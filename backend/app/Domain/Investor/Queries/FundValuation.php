@@ -177,13 +177,25 @@ final class FundValuation
      *
      * مشيةٌ واحدة على الدفتر كلِّه بـ`deltas()`، لا أربعُ عباراتِ `CASE` تعيد قولَ ما يقوله
      * الـ enum: التعريفُ يعيش في موضعٍ واحد، وتعريفان يفترقان أوّلَ حالةٍ حافّة.
+     *
+     * ## والسالبُ يُقصّ عند الصفر، صاحباً صاحباً — §٠.٨ من المواصفة
+     *
+     * خسارةٌ متأخّرة تقف سالبةً في رقبة صاحبها: «مطالبة على المستثمر نفسه، ويُرحّل حتى يُخصم من
+     * أرباحه المستقبلية». فهي **ليست أصلاً للصندوق** — لا تُحصَّل نقداً أبداً. ولو جُمعت مع
+     * الموجب لنقص الدَّين، فارتفعت القيمة، فارتفع سعرُ الوحدة: خسارةُ رجلٍ يقتسمها الباقون ربحاً.
+     *
+     * فالجيبُ غيرُ المسوّى يُجمع لكلّ صاحبٍ في صفقته ثم يُقصّ: سالبُه يُستنزل من ربحه هو الذي لم
+     * يُفرَج عنه، وهو ما سيُفرَج له فعلاً. وجيبُ المحفظة يُقصّ وحدَه: ما أُفرِج عنه يُسحب كاملاً
+     * اليوم، والسالبُ يُخصم من القادم لا مما خرج.
      */
     private function profitOwed(?int $dealId): string
     {
-        $total = '0';
+        $unsettled = [];
+        $inWallets = [];
 
         foreach (InvestorWalletEntry::query()->with('reversedEntry')->get() as $entry) {
             $deltas = $entry->deltas();
+            $investorId = (int) $entry->investor_id;
 
             // **الجيبُ المحدَّد يخصّ صفقته، وجيبُ المحفظة يخصّ الجميع.** صفُّ الإفراج يسمّي
             // صفقتَه فيُنسب إليها، وصفُّ السحب لا يسمّي شيئاً — فما دام في المحفظة محسوبٌ
@@ -191,10 +203,19 @@ final class FundValuation
             // ويُبالغ قليلاً في دَين الصندوق ما دامت صفقةٌ قديمةٌ لم تُصفَّ بعد — وهو الاتجاهُ
             // الذي لا يظلم قائماً لصالح داخلٍ جديد.
             if ($dealId === null || (int) ($entry->investor_deal_id ?? 0) === $dealId) {
-                $total = bcadd($total, $deltas['profit_deal'], 8);
+                $key = $investorId.':'.(int) ($entry->investor_deal_id ?? 0);
+                $unsettled[$key] = bcadd($unsettled[$key] ?? '0', $deltas['profit_deal'], 8);
             }
 
-            $total = bcadd($total, $deltas['profit_wallet'], 8);
+            $inWallets[$investorId] = bcadd($inWallets[$investorId] ?? '0', $deltas['profit_wallet'], 8);
+        }
+
+        $total = '0';
+
+        foreach ([...array_values($unsettled), ...array_values($inWallets)] as $balance) {
+            if (bccomp($balance, '0', 8) > 0) {
+                $total = bcadd($total, $balance, 8);
+            }
         }
 
         return $total;

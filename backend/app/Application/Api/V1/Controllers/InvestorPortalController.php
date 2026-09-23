@@ -15,6 +15,7 @@ use App\Domain\Investor\Models\InvestmentUnit;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\PeriodShares;
+use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Queries\UnitPrice;
 use App\Domain\Investor\Support\Money;
 use App\Support\ResponseTrait;
@@ -42,6 +43,7 @@ class InvestorPortalController extends Controller
         private readonly FundUnits $units,
         private readonly UnitPrice $price,
         private readonly PeriodShares $shares,
+        private readonly ProfitAwaitingDelivery $awaiting,
     ) {}
 
     /**
@@ -95,8 +97,17 @@ class InvestorPortalController extends Controller
         $balances = $this->investors->balancesFor($investorId);
 
         $capitalInDeals = '0.00';
-        $profitInDeals = '0.00';
         $deals = [];
+
+        // **«أرباح معلّقة» من كلّ جيبٍ مقيَّد، لا من صفقاته القديمة وحدها.** شريكُ الصندوق لا صفَّ
+        // له في `investor_deal_shares` — نصيبُه وحداتٌ — فكان ربحُه المقيَّد في الصندوق يغيب عن
+        // هذا الرقم ويظهر صفراً وهو له. ورأسُ المال لا يُجمع هكذا: رأسُ ماله في الصندوق تقوله
+        // بطاقةُ الصندوق بوحداته وقيمتها.
+        $profitInDeals = '0.00';
+
+        foreach ($balances['deals'] as $pots) {
+            $profitInDeals = bcadd($profitInDeals, $pots['profit'], 2);
+        }
 
         $rows = $investor->shares()->with('deal')->get();
 
@@ -105,7 +116,6 @@ class InvestorPortalController extends Controller
             $pots = $balances['deals'][$dealId] ?? ['capital' => '0.00', 'profit' => '0.00'];
 
             $capitalInDeals = bcadd($capitalInDeals, $pots['capital'], 2);
-            $profitInDeals = bcadd($profitInDeals, $pots['profit'], 2);
 
             $deals[] = [
                 'id' => $dealId,
@@ -118,6 +128,9 @@ class InvestorPortalController extends Controller
                 'profit' => $pots['profit'],
             ];
         }
+
+        // الأوّلُ من الأرقام الثلاثة — §٠.٨: محسوبٌ لا مقيَّد، ولا صفَّ له في الدفتر.
+        $awaiting = $this->awaiting->forInvestor($investorId);
 
         $withdrawn = (string) InvestorWalletEntry::query()
             ->where('investor_id', $investorId)
@@ -134,6 +147,8 @@ class InvestorPortalController extends Controller
             'capital_in_wallet' => $balances['wallet']['capital'],
             'capital_in_deals' => $capitalInDeals,
             'capital_total' => bcadd($balances['wallet']['capital'], $capitalInDeals, 2),
+            'profit_awaiting_delivery' => $awaiting['amount'],
+            'orders_awaiting_delivery' => $awaiting['orders'],
             'profit_in_deals' => $profitInDeals,
             'profit_available' => $balances['wallet']['profit'],
             'profit_withdrawn' => number_format((float) $withdrawn, 2, '.', ''),

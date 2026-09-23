@@ -70,16 +70,17 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
   /// **`closePeriod` لا `close`**: الثانيةُ اسمٌ مشغولٌ في `Cubit` نفسه — تهدم الـcubit — وكانت
   /// ستُغلقه بدل أن تُقفل فترة.
   ///
-  /// تُعيد الفشلَ الذي يُعرض، وnull حين ينجح.
-  Future<Failure?> closePeriod({String? overrideReason}) async {
+  /// تُعيد الفترةَ كما صارت حين ينجح — **«مغلقة» أو «قيد الإغلاق»**، وهما خبران مختلفان: الثانية
+  /// انتهت في موعدها وبقيت لها طلبيات، فلا يُقال عنها «أُفرج عن الأرباح» — والفشلَ الذي يُعرض.
+  Future<(FundPeriod?, Failure?)> closePeriod({String? overrideReason}) async {
     final result = await _closePeriod(overrideReason: overrideReason);
 
-    if (isClosed) return null;
+    if (isClosed) return (null, null);
 
-    return result.fold((failure) => failure, (_) {
+    return result.fold((failure) => (null, failure), (period) {
       unawaited(load());
 
-      return null;
+      return (period, null);
     });
   }
 

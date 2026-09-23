@@ -29,6 +29,9 @@ class _FakeRepository implements InvestmentFundRepository {
   int closed = 0;
   String? closedWith;
 
+  /// ما يعود به الإقفالُ حين ينجح — `null` يُبقي الرفضَ الذي تقوم عليه بقيّةُ الاختبارات.
+  FundPeriod? closesInto;
+
   @override
   Future<Either<Failure, FundStanding>> standing() async => Right(held);
 
@@ -43,6 +46,8 @@ class _FakeRepository implements InvestmentFundRepository {
   Future<Either<Failure, FundPeriod>> closePeriod({String? overrideReason}) async {
     closedWith = overrideReason;
     closed++;
+
+    if (closesInto case final period?) return Right(period);
 
     return const Left(Failure.server(message: 'فيها طلبيات لم تصل العملاء بعد'));
   }
@@ -176,8 +181,9 @@ void main() {
     expect(find.text('لا توجد فترة مفتوحة'), findsOneWidget);
   });
 
-  testWidgets('a running period shows its window and what closes it', (tester) async {
-    // Arrange
+  testWidgets('a running period shows its window and how long it has been due', (tester) async {
+    // Arrange — §٠.٤: الجدولةُ تُقفلها في ساعتها الأولى، فبقاؤها مستحقّةً ثلاثةَ أيام يعني أنها
+    // صمتت. واللوحةُ تقولها رقماً بدل أن يمرّ الصمت.
     await register(
       const FundStanding(
         valuation: _valuation,
@@ -190,6 +196,7 @@ void main() {
           endsOn: '2026-09-30',
           subscriptionClosesOn: '2026-09-07',
           isDueToClose: true,
+          overdueDays: 3,
           periodMonths: 1,
           investorProfitSharePercent: '50.00',
           openingStockCost: '14000.00',
@@ -202,12 +209,71 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — و«حلّ موعدُها» لا «أُقفلت»: الطلبياتُ الطائرة تقرّر الثانية.
+    // Assert
     expect(find.text('الفترة P1 — مفتوحة'), findsOneWidget);
     expect(find.text('2026-09-01 ← 2026-09-30'), findsOneWidget);
     expect(find.text('الاكتتاب مفتوح حتى 2026-09-07'), findsOneWidget);
-    expect(find.textContaining('حلّ موعد إقفالها'), findsOneWidget);
+    expect(find.text('مستحقّة الإقفال منذ 3 أيام'), findsOneWidget);
     expect(find.text('لا توجد فترة مفتوحة'), findsNothing);
+  });
+
+  testWidgets('a period waiting for its orders stays on the dashboard, counting them', (
+    tester,
+  ) async {
+    // Arrange — §١٢هـ: «تبقى بلا حدّ، واللوحةُ تصرخ». سبتمبر أُقفل في موعده وبقيت له طلبيتان،
+    // وأكتوبر يجري فوقه.
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 2,
+          code: 'P2',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-10-01',
+          endsOn: '2026-10-31',
+          subscriptionClosesOn: '2026-10-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+        waitingPeriods: [
+          FundPeriod(
+            id: 1,
+            code: 'P1',
+            status: 'closing',
+            statusLabel: 'قيد الإغلاق',
+            startsOn: '2026-09-22',
+            endsOn: '2026-09-30',
+            subscriptionClosesOn: '2026-09-30',
+            isDueToClose: false,
+            owedOrders: 2,
+            periodMonths: 1,
+            investorProfitSharePercent: '50.00',
+            openingStockCost: '0.00',
+            openingCash: '0.00',
+          ),
+        ],
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('تنتظر طلبيتين'), 200);
+
+    // Assert — بابٌ يُفتح على الفترة، ويقول كم طلبيةً تحبسها.
+    final card = find.ancestor(
+      of: find.text('الفترة P1 — قيد الإغلاق'),
+      matching: find.byType(InkWell),
+    );
+
+    expect(card, findsOneWidget);
+    expect(tester.widget<InkWell>(card).onTap, isNotNull);
+    expect(find.text('تنتظر طلبيتين'), findsOneWidget);
+    expect(find.text('الفترة P2 — مفتوحة'), findsOneWidget);
   });
 
   testWidgets('a refusal to close is shown in the server words', (tester) async {
@@ -255,6 +321,53 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
   });
+  testWidgets('a close that leaves the period waiting says so, not that it closed', (tester) async {
+    // Arrange — §٠.٧: الفترةُ تنتهي في موعدها ولو بقيت لها طلبية. «أُقفلت وأُفرج عن الأرباح»
+    // كذبٌ هنا: ربحُ ما لم يصل أو لم يُحصَّل لم يُفرَج عنه.
+    const due = FundPeriod(
+      id: 1,
+      code: 'P1',
+      status: 'open',
+      statusLabel: 'مفتوحة',
+      startsOn: '2026-09-22',
+      endsOn: '2026-09-30',
+      subscriptionClosesOn: '2026-09-30',
+      isDueToClose: true,
+      overdueDays: 0,
+      periodMonths: 1,
+      investorProfitSharePercent: '50.00',
+      openingStockCost: '0.00',
+      openingCash: '0.00',
+    );
+    final repository = await register(const FundStanding(valuation: _valuation, period: due));
+    repository.closesInto = due.copyWith(
+      status: 'closing',
+      statusLabel: 'قيد الإغلاق',
+      isDueToClose: false,
+      owedOrders: 2,
+    );
+    sl<Session>().adopt(
+      const AuthUser(id: 1, name: 'مدير', phone: '0910000000', permissions: ['investors.manage']),
+    );
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('إقفال الفترة'), 200);
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('إقفال الفترة'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Assert
+    expect(find.text('انتهت الفترة P1 — قيد الإغلاق، تنتظر طلبيتين'), findsOneWidget);
+    expect(find.textContaining('أُفرج عن الأرباح'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('the unit price and each partner\'s share are on the dashboard', (tester) async {
     // Arrange — سعرُ الوحدة هو ما يشتري به الداخلُ الجديد، فمن يقبض مالاً اليوم يحتاج أن يراه
     // قبل أن يكتب. والنسبُ هي ما سيأخذه كلُّ شريك من ربح هذه الفترة.

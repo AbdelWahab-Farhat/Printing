@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
@@ -73,13 +74,19 @@ class _PeriodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isOpen = period.status == 'open';
     final radius = BorderRadius.circular(16.r);
+
+    // ثلاثُ حالاتٍ بثلاثة ألوان: الجاريةُ، والمنتظِرةُ طلبياتِها، والمغلقةُ بأرقامها.
+    final color = switch (period.status) {
+      'open' => scheme.primaryContainer,
+      'closing' => scheme.secondaryContainer,
+      _ => scheme.surfaceContainerHighest,
+    };
 
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Material(
-        color: isOpen ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+        color: color,
         borderRadius: radius,
         child: InkWell(
           borderRadius: radius,
@@ -107,6 +114,10 @@ class _PeriodCard extends StatelessWidget {
                   '${period.startsOn} ← ${period.endsOn}',
                   style: context.textTheme.bodyMedium,
                 ),
+                if (period.owedOrders case final owed? when owed > 0) ...[
+                  SizedBox(height: 8.h),
+                  Text('تنتظر ${ordersCount(owed)}', style: context.textTheme.bodyMedium),
+                ],
                 if (period.endsSettlementCycle) ...[
                   SizedBox(height: 8.h),
                   Text('تُغلق دورة تسوية', style: context.textTheme.bodyMedium),

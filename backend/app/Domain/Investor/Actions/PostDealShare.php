@@ -9,6 +9,7 @@ use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\PeriodForEntry;
 use App\Domain\Investor\Queries\PeriodShares;
+use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
 use Illuminate\Support\Collection;
@@ -67,13 +68,11 @@ final class PostDealShare
         // مرّةً للدفعة كلِّها: كلُّ صفوفها من مصدرٍ واحد، فلا فترةَ تختلف بينها. وهي كذلك ما
         // تُقرأ به نسبُ القسمة حين تكون الصفقةُ هي الصندوق.
         $periodId = $this->periodFor->bySource($sourceType, $sourceId);
-        $weights = $this->weightsFor($deal, $periodId);
+        $target = $this->split($deal, $investorsAmount, $periodId);
 
-        if ($weights === []) {
+        if ($target === []) {
             return [];
         }
-
-        $amounts = Money::allocate($investorsAmount, array_values($weights));
 
         $standing = InvestorWalletEntry::query()
             ->where('investor_deal_id', $deal->getKey())
@@ -83,12 +82,6 @@ final class PostDealShare
             ->whereDoesntHave('reversedBy')
             ->get()
             ->keyBy('investor_id');
-
-        $target = [];
-
-        foreach (array_keys($weights) as $index => $investorId) {
-            $target[$investorId] = $amounts[$index] ?? '0.00';
-        }
 
         if ($this->matches($standing, $target)) {
             return [];
@@ -131,6 +124,49 @@ final class PostDealShare
         }
 
         return $written;
+    }
+
+    /**
+     * ما كان سيُكتب لكلّ مستثمرٍ لو قُيِّد هذا المبلغ الآن — بلا كتابة.
+     *
+     * بابُ «ربح قيد التسليم» ({@see ProfitAwaitingDelivery}): طلبيةٌ جُمِّدت تكلفتُها ولم تُسلَّم
+     * يُعرض نصيبُ كلّ شريكٍ منها **بالقسمة التي سيقيّده بها التسليمُ بعينها** — فترةُ المصدر،
+     * ونسبُها، وتوزيعُ الباقي الأكبر. والقسمةُ واحدةٌ هنا وفي الكتابة، فلا يفترق المعروضُ عمّا
+     * يُقيَّد.
+     *
+     * @return array<int, string> المستثمر ← نصيبُه، بإشارته
+     */
+    public function preview(
+        InvestorDeal $deal,
+        string $investorsAmount,
+        string $sourceType,
+        int $sourceId,
+    ): array {
+        return $this->split($deal, $investorsAmount, $this->periodFor->bySource($sourceType, $sourceId));
+    }
+
+    /**
+     * نصيبُ المبلغ لكلّ مستثمرٍ بالباقي الأكبر — القسمةُ الواحدة التي يكتب بها الفعلُ ويعرض بها
+     * {@see preview()}.
+     *
+     * @return array<int, string>
+     */
+    private function split(InvestorDeal $deal, string $investorsAmount, ?int $periodId): array
+    {
+        $weights = $this->weightsFor($deal, $periodId);
+
+        if ($weights === []) {
+            return [];
+        }
+
+        $amounts = Money::allocate($investorsAmount, array_values($weights));
+        $target = [];
+
+        foreach (array_keys($weights) as $index => $investorId) {
+            $target[$investorId] = $amounts[$index] ?? '0.00';
+        }
+
+        return $target;
     }
 
     /**

@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -124,6 +125,10 @@ class _Standing extends StatelessWidget {
           _Period(period: period)
         else
           const _NoPeriod(),
+        for (final waiting in standing.waitingPeriods) ...[
+          SizedBox(height: 12.h),
+          _WaitingPeriod(period: waiting),
+        ],
         SizedBox(height: 16.h),
         const _PeriodsButton(),
         if (standing.investors.isNotEmpty) ...[
@@ -276,8 +281,10 @@ class _Period extends StatelessWidget {
                   color: scheme.errorContainer,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
+                // **الجدولةُ تُقفلها في ساعتها الأولى**، فبقاءُ هذا السطر يعني أنها صمتت — ويقول
+                // منذ متى، لأن «حلّ موعدُها» بلا رقمٍ يُقرأ يوماً وشهراً سواء.
                 child: Text(
-                  'حلّ موعد إقفالها — تُقفَل متى سُلِّمت آخرُ طلبياتها',
+                  'مستحقّة الإقفال ${sinceDays(period.overdueDays ?? 0)}',
                   style: context.textTheme.bodyMedium?.copyWith(color: scheme.onErrorContainer),
                 ),
               ),
@@ -285,6 +292,65 @@ class _Period extends StatelessWidget {
               const PermissionGate(
                 permission: AppPermission.manageInvestors,
                 child: _CloseButton(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// فترةٌ «قيد الإغلاق» — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل.
+///
+/// **لا تحبس أحداً**، لكنها تبقى على اللوحة ما بقيت: «تبقى بلا حدّ، واللوحةُ تصرخ». وهي بابٌ
+/// كبطاقة الفترة الجارية، يُفتح على طلبياتها.
+class _WaitingPeriod extends StatelessWidget {
+  const _WaitingPeriod({required this.period});
+
+  final FundPeriod period;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return InkWell(
+      onTap: () => context.push(Routes.investmentPeriod(period.id), extra: period.code),
+      borderRadius: BorderRadius.circular(16.r),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: scheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'الفترة ${period.code} — ${period.statusLabel}',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(AppIcons.forward, size: 20.sp, color: scheme.onSecondaryContainer),
+              ],
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              '${period.startsOn} ← ${period.endsOn}',
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer),
+            ),
+            if (period.owedOrders case final owed? when owed > 0) ...[
+              SizedBox(height: 8.h),
+              Text(
+                'تنتظر ${ordersCount(owed)}',
+                style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSecondaryContainer),
               ),
             ],
           ],
@@ -311,7 +377,7 @@ class _CloseButtonState extends State<_CloseButton> {
   Future<void> _close() async {
     setState(() => _closing = true);
 
-    final failure = await context.read<InvestmentFundCubit>().closePeriod();
+    final (period, failure) = await context.read<InvestmentFundCubit>().closePeriod();
 
     if (!mounted) return;
 
@@ -319,9 +385,22 @@ class _CloseButtonState extends State<_CloseButton> {
 
     await showCustomSnackBar(
       context: context,
-      title: failure?.message ?? 'أُقفلت — أُفرج عن الأرباح، ورأسُ المال والبضاعة في مكانهما',
+      title: failure?.message ?? _closedAs(period),
       type: failure == null ? SnackType.success : SnackType.error,
     );
+  }
+
+  /// ما صارت إليه — **«قيد الإغلاق» ليست «أُقفلت»**: ربحُ ما لم يصل أو لم يُحصَّل لم يُفرَج عنه.
+  String _closedAs(FundPeriod? period) {
+    if (period != null && period.status == 'closing') {
+      final owed = period.owedOrders ?? 0;
+
+      return owed > 0
+          ? 'انتهت الفترة ${period.code} — ${period.statusLabel}، تنتظر ${ordersCount(owed)}'
+          : 'انتهت الفترة ${period.code} — ${period.statusLabel}';
+    }
+
+    return 'أُقفلت — أُفرج عن الأرباح، ورأسُ المال والبضاعة في مكانهما';
   }
 
   @override

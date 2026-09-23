@@ -174,4 +174,33 @@ void main() {
     expect(pushed, '/investment/periods/7');
     expect(carried, 'P7');
   });
+
+  testWidgets('a period waiting for its orders says how many hold it', (tester) async {
+    // Arrange — §٠.٧: الحالةُ الثالثة. انتهت نافذتُها في موعدها، وبقيت لها ثلاثُ طلبيات.
+    await register(const [
+      FundPeriod(
+        id: 8,
+        code: 'P8',
+        status: 'closing',
+        statusLabel: 'قيد الإغلاق',
+        startsOn: '2026-09-22',
+        endsOn: '2026-09-30',
+        subscriptionClosesOn: '2026-09-30',
+        isDueToClose: false,
+        owedOrders: 3,
+        periodMonths: 1,
+        investorProfitSharePercent: '50.00',
+        openingStockCost: '0.00',
+        openingCash: '0.00',
+      ),
+    ]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('قيد الإغلاق'), findsOneWidget);
+    expect(find.text('تنتظر 3 طلبيات'), findsOneWidget);
+  });
 }

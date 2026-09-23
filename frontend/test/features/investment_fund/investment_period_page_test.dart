@@ -282,6 +282,37 @@ void main() {
     expect(find.text('9,000 د.ل'), findsOneWidget);
   });
 
+  testWidgets('a waiting period says how many orders still hold it', (tester) async {
+    // Arrange — «قيد الإغلاق»: أرقامُها لم تُجمَّد بعد، وطلبيتان لم تصلا أو لم تُحصَّلا.
+    await register(
+      const PeriodOrders(
+        period: FundPeriod(
+          id: 8,
+          code: 'P8',
+          status: 'closing',
+          statusLabel: 'قيد الإغلاق',
+          startsOn: '2026-09-22',
+          endsOn: '2026-09-30',
+          subscriptionClosesOn: '2026-09-30',
+          isDueToClose: false,
+          owedOrders: 2,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('الفترة P8 — قيد الإغلاق'), findsOneWidget);
+    expect(find.text('تنتظر طلبيتين'), findsOneWidget);
+  });
+
   testWidgets('a refusal is shown in the server words, with a way back', (tester) async {
     // Arrange
     final repository = await register(

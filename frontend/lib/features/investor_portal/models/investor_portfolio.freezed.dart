@@ -17,8 +17,12 @@ mixin _$InvestorPortfolio {
 
  InvestorIdentity get investor;/// His money with the company, committed to nothing.
 @JsonKey(name: 'capital_in_wallet') String get capitalInWallet;/// His money currently financing goods on a shelf.
-@JsonKey(name: 'capital_in_deals') String get capitalInDeals;@JsonKey(name: 'capital_total') String get capitalTotal;/// Earned by deals still running. His, but not yet his to take.
-@JsonKey(name: 'profit_in_deals') String get profitInDeals;/// Released by a closed deal, and withdrawable.
+@JsonKey(name: 'capital_in_deals') String get capitalInDeals;@JsonKey(name: 'capital_total') String get capitalTotal;/// **ربح قيد التسليم** — طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. محسوبٌ لا مقيَّد: هو ما سيقيّده
+/// التسليمُ بعينه، ولا صفَّ له في الدفتر بعد.
+@JsonKey(name: 'profit_awaiting_delivery') String get profitAwaitingDelivery;/// كم طلبيةً وراء [profitAwaitingDelivery].
+@JsonKey(name: 'orders_awaiting_delivery') int get ordersAwaitingDelivery;/// **أرباح معلّقة** — سُلِّمت فقُيِّدت، والصندوقُ منها. له، ولا يُسحب حتى تنقضي فترتُها
+/// وتُحصَّل طلبيتُها.
+@JsonKey(name: 'profit_in_deals') String get profitInDeals;/// **أرباح متاحة للسحب** — اجتمع شرطاها، والسحبُ يقرأ منها وحدها.
 @JsonKey(name: 'profit_available') String get profitAvailable;@JsonKey(name: 'profit_withdrawn') String get profitWithdrawn; List<InvestorDealLine> get deals;/// **موقفُه من الصندوق المستمرّ** — وهو اليوم الطريقُ الذي يدخل منه شريكٌ جديد.
 ///
 /// `null` لمن لا وحداتِ له: شريكٌ قديم في صفقاتٍ وحدها. ولا يُعرض صفراً عندها، لأن «لا
@@ -36,16 +40,16 @@ $InvestorPortfolioCopyWith<InvestorPortfolio> get copyWith => _$InvestorPortfoli
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPortfolio&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.capitalInWallet, capitalInWallet) || other.capitalInWallet == capitalInWallet)&&(identical(other.capitalInDeals, capitalInDeals) || other.capitalInDeals == capitalInDeals)&&(identical(other.capitalTotal, capitalTotal) || other.capitalTotal == capitalTotal)&&(identical(other.profitInDeals, profitInDeals) || other.profitInDeals == profitInDeals)&&(identical(other.profitAvailable, profitAvailable) || other.profitAvailable == profitAvailable)&&(identical(other.profitWithdrawn, profitWithdrawn) || other.profitWithdrawn == profitWithdrawn)&&const DeepCollectionEquality().equals(other.deals, deals)&&(identical(other.fund, fund) || other.fund == fund));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPortfolio&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.capitalInWallet, capitalInWallet) || other.capitalInWallet == capitalInWallet)&&(identical(other.capitalInDeals, capitalInDeals) || other.capitalInDeals == capitalInDeals)&&(identical(other.capitalTotal, capitalTotal) || other.capitalTotal == capitalTotal)&&(identical(other.profitAwaitingDelivery, profitAwaitingDelivery) || other.profitAwaitingDelivery == profitAwaitingDelivery)&&(identical(other.ordersAwaitingDelivery, ordersAwaitingDelivery) || other.ordersAwaitingDelivery == ordersAwaitingDelivery)&&(identical(other.profitInDeals, profitInDeals) || other.profitInDeals == profitInDeals)&&(identical(other.profitAvailable, profitAvailable) || other.profitAvailable == profitAvailable)&&(identical(other.profitWithdrawn, profitWithdrawn) || other.profitWithdrawn == profitWithdrawn)&&const DeepCollectionEquality().equals(other.deals, deals)&&(identical(other.fund, fund) || other.fund == fund));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investor,capitalInWallet,capitalInDeals,capitalTotal,profitInDeals,profitAvailable,profitWithdrawn,const DeepCollectionEquality().hash(deals),fund);
+int get hashCode => Object.hash(runtimeType,investor,capitalInWallet,capitalInDeals,capitalTotal,profitAwaitingDelivery,ordersAwaitingDelivery,profitInDeals,profitAvailable,profitWithdrawn,const DeepCollectionEquality().hash(deals),fund);
 
 @override
 String toString() {
-  return 'InvestorPortfolio(investor: $investor, capitalInWallet: $capitalInWallet, capitalInDeals: $capitalInDeals, capitalTotal: $capitalTotal, profitInDeals: $profitInDeals, profitAvailable: $profitAvailable, profitWithdrawn: $profitWithdrawn, deals: $deals, fund: $fund)';
+  return 'InvestorPortfolio(investor: $investor, capitalInWallet: $capitalInWallet, capitalInDeals: $capitalInDeals, capitalTotal: $capitalTotal, profitAwaitingDelivery: $profitAwaitingDelivery, ordersAwaitingDelivery: $ordersAwaitingDelivery, profitInDeals: $profitInDeals, profitAvailable: $profitAvailable, profitWithdrawn: $profitWithdrawn, deals: $deals, fund: $fund)';
 }
 
 
@@ -56,7 +60,7 @@ abstract mixin class $InvestorPortfolioCopyWith<$Res>  {
   factory $InvestorPortfolioCopyWith(InvestorPortfolio value, $Res Function(InvestorPortfolio) _then) = _$InvestorPortfolioCopyWithImpl;
 @useResult
 $Res call({
- InvestorIdentity investor,@JsonKey(name: 'capital_in_wallet') String capitalInWallet,@JsonKey(name: 'capital_in_deals') String capitalInDeals,@JsonKey(name: 'capital_total') String capitalTotal,@JsonKey(name: 'profit_in_deals') String profitInDeals,@JsonKey(name: 'profit_available') String profitAvailable,@JsonKey(name: 'profit_withdrawn') String profitWithdrawn, List<InvestorDealLine> deals, FundShare? fund
+ InvestorIdentity investor,@JsonKey(name: 'capital_in_wallet') String capitalInWallet,@JsonKey(name: 'capital_in_deals') String capitalInDeals,@JsonKey(name: 'capital_total') String capitalTotal,@JsonKey(name: 'profit_awaiting_delivery') String profitAwaitingDelivery,@JsonKey(name: 'orders_awaiting_delivery') int ordersAwaitingDelivery,@JsonKey(name: 'profit_in_deals') String profitInDeals,@JsonKey(name: 'profit_available') String profitAvailable,@JsonKey(name: 'profit_withdrawn') String profitWithdrawn, List<InvestorDealLine> deals, FundShare? fund
 });
 
 
@@ -73,13 +77,15 @@ class _$InvestorPortfolioCopyWithImpl<$Res>
 
 /// Create a copy of InvestorPortfolio
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? investor = null,Object? capitalInWallet = null,Object? capitalInDeals = null,Object? capitalTotal = null,Object? profitInDeals = null,Object? profitAvailable = null,Object? profitWithdrawn = null,Object? deals = null,Object? fund = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? investor = null,Object? capitalInWallet = null,Object? capitalInDeals = null,Object? capitalTotal = null,Object? profitAwaitingDelivery = null,Object? ordersAwaitingDelivery = null,Object? profitInDeals = null,Object? profitAvailable = null,Object? profitWithdrawn = null,Object? deals = null,Object? fund = freezed,}) {
   return _then(_self.copyWith(
 investor: null == investor ? _self.investor : investor // ignore: cast_nullable_to_non_nullable
 as InvestorIdentity,capitalInWallet: null == capitalInWallet ? _self.capitalInWallet : capitalInWallet // ignore: cast_nullable_to_non_nullable
 as String,capitalInDeals: null == capitalInDeals ? _self.capitalInDeals : capitalInDeals // ignore: cast_nullable_to_non_nullable
 as String,capitalTotal: null == capitalTotal ? _self.capitalTotal : capitalTotal // ignore: cast_nullable_to_non_nullable
-as String,profitInDeals: null == profitInDeals ? _self.profitInDeals : profitInDeals // ignore: cast_nullable_to_non_nullable
+as String,profitAwaitingDelivery: null == profitAwaitingDelivery ? _self.profitAwaitingDelivery : profitAwaitingDelivery // ignore: cast_nullable_to_non_nullable
+as String,ordersAwaitingDelivery: null == ordersAwaitingDelivery ? _self.ordersAwaitingDelivery : ordersAwaitingDelivery // ignore: cast_nullable_to_non_nullable
+as int,profitInDeals: null == profitInDeals ? _self.profitInDeals : profitInDeals // ignore: cast_nullable_to_non_nullable
 as String,profitAvailable: null == profitAvailable ? _self.profitAvailable : profitAvailable // ignore: cast_nullable_to_non_nullable
 as String,profitWithdrawn: null == profitWithdrawn ? _self.profitWithdrawn : profitWithdrawn // ignore: cast_nullable_to_non_nullable
 as String,deals: null == deals ? _self.deals : deals // ignore: cast_nullable_to_non_nullable
@@ -190,10 +196,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_awaiting_delivery')  String profitAwaitingDelivery, @JsonKey(name: 'orders_awaiting_delivery')  int ordersAwaitingDelivery, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestorPortfolio() when $default != null:
-return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
+return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitAwaitingDelivery,_that.ordersAwaitingDelivery,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
   return orElse();
 
 }
@@ -211,10 +217,10 @@ return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_awaiting_delivery')  String profitAwaitingDelivery, @JsonKey(name: 'orders_awaiting_delivery')  int ordersAwaitingDelivery, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)  $default,) {final _that = this;
 switch (_that) {
 case _InvestorPortfolio():
-return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
+return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitAwaitingDelivery,_that.ordersAwaitingDelivery,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -231,10 +237,10 @@ return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( InvestorIdentity investor, @JsonKey(name: 'capital_in_wallet')  String capitalInWallet, @JsonKey(name: 'capital_in_deals')  String capitalInDeals, @JsonKey(name: 'capital_total')  String capitalTotal, @JsonKey(name: 'profit_awaiting_delivery')  String profitAwaitingDelivery, @JsonKey(name: 'orders_awaiting_delivery')  int ordersAwaitingDelivery, @JsonKey(name: 'profit_in_deals')  String profitInDeals, @JsonKey(name: 'profit_available')  String profitAvailable, @JsonKey(name: 'profit_withdrawn')  String profitWithdrawn,  List<InvestorDealLine> deals,  FundShare? fund)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestorPortfolio() when $default != null:
-return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
+return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.capitalTotal,_that.profitAwaitingDelivery,_that.ordersAwaitingDelivery,_that.profitInDeals,_that.profitAvailable,_that.profitWithdrawn,_that.deals,_that.fund);case _:
   return null;
 
 }
@@ -246,7 +252,7 @@ return $default(_that.investor,_that.capitalInWallet,_that.capitalInDeals,_that.
 @JsonSerializable()
 
 class _InvestorPortfolio implements InvestorPortfolio {
-  const _InvestorPortfolio({required this.investor, @JsonKey(name: 'capital_in_wallet') required this.capitalInWallet, @JsonKey(name: 'capital_in_deals') required this.capitalInDeals, @JsonKey(name: 'capital_total') required this.capitalTotal, @JsonKey(name: 'profit_in_deals') required this.profitInDeals, @JsonKey(name: 'profit_available') required this.profitAvailable, @JsonKey(name: 'profit_withdrawn') required this.profitWithdrawn, final  List<InvestorDealLine> deals = const <InvestorDealLine>[], this.fund}): _deals = deals;
+  const _InvestorPortfolio({required this.investor, @JsonKey(name: 'capital_in_wallet') required this.capitalInWallet, @JsonKey(name: 'capital_in_deals') required this.capitalInDeals, @JsonKey(name: 'capital_total') required this.capitalTotal, @JsonKey(name: 'profit_awaiting_delivery') this.profitAwaitingDelivery = '0.00', @JsonKey(name: 'orders_awaiting_delivery') this.ordersAwaitingDelivery = 0, @JsonKey(name: 'profit_in_deals') required this.profitInDeals, @JsonKey(name: 'profit_available') required this.profitAvailable, @JsonKey(name: 'profit_withdrawn') required this.profitWithdrawn, final  List<InvestorDealLine> deals = const <InvestorDealLine>[], this.fund}): _deals = deals;
   factory _InvestorPortfolio.fromJson(Map<String, dynamic> json) => _$InvestorPortfolioFromJson(json);
 
 @override final  InvestorIdentity investor;
@@ -255,9 +261,15 @@ class _InvestorPortfolio implements InvestorPortfolio {
 /// His money currently financing goods on a shelf.
 @override@JsonKey(name: 'capital_in_deals') final  String capitalInDeals;
 @override@JsonKey(name: 'capital_total') final  String capitalTotal;
-/// Earned by deals still running. His, but not yet his to take.
+/// **ربح قيد التسليم** — طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. محسوبٌ لا مقيَّد: هو ما سيقيّده
+/// التسليمُ بعينه، ولا صفَّ له في الدفتر بعد.
+@override@JsonKey(name: 'profit_awaiting_delivery') final  String profitAwaitingDelivery;
+/// كم طلبيةً وراء [profitAwaitingDelivery].
+@override@JsonKey(name: 'orders_awaiting_delivery') final  int ordersAwaitingDelivery;
+/// **أرباح معلّقة** — سُلِّمت فقُيِّدت، والصندوقُ منها. له، ولا يُسحب حتى تنقضي فترتُها
+/// وتُحصَّل طلبيتُها.
 @override@JsonKey(name: 'profit_in_deals') final  String profitInDeals;
-/// Released by a closed deal, and withdrawable.
+/// **أرباح متاحة للسحب** — اجتمع شرطاها، والسحبُ يقرأ منها وحدها.
 @override@JsonKey(name: 'profit_available') final  String profitAvailable;
 @override@JsonKey(name: 'profit_withdrawn') final  String profitWithdrawn;
  final  List<InvestorDealLine> _deals;
@@ -286,16 +298,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPortfolio&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.capitalInWallet, capitalInWallet) || other.capitalInWallet == capitalInWallet)&&(identical(other.capitalInDeals, capitalInDeals) || other.capitalInDeals == capitalInDeals)&&(identical(other.capitalTotal, capitalTotal) || other.capitalTotal == capitalTotal)&&(identical(other.profitInDeals, profitInDeals) || other.profitInDeals == profitInDeals)&&(identical(other.profitAvailable, profitAvailable) || other.profitAvailable == profitAvailable)&&(identical(other.profitWithdrawn, profitWithdrawn) || other.profitWithdrawn == profitWithdrawn)&&const DeepCollectionEquality().equals(other._deals, _deals)&&(identical(other.fund, fund) || other.fund == fund));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPortfolio&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.capitalInWallet, capitalInWallet) || other.capitalInWallet == capitalInWallet)&&(identical(other.capitalInDeals, capitalInDeals) || other.capitalInDeals == capitalInDeals)&&(identical(other.capitalTotal, capitalTotal) || other.capitalTotal == capitalTotal)&&(identical(other.profitAwaitingDelivery, profitAwaitingDelivery) || other.profitAwaitingDelivery == profitAwaitingDelivery)&&(identical(other.ordersAwaitingDelivery, ordersAwaitingDelivery) || other.ordersAwaitingDelivery == ordersAwaitingDelivery)&&(identical(other.profitInDeals, profitInDeals) || other.profitInDeals == profitInDeals)&&(identical(other.profitAvailable, profitAvailable) || other.profitAvailable == profitAvailable)&&(identical(other.profitWithdrawn, profitWithdrawn) || other.profitWithdrawn == profitWithdrawn)&&const DeepCollectionEquality().equals(other._deals, _deals)&&(identical(other.fund, fund) || other.fund == fund));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investor,capitalInWallet,capitalInDeals,capitalTotal,profitInDeals,profitAvailable,profitWithdrawn,const DeepCollectionEquality().hash(_deals),fund);
+int get hashCode => Object.hash(runtimeType,investor,capitalInWallet,capitalInDeals,capitalTotal,profitAwaitingDelivery,ordersAwaitingDelivery,profitInDeals,profitAvailable,profitWithdrawn,const DeepCollectionEquality().hash(_deals),fund);
 
 @override
 String toString() {
-  return 'InvestorPortfolio(investor: $investor, capitalInWallet: $capitalInWallet, capitalInDeals: $capitalInDeals, capitalTotal: $capitalTotal, profitInDeals: $profitInDeals, profitAvailable: $profitAvailable, profitWithdrawn: $profitWithdrawn, deals: $deals, fund: $fund)';
+  return 'InvestorPortfolio(investor: $investor, capitalInWallet: $capitalInWallet, capitalInDeals: $capitalInDeals, capitalTotal: $capitalTotal, profitAwaitingDelivery: $profitAwaitingDelivery, ordersAwaitingDelivery: $ordersAwaitingDelivery, profitInDeals: $profitInDeals, profitAvailable: $profitAvailable, profitWithdrawn: $profitWithdrawn, deals: $deals, fund: $fund)';
 }
 
 
@@ -306,7 +318,7 @@ abstract mixin class _$InvestorPortfolioCopyWith<$Res> implements $InvestorPortf
   factory _$InvestorPortfolioCopyWith(_InvestorPortfolio value, $Res Function(_InvestorPortfolio) _then) = __$InvestorPortfolioCopyWithImpl;
 @override @useResult
 $Res call({
- InvestorIdentity investor,@JsonKey(name: 'capital_in_wallet') String capitalInWallet,@JsonKey(name: 'capital_in_deals') String capitalInDeals,@JsonKey(name: 'capital_total') String capitalTotal,@JsonKey(name: 'profit_in_deals') String profitInDeals,@JsonKey(name: 'profit_available') String profitAvailable,@JsonKey(name: 'profit_withdrawn') String profitWithdrawn, List<InvestorDealLine> deals, FundShare? fund
+ InvestorIdentity investor,@JsonKey(name: 'capital_in_wallet') String capitalInWallet,@JsonKey(name: 'capital_in_deals') String capitalInDeals,@JsonKey(name: 'capital_total') String capitalTotal,@JsonKey(name: 'profit_awaiting_delivery') String profitAwaitingDelivery,@JsonKey(name: 'orders_awaiting_delivery') int ordersAwaitingDelivery,@JsonKey(name: 'profit_in_deals') String profitInDeals,@JsonKey(name: 'profit_available') String profitAvailable,@JsonKey(name: 'profit_withdrawn') String profitWithdrawn, List<InvestorDealLine> deals, FundShare? fund
 });
 
 
@@ -323,13 +335,15 @@ class __$InvestorPortfolioCopyWithImpl<$Res>
 
 /// Create a copy of InvestorPortfolio
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? investor = null,Object? capitalInWallet = null,Object? capitalInDeals = null,Object? capitalTotal = null,Object? profitInDeals = null,Object? profitAvailable = null,Object? profitWithdrawn = null,Object? deals = null,Object? fund = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? investor = null,Object? capitalInWallet = null,Object? capitalInDeals = null,Object? capitalTotal = null,Object? profitAwaitingDelivery = null,Object? ordersAwaitingDelivery = null,Object? profitInDeals = null,Object? profitAvailable = null,Object? profitWithdrawn = null,Object? deals = null,Object? fund = freezed,}) {
   return _then(_InvestorPortfolio(
 investor: null == investor ? _self.investor : investor // ignore: cast_nullable_to_non_nullable
 as InvestorIdentity,capitalInWallet: null == capitalInWallet ? _self.capitalInWallet : capitalInWallet // ignore: cast_nullable_to_non_nullable
 as String,capitalInDeals: null == capitalInDeals ? _self.capitalInDeals : capitalInDeals // ignore: cast_nullable_to_non_nullable
 as String,capitalTotal: null == capitalTotal ? _self.capitalTotal : capitalTotal // ignore: cast_nullable_to_non_nullable
-as String,profitInDeals: null == profitInDeals ? _self.profitInDeals : profitInDeals // ignore: cast_nullable_to_non_nullable
+as String,profitAwaitingDelivery: null == profitAwaitingDelivery ? _self.profitAwaitingDelivery : profitAwaitingDelivery // ignore: cast_nullable_to_non_nullable
+as String,ordersAwaitingDelivery: null == ordersAwaitingDelivery ? _self.ordersAwaitingDelivery : ordersAwaitingDelivery // ignore: cast_nullable_to_non_nullable
+as int,profitInDeals: null == profitInDeals ? _self.profitInDeals : profitInDeals // ignore: cast_nullable_to_non_nullable
 as String,profitAvailable: null == profitAvailable ? _self.profitAvailable : profitAvailable // ignore: cast_nullable_to_non_nullable
 as String,profitWithdrawn: null == profitWithdrawn ? _self.profitWithdrawn : profitWithdrawn // ignore: cast_nullable_to_non_nullable
 as String,deals: null == deals ? _self._deals : deals // ignore: cast_nullable_to_non_nullable

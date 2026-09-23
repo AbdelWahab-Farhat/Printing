@@ -9,11 +9,12 @@ part 'investor_portfolio.g.dart';
 /// `2500.10` becomes `2500.099999`; the same rule the rest of this app follows for every figure
 /// it displays.
 ///
-/// The two profit fields are separate on purpose and must stay that way on screen.
-/// [profitInDeals] is what his running deals have earned him so far — real, his, and moving with
-/// every delivery, but not money he can ask for yet. [profitAvailable] is what a closed deal has
-/// released into his wallet, and is the only figure a withdrawal can draw on. Showing one number
-/// for both would either promise him money he cannot have or hide money he has already made.
+/// The three profit fields are separate on purpose and must stay that way on screen — three
+/// gates in a row, §٠.٨ of the fund spec. [profitAwaitingDelivery] is computed, not booked: orders
+/// past «جاهزة» that have not reached the customer. [profitInDeals] is booked and his, but not
+/// money he can ask for yet. [profitAvailable] has passed both gates and is the only figure a
+/// withdrawal can draw on. One number for all three would either promise him money he cannot
+/// have or hide money he has already made.
 @freezed
 abstract class InvestorPortfolio with _$InvestorPortfolio {
   const factory InvestorPortfolio({
@@ -27,10 +28,18 @@ abstract class InvestorPortfolio with _$InvestorPortfolio {
 
     @JsonKey(name: 'capital_total') required String capitalTotal,
 
-    /// Earned by deals still running. His, but not yet his to take.
+    /// **ربح قيد التسليم** — طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. محسوبٌ لا مقيَّد: هو ما سيقيّده
+    /// التسليمُ بعينه، ولا صفَّ له في الدفتر بعد.
+    @JsonKey(name: 'profit_awaiting_delivery') @Default('0.00') String profitAwaitingDelivery,
+
+    /// كم طلبيةً وراء [profitAwaitingDelivery].
+    @JsonKey(name: 'orders_awaiting_delivery') @Default(0) int ordersAwaitingDelivery,
+
+    /// **أرباح معلّقة** — سُلِّمت فقُيِّدت، والصندوقُ منها. له، ولا يُسحب حتى تنقضي فترتُها
+    /// وتُحصَّل طلبيتُها.
     @JsonKey(name: 'profit_in_deals') required String profitInDeals,
 
-    /// Released by a closed deal, and withdrawable.
+    /// **أرباح متاحة للسحب** — اجتمع شرطاها، والسحبُ يقرأ منها وحدها.
     @JsonKey(name: 'profit_available') required String profitAvailable,
 
     @JsonKey(name: 'profit_withdrawn') required String profitWithdrawn,

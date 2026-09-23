@@ -131,4 +131,19 @@ class InvestmentPeriod extends Model implements HasAuditTrail
     {
         return $this->status === PeriodStatus::Open && $now > $this->ends_on->endOfDay();
     }
+
+    /**
+     * كم يوماً مرّ وهي مستحقّةُ الإقفال ولم تُقفَل — أو `null` إن لم تستحقّه بعد.
+     *
+     * أيامٌ كاملة منذ أوّل لحظةٍ بعد يومها الأخير: صفرٌ في اليوم التالي لنهايتها، وثلاثةٌ بعد
+     * ثلاثة أيام. والجدولةُ تُقفلها في ساعتها الأولى، فرقمٌ فوق الصفر على اللوحة يعني أنها صمتت.
+     */
+    public function daysOverdue(\DateTimeInterface $now): ?int
+    {
+        if (! $this->isDueToClose($now)) {
+            return null;
+        }
+
+        return (int) floor($this->ends_on->copy()->addDay()->startOfDay()->diffInDays($now));
+    }
 }

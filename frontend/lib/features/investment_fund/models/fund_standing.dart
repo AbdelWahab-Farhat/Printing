@@ -35,7 +35,7 @@ abstract class FundValuation with _$FundValuation {
   factory FundValuation.fromJson(Map<String, dynamic> json) => _$FundValuationFromJson(json);
 }
 
-/// الفترةُ التي تستقبل القيد الآن.
+/// فترةٌ من فترات الصندوق — الجاريةُ على اللوحة، وكلُّها في السجلّ.
 @freezed
 abstract class FundPeriod with _$FundPeriod {
   const factory FundPeriod({
@@ -50,8 +50,16 @@ abstract class FundPeriod with _$FundPeriod {
     /// آخرُ يومٍ يُقبَل فيه إيداعُ رأس مال؛ ما بعده يُحتجز للفترة التالية.
     @JsonKey(name: 'subscription_closes_on') required String subscriptionClosesOn,
 
-    /// **حلّ موعدُها، لا أنها تستطيع.** الطلبياتُ التي خرجت بضاعتُها ولم تُسلَّم تقرّر الثانية.
+    /// **حلّ موعدُها ولم تُقفَل.** الجدولةُ تُقفلها في ساعتها الأولى، فبقاءُ هذا صادقاً يعني
+    /// أنها صمتت — واللوحةُ تقوله ولا تسكت عنه.
     @JsonKey(name: 'is_due_to_close') required bool isDueToClose,
+
+    /// كم يوماً مرّ وهي مستحقّةٌ ولم تُقفَل — `null` ما لم تستحقّ، وصفرٌ يومَها.
+    @JsonKey(name: 'overdue_days') int? overdueDays,
+
+    /// **كم طلبيةً تحبسها «قيد الإغلاق».** `null` لغير المنتظِرة: المفتوحةُ لا تنتظر شيئاً بعد،
+    /// والمغلقةُ لم يبقَ لها شيء.
+    @JsonKey(name: 'owed_orders') int? owedOrders,
 
     @JsonKey(name: 'period_months') required int periodMonths,
     @JsonKey(name: 'investor_profit_share_percent')
@@ -132,6 +140,10 @@ abstract class FundStanding with _$FundStanding {
     @JsonKey(name: 'units_outstanding') @Default('0.000000') String unitsOutstanding,
 
     @Default(<FundHolder>[]) List<FundHolder> investors,
+
+    /// **فتراتٌ «قيد الإغلاق»** — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل. لا
+    /// تحبس أحداً، لكنها تبقى على اللوحة ما بقيت: «تبقى بلا حدّ، واللوحةُ تصرخ».
+    @JsonKey(name: 'waiting_periods') @Default(<FundPeriod>[]) List<FundPeriod> waitingPeriods,
 
     /// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
     /// حقولُها، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض

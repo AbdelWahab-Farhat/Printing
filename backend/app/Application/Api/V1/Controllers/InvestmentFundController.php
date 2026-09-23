@@ -13,6 +13,7 @@ use App\Domain\Investor\Actions\RecordFundExpense;
 use App\Domain\Investor\Actions\WithdrawFromFund;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Enums\DealExpenseKind;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Queries\FundUnits;
@@ -67,6 +68,15 @@ class InvestmentFundController extends Controller
         return $this->success([
             'valuation' => ($this->valuation)(),
             'period' => $period === null ? null : $this->periodPayload($period),
+
+            // **فتراتٌ «قيد الإغلاق»** — §١٢هـ: «تبقى بلا حدّ، واللوحةُ تصرخ». لا تحبس أحداً،
+            // لكنها تبقى على اللوحة ما بقيت لها طلبيةٌ في الطريق أو مالٌ لم يُحصَّل.
+            'waiting_periods' => InvestmentPeriod::query()
+                ->where('status', PeriodStatus::Closing)
+                ->orderBy('starts_on')
+                ->get()
+                ->map(fn (InvestmentPeriod $waiting): array => $this->periodPayload($waiting))
+                ->all(),
 
             // **سعرُ الوحدة على اللوحة، لا في شاشةٍ خفيّة.** هو الرقمُ الذي يشتري به الداخلُ
             // الجديد، فمن يقبض مالاً من مستثمرٍ اليوم يحتاج أن يراه قبل أن يكتب.
@@ -366,10 +376,13 @@ class InvestmentFundController extends Controller
             $validated['override_reason'] ?? null,
         );
 
-        return $this->success(
-            $this->periodPayload($period),
-            "أُقفلت الفترة «{$period->code}» — أُفرج عن الأرباح، ورأسُ المال والبضاعة في مكانهما",
-        );
+        // **«قيد الإغلاق» ليست «أُقفلت».** انتهت في موعدها وبقيت لها طلبيات، وربحُ ما لم يصل أو
+        // لم يُحصَّل لم يُفرَج عنه — فالجملةُ تقول ما حدث لا ما كان يحدث قبل الشريحة ١٠.
+        $message = $period->status === PeriodStatus::Closing
+            ? "انتهت الفترة «{$period->code}» في موعدها — قيد الإغلاق حتى تصل آخرُ طلبياتها ويُحصَّل مالُها"
+            : "أُقفلت الفترة «{$period->code}» — أُفرج عن الأرباح، ورأسُ المال والبضاعة في مكانهما";
+
+        return $this->success($this->periodPayload($period), $message);
     }
 
     /**
@@ -391,6 +404,16 @@ class InvestmentFundController extends Controller
             // خرجت بضاعتُها ولم تُسلَّم تقرّر إن كانت تستطيع — فاللوحةُ تقول «مستحقّة منذ ٣ أيام»
             // بدل أن يصمت غيابُ الجدولة.
             'is_due_to_close' => $period->isDueToClose(now()),
+
+            // **«مستحقّة الإقفال منذ ٣ أيام»** — §٠.٤: الجدولةُ تُقفلها في موعدها، وحين تصمت يصير
+            // غيابُها رقماً على اللوحة بدل أن يمرّ. أيامٌ كاملة منذ صارت مستحقّة، وصفرٌ يومَها.
+            'overdue_days' => $period->daysOverdue(now()),
+
+            // **كم طلبيةً تحبسها «قيد الإغلاق»** — القاعدةُ نفسُها التي يُقرَّر بها الإقفال، فلا
+            // يفترق الرقمُ عن القرار. `null` لغيرها: المفتوحةُ لم تنتظر بعد، والمغلقةُ لم يبقَ لها.
+            'owed_orders' => $period->status === PeriodStatus::Closing
+                ? count($this->closePeriod->owedOrdersOf($period))
+                : null,
 
             // ما كُتب على صفّها إن أُقفلت بتجاوز — يبقى على الشاشة ولا يُطوى.
             'override_reason' => $period->override_reason,

@@ -190,6 +190,103 @@ class FundValuationTest extends TestCase
         $this->assertSame('47000.00', $value['total']);
     }
 
+    /** صفٌّ في دفتر المحافظ بلا مرورٍ على الأفعال — ما يلزم هنا أرصدتُه، لا من كتبها. */
+    private function walletRow(int $investorId, int $dealId, WalletEntryType $type, string $amount, int $sourceId): void
+    {
+        $earning = in_array($type, [WalletEntryType::Profit, WalletEntryType::Loss], true);
+
+        DB::table('investor_wallet_entries')->insert([
+            'investor_id' => $investorId,
+            'investor_deal_id' => $dealId,
+            'type' => $type->value,
+            'amount' => $amount,
+            'source_type' => $earning ? 'order' : null,
+            'source_id' => $earning ? $sourceId : null,
+            'occurred_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    public function test_one_investors_negative_profit_does_not_raise_what_the_fund_is_worth(): void
+    {
+        // Arrange — §٠.٨: خسارةٌ متأخّرة تقف سالبةً في رقبة صاحبها. لو طُرحت مع الموجب لنقص
+        // الدَّين، فارتفعت القيمة، فارتفع سعرُ الوحدة — وانقلبت خسارةُ رجلٍ ربحاً يقتسمه الباقون.
+        $earner = Investor::factory()->create();
+        $loser = Investor::factory()->create();
+        $deal = InvestorDeal::factory()->create();
+
+        $this->cash(CashEntryType::Deposit, '50000.00', 1);
+        $this->walletRow((int) $earner->id, (int) $deal->id, WalletEntryType::Profit, '3000.00', 91);
+        $this->walletRow((int) $loser->id, (int) $deal->id, WalletEntryType::Loss, '1000.00', 92);
+
+        // Act
+        $value = $this->valuation()();
+
+        // Assert — الدَّينُ ثلاثةُ آلافٍ كاملة: السالبُ مطالبةٌ على صاحبه، لا أصلٌ للصندوق.
+        $this->assertSame('3000.00', $value['profit_owed']);
+        $this->assertSame('47000.00', $value['total']);
+    }
+
+    public function test_a_negative_balance_nets_against_its_owners_own_unreleased_profit(): void
+    {
+        // Arrange — «يُرحّل حتى يُخصم من أرباحه المستقبلية»: ما يُفرَج له بعدُ هو صافي الاثنين.
+        $investor = Investor::factory()->create();
+        $deal = InvestorDeal::factory()->create();
+
+        $this->cash(CashEntryType::Deposit, '50000.00', 1);
+        $this->walletRow((int) $investor->id, (int) $deal->id, WalletEntryType::Profit, '3000.00', 91);
+        $this->walletRow((int) $investor->id, (int) $deal->id, WalletEntryType::Loss, '1000.00', 92);
+
+        // Act
+        $value = $this->valuation()();
+
+        // Assert
+        $this->assertSame('2000.00', $value['profit_owed']);
+    }
+
+    public function test_released_profit_stays_owed_in_full_beside_a_negative_carried_forward(): void
+    {
+        // Arrange — ربحٌ أُفرِج عنه ٥٠٠ ولم يُسحب، ثم خسارةٌ متأخّرة ٣٠٠. السالبُ يُخصم من أرباحه
+        // **القادمة**، والمُفرَجُ عنه يُسحب كاملاً اليوم — فهو دَينٌ كامل على الصندوق.
+        $investor = Investor::factory()->create();
+        $deal = InvestorDeal::factory()->create();
+
+        $this->cash(CashEntryType::Deposit, '50000.00', 1);
+        $this->walletRow((int) $investor->id, (int) $deal->id, WalletEntryType::Profit, '500.00', 91);
+        $this->walletRow((int) $investor->id, (int) $deal->id, WalletEntryType::ProfitRelease, '500.00', 0);
+        $this->walletRow((int) $investor->id, (int) $deal->id, WalletEntryType::Loss, '300.00', 92);
+
+        // Act
+        $value = $this->valuation()();
+
+        // Assert
+        $this->assertSame('500.00', $value['profit_owed']);
+        $this->assertSame('49500.00', $value['total']);
+    }
+
+    public function test_a_loss_carried_into_the_next_period_stays_on_its_owner(): void
+    {
+        // Arrange — خسارةٌ متأخّرة رُحِّلت: صفّا الترحيل يتقابلان في جيبه، والسالبُ باقٍ عليه
+        // وحده. فلا يُطرح من ربح شريكه في الرقم الكلّي.
+        $earner = Investor::factory()->create();
+        $loser = Investor::factory()->create();
+        $deal = InvestorDeal::factory()->create();
+
+        $this->cash(CashEntryType::Deposit, '50000.00', 1);
+        $this->walletRow((int) $earner->id, (int) $deal->id, WalletEntryType::Profit, '1000.00', 91);
+        $this->walletRow((int) $loser->id, (int) $deal->id, WalletEntryType::Loss, '300.00', 92);
+        $this->walletRow((int) $loser->id, (int) $deal->id, WalletEntryType::LossCarriedOut, '300.00', 0);
+        $this->walletRow((int) $loser->id, (int) $deal->id, WalletEntryType::LossCarriedIn, '300.00', 0);
+
+        // Act
+        $value = $this->valuation()();
+
+        // Assert
+        $this->assertSame('1000.00', $value['profit_owed']);
+        $this->assertSame('49000.00', $value['total']);
+    }
+
     public function test_capital_in_a_wallet_is_not_subtracted(): void
     {
         // Arrange — رأسُ المال هو الذي يعمل؛ طرحُه يُفرِّغ الصندوق من نفسه.

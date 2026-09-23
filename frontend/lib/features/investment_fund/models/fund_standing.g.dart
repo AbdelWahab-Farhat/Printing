@@ -35,6 +35,8 @@ _FundPeriod _$FundPeriodFromJson(Map<String, dynamic> json) => _FundPeriod(
   endsOn: json['ends_on'] as String,
   subscriptionClosesOn: json['subscription_closes_on'] as String,
   isDueToClose: json['is_due_to_close'] as bool,
+  overdueDays: (json['overdue_days'] as num?)?.toInt(),
+  owedOrders: (json['owed_orders'] as num?)?.toInt(),
   periodMonths: (json['period_months'] as num).toInt(),
   investorProfitSharePercent: json['investor_profit_share_percent'] as String,
   openingStockCost: json['opening_stock_cost'] as String,
@@ -64,6 +66,8 @@ Map<String, dynamic> _$FundPeriodToJson(_FundPeriod instance) =>
       'ends_on': instance.endsOn,
       'subscription_closes_on': instance.subscriptionClosesOn,
       'is_due_to_close': instance.isDueToClose,
+      'overdue_days': instance.overdueDays,
+      'owed_orders': instance.owedOrders,
       'period_months': instance.periodMonths,
       'investor_profit_share_percent': instance.investorProfitSharePercent,
       'opening_stock_cost': instance.openingStockCost,
@@ -118,6 +122,11 @@ _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>
               ?.map((e) => FundHolder.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <FundHolder>[],
+      waitingPeriods:
+          (json['waiting_periods'] as List<dynamic>?)
+              ?.map((e) => FundPeriod.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FundPeriod>[],
       defaultPlainSalePrice: json['default_plain_sale_price'] as String?,
       subscribable:
           (json['subscribable'] as List<dynamic>?)
@@ -126,16 +135,18 @@ _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>
           const <FundSubscriber>[],
     );
 
-Map<String, dynamic> _$FundStandingToJson(_FundStanding instance) =>
-    <String, dynamic>{
-      'valuation': instance.valuation.toJson(),
-      'period': instance.period?.toJson(),
-      'unit_price': instance.unitPrice,
-      'units_outstanding': instance.unitsOutstanding,
-      'investors': instance.investors.map((e) => e.toJson()).toList(),
-      'default_plain_sale_price': instance.defaultPlainSalePrice,
-      'subscribable': instance.subscribable.map((e) => e.toJson()).toList(),
-    };
+Map<String, dynamic> _$FundStandingToJson(
+  _FundStanding instance,
+) => <String, dynamic>{
+  'valuation': instance.valuation.toJson(),
+  'period': instance.period?.toJson(),
+  'unit_price': instance.unitPrice,
+  'units_outstanding': instance.unitsOutstanding,
+  'investors': instance.investors.map((e) => e.toJson()).toList(),
+  'waiting_periods': instance.waitingPeriods.map((e) => e.toJson()).toList(),
+  'default_plain_sale_price': instance.defaultPlainSalePrice,
+  'subscribable': instance.subscribable.map((e) => e.toJson()).toList(),
+};
 
 _FundSubscriber _$FundSubscriberFromJson(Map<String, dynamic> json) =>
     _FundSubscriber(

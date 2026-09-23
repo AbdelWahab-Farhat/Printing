@@ -4,8 +4,8 @@ use App\Application\Api\V1\Middleware\DeshapeArabicInput;
 use App\Support\ApiEnvelope;
 use App\Support\Exceptions\ProvidesApiFailure;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -36,6 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Nightly, off-hours, and without overlapping itself — a prune that ran long once must
         // not have a second copy start on top of it.
         $schedule->command('notifications:prune')->dailyAt('03:30')->withoutOverlapping();
+
+        // فتراتُ الصندوق: تُقفَل في موعدها وتُفتح التاليةُ — كلَّ ساعة، لأن نداءً فائتاً يُدركه
+        // الذي بعده، والنداءُ الذي لا يجد ما يفعله لا يكتب شيئاً. انظر RollInvestmentPeriods.
+        $schedule->command('investment:roll-periods')->hourly()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there

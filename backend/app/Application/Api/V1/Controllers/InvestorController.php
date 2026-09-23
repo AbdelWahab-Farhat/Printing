@@ -20,6 +20,7 @@ use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +44,7 @@ class InvestorController extends Controller
     public function __construct(
         private readonly InvestorService $investors,
         private readonly FundDeal $fund,
+        private readonly ProfitAwaitingDelivery $awaiting,
     ) {}
 
     /**
@@ -103,6 +105,23 @@ class InvestorController extends Controller
     {
         $balances = $this->investors->balancesFor((int) $investor->getKey());
         $fundId = $this->fund->idOrNull();
+
+        // **الأرقامُ الثلاثة قبل أن يُحذف الصندوقُ من الصفقات** — ربحُه المقيَّد فيه جزءٌ من
+        // «أرباح معلّقة»، وحذفُه من القائمة أدناه عرضٌ لا حساب.
+        $pending = '0.00';
+
+        foreach ($balances['deals'] as $pots) {
+            $pending = bcadd($pending, $pots['profit'], 2);
+        }
+
+        $awaiting = $this->awaiting->forInvestor((int) $investor->getKey());
+
+        $investor->setAttribute('profit_figures', [
+            'awaiting_delivery' => $awaiting['amount'],
+            'orders_awaiting_delivery' => $awaiting['orders'],
+            'pending' => $pending,
+            'available' => $balances['wallet']['profit'],
+        ]);
 
         if ($fundId !== null) {
             unset($balances['deals'][$fundId]);

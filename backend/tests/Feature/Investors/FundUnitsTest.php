@@ -250,7 +250,11 @@ class FundUnitsTest extends TestCase
     {
         // Arrange — «يمكنه فقط في بداية الفترة اول اسبوع او اول يوم مدة يحددها المدير». ولو
         // قُبل بعدها لغيّر قسمةَ شهرٍ نصفُه مضى، فيُقسَّم ربحُ طلبيةٍ من أوّله بنسب آخره.
+        // **والحارسُ على ما بعد الأولى**: نافذتُها كلُّ أيامها (§١٢و)، فالتجربةُ على أكتوبر.
         Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        $this->close();
         $this->openPeriod();
         $late = Investor::factory()->create();
         $this->fundWallet($late, '1000.00');
@@ -258,9 +262,26 @@ class FundUnitsTest extends TestCase
         // Assert
         $this->expectException(SubscriptionWindowIsClosed::class);
 
+        // Act — نافذةُ أكتوبر أُغلقت في السابع.
+        Carbon::setTestNow('2026-10-20 09:00:00');
+        $this->deposit($late, '1000.00');
+    }
+
+    public function test_the_first_period_takes_money_on_any_of_its_days(): void
+    {
+        // Arrange — لا فترةَ قبل الأولى يُكتتب فيها، فنافذتُها كلُّ أيامها (§١٢و): من وصل في
+        // العشرين من شهرها الأول شريكٌ فيها، لا منتظرٌ لما بعدها.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $late = Investor::factory()->create();
+
         // Act
         Carbon::setTestNow('2026-09-20 09:00:00');
         $this->deposit($late, '1000.00');
+
+        // Assert
+        $shares = app(PeriodShares::class)->current();
+        $this->assertSame('100.000000', $shares[(int) $late->id] ?? null);
     }
 
     public function test_the_first_period_of_the_fund_is_entered_through_its_own_window(): void

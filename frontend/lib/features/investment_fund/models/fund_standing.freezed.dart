@@ -304,8 +304,12 @@ as String,
 mixin _$FundPeriod {
 
  int get id; String get code; String get status;@JsonKey(name: 'status_label') String get statusLabel;@JsonKey(name: 'starts_on') String get startsOn;@JsonKey(name: 'ends_on') String get endsOn;/// آخرُ يومٍ يُقبَل فيه إيداعُ رأس مال؛ ما بعده يُحتجز للفترة التالية.
-@JsonKey(name: 'subscription_closes_on') String get subscriptionClosesOn;/// **حلّ موعدُها، لا أنها تستطيع.** الطلبياتُ التي خرجت بضاعتُها ولم تُسلَّم تقرّر الثانية.
-@JsonKey(name: 'is_due_to_close') bool get isDueToClose;@JsonKey(name: 'period_months') int get periodMonths;@JsonKey(name: 'investor_profit_share_percent') String get investorProfitSharePercent;@JsonKey(name: 'opening_stock_cost') String get openingStockCost;@JsonKey(name: 'opening_cash') String get openingCash;/// **بابُ الاكتتاب.** الخادمُ يقرّر، لا الشاشةُ بمقارنة تواريخ: قاعدةٌ واحدة تُنفَّذ في موضعٍ
+@JsonKey(name: 'subscription_closes_on') String get subscriptionClosesOn;/// **حلّ موعدُها ولم تُقفَل.** الجدولةُ تُقفلها في ساعتها الأولى، فبقاءُ هذا صادقاً يعني
+/// أنها صمتت — واللوحةُ تقوله ولا تسكت عنه.
+@JsonKey(name: 'is_due_to_close') bool get isDueToClose;/// كم يوماً مرّ وهي مستحقّةٌ ولم تُقفَل — `null` ما لم تستحقّ، وصفرٌ يومَها.
+@JsonKey(name: 'overdue_days') int? get overdueDays;/// **كم طلبيةً تحبسها «قيد الإغلاق».** `null` لغير المنتظِرة: المفتوحةُ لا تنتظر شيئاً بعد،
+/// والمغلقةُ لم يبقَ لها شيء.
+@JsonKey(name: 'owed_orders') int? get owedOrders;@JsonKey(name: 'period_months') int get periodMonths;@JsonKey(name: 'investor_profit_share_percent') String get investorProfitSharePercent;@JsonKey(name: 'opening_stock_cost') String get openingStockCost;@JsonKey(name: 'opening_cash') String get openingCash;/// **بابُ الاكتتاب.** الخادمُ يقرّر، لا الشاشةُ بمقارنة تواريخ: قاعدةٌ واحدة تُنفَّذ في موضعٍ
 /// واحد، ولا تختلف نسخةٌ مثبَّتةٌ على هاتف عن الخادم يوم تتغيّر.
 @JsonKey(name: 'accepts_capital') bool get acceptsCapital;/// **ولمن هذه النافذة؟** الداخلُ منها لا يقاسم شهراً بدأ بالفعل: نصيبُه يبدأ من الفترة
 /// التالية. والاستثناءُ أوّلُ فتراتِ الصندوق — ولا تحسبه الشاشةُ، الخادمُ يقوله.
@@ -326,16 +330,16 @@ $FundPeriodCopyWith<FundPeriod> get copyWith => _$FundPeriodCopyWithImpl<FundPer
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.subscriptionClosesOn, subscriptionClosesOn) || other.subscriptionClosesOn == subscriptionClosesOn)&&(identical(other.isDueToClose, isDueToClose) || other.isDueToClose == isDueToClose)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.openingStockCost, openingStockCost) || other.openingStockCost == openingStockCost)&&(identical(other.openingCash, openingCash) || other.openingCash == openingCash)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital)&&(identical(other.subscriptionServesNextPeriod, subscriptionServesNextPeriod) || other.subscriptionServesNextPeriod == subscriptionServesNextPeriod)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths)&&(identical(other.endsSettlementCycle, endsSettlementCycle) || other.endsSettlementCycle == endsSettlementCycle)&&(identical(other.overrideReason, overrideReason) || other.overrideReason == overrideReason)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.netProfit, netProfit) || other.netProfit == netProfit)&&(identical(other.investorsPool, investorsPool) || other.investorsPool == investorsPool)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.salesRevenue, salesRevenue) || other.salesRevenue == salesRevenue)&&(identical(other.closingStockCost, closingStockCost) || other.closingStockCost == closingStockCost)&&(identical(other.closingCash, closingCash) || other.closingCash == closingCash));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.subscriptionClosesOn, subscriptionClosesOn) || other.subscriptionClosesOn == subscriptionClosesOn)&&(identical(other.isDueToClose, isDueToClose) || other.isDueToClose == isDueToClose)&&(identical(other.overdueDays, overdueDays) || other.overdueDays == overdueDays)&&(identical(other.owedOrders, owedOrders) || other.owedOrders == owedOrders)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.openingStockCost, openingStockCost) || other.openingStockCost == openingStockCost)&&(identical(other.openingCash, openingCash) || other.openingCash == openingCash)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital)&&(identical(other.subscriptionServesNextPeriod, subscriptionServesNextPeriod) || other.subscriptionServesNextPeriod == subscriptionServesNextPeriod)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths)&&(identical(other.endsSettlementCycle, endsSettlementCycle) || other.endsSettlementCycle == endsSettlementCycle)&&(identical(other.overrideReason, overrideReason) || other.overrideReason == overrideReason)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.netProfit, netProfit) || other.netProfit == netProfit)&&(identical(other.investorsPool, investorsPool) || other.investorsPool == investorsPool)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.salesRevenue, salesRevenue) || other.salesRevenue == salesRevenue)&&(identical(other.closingStockCost, closingStockCost) || other.closingStockCost == closingStockCost)&&(identical(other.closingCash, closingCash) || other.closingCash == closingCash));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,startsOn,endsOn,subscriptionClosesOn,isDueToClose,periodMonths,investorProfitSharePercent,openingStockCost,openingCash,acceptsCapital,subscriptionServesNextPeriod,capitalLockMonths,endsSettlementCycle,overrideReason,closedAt,netProfit,investorsPool,companyShare,salesRevenue,closingStockCost,closingCash]);
+int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,startsOn,endsOn,subscriptionClosesOn,isDueToClose,overdueDays,owedOrders,periodMonths,investorProfitSharePercent,openingStockCost,openingCash,acceptsCapital,subscriptionServesNextPeriod,capitalLockMonths,endsSettlementCycle,overrideReason,closedAt,netProfit,investorsPool,companyShare,salesRevenue,closingStockCost,closingCash]);
 
 @override
 String toString() {
-  return 'FundPeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel, startsOn: $startsOn, endsOn: $endsOn, subscriptionClosesOn: $subscriptionClosesOn, isDueToClose: $isDueToClose, periodMonths: $periodMonths, investorProfitSharePercent: $investorProfitSharePercent, openingStockCost: $openingStockCost, openingCash: $openingCash, acceptsCapital: $acceptsCapital, subscriptionServesNextPeriod: $subscriptionServesNextPeriod, capitalLockMonths: $capitalLockMonths, endsSettlementCycle: $endsSettlementCycle, overrideReason: $overrideReason, closedAt: $closedAt, netProfit: $netProfit, investorsPool: $investorsPool, companyShare: $companyShare, salesRevenue: $salesRevenue, closingStockCost: $closingStockCost, closingCash: $closingCash)';
+  return 'FundPeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel, startsOn: $startsOn, endsOn: $endsOn, subscriptionClosesOn: $subscriptionClosesOn, isDueToClose: $isDueToClose, overdueDays: $overdueDays, owedOrders: $owedOrders, periodMonths: $periodMonths, investorProfitSharePercent: $investorProfitSharePercent, openingStockCost: $openingStockCost, openingCash: $openingCash, acceptsCapital: $acceptsCapital, subscriptionServesNextPeriod: $subscriptionServesNextPeriod, capitalLockMonths: $capitalLockMonths, endsSettlementCycle: $endsSettlementCycle, overrideReason: $overrideReason, closedAt: $closedAt, netProfit: $netProfit, investorsPool: $investorsPool, companyShare: $companyShare, salesRevenue: $salesRevenue, closingStockCost: $closingStockCost, closingCash: $closingCash)';
 }
 
 
@@ -346,7 +350,7 @@ abstract mixin class $FundPeriodCopyWith<$Res>  {
   factory $FundPeriodCopyWith(FundPeriod value, $Res Function(FundPeriod) _then) = _$FundPeriodCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'starts_on') String startsOn,@JsonKey(name: 'ends_on') String endsOn,@JsonKey(name: 'subscription_closes_on') String subscriptionClosesOn,@JsonKey(name: 'is_due_to_close') bool isDueToClose,@JsonKey(name: 'period_months') int periodMonths,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'opening_stock_cost') String openingStockCost,@JsonKey(name: 'opening_cash') String openingCash,@JsonKey(name: 'accepts_capital') bool acceptsCapital,@JsonKey(name: 'subscription_serves_next_period') bool subscriptionServesNextPeriod,@JsonKey(name: 'capital_lock_months') int capitalLockMonths,@JsonKey(name: 'ends_settlement_cycle') bool endsSettlementCycle,@JsonKey(name: 'override_reason') String? overrideReason,@JsonKey(name: 'closed_at') String? closedAt,@JsonKey(name: 'net_profit') String? netProfit,@JsonKey(name: 'investors_pool') String? investorsPool,@JsonKey(name: 'company_share') String? companyShare,@JsonKey(name: 'sales_revenue') String? salesRevenue,@JsonKey(name: 'closing_stock_cost') String? closingStockCost,@JsonKey(name: 'closing_cash') String? closingCash
+ int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'starts_on') String startsOn,@JsonKey(name: 'ends_on') String endsOn,@JsonKey(name: 'subscription_closes_on') String subscriptionClosesOn,@JsonKey(name: 'is_due_to_close') bool isDueToClose,@JsonKey(name: 'overdue_days') int? overdueDays,@JsonKey(name: 'owed_orders') int? owedOrders,@JsonKey(name: 'period_months') int periodMonths,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'opening_stock_cost') String openingStockCost,@JsonKey(name: 'opening_cash') String openingCash,@JsonKey(name: 'accepts_capital') bool acceptsCapital,@JsonKey(name: 'subscription_serves_next_period') bool subscriptionServesNextPeriod,@JsonKey(name: 'capital_lock_months') int capitalLockMonths,@JsonKey(name: 'ends_settlement_cycle') bool endsSettlementCycle,@JsonKey(name: 'override_reason') String? overrideReason,@JsonKey(name: 'closed_at') String? closedAt,@JsonKey(name: 'net_profit') String? netProfit,@JsonKey(name: 'investors_pool') String? investorsPool,@JsonKey(name: 'company_share') String? companyShare,@JsonKey(name: 'sales_revenue') String? salesRevenue,@JsonKey(name: 'closing_stock_cost') String? closingStockCost,@JsonKey(name: 'closing_cash') String? closingCash
 });
 
 
@@ -363,7 +367,7 @@ class _$FundPeriodCopyWithImpl<$Res>
 
 /// Create a copy of FundPeriod
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? startsOn = null,Object? endsOn = null,Object? subscriptionClosesOn = null,Object? isDueToClose = null,Object? periodMonths = null,Object? investorProfitSharePercent = null,Object? openingStockCost = null,Object? openingCash = null,Object? acceptsCapital = null,Object? subscriptionServesNextPeriod = null,Object? capitalLockMonths = null,Object? endsSettlementCycle = null,Object? overrideReason = freezed,Object? closedAt = freezed,Object? netProfit = freezed,Object? investorsPool = freezed,Object? companyShare = freezed,Object? salesRevenue = freezed,Object? closingStockCost = freezed,Object? closingCash = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? startsOn = null,Object? endsOn = null,Object? subscriptionClosesOn = null,Object? isDueToClose = null,Object? overdueDays = freezed,Object? owedOrders = freezed,Object? periodMonths = null,Object? investorProfitSharePercent = null,Object? openingStockCost = null,Object? openingCash = null,Object? acceptsCapital = null,Object? subscriptionServesNextPeriod = null,Object? capitalLockMonths = null,Object? endsSettlementCycle = null,Object? overrideReason = freezed,Object? closedAt = freezed,Object? netProfit = freezed,Object? investorsPool = freezed,Object? companyShare = freezed,Object? salesRevenue = freezed,Object? closingStockCost = freezed,Object? closingCash = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -373,7 +377,9 @@ as String,startsOn: null == startsOn ? _self.startsOn : startsOn // ignore: cast
 as String,endsOn: null == endsOn ? _self.endsOn : endsOn // ignore: cast_nullable_to_non_nullable
 as String,subscriptionClosesOn: null == subscriptionClosesOn ? _self.subscriptionClosesOn : subscriptionClosesOn // ignore: cast_nullable_to_non_nullable
 as String,isDueToClose: null == isDueToClose ? _self.isDueToClose : isDueToClose // ignore: cast_nullable_to_non_nullable
-as bool,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
+as bool,overdueDays: freezed == overdueDays ? _self.overdueDays : overdueDays // ignore: cast_nullable_to_non_nullable
+as int?,owedOrders: freezed == owedOrders ? _self.owedOrders : owedOrders // ignore: cast_nullable_to_non_nullable
+as int?,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
 as int,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,openingStockCost: null == openingStockCost ? _self.openingStockCost : openingStockCost // ignore: cast_nullable_to_non_nullable
 as String,openingCash: null == openingCash ? _self.openingCash : openingCash // ignore: cast_nullable_to_non_nullable
@@ -474,10 +480,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'overdue_days')  int? overdueDays, @JsonKey(name: 'owed_orders')  int? owedOrders, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundPeriod() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.overdueDays,_that.owedOrders,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
   return orElse();
 
 }
@@ -495,10 +501,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsO
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'overdue_days')  int? overdueDays, @JsonKey(name: 'owed_orders')  int? owedOrders, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)  $default,) {final _that = this;
 switch (_that) {
 case _FundPeriod():
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.overdueDays,_that.owedOrders,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -515,10 +521,10 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsO
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'starts_on')  String startsOn, @JsonKey(name: 'ends_on')  String endsOn, @JsonKey(name: 'subscription_closes_on')  String subscriptionClosesOn, @JsonKey(name: 'is_due_to_close')  bool isDueToClose, @JsonKey(name: 'overdue_days')  int? overdueDays, @JsonKey(name: 'owed_orders')  int? owedOrders, @JsonKey(name: 'period_months')  int periodMonths, @JsonKey(name: 'investor_profit_share_percent')  String investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost')  String openingStockCost, @JsonKey(name: 'opening_cash')  String openingCash, @JsonKey(name: 'accepts_capital')  bool acceptsCapital, @JsonKey(name: 'subscription_serves_next_period')  bool subscriptionServesNextPeriod, @JsonKey(name: 'capital_lock_months')  int capitalLockMonths, @JsonKey(name: 'ends_settlement_cycle')  bool endsSettlementCycle, @JsonKey(name: 'override_reason')  String? overrideReason, @JsonKey(name: 'closed_at')  String? closedAt, @JsonKey(name: 'net_profit')  String? netProfit, @JsonKey(name: 'investors_pool')  String? investorsPool, @JsonKey(name: 'company_share')  String? companyShare, @JsonKey(name: 'sales_revenue')  String? salesRevenue, @JsonKey(name: 'closing_stock_cost')  String? closingStockCost, @JsonKey(name: 'closing_cash')  String? closingCash)?  $default,) {final _that = this;
 switch (_that) {
 case _FundPeriod() when $default != null:
-return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
+return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsOn,_that.endsOn,_that.subscriptionClosesOn,_that.isDueToClose,_that.overdueDays,_that.owedOrders,_that.periodMonths,_that.investorProfitSharePercent,_that.openingStockCost,_that.openingCash,_that.acceptsCapital,_that.subscriptionServesNextPeriod,_that.capitalLockMonths,_that.endsSettlementCycle,_that.overrideReason,_that.closedAt,_that.netProfit,_that.investorsPool,_that.companyShare,_that.salesRevenue,_that.closingStockCost,_that.closingCash);case _:
   return null;
 
 }
@@ -530,7 +536,7 @@ return $default(_that.id,_that.code,_that.status,_that.statusLabel,_that.startsO
 @JsonSerializable()
 
 class _FundPeriod implements FundPeriod {
-  const _FundPeriod({required this.id, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'starts_on') required this.startsOn, @JsonKey(name: 'ends_on') required this.endsOn, @JsonKey(name: 'subscription_closes_on') required this.subscriptionClosesOn, @JsonKey(name: 'is_due_to_close') required this.isDueToClose, @JsonKey(name: 'period_months') required this.periodMonths, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost') required this.openingStockCost, @JsonKey(name: 'opening_cash') required this.openingCash, @JsonKey(name: 'accepts_capital') this.acceptsCapital = false, @JsonKey(name: 'subscription_serves_next_period') this.subscriptionServesNextPeriod = false, @JsonKey(name: 'capital_lock_months') this.capitalLockMonths = 12, @JsonKey(name: 'ends_settlement_cycle') this.endsSettlementCycle = false, @JsonKey(name: 'override_reason') this.overrideReason, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'net_profit') this.netProfit, @JsonKey(name: 'investors_pool') this.investorsPool, @JsonKey(name: 'company_share') this.companyShare, @JsonKey(name: 'sales_revenue') this.salesRevenue, @JsonKey(name: 'closing_stock_cost') this.closingStockCost, @JsonKey(name: 'closing_cash') this.closingCash});
+  const _FundPeriod({required this.id, required this.code, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'starts_on') required this.startsOn, @JsonKey(name: 'ends_on') required this.endsOn, @JsonKey(name: 'subscription_closes_on') required this.subscriptionClosesOn, @JsonKey(name: 'is_due_to_close') required this.isDueToClose, @JsonKey(name: 'overdue_days') this.overdueDays, @JsonKey(name: 'owed_orders') this.owedOrders, @JsonKey(name: 'period_months') required this.periodMonths, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'opening_stock_cost') required this.openingStockCost, @JsonKey(name: 'opening_cash') required this.openingCash, @JsonKey(name: 'accepts_capital') this.acceptsCapital = false, @JsonKey(name: 'subscription_serves_next_period') this.subscriptionServesNextPeriod = false, @JsonKey(name: 'capital_lock_months') this.capitalLockMonths = 12, @JsonKey(name: 'ends_settlement_cycle') this.endsSettlementCycle = false, @JsonKey(name: 'override_reason') this.overrideReason, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'net_profit') this.netProfit, @JsonKey(name: 'investors_pool') this.investorsPool, @JsonKey(name: 'company_share') this.companyShare, @JsonKey(name: 'sales_revenue') this.salesRevenue, @JsonKey(name: 'closing_stock_cost') this.closingStockCost, @JsonKey(name: 'closing_cash') this.closingCash});
   factory _FundPeriod.fromJson(Map<String, dynamic> json) => _$FundPeriodFromJson(json);
 
 @override final  int id;
@@ -541,8 +547,14 @@ class _FundPeriod implements FundPeriod {
 @override@JsonKey(name: 'ends_on') final  String endsOn;
 /// آخرُ يومٍ يُقبَل فيه إيداعُ رأس مال؛ ما بعده يُحتجز للفترة التالية.
 @override@JsonKey(name: 'subscription_closes_on') final  String subscriptionClosesOn;
-/// **حلّ موعدُها، لا أنها تستطيع.** الطلبياتُ التي خرجت بضاعتُها ولم تُسلَّم تقرّر الثانية.
+/// **حلّ موعدُها ولم تُقفَل.** الجدولةُ تُقفلها في ساعتها الأولى، فبقاءُ هذا صادقاً يعني
+/// أنها صمتت — واللوحةُ تقوله ولا تسكت عنه.
 @override@JsonKey(name: 'is_due_to_close') final  bool isDueToClose;
+/// كم يوماً مرّ وهي مستحقّةٌ ولم تُقفَل — `null` ما لم تستحقّ، وصفرٌ يومَها.
+@override@JsonKey(name: 'overdue_days') final  int? overdueDays;
+/// **كم طلبيةً تحبسها «قيد الإغلاق».** `null` لغير المنتظِرة: المفتوحةُ لا تنتظر شيئاً بعد،
+/// والمغلقةُ لم يبقَ لها شيء.
+@override@JsonKey(name: 'owed_orders') final  int? owedOrders;
 @override@JsonKey(name: 'period_months') final  int periodMonths;
 @override@JsonKey(name: 'investor_profit_share_percent') final  String investorProfitSharePercent;
 @override@JsonKey(name: 'opening_stock_cost') final  String openingStockCost;
@@ -581,16 +593,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.subscriptionClosesOn, subscriptionClosesOn) || other.subscriptionClosesOn == subscriptionClosesOn)&&(identical(other.isDueToClose, isDueToClose) || other.isDueToClose == isDueToClose)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.openingStockCost, openingStockCost) || other.openingStockCost == openingStockCost)&&(identical(other.openingCash, openingCash) || other.openingCash == openingCash)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital)&&(identical(other.subscriptionServesNextPeriod, subscriptionServesNextPeriod) || other.subscriptionServesNextPeriod == subscriptionServesNextPeriod)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths)&&(identical(other.endsSettlementCycle, endsSettlementCycle) || other.endsSettlementCycle == endsSettlementCycle)&&(identical(other.overrideReason, overrideReason) || other.overrideReason == overrideReason)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.netProfit, netProfit) || other.netProfit == netProfit)&&(identical(other.investorsPool, investorsPool) || other.investorsPool == investorsPool)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.salesRevenue, salesRevenue) || other.salesRevenue == salesRevenue)&&(identical(other.closingStockCost, closingStockCost) || other.closingStockCost == closingStockCost)&&(identical(other.closingCash, closingCash) || other.closingCash == closingCash));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.subscriptionClosesOn, subscriptionClosesOn) || other.subscriptionClosesOn == subscriptionClosesOn)&&(identical(other.isDueToClose, isDueToClose) || other.isDueToClose == isDueToClose)&&(identical(other.overdueDays, overdueDays) || other.overdueDays == overdueDays)&&(identical(other.owedOrders, owedOrders) || other.owedOrders == owedOrders)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.openingStockCost, openingStockCost) || other.openingStockCost == openingStockCost)&&(identical(other.openingCash, openingCash) || other.openingCash == openingCash)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital)&&(identical(other.subscriptionServesNextPeriod, subscriptionServesNextPeriod) || other.subscriptionServesNextPeriod == subscriptionServesNextPeriod)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths)&&(identical(other.endsSettlementCycle, endsSettlementCycle) || other.endsSettlementCycle == endsSettlementCycle)&&(identical(other.overrideReason, overrideReason) || other.overrideReason == overrideReason)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.netProfit, netProfit) || other.netProfit == netProfit)&&(identical(other.investorsPool, investorsPool) || other.investorsPool == investorsPool)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.salesRevenue, salesRevenue) || other.salesRevenue == salesRevenue)&&(identical(other.closingStockCost, closingStockCost) || other.closingStockCost == closingStockCost)&&(identical(other.closingCash, closingCash) || other.closingCash == closingCash));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,startsOn,endsOn,subscriptionClosesOn,isDueToClose,periodMonths,investorProfitSharePercent,openingStockCost,openingCash,acceptsCapital,subscriptionServesNextPeriod,capitalLockMonths,endsSettlementCycle,overrideReason,closedAt,netProfit,investorsPool,companyShare,salesRevenue,closingStockCost,closingCash]);
+int get hashCode => Object.hashAll([runtimeType,id,code,status,statusLabel,startsOn,endsOn,subscriptionClosesOn,isDueToClose,overdueDays,owedOrders,periodMonths,investorProfitSharePercent,openingStockCost,openingCash,acceptsCapital,subscriptionServesNextPeriod,capitalLockMonths,endsSettlementCycle,overrideReason,closedAt,netProfit,investorsPool,companyShare,salesRevenue,closingStockCost,closingCash]);
 
 @override
 String toString() {
-  return 'FundPeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel, startsOn: $startsOn, endsOn: $endsOn, subscriptionClosesOn: $subscriptionClosesOn, isDueToClose: $isDueToClose, periodMonths: $periodMonths, investorProfitSharePercent: $investorProfitSharePercent, openingStockCost: $openingStockCost, openingCash: $openingCash, acceptsCapital: $acceptsCapital, subscriptionServesNextPeriod: $subscriptionServesNextPeriod, capitalLockMonths: $capitalLockMonths, endsSettlementCycle: $endsSettlementCycle, overrideReason: $overrideReason, closedAt: $closedAt, netProfit: $netProfit, investorsPool: $investorsPool, companyShare: $companyShare, salesRevenue: $salesRevenue, closingStockCost: $closingStockCost, closingCash: $closingCash)';
+  return 'FundPeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel, startsOn: $startsOn, endsOn: $endsOn, subscriptionClosesOn: $subscriptionClosesOn, isDueToClose: $isDueToClose, overdueDays: $overdueDays, owedOrders: $owedOrders, periodMonths: $periodMonths, investorProfitSharePercent: $investorProfitSharePercent, openingStockCost: $openingStockCost, openingCash: $openingCash, acceptsCapital: $acceptsCapital, subscriptionServesNextPeriod: $subscriptionServesNextPeriod, capitalLockMonths: $capitalLockMonths, endsSettlementCycle: $endsSettlementCycle, overrideReason: $overrideReason, closedAt: $closedAt, netProfit: $netProfit, investorsPool: $investorsPool, companyShare: $companyShare, salesRevenue: $salesRevenue, closingStockCost: $closingStockCost, closingCash: $closingCash)';
 }
 
 
@@ -601,7 +613,7 @@ abstract mixin class _$FundPeriodCopyWith<$Res> implements $FundPeriodCopyWith<$
   factory _$FundPeriodCopyWith(_FundPeriod value, $Res Function(_FundPeriod) _then) = __$FundPeriodCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'starts_on') String startsOn,@JsonKey(name: 'ends_on') String endsOn,@JsonKey(name: 'subscription_closes_on') String subscriptionClosesOn,@JsonKey(name: 'is_due_to_close') bool isDueToClose,@JsonKey(name: 'period_months') int periodMonths,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'opening_stock_cost') String openingStockCost,@JsonKey(name: 'opening_cash') String openingCash,@JsonKey(name: 'accepts_capital') bool acceptsCapital,@JsonKey(name: 'subscription_serves_next_period') bool subscriptionServesNextPeriod,@JsonKey(name: 'capital_lock_months') int capitalLockMonths,@JsonKey(name: 'ends_settlement_cycle') bool endsSettlementCycle,@JsonKey(name: 'override_reason') String? overrideReason,@JsonKey(name: 'closed_at') String? closedAt,@JsonKey(name: 'net_profit') String? netProfit,@JsonKey(name: 'investors_pool') String? investorsPool,@JsonKey(name: 'company_share') String? companyShare,@JsonKey(name: 'sales_revenue') String? salesRevenue,@JsonKey(name: 'closing_stock_cost') String? closingStockCost,@JsonKey(name: 'closing_cash') String? closingCash
+ int id, String code, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'starts_on') String startsOn,@JsonKey(name: 'ends_on') String endsOn,@JsonKey(name: 'subscription_closes_on') String subscriptionClosesOn,@JsonKey(name: 'is_due_to_close') bool isDueToClose,@JsonKey(name: 'overdue_days') int? overdueDays,@JsonKey(name: 'owed_orders') int? owedOrders,@JsonKey(name: 'period_months') int periodMonths,@JsonKey(name: 'investor_profit_share_percent') String investorProfitSharePercent,@JsonKey(name: 'opening_stock_cost') String openingStockCost,@JsonKey(name: 'opening_cash') String openingCash,@JsonKey(name: 'accepts_capital') bool acceptsCapital,@JsonKey(name: 'subscription_serves_next_period') bool subscriptionServesNextPeriod,@JsonKey(name: 'capital_lock_months') int capitalLockMonths,@JsonKey(name: 'ends_settlement_cycle') bool endsSettlementCycle,@JsonKey(name: 'override_reason') String? overrideReason,@JsonKey(name: 'closed_at') String? closedAt,@JsonKey(name: 'net_profit') String? netProfit,@JsonKey(name: 'investors_pool') String? investorsPool,@JsonKey(name: 'company_share') String? companyShare,@JsonKey(name: 'sales_revenue') String? salesRevenue,@JsonKey(name: 'closing_stock_cost') String? closingStockCost,@JsonKey(name: 'closing_cash') String? closingCash
 });
 
 
@@ -618,7 +630,7 @@ class __$FundPeriodCopyWithImpl<$Res>
 
 /// Create a copy of FundPeriod
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? startsOn = null,Object? endsOn = null,Object? subscriptionClosesOn = null,Object? isDueToClose = null,Object? periodMonths = null,Object? investorProfitSharePercent = null,Object? openingStockCost = null,Object? openingCash = null,Object? acceptsCapital = null,Object? subscriptionServesNextPeriod = null,Object? capitalLockMonths = null,Object? endsSettlementCycle = null,Object? overrideReason = freezed,Object? closedAt = freezed,Object? netProfit = freezed,Object? investorsPool = freezed,Object? companyShare = freezed,Object? salesRevenue = freezed,Object? closingStockCost = freezed,Object? closingCash = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? startsOn = null,Object? endsOn = null,Object? subscriptionClosesOn = null,Object? isDueToClose = null,Object? overdueDays = freezed,Object? owedOrders = freezed,Object? periodMonths = null,Object? investorProfitSharePercent = null,Object? openingStockCost = null,Object? openingCash = null,Object? acceptsCapital = null,Object? subscriptionServesNextPeriod = null,Object? capitalLockMonths = null,Object? endsSettlementCycle = null,Object? overrideReason = freezed,Object? closedAt = freezed,Object? netProfit = freezed,Object? investorsPool = freezed,Object? companyShare = freezed,Object? salesRevenue = freezed,Object? closingStockCost = freezed,Object? closingCash = freezed,}) {
   return _then(_FundPeriod(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -628,7 +640,9 @@ as String,startsOn: null == startsOn ? _self.startsOn : startsOn // ignore: cast
 as String,endsOn: null == endsOn ? _self.endsOn : endsOn // ignore: cast_nullable_to_non_nullable
 as String,subscriptionClosesOn: null == subscriptionClosesOn ? _self.subscriptionClosesOn : subscriptionClosesOn // ignore: cast_nullable_to_non_nullable
 as String,isDueToClose: null == isDueToClose ? _self.isDueToClose : isDueToClose // ignore: cast_nullable_to_non_nullable
-as bool,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
+as bool,overdueDays: freezed == overdueDays ? _self.overdueDays : overdueDays // ignore: cast_nullable_to_non_nullable
+as int?,owedOrders: freezed == owedOrders ? _self.owedOrders : owedOrders // ignore: cast_nullable_to_non_nullable
+as int?,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
 as int,investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,openingStockCost: null == openingStockCost ? _self.openingStockCost : openingStockCost // ignore: cast_nullable_to_non_nullable
 as String,openingCash: null == openingCash ? _self.openingCash : openingCash // ignore: cast_nullable_to_non_nullable
@@ -943,7 +957,9 @@ mixin _$FundStanding {
  FundValuation get valuation;/// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
  FundPeriod? get period;/// **سعرُ الوحدة اليوم** — ما يشتري به الداخلُ الجديد. يُحسب في الخادم ولا يُعاد حسابُه
 /// هنا: تنفيذٌ ثانٍ للقاعدة هو الذي يخالفها يوم تتغيّر.
-@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'units_outstanding') String get unitsOutstanding; List<FundHolder> get investors;/// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
+@JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'units_outstanding') String get unitsOutstanding; List<FundHolder> get investors;/// **فتراتٌ «قيد الإغلاق»** — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل. لا
+/// تحبس أحداً، لكنها تبقى على اللوحة ما بقيت: «تبقى بلا حدّ، واللوحةُ تصرخ».
+@JsonKey(name: 'waiting_periods') List<FundPeriod> get waitingPeriods;/// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
 /// حقولُها، وطلبٌ ثانٍ للإعدادات في اللحظة نفسها رحلةٌ زائدة لرقمٍ واحد. افتراضٌ يُعرض
 /// ويُغيَّر، لا قاعدةٌ في حساب.
 @JsonKey(name: 'default_plain_sale_price') String? get defaultPlainSalePrice;/// **سقفُ اشتراك كل مستثمر اليوم** — رصيدُ محفظته. يصل مع اللوحة لأن الورقة تحتاجه قبل أن
@@ -961,16 +977,16 @@ $FundStandingCopyWith<FundStanding> get copyWith => _$FundStandingCopyWithImpl<F
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.waitingPeriods, waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),defaultPlainSalePrice,const DeepCollectionEquality().hash(subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -981,7 +997,7 @@ abstract mixin class $FundStandingCopyWith<$Res>  {
   factory $FundStandingCopyWith(FundStanding value, $Res Function(FundStanding) _then) = _$FundStandingCopyWithImpl;
 @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
+ FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -998,14 +1014,15 @@ class _$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_self.copyWith(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
 as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self.investors : investors // ignore: cast_nullable_to_non_nullable
-as List<FundHolder>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as List<FundHolder>,waitingPeriods: null == waitingPeriods ? _self.waitingPeriods : waitingPeriods // ignore: cast_nullable_to_non_nullable
+as List<FundPeriod>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
 as String?,subscribable: null == subscribable ? _self.subscribable : subscribable // ignore: cast_nullable_to_non_nullable
 as List<FundSubscriber>,
   ));
@@ -1113,10 +1130,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return orElse();
 
 }
@@ -1134,10 +1151,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding():
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1154,10 +1171,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return null;
 
 }
@@ -1169,7 +1186,7 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 @JsonSerializable()
 
 class _FundStanding implements FundStanding {
-  const _FundStanding({required this.valuation, this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_subscribable = subscribable;
+  const _FundStanding({required this.valuation, this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], @JsonKey(name: 'waiting_periods') final  List<FundPeriod> waitingPeriods = const <FundPeriod>[], @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_waitingPeriods = waitingPeriods,_subscribable = subscribable;
   factory _FundStanding.fromJson(Map<String, dynamic> json) => _$FundStandingFromJson(json);
 
 @override final  FundValuation valuation;
@@ -1184,6 +1201,17 @@ class _FundStanding implements FundStanding {
   if (_investors is EqualUnmodifiableListView) return _investors;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_investors);
+}
+
+/// **فتراتٌ «قيد الإغلاق»** — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل. لا
+/// تحبس أحداً، لكنها تبقى على اللوحة ما بقيت: «تبقى بلا حدّ، واللوحةُ تصرخ».
+ final  List<FundPeriod> _waitingPeriods;
+/// **فتراتٌ «قيد الإغلاق»** — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل. لا
+/// تحبس أحداً، لكنها تبقى على اللوحة ما بقيت: «تبقى بلا حدّ، واللوحةُ تصرخ».
+@override@JsonKey(name: 'waiting_periods') List<FundPeriod> get waitingPeriods {
+  if (_waitingPeriods is EqualUnmodifiableListView) return _waitingPeriods;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_waitingPeriods);
 }
 
 /// **سعرُ السادة الافتراضي** — يصل مع اللوحة لأن شاشةَ الشراء تقرأ اللوحةَ قبل أن تُملأ
@@ -1215,16 +1243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._waitingPeriods, _waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),defaultPlainSalePrice,const DeepCollectionEquality().hash(_subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(_subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -1235,7 +1263,7 @@ abstract mixin class _$FundStandingCopyWith<$Res> implements $FundStandingCopyWi
   factory _$FundStandingCopyWith(_FundStanding value, $Res Function(_FundStanding) _then) = __$FundStandingCopyWithImpl;
 @override @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
+ FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -1252,14 +1280,15 @@ class __$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_FundStanding(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
 as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self._investors : investors // ignore: cast_nullable_to_non_nullable
-as List<FundHolder>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
+as List<FundHolder>,waitingPeriods: null == waitingPeriods ? _self._waitingPeriods : waitingPeriods // ignore: cast_nullable_to_non_nullable
+as List<FundPeriod>,defaultPlainSalePrice: freezed == defaultPlainSalePrice ? _self.defaultPlainSalePrice : defaultPlainSalePrice // ignore: cast_nullable_to_non_nullable
 as String?,subscribable: null == subscribable ? _self._subscribable : subscribable // ignore: cast_nullable_to_non_nullable
 as List<FundSubscriber>,
   ));

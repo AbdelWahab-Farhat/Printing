@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/investor_portal/models/investor_portfolio.dart';
@@ -123,20 +124,28 @@ class _Portfolio extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
 
-        // Three profit figures, never merged. One is earned and still riding on deals that have
-        // not finished; one has been released and can be asked for; one he already has. A single
-        // number would either promise money that is not available or hide money already made.
+        // **ثلاثُ بوّاباتٍ متتابعة — §٠.٨ من مواصفة الصندوق —** ثم ما قبضه فعلاً. الأوّلُ محسوبٌ
+        // لا مقيَّد: طلبياتٌ بلغت «جاهزة» ولم تُسلَّم. والثاني سُلِّم فقُيِّد، ولا يُسحب حتى تنقضي
+        // فترتُه ويُحصَّل. والثالثُ اجتمع شرطاه. رقمٌ واحد لها كان سيَعِد بمالٍ لا يُسحب.
         InvestorMoneyTile(
-          label: 'أرباحي حتى الآن',
+          label: 'ربح قيد التسليم',
+          amount: portfolio.profitAwaitingDelivery,
+          caption: portfolio.ordersAwaitingDelivery > 0
+              ? 'من ${ordersCount(portfolio.ordersAwaitingDelivery)} في الطريق'
+              : 'لا طلبيات في الطريق',
+        ),
+        SizedBox(height: 12.h),
+        InvestorMoneyTile(
+          label: 'أرباح معلّقة',
           amount: portfolio.profitInDeals,
-          caption: 'من صفقات ما زالت مفتوحة — تُصرف عند إقفالها',
+          caption: 'سُلِّمت — تُتاح بانتهاء فترتها وتحصيلها',
           emphasis: true,
         ),
         SizedBox(height: 12.h),
         InvestorMoneyTile(
           label: 'أرباح متاحة للسحب',
           amount: portfolio.profitAvailable,
-          caption: 'من صفقات أُقفلت',
+          caption: 'انتهت فترتها وحُصِّلت',
         ),
         SizedBox(height: 12.h),
         InvestorMoneyTile(

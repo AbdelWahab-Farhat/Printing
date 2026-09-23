@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -160,6 +161,10 @@ class _Header extends StatelessWidget {
             'حصة المستثمرين ${period.investorProfitSharePercent}%',
             style: context.textTheme.bodyMedium,
           ),
+          if (period.owedOrders case final owed? when owed > 0) ...[
+            SizedBox(height: 8.h),
+            Text('تنتظر ${ordersCount(owed)}', style: context.textTheme.bodyMedium),
+          ],
           if (period.overrideReason case final reason?) ...[
             SizedBox(height: 8.h),
             Text('أُقفلت بتجاوز: $reason', style: context.textTheme.bodyMedium),

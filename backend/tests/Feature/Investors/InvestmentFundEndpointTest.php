@@ -7,12 +7,19 @@ namespace Tests\Feature\Investors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Models\StockBatchConsumption;
+use App\Domain\Inventory\Models\StockItem;
+use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Investor\Actions\CloseInvestmentPeriod;
+use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Queries\FundCash;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Support\FundDeal;
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +56,127 @@ class InvestmentFundEndpointTest extends TestCase
         $user->givePermissionTo(array_map(fn (PermissionName $p) => $p->value, $permissions));
 
         return ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+    }
+
+    public function test_a_period_past_its_date_says_how_many_days_it_has_been_due(): void
+    {
+        // Arrange — §٠.٤: غيابُ الجدولة صامت، فاللوحةُ تقول «مستحقّة الإقفال منذ ٣ أيام». انتهت
+        // في ٣٠ سبتمبر، فهي مستحقّةٌ منذ أوّل أكتوبر.
+        Carbon::setTestNow('2026-09-23 09:00:00');
+        $headers = $this->headersFor([PermissionName::ViewInvestors, PermissionName::ManageInvestors]);
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+        Carbon::setTestNow('2026-10-04 09:00:00');
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.period.is_due_to_close', true)
+            ->assertJsonPath('data.period.overdue_days', 3);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_a_period_still_inside_its_dates_is_not_overdue(): void
+    {
+        // Arrange
+        Carbon::setTestNow('2026-09-23 09:00:00');
+        $headers = $this->headersFor([PermissionName::ViewInvestors, PermissionName::ManageInvestors]);
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+        Carbon::setTestNow('2026-09-30 20:00:00');
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.period.is_due_to_close', false)
+            ->assertJsonPath('data.period.overdue_days', null);
+
+        Carbon::setTestNow();
+    }
+
+    /** طلبيةٌ سحبت من رفّ الصندوق ولم تصل العميل بعد. */
+    private function orderInFlight(string $placedAt): Order
+    {
+        $deal = app(FundDeal::class)();
+
+        $item = StockItem::factory()->named('رفّ الصندوق '.fake()->unique()->numberBetween(1, 99999))->create();
+        $batch = StockBatch::factory()->create([
+            'investor_deal_id' => $deal->getKey(),
+            'stock_item_id' => $item->getKey(),
+        ]);
+        $movement = StockMovement::factory()->create([
+            'movement_type' => 'order_fulfillment',
+            'stock_item_id' => $item->getKey(),
+        ]);
+
+        StockBatchConsumption::factory()->create([
+            'stock_batch_id' => $batch->getKey(),
+            'stock_movement_id' => $movement->getKey(),
+        ]);
+
+        $order = Order::factory()->create([
+            'placed_at' => $placedAt,
+            'status' => 'out_for_delivery',
+        ]);
+
+        OrderItem::factory()->create([
+            'order_id' => $order->getKey(),
+            'fulfillment_stock_movement_id' => $movement->getKey(),
+        ]);
+
+        return $order;
+    }
+
+    public function test_the_dashboard_lists_the_periods_still_waiting_for_their_orders(): void
+    {
+        // Arrange — §١٢هـ: «تبقى بلا حدّ، واللوحةُ تصرخ». سبتمبر أُقفل في موعده وبقيت له طلبيةٌ
+        // في الطريق، وأكتوبر يجري فوقه.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $this->orderInFlight('2026-09-28 10:00:00');
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        app(CloseInvestmentPeriod::class)(actorId: null);
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $headers = $this->headersFor([PermissionName::ViewInvestors]);
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.period.starts_on', '2026-10-01')
+            ->assertJsonPath('data.period.owed_orders', null)
+            ->assertJsonCount(1, 'data.waiting_periods')
+            ->assertJsonPath('data.waiting_periods.0.status', 'closing')
+            ->assertJsonPath('data.waiting_periods.0.status_label', 'قيد الإغلاق')
+            ->assertJsonPath('data.waiting_periods.0.owed_orders', 1);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_closing_a_period_that_still_waits_says_so_rather_than_closed(): void
+    {
+        // Arrange — §٠.٧: تنتهي في موعدها ولو بقيت لها طلبية. «أُفرج عن الأرباح» كذبٌ هنا.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $headers = $this->headersFor([PermissionName::ViewInvestors, PermissionName::ManageInvestors]);
+        $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
+        $this->orderInFlight('2026-09-28 10:00:00');
+        Carbon::setTestNow('2026-10-02 09:00:00');
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/investment/periods/close');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'closing')
+            ->assertJsonPath('data.owed_orders', 1);
+        $this->assertStringContainsString('قيد الإغلاق', $response->json('message'));
+        $this->assertStringNotContainsString('أُفرج عن الأرباح', $response->json('message'));
+
+        Carbon::setTestNow();
     }
 
     public function test_a_fund_with_no_period_says_so_rather_than_inventing_one(): void
@@ -171,7 +299,7 @@ class InvestmentFundEndpointTest extends TestCase
 
     public function test_an_early_close_without_a_reason_is_refused_with_words(): void
     {
-        // Arrange
+        // Arrange — أوّلُ فترةٍ فُتحت في ١٥ سبتمبر تنتهي في ٣٠ منه، فالخامسُ والعشرون قبل موعدها.
         Carbon::setTestNow('2026-09-15 09:00:00');
         $headers = $this->headersFor([
             PermissionName::ViewInvestors,
@@ -180,7 +308,7 @@ class InvestmentFundEndpointTest extends TestCase
         $this->withHeaders($headers)->postJson('/api/v1/investment/periods')->assertOk();
 
         // Act
-        Carbon::setTestNow('2026-10-02 09:00:00');
+        Carbon::setTestNow('2026-09-25 09:00:00');
         $response = $this->withHeaders($headers)->postJson('/api/v1/investment/periods/close');
 
         // Assert
