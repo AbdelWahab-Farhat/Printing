@@ -4,10 +4,21 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
+use App\Domain\Investor\Actions\CloseInvestorDeal;
+use App\Domain\Investor\Actions\FoldDealIntoFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
+use App\Domain\Investor\Actions\RecordCashEntry;
+use App\Domain\Investor\Enums\CashEntryType;
+use App\Domain\Investor\Enums\DealStatus;
 use App\Domain\Investor\Enums\PeriodStatus;
+use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestmentPeriod;
+use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\DealOrdersInFlightQuery;
 use Illuminate\Console\Command;
 
 /**
@@ -35,6 +46,13 @@ use Illuminate\Console\Command;
  * فترةٌ «قيد الإغلاق» تُتمَّم حين تصل آخرُ طلبياتها ويُحصَّل مالُها، والمستمعُ على الطلبيات بابُ
  * ذلك الأوّل. وهذا ظهيرُه: {@see CloseInvestmentPeriod::finalise()} يُفرج عمّا اجتمع شرطاه ويُقفل
  * ما لم يبقَ له شيء، وإعادتُه على فترةٍ لم يتغيّر فيها شيء لا تكتب شيئاً.
+ *
+ * ## وصفقةٌ دخلت الصندوق تُقفَل حين تصل طلبياتُها
+ *
+ * {@see FoldDealIntoFund} يترك في الصفقة رأسَ مال طلبياتها التي في الطريق (§١٣د). فحين لا يبقى
+ * منها شيء تُقفَل بقواعدها ({@see CloseInvestorDeal})، ويدخل نقدُ ما أُفرِج عنه من ربحها خزينةَ
+ * الصندوق لأن سحبَه يخرج منها. **وبضاعةٌ عادت إلى رفّها** بعد التحويل لا تنتقل من هنا: حركتا
+ * المخزن تطلبان يداً، فيقول ذلك ويتركها لمن يعيد التحويل.
  */
 class RollInvestmentPeriods extends Command
 {
@@ -46,11 +64,18 @@ class RollInvestmentPeriods extends Command
 
     protected $description = 'يُقفل فترة الاستثمار التي حلّ موعدها ويفتح التي تليها، ويُتمّ الفترات المنتظِرة';
 
-    public function handle(CloseInvestmentPeriod $close, OpenInvestmentPeriod $open): int
-    {
+    public function handle(
+        CloseInvestmentPeriod $close,
+        OpenInvestmentPeriod $open,
+        CloseInvestorDeal $closeDeal,
+        DealOrdersInFlightQuery $inFlight,
+        RecordCashEntry $cash,
+    ): int {
         if ((bool) $this->option('dry-run')) {
             return $this->describe($close);
         }
+
+        $this->finishFoldedDeals($closeDeal, $inFlight, $cash);
 
         $waiting = InvestmentPeriod::query()
             ->where('status', PeriodStatus::Closing)
@@ -84,6 +109,63 @@ class RollInvestmentPeriods extends Command
         $this->error('توقّفت الحلقة عند حدّها ولم تبلغ فترةً جارية — راجع الفترات.');
 
         return self::FAILURE;
+    }
+
+    private function finishFoldedDeals(CloseInvestorDeal $closeDeal, DealOrdersInFlightQuery $inFlight, RecordCashEntry $cash): void
+    {
+        $folded = InvestorDeal::query()
+            ->whereNotNull('folded_into_fund_at')
+            ->where('status', DealStatus::Open)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($folded as $deal) {
+            if ($deal->stillHoldsStock()) {
+                $this->warn("الصفقة {$deal->code} دخلت الصندوق وعادت إلى رفّها بضاعة — أعد: investment:fold-deal {$deal->code}");
+
+                continue;
+            }
+
+            if ($inFlight((int) $deal->getKey()) !== []) {
+                continue;
+            }
+
+            $closeDeal($deal);
+            $this->backReleasedProfit($deal, $cash);
+            $this->info("أُقفلت الصفقة {$deal->code} — وصلت آخرُ طلبياتها بعد دخولها الصندوق.");
+        }
+    }
+
+    /**
+     * ربحُ صفقةٍ دخلت الصندوق يُسحب من خزينته، فنقدُه يدخلها — مرّةً لكل صفّ إفراج.
+     */
+    private function backReleasedProfit(InvestorDeal $deal, RecordCashEntry $cash): void
+    {
+        $releases = InvestorWalletEntry::query()
+            ->where('investor_deal_id', $deal->getKey())
+            ->where('type', WalletEntryType::ProfitRelease)
+            ->whereDoesntHave('reversedBy')
+            ->get();
+
+        foreach ($releases as $release) {
+            $backed = InvestmentCashEntry::query()
+                ->where('type', CashEntryType::LegacyTransfer)
+                ->where('source_type', AuditSubject::InvestorWalletEntry->value)
+                ->where('source_id', $release->getKey())
+                ->exists();
+
+            if ($backed) {
+                continue;
+            }
+
+            $cash(
+                type: CashEntryType::LegacyTransfer,
+                amount: (string) $release->amount,
+                sourceType: AuditSubject::InvestorWalletEntry->value,
+                sourceId: (int) $release->getKey(),
+                notes: "ربح الصفقة {$deal->code} بعد وصول آخر طلبياتها",
+            );
+        }
     }
 
     /** ما كان سيفعله النداءُ الآن — قراءةٌ لا تكتب شيئاً. */

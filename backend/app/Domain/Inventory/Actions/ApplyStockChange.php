@@ -14,6 +14,7 @@ use App\Domain\Inventory\Exceptions\UnitOfMeasurementMismatch;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Inventory\Support\Money;
 use Illuminate\Support\Carbon;
 
 /**
@@ -166,6 +167,89 @@ final class ApplyStockChange
         }
 
         return $stock;
+    }
+
+    /**
+     * Hands these cost layers, whole, to another owner on the same shelf — the balance does not
+     * move, only who financed what is on it.
+     *
+     * **New layers, not a re-stamp.** Rewriting `investor_deal_id` on a layer would rewrite its
+     * past: every draw it ever gave — sales long settled with the old owner, parcels still owed by a
+     * customer — would read as the new owner's, and any posting re-run against those sources would
+     * pay the new owner beside the old. So each layer is drawn to zero under `$outMovementId`, and
+     * an identical layer opens for `$toDealId`: same quantity, cost, `received_at`, origin and
+     * سعر السادة. FIFO order and the price the press pays are exactly what they were.
+     *
+     * **The balance row is locked and left alone.** One draw of `q` and one layer of `q` keep
+     * `SUM(quantity_remaining)` equal to it without writing it — the two `OwnershipTransfer`
+     * movement rows the caller records carry the pair into the movement feed, where they net to
+     * nothing as well.
+     *
+     * @param  list<int>  $batchIds  layers on this (warehouse, size), each handed over in full
+     * @return list<BatchDraw> what was taken off the old owner, layer by layer
+     */
+    public function handOverBatches(
+        int $warehouseId,
+        int $stockItemId,
+        array $batchIds,
+        ?int $toDealId,
+        int $outMovementId,
+    ): array {
+        $this->lockBalance($warehouseId, $stockItemId);
+
+        $batches = StockBatch::query()
+            ->whereIn('id', $batchIds)
+            ->where('warehouse_id', $warehouseId)
+            ->where('stock_item_id', $stockItemId)
+            ->where('quantity_remaining', '>', 0)
+            ->orderBy('received_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        $draws = [];
+
+        foreach ($batches as $batch) {
+            $take = (string) $batch->quantity_remaining;
+            $totalCost = Money::round(bcmul($take, (string) $batch->unit_cost, 8));
+
+            $batch->quantity_remaining = '0.000';
+            $batch->save();
+
+            $consumption = new StockBatchConsumption;
+            $consumption->stock_batch_id = $batch->id;
+            $consumption->stock_movement_id = $outMovementId;
+            $consumption->quantity = $take;
+            $consumption->unit_cost = $batch->unit_cost;
+            $consumption->total_cost = $totalCost;
+            $consumption->save();
+
+            $this->openBatch(
+                $warehouseId, $stockItemId, $take, (string) $batch->unit_cost, $batch->unit,
+                $batch->source_type, $batch->stock_arrival_item_id, $batch->received_at->copy(),
+                // The event that brought this stock into the business, as a transfer keeps it.
+                $batch->stock_movement_id,
+                $toDealId,
+                $batch->printing_sale_price === null ? null : (string) $batch->printing_sale_price,
+            );
+
+            $draws[] = new BatchDraw(
+                stockBatchId: $batch->id,
+                quantity: $take,
+                unitCost: (string) $batch->unit_cost,
+                totalCost: $totalCost,
+                receivedAt: $batch->received_at->toISOString(),
+                sourceType: $batch->source_type,
+                stockArrivalItemId: $batch->stock_arrival_item_id,
+                stockMovementId: $batch->stock_movement_id,
+                investorDealId: $batch->investor_deal_id,
+                printingSalePrice: $batch->printing_sale_price === null
+                    ? null
+                    : (string) $batch->printing_sale_price,
+            );
+        }
+
+        return $draws;
     }
 
     /**

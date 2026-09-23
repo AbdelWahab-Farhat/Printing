@@ -471,6 +471,15 @@ final class CloseInvestmentPeriod
             ->whereNull('deleted_at')
             ->whereRaw('occurred_at::date >= ?', [$period->starts_on->toDateString()])
             ->whereRaw('occurred_at::date <= ?', [$period->ends_on->toDateString()])
+            // **وصفوفُ صفقةٍ دخلت الصندوق لا تُطالَب بها** — تبقى بلا ختمٍ أبداً. تُسوّيها
+            // {@see FoldDealIntoFund} ثم إقفالُها هي، ولو ختمتها فترةٌ لقرأت إفراجَ التحويل
+            // ربحاً لها خرج مالُه. {@see InvestorBalances::withoutFoldedDeals()}
+            ->where(fn ($q) => $q
+                ->whereNull('investor_deal_id')
+                ->orWhereNotIn(
+                    'investor_deal_id',
+                    DB::table('investor_deals')->whereNotNull('folded_into_fund_at')->select('id'),
+                ))
             ->update(['investment_period_id' => $period->getKey()]);
     }
 
@@ -565,6 +574,12 @@ final class CloseInvestmentPeriod
      * تُشطب الخسارةُ من رأس المال وتتحمّل الشركةُ ما جاوزه؛ وما خرج تُرحَّل الخسارةُ مطالبةً
      * على صاحبها.
      */
+    // **ما يفترضه هذا الحارس، مكتوباً:** صفُّ `profit_release` في فترةٍ يعني «ربحُ هذه الفترة
+    // دُفع». وهو صادقٌ ما دام كاتبُ الصفّ هو إقفالُ الفترة أو المستمعُ عند التحصيل. **وكلُّ من
+    // يكتب صفَّ إفراجٍ لسببٍ آخر يكسره بصمت**: تحويلُ صفقةٍ إلى الصندوق يُفرج عن ربحٍ صُنع قبله،
+    // فلو ختمته فترةٌ لرأت هنا «دُفع» ورحّلت على صاحبه خسارةً وهمية. ولذلك تتخطّى الفترةُ الصفقةَ
+    // المعلَّمة كلَّها ({@see InvestorBalances::withoutFoldedDeals()}) — وسببٌ جديدٌ لصفّ إفراجٍ
+    // يحتاج مثلَها.
     private function alreadyPaidFrom(InvestmentPeriod $period, int $investorId, int $dealId): bool
     {
         return InvestorWalletEntry::query()

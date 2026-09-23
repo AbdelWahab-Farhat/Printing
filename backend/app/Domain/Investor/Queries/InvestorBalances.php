@@ -166,10 +166,10 @@ final class InvestorBalances
      */
     public function profitInPeriod(int $periodId): array
     {
-        $entries = InvestorWalletEntry::query()
+        $entries = $this->withoutFoldedDeals(InvestorWalletEntry::query()
             ->with('reversedEntry')
             ->where('investment_period_id', $periodId)
-            ->whereNotNull('investor_deal_id')
+            ->whereNotNull('investor_deal_id'))
             ->get();
 
         $profit = [];
@@ -226,10 +226,10 @@ final class InvestorBalances
      */
     public function releasableInPeriod(int $periodId): array
     {
-        $entries = InvestorWalletEntry::query()
+        $entries = $this->withoutFoldedDeals(InvestorWalletEntry::query()
             ->with('reversedEntry')
             ->where('investment_period_id', $periodId)
-            ->whereNotNull('investor_deal_id')
+            ->whereNotNull('investor_deal_id'))
             ->get();
 
         $withheld = $this->ordersNotCollected($entries);
@@ -301,6 +301,27 @@ final class InvestorBalances
         }
 
         return $withheld;
+    }
+
+    /**
+     * **صفقةٌ دخلت الصندوق ليست من شأن فترة** — قاعدةٌ واحدة لقارئين: ما يُفرَج عنه
+     * ({@see releasableInPeriod()}) وما يُرحَّل خسارةً ({@see profitInPeriod()}).
+     *
+     * `FoldDealIntoFund` يكتب في الصفقة القديمة صفَّ إفراجٍ لربحٍ صُنع قبل الصندوق. لو قرأته فترةٌ
+     * لرأت ربحاً سالباً خرج مالُه — فرحّلت على صاحبه خسارةً وهمية بحجمه، ولأفرجت عن ربح الصفقة
+     * المختوم بها مرّةً ثانية. والصفقةُ المعلَّمة تُسوّى بالتحويل ثم بإقفالها هي.
+     *
+     * @template TQuery of \Illuminate\Database\Eloquent\Builder
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private function withoutFoldedDeals($query)
+    {
+        return $query->whereNotIn(
+            'investor_deal_id',
+            DB::table('investor_deals')->whereNotNull('folded_into_fund_at')->select('id'),
+        );
     }
 
     /**

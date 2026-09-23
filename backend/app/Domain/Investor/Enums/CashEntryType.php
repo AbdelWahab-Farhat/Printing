@@ -60,6 +60,14 @@ enum CashEntryType: string
      */
     case StockSoldToPress = 'stock_sold_to_press';
 
+    /**
+     * مالُ صفقةٍ قديمة ينتقل من صندوق الشركة إلى خزينة الصندوق حين تدخله — §٠.٩.
+     *
+     * مصدرُه صفُّ المحفظة الذي يقابله: الاشتراكُ الذي صار وحدات (نقدُه المحقَّق)، أو الإفراجُ
+     * الذي صار ربحاً في محفظته (فسحبُه يخرج من هنا ولا يأكل نقدَ الصندوق).
+     */
+    case LegacyTransfer = 'legacy_transfer';
+
     /** يُبطل صفّاً واحداً سابقاً، حاملاً مبلغَه كما هو. */
     case Reversal = 'reversal';
 
@@ -74,6 +82,7 @@ enum CashEntryType: string
             self::CompanyPayout => 'نصيب الشركة',
             self::CapitalReturn => 'إرجاع رأس مال',
             self::StockSoldToPress => 'بيع سادة للمطبعة',
+            self::LegacyTransfer => 'تحويل من صفقة سابقة',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -87,7 +96,7 @@ enum CashEntryType: string
     public function isInflow(): bool
     {
         return match ($this) {
-            self::Deposit, self::SaleProceeds, self::StockSoldToPress => true,
+            self::Deposit, self::SaleProceeds, self::StockSoldToPress, self::LegacyTransfer => true,
             default => false,
         };
     }

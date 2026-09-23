@@ -519,6 +519,7 @@ final class AuditAttributeLabels
             'opened_on' => 'تاريخ الصفقة',
             'opened_at' => 'وقت الفتح',
             'closed_at' => 'وقت الإغلاق',
+            'folded_into_fund_at' => 'وقت دخولها الصندوق',
             'cancellation_reason' => 'سبب الإلغاء',
             'created_by' => 'أنشأها',
         ],

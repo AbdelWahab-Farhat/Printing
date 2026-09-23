@@ -67,7 +67,11 @@ final class PostDealShare
         // أكتوبر ربحُها لسبتمبر، وهو نصُّ قرار المالك: «كل طلبية في سبتمبر هي ل سبتمبر». وتُقرأ
         // مرّةً للدفعة كلِّها: كلُّ صفوفها من مصدرٍ واحد، فلا فترةَ تختلف بينها. وهي كذلك ما
         // تُقرأ به نسبُ القسمة حين تكون الصفقةُ هي الصندوق.
-        $periodId = $this->periodFor->bySource($sourceType, $sourceId);
+        // **وصفقةٌ دخلت الصندوق لا فترةَ لصفوفها** — ربحُ طلبياتها الباقية يُسوّى بإقفالها هي،
+        // وختمُه بفترةٍ يجعل الفترةَ تُفرج عنه أو ترحّله. انظر {@see FoldDealIntoFund}.
+        $periodId = $deal->folded_into_fund_at === null
+            ? $this->periodFor->bySource($sourceType, $sourceId)
+            : null;
         $target = $this->split($deal, $investorsAmount, $periodId);
 
         if ($target === []) {

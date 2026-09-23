@@ -74,6 +74,7 @@ class InvestorDeal extends Model implements HasAuditTrail
             'opened_on' => 'date',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
+            'folded_into_fund_at' => 'datetime',
         ];
     }
 

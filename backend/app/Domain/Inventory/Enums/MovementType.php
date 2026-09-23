@@ -62,6 +62,18 @@ enum MovementType: string
      */
     case ArrivalReversal = 'arrival_reversal';
 
+    /**
+     * The same goods on the same shelf changing owner — a legacy investor deal's remaining layers
+     * handed to the continuous fund, see `FoldDealIntoFund`.
+     *
+     * **Always a pair, and never recorded by hand.** One row takes the layers off the deal (its
+     * consumptions draw each layer to zero), the other puts identical layers on for the new owner —
+     * so a warehouse's running balance in the movement feed nets to nothing, as the shelf itself
+     * does. None of the four stock endpoints can post it: only `ApplyStockChange::handOverBatches()`
+     * writes the layers behind it.
+     */
+    case OwnershipTransfer = 'ownership_transfer';
+
     public function label(): string
     {
         return match ($this) {
@@ -72,6 +84,7 @@ enum MovementType: string
             self::OrderReversal => 'إرجاع بعد إلغاء طلبية',
             self::ScrapLoss => 'تلف أثناء الإنتاج',
             self::ArrivalReversal => 'إلغاء استلام شحنة',
+            self::OwnershipTransfer => 'نقل ملكية',
         };
     }
 
@@ -87,7 +100,8 @@ enum MovementType: string
         return match ($this) {
             self::InternalTransfer, self::OrderFulfillment, self::ScrapLoss,
             self::ArrivalReversal => true,
-            self::PurchaseArrival, self::Adjustment, self::OrderReversal => false,
+            self::PurchaseArrival, self::Adjustment, self::OrderReversal,
+            self::OwnershipTransfer => false,
         };
     }
 
@@ -99,7 +113,7 @@ enum MovementType: string
         return match ($this) {
             self::PurchaseArrival, self::InternalTransfer, self::OrderReversal => true,
             self::OrderFulfillment, self::Adjustment, self::ScrapLoss,
-            self::ArrivalReversal => false,
+            self::ArrivalReversal, self::OwnershipTransfer => false,
         };
     }
 

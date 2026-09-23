@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Queries;
 
+use App\Domain\Investor\Actions\FoldDealIntoFund;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -31,6 +33,27 @@ final class DealOrdersInFlightQuery
      * @return list<string> the order codes blocking the close, empty when nothing does
      */
     public function __invoke(int $dealId): array
+    {
+        return $this->drawsInFlight($dealId)
+            ->distinct()
+            ->orderBy('o.id')
+            ->pluck('o.id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    }
+
+    /**
+     * ما كلّفته بضاعةُ الصفقة التي في الطريق — بالسحب نفسه الذي يحبس إقفالها، لا بتعريفٍ ثانٍ.
+     *
+     * يقرؤه {@see FoldDealIntoFund}: رأسُ المال المقابل لهذه البضاعة يبقى في الصفقة حتى تصل
+     * طلبياتُها، وما سواه يدخل الصندوق.
+     */
+    public function costOf(int $dealId): string
+    {
+        return (string) ($this->drawsInFlight($dealId)->sum('c.total_cost') ?? '0');
+    }
+
+    private function drawsInFlight(int $dealId): Builder
     {
         return DB::table('stock_batch_consumptions as c')
             ->join('stock_batches as b', 'b.id', '=', 'c.stock_batch_id')
@@ -67,11 +90,6 @@ final class DealOrdersInFlightQuery
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('stock_movements as r')
                 ->whereColumn('r.reverses_movement_id', 'm.id')
-                ->whereNull('r.deleted_at'))
-            ->distinct()
-            ->orderBy('o.id')
-            ->pluck('o.id')
-            ->map(fn ($id) => (string) $id)
-            ->all();
+                ->whereNull('r.deleted_at'));
     }
 }
