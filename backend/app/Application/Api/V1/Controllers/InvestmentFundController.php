@@ -312,6 +312,7 @@ class InvestmentFundController extends Controller
 
         $ids = array_keys($units);
         $shares = $period === null ? [] : $this->shares->forPeriod((int) $period->getKey());
+        $upcoming = $this->shares->upcoming();
         $names = Investor::query()->whereIn('id', $ids)->pluck('name', 'id');
 
         // بلا إنشاء: هذه قراءةٌ لا تكتب. ولا صندوقَ بعد يعني لا مالَ فيه لأحد.
@@ -335,6 +336,10 @@ class InvestmentFundController extends Controller
                 // **من اكتتب في نافذة هذه الفترة يقف هنا بصفر**، لأن نصيبَه يبدأ من التالية.
                 // وصفرٌ بجانب اسمِ رجلٍ وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
                 'share_starts_next_period' => $period !== null && ! isset($shares[$id]),
+
+                // **ونسبتُه في الفترة التالية لو فُتحت الليلة** — ما تعرضه صفحةُ «الشركاء» تحت
+                // «مستثمرو الفترة القادمة». تقديرٌ لا عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره.
+                'next_share_percent' => $upcoming[$id] ?? '0.000000',
                 'capital' => $inFund[$id]['capital'] ?? '0.00',
                 'profit' => $balances[$id]['profit'] ?? '0.00',
             ];
@@ -427,10 +432,10 @@ class InvestmentFundController extends Controller
             'accepts_capital' => $period->acceptsCapitalOn(now()),
 
             // **ولمن هذه النافذة؟** الداخلُ منها لا يقاسم شهراً بدأ بالفعل: «تجمد نسبته ولا
-            // تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة». والاستثناءُ أوّلُ فتراتِ
-            // الصندوق — {@see InvestmentPeriod::isTheFirstOfTheFund()} — فالخادمُ يقول أيُّهما
-            // هذه ولا تحسبها الشاشةُ بمقارنة تواريخ.
-            'subscription_serves_next_period' => ! $period->isTheFirstOfTheFund(),
+            // تحسب له أرباح شهر تسعة إنما تحسب له أرباح شهر عشرة». والاستثناءُ الوحيد أولى
+            // صندوقٍ لم تُحوَّل إليه صفقة — {@see PeriodShares::windowServesNextPeriod()} — فالخادمُ
+            // يقول أيُّهما هذه ولا تحسبها الشاشةُ بمقارنة تواريخ.
+            'subscription_serves_next_period' => $this->shares->windowServesNextPeriod($period),
 
             'opening_stock_cost' => (string) $period->opening_stock_cost,
             'opening_cash' => (string) $period->opening_cash,

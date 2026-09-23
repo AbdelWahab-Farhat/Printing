@@ -17,6 +17,7 @@ use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
+use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\FoldDealIntoFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\DTOs\WalletEntryData;
@@ -374,6 +375,37 @@ class FoldDealIntoFundTest extends TestCase
         $this->assertSame('9900.00', $pots['deals'][$fundId]['capital']);
         $this->assertSame('1100.00', $pots['deals'][(int) $deal->id]['capital']);
         $this->assertSame('0.00', $pots['wallet']['capital']);
+    }
+
+    public function test_who_subscribes_after_the_fold_waits_for_the_next_period(): void
+    {
+        // Arrange — قرارُ المالك 2026-09-23: «اريد عبدالرحمن فقط شريك هذه الفترة وينضمون للفترة
+        // التي تليها». الصفقةُ القديمة تؤسّس الصندوق، ومن اكتتب بعدها في النافذة ينتظر.
+        [$deal, $partner] = $this->d1BeforeTheFund();
+        $this->fold($deal);
+
+        Carbon::setTestNow('2026-09-24 12:00:00');
+        $newcomer = Investor::factory()->create();
+        app(InvestorService::class)->recordWalletEntry(
+            new WalletEntryData(
+                investorId: (int) $newcomer->getKey(),
+                type: WalletEntryType::Deposit,
+                amount: '9900.00',
+                method: 'cash',
+            ),
+            null,
+        );
+        app(DepositToFund::class)(investorId: (int) $newcomer->getKey(), amount: '9900.00', actorId: null);
+
+        // Act
+        $now = app(PeriodShares::class)->current();
+        $next = app(PeriodShares::class)->upcoming();
+
+        // Assert — هو وحده في هذه الفترة، والوافدُ نصيبُه من التالية بوحداته.
+        $this->assertSame([(int) $partner->id => '100.000000'], $now);
+        $this->assertArrayHasKey((int) $partner->id, $next);
+        $this->assertArrayHasKey((int) $newcomer->id, $next);
+        $this->assertSame('100.000000', bcadd($next[(int) $partner->id], $next[(int) $newcomer->id], 6));
     }
 
     public function test_the_company_share_of_the_shelf_is_bought_from_his_realised_cash(): void

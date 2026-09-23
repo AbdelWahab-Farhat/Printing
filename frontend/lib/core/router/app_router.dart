@@ -33,6 +33,7 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_purchase_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_partners_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_periods_page.dart';
 import 'package:dayaa/features/investment_settings/presentation/views/investment_settings_page.dart';
@@ -134,6 +135,9 @@ abstract final class Routes {
 
   /// سجلُّ الفترات — ما حلّ محلّ «قائمة الصفقات».
   static const String investmentPeriods = '/investment/periods';
+
+  /// شركاءُ الصندوق في فترتين — من يقتسم ربحَ هذه الفترة، ومن يقتسم ربحَ التي تليها.
+  static const String investmentPartners = '/investment/partners';
 
   /// فترةٌ واحدة: طلبياتُها، ونصيبُ كلِّ مستثمرٍ من كلٍّ منها.
   static String investmentPeriod(int id) => '/investment/periods/$id';
@@ -570,6 +574,10 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentPeriods,
         builder: (context, state) => const InvestmentPeriodsPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentPartners,
+        builder: (context, state) => const InvestmentPartnersPage(),
       ),
       GoRoute(
         // خلف «/periods» لا أمامه: المسارُ الثابتُ أطولُ مطابقةً، ولا يبتلعه متغيّرٌ بعده.

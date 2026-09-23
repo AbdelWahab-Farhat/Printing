@@ -12,6 +12,7 @@ import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_capital_sheet.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense_sheet.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_partner_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -532,10 +533,10 @@ class _Unit extends StatelessWidget {
   }
 }
 
-/// الشركاءُ ونسبُهم في هذه الفترة.
+/// الشركاءُ ونسبُهم في هذه الفترة — ومن ينتظر التالية خلف زرٍّ يعدّهم.
 ///
-/// **النسبةُ أكبرُ رقمٍ على السطر** لأنها السؤال: ماذا يأخذ من ربح هذا الشهر. ورأسُ ماله وربحُه
-/// تحتها لأنهما جوابُ سؤالٍ آخر — ماذا وضع وماذا لم يسحب بعد.
+/// **من اكتتب في نافذة هذه الفترة لا يقف هنا**: لا يقتسم ربحَها، وسطرُه بجانب من يقتسمه كان
+/// يوحي بأنه شريكٌ بصفر. يقف في صفحة «شركاء الصندوق» تحت «الفترة القادمة» بنسبته فيها.
 class _Partners extends StatelessWidget {
   const _Partners({required this.holders});
 
@@ -543,6 +544,9 @@ class _Partners extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final current = holders.where((h) => !h.shareStartsNextPeriod).toList();
+    final joining = holders.length - current.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -551,98 +555,16 @@ class _Partners extends StatelessWidget {
           style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         SizedBox(height: 12.h),
-        for (final holder in holders) _PartnerRow(holder: holder),
+        for (final holder in current) FundPartnerCard(holder: holder, percent: holder.sharePercent),
+        SizedBox(height: 4.h),
+        AppButton.outlined(
+          label: joining > 0
+              ? 'الفترة القادمة — ${arabicCount(joining, one: 'مستثمر واحد ينضمّ', two: 'مستثمران ينضمّان', few: 'مستثمرين ينضمّون', many: 'مستثمراً ينضمّون')}'
+              : 'شركاء الفترة الحالية والقادمة',
+          onPressed: () => context.push(Routes.investmentPartners),
+        ),
       ],
     );
-  }
-}
-
-class _PartnerRow extends StatelessWidget {
-  const _PartnerRow({required this.holder});
-
-  final FundHolder holder;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    // **السطرُ بابٌ لا لافتة.** اسمُه ونسبتُه تقولان ماذا يأخذ من هذا الشهر؛ ومن وضع المال ومتى،
-    // وما سحبه، ومتى يُفكّ حبسُ رأس ماله — كلُّه على شاشته. وكان الطريقُ إليها أن يخرج من هنا
-    // إلى «المستثمرون» ثم يبحث عن الاسم نفسِه الذي يقرؤه أمامه.
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: InkWell(
-        onTap: () => context.push(Routes.investor(holder.investorId)),
-        borderRadius: BorderRadius.circular(14.r),
-        child: Container(
-          padding: EdgeInsets.all(14.w),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(14.r),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      holder.name,
-                      style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  if (holder.shareStartsNextPeriod)
-                    // نصيبُه من هذا الشهر صفر، و«٠٫٠٠٪» وحدها تُقرأ عطباً لا قاعدة.
-                    Text(
-                      'من الفترة القادمة',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    Text(
-                      // ستُّ خاناتٍ على الشاشة ضجيج؛ اثنتان تكفيان للقراءة، والقسمةُ نفسُها
-                      // تجري بالستّ في الخادم.
-                      '${_twoPlaces(holder.sharePercent)}%',
-                      textDirection: TextDirection.ltr,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: scheme.primary,
-                      ),
-                    ),
-                  SizedBox(width: 8.w),
-                  // السهمُ هو ما يقول إنه يُفتح — كبطاقة الفترة فوقه، وبلا كلمةٍ تشرحه.
-                  Icon(AppIcons.forward, size: 18.sp, color: scheme.onSurfaceVariant),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'رأس المال ${holder.capital.grouped} د.ل',
-                      style: context.textTheme.bodyMedium,
-                    ),
-                  ),
-                  Text(
-                    'الربح ${holder.profit.grouped} د.ل',
-                    style: context.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _twoPlaces(String value) {
-    final parsed = double.tryParse(value);
-
-    return parsed == null ? value : parsed.toStringAsFixed(2);
   }
 }
 

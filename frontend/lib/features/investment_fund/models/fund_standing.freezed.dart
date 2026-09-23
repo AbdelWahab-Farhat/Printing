@@ -671,7 +671,7 @@ mixin _$FundHolder {
 
 @JsonKey(name: 'investor_id') int get investorId; String get name; String get units;@JsonKey(name: 'share_percent') String get sharePercent; String get capital; String get profit;/// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
-@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;
+@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;@JsonKey(name: 'next_share_percent') String get nextSharePercent;
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -684,16 +684,16 @@ $FundHolderCopyWith<FundHolder> get copyWith => _$FundHolderCopyWithImpl<FundHol
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundHolder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.units, units) || other.units == units)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundHolder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.units, units) || other.units == units)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.nextSharePercent, nextSharePercent) || other.nextSharePercent == nextSharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,name,units,sharePercent,capital,profit,shareStartsNextPeriod);
+int get hashCode => Object.hash(runtimeType,investorId,name,units,sharePercent,capital,profit,shareStartsNextPeriod,nextSharePercent);
 
 @override
 String toString() {
-  return 'FundHolder(investorId: $investorId, name: $name, units: $units, sharePercent: $sharePercent, capital: $capital, profit: $profit, shareStartsNextPeriod: $shareStartsNextPeriod)';
+  return 'FundHolder(investorId: $investorId, name: $name, units: $units, sharePercent: $sharePercent, capital: $capital, profit: $profit, shareStartsNextPeriod: $shareStartsNextPeriod, nextSharePercent: $nextSharePercent)';
 }
 
 
@@ -704,7 +704,7 @@ abstract mixin class $FundHolderCopyWith<$Res>  {
   factory $FundHolderCopyWith(FundHolder value, $Res Function(FundHolder) _then) = _$FundHolderCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'investor_id') int investorId, String name, String units,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod
+@JsonKey(name: 'investor_id') int investorId, String name, String units,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod,@JsonKey(name: 'next_share_percent') String nextSharePercent
 });
 
 
@@ -721,7 +721,7 @@ class _$FundHolderCopyWithImpl<$Res>
 
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? investorId = null,Object? name = null,Object? units = null,Object? sharePercent = null,Object? capital = null,Object? profit = null,Object? shareStartsNextPeriod = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? investorId = null,Object? name = null,Object? units = null,Object? sharePercent = null,Object? capital = null,Object? profit = null,Object? shareStartsNextPeriod = null,Object? nextSharePercent = null,}) {
   return _then(_self.copyWith(
 investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -730,7 +730,8 @@ as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent
 as String,capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,shareStartsNextPeriod: null == shareStartsNextPeriod ? _self.shareStartsNextPeriod : shareStartsNextPeriod // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,nextSharePercent: null == nextSharePercent ? _self.nextSharePercent : nextSharePercent // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -815,10 +816,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'next_share_percent')  String nextSharePercent)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundHolder() when $default != null:
-return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod);case _:
+return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod,_that.nextSharePercent);case _:
   return orElse();
 
 }
@@ -836,10 +837,10 @@ return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'next_share_percent')  String nextSharePercent)  $default,) {final _that = this;
 switch (_that) {
 case _FundHolder():
-return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod);case _:
+return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod,_that.nextSharePercent);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -856,10 +857,10 @@ return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'investor_id')  int investorId,  String name,  String units, @JsonKey(name: 'share_percent')  String sharePercent,  String capital,  String profit, @JsonKey(name: 'share_starts_next_period')  bool shareStartsNextPeriod, @JsonKey(name: 'next_share_percent')  String nextSharePercent)?  $default,) {final _that = this;
 switch (_that) {
 case _FundHolder() when $default != null:
-return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod);case _:
+return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that.capital,_that.profit,_that.shareStartsNextPeriod,_that.nextSharePercent);case _:
   return null;
 
 }
@@ -871,7 +872,7 @@ return $default(_that.investorId,_that.name,_that.units,_that.sharePercent,_that
 @JsonSerializable()
 
 class _FundHolder implements FundHolder {
-  const _FundHolder({@JsonKey(name: 'investor_id') required this.investorId, required this.name, required this.units, @JsonKey(name: 'share_percent') required this.sharePercent, required this.capital, required this.profit, @JsonKey(name: 'share_starts_next_period') this.shareStartsNextPeriod = false});
+  const _FundHolder({@JsonKey(name: 'investor_id') required this.investorId, required this.name, required this.units, @JsonKey(name: 'share_percent') required this.sharePercent, required this.capital, required this.profit, @JsonKey(name: 'share_starts_next_period') this.shareStartsNextPeriod = false, @JsonKey(name: 'next_share_percent') this.nextSharePercent = '0.000000'});
   factory _FundHolder.fromJson(Map<String, dynamic> json) => _$FundHolderFromJson(json);
 
 @override@JsonKey(name: 'investor_id') final  int investorId;
@@ -883,6 +884,7 @@ class _FundHolder implements FundHolder {
 /// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
 @override@JsonKey(name: 'share_starts_next_period') final  bool shareStartsNextPeriod;
+@override@JsonKey(name: 'next_share_percent') final  String nextSharePercent;
 
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
@@ -897,16 +899,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundHolder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.units, units) || other.units == units)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundHolder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.units, units) || other.units == units)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.nextSharePercent, nextSharePercent) || other.nextSharePercent == nextSharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,name,units,sharePercent,capital,profit,shareStartsNextPeriod);
+int get hashCode => Object.hash(runtimeType,investorId,name,units,sharePercent,capital,profit,shareStartsNextPeriod,nextSharePercent);
 
 @override
 String toString() {
-  return 'FundHolder(investorId: $investorId, name: $name, units: $units, sharePercent: $sharePercent, capital: $capital, profit: $profit, shareStartsNextPeriod: $shareStartsNextPeriod)';
+  return 'FundHolder(investorId: $investorId, name: $name, units: $units, sharePercent: $sharePercent, capital: $capital, profit: $profit, shareStartsNextPeriod: $shareStartsNextPeriod, nextSharePercent: $nextSharePercent)';
 }
 
 
@@ -917,7 +919,7 @@ abstract mixin class _$FundHolderCopyWith<$Res> implements $FundHolderCopyWith<$
   factory _$FundHolderCopyWith(_FundHolder value, $Res Function(_FundHolder) _then) = __$FundHolderCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'investor_id') int investorId, String name, String units,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod
+@JsonKey(name: 'investor_id') int investorId, String name, String units,@JsonKey(name: 'share_percent') String sharePercent, String capital, String profit,@JsonKey(name: 'share_starts_next_period') bool shareStartsNextPeriod,@JsonKey(name: 'next_share_percent') String nextSharePercent
 });
 
 
@@ -934,7 +936,7 @@ class __$FundHolderCopyWithImpl<$Res>
 
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? investorId = null,Object? name = null,Object? units = null,Object? sharePercent = null,Object? capital = null,Object? profit = null,Object? shareStartsNextPeriod = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? investorId = null,Object? name = null,Object? units = null,Object? sharePercent = null,Object? capital = null,Object? profit = null,Object? shareStartsNextPeriod = null,Object? nextSharePercent = null,}) {
   return _then(_FundHolder(
 investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -943,7 +945,8 @@ as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent
 as String,capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,shareStartsNextPeriod: null == shareStartsNextPeriod ? _self.shareStartsNextPeriod : shareStartsNextPeriod // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,nextSharePercent: null == nextSharePercent ? _self.nextSharePercent : nextSharePercent // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

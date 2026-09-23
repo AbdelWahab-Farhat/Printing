@@ -22,9 +22,11 @@ use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\DealOrdersInFlightQuery;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\PeriodForEntry;
+use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
 use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -103,7 +105,11 @@ final class FoldDealIntoFund
             // دخولهما، والوحداتُ تُشترى بسعر ما قبلهما.
             $plan = $this->plan($locked);
 
-            $locked->folded_into_fund_at ??= now();
+            // **لحظةٌ واحدة لكلّ ما يُكتب هنا.** الفترةُ الأولى يقاسمها من ملك وحدةً عند هذه اللحظة
+            // ({@see PeriodShares}) — فوحداتُ التحويل تُختم بها نفسِها، لا بساعةٍ قد تسبقها ثانية.
+            $at = now()->toImmutable();
+
+            $locked->folded_into_fund_at ??= $at;
             $locked->save();
 
             $fund = ($this->fund)();
@@ -111,7 +117,7 @@ final class FoldDealIntoFund
             $this->handOverTheShelf($locked, (int) $fund->getKey(), $actorId);
 
             foreach ($plan['investors'] as $line) {
-                $this->enter($locked, $fund, $period, $line, $plan['unit_price'], $actorId);
+                $this->enter($locked, $fund, $period, $line, $plan['unit_price'], $actorId, $at);
             }
 
             return $plan;
@@ -285,6 +291,7 @@ final class FoldDealIntoFund
         array $line,
         string $unitPrice,
         int $actorId,
+        CarbonImmutable $at,
     ): void {
         $investorId = (int) $line['investor_id'];
         $note = "تحويل الصفقة {$deal->code} إلى الصندوق";
@@ -292,15 +299,16 @@ final class FoldDealIntoFund
         if (bccomp($line['enters'], '0', 2) > 0) {
             // خروجٌ من الصفقة إلى المحفظة ثم دخولٌ منها إلى الصندوق — زوجٌ يتقابل في المحفظة، فيبقى
             // كشفُه يقول من أين جاء المالُ وإلى أين ذهب.
-            $this->write($investorId, $deal, WalletEntryType::Release, $line['enters'], null, $note);
+            $this->write($investorId, $deal, WalletEntryType::Release, $line['enters'], null, $note, $at);
 
             $allocation = $this->write(
                 $investorId,
                 $fund,
                 WalletEntryType::Allocation,
                 $line['enters'],
-                $this->periodFor->byDate(now()),
+                $this->periodFor->byDate($at),
                 $note,
+                $at,
             );
 
             $units = new InvestmentUnit;
@@ -311,10 +319,10 @@ final class FoldDealIntoFund
             $units->unit_price = $unitPrice;
             $units->amount = $line['enters'];
             // §١٣هـ: من يوم التحويل، بمدّة الفترة المجمَّدة — كأيّ دفعةٍ تدخل الصندوق.
-            $units->locked_until = now()->addMonths((int) $period->capital_lock_months)->toDateString();
+            $units->locked_until = $at->addMonths((int) $period->capital_lock_months)->toDateString();
             $units->source_type = AuditSubject::InvestorWalletEntry->value;
             $units->source_id = $allocation->getKey();
-            $units->occurred_at = now();
+            $units->occurred_at = $at;
             $units->recorded_by = $actorId;
             $units->save();
 
@@ -331,7 +339,7 @@ final class FoldDealIntoFund
         }
 
         if (bccomp($line['profit'], '0', 2) > 0) {
-            $release = $this->write($investorId, $deal, WalletEntryType::ProfitRelease, $line['profit'], null, $note);
+            $release = $this->write($investorId, $deal, WalletEntryType::ProfitRelease, $line['profit'], null, $note, $at);
 
             ($this->cash)(
                 type: CashEntryType::LegacyTransfer,
@@ -354,10 +362,11 @@ final class FoldDealIntoFund
         string $amount,
         ?int $periodId,
         string $note,
+        CarbonImmutable $at,
     ): InvestorWalletEntry {
         $entry = new InvestorWalletEntry([
             'amount' => Money::round($amount),
-            'occurred_at' => now(),
+            'occurred_at' => $at,
             'notes' => $note,
         ]);
 

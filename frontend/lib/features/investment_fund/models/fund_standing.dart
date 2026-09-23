@@ -119,6 +119,10 @@ abstract class FundHolder with _$FundHolder {
     @JsonKey(name: 'share_starts_next_period')
     @Default(false)
     bool shareStartsNextPeriod,
+
+    /// **نسبتُه في الفترة التالية لو فُتحت الليلة** — بكلّ وحداته، ومنها ما ينتظر. تقديرٌ لا
+    /// عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره. والخادمُ يحسبه، لا الشاشة.
+    @JsonKey(name: 'next_share_percent') @Default('0.000000') String nextSharePercent,
   }) = _FundHolder;
 
   factory FundHolder.fromJson(Map<String, dynamic> json) => _$FundHolderFromJson(json);

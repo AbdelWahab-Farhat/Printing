@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Queries;
 
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
+use App\Domain\Investor\Actions\FoldDealIntoFund;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\InvestmentPeriodShare;
+use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Support\Money;
+use Illuminate\Support\Carbon;
 
 /**
  * بأيّ نسبٍ يُقسَّم ربحُ فترةٍ بعينها — «نسبتهم الحالية مربوطة بكل فترة».
@@ -32,13 +35,17 @@ use App\Domain\Investor\Support\Money;
  * ولا تُقرأ «اليوم» في كل حال: لو قُرئت لتغيّرت قسمةُ شهرٍ كلَّما دخل داخل، وصار ربحُ طلبيةٍ من
  * أوّله يُقسَّم بنسب آخره.
  *
- * ## وأوّلُ فترةٍ في عمر الصندوق تُدخَل من نافذتها هي
+ * ## وأوّلُ فترةٍ في عمر الصندوق يقاسمها مؤسِّسوه
  *
- * لا فترةَ قبلها يُكتتب فيها، فلو حُرمت نافذتُها لما كان للصندوق ملّاكٌ أصلاً في شهره الأول.
- *
+ * لا عشيّةَ قبلها يملك فيها أحدٌ وحدة، فلو قُطعت هناك لما كان للصندوق ملّاكٌ في شهره الأول —
  * **وليست مجاملةً للبداية**: وعاءُ أرباحِ فترةٍ بلا شركاء لا يُقسَّم على أحد، فيبقى في الصندوق
  * ويرفع سعرَ الوحدة — فيصل أصحابَ الوحدات أنفسَهم من البابِ الخلفيّ رأسَ مالٍ لا ربحاً يُسحب.
  * وهو الخطرُ نفسُه الذي يُخرج {@see CloseInvestmentPeriod} نصيبَ الشركة نقداً من أجله.
+ *
+ * **ومؤسِّسوه مالُ الصفقة القديمة إن دخلته** ({@see FoldDealIntoFund}): الصورةُ تُلتقط لحظةَ
+ * تحويلها، ومن اكتتب بعدها ينتظر الفترةَ التالية كأيّ داخل. قرارُ المالك 2026-09-23: «اريد
+ * عبدالرحمن فقط شريك هذه الفترة وينضمون للفترة التي تليها» — فنقض ما في §١٢و. **وإن لم تُحوَّل
+ * صفقةٌ** فمؤسِّسوه مكتتبو نافذتها، وإلا لم يبقَ له مالكٌ واحد.
  *
  * ## والمجمَّدُ يسبق المحسوب
  *
@@ -94,13 +101,41 @@ final class PeriodShares
      * **عشيّةَ البدء** لا يومَ إغلاق النافذة — انظر أعلى الملف. وهي عشيّةُ البدء لا إغلاقُ نافذة
      * الفترة السابقة: بينهما قد يخرج شريكٌ بوحداته، ومن خرج لا يقاسم شهراً لم يبدأ.
      *
-     * وأوّلُ فترةٍ في عمر الصندوق تُدخَل من نافذتها هي — {@see InvestmentPeriod::isTheFirstOfTheFund()}.
+     * وأوّلُ فترةٍ في عمر الصندوق تُقطع عند تأسيسه — انظر أعلى الملف.
      */
     private function cutoffFor(InvestmentPeriod $period): \DateTimeInterface
     {
-        return $period->isTheFirstOfTheFund()
-            ? $period->subscription_closes_on->endOfDay()
-            : $period->starts_on->copy()->subDay()->endOfDay();
+        if (! $period->isTheFirstOfTheFund()) {
+            return $period->starts_on->copy()->subDay()->endOfDay();
+        }
+
+        return $this->foundedAt($period) ?? $period->subscription_closes_on->endOfDay();
+    }
+
+    /**
+     * أيُقاسم مكتتبُ نافذةِ هذه الفترة الفترةَ التالية لا هذه؟ — ما تقوله الشاشةُ بجانب زرّ الإيداع.
+     *
+     * نعم لكل فترة، إلا أولى صندوقٍ لم تُحوَّل إليه صفقة: مكتتبوها هم مؤسِّسوه.
+     */
+    public function windowServesNextPeriod(InvestmentPeriod $period): bool
+    {
+        return ! $period->isTheFirstOfTheFund() || $this->foundedAt($period) !== null;
+    }
+
+    /**
+     * لحظةُ تحويل الصفقة القديمة إلى الصندوق — آخرُها إن كانت أكثر من واحدة.
+     *
+     * وحداتُ التحويل مختومةٌ بهذه اللحظة نفسها ({@see FoldDealIntoFund})، فتدخل الصورةَ بـ`<=`
+     * وما كُتب بعدها لا يدخل.
+     */
+    private function foundedAt(InvestmentPeriod $period): ?Carbon
+    {
+        $at = InvestorDeal::query()
+            ->whereNotNull('folded_into_fund_at')
+            ->where('folded_into_fund_at', '<=', $period->ends_on->copy()->endOfDay())
+            ->max('folded_into_fund_at');
+
+        return $at === null ? null : Carbon::parse($at);
     }
 
     /**
@@ -108,8 +143,27 @@ final class PeriodShares
      */
     private function live(InvestmentPeriod $period): array
     {
-        $held = $this->unitsOf($period);
+        return $this->percentsOf($this->unitsOf($period));
+    }
 
+    /**
+     * نسبُ الفترة التالية لو فُتحت الليلة — كلُّ الوحدات القائمة الآن، ومنها وحداتُ من ينتظرها.
+     *
+     * تقديرٌ لا عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّرها، والتي تُقسَّم بها فعلاً تُلتقط عشيّةَ بدئها.
+     *
+     * @return array<int, string>
+     */
+    public function upcoming(): array
+    {
+        return $this->percentsOf($this->units->byInvestor());
+    }
+
+    /**
+     * @param  array<int, string>  $held
+     * @return array<int, string>
+     */
+    private function percentsOf(array $held): array
+    {
         if ($held === []) {
             return [];
         }

@@ -94,6 +94,7 @@ _FundHolder _$FundHolderFromJson(Map<String, dynamic> json) => _FundHolder(
   capital: json['capital'] as String,
   profit: json['profit'] as String,
   shareStartsNextPeriod: json['share_starts_next_period'] as bool? ?? false,
+  nextSharePercent: json['next_share_percent'] as String? ?? '0.000000',
 );
 
 Map<String, dynamic> _$FundHolderToJson(_FundHolder instance) =>
@@ -105,6 +106,7 @@ Map<String, dynamic> _$FundHolderToJson(_FundHolder instance) =>
       'capital': instance.capital,
       'profit': instance.profit,
       'share_starts_next_period': instance.shareStartsNextPeriod,
+      'next_share_percent': instance.nextSharePercent,
     };
 
 _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>

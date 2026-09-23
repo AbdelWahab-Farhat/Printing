@@ -476,7 +476,10 @@ class InvestmentFundEndpointTest extends TestCase
             ->assertJsonPath('data.investors.0.share_starts_next_period', false)
             ->assertJsonPath('data.investors.1.investor_id', $newcomer->id)
             ->assertJsonPath('data.investors.1.share_percent', '0.000000')
-            ->assertJsonPath('data.investors.1.share_starts_next_period', true);
+            ->assertJsonPath('data.investors.1.share_starts_next_period', true)
+            // وفي التالية يقف الاثنان بوحداتهما — ما تعرضه صفحةُ «الشركاء» تحت «الفترة القادمة».
+            ->assertJsonPath('data.investors.0.next_share_percent', '75.000000')
+            ->assertJsonPath('data.investors.1.next_share_percent', '25.000000');
     }
 
     public function test_a_withdrawal_needs_the_lock_to_have_run_out(): void
