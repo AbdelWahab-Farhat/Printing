@@ -186,6 +186,24 @@ abstract final class AppIcons {
   static IconData get reversePayment =>
       _pick(Icons.block_flipped, CupertinoIcons.nosign);
 
+  /// Capital going into the investment fund — «اشتراك في الصندوق».
+  ///
+  /// A piggy bank rather than [payment]'s notes: [payment] is a customer settling an order, and
+  /// this is money that stays in the fund and works.
+  static IconData get fundDeposit =>
+      _pick(Icons.savings_outlined, CupertinoIcons.plus_circle);
+
+  /// Capital leaving the fund — «استرداد رأس مال».
+  ///
+  /// Deliberately not [refund]: that turning arrow is money going back to a customer over an
+  /// order, and this is a partner taking out what he put in.
+  static IconData get fundWithdraw =>
+      _pick(Icons.output_rounded, CupertinoIcons.arrow_up_circle);
+
+  /// A cost the fund carries — «تسجيل مصروف». A receipt, because what is recorded is a bill.
+  static IconData get expense =>
+      _pick(Icons.receipt_long_outlined, CupertinoIcons.doc_text);
+
   /// A record's change log. Every model has one.
   static IconData get history =>
       _pick(Icons.history_rounded, CupertinoIcons.clock);

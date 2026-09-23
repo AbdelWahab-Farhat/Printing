@@ -16,6 +16,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// **والقسمان من الخادم لا من الشاشة**: نسبةُ هذه الفترة `share_percent`، ونسبةُ التالية
 /// `next_share_percent` — بكلّ الوحدات القائمة اليوم. الشاشةُ تفرز ولا تحسب.
+///
+/// **تبويبان لا قسمان في عمود واحد** — قرارُ المالك 2026-09-23. القسمُ الثاني كان يقع تحت
+/// الأوّل، فمن جاء يسأل عن القادمة يمرّر فوق الحالية كلِّها ليصلها.
 class InvestmentPartnersPage extends StatelessWidget {
   const InvestmentPartnersPage({super.key});
 
@@ -30,19 +33,52 @@ class InvestmentPartnersPage extends StatelessWidget {
         withdraw: sl(),
         recordExpense: sl(),
       )..load(),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('شركاء الصندوق')),
-        body: BlocBuilder<InvestmentFundCubit, InvestmentFundState>(
-          builder: (context, state) => switch (state) {
-            InvestmentFundLoading() => const Center(child: CircularProgressIndicator()),
-            InvestmentFundFailure(:final failure) => _Retry(message: failure.message),
-            InvestmentFundLoaded(:final standing) => RefreshIndicator(
-              onRefresh: () => context.read<InvestmentFundCubit>().load(),
-              child: _Partners(standing: standing),
-            ),
-          },
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('المستثمرون')),
+          body: Column(
+            children: [
+              const _Tabs(),
+              Expanded(
+                child: BlocBuilder<InvestmentFundCubit, InvestmentFundState>(
+                  builder: (context, state) => switch (state) {
+                    InvestmentFundLoading() => const Center(child: CircularProgressIndicator()),
+                    InvestmentFundFailure(:final failure) => _Retry(message: failure.message),
+                    InvestmentFundLoaded(:final standing) => _Partners(standing: standing),
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// شريطُ التبويبين — بزيّ «العملاء / الموردون / المستثمرون» في `PartiesPage` لا بزيٍّ خاصّ.
+///
+/// **في الجسم لا في `AppBar.bottom`**، كما هناك: الشريطُ يبقى فوق التحميل والخطأ، ولا يُحسب له
+/// ارتفاعٌ يدويّ يختلف عمّا يرسمه `TabBar` فعلاً.
+class _Tabs extends StatelessWidget {
+  const _Tabs();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return TabBar(
+      indicatorSize: TabBarIndicatorSize.tab,
+      dividerColor: scheme.outlineVariant.withValues(alpha: 0.5),
+      labelColor: scheme.primary,
+      unselectedLabelColor: scheme.onSurfaceVariant,
+      labelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+      unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      tabs: [
+        Tab(height: 44.h, text: 'الفترة الحالية'),
+        Tab(height: 44.h, text: 'الفترة القادمة'),
+      ],
     );
   }
 }
@@ -68,11 +104,9 @@ class _Partners extends StatelessWidget {
             .compareTo(double.tryParse(a.nextSharePercent) ?? 0),
       );
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
+    return TabBarView(
       children: [
-        _Section(
-          title: 'مستثمرو الفترة الحالية',
+        _Tab(
           subtitle: period == null
               ? 'لا فترة مفتوحة'
               : 'الفترة ${period.code} (${period.startsOn} ← ${period.endsOn}) — يقتسمون ربحها بهذه النسب',
@@ -82,9 +116,7 @@ class _Partners extends StatelessWidget {
               FundPartnerCard(holder: holder, percent: holder.sharePercent),
           ],
         ),
-        SizedBox(height: 28.h),
-        _Section(
-          title: 'مستثمرو الفترة القادمة',
+        _Tab(
           // **تقديرٌ لا عهد** — ويقولها السطرُ قبل أن يُقرأ الرقمُ وعداً.
           subtitle: 'تبدأ بعد ${period?.endsOn ?? 'إقفال الفترة الحالية'} — نسبٌ بوحدات اليوم، '
               'تتغيّر إن اشترك أحدٌ أو استردّ قبل بدئها',
@@ -103,39 +135,40 @@ class _Partners extends StatelessWidget {
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({
-    required this.title,
+/// تبويبٌ واحد — سطرٌ يقول لأيّ فترةٍ هذه النسب، ثم الشركاء.
+///
+/// **يُسحب ليُحدَّث في كلٍّ منهما**، لأن كلَّ تبويبٍ قائمتُه، والسحبُ يُعيد قراءة الاثنين معاً.
+class _Tab extends StatelessWidget {
+  const _Tab({
     required this.subtitle,
     required this.empty,
     required this.children,
   });
 
-  final String title;
   final String subtitle;
   final String empty;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          title,
-          style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          subtitle,
-          style: context.textTheme.bodyMedium?.copyWith(color: context.colorScheme.onSurfaceVariant),
-        ),
-        SizedBox(height: 12.h),
-        if (children.isEmpty)
-          Text(empty, style: context.textTheme.bodyMedium)
-        else
-          ...children,
-      ],
+    return RefreshIndicator(
+      onRefresh: () => context.read<InvestmentFundCubit>().load(),
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
+        children: [
+          Text(
+            subtitle,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          if (children.isEmpty)
+            Text(empty, style: context.textTheme.bodyMedium)
+          else
+            ...children,
+        ],
+      ),
     );
   }
 }

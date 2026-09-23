@@ -368,9 +368,12 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('the unit price and each partner\'s share are on the dashboard', (tester) async {
+  testWidgets('the unit price is on the dashboard, and subscribing rides the floating button', (
+    tester,
+  ) async {
     // Arrange — سعرُ الوحدة هو ما يشتري به الداخلُ الجديد، فمن يقبض مالاً اليوم يحتاج أن يراه
-    // قبل أن يكتب. والنسبُ هي ما سيأخذه كلُّ شريك من ربح هذه الفترة.
+    // قبل أن يكتب. والاشتراكُ نفسُه في الزرّ العائم — قرارُ المالك 2026-09-23 — لا في ذيل
+    // اللوحة؛ والشركاءُ ونسبُهم خلف «المستثمرون الحاليون» لا على اللوحة.
     await register(
       const FundStanding(
         valuation: _valuation,
@@ -428,12 +431,23 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — السعرُ كما وصل، والنسبُ بخانتين للقراءة لا بستّ.
+    // Assert — السعرُ كما وصل، ولا شريكَ على اللوحة، ولا زرَّ اشتراكٍ في جسمها.
     expect(find.text('1.600000'), findsOneWidget);
-    expect(find.text('أحمد'), findsOneWidget);
-    expect(find.text('75.00%'), findsOneWidget);
-    expect(find.text('25.00%'), findsOneWidget);
+    expect(find.text('أحمد'), findsNothing);
+    expect(
+      find.descendant(of: find.byType(ListView), matching: find.text('اشتراك في الصندوق')),
+      findsNothing,
+    );
+
+    // Act — صلاحيةُ المال تُبقي اثنين (الاشتراك والاسترداد)، فهو زرٌّ يتفتّح.
+    await tester.tap(find.byType(FloatingActionButton).last);
+    await tester.pumpAndSettle();
+
+    // Assert
     expect(find.text('اشتراك في الصندوق'), findsOneWidget);
+    expect(find.text('استرداد رأس مال'), findsOneWidget);
+    // «تسجيل مصروف» خلف صلاحيةٍ أخرى لا تحملها هذه الجلسة.
+    expect(find.text('تسجيل مصروف'), findsNothing);
   });
 
   testWidgets('a closed subscription window says so instead of offering a deposit', (tester) async {
@@ -475,12 +489,13 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — والاستردادُ وحده يبقى، فهو الزرُّ العائم نفسُه باسمه لا زرٌّ يتفتّح عن واحد.
     expect(find.text('اشتراك في الصندوق'), findsNothing);
     expect(
       find.text('أُغلقت نافذة الاكتتاب — يُقبل رأس المال في الفترة التالية'),
       findsOneWidget,
     );
+    expect(find.text('استرداد رأس مال'), findsOneWidget);
   });
 
   testWidgets('the record of the periods has a door on the dashboard', (tester) async {
@@ -494,6 +509,23 @@ void main() {
 
     // Assert — بلا صلاحيةٍ في الجلسة: القراءةُ ليست خلف `manage`، ومن يرى اللوحة يرى سجلَّها.
     expect(find.text('سجل الفترات'), findsOneWidget);
+    expect(find.text('المستثمرون الحاليون'), findsOneWidget);
+  });
+
+  testWidgets('the investors door sits beside the periods record, on one row', (tester) async {
+    // Arrange — قرارُ المالك 2026-09-23: «سجل الفترات يكون بجانبه زر المستثمرين الحاليين».
+    await register(const FundStanding(valuation: _valuation));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — على سطرٍ واحد، والسجلُّ على اليمين حيث يبدأ السطرُ العربيّ.
+    final periods = tester.getCenter(find.text('سجل الفترات'));
+    final investors = tester.getCenter(find.text('المستثمرون الحاليون'));
+
+    expect(periods.dy, investors.dy);
+    expect(periods.dx, greaterThan(investors.dx));
   });
   testWidgets('the running period card is a door into the period itself', (tester) async {
     // Arrange — الأرقامُ على البطاقة صحيحةٌ ولا تقول من أين جاءت. وكان الطريقُ الوحيد إلى
@@ -566,101 +598,6 @@ void main() {
     // Assert
     expect(find.text('اكتتاب الفترة القادمة مفتوح حتى 2026-10-07'), findsOneWidget);
     expect(find.text('الاكتتاب مفتوح حتى 2026-10-07'), findsNothing);
-  });
-
-  testWidgets('a partner who just subscribed reads when his share starts, not a zero', (
-    tester,
-  ) async {
-    // Arrange — مالُه في الصندوق ووحداتُه قائمة، ونصيبُه من هذا الشهر صفر. و«٠٫٠٠٪» وحدها
-    // بجانب اسمه تُقرأ عطباً لا قاعدة.
-    await register(
-      const FundStanding(
-        valuation: _valuation,
-        investors: [
-          FundHolder(
-            investorId: 1,
-            name: 'أحمد',
-            units: '3000.000000',
-            sharePercent: '100.000000',
-            capital: '3000.00',
-            profit: '0.00',
-          ),
-          FundHolder(
-            investorId: 2,
-            name: 'محمد',
-            units: '1000.000000',
-            sharePercent: '0.000000',
-            capital: '1000.00',
-            profit: '0.00',
-            shareStartsNextPeriod: true,
-          ),
-        ],
-        period: FundPeriod(
-          id: 2,
-          code: 'P2',
-          status: 'open',
-          statusLabel: 'مفتوحة',
-          startsOn: '2026-10-01',
-          endsOn: '2026-10-31',
-          subscriptionClosesOn: '2026-10-07',
-          isDueToClose: false,
-          periodMonths: 1,
-          investorProfitSharePercent: '50.00',
-          openingStockCost: '0.00',
-          openingCash: '0.00',
-          subscriptionServesNextPeriod: true,
-        ),
-      ),
-    );
-
-    // Act — شاشةٌ طويلة: `ListView` يبني ما يُرى فقط.
-    tester.view.physicalSize = const Size(800, 2400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    // Assert
-    expect(find.text('من الفترة القادمة'), findsOneWidget);
-    expect(find.text('0.00%'), findsNothing);
-    expect(find.text('100.00%'), findsOneWidget);
-  });
-
-  testWidgets('a partner row is a door into that investor', (tester) async {
-    // Arrange — الاسمُ على السطر ونسبتُه بجانبه، وما وراءهما — دفعاتُه، وسحوباتُه، ومتى يُفكّ
-    // حبسُ ماله — على شاشة المستثمر. وكان الطريقُ إليها «المستثمرون» في القائمة الجانبية ثم
-    // بحثاً عن الاسم نفسِه الذي يقرؤه الآن أمامه.
-    await register(
-      const FundStanding(
-        valuation: _valuation,
-        investors: [
-          FundHolder(
-            investorId: 9,
-            name: 'أحمد',
-            units: '3000.000000',
-            sharePercent: '100.000000',
-            capital: '3000.00',
-            profit: '400.00',
-          ),
-        ],
-      ),
-    );
-
-    // Act — شاشةٌ طويلة: `ListView` يبني ما يُرى فقط.
-    tester.view.physicalSize = const Size(800, 2400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    // Assert — بطاقةٌ تُنقر، وسهمٌ يقول ذلك قبل أن يجرّب أحد، كبطاقة الفترة فوقها.
-    final row = find.ancestor(of: find.text('أحمد'), matching: find.byType(InkWell));
-
-    expect(row, findsOneWidget);
-    expect(tester.widget<InkWell>(row).onTap, isNotNull);
-    expect(find.descendant(of: row, matching: find.byIcon(AppIcons.forward)), findsOneWidget);
   });
 
   testWidgets('the period window is read from its start, on the right', (tester) async {

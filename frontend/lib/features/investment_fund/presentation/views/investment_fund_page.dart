@@ -7,12 +7,12 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_snackbar.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_capital_sheet.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense_sheet.dart';
-import 'package:dayaa/features/investment_fund/presentation/widgets/fund_partner_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -68,9 +68,20 @@ class _FundView extends StatelessWidget {
         },
     );
 
-    if (isEmbedded) return body;
-
-    return Scaffold(appBar: AppBar(title: const Text('الصندوق الاستثماري')), body: body);
+    return Scaffold(
+      // شفّافٌ وبلا شريطٍ حين تملكهما الصدفة — سابقتُه `StockItemsPage`. والهيكلُ في الحالتين،
+      // لا المستقلّة وحدها: الزرُّ العائم يحتاج هيكلاً يحمله.
+      backgroundColor: isEmbedded ? Colors.transparent : null,
+      appBar: isEmbedded ? null : AppBar(title: const Text('الصندوق الاستثماري')),
+      floatingActionButtonLocation: AppSpeedDial.location,
+      floatingActionButton: BlocBuilder<InvestmentFundCubit, InvestmentFundState>(
+        builder: (context, state) => switch (state) {
+          InvestmentFundLoaded(:final standing) => _Actions(standing: standing),
+          _ => const SizedBox.shrink(),
+        },
+      ),
+      body: body,
+    );
   }
 }
 
@@ -110,7 +121,8 @@ class _Standing extends StatelessWidget {
     final value = standing.valuation;
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
+      // الحاشيةُ السفلى بطولِ الزرّ العائم وأكثر: آخرُ بابٍ في اللوحة لا يُدفن تحته.
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
         _Total(amount: value.total),
         SizedBox(height: 20.h),
@@ -122,22 +134,20 @@ class _Standing extends StatelessWidget {
         SizedBox(height: 24.h),
         _Unit(price: standing.unitPrice, outstanding: standing.unitsOutstanding),
         SizedBox(height: 24.h),
-        if (standing.period case final period?)
-          _Period(period: period)
-        else
+        if (standing.period case final period?) ...[
+          _Period(period: period),
+          if (!period.acceptsCapital) ...[
+            SizedBox(height: 12.h),
+            const _SubscriptionClosed(),
+          ],
+        ] else
           const _NoPeriod(),
         for (final waiting in standing.waitingPeriods) ...[
           SizedBox(height: 12.h),
           _WaitingPeriod(period: waiting),
         ],
         SizedBox(height: 16.h),
-        const _PeriodsButton(),
-        if (standing.investors.isNotEmpty) ...[
-          SizedBox(height: 28.h),
-          _Partners(holders: standing.investors),
-        ],
-        SizedBox(height: 24.h),
-        _Actions(standing: standing),
+        const _Doors(),
       ],
     );
   }
@@ -458,19 +468,36 @@ class _NoPeriodState extends State<_NoPeriod> {
   }
 }
 
-/// البابُ إلى الفترات — الحاضرةُ فوقه، وكلُّ ما قبلها خلفه.
+/// بابان متجاوران — **سجلُّ الفترات، والمستثمرون**.
 ///
 /// **واللوحةُ تعرض فترةً واحدة عن قصد**: هي التي تستقبل القيد اليوم، وحشرُ السجلِّ كلِّه فوقها
-/// يدفن السؤالَ الذي فُتحت الشاشةُ لأجله. وما خلف هذا الزرّ سؤالٌ آخر — **ماذا صنعت كلُّ فترة،
-/// وأيُّ طلبيةٍ صنعته، وكم أخذ كلُّ شريكٍ منها**.
-class _PeriodsButton extends StatelessWidget {
-  const _PeriodsButton();
+/// يدفن السؤالَ الذي فُتحت الشاشةُ لأجله. وما خلف الباب الأول سؤالٌ آخر — **ماذا صنعت كلُّ
+/// فترة، وأيُّ طلبيةٍ صنعته، وكم أخذ كلُّ شريكٍ منها**.
+///
+/// **والشركاءُ خلف الباب الثاني لا على اللوحة.** قرارُ المالك 2026-09-23: «سجل الفترات يكون
+/// بجانبه زر المستثمرين الحاليين، والصفحة فيها تبويبان: الفترة الحالية والفترة القادمة». كانت
+/// قائمةُ الشركاء هنا وزرٌّ تحتها إلى القادمة، فصار للسؤال نفسِه نصفان في شاشتين.
+class _Doors extends StatelessWidget {
+  const _Doors();
 
   @override
   Widget build(BuildContext context) {
-    return AppButton.outlined(
-      label: 'سجل الفترات',
-      onPressed: () => context.push(Routes.investmentPeriods),
+    return Row(
+      children: [
+        Expanded(
+          child: AppButton.outlined(
+            label: 'سجل الفترات',
+            onPressed: () => context.push(Routes.investmentPeriods),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: AppButton.outlined(
+            label: 'المستثمرون الحاليون',
+            onPressed: () => context.push(Routes.investmentPartners),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -533,45 +560,18 @@ class _Unit extends StatelessWidget {
   }
 }
 
-/// الشركاءُ ونسبُهم في هذه الفترة — ومن ينتظر التالية خلف زرٍّ يعدّهم.
+/// أزرارُ الصندوق — **زرٌّ عائمٌ واحد يتفتّح عنها**، كزرّ شاشة العميل.
 ///
-/// **من اكتتب في نافذة هذه الفترة لا يقف هنا**: لا يقتسم ربحَها، وسطرُه بجانب من يقتسمه كان
-/// يوحي بأنه شريكٌ بصفر. يقف في صفحة «شركاء الصندوق» تحت «الفترة القادمة» بنسبته فيها.
-class _Partners extends StatelessWidget {
-  const _Partners({required this.holders});
-
-  final List<FundHolder> holders;
-
-  @override
-  Widget build(BuildContext context) {
-    final current = holders.where((h) => !h.shareStartsNextPeriod).toList();
-    final joining = holders.length - current.length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'الشركاء ونسبُهم في هذه الفترة',
-          style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        SizedBox(height: 12.h),
-        for (final holder in current) FundPartnerCard(holder: holder, percent: holder.sharePercent),
-        SizedBox(height: 4.h),
-        AppButton.outlined(
-          label: joining > 0
-              ? 'الفترة القادمة — ${arabicCount(joining, one: 'مستثمر واحد ينضمّ', two: 'مستثمران ينضمّان', few: 'مستثمرين ينضمّون', many: 'مستثمراً ينضمّون')}'
-              : 'شركاء الفترة الحالية والقادمة',
-          onPressed: () => context.push(Routes.investmentPartners),
-        ),
-      ],
-    );
-  }
-}
-
-/// أزرارُ الصندوق — وكلٌّ منها يظهر متى كان له معنى.
+/// قرارُ المالك 2026-09-23: «الأزرار مثل استرداد رأس المال وتسجيل المصروف — كذلك اشتراك في
+/// الصندوق — تكون مثل الزرّ العائم الخاص بالعميل». كانت ثلاثةَ أزرارٍ بعرض الشاشة في ذيل
+/// اللوحة، لا تُرى إلا بعد تمريرها كلِّها.
 ///
-/// **زرُّ الإيداع يغيب حين تُغلق نافذةُ الاكتتاب**، والخادمُ هو من قال إنها أُغلقت
+/// [AppSpeedDial] يفرزها بالصلاحية، ويصير زرّاً واحداً باسمه حين لا يبقى إلا واحد.
+///
+/// **الاشتراكُ يغيب حين تُغلق نافذةُ الاكتتاب**، والخادمُ هو من قال إنها أُغلقت
 /// (`accepts_capital`): مقارنةُ تواريخ هنا نسخةٌ ثانية من القاعدة تخالف الأولى يوم تتغيّر.
+/// والسطرُ الذي يقول ذلك في جسم اللوحة — [_SubscriptionClosed] — لا هنا، لأن الزرَّ المطويّ لا
+/// يقول شيئاً عمّا غاب منه.
 class _Actions extends StatelessWidget {
   const _Actions({required this.standing});
 
@@ -584,57 +584,60 @@ class _Actions extends StatelessWidget {
 
     if (period == null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return AppSpeedDial(
+      actions: [
         if (period.acceptsCapital)
-          PermissionGate(
+          AppAction(
+            label: 'اشتراك في الصندوق',
+            icon: AppIcons.fundDeposit,
+            tone: AppActionTone.primary,
             permission: AppPermission.recordInvestorMoney,
-            child: AppButton(
-              label: 'اشتراك في الصندوق',
-              onPressed: () => showFundCapitalSheet(
-                context: context,
-                cubit: cubit,
-                action: FundCapitalAction.deposit,
-                standing: standing,
-              ),
-            ),
-          )
-        else
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Text(
-              'أُغلقت نافذة الاكتتاب — يُقبل رأس المال في الفترة التالية',
-              style: context.textTheme.bodyMedium,
-            ),
-          ),
-        SizedBox(height: 12.h),
-        PermissionGate(
-          permission: AppPermission.recordInvestorMoney,
-          child: AppButton.outlined(
-            label: 'استرداد رأس مال',
-            onPressed: () => showFundCapitalSheet(
+            onTap: (context) => showFundCapitalSheet(
               context: context,
               cubit: cubit,
-              action: FundCapitalAction.withdrawal,
+              action: FundCapitalAction.deposit,
               standing: standing,
             ),
           ),
-        ),
-        SizedBox(height: 12.h),
-        PermissionGate(
-          permission: AppPermission.recordDealExpenses,
-          child: AppButton.outlined(
-            label: 'تسجيل مصروف',
-            onPressed: () => showFundExpenseSheet(context: context, cubit: cubit),
+        AppAction(
+          label: 'استرداد رأس مال',
+          icon: AppIcons.fundWithdraw,
+          permission: AppPermission.recordInvestorMoney,
+          onTap: (context) => showFundCapitalSheet(
+            context: context,
+            cubit: cubit,
+            action: FundCapitalAction.withdrawal,
+            standing: standing,
           ),
         ),
+        AppAction(
+          label: 'تسجيل مصروف',
+          icon: AppIcons.expense,
+          permission: AppPermission.recordDealExpenses,
+          onTap: (context) => showFundExpenseSheet(context: context, cubit: cubit),
+        ),
       ],
+    );
+  }
+}
+
+/// نافذةُ الاكتتاب أُغلقت — يقولها سطرٌ تحت الفترة بدل زرٍّ يغيب بصمت.
+class _SubscriptionClosed extends StatelessWidget {
+  const _SubscriptionClosed();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Text(
+        'أُغلقت نافذة الاكتتاب — يُقبل رأس المال في الفترة التالية',
+        style: context.textTheme.bodyMedium,
+      ),
     );
   }
 }
