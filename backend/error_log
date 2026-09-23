@@ -1,0 +1,14 @@
+[20-Sep-2026 15:22:10 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.1". You are running 8.2.33. in /var/www/printing/backend/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /var/www/printing/backend/vendor/composer/autoload_real.php(25): require()
+#1 /var/www/printing/backend/vendor/autoload.php(22): ComposerAutoloaderInit9186b323cbe051591836ac1ee27d4dc0::getLoader()
+#2 /var/www/printing/backend/artisan(10): require('/var/www/printi...')
+#3 {main}
+  thrown in /var/www/printing/backend/vendor/composer/platform_check.php on line 22
+[21-Sep-2026 12:28:20 UTC] PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.1". You are running 8.2.33. in /var/www/printing/backend/vendor/composer/platform_check.php:22
+Stack trace:
+#0 /var/www/printing/backend/vendor/composer/autoload_real.php(25): require()
+#1 /var/www/printing/backend/vendor/autoload.php(22): ComposerAutoloaderInit9186b323cbe051591836ac1ee27d4dc0::getLoader()
+#2 /var/www/printing/backend/artisan(10): require('/var/www/printi...')
+#3 {main}
+  thrown in /var/www/printing/backend/vendor/composer/platform_check.php on line 22

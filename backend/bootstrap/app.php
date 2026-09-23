@@ -36,6 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Nightly, off-hours, and without overlapping itself — a prune that ran long once must
         // not have a second copy start on top of it.
         $schedule->command('notifications:prune')->dailyAt('03:30')->withoutOverlapping();
+
+        // تدويرُ فترات الصندوق: تُقفَل المستحقّة وتُفتح التالية بلا ضغطةِ زرّ.
+        //
+        // **بعد منتصف الليل بقليل** لأن الاستحقاقَ يُقاس بآخر يومٍ في الفترة: من انتهى أمسَ
+        // يُقفَل اليومَ لا بعد يومين. ولا حساسيةَ للساعة بعدها — الفعلان idempotent، فمن فاته
+        // النداءُ اليومَ لعطلٍ في الخادم يُقفَل غداً بلا أثرٍ مزدوج.
+        $schedule->command('investment:roll-periods')->dailyAt('00:20')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there
