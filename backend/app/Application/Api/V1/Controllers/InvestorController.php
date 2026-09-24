@@ -21,6 +21,7 @@ use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundStanding;
+use App\Domain\Investor\Queries\InvestorPeriods;
 use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
@@ -47,6 +48,7 @@ class InvestorController extends Controller
         private readonly FundDeal $fund,
         private readonly ProfitAwaitingDelivery $awaiting,
         private readonly FundStanding $fundStanding,
+        private readonly InvestorPeriods $periods,
     ) {}
 
     /**
@@ -133,6 +135,9 @@ class InvestorController extends Controller
 
         $investor->setAttribute('balances', $balances);
         $investor->setAttribute('fund', $this->fundStanding->forInvestor((int) $investor->getKey()));
+
+        // **فتراتُه بدل صفقاته** — قرارُ المالك 2026-09-25: الصفحةُ لا ترسم `balances.deals` بعدها.
+        $investor->setAttribute('periods', $this->periods->forInvestor((int) $investor->getKey()));
 
         return $this->success(new InvestorResource($investor));
     }

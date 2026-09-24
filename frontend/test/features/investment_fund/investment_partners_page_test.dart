@@ -216,6 +216,22 @@ void main() {
     expect(find.text('محمد'), findsOneWidget);
   });
 
+  testWidgets('this period opens straight on its partners, with no sentence above them', (
+    tester,
+  ) async {
+    // Arrange — قرارُ المالك 2026-09-25: «انزع هذه الجملة كذلك».
+    await register(_standing);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — لا «الفترة P… — يقتسمون ربحها بهذه النسب» فوق البطاقات.
+    expect(find.textContaining('يقتسمون'), findsNothing);
+    expect(find.textContaining('${_period.code} ('), findsNothing);
+    expect(find.text('أحمد'), findsOneWidget);
+  });
+
   testWidgets('a partner row is a door into that investor', (tester) async {
     // Arrange — الاسمُ على السطر ونسبتُه بجانبه، وما وراءهما — دفعاتُه، وسحوباتُه، ومتى يُفكّ
     // حبسُ ماله — على شاشة المستثمر.

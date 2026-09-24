@@ -107,10 +107,8 @@ class _Partners extends StatelessWidget {
     return TabBarView(
       children: [
         _Tab(
-          subtitle: period == null
-              ? 'لا فترة مفتوحة'
-              : 'الفترة ${period.code} (${period.startsOn} ← ${period.endsOn}) — يقتسمون ربحها بهذه النسب',
-          empty: 'لا شريك في هذه الفترة',
+          // بلا سطرٍ فوق البطاقات — قرارُ المالك 2026-09-25: «انزع هذه الجملة كذلك».
+          empty: period == null ? 'لا فترة مفتوحة' : 'لا شريك في هذه الفترة',
           children: [
             for (final holder in current)
               FundPartnerCard(holder: holder, percent: holder.sharePercent),
@@ -133,17 +131,12 @@ class _Partners extends StatelessWidget {
   }
 }
 
-/// تبويبٌ واحد — سطرٌ يقول لأيّ فترةٍ هذه النسب إن وُجد، ثم الشركاء.
+/// تبويبٌ واحد — شركاؤه، ولا شيءَ فوقهم.
 ///
 /// **يُسحب ليُحدَّث في كلٍّ منهما**، لأن كلَّ تبويبٍ قائمتُه، والسحبُ يُعيد قراءة الاثنين معاً.
 class _Tab extends StatelessWidget {
-  const _Tab({
-    this.subtitle,
-    required this.empty,
-    required this.children,
-  });
+  const _Tab({required this.empty, required this.children});
 
-  final String? subtitle;
   final String empty;
   final List<Widget> children;
 
@@ -154,15 +147,6 @@ class _Tab extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
         children: [
-          if (subtitle case final subtitle?) ...[
-            Text(
-              subtitle,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: 12.h),
-          ],
           if (children.isEmpty)
             Text(empty, style: context.textTheme.bodyMedium)
           else

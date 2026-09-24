@@ -26,6 +26,11 @@ _Investor _$InvestorFromJson(Map<String, dynamic> json) => _Investor(
   fund: json['fund'] == null
       ? null
       : FundShare.fromJson(json['fund'] as Map<String, dynamic>),
+  periods:
+      (json['periods'] as List<dynamic>?)
+          ?.map((e) => InvestorPeriod.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <InvestorPeriod>[],
 );
 
 Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
@@ -40,7 +45,22 @@ Map<String, dynamic> _$InvestorToJson(_Investor instance) => <String, dynamic>{
   'balances': instance.balances?.toJson(),
   'profit_figures': instance.profitFigures?.toJson(),
   'fund': instance.fund?.toJson(),
+  'periods': instance.periods.map((e) => e.toJson()).toList(),
 };
+
+_InvestorPeriod _$InvestorPeriodFromJson(Map<String, dynamic> json) =>
+    _InvestorPeriod(
+      id: (json['id'] as num).toInt(),
+      code: json['code'] as String,
+      profit: json['profit'] as String,
+    );
+
+Map<String, dynamic> _$InvestorPeriodToJson(_InvestorPeriod instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'profit': instance.profit,
+    };
 
 _InvestorBalances _$InvestorBalancesFromJson(Map<String, dynamic> json) =>
     _InvestorBalances(

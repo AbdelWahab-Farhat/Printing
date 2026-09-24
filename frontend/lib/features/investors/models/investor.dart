@@ -39,9 +39,27 @@ abstract class Investor with _$Investor {
     /// **مالُه في الصندوق** — على صفحته وحدها كذلك. الصندوقُ ليس من [InvestorBalances.deals]
     /// عمداً، وهذا ما يقوله بدلاً منه.
     FundShare? fund,
+
+    /// **فتراتُه، الأحدثُ أوّلاً** — على صفحته وحدها، في مكان الصفقات: «عرض الفترات بدلا من
+    /// الصفقات» (2026-09-25).
+    @Default(<InvestorPeriod>[]) List<InvestorPeriod> periods,
   }) = _Investor;
 
   factory Investor.fromJson(Map<String, dynamic> json) => _$InvestorFromJson(json);
+}
+
+/// فترةٌ كان شريكاً فيها، وربحُه فيها كما تقوله شاشتُها — الخادمُ يأخذه منها لا من حسابٍ ثانٍ.
+@freezed
+abstract class InvestorPeriod with _$InvestorPeriod {
+  const factory InvestorPeriod({
+    required int id,
+    required String code,
+
+    /// سالبٌ في فترةٍ خسر فيها.
+    required String profit,
+  }) = _InvestorPeriod;
+
+  factory InvestorPeriod.fromJson(Map<String, dynamic> json) => _$InvestorPeriodFromJson(json);
 }
 
 /// What his money is doing: two pots in the wallet, and two per deal.

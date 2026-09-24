@@ -126,21 +126,20 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final balances = investor.balances;
 
-    // **صفقةٌ لا يبقى له فيها شيء لا سطرَ لها.** صفقةٌ أُقفلت رجع منها رأسُ ماله وربحُه، فسطرُها
-    // صفرٌ على صفر إلى الأبد. وما بقي فيه مالُه — دفعةُ شراءٍ قديمة لم تُطوَ في الصندوق — يبقى،
-    // لأن إخفاءه يُخفي ماله.
-    final deals = [
-      for (final pots in balances?.deals ?? const <DealPots>[])
-        if (!_isZero(pots.capital) || !_isZero(pots.profit)) pots,
-    ];
-
     return ListView(
       // `always`, so pull-to-refresh works on an investor short enough not to scroll.
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
       children: [
-        _Identity(investor: investor),
-        SizedBox(height: 16.h),
+        // لا هاتفَ ولا رمزَ فوق المحفظة — «مش ضروري»؛ الاسمُ في الشريط يكفي. والإيقافُ وحده يبقى،
+        // لأنه يغيّر معنى كلِّ رقمٍ تحته.
+        if (!investor.isActive) ...[
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: _Pill(label: 'موقوف'),
+          ),
+          SizedBox(height: 12.h),
+        ],
 
         if (balances != null) ...[
           // **ماله أولاً، في كلّ مكانٍ هو فيه، ثم ما ربحه.** المحفظةُ بطلةُ الشاشة لأنها ما يتحرّك
@@ -156,6 +155,24 @@ class _Body extends StatelessWidget {
             _FundTile(fund: fund),
             SizedBox(height: 12.h),
           ],
+
+          // **فتراتُه في مكان الصفقات، ولا صفقةَ بعدها** — قرارُ المالك 2026-09-25: «عرض الفترات
+          // بدلا من الصفقات»، والقديمةُ «سوف تغلق وتضاف لربحه ومالناش علاقة بيها».
+          if (investor.periods.isNotEmpty) ...[
+            SizedBox(height: 12.h),
+            Text(
+              'الفترات',
+              style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 8.h),
+            for (final period in investor.periods)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: _PeriodRow(period: period),
+              ),
+            SizedBox(height: 16.h),
+          ],
+
           // **الربحُ كما يقرؤه على بوابته**: مجموعُ البوّابات الثلاث، وزرٌّ لكل واحدة — §٠.٨.
           // ومن لا أرقامَ له منها يرى ما يُسحب وحده، كما كانت الصفحة قبل الصندوق.
           if (investor.profitFigures case final figures?)
@@ -163,34 +180,16 @@ class _Body extends StatelessWidget {
               awaitingDelivery: figures.awaitingDelivery,
               pending: figures.pending,
               available: balances.wallet.profit,
-              icon: AppIcons.report,
             )
           else
-            InvestorMoneyTile(
-              label: 'أرباح متاحة للسحب',
-              amount: balances.wallet.profit,
-              icon: AppIcons.report,
-            ),
-
-          if (deals.isNotEmpty) ...[
-            SizedBox(height: 24.h),
-            const _SectionTitle(title: 'في الصفقات'),
-            SizedBox(height: 8.h),
-            for (final pots in deals)
-              Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
-                child: _DealRow(pots: pots),
-              ),
-          ],
+            InvestorMoneyTile(label: 'أرباح متاحة للسحب', amount: balances.wallet.profit),
         ],
       ],
     );
   }
 }
 
-bool _isZero(String amount) => thousandths(amount) == BigInt.zero;
-
-/// مالُه في الصندوق: ما وضعه، ونصيبُه من ربح الفترة، ودفعاتُه بمواعيد فكّها.
+/// مالُه في الصندوق: ما وضعه، ودفعاتُه بمواعيد فكّها.
 ///
 /// **الرقمُ الكبير رأسُ ماله فيه، لا قيمةُ حصته.** هو ما وضعه ولم يستردّه — سطرُه في لوحة الصندوق،
 /// وسقفُ ما يستردّه. والقيمةُ (وحداتُه × سعرَ اليوم) قريبةٌ منه في الحال السويّة، وتقولها بوابتُه.
@@ -204,23 +203,24 @@ class _FundTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // لا نسبةَ تُقال لمن لا مالَ له فيه، ولا فترةَ تُسمّى قبل أن تُفتح أُولاها.
-    final period = fund.period;
-    final caption = period == null || _isZero(fund.capital)
-        ? null
-        : fund.shareStartsNextPeriod
-        ? 'نصيبه يبدأ من الفترة القادمة'
-        : 'نصيبه من ربح ${period.code}: ${fromThousandths(thousandths(fund.sharePercent), scale: 2)}%';
+    // لا سطرَ تحت الرقم: «نصيبه من ربح P1: …%» رُفض كلامًا لا حاجة له. ولا قرصَ بجانبه:
+    // «⊕» هناك كان يُقرأ زرّاً لا يفعل شيئاً.
+    //
+    // دفعةٌ وحيدة هي كلُّ ما في الصندوق مبلغُها الرقمُ الكبير نفسُه، فتقول موعدَ فكّها وحده.
+    final deposits = fund.deposits;
+    final onlyOne =
+        deposits.length == 1 && thousandths(deposits.single.amount) == thousandths(fund.capital);
 
     return InvestorMoneyTile(
       label: 'في الصندوق',
       amount: fund.capital,
-      caption: caption,
-      icon: AppIcons.fundDeposit,
-      footer: fund.deposits.isEmpty
+      footer: deposits.isEmpty
           ? null
           : Column(
-              children: [for (final deposit in fund.deposits) _DepositLine(deposit: deposit)],
+              children: [
+                for (final deposit in deposits)
+                  _DepositLine(deposit: deposit, showsAmount: !onlyOne),
+              ],
             ),
     );
   }
@@ -228,9 +228,12 @@ class _FundTile extends StatelessWidget {
 
 /// دفعةٌ واحدة: مبلغُها، ومتى يُفكّ حبسُها.
 class _DepositLine extends StatelessWidget {
-  const _DepositLine({required this.deposit});
+  const _DepositLine({required this.deposit, required this.showsAmount});
 
   final FundDeposit deposit;
+
+  /// لا، حين يكون المبلغُ هو رقمَ البطاقة نفسَه.
+  final bool showsAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +244,14 @@ class _DepositLine extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         children: [
-          Text(
-            '${deposit.amount.grouped} د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          SizedBox(width: 12.w),
+          if (showsAmount) ...[
+            Text(
+              '${deposit.amount.grouped} د.ل',
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            SizedBox(width: 12.w),
+          ],
           Expanded(
             child: Text(
               // «متاحة للاسترداد» لا «للسحب»: ما انقضى حبسُه يرجع إلى محفظته بـ«استرداد رأس مال»
@@ -254,7 +259,7 @@ class _DepositLine extends StatelessWidget {
               deposit.isLocked
                   ? 'محبوسة إلى ${until == null ? '—' : AppDates.day(until)}'
                   : 'متاحة للاسترداد',
-              textAlign: TextAlign.end,
+              textAlign: showsAmount ? TextAlign.end : TextAlign.start,
               style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ),
@@ -264,167 +269,44 @@ class _DepositLine extends StatelessWidget {
   }
 }
 
-/// A heading with the glyph of what is under it, so a screen of cards is found by shape.
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Row(
-      children: [
-        Container(
-          height: 36.w,
-          width: 36.w,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.primaryContainer),
-          child: Icon(AppIcons.investorDeals, size: 18.sp, color: scheme.onPrimaryContainer),
-        ),
-        SizedBox(width: 10.w),
-        Text(
-          title,
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-      ],
-    );
-  }
-}
-
-/// Who he is, in the one line that gets read out on the phone.
-class _Identity extends StatelessWidget {
-  const _Identity({required this.investor});
-
-  final Investor investor;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 14.h),
-      decoration: _cardDecoration(scheme),
-      child: Row(
-        children: [
-          Container(
-            height: 48.w,
-            width: 48.w,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.secondaryContainer),
-            child: Icon(AppIcons.person, size: 24.sp, color: scheme.onSecondaryContainer),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  investor.name,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        [if (investor.phone != null) investor.phone!, investor.code].join(' · '),
-                        textDirection: TextDirection.ltr,
-                        textAlign: TextAlign.start,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 6.w),
-                    Icon(AppIcons.phone, size: 16.sp, color: scheme.primary),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (!investor.isActive) const _Pill(label: 'موقوف'),
-        ],
-      ),
-    );
-  }
-}
-
-/// What he has in one deal, and what it has made him so far.
+/// فترةٌ كان شريكاً فيها، وربحُه فيها.
 ///
-/// It opens the deal. The chevron is the promise, and the money on the row is the reason
-/// somebody follows it — «من أين جاء الربح؟» is a question about the deal, not about him.
-class _DealRow extends StatelessWidget {
-  const _DealRow({required this.pots});
+/// تُفتح على شاشتها: «من أين جاء الربح؟» سؤالٌ عن الفترة، وجوابُه طلبياتُها. والمبلغُ أكبرُ ما في
+/// الصفّ، ورمزُ الفترة عنوانُه.
+class _PeriodRow extends StatelessWidget {
+  const _PeriodRow({required this.period});
 
-  final DealPots pots;
+  final InvestorPeriod period;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isLoss = pots.profit.startsWith('-');
     final corner = BorderRadius.circular(16.r);
 
     return Material(
       color: Colors.transparent,
       borderRadius: corner,
       child: InkWell(
-        onTap: () => context.push(Routes.investorDeal(pots.investorDealId)),
+        onTap: () => context.push(Routes.investmentPeriod(period.id), extra: period.code),
         borderRadius: corner,
         child: Container(
           padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 12.h),
           decoration: _cardDecoration(scheme, radius: corner),
           child: Row(
             children: [
-              Container(
-                height: 40.w,
-                width: 40.w,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: scheme.surfaceContainerHigh,
-                ),
-                child: Icon(
-                  AppIcons.investorDeals,
-                  size: 18.sp,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(width: 12.w),
               Expanded(
                 child: Text(
-                  'صفقة #${pots.investorDealId}',
+                  period.code,
                   style: context.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // The money is the biggest thing on the row and the deal's number is the
-                  // caption — a row where nothing is bigger than anything else is a row with no
-                  // answer on it.
-                  Text(
-                    '${pots.capital.grouped} د.ل',
-                    textDirection: TextDirection.ltr,
-                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  Text(
-                    // `unsigned`: the word already says which direction this is, and «خسارة
-                    // -1,500» says it twice — which reads as a negative loss.
-                    '${isLoss ? 'خسارة' : 'ربح'} ${unsigned(pots.profit).grouped} د.ل',
-                    textDirection: TextDirection.ltr,
-                    style: context.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: isLoss ? scheme.error : scheme.primary,
-                    ),
-                  ),
-                ],
+              Text(
+                '${period.profit.grouped} د.ل',
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: period.profit.startsWith('-') ? scheme.error : null,
+                ),
               ),
               Icon(AppIcons.forward, size: 20.sp, color: scheme.outline),
             ],

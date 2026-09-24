@@ -68,6 +68,9 @@ class InvestorResource extends JsonResource
             // عمداً (صفقةٌ في الجدول لا على الشاشة)، وهذا ما يقوله بدلاً منه.
             'fund' => $this->when(isset($this->fund), fn (): array => $this->fund),
 
+            // **فتراتُه وربحُه في كلٍّ منها** — على صفحته وحدها كذلك، الأحدثُ أوّلاً.
+            'periods' => $this->when(isset($this->periods), fn (): array => $this->periods),
+
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
