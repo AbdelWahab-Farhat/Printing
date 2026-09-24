@@ -27,6 +27,7 @@ class InvestorMoneyTile extends StatelessWidget {
     this.caption,
     this.emphasis = false,
     this.icon,
+    this.header,
     this.footer,
   }) : artwork = null;
 
@@ -41,6 +42,7 @@ class InvestorMoneyTile extends StatelessWidget {
     this.caption,
   }) : emphasis = true,
        icon = null,
+       header = null,
        footer = null;
 
   final String label;
@@ -58,6 +60,10 @@ class InvestorMoneyTile extends StatelessWidget {
 
   /// The asset painted on the hero card — `'assets/images/wallet.png'`.
   final String? artwork;
+
+  /// ما يُرسم فوق الاسم على عرض البطاقة كلّه — مفتاحُ «الصندوق | الأرباح» على صفحة المستثمر.
+  /// للبطاقة العادية وحدها.
+  final Widget? header;
 
   /// ما يُرسم تحت الرقم على عرض البطاقة كلّه — أزرارُ `InvestorProfitTile`. للبطاقة العادية وحدها.
   final Widget? footer;
@@ -96,6 +102,10 @@ class InvestorMoneyTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (header case final header?) ...[
+            header,
+            SizedBox(height: 12.h),
+          ],
           Row(
             children: [
               Expanded(

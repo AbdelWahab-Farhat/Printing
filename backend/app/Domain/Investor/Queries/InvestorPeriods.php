@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Queries;
 
 use App\Domain\Investor\Models\InvestmentPeriod;
-use App\Domain\Investor\Models\InvestorWalletEntry;
 
 /**
  * فتراتُ مستثمرٍ واحد وربحُه في كلٍّ منها — ما تعرضه صفحتُه بدل الصفقات.
@@ -13,11 +12,13 @@ use App\Domain\Investor\Models\InvestorWalletEntry;
  * قرارُ المالك 2026-09-25: «عرض الفترات بدلا من الصفقات». والصفقةُ القديمة التي دخلت الصندوق
  * «سوف تغلق وتضاف لربحه ومالناش علاقة بيها».
  *
- * **ربحُه في الفترة هو ما تقوله له شاشةُ الفترة** ({@see PeriodOrdersQuery})، لا حسابٌ ثانٍ:
- * الصفُّ يُفتح عليها، وصفٌّ يقول رقماً وشاشتُه تقول غيرَه سؤالٌ بلا جواب.
+ * **الفترةُ له إن كان شريكاً فيها وحدها** — «الفترات التي مشارك فيها مستثمر فقط سواء منتهية أو
+ * مستمرة» — بنسب {@see PeriodShares} نفسِها التي تعرضها شاشةُ الشركاء. **لا بختم صفوفه**: كلُّ
+ * صفٍّ في المحفظة يُختم بفترة يومه، فمن اكتتب في نافذة P1 يحمل إيداعُه واكتتابُه ختمَها وهو
+ * ينتظر P2 — وهكذا ظهر «بادي 2» في P1.
  *
- * **والفترةُ له إن كان شريكاً فيها أو قُيِّد له فيها شيء.** الشريكُ في فترةٍ لم تُعطِ بعدُ يراها
- * بصفرها؛ ومن ليس شريكاً قد يقع تصحيحُ طلبيةٍ قديمة على فترته المفتوحة، فيُرى من أين جاء.
+ * **وربحُه فيها هو ما تقوله له شاشةُ الفترة** ({@see PeriodOrdersQuery})، لا حسابٌ ثانٍ: الصفُّ
+ * يُفتح عليها، وصفٌّ يقول رقماً وشاشتُه تقول غيرَه سؤالٌ بلا جواب.
  */
 final class InvestorPeriods
 {
@@ -34,14 +35,6 @@ final class InvestorPeriods
      */
     public function forInvestor(int $investorId): array
     {
-        $stamped = InvestorWalletEntry::query()
-            ->where('investor_id', $investorId)
-            ->whereNotNull('investment_period_id')
-            ->distinct()
-            ->pluck('investment_period_id')
-            ->mapWithKeys(fn ($id): array => [(int) $id => true])
-            ->all();
-
         $periods = InvestmentPeriod::query()
             ->orderByDesc('starts_on')
             ->limit(self::MOST_PERIODS)
@@ -51,9 +44,8 @@ final class InvestorPeriods
 
         foreach ($periods as $period) {
             $periodId = (int) $period->getKey();
-            $isPartner = isset($this->shares->forPeriod($periodId)[$investorId]);
 
-            if (! $isPartner && ! isset($stamped[$periodId])) {
+            if (! isset($this->shares->forPeriod($periodId)[$investorId])) {
                 continue;
             }
 

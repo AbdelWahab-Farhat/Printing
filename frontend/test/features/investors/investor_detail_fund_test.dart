@@ -342,36 +342,111 @@ void main() {
     expect(inFund('محبوسة إلى 1 سبتمبر 2027'), findsOneWidget);
   });
 
-  testWidgets('his money reads before his profit: wallet, fund, periods, then profit', (
-    tester,
-  ) async {
+  const inFundOnly = FundShare(
+    capital: '3000.00',
+    units: '3000.000000',
+    unitPrice: '1.000000',
+    value: '3000.00',
+    sharePercent: '100.000000',
+  );
+
+  const threeGates = ProfitFigures(
+    awaitingDelivery: '100.00',
+    pending: '200.00',
+    available: '0.00',
+  );
+
+  /// المفتاحُ بين وجهَي الصندوق الواحد — `SegmentedButton` التطبيق، أيّاً كان نوعُ قيمته.
+  final toggle = find.byWidgetPredicate((widget) => widget is SegmentedButton);
+
+  testWidgets('the fund and the profit share one box, the fund showing first', (tester) async {
+    // Arrange — طلبُ المالك 2026-09-25: «بوكس الصندوق والأرباح بوكس واحد يصير بينهم toggle».
+    final shown = investor(fund: inFundOnly).copyWith(profitFigures: threeGates);
+
+    // Act
+    await open(tester, shown);
+
+    // Assert
+    expect(toggle, findsOneWidget);
+    expect(find.text('الصندوق'), findsOneWidget);
+    expect(find.text('الأرباح'), findsOneWidget);
+    expect(inFund('3,000 د.ل'), findsOneWidget);
+    expect(find.text('إجمالي الأرباح'), findsNothing);
+  });
+
+  testWidgets('the toggle turns the box to his profit and back', (tester) async {
     // Arrange
-    const fund = FundShare(
-      capital: '3000.00',
-      units: '3000.000000',
-      unitPrice: '1.000000',
-      value: '3000.00',
-      sharePercent: '100.000000',
-    );
+    final shown = investor(fund: inFundOnly).copyWith(profitFigures: threeGates);
+    await open(tester, shown);
+
+    // Act
+    await tester.tap(find.text('الأرباح'));
+    await tester.pumpAndSettle();
+    final profitShown = find.text('إجمالي الأرباح').evaluate().length;
+    final totalShown = find.text('300 د.ل').evaluate().length;
+    final fundHidden = find.text('في الصندوق').evaluate().isEmpty;
+
+    await tester.tap(find.text('الصندوق'));
+    await tester.pumpAndSettle();
+
+    // Assert — بوّاباتُ الربح تبقى أزرارَها داخل الصندوق الواحد.
+    expect(profitShown, 1);
+    expect(totalShown, 1);
+    expect(fundHidden, isTrue);
+    expect(inFund('3,000 د.ل'), findsOneWidget);
+    expect(find.text('إجمالي الأرباح'), findsNothing);
+  });
+
+  testWidgets('a gate chip still works inside the shared box', (tester) async {
+    // Arrange
+    final shown = investor(fund: inFundOnly).copyWith(profitFigures: threeGates);
+    await open(tester, shown);
+    await tester.tap(find.text('الأرباح'));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('معلّقة'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('أرباح معلّقة'), findsOneWidget);
+    expect(find.text('200 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('without a fund figure the profit stands alone, with no toggle', (tester) async {
+    // Arrange — ردٌّ من خادمٍ لا يرسل `fund`: لا جانبَ ثانياً يُبدَّل إليه.
+    final shown = investor().copyWith(profitFigures: threeGates);
+
+    // Act
+    await open(tester, shown);
+
+    // Assert
+    expect(toggle, findsNothing);
+    expect(find.text('إجمالي الأرباح'), findsOneWidget);
+  });
+
+  testWidgets('his money reads first: wallet, the shared box, then his periods', (tester) async {
+    // Arrange
     final shown = investor(
-      fund: fund,
+      fund: inFundOnly,
       periods: const [InvestorPeriod(id: 1, code: 'P1', profit: '0.00')],
-    ).copyWith(
-      profitFigures: const ProfitFigures(
-        awaitingDelivery: '0.00',
-        pending: '0.00',
-        available: '0.00',
-      ),
-    );
+    ).copyWith(profitFigures: threeGates);
 
     // Act
     await open(tester, shown);
     double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    final walletTop = top('رصيد المحفظة');
+    final fundTop = top('في الصندوق');
+    final periodTop = top('P1');
 
-    // Assert — الفتراتُ في مكان الصفقات: «عرض الفترات بدلا من الصفقات».
-    expect(top('رصيد المحفظة'), lessThan(top('في الصندوق')));
-    expect(top('في الصندوق'), lessThan(top('P1')));
-    expect(top('P1'), lessThan(top('إجمالي الأرباح')));
+    await tester.tap(find.text('الأرباح'));
+    await tester.pumpAndSettle();
+    final profitTop = top('إجمالي الأرباح');
+
+    // Assert — الفتراتُ تحت الصندوق الواحد، أيَّ وجهيه كان.
+    expect(walletTop, lessThan(fundTop));
+    expect(fundTop, lessThan(periodTop));
+    expect(profitTop, lessThan(top('P1')));
   });
 
   testWidgets('no decorative disc beside the figures', (tester) async {

@@ -6,6 +6,10 @@ namespace Tests\Feature\Investors;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Actions\DepositToFund;
+use App\Domain\Investor\Actions\OpenInvestmentPeriod;
+use App\Domain\Investor\Actions\RecordWalletEntry;
+use App\Domain\Investor\DTOs\WalletEntryData;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestmentPeriod;
@@ -15,6 +19,7 @@ use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -78,6 +83,24 @@ class InvestorPeriodsTest extends TestCase
         $reversal->type = WalletEntryType::Reversal;
         $reversal->reverses_entry_id = $original->getKey();
         $reversal->save();
+    }
+
+    /**
+     * مالٌ على الطاولة ثم اشتراكٌ به في الصندوق — البابان الحقيقيّان، وكلاهما يختم صفَّه بفترة يومه.
+     */
+    private function subscribe(Investor $investor, string $amount): void
+    {
+        app(RecordWalletEntry::class)(
+            new WalletEntryData(
+                investorId: (int) $investor->id,
+                type: WalletEntryType::Deposit,
+                amount: $amount,
+                method: 'cash',
+            ),
+            null,
+        );
+
+        app(DepositToFund::class)(investorId: (int) $investor->id, amount: $amount, actorId: null);
     }
 
     private function share(InvestmentPeriod $period, Investor $investor, string $percent): void
@@ -180,6 +203,36 @@ class InvestorPeriodsTest extends TestCase
 
         // Assert
         $response->assertOk()->assertJsonCount(0, 'data.periods');
+    }
+
+    public function test_subscribing_during_a_period_does_not_make_him_its_partner(): void
+    {
+        // Arrange — ما رآه المالك على «بادي 2»: عبدالرحمن وحده شريكُ P1 بتحويل صفقته، وبادي اكتتب
+        // بعده في اليوم نفسه فانتظر الفترةَ التالية — وصفّا إيداعه واكتتابه مختومان بـP1 مع ذلك.
+        Carbon::setTestNow('2026-09-23 08:00:00');
+        $first = app(OpenInvestmentPeriod::class)(actorId: null);
+
+        $abdulrahman = Investor::factory()->create();
+        $this->subscribe($abdulrahman, '15472.56');
+
+        // لحظةُ التحويل تقطع صورةَ ملّاك الفترة الأولى — {@see PeriodShares::foundedAt()}.
+        InvestorDeal::factory()->create(['folded_into_fund_at' => now()]);
+
+        Carbon::setTestNow('2026-09-23 09:00:00');
+        $badi = Investor::factory()->create();
+        $this->subscribe($badi, '4842.00');
+
+        $headers = $this->headers();
+
+        // Act
+        $his = $this->withHeaders($headers)->getJson("/api/v1/investors/{$badi->id}");
+        $founders = $this->withHeaders($headers)->getJson("/api/v1/investors/{$abdulrahman->id}");
+
+        // Assert
+        $his->assertOk()->assertJsonCount(0, 'data.periods');
+        $founders->assertOk()
+            ->assertJsonCount(1, 'data.periods')
+            ->assertJsonPath('data.periods.0.id', (int) $first->id);
     }
 
     public function test_a_period_he_shared_that_has_made_nothing_yet_is_listed_at_zero(): void

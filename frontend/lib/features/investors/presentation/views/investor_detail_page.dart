@@ -151,15 +151,16 @@ class _Body extends StatelessWidget {
             artwork: 'assets/images/wallet.png',
           ),
           SizedBox(height: 12.h),
-          if (investor.fund case final fund?) ...[
-            _FundTile(fund: fund),
-            SizedBox(height: 12.h),
-          ],
+          _FundAndProfit(
+            fund: investor.fund,
+            figures: investor.profitFigures,
+            walletProfit: balances.wallet.profit,
+          ),
 
           // **فتراتُه في مكان الصفقات، ولا صفقةَ بعدها** — قرارُ المالك 2026-09-25: «عرض الفترات
           // بدلا من الصفقات»، والقديمةُ «سوف تغلق وتضاف لربحه ومالناش علاقة بيها».
           if (investor.periods.isNotEmpty) ...[
-            SizedBox(height: 12.h),
+            SizedBox(height: 24.h),
             Text(
               'الفترات',
               style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -170,21 +171,85 @@ class _Body extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 8.h),
                 child: _PeriodRow(period: period),
               ),
-            SizedBox(height: 16.h),
           ],
-
-          // **الربحُ كما يقرؤه على بوابته**: مجموعُ البوّابات الثلاث، وزرٌّ لكل واحدة — §٠.٨.
-          // ومن لا أرقامَ له منها يرى ما يُسحب وحده، كما كانت الصفحة قبل الصندوق.
-          if (investor.profitFigures case final figures?)
-            InvestorProfitTile(
-              awaitingDelivery: figures.awaitingDelivery,
-              pending: figures.pending,
-              available: balances.wallet.profit,
-            )
-          else
-            InvestorMoneyTile(label: 'أرباح متاحة للسحب', amount: balances.wallet.profit),
         ],
       ],
+    );
+  }
+}
+
+/// وجها البطاقة الواحدة.
+enum _MoneyView { fund, profit }
+
+/// **مالُه في الصندوق وربحُه في بطاقةٍ واحدة، بمفتاحٍ بينهما** — طلبُ المالك 2026-09-25: «بوكس
+/// الصندوق والأرباح بوكس واحد يصير بينهم toggle».
+///
+/// الصندوقُ أوّلاً، لأن مالَه قبل ربحه على هذه الصفحة كلِّها. ومن لا رقمَ له في الصندوق — خادمٌ
+/// لا يرسل `fund` — يرى ربحَه وحده بلا مفتاح: مفتاحٌ بوجهٍ واحد لا يبدّل شيئاً.
+class _FundAndProfit extends StatefulWidget {
+  const _FundAndProfit({required this.fund, required this.figures, required this.walletProfit});
+
+  final FundShare? fund;
+  final ProfitFigures? figures;
+  final String walletProfit;
+
+  @override
+  State<_FundAndProfit> createState() => _FundAndProfitState();
+}
+
+class _FundAndProfitState extends State<_FundAndProfit> {
+  _MoneyView _view = _MoneyView.fund;
+
+  @override
+  Widget build(BuildContext context) {
+    final fund = widget.fund;
+
+    if (fund == null) return _profit(header: null);
+
+    // **مفتاحُ شريط المخزون نفسُه** (`InventoryTabPage`): شريطٌ على عرض البطاقة لا زرٌّ بقياس
+    // Material الكامل، لأن الرقمَ تحته هو موضوعُ البطاقة لا المفتاح.
+    final toggle = SizedBox(
+      height: 34.h,
+      child: SegmentedButton<_MoneyView>(
+        segments: const [
+          ButtonSegment<_MoneyView>(value: _MoneyView.fund, label: Text('الصندوق')),
+          ButtonSegment<_MoneyView>(value: _MoneyView.profit, label: Text('الأرباح')),
+        ],
+        selected: {_view},
+        showSelectedIcon: false,
+        expandedInsets: EdgeInsets.zero,
+        style: SegmentedButton.styleFrom(
+          textStyle: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onSelectionChanged: (choice) => setState(() => _view = choice.first),
+      ),
+    );
+
+    return switch (_view) {
+      _MoneyView.fund => _FundTile(fund: fund, header: toggle),
+      _MoneyView.profit => _profit(header: toggle),
+    };
+  }
+
+  /// **الربحُ كما يقرؤه على بوابته**: مجموعُ البوّابات الثلاث، وزرٌّ لكل واحدة — §٠.٨. ومن لا
+  /// أرقامَ له منها يرى ما يُسحب وحده، كما كانت الصفحة قبل الصندوق.
+  Widget _profit({required Widget? header}) {
+    if (widget.figures case final figures?) {
+      return InvestorProfitTile(
+        awaitingDelivery: figures.awaitingDelivery,
+        pending: figures.pending,
+        available: widget.walletProfit,
+        header: header,
+      );
+    }
+
+    return InvestorMoneyTile(
+      label: 'أرباح متاحة للسحب',
+      amount: widget.walletProfit,
+      header: header,
     );
   }
 }
@@ -197,9 +262,12 @@ class _Body extends StatelessWidget {
 /// **والحبسُ دفعةً دفعة**، لأنه كذلك: من اشترك مرّتين يُفكّ مالُه على مرّتين، و«متى أستردّ مالي؟»
 /// سؤالٌ يُسأل على الهاتف.
 class _FundTile extends StatelessWidget {
-  const _FundTile({required this.fund});
+  const _FundTile({required this.fund, this.header});
 
   final FundShare fund;
+
+  /// مفتاحُ [_FundAndProfit].
+  final Widget? header;
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +282,7 @@ class _FundTile extends StatelessWidget {
     return InvestorMoneyTile(
       label: 'في الصندوق',
       amount: fund.capital,
+      header: header,
       footer: deposits.isEmpty
           ? null
           : Column(
