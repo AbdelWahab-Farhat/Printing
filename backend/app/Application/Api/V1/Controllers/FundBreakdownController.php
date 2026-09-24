@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Controller;
 use App\Domain\Investor\Queries\FundCashLedger;
+use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundGoodsOut;
 use App\Domain\Investor\Queries\FundProfitOwed;
 use App\Domain\Investor\Queries\FundShelfStock;
@@ -31,6 +32,7 @@ class FundBreakdownController extends Controller
 
     public function __construct(
         private readonly FundCashLedger $cashLedger,
+        private readonly FundGoodsOnOrder $onOrder,
         private readonly FundShelfStock $shelf,
         private readonly FundGoodsOut $goodsOut,
         private readonly FundProfitOwed $profitOwed,
@@ -57,6 +59,16 @@ class FundBreakdownController extends Controller
             'total' => $ledger['total'],
             'balance' => $ledger['balance'],
         ]);
+    }
+
+    /**
+     * List the purchases the fund paid for that have not arrived yet
+     *
+     * أوامرُ الشراء التي خرج ثمنُها من الخزينة ولم تصل بضاعتُها الرفَّ بعد — كاملةً أو ما نقص منها.
+     */
+    public function onOrder(): JsonResponse
+    {
+        return $this->success(($this->onOrder)());
     }
 
     /**

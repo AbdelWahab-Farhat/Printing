@@ -779,6 +779,8 @@ Route::prefix('v1')->group(function (): void {
         // فصلاحيتُها صلاحيةُ اللوحة نفسِها.
         Route::get('investment/fund/cash', [FundBreakdownController::class, 'cash'])
             ->middleware('can:investors.view')->name('investment.fund.cash');
+        Route::get('investment/fund/on-order', [FundBreakdownController::class, 'onOrder'])
+            ->middleware('can:investors.view')->name('investment.fund.on-order');
         Route::get('investment/fund/shelf', [FundBreakdownController::class, 'shelf'])
             ->middleware('can:investors.view')->name('investment.fund.shelf');
         Route::get('investment/fund/in-flight', [FundBreakdownController::class, 'inFlight'])

@@ -671,7 +671,9 @@ mixin _$FundHolder {
 
 @JsonKey(name: 'investor_id') int get investorId; String get name; String get units;@JsonKey(name: 'share_percent') String get sharePercent; String get capital; String get profit;/// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
-@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;@JsonKey(name: 'next_share_percent') String get nextSharePercent;
+@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;/// **نسبتُه في الفترة التالية لو فُتحت الليلة** — بكلّ وحداته، ومنها ما ينتظر. تقديرٌ لا
+/// عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره. والخادمُ يحسبه، لا الشاشة.
+@JsonKey(name: 'next_share_percent') String get nextSharePercent;
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -884,6 +886,8 @@ class _FundHolder implements FundHolder {
 /// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
 @override@JsonKey(name: 'share_starts_next_period') final  bool shareStartsNextPeriod;
+/// **نسبتُه في الفترة التالية لو فُتحت الليلة** — بكلّ وحداته، ومنها ما ينتظر. تقديرٌ لا
+/// عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره. والخادمُ يحسبه، لا الشاشة.
 @override@JsonKey(name: 'next_share_percent') final  String nextSharePercent;
 
 /// Create a copy of FundHolder
@@ -957,7 +961,9 @@ as String,
 /// @nodoc
 mixin _$FundStanding {
 
- FundValuation get valuation;/// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
+ FundValuation get valuation;/// **بضاعة مشتراة لم تصل** — ثمنُها خرج من الخزينة ولم تصل الرفَّ بعد. بجانب القيمة لا
+/// داخلها، قرارُ المالك 2026-09-24: «عرض لأن المال استُعمل بالفعل».
+@JsonKey(name: 'goods_on_order') String get goodsOnOrder;/// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
  FundPeriod? get period;/// **سعرُ الوحدة اليوم** — ما يشتري به الداخلُ الجديد. يُحسب في الخادم ولا يُعاد حسابُه
 /// هنا: تنفيذٌ ثانٍ للقاعدة هو الذي يخالفها يوم تتغيّر.
 @JsonKey(name: 'unit_price') String get unitPrice;@JsonKey(name: 'units_outstanding') String get unitsOutstanding; List<FundHolder> get investors;/// **فتراتٌ «قيد الإغلاق»** — انتهت نافذتُها وبقيت لها طلبياتٌ لم تصل أو لم تُحصَّل. لا
@@ -980,16 +986,16 @@ $FundStandingCopyWith<FundStanding> get copyWith => _$FundStandingCopyWithImpl<F
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.waitingPeriods, waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.goodsOnOrder, goodsOnOrder) || other.goodsOnOrder == goodsOnOrder)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.waitingPeriods, waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other.subscribable, subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,goodsOnOrder,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, goodsOnOrder: $goodsOnOrder, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -1000,7 +1006,7 @@ abstract mixin class $FundStandingCopyWith<$Res>  {
   factory $FundStandingCopyWith(FundStanding value, $Res Function(FundStanding) _then) = _$FundStandingCopyWithImpl;
 @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
+ FundValuation valuation,@JsonKey(name: 'goods_on_order') String goodsOnOrder, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -1017,10 +1023,11 @@ class _$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? valuation = null,Object? goodsOnOrder = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_self.copyWith(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
-as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
+as FundValuation,goodsOnOrder: null == goodsOnOrder ? _self.goodsOnOrder : goodsOnOrder // ignore: cast_nullable_to_non_nullable
+as String,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self.investors : investors // ignore: cast_nullable_to_non_nullable
@@ -1133,10 +1140,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FundValuation valuation, @JsonKey(name: 'goods_on_order')  String goodsOnOrder,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.goodsOnOrder,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return orElse();
 
 }
@@ -1154,10 +1161,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FundValuation valuation, @JsonKey(name: 'goods_on_order')  String goodsOnOrder,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding():
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.goodsOnOrder,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1174,10 +1181,10 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FundValuation valuation, @JsonKey(name: 'goods_on_order')  String goodsOnOrder,  FundPeriod? period, @JsonKey(name: 'unit_price')  String unitPrice, @JsonKey(name: 'units_outstanding')  String unitsOutstanding,  List<FundHolder> investors, @JsonKey(name: 'waiting_periods')  List<FundPeriod> waitingPeriods, @JsonKey(name: 'default_plain_sale_price')  String? defaultPlainSalePrice,  List<FundSubscriber> subscribable)?  $default,) {final _that = this;
 switch (_that) {
 case _FundStanding() when $default != null:
-return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
+return $default(_that.valuation,_that.goodsOnOrder,_that.period,_that.unitPrice,_that.unitsOutstanding,_that.investors,_that.waitingPeriods,_that.defaultPlainSalePrice,_that.subscribable);case _:
   return null;
 
 }
@@ -1189,10 +1196,13 @@ return $default(_that.valuation,_that.period,_that.unitPrice,_that.unitsOutstand
 @JsonSerializable()
 
 class _FundStanding implements FundStanding {
-  const _FundStanding({required this.valuation, this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], @JsonKey(name: 'waiting_periods') final  List<FundPeriod> waitingPeriods = const <FundPeriod>[], @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_waitingPeriods = waitingPeriods,_subscribable = subscribable;
+  const _FundStanding({required this.valuation, @JsonKey(name: 'goods_on_order') this.goodsOnOrder = '0.00', this.period, @JsonKey(name: 'unit_price') this.unitPrice = '1.000000', @JsonKey(name: 'units_outstanding') this.unitsOutstanding = '0.000000', final  List<FundHolder> investors = const <FundHolder>[], @JsonKey(name: 'waiting_periods') final  List<FundPeriod> waitingPeriods = const <FundPeriod>[], @JsonKey(name: 'default_plain_sale_price') this.defaultPlainSalePrice, final  List<FundSubscriber> subscribable = const <FundSubscriber>[]}): _investors = investors,_waitingPeriods = waitingPeriods,_subscribable = subscribable;
   factory _FundStanding.fromJson(Map<String, dynamic> json) => _$FundStandingFromJson(json);
 
 @override final  FundValuation valuation;
+/// **بضاعة مشتراة لم تصل** — ثمنُها خرج من الخزينة ولم تصل الرفَّ بعد. بجانب القيمة لا
+/// داخلها، قرارُ المالك 2026-09-24: «عرض لأن المال استُعمل بالفعل».
+@override@JsonKey(name: 'goods_on_order') final  String goodsOnOrder;
 /// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
 @override final  FundPeriod? period;
 /// **سعرُ الوحدة اليوم** — ما يشتري به الداخلُ الجديد. يُحسب في الخادم ولا يُعاد حسابُه
@@ -1246,16 +1256,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._waitingPeriods, _waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundStanding&&(identical(other.valuation, valuation) || other.valuation == valuation)&&(identical(other.goodsOnOrder, goodsOnOrder) || other.goodsOnOrder == goodsOnOrder)&&(identical(other.period, period) || other.period == period)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitsOutstanding, unitsOutstanding) || other.unitsOutstanding == unitsOutstanding)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._waitingPeriods, _waitingPeriods)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&const DeepCollectionEquality().equals(other._subscribable, _subscribable));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,valuation,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(_subscribable));
+int get hashCode => Object.hash(runtimeType,valuation,goodsOnOrder,period,unitPrice,unitsOutstanding,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_waitingPeriods),defaultPlainSalePrice,const DeepCollectionEquality().hash(_subscribable));
 
 @override
 String toString() {
-  return 'FundStanding(valuation: $valuation, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
+  return 'FundStanding(valuation: $valuation, goodsOnOrder: $goodsOnOrder, period: $period, unitPrice: $unitPrice, unitsOutstanding: $unitsOutstanding, investors: $investors, waitingPeriods: $waitingPeriods, defaultPlainSalePrice: $defaultPlainSalePrice, subscribable: $subscribable)';
 }
 
 
@@ -1266,7 +1276,7 @@ abstract mixin class _$FundStandingCopyWith<$Res> implements $FundStandingCopyWi
   factory _$FundStandingCopyWith(_FundStanding value, $Res Function(_FundStanding) _then) = __$FundStandingCopyWithImpl;
 @override @useResult
 $Res call({
- FundValuation valuation, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
+ FundValuation valuation,@JsonKey(name: 'goods_on_order') String goodsOnOrder, FundPeriod? period,@JsonKey(name: 'unit_price') String unitPrice,@JsonKey(name: 'units_outstanding') String unitsOutstanding, List<FundHolder> investors,@JsonKey(name: 'waiting_periods') List<FundPeriod> waitingPeriods,@JsonKey(name: 'default_plain_sale_price') String? defaultPlainSalePrice, List<FundSubscriber> subscribable
 });
 
 
@@ -1283,10 +1293,11 @@ class __$FundStandingCopyWithImpl<$Res>
 
 /// Create a copy of FundStanding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? valuation = null,Object? goodsOnOrder = null,Object? period = freezed,Object? unitPrice = null,Object? unitsOutstanding = null,Object? investors = null,Object? waitingPeriods = null,Object? defaultPlainSalePrice = freezed,Object? subscribable = null,}) {
   return _then(_FundStanding(
 valuation: null == valuation ? _self.valuation : valuation // ignore: cast_nullable_to_non_nullable
-as FundValuation,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
+as FundValuation,goodsOnOrder: null == goodsOnOrder ? _self.goodsOnOrder : goodsOnOrder // ignore: cast_nullable_to_non_nullable
+as String,period: freezed == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod?,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,unitsOutstanding: null == unitsOutstanding ? _self.unitsOutstanding : unitsOutstanding // ignore: cast_nullable_to_non_nullable
 as String,investors: null == investors ? _self._investors : investors // ignore: cast_nullable_to_non_nullable

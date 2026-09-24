@@ -134,6 +134,10 @@ abstract class FundStanding with _$FundStanding {
   const factory FundStanding({
     required FundValuation valuation,
 
+    /// **بضاعة مشتراة لم تصل** — ثمنُها خرج من الخزينة ولم تصل الرفَّ بعد. بجانب القيمة لا
+    /// داخلها، قرارُ المالك 2026-09-24: «عرض لأن المال استُعمل بالفعل».
+    @JsonKey(name: 'goods_on_order') @Default('0.00') String goodsOnOrder,
+
     /// `null` قبل أن تُفتح أوّلُ فترة — وهي حالةٌ تُقال صراحةً لا تُخترع لها فترةٌ وهمية.
     FundPeriod? period,
 

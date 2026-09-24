@@ -63,6 +63,7 @@ abstract final class InvestmentEndpoints {
   /// ما وراء كلّ بندٍ في اللوحة — النقدُ بسجلّه، والبضاعةُ بموادّها وطلبياتها، والأرباحُ بما
   /// صنعها. وكلُّ قائمةٍ تجمع إلى رقم اللوحة الذي فُتحت منه.
   static const String fundCash = '/investment/fund/cash';
+  static const String fundOnOrder = '/investment/fund/on-order';
   static const String fundShelf = '/investment/fund/shelf';
   static const String fundInFlight = '/investment/fund/in-flight';
   static const String fundReceivables = '/investment/fund/receivables';

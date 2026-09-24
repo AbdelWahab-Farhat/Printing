@@ -146,6 +146,7 @@ void main() {
         GoRoute(path: '/investment', builder: (context, state) => const InvestmentFundPage()),
         for (final path in const [
           '/investment/cash',
+          '/investment/on-order',
           '/investment/shelf',
           '/investment/in-flight',
           '/investment/receivables',
@@ -181,6 +182,7 @@ void main() {
   // والبضاعةُ إلى موادّها وطلبياتها، والأرباحُ إلى ما أعطاها.
   for (final (label, path) in const [
     ('نقد في الخزينة', '/investment/cash'),
+    ('بضاعة مشتراة لم تصل', '/investment/on-order'),
     ('بضاعة على الرفّ', '/investment/shelf'),
     ('بضاعة خرجت ولم تُسلَّم', '/investment/in-flight'),
     ('سُلِّمت ولم تُحصَّل', '/investment/receivables'),
@@ -201,6 +203,22 @@ void main() {
       expect(opened, path);
     });
   }
+
+  testWidgets('goods paid for and not arrived are shown beside the value, not added to it', (
+    tester,
+  ) async {
+    // Arrange — قرارُ المالك: «عرض لأن المال استُعمل بالفعل».
+    await register(const FundStanding(valuation: _valuation, goodsOnOrder: '12500.00'));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — الرقمُ على اللوحة، والقيمةُ كما قالها الخادم بلا زيادة.
+    expect(find.text('بضاعة مشتراة لم تصل'), findsOneWidget);
+    expect(find.text('12,500 د.ل'), findsOneWidget);
+    expect(find.text('26,000 د.ل'), findsOneWidget);
+  });
 
   testWidgets('the cash log also sits beside the fund value', (tester) async {
     // Arrange — «ممكن تكون بجانب قيمة الصندوق».
@@ -583,9 +601,10 @@ void main() {
     // لا سجلٌّ يُحشر فوق الرقم الذي فُتحت الشاشةُ لأجله.
     await register(const FundStanding(valuation: _valuation));
 
-    // Act
+    // Act — البابان في ذيل اللوحة، تحت ستّة بنود.
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('سجل الفترات'), 200);
 
     // Assert — بلا صلاحيةٍ في الجلسة: القراءةُ ليست خلف `manage`، ومن يرى اللوحة يرى سجلَّها.
     expect(find.text('سجل الفترات'), findsOneWidget);
@@ -599,6 +618,7 @@ void main() {
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('سجل الفترات'), 200);
 
     // Assert — على سطرٍ واحد، والسجلُّ على اليمين حيث يبدأ السطرُ العربيّ.
     final periods = tester.getCenter(find.text('سجل الفترات'));

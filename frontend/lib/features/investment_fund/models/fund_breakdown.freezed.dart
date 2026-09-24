@@ -1734,6 +1734,854 @@ as List<FundGoodsOrder>,
 
 
 /// @nodoc
+mixin _$FundOnOrderLine {
+
+@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'unit_label') String? get unitLabel;@JsonKey(name: 'quantity_ordered') String get quantityOrdered;@JsonKey(name: 'quantity_received') String get quantityReceived;@JsonKey(name: 'quantity_remaining') String get quantityRemaining;/// التكلفةُ الواصلة لما لم يصل — ما يدخل به قيمةَ الصندوق.
+ String get value;
+/// Create a copy of FundOnOrderLine
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FundOnOrderLineCopyWith<FundOnOrderLine> get copyWith => _$FundOnOrderLineCopyWithImpl<FundOnOrderLine>(this as FundOnOrderLine, _$identity);
+
+  /// Serializes this FundOnOrderLine to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
+
+@override
+String toString() {
+  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FundOnOrderLineCopyWith<$Res>  {
+  factory $FundOnOrderLineCopyWith(FundOnOrderLine value, $Res Function(FundOnOrderLine) _then) = _$FundOnOrderLineCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
+});
+
+
+
+
+}
+/// @nodoc
+class _$FundOnOrderLineCopyWithImpl<$Res>
+    implements $FundOnOrderLineCopyWith<$Res> {
+  _$FundOnOrderLineCopyWithImpl(this._self, this._then);
+
+  final FundOnOrderLine _self;
+  final $Res Function(FundOnOrderLine) _then;
+
+/// Create a copy of FundOnOrderLine
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
+  return _then(_self.copyWith(
+stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
+as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
+as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FundOnOrderLine].
+extension FundOnOrderLinePatterns on FundOnOrderLine {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FundOnOrderLine value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FundOnOrderLine() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FundOnOrderLine value)  $default,){
+final _that = this;
+switch (_that) {
+case _FundOnOrderLine():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FundOnOrderLine value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FundOnOrderLine() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FundOnOrderLine() when $default != null:
+return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)  $default,) {final _that = this;
+switch (_that) {
+case _FundOnOrderLine():
+return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,) {final _that = this;
+switch (_that) {
+case _FundOnOrderLine() when $default != null:
+return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FundOnOrderLine implements FundOnOrderLine {
+  const _FundOnOrderLine({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'quantity_ordered') required this.quantityOrdered, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, required this.value});
+  factory _FundOnOrderLine.fromJson(Map<String, dynamic> json) => _$FundOnOrderLineFromJson(json);
+
+@override@JsonKey(name: 'stock_item_id') final  int? stockItemId;
+@override final  String? code;
+@override final  String? name;
+@override@JsonKey(name: 'unit_label') final  String? unitLabel;
+@override@JsonKey(name: 'quantity_ordered') final  String quantityOrdered;
+@override@JsonKey(name: 'quantity_received') final  String quantityReceived;
+@override@JsonKey(name: 'quantity_remaining') final  String quantityRemaining;
+/// التكلفةُ الواصلة لما لم يصل — ما يدخل به قيمةَ الصندوق.
+@override final  String value;
+
+/// Create a copy of FundOnOrderLine
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FundOnOrderLineCopyWith<_FundOnOrderLine> get copyWith => __$FundOnOrderLineCopyWithImpl<_FundOnOrderLine>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FundOnOrderLineToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
+
+@override
+String toString() {
+  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FundOnOrderLineCopyWith<$Res> implements $FundOnOrderLineCopyWith<$Res> {
+  factory _$FundOnOrderLineCopyWith(_FundOnOrderLine value, $Res Function(_FundOnOrderLine) _then) = __$FundOnOrderLineCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
+});
+
+
+
+
+}
+/// @nodoc
+class __$FundOnOrderLineCopyWithImpl<$Res>
+    implements _$FundOnOrderLineCopyWith<$Res> {
+  __$FundOnOrderLineCopyWithImpl(this._self, this._then);
+
+  final _FundOnOrderLine _self;
+  final $Res Function(_FundOnOrderLine) _then;
+
+/// Create a copy of FundOnOrderLine
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
+  return _then(_FundOnOrderLine(
+stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
+as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
+as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FundPurchaseOnOrder {
+
+@JsonKey(name: 'purchase_order_id') int get purchaseOrderId;@JsonKey(name: 'vendor_name') String? get vendorName; String get status;@JsonKey(name: 'status_label') String get statusLabel;@JsonKey(name: 'order_date') DateTime? get orderDate;@JsonKey(name: 'expected_date') DateTime? get expectedDate; String get value; List<FundOnOrderLine> get lines;
+/// Create a copy of FundPurchaseOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FundPurchaseOnOrderCopyWith<FundPurchaseOnOrder> get copyWith => _$FundPurchaseOnOrderCopyWithImpl<FundPurchaseOnOrder>(this as FundPurchaseOnOrder, _$identity);
+
+  /// Serializes this FundPurchaseOnOrder to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundPurchaseOnOrder&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.vendorName, vendorName) || other.vendorName == vendorName)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.value, value) || other.value == value)&&const DeepCollectionEquality().equals(other.lines, lines));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,purchaseOrderId,vendorName,status,statusLabel,orderDate,expectedDate,value,const DeepCollectionEquality().hash(lines));
+
+@override
+String toString() {
+  return 'FundPurchaseOnOrder(purchaseOrderId: $purchaseOrderId, vendorName: $vendorName, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, value: $value, lines: $lines)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FundPurchaseOnOrderCopyWith<$Res>  {
+  factory $FundPurchaseOnOrderCopyWith(FundPurchaseOnOrder value, $Res Function(FundPurchaseOnOrder) _then) = _$FundPurchaseOnOrderCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'purchase_order_id') int purchaseOrderId,@JsonKey(name: 'vendor_name') String? vendorName, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') DateTime? orderDate,@JsonKey(name: 'expected_date') DateTime? expectedDate, String value, List<FundOnOrderLine> lines
+});
+
+
+
+
+}
+/// @nodoc
+class _$FundPurchaseOnOrderCopyWithImpl<$Res>
+    implements $FundPurchaseOnOrderCopyWith<$Res> {
+  _$FundPurchaseOnOrderCopyWithImpl(this._self, this._then);
+
+  final FundPurchaseOnOrder _self;
+  final $Res Function(FundPurchaseOnOrder) _then;
+
+/// Create a copy of FundPurchaseOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? purchaseOrderId = null,Object? vendorName = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = freezed,Object? expectedDate = freezed,Object? value = null,Object? lines = null,}) {
+  return _then(_self.copyWith(
+purchaseOrderId: null == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
+as int,vendorName: freezed == vendorName ? _self.vendorName : vendorName // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String,orderDate: freezed == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,expectedDate: freezed == expectedDate ? _self.expectedDate : expectedDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
+as List<FundOnOrderLine>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FundPurchaseOnOrder].
+extension FundPurchaseOnOrderPatterns on FundPurchaseOnOrder {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FundPurchaseOnOrder value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FundPurchaseOnOrder value)  $default,){
+final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FundPurchaseOnOrder value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'purchase_order_id')  int purchaseOrderId, @JsonKey(name: 'vendor_name')  String? vendorName,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  DateTime? orderDate, @JsonKey(name: 'expected_date')  DateTime? expectedDate,  String value,  List<FundOnOrderLine> lines)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder() when $default != null:
+return $default(_that.purchaseOrderId,_that.vendorName,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.value,_that.lines);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'purchase_order_id')  int purchaseOrderId, @JsonKey(name: 'vendor_name')  String? vendorName,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  DateTime? orderDate, @JsonKey(name: 'expected_date')  DateTime? expectedDate,  String value,  List<FundOnOrderLine> lines)  $default,) {final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder():
+return $default(_that.purchaseOrderId,_that.vendorName,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.value,_that.lines);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'purchase_order_id')  int purchaseOrderId, @JsonKey(name: 'vendor_name')  String? vendorName,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  DateTime? orderDate, @JsonKey(name: 'expected_date')  DateTime? expectedDate,  String value,  List<FundOnOrderLine> lines)?  $default,) {final _that = this;
+switch (_that) {
+case _FundPurchaseOnOrder() when $default != null:
+return $default(_that.purchaseOrderId,_that.vendorName,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.value,_that.lines);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FundPurchaseOnOrder implements FundPurchaseOnOrder {
+  const _FundPurchaseOnOrder({@JsonKey(name: 'purchase_order_id') required this.purchaseOrderId, @JsonKey(name: 'vendor_name') this.vendorName, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'order_date') this.orderDate, @JsonKey(name: 'expected_date') this.expectedDate, required this.value, final  List<FundOnOrderLine> lines = const <FundOnOrderLine>[]}): _lines = lines;
+  factory _FundPurchaseOnOrder.fromJson(Map<String, dynamic> json) => _$FundPurchaseOnOrderFromJson(json);
+
+@override@JsonKey(name: 'purchase_order_id') final  int purchaseOrderId;
+@override@JsonKey(name: 'vendor_name') final  String? vendorName;
+@override final  String status;
+@override@JsonKey(name: 'status_label') final  String statusLabel;
+@override@JsonKey(name: 'order_date') final  DateTime? orderDate;
+@override@JsonKey(name: 'expected_date') final  DateTime? expectedDate;
+@override final  String value;
+ final  List<FundOnOrderLine> _lines;
+@override@JsonKey() List<FundOnOrderLine> get lines {
+  if (_lines is EqualUnmodifiableListView) return _lines;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_lines);
+}
+
+
+/// Create a copy of FundPurchaseOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FundPurchaseOnOrderCopyWith<_FundPurchaseOnOrder> get copyWith => __$FundPurchaseOnOrderCopyWithImpl<_FundPurchaseOnOrder>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FundPurchaseOnOrderToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundPurchaseOnOrder&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.vendorName, vendorName) || other.vendorName == vendorName)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.value, value) || other.value == value)&&const DeepCollectionEquality().equals(other._lines, _lines));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,purchaseOrderId,vendorName,status,statusLabel,orderDate,expectedDate,value,const DeepCollectionEquality().hash(_lines));
+
+@override
+String toString() {
+  return 'FundPurchaseOnOrder(purchaseOrderId: $purchaseOrderId, vendorName: $vendorName, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, value: $value, lines: $lines)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FundPurchaseOnOrderCopyWith<$Res> implements $FundPurchaseOnOrderCopyWith<$Res> {
+  factory _$FundPurchaseOnOrderCopyWith(_FundPurchaseOnOrder value, $Res Function(_FundPurchaseOnOrder) _then) = __$FundPurchaseOnOrderCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'purchase_order_id') int purchaseOrderId,@JsonKey(name: 'vendor_name') String? vendorName, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') DateTime? orderDate,@JsonKey(name: 'expected_date') DateTime? expectedDate, String value, List<FundOnOrderLine> lines
+});
+
+
+
+
+}
+/// @nodoc
+class __$FundPurchaseOnOrderCopyWithImpl<$Res>
+    implements _$FundPurchaseOnOrderCopyWith<$Res> {
+  __$FundPurchaseOnOrderCopyWithImpl(this._self, this._then);
+
+  final _FundPurchaseOnOrder _self;
+  final $Res Function(_FundPurchaseOnOrder) _then;
+
+/// Create a copy of FundPurchaseOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? purchaseOrderId = null,Object? vendorName = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = freezed,Object? expectedDate = freezed,Object? value = null,Object? lines = null,}) {
+  return _then(_FundPurchaseOnOrder(
+purchaseOrderId: null == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
+as int,vendorName: freezed == vendorName ? _self.vendorName : vendorName // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String,orderDate: freezed == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,expectedDate: freezed == expectedDate ? _self.expectedDate : expectedDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,lines: null == lines ? _self._lines : lines // ignore: cast_nullable_to_non_nullable
+as List<FundOnOrderLine>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FundOnOrder {
+
+ String get total; List<FundPurchaseOnOrder> get orders;
+/// Create a copy of FundOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FundOnOrderCopyWith<FundOnOrder> get copyWith => _$FundOnOrderCopyWithImpl<FundOnOrder>(this as FundOnOrder, _$identity);
+
+  /// Serializes this FundOnOrder to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundOnOrder&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.orders, orders));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,total,const DeepCollectionEquality().hash(orders));
+
+@override
+String toString() {
+  return 'FundOnOrder(total: $total, orders: $orders)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FundOnOrderCopyWith<$Res>  {
+  factory $FundOnOrderCopyWith(FundOnOrder value, $Res Function(FundOnOrder) _then) = _$FundOnOrderCopyWithImpl;
+@useResult
+$Res call({
+ String total, List<FundPurchaseOnOrder> orders
+});
+
+
+
+
+}
+/// @nodoc
+class _$FundOnOrderCopyWithImpl<$Res>
+    implements $FundOnOrderCopyWith<$Res> {
+  _$FundOnOrderCopyWithImpl(this._self, this._then);
+
+  final FundOnOrder _self;
+  final $Res Function(FundOnOrder) _then;
+
+/// Create a copy of FundOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? total = null,Object? orders = null,}) {
+  return _then(_self.copyWith(
+total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,orders: null == orders ? _self.orders : orders // ignore: cast_nullable_to_non_nullable
+as List<FundPurchaseOnOrder>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FundOnOrder].
+extension FundOnOrderPatterns on FundOnOrder {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FundOnOrder value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FundOnOrder() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FundOnOrder value)  $default,){
+final _that = this;
+switch (_that) {
+case _FundOnOrder():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FundOnOrder value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FundOnOrder() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String total,  List<FundPurchaseOnOrder> orders)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FundOnOrder() when $default != null:
+return $default(_that.total,_that.orders);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String total,  List<FundPurchaseOnOrder> orders)  $default,) {final _that = this;
+switch (_that) {
+case _FundOnOrder():
+return $default(_that.total,_that.orders);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String total,  List<FundPurchaseOnOrder> orders)?  $default,) {final _that = this;
+switch (_that) {
+case _FundOnOrder() when $default != null:
+return $default(_that.total,_that.orders);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FundOnOrder implements FundOnOrder {
+  const _FundOnOrder({required this.total, final  List<FundPurchaseOnOrder> orders = const <FundPurchaseOnOrder>[]}): _orders = orders;
+  factory _FundOnOrder.fromJson(Map<String, dynamic> json) => _$FundOnOrderFromJson(json);
+
+@override final  String total;
+ final  List<FundPurchaseOnOrder> _orders;
+@override@JsonKey() List<FundPurchaseOnOrder> get orders {
+  if (_orders is EqualUnmodifiableListView) return _orders;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_orders);
+}
+
+
+/// Create a copy of FundOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FundOnOrderCopyWith<_FundOnOrder> get copyWith => __$FundOnOrderCopyWithImpl<_FundOnOrder>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FundOnOrderToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundOnOrder&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other._orders, _orders));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,total,const DeepCollectionEquality().hash(_orders));
+
+@override
+String toString() {
+  return 'FundOnOrder(total: $total, orders: $orders)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FundOnOrderCopyWith<$Res> implements $FundOnOrderCopyWith<$Res> {
+  factory _$FundOnOrderCopyWith(_FundOnOrder value, $Res Function(_FundOnOrder) _then) = __$FundOnOrderCopyWithImpl;
+@override @useResult
+$Res call({
+ String total, List<FundPurchaseOnOrder> orders
+});
+
+
+
+
+}
+/// @nodoc
+class __$FundOnOrderCopyWithImpl<$Res>
+    implements _$FundOnOrderCopyWith<$Res> {
+  __$FundOnOrderCopyWithImpl(this._self, this._then);
+
+  final _FundOnOrder _self;
+  final $Res Function(_FundOnOrder) _then;
+
+/// Create a copy of FundOnOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? total = null,Object? orders = null,}) {
+  return _then(_FundOnOrder(
+total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,orders: null == orders ? _self._orders : orders // ignore: cast_nullable_to_non_nullable
+as List<FundPurchaseOnOrder>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$FundProfitAdjustment {
 
  String get kind; String get label; String get amount;

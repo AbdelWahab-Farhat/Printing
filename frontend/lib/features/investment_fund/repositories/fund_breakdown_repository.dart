@@ -12,6 +12,9 @@ abstract interface class FundBreakdownRepository {
   /// سجلُّ الخزينة صفحةً صفحة، الأحدثُ أوّلاً — و`balance` في `extraMeta` نقدُ اللوحة بعينه.
   Future<Either<Failure, Paginated<FundCashEntry>>> cash({required int page});
 
+  /// أوامرُ شراءٍ دفع الصندوقُ ثمنَها ولم تصل بضاعتُها، وما بقي من كلٍّ منها.
+  Future<Either<Failure, FundOnOrder>> onOrder();
+
   /// بضاعةُ الصندوق على الرفّ، مادّةً مادّة.
   Future<Either<Failure, FundShelf>> shelf();
 

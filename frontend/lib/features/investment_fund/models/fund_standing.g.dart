@@ -114,6 +114,7 @@ _FundStanding _$FundStandingFromJson(Map<String, dynamic> json) =>
       valuation: FundValuation.fromJson(
         json['valuation'] as Map<String, dynamic>,
       ),
+      goodsOnOrder: json['goods_on_order'] as String? ?? '0.00',
       period: json['period'] == null
           ? null
           : FundPeriod.fromJson(json['period'] as Map<String, dynamic>),
@@ -141,6 +142,7 @@ Map<String, dynamic> _$FundStandingToJson(
   _FundStanding instance,
 ) => <String, dynamic>{
   'valuation': instance.valuation.toJson(),
+  'goods_on_order': instance.goodsOnOrder,
   'period': instance.period?.toJson(),
   'unit_price': instance.unitPrice,
   'units_outstanding': instance.unitsOutstanding,

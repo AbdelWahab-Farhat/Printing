@@ -134,6 +134,54 @@ abstract class FundGoodsOut with _$FundGoodsOut {
   factory FundGoodsOut.fromJson(Map<String, dynamic> json) => _$FundGoodsOutFromJson(json);
 }
 
+/// مادّةٌ في أمر شراءٍ دفع الصندوقُ ثمنَه — كم طُلب منها، وكم وصل، وكم بقي، وبكم.
+@freezed
+abstract class FundOnOrderLine with _$FundOnOrderLine {
+  const factory FundOnOrderLine({
+    @JsonKey(name: 'stock_item_id') int? stockItemId,
+    String? code,
+    String? name,
+    @JsonKey(name: 'unit_label') String? unitLabel,
+    @JsonKey(name: 'quantity_ordered') required String quantityOrdered,
+    @JsonKey(name: 'quantity_received') required String quantityReceived,
+    @JsonKey(name: 'quantity_remaining') required String quantityRemaining,
+
+    /// التكلفةُ الواصلة لما لم يصل — ما يدخل به قيمةَ الصندوق.
+    required String value,
+  }) = _FundOnOrderLine;
+
+  factory FundOnOrderLine.fromJson(Map<String, dynamic> json) => _$FundOnOrderLineFromJson(json);
+}
+
+/// أمرُ شراءٍ خرج ثمنُه من الخزينة ولم تصل بضاعتُه — كلُّها أو بعضُها.
+@freezed
+abstract class FundPurchaseOnOrder with _$FundPurchaseOnOrder {
+  const factory FundPurchaseOnOrder({
+    @JsonKey(name: 'purchase_order_id') required int purchaseOrderId,
+    @JsonKey(name: 'vendor_name') String? vendorName,
+    required String status,
+    @JsonKey(name: 'status_label') required String statusLabel,
+    @JsonKey(name: 'order_date') DateTime? orderDate,
+    @JsonKey(name: 'expected_date') DateTime? expectedDate,
+    required String value,
+    @Default(<FundOnOrderLine>[]) List<FundOnOrderLine> lines,
+  }) = _FundPurchaseOnOrder;
+
+  factory FundPurchaseOnOrder.fromJson(Map<String, dynamic> json) =>
+      _$FundPurchaseOnOrderFromJson(json);
+}
+
+/// «بضاعة مشتراة لم تصل» — رقمُ اللوحة وأوامرُه.
+@freezed
+abstract class FundOnOrder with _$FundOnOrder {
+  const factory FundOnOrder({
+    required String total,
+    @Default(<FundPurchaseOnOrder>[]) List<FundPurchaseOnOrder> orders,
+  }) = _FundOnOrder;
+
+  factory FundOnOrder.fromJson(Map<String, dynamic> json) => _$FundOnOrderFromJson(json);
+}
+
 /// سطرٌ في الربح المستحقّ ليس طلبية — مصروفٌ، أو خسارةٌ رُحِّلت، أو تسوية.
 ///
 /// **بإشارته**: مصروفٌ أكل من الربح يُقرأ «-20» لا «20».

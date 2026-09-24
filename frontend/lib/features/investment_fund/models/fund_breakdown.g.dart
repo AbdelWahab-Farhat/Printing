@@ -153,6 +153,78 @@ Map<String, dynamic> _$FundGoodsOutToJson(_FundGoodsOut instance) =>
       'orders': instance.orders.map((e) => e.toJson()).toList(),
     };
 
+_FundOnOrderLine _$FundOnOrderLineFromJson(Map<String, dynamic> json) =>
+    _FundOnOrderLine(
+      stockItemId: (json['stock_item_id'] as num?)?.toInt(),
+      code: json['code'] as String?,
+      name: json['name'] as String?,
+      unitLabel: json['unit_label'] as String?,
+      quantityOrdered: json['quantity_ordered'] as String,
+      quantityReceived: json['quantity_received'] as String,
+      quantityRemaining: json['quantity_remaining'] as String,
+      value: json['value'] as String,
+    );
+
+Map<String, dynamic> _$FundOnOrderLineToJson(_FundOnOrderLine instance) =>
+    <String, dynamic>{
+      'stock_item_id': instance.stockItemId,
+      'code': instance.code,
+      'name': instance.name,
+      'unit_label': instance.unitLabel,
+      'quantity_ordered': instance.quantityOrdered,
+      'quantity_received': instance.quantityReceived,
+      'quantity_remaining': instance.quantityRemaining,
+      'value': instance.value,
+    };
+
+_FundPurchaseOnOrder _$FundPurchaseOnOrderFromJson(Map<String, dynamic> json) =>
+    _FundPurchaseOnOrder(
+      purchaseOrderId: (json['purchase_order_id'] as num).toInt(),
+      vendorName: json['vendor_name'] as String?,
+      status: json['status'] as String,
+      statusLabel: json['status_label'] as String,
+      orderDate: json['order_date'] == null
+          ? null
+          : DateTime.parse(json['order_date'] as String),
+      expectedDate: json['expected_date'] == null
+          ? null
+          : DateTime.parse(json['expected_date'] as String),
+      value: json['value'] as String,
+      lines:
+          (json['lines'] as List<dynamic>?)
+              ?.map((e) => FundOnOrderLine.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FundOnOrderLine>[],
+    );
+
+Map<String, dynamic> _$FundPurchaseOnOrderToJson(
+  _FundPurchaseOnOrder instance,
+) => <String, dynamic>{
+  'purchase_order_id': instance.purchaseOrderId,
+  'vendor_name': instance.vendorName,
+  'status': instance.status,
+  'status_label': instance.statusLabel,
+  'order_date': instance.orderDate?.toIso8601String(),
+  'expected_date': instance.expectedDate?.toIso8601String(),
+  'value': instance.value,
+  'lines': instance.lines.map((e) => e.toJson()).toList(),
+};
+
+_FundOnOrder _$FundOnOrderFromJson(Map<String, dynamic> json) => _FundOnOrder(
+  total: json['total'] as String,
+  orders:
+      (json['orders'] as List<dynamic>?)
+          ?.map((e) => FundPurchaseOnOrder.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <FundPurchaseOnOrder>[],
+);
+
+Map<String, dynamic> _$FundOnOrderToJson(_FundOnOrder instance) =>
+    <String, dynamic>{
+      'total': instance.total,
+      'orders': instance.orders.map((e) => e.toJson()).toList(),
+    };
+
 _FundProfitAdjustment _$FundProfitAdjustmentFromJson(
   Map<String, dynamic> json,
 ) => _FundProfitAdjustment(

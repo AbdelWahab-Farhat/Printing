@@ -712,6 +712,7 @@ abstract final class Injector {
         () => FundBreakdownRepositoryImpl(sl<Dio>()),
       )
       ..registerLazySingleton<GetFundCash>(() => GetFundCash(sl<FundBreakdownRepository>()))
+      ..registerLazySingleton<GetFundOnOrder>(() => GetFundOnOrder(sl<FundBreakdownRepository>()))
       ..registerLazySingleton<GetFundShelf>(() => GetFundShelf(sl<FundBreakdownRepository>()))
       ..registerLazySingleton<GetFundGoodsOut>(
         () => GetFundGoodsOut(sl<FundBreakdownRepository>()),

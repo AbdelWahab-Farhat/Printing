@@ -21,6 +21,14 @@ class FundBreakdownRepositoryImpl implements FundBreakdownRepository {
   }
 
   @override
+  Future<Either<Failure, FundOnOrder>> onOrder() {
+    return safeRequest<FundOnOrder>(
+      () => _dio.get(InvestmentEndpoints.fundOnOrder),
+      parse: (data) => FundOnOrder.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, FundShelf>> shelf() {
     return safeRequest<FundShelf>(
       () => _dio.get(InvestmentEndpoints.fundShelf),

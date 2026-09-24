@@ -6,6 +6,7 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_on_order_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_out_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_profit_owed_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_shelf_page.dart';
@@ -29,6 +30,7 @@ class _FakeBreakdown implements FundBreakdownRepository {
     this.shelfHeld,
     this.goodsHeld = const {},
     this.profitHeld,
+    this.onOrderHeld,
     this.failure,
   });
 
@@ -36,6 +38,7 @@ class _FakeBreakdown implements FundBreakdownRepository {
   final FundShelf? shelfHeld;
   final Map<FundGoodsStage, FundGoodsOut> goodsHeld;
   final FundProfitOwed? profitHeld;
+  final FundOnOrder? onOrderHeld;
   final Failure? failure;
 
   FundGoodsStage? askedStage;
@@ -59,6 +62,9 @@ class _FakeBreakdown implements FundBreakdownRepository {
 
   @override
   Future<Either<Failure, FundProfitOwed>> profitOwed() async => _answer(profitHeld);
+
+  @override
+  Future<Either<Failure, FundOnOrder>> onOrder() async => _answer(onOrderHeld);
 }
 
 const _meta = PageMeta(currentPage: 1, perPage: 30, lastPage: 1, total: 2);
@@ -108,7 +114,8 @@ void main() {
       ..registerLazySingleton<GetFundCash>(() => GetFundCash(repository))
       ..registerLazySingleton<GetFundShelf>(() => GetFundShelf(repository))
       ..registerLazySingleton<GetFundGoodsOut>(() => GetFundGoodsOut(repository))
-      ..registerLazySingleton<GetFundProfitOwed>(() => GetFundProfitOwed(repository));
+      ..registerLazySingleton<GetFundProfitOwed>(() => GetFundProfitOwed(repository))
+      ..registerLazySingleton<GetFundOnOrder>(() => GetFundOnOrder(repository));
 
     return repository;
   }
@@ -326,6 +333,66 @@ void main() {
 
       // Assert
       expect(find.text('لا طلبيات تحمل بضاعة الصندوق هنا'), findsOneWidget);
+    });
+  });
+
+  group('بضاعة مشتراة لم تصل', () {
+    testWidgets('each purchase order says what is still to come and what it is worth', (
+      tester,
+    ) async {
+      // Arrange — لوريٌ دفع الصندوقُ ثمنَه ووصل ثلاثمئة كيلو من خمسمئة.
+      await register(
+        _FakeBreakdown(
+          onOrderHeld: FundOnOrder(
+            total: '5000.00',
+            orders: [
+              FundPurchaseOnOrder(
+                purchaseOrderId: 18,
+                vendorName: 'مصنع الشرق للأكياس',
+                status: 'completed',
+                statusLabel: 'مكتمل',
+                orderDate: DateTime(2026, 8, 30),
+                value: '5000.00',
+                lines: const [
+                  FundOnOrderLine(
+                    stockItemId: 5,
+                    name: 'كيس 25×35',
+                    unitLabel: 'كجم',
+                    quantityOrdered: '500.000',
+                    quantityReceived: '300.000',
+                    quantityRemaining: '200.000',
+                    value: '5000.00',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host(const FundGoodsOnOrderPage()));
+      await tester.pumpAndSettle();
+
+      // Assert — المجموعُ رقمُ اللوحة، وتحت الأمر ما بقي من كلّ مادّة من أصل ما طُلب.
+      expect(find.text('بضاعة مشتراة لم تصل'), findsOneWidget);
+      expect(find.text('أمر شراء #18'), findsOneWidget);
+      expect(find.text('مصنع الشرق للأكياس · 30 أغسطس 2026'), findsOneWidget);
+      expect(find.text('كيس 25×35'), findsOneWidget);
+      expect(find.text('باقي 200 من 500 كجم'), findsOneWidget);
+      expect(find.text('5,000 د.ل'), findsNWidgets(3));
+    });
+
+    testWidgets('nothing on its way says so', (tester) async {
+      // Arrange
+      await register(_FakeBreakdown(onOrderHeld: const FundOnOrder(total: '0.00')));
+
+      // Act
+      await tester.pumpWidget(host(const FundGoodsOnOrderPage()));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('لا مشتريات للصندوق في الطريق'), findsOneWidget);
     });
   });
 

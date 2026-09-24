@@ -15,6 +15,7 @@ import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_on_order_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_out_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_profit_owed_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_shelf_page.dart';
@@ -241,7 +242,33 @@ final _profit = FundProfitOwed(
   ),
 );
 
+final _onOrder = FundOnOrder(
+  total: '12500.00',
+  orders: [
+    FundPurchaseOnOrder(
+      purchaseOrderId: 18,
+      vendorName: 'مصنع الشرق للأكياس',
+      status: 'arrived',
+      statusLabel: 'بانتظار الوصول',
+      orderDate: _now.subtract(const Duration(days: 5)),
+      value: '12500.00',
+      lines: const [
+        FundOnOrderLine(
+          stockItemId: 1,
+          name: 'كيس قماش 30×40',
+          unitLabel: 'قطعة',
+          quantityOrdered: '3000.000',
+          quantityReceived: '0.000',
+          quantityRemaining: '3000.000',
+          value: '12500.00',
+        ),
+      ],
+    ),
+  ],
+);
+
 const _standing = FundStanding(
+  goodsOnOrder: '12500.00',
   valuation: FundValuation(
     cash: '9362.96',
     stockOnShelf: '12216.17',
@@ -297,6 +324,7 @@ Future<void> main() async {
   final screens = <String, Widget>{
     'fund-0-dashboard': const InvestmentFundPage(),
     'fund-1-cash': const FundCashPage(),
+    'fund-1b-on-order': const FundGoodsOnOrderPage(),
     'fund-2-shelf': const FundShelfPage(),
     'fund-3-in-flight': const FundGoodsOutPage(stage: FundGoodsStage.inFlight),
     'fund-4-receivables': const FundGoodsOutPage(stage: FundGoodsStage.uncollected),
@@ -317,6 +345,7 @@ Future<void> main() async {
       when(() => breakdown.goodsOut(FundGoodsStage.uncollected))
           .thenAnswer((_) async => Right(_receivables));
       when(breakdown.profitOwed).thenAnswer((_) async => Right(_profit));
+      when(breakdown.onOrder).thenAnswer((_) async => Right(_onOrder));
 
       sl
         ..registerSingleton<Session>(Session())
@@ -327,6 +356,7 @@ Future<void> main() async {
         ..registerLazySingleton<WithdrawCapital>(() => WithdrawCapital(fund))
         ..registerLazySingleton<RecordFundExpense>(() => RecordFundExpense(fund))
         ..registerLazySingleton<GetFundCash>(() => GetFundCash(breakdown))
+        ..registerLazySingleton<GetFundOnOrder>(() => GetFundOnOrder(breakdown))
         ..registerLazySingleton<GetFundShelf>(() => GetFundShelf(breakdown))
         ..registerLazySingleton<GetFundGoodsOut>(() => GetFundGoodsOut(breakdown))
         ..registerLazySingleton<GetFundProfitOwed>(() => GetFundProfitOwed(breakdown));

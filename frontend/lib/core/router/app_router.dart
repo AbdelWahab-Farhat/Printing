@@ -33,6 +33,7 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_on_order_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_out_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_profit_owed_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_purchase_page.dart';
@@ -153,6 +154,7 @@ abstract final class Routes {
   /// ما وراء كلّ بندٍ في لوحة الصندوق: سجلُّ الخزينة، وموادُّ الرفّ، وطلبياتُ البضاعة الخارجة،
   /// والطلبياتُ التي صنعت الأرباحَ المستحقّة.
   static const String investmentCash = '/investment/cash';
+  static const String investmentOnOrder = '/investment/on-order';
   static const String investmentShelf = '/investment/shelf';
   static const String investmentInFlight = '/investment/in-flight';
   static const String investmentReceivables = '/investment/receivables';
@@ -595,6 +597,10 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentCash,
         builder: (context, state) => const FundCashPage(),
+      ),
+      GoRoute(
+        path: Routes.investmentOnOrder,
+        builder: (context, state) => const FundGoodsOnOrderPage(),
       ),
       GoRoute(
         path: Routes.investmentShelf,

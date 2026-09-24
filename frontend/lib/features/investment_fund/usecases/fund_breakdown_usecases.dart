@@ -14,6 +14,15 @@ class GetFundCash {
       _repository.cash(page: page);
 }
 
+/// ما دفع الصندوقُ ثمنَه ولم يصل بعد.
+class GetFundOnOrder {
+  const GetFundOnOrder(this._repository);
+
+  final FundBreakdownRepository _repository;
+
+  Future<Either<Failure, FundOnOrder>> call() => _repository.onOrder();
+}
+
 /// ما على الرفّ من بضاعة الصندوق.
 class GetFundShelf {
   const GetFundShelf(this._repository);

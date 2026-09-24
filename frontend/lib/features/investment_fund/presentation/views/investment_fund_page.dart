@@ -147,6 +147,15 @@ class _Standing extends StatelessWidget {
           amount: value.profitOwed,
           opens: Routes.investmentProfitOwed,
         ),
+        // **تحت خطٍّ لا بين البنود** — ليس منها: ثمنُ أوامر شراءٍ خرج من الخزينة ولم يصل الرفَّ
+        // بعد، وقرارُ المالك أنه لا يدخل القيمة («عرض لأن المال استُعمل بالفعل»). فلو جاور
+        // البنودَ لجمعه قارئُها إلى المجموع فوقها.
+        Divider(height: 16.h, color: context.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        _Row(
+          label: 'بضاعة مشتراة لم تصل',
+          amount: standing.goodsOnOrder,
+          opens: Routes.investmentOnOrder,
+        ),
         SizedBox(height: 24.h),
         _Unit(price: standing.unitPrice, outstanding: standing.unitsOutstanding),
         SizedBox(height: 24.h),

@@ -16,6 +16,7 @@ use App\Domain\Investor\Enums\DealExpenseKind;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
+use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Queries\InvestorBalances;
@@ -23,6 +24,7 @@ use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
 use App\Domain\Investor\Support\FundDeal;
+use App\Domain\Investor\Support\Money;
 use App\Domain\Settings\SettingsService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +45,7 @@ class InvestmentFundController extends Controller
 
     public function __construct(
         private readonly FundValuation $valuation,
+        private readonly FundGoodsOnOrder $onOrder,
         private readonly OpenInvestmentPeriod $openPeriod,
         private readonly CloseInvestmentPeriod $closePeriod,
         private readonly UnitPrice $unitPrice,
@@ -67,6 +70,10 @@ class InvestmentFundController extends Controller
 
         return $this->success([
             'valuation' => ($this->valuation)(),
+
+            // **بجانب القيمة لا داخلها** — قرارُ المالك 2026-09-24: «عرض لأن المال استُعمل
+            // بالفعل». ثمنُ أوامر شراءٍ خرج من الخزينة ولم تصل بضاعتُها الرفَّ بعد.
+            'goods_on_order' => Money::round($this->onOrder->value()),
             'period' => $period === null ? null : $this->periodPayload($period),
 
             // **فتراتٌ «قيد الإغلاق»** — §١٢هـ: «تبقى بلا حدّ، واللوحةُ تصرخ». لا تحبس أحداً،
