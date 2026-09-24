@@ -43,6 +43,21 @@ use Illuminate\Support\Facades\DB;
  *
  * **والطلبيةُ الملغاة هدفُها صفر**: بضاعتُها رجعت إلى الرفّ، والمالُ المقبوض يُردّ للعميل بدفعةٍ
  * عكسية تمرّ من هنا مرّةً أخرى.
+ *
+ * ## والشطبُ تدفعه الشركة — هدفٌ ثانٍ بجانب الأوّل
+ *
+ * قرارُ المالك: خطرُ العميل على المطبعة لا على المستثمر. فما شُطب من دَين الطلبية يدفع الشركةُ
+ * نصيبَ الصندوق منه، بصفٍّ من نوعه ({@see CashEntryType::WriteOffCoveredByCompany}):
+ *
+ * ```
+ * ما دفعه العميل   = إيرادُ الصندوق × min(1, (النقد + ما قبضه الناقل) ÷ الإجمالي)
+ * ما دفعته الشركة  = إيرادُ الصندوق × min(1, (النقد + الناقل + المشطوب) ÷ الإجمالي) − ما دفعه العميل
+ * ```
+ *
+ * **وما قبضه الناقلُ عند الباب محسوبٌ للعميل** — دفعه كاملاً، وذهب جزءٌ منه أجرةَ توصيلٍ باتّفاق،
+ * والمالُ الذي بقي عندنا يغطّي البضاعة. والثاني فرقٌ من الأوّل لا نسبةٌ مستقلّة، فلا يضيع قرشٌ
+ * بين تقريبين. **وقبل هذا كان الصندوقُ لا يُقيَّد له شيءٌ أصلاً**: كان يقرأ `paid_amount` من مصفوفةٍ
+ * لا تحمله، فيصير الهدفُ صفراً في كلّ طلبية.
  */
 final class PostFundProceedsForOrder
 {
@@ -53,71 +68,95 @@ final class PostFundProceedsForOrder
         private readonly RecordCashEntry $cash,
     ) {}
 
-    public function __invoke(int $orderId): ?InvestmentCashEntry
+    public function __invoke(int $orderId): void
     {
         $fundId = $this->fund->idOrNull();
 
         if ($fundId === null) {
-            return null;
+            return;
         }
 
-        return DB::transaction(function () use ($orderId, $fundId): ?InvestmentCashEntry {
-            $target = $this->targetFor($orderId, $fundId);
+        DB::transaction(function () use ($orderId, $fundId): void {
+            [$fromCustomer, $fromCompany] = $this->targetsFor($orderId, $fundId);
 
-            $standing = InvestmentCashEntry::query()
-                ->where('source_type', AuditSubject::Order->value)
-                ->where('source_id', $orderId)
-                ->whereDoesntHave('reversedBy')
-                ->where('type', CashEntryType::SaleProceeds)
-                ->get();
-
-            $current = '0';
-
-            foreach ($standing as $entry) {
-                $current = bcadd($current, (string) $entry->amount, 8);
-            }
-
-            if (bccomp($current, $target, 2) === 0) {
-                return null;
-            }
-
-            foreach ($standing as $entry) {
-                $this->cash->reverse($entry, null, 'تصحيح تحصيل الصندوق من الطلبية');
-            }
-
-            if (bccomp($target, '0', 2) <= 0) {
-                return null;
-            }
-
-            $sequence = 1 + (int) InvestmentCashEntry::query()
-                ->where('source_type', AuditSubject::Order->value)
-                ->where('source_id', $orderId)
-                ->max('source_sequence');
-
-            return ($this->cash)(
-                type: CashEntryType::SaleProceeds,
-                amount: $target,
-                sourceType: AuditSubject::Order->value,
-                sourceId: $orderId,
-                sourceSequence: $sequence,
-            );
+            $this->reconcile($orderId, CashEntryType::SaleProceeds, $fromCustomer, 'تصحيح تحصيل الصندوق من الطلبية');
+            $this->reconcile($orderId, CashEntryType::WriteOffCoveredByCompany, $fromCompany, 'تصحيح ما تحمّلته الشركة من شطب الطلبية');
         });
     }
 
-    /** ما ينبغي أن يكون في الخزينة عن هذه الطلبية اليوم. */
-    private function targetFor(int $orderId, int $fundId): string
+    /**
+     * يجعل صفوفَ نوعٍ واحدٍ لهذه الطلبية تساوي هدفَها: مساوٍ فلا شيء، وإلا عُكس القائمُ كلُّه
+     * وكُتب الجديدُ بتسلسلٍ تالٍ.
+     *
+     * **والتسلسلُ مشتركٌ بين النوعين** — المفتاحُ الفريد `(source_type, source_id, source_sequence)`
+     * لا يحمل النوع، فأكبرُ تسلسلٍ يُقرأ على صفوف الطلبية كلِّها.
+     */
+    private function reconcile(int $orderId, CashEntryType $type, string $target, string $reason): void
     {
+        $standing = InvestmentCashEntry::query()
+            ->where('source_type', AuditSubject::Order->value)
+            ->where('source_id', $orderId)
+            ->whereDoesntHave('reversedBy')
+            ->where('type', $type)
+            ->get();
+
+        $current = '0';
+
+        foreach ($standing as $entry) {
+            $current = bcadd($current, (string) $entry->amount, 8);
+        }
+
+        if (bccomp($current, $target, 2) === 0) {
+            return;
+        }
+
+        foreach ($standing as $entry) {
+            $this->cash->reverse($entry, null, $reason);
+        }
+
+        if (bccomp($target, '0', 2) <= 0) {
+            return;
+        }
+
+        $sequence = 1 + (int) InvestmentCashEntry::query()
+            ->where('source_type', AuditSubject::Order->value)
+            ->where('source_id', $orderId)
+            ->max('source_sequence');
+
+        ($this->cash)(
+            type: $type,
+            amount: $target,
+            sourceType: AuditSubject::Order->value,
+            sourceId: $orderId,
+            sourceSequence: $sequence,
+        );
+    }
+
+    /**
+     * ما ينبغي أن يكون في الخزينة عن هذه الطلبية اليوم — من العميل، ومن الشركة عن المشطوب.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function targetsFor(int $orderId, int $fundId): array
+    {
+        $none = ['0.00', '0.00'];
         $order = $this->orders->profitAttributionFor($orderId);
 
         if ($order === null || $order['lines'] === [] || $order['status'] === OrderStatus::Cancelled->value) {
-            return '0.00';
+            return $none;
         }
 
-        $grandTotal = (string) ($order['grand_total'] ?? '0');
-        $paid = (string) ($order['paid_amount'] ?? '0');
+        $grandTotal = (string) $order['grand_total'];
 
-        if (bccomp($grandTotal, '0', 2) <= 0 || bccomp($paid, '0', 2) <= 0) {
-            return '0.00';
+        if (bccomp($grandTotal, '0', 2) <= 0) {
+            return $none;
+        }
+
+        $byCustomer = bcadd((string) $order['paid_amount'], (string) $order['carrier_settled_amount'], 8);
+        $covered = bcadd($byCustomer, (string) $order['written_off_amount'], 8);
+
+        if (bccomp($covered, '0', 2) <= 0) {
+            return $none;
         }
 
         $slices = OrderDealSlices::forOrder(
@@ -130,13 +169,25 @@ final class PostFundProceedsForOrder
         $revenue = (string) ($slices[$fundId]['revenue'] ?? '0');
 
         if (bccomp($revenue, '0', 2) <= 0) {
-            return '0.00';
+            return $none;
         }
 
-        // المحصَّلُ قد يتجاوز الإجمالي بدفعةٍ زائدة تُردّ لاحقاً؛ النسبةُ تُقصّ عند الواحد فلا
-        // يقبض الصندوقُ أكثر ممّا باع.
-        $ratio = bccomp($paid, $grandTotal, 2) >= 0 ? '1' : bcdiv($paid, $grandTotal, 8);
+        $fromCustomer = Money::round(bcmul($revenue, $this->ratio($byCustomer, $grandTotal), 8));
+        $inAll = Money::round(bcmul($revenue, $this->ratio($covered, $grandTotal), 8));
 
-        return Money::round(bcmul($revenue, $ratio, 8));
+        return [$fromCustomer, Money::round(bcsub($inAll, $fromCustomer, 8))];
+    }
+
+    /**
+     * جزءُ الإجمالي الذي غطّاه هذا المبلغ، مقصوصاً عند الواحد: دفعةٌ زائدة تُردّ لاحقاً لا تجعل
+     * الصندوقَ يقبض أكثر ممّا باع.
+     */
+    private function ratio(string $amount, string $grandTotal): string
+    {
+        if (bccomp($amount, '0', 2) <= 0) {
+            return '0';
+        }
+
+        return bccomp($amount, $grandTotal, 2) >= 0 ? '1' : bcdiv($amount, $grandTotal, 8);
     }
 }

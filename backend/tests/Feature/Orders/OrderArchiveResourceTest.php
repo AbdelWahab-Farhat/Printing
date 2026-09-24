@@ -50,12 +50,15 @@ class OrderArchiveResourceTest extends TestCase
      */
     private const OFFERED_KEYS = [
         'available_transitions',
+        'can_unsettle',
         'designs_are_editable',
         'destination_is_editable',
         'items_are_editable',
         'progress',
         'reinstate_to',
         'reinstate_to_label',
+        'undo_delivery_to',
+        'undo_delivery_to_label',
     ];
 
     protected function setUp(): void

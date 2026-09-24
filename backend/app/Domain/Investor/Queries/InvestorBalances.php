@@ -7,6 +7,7 @@ namespace App\Domain\Investor\Queries;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Support\StillOwed;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -213,8 +214,9 @@ final class InvestorBalances
      *
      * ## والشرطُ رقمٌ لا زرّ
      *
-     * `paid_amount >= grand_total` — الواقعةُ المالية لا حالةٌ يضغطها موظّف، **وهو الشرطُ
-     * بعينه الذي تقيس به {@see FundValuation} المستحقّات**. فلا يخرج دينارٌ من بند «مبيعاتٌ لم
+     * {@see StillOwed} — الواقعةُ المالية لا حالةٌ يضغطها موظّف، **وهو الشرطُ بعينه الذي تقيس
+     * به {@see FundValuation} المستحقّات**. والشطبُ يفتحها كما يفتحها النقد، لأن الشركة تدفع
+     * نصيبَ الصندوق منه. فلا يخرج دينارٌ من بند «مبيعاتٌ لم
      * تُحصَّل» إلا وقد فُتحت له بوّابةُ السحب في اللحظة نفسها.
      *
      * ## وما لا طلبيةَ له يمرّ
@@ -239,6 +241,53 @@ final class InvestorBalances
             [$sourceType, $sourceId] = $entry->effectiveSource();
 
             if ($sourceType === AuditSubject::Order->value && isset($withheld[$sourceId])) {
+                continue;
+            }
+
+            $investorId = (int) $entry->investor_id;
+            $dealId = (int) $entry->investor_deal_id;
+
+            $profit[$investorId][$dealId] = bcadd(
+                $profit[$investorId][$dealId] ?? '0',
+                $entry->deltas()['profit_deal'],
+                8,
+            );
+        }
+
+        $out = [];
+
+        foreach ($profit as $investorId => $deals) {
+            foreach ($deals as $dealId => $amount) {
+                $out[$investorId][$dealId] = Money::round($amount);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * ربحُ طلبيةٍ واحدة في هذه الفترة، لكلّ مستثمر في كلّ صفقة.
+     *
+     * **ما يقرؤه إعادةُ الحجز**: فترةٌ «قيد الإغلاق» أفرجت عن ربح طلبيةٍ ثم عُكس مالُها، فصار
+     * المتاحُ سالباً. وربحُ **تلك** الطلبية وحدها يعود محجوزاً؛ وما سواه من السالب خسارةٌ وصلت
+     * بعد خروج المال، تُرحَّل بقاعدتها. هذا الرقمُ هو الفاصلُ بينهما.
+     *
+     * @return array<int, array<int, string>> المستثمر ← الصفقة ← ربحُ الطلبية، بإشارته
+     */
+    public function orderProfitInPeriod(int $periodId, int $orderId): array
+    {
+        $entries = $this->withoutFoldedDeals(InvestorWalletEntry::query()
+            ->with('reversedEntry')
+            ->where('investment_period_id', $periodId)
+            ->whereNotNull('investor_deal_id'))
+            ->get();
+
+        $profit = [];
+
+        foreach ($entries as $entry) {
+            [$sourceType, $sourceId] = $entry->effectiveSource();
+
+            if ($sourceType !== AuditSubject::Order->value || $sourceId !== $orderId) {
                 continue;
             }
 
@@ -294,7 +343,7 @@ final class InvestorBalances
         $unpaid = DB::table('orders')
             ->whereIn('id', array_keys($orderIds))
             ->whereNull('deleted_at')
-            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->whereRaw(StillOwed::sql())
             ->pluck('id');
 
         $withheld = [];

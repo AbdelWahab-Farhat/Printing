@@ -149,6 +149,21 @@ enum PermissionName: string
     case RecordPartialDelivery = 'orders.partial_delivery';
 
     case SettleOrders = 'orders.status.settled';
+
+    // **The way back out of «تم التسوية», and a grant of its own rather than a ride on the one
+    // above.** Settling is the routine last step of every order; undoing it reopens a record the
+    // books treated as closed, so that money may be taken off it again. Reusing
+    // `orders.status.settled` would hand that to everybody who settles, silently. Granted on day
+    // one to the roles that can already reverse a payment — the only reason anyone un-settles.
+    // See `UnsettleOrder`.
+    case UnsettleOrders = 'orders.status.unsettle';
+
+    // **The way back out of «تم الاستلام»**, for a delivery recorded by mistake — the wrong order
+    // tapped, the customer who has not actually come. Its own grant for the reason the one above
+    // is: marking delivered is routine, and undoing it takes back the profit the investors were
+    // credited with. Granted on day one to the roles that can mark an order delivered. See
+    // `UndoOrderDelivery`.
+    case UndoOrderDelivery = 'orders.status.undo_delivery';
     case RecordCourierReturn = 'orders.status.returned_courier';
     case RecordCarrierReturn = 'orders.status.returned_carrier';
     case RecordOfficeReturn = 'orders.status.returned_office';
@@ -393,6 +408,8 @@ enum PermissionName: string
             self::MarkOrdersDelivered => 'تأكيد استلام العميل للطلبية',
             self::RecordPartialDelivery => 'تسجيل تسليم جزئي — يُنقص الفاتورة',
             self::SettleOrders => 'تسوية مبلغ الطلبية',
+            self::UnsettleOrders => 'التراجع عن تسوية الطلبية',
+            self::UndoOrderDelivery => 'التراجع عن تسليم الطلبية',
             self::RecordCourierReturn => 'تسجيل راجع لدى المندوب',
             self::RecordCarrierReturn => 'تسجيل راجع لدى شركة التوصيل',
             self::RecordOfficeReturn => 'تسجيل راجع مكتب',
@@ -481,7 +498,8 @@ enum PermissionName: string
             // but it is answered on the status screen by whoever is making that move, and the
             // roles screen is read by somebody deciding what a job involves.
             self::RecordPartialDelivery,
-            self::SettleOrders, self::RecordCourierReturn, self::RecordCarrierReturn,
+            self::UndoOrderDelivery, self::SettleOrders, self::UnsettleOrders,
+            self::RecordCourierReturn, self::RecordCarrierReturn,
             self::RecordOfficeReturn, self::ResendOrders,
             self::CancelOrders => 'حالات الطلبيات',
 

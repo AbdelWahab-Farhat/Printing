@@ -18,10 +18,12 @@ use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Actions\AllocateOrderIdentifier;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\DeleteOrder;
+use App\Domain\Order\Actions\RecalculateOrderPayments;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
+use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderFlow;
@@ -446,6 +448,37 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * Whether the newest entry on the ledger is what made this order owe again.
+     *
+     * True when the order owes now and did not before that one row — a payment reversed, a refund
+     * that went too far, a write-off undone. **What the investors' side asks when money moves**:
+     * a profit already handed out on this order's payment has to be held back again, and this is
+     * how it tells that from a part-payment on an order that never stopped owing. Read from the
+     * cached totals and the one row, never from the whole ledger: every entry comes through
+     * {@see RecalculateOrderPayments}, so the totals are already the sum of everything including
+     * it, and taking the row back out gives exactly where they stood a moment earlier.
+     */
+    public function lastEntryReopenedTheDebt(): bool
+    {
+        if (! $this->paymentStatus()->isOutstanding()) {
+            return false;
+        }
+
+        $last = OrderPayment::query()
+            ->where('order_id', $this->getKey())
+            ->orderByDesc('id')
+            ->first();
+
+        if ($last === null) {
+            return false;
+        }
+
+        $remainingBefore = bcadd($this->remainingAmount(), $last->signedAmount(), 8);
+
+        return bccomp($remainingBefore, '0', 8) <= 0;
+    }
+
+    /**
      * What this order made, on the accrual side: `grand_total` less what it cost to produce.
      *
      * **Null until `total_cogs` is known**, not zero — an order that has not reached printing has
@@ -734,6 +767,52 @@ class Order extends Model implements HasAuditTrail
     public function destinationIsEditable(): bool
     {
         return $this->status !== OrderStatus::OutForDelivery && ! $this->status->isClosed();
+    }
+
+    /**
+     * Where a delivered order stood before it reached «تم الاستلام», or null.
+     *
+     * The same reading as {@see statusBeforeCancellation()} and for the same reason: three
+     * statuses lead to «تم الاستلام» — «جاري التوصيل», «استلام مكتب» and «راجع مكتب» — and only
+     * the timeline says which one this order came from. It is what {@see UndoOrderDelivery} puts
+     * the order back to.
+     *
+     * **An un-settlement is not a delivery**, though it too lands on «تم الاستلام». Its row reads
+     * «تم التسوية → تم الاستلام», and taking it for the delivery would offer to send the order
+     * back to «تم التسوية» — undoing the undo. So rows coming out of «تم التسوية» are passed over,
+     * and the search goes on to the move that actually handed the bags over.
+     */
+    public function statusBeforeDelivery(): ?OrderStatus
+    {
+        if ($this->status !== OrderStatus::Delivered) {
+            return null;
+        }
+
+        $transitions = $this->relationLoaded('transitions')
+            ? $this->transitions->sortByDesc('id')
+            : $this->transitions()->reorder('id', 'desc')->get();
+
+        foreach ($transitions as $transition) {
+            if ($transition->to_status === OrderStatus::Delivered
+                && $transition->from_status !== OrderStatus::Settled) {
+                return $transition->from_status;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether any line was handed over short — a partial delivery, which shrank the invoice and
+     * put what came back on a shelf.
+     */
+    public function wasDeliveredPartly(): bool
+    {
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+        return $items->contains(
+            fn (OrderItem $item): bool => bccomp((string) ($item->undelivered_quantity ?? '0'), '0', 3) > 0,
+        );
     }
 
     /**

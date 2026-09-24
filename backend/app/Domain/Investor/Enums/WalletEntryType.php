@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Enums;
 
+use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 
 /**
@@ -17,7 +18,7 @@ use App\Domain\Investor\Models\InvestorWalletEntry;
  * capital in wallet = deposit − withdrawal − allocation + release
  * capital in deal D = allocation(D) − release(D)
  * profit in deal D  = profit(D) − loss(D) − profitRelease(D)
- * profit in wallet  = profitRelease − profitWithdrawal
+ * profit in wallet  = profitRelease − profitWithheld − profitWithdrawal
  * ```
  *
  * **Money can only leave from the wallet, and profit only reaches the wallet when a deal
@@ -80,6 +81,20 @@ enum WalletEntryType: string
     /** The deal's net profit moving to the wallet at close — where it becomes withdrawable. */
     case ProfitRelease = 'profit_release';
 
+    /**
+     * ربحٌ أُفرِج عنه ثم عاد محجوزاً، لأن مالَ طلبيته لم يعد محصَّلاً.
+     *
+     * **الحالُ:** فترةٌ «قيد الإغلاق» أفرجت عن ربح طلبيةٍ دُفع ثمنُها، ثم عُكست الدفعة. ما دامت
+     * الفترةُ تقبل القيد يُعاد الربحُ من المحفظة إلى الفترة ينتظر المالَ من جديد — قرارُ المالك
+     * «يُحجز ثانيةً» لا «يُترك في الجيب». ويُفرَج عنه مرّةً أخرى يومَ يُدفع أو يُشطب الفرق.
+     *
+     * نقيضُ `profit_release` في اتجاهه، وصفٌّ مستقلّ لا عكسٌ له: الإفراجُ صفٌّ واحدٌ لكلّ مستثمر
+     * في الصفقة يجمع طلبياتٍ كثيرة، والعكسُ يحمل مبلغَ صفّه كاملاً فلا يستطيع أن يستردّ جزءاً.
+     * **وقد تصير المحفظةُ سالبةً به** إن كان صاحبُها سحب — والسالبُ مطالبةٌ تسدّها إفراجاتُه
+     * التالية، القاعدةُ نفسُها التي تحكم الخسارة المرحَّلة. {@see CloseInvestmentPeriod::settleInvestors()}
+     */
+    case ProfitWithheld = 'profit_withheld';
+
     /** Profit paid out to the investor. */
     case ProfitWithdrawal = 'profit_withdrawal';
 
@@ -109,6 +124,7 @@ enum WalletEntryType: string
             self::CapitalWritedown => 'خصم خسارة من رأس المال',
             self::LossAbsorbedByCompany => 'خسارة تحمّلتها الشركة',
             self::ProfitRelease => 'إتاحة أرباح الصفقة للسحب',
+            self::ProfitWithheld => 'إعادة حجز ربح لم يُحصَّل مالُه',
             self::LossCarriedOut => 'ترحيل خسارة إلى الفترة التالية',
             self::LossCarriedIn => 'خسارة مرحَّلة من فترة سابقة',
             self::ProfitWithdrawal => 'سحب أرباح',
@@ -149,6 +165,7 @@ enum WalletEntryType: string
             self::CapitalWritedown => ['capital_wallet' => 0, 'capital_deal' => -1, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::LossAbsorbedByCompany => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::ProfitRelease => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 1],
+            self::ProfitWithheld => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => -1],
             // الزوجُ يتعادل في الدفتر كلِّه ويفترق في الفترتين: يسدّ هنا ويفتح هناك.
             self::LossCarriedOut => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => 1, 'profit_wallet' => 0],
             self::LossCarriedIn => ['capital_wallet' => 0, 'capital_deal' => 0, 'profit_deal' => -1, 'profit_wallet' => 0],
@@ -174,7 +191,7 @@ enum WalletEntryType: string
         return match ($this) {
             self::Allocation, self::Release, self::Profit, self::Loss,
             self::CapitalWritedown, self::LossAbsorbedByCompany, self::ProfitRelease,
-            self::LossCarriedOut, self::LossCarriedIn => true,
+            self::ProfitWithheld, self::LossCarriedOut, self::LossCarriedIn => true,
             default => false,
         };
     }

@@ -294,6 +294,19 @@ abstract class Order with _$Order {
     /// [statusLabel] gives: a status this build has never heard of still reads correctly.
     @JsonKey(name: 'reinstate_to_label') String? reinstateToLabel,
 
+    /// Whether «تراجع عن التسوية» is on offer — settled, and this user holds the grant. A flag
+    /// rather than a status: the undo always lands on «تم الاستلام».
+    @JsonKey(name: 'can_unsettle') @Default(false) bool canUnsettle,
+
+    /// Where «تراجع عن التسليم» would put this order back, or null when it is not on offer — not
+    /// delivered, no grant, a partial delivery, or a timeline that does not say. A delivery Nawris
+    /// reported still carries it; the server refuses that one with the reason.
+    @JsonKey(name: 'undo_delivery_to', unknownEnumValue: OrderStatus.unknown)
+    OrderStatus? undoDeliveryTo,
+
+    /// The Arabic the server chose for [undoDeliveryTo], rendered as-is.
+    @JsonKey(name: 'undo_delivery_to_label') String? undoDeliveryToLabel,
+
     /// The journey, in the domain's own order — see [OrderProgress].
     @Default(OrderProgress.unknown) OrderProgress progress,
 
@@ -437,6 +450,10 @@ abstract class Order with _$Order {
   /// records where it was cancelled from — are the server's, and a copy of them in Dart is the
   /// copy that drifts.
   bool get canReinstate => reinstateTo != null;
+
+  /// Whether this screen may offer to take back the delivery — the server's answer, as
+  /// [canReinstate] is.
+  bool get canUndoDelivery => undoDeliveryTo != null;
 
   /// Whether «تعديل النواقص» has anything to do on this order right now.
   ///

@@ -15,6 +15,8 @@ use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderRequest;
+use App\Application\Api\V1\Requests\Order\UndoOrderDeliveryRequest;
+use App\Application\Api\V1\Requests\Order\UnsettleOrderRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderRequest;
 use App\Application\Api\V1\Resources\OrderDesignResource;
 use App\Application\Api\V1\Resources\OrderResource;
@@ -407,6 +409,66 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($this->orders->loadForDisplay($updated)),
             "تم التراجع عن الإلغاء، وأُعيدت الطلبية إلى «{$updated->status->label()}»",
+        );
+    }
+
+    /**
+     * Undo a settlement
+     *
+     * Takes an order in «تم التسوية» back to «تم الاستلام». The destination is fixed — the only
+     * move into «تم التسوية» is from «تم الاستلام» — so there is nothing to send but `reason`,
+     * which is required.
+     *
+     * **What it is for.** A payment reversal or refund that would leave a settled order owing is
+     * refused with 422 until this has been done. The profit does not move; the investors' side
+     * reads what the order has been paid, not its status.
+     *
+     * The settlement stays in the order's history; this move is written above it, and the order
+     * stops carrying `settled_at` and `collected_amount`. Refused with 422 on an order that is
+     * not settled. Read `can_unsettle` on the order to decide whether to draw the button.
+     */
+    public function unsettle(UnsettleOrderRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->unsettle(
+            $order,
+            (string) $request->validated('reason'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->orders->loadForDisplay($updated)),
+            "تم التراجع عن التسوية، وأُعيدت الطلبية إلى «{$updated->status->label()}»",
+        );
+    }
+
+    /**
+     * Undo a delivery
+     *
+     * Takes an order in «تم الاستلام» back **exactly where it was delivered from** — «جاري
+     * التوصيل», «استلام مكتب» or «راجع مكتب» — read from its own timeline. Send only `reason`,
+     * which is required; read `undo_delivery_to_label` on the order to show where it is going.
+     *
+     * The investors' profit the delivery credited is reversed, and posted again on the next
+     * delivery. Money taken at the door stays on the ledger. No stock moves.
+     *
+     * Refused with 422 on an order that is not delivered (a settled one is un-settled first), on
+     * a partial delivery, on one whose timeline does not say where it came from, and on a
+     * delivery Nawris reported — that one is corrected with the carrier.
+     */
+    public function undoDelivery(UndoOrderDeliveryRequest $request, Order $order): JsonResponse
+    {
+        // Asked here rather than in the domain: `Order` may not know that a carrier exists.
+        $this->carrier->refuseIfCarrierReportedDelivery($order);
+
+        $updated = $this->orders->undoDelivery(
+            $order,
+            (string) $request->validated('reason'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->orders->loadForDisplay($updated)),
+            "تم التراجع عن التسليم، وأُعيدت الطلبية إلى «{$updated->status->label()}»",
         );
     }
 

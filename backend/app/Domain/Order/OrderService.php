@@ -18,6 +18,8 @@ use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\SetOrderShortages;
+use App\Domain\Order\Actions\UndoOrderDelivery;
+use App\Domain\Order\Actions\UnsettleOrder;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
@@ -70,6 +72,9 @@ class OrderService
         // The only writer of a status that does not go through the one above — see its docblock
         // for why undoing a cancellation is not a move on the map.
         private readonly ReinstateCancelledOrder $reinstateOrder,
+        // The same kind of undo, out of «تم التسوية» — see its docblock.
+        private readonly UnsettleOrder $unsettleOrder,
+        private readonly UndoOrderDelivery $undoDelivery,
         private readonly SetOrderShortages $setShortages,
         private readonly MarkReadyMessageSent $markReadyMessageSent,
         private readonly ConfirmDepositReceipt $confirmDepositReceipt,
@@ -182,6 +187,24 @@ class OrderService
     public function reinstate(Order $order, ?string $reason = null, ?User $actor = null): Order
     {
         return ($this->reinstateOrder)($order, $reason, $actor);
+    }
+
+    /**
+     * Take a settled order back to «تم الاستلام», so money on it can be corrected.
+     *
+     * The destination is fixed and the reason required — see {@see UnsettleOrder}.
+     */
+    public function unsettle(Order $order, string $reason, ?User $actor = null): Order
+    {
+        return ($this->unsettleOrder)($order, $reason, $actor);
+    }
+
+    /**
+     * Take a delivered order back to where it was delivered from — see {@see UndoOrderDelivery}.
+     */
+    public function undoDelivery(Order $order, string $reason, ?User $actor = null): Order
+    {
+        return ($this->undoDelivery)($order, $reason, $actor);
     }
 
     /**
@@ -520,5 +543,14 @@ class OrderService
     public function profitAttributionForMany(array $orderIds): array
     {
         return $this->profitAttribution->many($orderIds);
+    }
+
+    /**
+     * Whether the entry just written is what made this order owe again — see
+     * {@see Order::lastEntryReopenedTheDebt()}. False for an order that is gone.
+     */
+    public function lastEntryReopenedTheDebt(int $orderId): bool
+    {
+        return Order::query()->find($orderId)?->lastEntryReopenedTheDebt() ?? false;
     }
 }

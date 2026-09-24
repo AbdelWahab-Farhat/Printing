@@ -12,6 +12,7 @@ import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
+import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -96,6 +97,8 @@ void main() {
         addDesign: AddOrderDesign(repository),
         reviewDesign: ReviewOrderDesign(repository),
         reinstateOrder: ReinstateOrder(repository),
+        unsettleOrder: UnsettleOrder(repository),
+        undoOrderDelivery: UndoOrderDelivery(repository),
         deleteOrder: DeleteOrder(repository),
         restoreOrder: RestoreOrder(repository),
         confirmReadyMessage: ConfirmReadyMessage(repository),

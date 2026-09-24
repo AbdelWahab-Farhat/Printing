@@ -413,6 +413,7 @@ class OrderResource extends JsonResource
         // order's timeline. Null on every order that is not a cancellation this user may undo,
         // which is nearly all of them.
         $reinstateTo = $this->reinstatableToFor($request);
+        $undoDeliveryTo = $this->undoableDeliveryToFor($request);
 
         return [
             // **The whole point of gating the app on the server.** The moves this order may
@@ -454,6 +455,21 @@ class OrderResource extends JsonResource
             'reinstate_to' => $reinstateTo?->value,
             'reinstate_to_label' => $reinstateTo?->label(),
 
+            // **The way out of «تم التسوية»**, the same kind of undo with a fixed destination, so
+            // a flag rather than a status. True only on a settled order this user may reopen.
+            // See {@see \App\Domain\Order\Actions\UnsettleOrder}.
+            'can_unsettle' => $this->status === OrderStatus::Settled
+                && (bool) $request->user()?->can(PermissionName::UnsettleOrders->value),
+
+            // **And out of «تم الاستلام»**, named like the reinstatement: the status the undo will
+            // land on, so the button can say where. Null unless this user may undo it and the
+            // domain would accept it — not partial, and the timeline in hand says where it came
+            // from. A delivery Nawris reported still shows the button and is refused with the
+            // reason: this resource may not ask the carrier. See
+            // {@see \App\Domain\Order\Actions\UndoOrderDelivery}.
+            'undo_delivery_to' => $undoDeliveryTo?->value,
+            'undo_delivery_to_label' => $undoDeliveryTo?->label(),
+
             // The journey, in the domain's own order. Shipped with the order for the same
             // reason `available_transitions` is: which status follows which is knowledge this
             // API refuses to let a client keep a second copy of.
@@ -492,6 +508,29 @@ class OrderResource extends JsonResource
      * a list: `loadForDisplay()` eager-loads `transitions` for the order screen, and
      * {@see Order::statusBeforeCancellation()} uses the loaded relation when it is there.
      */
+    /**
+     * Where undoing this delivery would send the order, or null when it is not on offer.
+     *
+     * Only where the timeline and the lines are already in hand — the order screen loads both —
+     * for the reason {@see reinstatableToFor()} gives.
+     */
+    private function undoableDeliveryToFor(Request $request): ?OrderStatus
+    {
+        if ($this->status !== OrderStatus::Delivered) {
+            return null;
+        }
+
+        if (! $request->user()?->can(PermissionName::UndoOrderDelivery->value)) {
+            return null;
+        }
+
+        if (! $this->relationLoaded('transitions') || ! $this->relationLoaded('items')) {
+            return null;
+        }
+
+        return $this->wasDeliveredPartly() ? null : $this->statusBeforeDelivery();
+    }
+
     private function reinstatableToFor(Request $request): ?OrderStatus
     {
         if ($this->status !== OrderStatus::Cancelled) {

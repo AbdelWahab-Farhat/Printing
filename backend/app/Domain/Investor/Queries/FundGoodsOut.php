@@ -6,6 +6,7 @@ namespace App\Domain\Investor\Queries;
 
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Support\StillOwed;
 use App\Domain\Order\Enums\OrderStatus;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
@@ -99,6 +100,8 @@ final class FundGoodsOut
                 'o.status',
                 'o.grand_total',
                 'o.paid_amount',
+                'o.written_off_amount',
+                'o.carrier_settled_amount',
                 'o.placed_at',
                 'o.delivered_at',
                 'o.created_at',
@@ -115,7 +118,14 @@ final class FundGoodsOut
             }
 
             // ما بقي على العميل، لا أقلَّ من صفر: دفعةٌ زائدة تُردّ لاحقاً ليست ديناً سالباً.
-            $remaining = bcsub((string) $order->grand_total, (string) $order->paid_amount, 2);
+            // وبالثلاثة التي تُغلق الدَّين لا بالنقد وحده — {@see StillOwed}: فرقٌ شُطب لم يعد
+            // على أحد، دفعت الشركةُ نصيبَ الصندوق منه.
+            $covered = bcadd(
+                bcadd((string) $order->paid_amount, (string) $order->written_off_amount, 2),
+                (string) $order->carrier_settled_amount,
+                2,
+            );
+            $remaining = bcsub((string) $order->grand_total, $covered, 2);
 
             $rows[] = [
                 'order_id' => (int) $order->id,

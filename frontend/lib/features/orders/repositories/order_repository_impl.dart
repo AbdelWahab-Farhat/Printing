@@ -315,6 +315,22 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> unsettle(int orderId, {required String reason}) {
+    return safeRequest<Order>(
+      () async => _dio.post(OrderEndpoints.unsettle(orderId), data: <String, dynamic>{'reason': reason}),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> undoDelivery(int orderId, {required String reason}) {
+    return safeRequest<Order>(
+      () async => _dio.post(OrderEndpoints.undoDelivery(orderId), data: <String, dynamic>{'reason': reason}),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Order>> changeStatus(
     int orderId, {
     required OrderStatus status,

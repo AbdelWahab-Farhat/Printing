@@ -370,6 +370,15 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/reinstate', [OrderController::class, 'reinstate'])
             ->middleware('can:orders.status.cancelled')->name('orders.reinstate');
 
+        // And the way back out of «تم التسوية». A grant of its own — see
+        // `PermissionName::UnsettleOrders` — and, like the one above, fixed whatever the body says.
+        Route::post('orders/{order}/unsettle', [OrderController::class, 'unsettle'])
+            ->middleware('can:orders.status.unsettle')->name('orders.unsettle');
+
+        // And out of «تم الاستلام», back to wherever the order was delivered from.
+        Route::post('orders/{order}/undo-delivery', [OrderController::class, 'undoDelivery'])
+            ->middleware('can:orders.status.undo_delivery')->name('orders.undo_delivery');
+
         // What is missing from each line — and therefore what the customer is charged, since a
         // line is billed for what is left of it. `can:` sits here rather than in the request
         // because unlike a status change this endpoint costs the same grant whatever it says:

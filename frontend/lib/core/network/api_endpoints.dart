@@ -496,6 +496,14 @@ abstract final class OrderEndpoints {
   /// order to name that status on the button. An optional `reason` is a note on the row.
   static String reinstate(int orderId) => '/orders/$orderId/reinstate';
 
+  /// Taking an order back out of «تم التسوية» to «تم الاستلام», so money on it can be corrected —
+  /// the server refuses a reversal that would leave a settled order owing. `reason` is required.
+  static String unsettle(int orderId) => '/orders/$orderId/unsettle';
+
+  /// Taking back a delivery recorded by mistake. Like [reinstate], no destination: the server
+  /// reads where the order was delivered from — see `undoDeliveryTo`. `reason` is required.
+  static String undoDelivery(int orderId) => '/orders/$orderId/undo-delivery';
+
   /// What is missing from each line — and so what the customer is charged, since a line is
   /// billed for what is left of it. A PATCH rather than a POST: nothing is recorded on the
   /// timeline, a number on the order is corrected.

@@ -18,6 +18,7 @@ use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\ReleaseProfitWhenBothGatesOpen;
+use App\Domain\Investor\Listeners\UnwindEarningsWhenDeliveryIsUndone;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
@@ -28,6 +29,7 @@ use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
 use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
+use App\Domain\Order\Events\OrderDeliveryUndone;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Events\OrderProfitFinalised;
@@ -147,6 +149,11 @@ class AppServiceProvider extends ServiceProvider
         // through a soft-delete-scoped query and returns early on an archived one, having
         // reversed nothing. See §٢٫١ of Docs/orders/ORDER-DELETE-AND-ARCHIVE.md.
         Event::listen(OrderProfitUnwound::class, UnwindEarningsWhenOrderIsDeleted::class);
+
+        // **And for a delivery taken back.** The order is alive and will be delivered again, when
+        // the event above posts its profit afresh; until then, what the mistaken delivery credited
+        // comes back off. Not `OrderProfitUnwound`: that one also closes the order's shortages.
+        Event::listen(OrderDeliveryUndone::class, UnwindEarningsWhenDeliveryIsUndone::class);
         Event::listen(OrderStockDrawn::class, PostPurchasesWhenStockLeaves::class);
         Event::listen(OrderScrapDrawn::class, PostPurchaseWhenScrapIsDrawn::class);
 

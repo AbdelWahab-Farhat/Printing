@@ -33,6 +33,7 @@ import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
+import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -206,6 +207,8 @@ void main() {
           addDesign: AddOrderDesign(repository),
           reviewDesign: ReviewOrderDesign(repository),
           reinstateOrder: ReinstateOrder(repository),
+          unsettleOrder: UnsettleOrder(repository),
+          undoOrderDelivery: UndoOrderDelivery(repository),
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
           confirmReadyMessage: ConfirmReadyMessage(repository),

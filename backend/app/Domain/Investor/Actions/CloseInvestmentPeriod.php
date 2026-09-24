@@ -19,7 +19,9 @@ use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PeriodForEntry;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Investor\Support\StillOwed;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\OrderService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -70,6 +72,7 @@ final class CloseInvestmentPeriod
         private readonly PeriodShares $periodShares,
         private readonly RecordCashEntry $cash,
         private readonly PeriodForEntry $periodFor,
+        private readonly OrderService $orders,
     ) {}
 
     public function __invoke(?int $actorId, ?string $overrideReason = null): InvestmentPeriod
@@ -151,7 +154,7 @@ final class CloseInvestmentPeriod
      * يُدفع دينارٌ مرّتين ولا تكون إعادةُ النداء مكلفة — وهو شرطُ الـidempotency الذي يقوم
      * عليه الإقفالُ الآليّ في §٠.٤.
      */
-    private function settle(InvestmentPeriod $period, ?int $actorId): InvestmentPeriod
+    private function settle(InvestmentPeriod $period, ?int $actorId, ?int $reopenedOrderId = null): InvestmentPeriod
     {
         $orderIds = $this->ordersOf($period);
         [$netProfit, $investorsPool] = $this->profitOf($orderIds);
@@ -163,7 +166,7 @@ final class CloseInvestmentPeriod
         // قُبض بها يوم أُقفلت.
         $this->periodShares->freeze($period);
 
-        [$released, $writtenDown] = $this->settleInvestors($period);
+        [$released, $writtenDown] = $this->settleInvestors($period, $reopenedOrderId);
 
         $companyShare = Money::round(bcsub($netProfit, $investorsPool, 8));
 
@@ -269,18 +272,24 @@ final class CloseInvestmentPeriod
             return null;
         }
 
-        return DB::transaction(function () use ($periodId, $actorId): ?InvestmentPeriod {
+        // **أهذه الحركةُ هي التي أعادت الطلبيةَ مدينة؟** دفعةٌ عُكست بعد أن أُفرج عن ربحها — فيُحجز
+        // ربحُها ثانيةً. ويُسأل هنا لا في القسمة، لأن هنا وحده يُعرف أيُّ طلبيةٍ تحرّك مالُها.
+        $reopened = $this->orders->lastEntryReopenedTheDebt($orderId) ? $orderId : null;
+
+        return DB::transaction(function () use ($periodId, $actorId, $reopened): ?InvestmentPeriod {
             $period = InvestmentPeriod::query()
                 ->whereKey($periodId)
                 ->lockForUpdate()
                 ->first();
 
-            // المفتوحةُ لم يحن موعدُها، والمغلقةُ لم يبقَ فيها ما يُفرَج عنه.
+            // المفتوحةُ لم يحن موعدُها، والمغلقةُ لم يبقَ فيها ما يُفرَج عنه — ولا ما يُحجز ثانيةً:
+            // حارسُ {@see InvestorWalletEntry} يرفض الكتابة فيها، والدَّينُ يبقى في القيمة حتى
+            // يُدفع أو يُشطب فتدفع الشركةُ نصيبَ الصندوق منه.
             if ($period === null || $period->status !== PeriodStatus::Closing) {
                 return $period;
             }
 
-            return $this->settle($period, $actorId);
+            return $this->settle($period, $actorId, $reopened);
         });
     }
 
@@ -330,7 +339,7 @@ final class CloseInvestmentPeriod
             ->whereNull('oi.deleted_at')
             ->whereNull('o.deleted_at')
             ->whereIn('o.status', [OrderStatus::Delivered->value, OrderStatus::Settled->value])
-            ->whereColumn('o.paid_amount', '<', 'o.grand_total')
+            ->whereRaw(StillOwed::sql('o'))
             // **وسحبٌ اشترته المطبعةُ بسعر السادة لا ينتظر تحصيلاً.** ثمنُه دخل خزينةَ الصندوق
             // يومَ غادر الرفّ، فبيعُ الطلبية بعده شأنُ المطبعة لا شأنُ الصندوق — وحبسُ الفترة
             // عليه انتظارٌ لمالٍ قد وصل. وهو الشرطُ نفسُه الذي يقرؤه {@see DealOrdersInFlightQuery}.
@@ -354,7 +363,7 @@ final class CloseInvestmentPeriod
             ->where('investor_wallet_entries.source_type', AuditSubject::Order->value)
             ->whereIn('investor_wallet_entries.source_id', $orderIds)
             ->whereNull('o.deleted_at')
-            ->whereColumn('o.paid_amount', '<', 'o.grand_total')
+            ->whereRaw(StillOwed::sql('o'))
             ->distinct()
             ->pluck('o.id')
             ->map(fn ($id): int => (int) $id)
@@ -510,7 +519,7 @@ final class CloseInvestmentPeriod
      *
      * @return array{0: string, 1: string} ما أُفرِج عنه، وما شُطب من رؤوس الأموال
      */
-    private function settleInvestors(InvestmentPeriod $period): array
+    private function settleInvestors(InvestmentPeriod $period, ?int $reopenedOrderId = null): array
     {
         $released = '0';
         $writtenDown = '0';
@@ -521,6 +530,9 @@ final class CloseInvestmentPeriod
         // **ببوّابة التحصيل، لا بكلّ ما قُيِّد.** ربحُ طلبيةٍ بالأجل يبقى معلّقاً على فترته
         // حتى يصل مالُه — §٠.٨. ويُفرَج عنه يومَ يصل، من {@see releaseWhatIsNowPayable()}.
         $perInvestor = $this->balances->releasableInPeriod((int) $period->getKey());
+        $reopened = $reopenedOrderId === null
+            ? []
+            : $this->balances->orderProfitInPeriod((int) $period->getKey(), $reopenedOrderId);
 
         foreach ($perInvestor as $investorId => $deals) {
             // ورأسُ المال **تراكميّ**: الشطبُ يأخذ ممّا وضعه الرجلُ في الصفقة متى وضعه، لا ممّا
@@ -538,6 +550,16 @@ final class CloseInvestmentPeriod
                 // **والفارقُ خروجُ المال لا شيءَ آخر**، ودليلُه صفُّ إفراجٍ سابقٌ في هذه الفترة
                 // بعينها لهذا الرجل في هذه الصفقة.
                 if (bccomp($profit, '0', 2) < 0 && $this->alreadyPaidFrom($period, (int) $investorId, (int) $dealId)) {
+                    // **إلا ربحَ الطلبية التي أعادتها هذه الحركةُ مدينة** — قرارُ المالك: يُحجز ثانيةً
+                    // ما دامت الفترةُ تقبل القيد. ذلك القدرُ وحده يعود من المحفظة، لا السالبُ كلُّه:
+                    // ما زاد عليه خسارةٌ متأخّرة تبقى للترحيل، وربحُ طلبيةٍ أخرى لم تُدفع قطّ لم
+                    // يُفرَج عنه أصلاً فلا يُستردّ. ويُفرَج عنه ثانيةً يومَ يُدفع أو يُشطب الفرق.
+                    $rehold = $this->lesserOf(substr($profit, 1), $reopened[$investorId][$dealId] ?? '0.00');
+
+                    if (bccomp($rehold, '0', 2) > 0) {
+                        $this->write($period, (int) $investorId, (int) $dealId, WalletEntryType::ProfitWithheld, $rehold);
+                    }
+
                     continue;
                 }
 
@@ -565,6 +587,11 @@ final class CloseInvestmentPeriod
         }
 
         return [Money::round($released), Money::round($writtenDown)];
+    }
+
+    private function lesserOf(string $a, string $b): string
+    {
+        return bccomp($a, $b, 2) <= 0 ? $a : $b;
     }
 
     /**

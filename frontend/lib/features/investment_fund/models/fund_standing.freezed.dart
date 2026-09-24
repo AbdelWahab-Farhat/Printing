@@ -671,7 +671,9 @@ mixin _$FundHolder {
 
 @JsonKey(name: 'investor_id') int get investorId; String get name; String get units;@JsonKey(name: 'share_percent') String get sharePercent; String get capital; String get profit;/// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
-@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;@JsonKey(name: 'next_share_percent') String get nextSharePercent;
+@JsonKey(name: 'share_starts_next_period') bool get shareStartsNextPeriod;/// **نسبتُه في الفترة التالية لو فُتحت الليلة** — بكلّ وحداته، ومنها ما ينتظر. تقديرٌ لا
+/// عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره. والخادمُ يحسبه، لا الشاشة.
+@JsonKey(name: 'next_share_percent') String get nextSharePercent;
 /// Create a copy of FundHolder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -884,6 +886,8 @@ class _FundHolder implements FundHolder {
 /// **اكتتب في نافذة هذه الفترة، فنصيبُه منها صفر ومن التالية كامل.** وصفرٌ بجانب اسمِ رجلٍ
 /// وضع مالَه أمس يُقرأ عطباً، فيقولها السطرُ بلفظها.
 @override@JsonKey(name: 'share_starts_next_period') final  bool shareStartsNextPeriod;
+/// **نسبتُه في الفترة التالية لو فُتحت الليلة** — بكلّ وحداته، ومنها ما ينتظر. تقديرٌ لا
+/// عهد: إيداعٌ أو سحبٌ قبل بدئها يغيّره. والخادمُ يحسبه، لا الشاشة.
 @override@JsonKey(name: 'next_share_percent') final  String nextSharePercent;
 
 /// Create a copy of FundHolder

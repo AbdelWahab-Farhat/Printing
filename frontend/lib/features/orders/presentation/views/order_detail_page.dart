@@ -36,6 +36,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/reinstate_order_dialog.dart';
 import 'package:dayaa/features/orders/presentation/widgets/stock_effect_dialog.dart';
+import 'package:dayaa/features/orders/presentation/widgets/undo_order_step_dialog.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/shortages/models/shortages_filter.dart';
@@ -203,6 +204,12 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // `deleted_at` rather than from a grant, so it stays one fact and not a rule.
               onReinstate: state.order!.canReinstate && !state.order!.isArchived
                   ? _reinstate
+                  : null,
+              // The same reading for the two other undos: the server already answered whether
+              // each is on offer, and the archive is the one condition it leaves to the order.
+              onUnsettle: state.order!.canUnsettle && !state.order!.isArchived ? _unsettle : null,
+              onUndoDelivery: state.order!.canUndoDelivery && !state.order!.isArchived
+                  ? _undoDelivery
                   : null,
               // **مرسومٌ للجميع، ومقفلٌ لمن لا يملك المنح** — قاعدة «مستعجلة» نفسها: «أُرسلت
               // الرسالة أمس» واقعةٌ تُقرأ، ومن يقرأ الطلبية يقرؤها. والقفل ثلاثة أسباب في سطر:
@@ -510,6 +517,67 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     context.handBack(updated);
   }
 
+  /// «تراجع عن التسوية» — asked with a required reason, answered with the order as it now is.
+  Future<void> _unsettle(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+
+    final reason = await showUndoOrderStepDialog(
+      context: context,
+      title: 'تراجع عن التسوية',
+      body: 'ترجع الطلبية إلى «تم الاستلام»، ويبقى التسوية وتاريخها في سجل الطلبية.',
+      warning:
+          'لا تتغيّر الدفعات بهذا وحده. هو ما يسمح بعدها بإلغاء دفعة أو ردّ مبلغ يجعل الطلبية مدينة.',
+    );
+    if (reason == null || !context.mounted) return;
+
+    final failure = await cubit.unsettle(reason: reason);
+    if (!context.mounted) return;
+
+    _afterUndo(context, failure);
+  }
+
+  /// «تراجع عن التسليم» — the destination is the server's, named on the button and here.
+  Future<void> _undoDelivery(BuildContext context) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final destination = order.undoDeliveryToLabel ?? order.undoDeliveryTo?.label ?? '';
+
+    final reason = await showUndoOrderStepDialog(
+      context: context,
+      title: 'تراجع عن التسليم',
+      body: 'ترجع الطلبية إلى «$destination» — الحالة التي سُلِّمت منها. ويبقى التسليم في سجل الطلبية.',
+      warning:
+          'يُعكس ربح المستثمرين من هذه الطلبية ويُقيَّد من جديد عند التسليم التالي. '
+          'المبلغ المقبوض عند الباب يبقى مسجّلاً، والمخزون لا يتحرّك.',
+    );
+    if (reason == null || !context.mounted) return;
+
+    final failure = await cubit.undoDelivery(reason: reason);
+    if (!context.mounted) return;
+
+    _afterUndo(context, failure);
+  }
+
+  /// What both undos do with the answer — the server's own Arabic on a refusal (a delivery Nawris
+  /// reported, a partial one), and the new status on success.
+  void _afterUndo(BuildContext context, Failure? failure) {
+    if (!context.mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = context.read<OrderDetailCubit>().state.order;
+    if (updated == null) return;
+
+    context.showSuccess('رجعت الطلبية إلى «${updated.statusLabel}»');
+    context.handBack(updated);
+  }
+
   /// Archives the order — «حذف».
   ///
   /// **Asked with the server's own preview of what it does to the warehouse**, never with a
@@ -785,6 +853,8 @@ class _Body extends StatelessWidget {
     required this.onDeleteShipment,
     required this.onUnlinkShipment,
     required this.onReinstate,
+    required this.onUnsettle,
+    required this.onUndoDelivery,
     required this.onConfirmReadyMessage,
     required this.onConfirmDeposit,
     required this.depositClaimedByMe,
@@ -827,6 +897,12 @@ class _Body extends StatelessWidget {
 
   /// Null unless the server said this order's cancellation may be undone — see the call site.
   final Future<void> Function(BuildContext context)? onReinstate;
+
+  /// Null unless the server said this settlement may be undone.
+  final Future<void> Function(BuildContext context)? onUnsettle;
+
+  /// Null unless the server said this delivery may be undone.
+  final Future<void> Function(BuildContext context)? onUndoDelivery;
 
   /// Null for a reader without `orders.ready_message`, for an archived order, and while a write
   /// is already in flight — see the call site for why those three are one line.
@@ -990,6 +1066,8 @@ class _Body extends StatelessWidget {
                       ? 'الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'
                       : order.canReinstate
                       ? 'الطلبية ${order.statusLabel} — والإلغاء وحده ما يمكن التراجع عنه'
+                      : order.canUnsettle
+                      ? 'الطلبية ${order.statusLabel} — والتسوية وحدها ما يمكن التراجع عنه'
                       : order.isFinal
                       ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
                       : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
@@ -1012,6 +1090,27 @@ class _Body extends StatelessWidget {
                     onPressed: () => reinstate(context),
                   ),
                 ],
+              ],
+              // **The two other undos**, outside the note above: a delivered order still has a
+              // move on the dial («تم التسوية»), so there is no note for them to stand under.
+              if (onUnsettle case final unsettle?) ...[
+                SizedBox(height: 12.h),
+                AppButton.tonal(
+                  label: 'تراجع عن التسوية — ترجع إلى «تم الاستلام»',
+                  icon: AppIcons.undo,
+                  onPressed: () => unsettle(context),
+                ),
+              ],
+              if (onUndoDelivery case final undoDelivery?) ...[
+                SizedBox(height: 12.h),
+                AppButton.tonal(
+                  label: switch (order.undoDeliveryToLabel) {
+                    final to? when to.isNotEmpty => 'تراجع عن التسليم — ترجع إلى «$to»',
+                    _ => 'تراجع عن التسليم',
+                  },
+                  icon: AppIcons.undo,
+                  onPressed: () => undoDelivery(context),
+                ),
               ],
               if (_hasDestinationDetails) ...[
                 SizedBox(height: 16.h),

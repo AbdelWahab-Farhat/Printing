@@ -7,9 +7,12 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderPaymentType;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\PaymentAmountMustBePositive;
 use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
 use App\Domain\Order\Exceptions\RefundExceedsPaid;
+use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
@@ -27,6 +30,11 @@ use Illuminate\Support\Facades\DB;
  * **Allowed in every status, cancelled included.** That is not an oversight: a cancelled order
  * with a deposit against it is the commonest reason to refund anything, and a lock that stopped
  * it would be a bug wearing a safety jacket.
+ *
+ * **One refusal, and it is about the result, not the status.** A refund that would leave a
+ * settled order owing is refused until the order is taken back to «تم الاستلام» — see
+ * {@see SettledOrderMustBeUnsettledFirst}. Handing back an overpayment on a settled order still
+ * passes: the order stays paid.
  *
  * **It names no particular payment.** Money going back may have been collected across three of
  * them, and forcing a choice would put a fact in the ledger nobody could stand behind. What
@@ -62,6 +70,22 @@ final class RefundOrderPayment
             // is a customer account, which this system does not have.
             if (bccomp($data->amount, $paid, Money::SCALE) > 0) {
                 throw RefundExceedsPaid::make($data->amount, $paid);
+            }
+
+            // **Before the row, not after it**, unlike the reversal: a refund may carry a receipt,
+            // and a file already on disk would outlive the rolled-back row that named it. A refund
+            // only ever lands on the paid total, so the outcome is known without writing anything.
+            if ($locked->status === OrderStatus::Settled) {
+                $after = PaymentStatus::between(
+                    bcsub($paid, $data->amount, Money::SCALE),
+                    (string) $locked->grand_total,
+                    (string) $locked->written_off_amount,
+                    (string) $locked->carrier_settled_amount,
+                );
+
+                if ($after->isOutstanding()) {
+                    throw SettledOrderMustBeUnsettledFirst::make();
+                }
             }
 
             $refund = $this->write($locked, $data, $actor);

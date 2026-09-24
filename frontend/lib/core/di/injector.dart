@@ -167,6 +167,7 @@ import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
+import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_categories_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
@@ -892,6 +893,13 @@ abstract final class Injector {
       ..registerLazySingleton<ReinstateOrder>(
         () => ReinstateOrder(sl<OrderRepository>()),
       )
+      // The same kind of undo, out of «تم التسوية» and out of «تم الاستلام».
+      ..registerLazySingleton<UnsettleOrder>(
+        () => UnsettleOrder(sl<OrderRepository>()),
+      )
+      ..registerLazySingleton<UndoOrderDelivery>(
+        () => UndoOrderDelivery(sl<OrderRepository>()),
+      )
       ..registerLazySingleton<SetOrderShortages>(
         () => SetOrderShortages(sl<OrderRepository>()),
       )
@@ -1005,6 +1013,8 @@ abstract final class Injector {
           addDesign: sl<AddOrderDesign>(),
           reviewDesign: sl<ReviewOrderDesign>(),
           reinstateOrder: sl<ReinstateOrder>(),
+          unsettleOrder: sl<UnsettleOrder>(),
+          undoOrderDelivery: sl<UndoOrderDelivery>(),
           // Both here rather than on a Cubit of the archive's own, for the reason the reinstate
           // is: the answer to either *is* the order, so the screen that has to redraw it is the
           // one that should hold the call.

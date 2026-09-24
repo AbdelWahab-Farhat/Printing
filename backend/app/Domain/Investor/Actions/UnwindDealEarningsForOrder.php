@@ -39,8 +39,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class UnwindDealEarningsForOrder
 {
-    /** What a reversal written by this path says in the investor's statement. */
-    private const REASON = 'عكس ربح طلبية محذوفة';
+    /** What a reversal written by this path says in the investor's statement, unless told otherwise. */
+    public const REASON = 'عكس ربح طلبية محذوفة';
+
+    /** The same reversal, for a delivery taken back rather than an order archived. */
+    public const REASON_DELIVERY_UNDONE = 'عكس ربح طلبية أُلغي تسليمها';
 
     public function __construct(private readonly PostDealShare $postShare) {}
 
@@ -48,7 +51,7 @@ final class UnwindDealEarningsForOrder
      * @return list<InvestorWalletEntry> always empty — the rows this writes are reversals, and
      *                                   {@see PostDealShare} returns only what it posts
      */
-    public function __invoke(int $orderId): array
+    public function __invoke(int $orderId, string $reason = self::REASON): array
     {
         $dealIds = InvestorWalletEntry::query()
             ->where('source_type', AuditSubject::Order->value)
@@ -66,7 +69,7 @@ final class UnwindDealEarningsForOrder
             return [];
         }
 
-        return DB::transaction(function () use ($dealIds, $orderId): array {
+        return DB::transaction(function () use ($dealIds, $orderId, $reason): array {
             $written = [];
 
             foreach ($dealIds as $dealId) {
@@ -76,7 +79,7 @@ final class UnwindDealEarningsForOrder
                     continue;
                 }
 
-                foreach (($this->postShare)($deal, '0.00', AuditSubject::Order->value, $orderId, self::REASON) as $row) {
+                foreach (($this->postShare)($deal, '0.00', AuditSubject::Order->value, $orderId, $reason) as $row) {
                     $written[] = $row;
                 }
             }
