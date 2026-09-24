@@ -117,9 +117,7 @@ class _Partners extends StatelessWidget {
           ],
         ),
         _Tab(
-          // **تقديرٌ لا عهد** — ويقولها السطرُ قبل أن يُقرأ الرقمُ وعداً.
-          subtitle: 'تبدأ بعد ${period?.endsOn ?? 'إقفال الفترة الحالية'} — نسبٌ بوحدات اليوم، '
-              'تتغيّر إن اشترك أحدٌ أو استردّ قبل بدئها',
+          // بلا سطرٍ فوق البطاقات — قرارُ المالك 2026-09-24: «انزع الملاحظة التي بالأعلى».
           empty: 'لا أحد بعد',
           children: [
             for (final holder in next)
@@ -135,17 +133,17 @@ class _Partners extends StatelessWidget {
   }
 }
 
-/// تبويبٌ واحد — سطرٌ يقول لأيّ فترةٍ هذه النسب، ثم الشركاء.
+/// تبويبٌ واحد — سطرٌ يقول لأيّ فترةٍ هذه النسب إن وُجد، ثم الشركاء.
 ///
 /// **يُسحب ليُحدَّث في كلٍّ منهما**، لأن كلَّ تبويبٍ قائمتُه، والسحبُ يُعيد قراءة الاثنين معاً.
 class _Tab extends StatelessWidget {
   const _Tab({
-    required this.subtitle,
+    this.subtitle,
     required this.empty,
     required this.children,
   });
 
-  final String subtitle;
+  final String? subtitle;
   final String empty;
   final List<Widget> children;
 
@@ -156,13 +154,15 @@ class _Tab extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
         children: [
-          Text(
-            subtitle,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
+          if (subtitle case final subtitle?) ...[
+            Text(
+              subtitle,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          SizedBox(height: 12.h),
+            SizedBox(height: 12.h),
+          ],
           if (children.isEmpty)
             Text(empty, style: context.textTheme.bodyMedium)
           else

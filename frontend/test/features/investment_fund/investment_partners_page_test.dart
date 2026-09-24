@@ -197,6 +197,25 @@ void main() {
     expect(find.text('75.00%'), findsOneWidget);
   });
 
+  testWidgets('the next tab opens straight on its partners, with no note above them', (
+    tester,
+  ) async {
+    // Arrange — قرارُ المالك 2026-09-24: «انزع الملاحظة التي بالأعلى».
+    await register(_standing);
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('الفترة القادمة'));
+    await tester.pumpAndSettle();
+
+    // Assert — لا سطرَ «تبدأ بعد …» فوق البطاقات.
+    expect(find.textContaining('تبدأ بعد'), findsNothing);
+    expect(find.textContaining('تتغيّر إن اشترك'), findsNothing);
+    expect(find.text('محمد'), findsOneWidget);
+  });
+
   testWidgets('a partner row is a door into that investor', (tester) async {
     // Arrange — الاسمُ على السطر ونسبتُه بجانبه، وما وراءهما — دفعاتُه، وسحوباتُه، ومتى يُفكّ
     // حبسُ ماله — على شاشة المستثمر.
