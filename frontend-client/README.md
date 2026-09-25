@@ -27,44 +27,49 @@ Flutter 3.44.6 · Dart 3.12.2
 ```bash
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs  # يولّد ملفات Freezed / JSON
-flutter run --dart-define=FLAVOR=dev                      # تطوير
+flutter run --flavor dev                                  # نسخة الاختبار — صندوق التجربة
 ```
 
 ## البيئات (Flavours)
 
-نكهتان فقط، ولكل واحدة ملف بيئة خاص بها. الاختيار يتم **وقت الترجمة** عبر `--dart-define`، فنسخة
-release لا يمكن توجيهها إلى خادم التطوير بأي شيء وقت التشغيل:
+نكهتان فقط، ولكل واحدة ملف بيئة وحزمةٌ واسمٌ وأيقونةٌ خاصة بها — كتطبيق الموظفين. الاختيار يتم
+**وقت الترجمة** عبر `--flavor` (نكهةُ Gradle ومخطّطُ Xcode)، فنسخة release لا يمكن توجيهها إلى خادم
+آخر بأي شيء وقت التشغيل:
 
-| النكهة | الملف | الأمر |
-|---|---|---|
-| `prod` | `.env` | الافتراضي — بدون أي `--dart-define` |
-| `dev` | `.env.dev` | `--dart-define=FLAVOR=dev` |
+| النكهة | الحزمة · الاسم | الملف | الأمر |
+|---|---|---|---|
+| `prod` | `ly.dayaa.client` · «فلايركس» | `.env` | الافتراضي — بلا `--flavor` (`default-flavor: prod` في pubspec) |
+| `dev` | `ly.dayaa.client.dev` · «فلايركس تجريبي»، وأيقونةٌ عليها شريط TEST | `.env.dev` → صندوق التجربة | `--flavor dev` |
+
+**حزمتان لا حزمة**: المُختبِرُ يحمل النسختين على الهاتف نفسه، ولا تحلّ إحداهما محلّ الأخرى.
+و`--flavor dev` وحده يختار `.env.dev` أيضاً ([AppConfig](lib/core/config/app_config.dart) يقرؤه عبر
+`appFlavor`)، فلا حاجة إلى `--dart-define=FLAVOR=dev` بجانبه — وإن كُتب صراحةً غَلَب.
 
 `.env.example` وحده مرفوع في git ويوثّق المفاتيح؛ الملفان الآخران مستثنيان لأن فيهما عناوين خوادم.
 وكل ملف **يجب** أن يكون مُدرجاً تحت `assets:` في [pubspec.yaml](pubspec.yaml) — نكهة ملفها غير
 محزوم تنهار عند الإقلاع لا عند البناء.
 
 `.env.dev` يحمل مفتاحاً إضافياً `BASE_URL_ANDROID`: محاكي أندرويد لا يصل `127.0.0.1` — ذلك العنوان
-هو المحاكي نفسه — فيمرّ عبر `10.0.2.2`. يُقرأ فقط في نكهة `dev`.
+هو المحاكي نفسه — فيمرّ عبر `10.0.2.2`. يُقرأ فقط في نكهة `dev` **وفي التصحيح** (`kDebugMode`):
+نسخةٌ مُصدَّرة تطلبه من هاتفٍ حقيقيّ تبقى على التحميل بلا رسالة، فلا تقرؤه أبداً.
 
 ## البناء
 
 ```bash
-flutter build apk --release --dart-define=FLAVOR=dev  # نسخة تجريبية على خادم التطوير
-flutter build apk --release                           # إنتاج (prod افتراضياً)
+flutter build apk --release --flavor dev   # نسخة المُختبِرين ← build/app/outputs/flutter-apk/app-dev-release.apk
+flutter build apk --release                # إنتاج (prod افتراضياً) ← app-prod-release.apk
+flutter build ipa --flavor dev             # iOS للمُختبِرين (TestFlight)
 ```
 
-⚠️ **لا تستعمل `--flavor`.** البيئة هنا `--dart-define` لا product flavor في Gradle —
-[AppConfig](lib/core/config/app_config.dart) يقرؤها وقت الترجمة ليختار ملف `.env`، فلا يمكن
-إقناع نسخة إنتاج بالتحدث إلى خادم التطوير. و`--flavor dev` يفشل بـ
-«Task 'assembleDevRelease' not found»، لأن `android/app/build.gradle.kts` لا يعرّف أي flavor
-ولا حاجة له بذلك.
+أيقونةُ الاختبار تُولَّد من الشعار نفسه — `python3 tool/make_test_flavour_icons.py` ثم
+`dart run flutter_launcher_icons` — و[flutter_launcher_icons-dev.yaml](flutter_launcher_icons-dev.yaml)
+يشرح لماذا لا يُعاد توليدُ أيقونة الإنتاج بالأمر نفسه.
 
 **تحقّق من الخادم داخل الحزمة قبل التوزيع** — الرابط يُحرَق داخل البناء، ونسخة موجّهة إلى خادم غير
 موجود تُثبَّت وتعمل ثم تفشل عند أول طلب، بلا أي رسالة تدلّ على السبب:
 
 ```bash
-unzip -p build/app/outputs/flutter-apk/app-release.apk assets/flutter_assets/.env | grep BASE_URL
+unzip -p build/app/outputs/flutter-apk/app-dev-release.apk assets/flutter_assets/.env.dev | grep BASE_URL
 ```
 
 قبل أي دمج:

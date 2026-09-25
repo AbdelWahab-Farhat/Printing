@@ -43,7 +43,7 @@
 ### الأوامر
 
 ```bash
-flutter run --dart-define=FLAVOR=dev        # تطوير
+flutter run --flavor dev                     # نسخة الاختبار — صندوق التجربة
 flutter run                                  # إنتاج (prod افتراضياً)
 dart run build_runner build                  # بعد أي تعديل على Freezed/JSON
 dart run build_runner watch                  # أثناء العمل المتواصل
@@ -280,10 +280,12 @@ result.fold(
 
 | الـ flavor | الملف | الأمر |
 |---|---|---|
-| `dev` | `.env.dev` | `flutter run --dart-define=FLAVOR=dev` |
-| `prod` | `.env` | `flutter run` |
+| `dev` | `.env.dev` | `flutter run --flavor dev` |
+| `prod` | `.env` | `flutter run` (`default-flavor: prod`) |
 
-محاكي أندرويد يصل للمضيف عبر `10.0.2.2` لا `127.0.0.1` — [AppConfig](lib/core/config/app_config.dart) يختار تلقائياً.
+`--flavor dev` حزمةٌ أخرى (`ly.dayaa.client.dev`) باسم «فلايركس تجريبي» وأيقونةٍ عليها TEST، فتُنصَّب بجانب الإنتاج. انظر README «البيئات».
+
+محاكي أندرويد يصل للمضيف عبر `10.0.2.2` لا `127.0.0.1` — [AppConfig](lib/core/config/app_config.dart) يختار تلقائياً، وفي التصحيح وحده.
 
 ---
 
@@ -381,7 +383,7 @@ TextFormField(validator: Validators.optional(Validators.email))   // حقل اخ
 ### فحص الشاشة على الجهاز
 
 ```bash
-flutter run test_driver/app.dart --dart-define=FLAVOR=dev
+flutter run test_driver/app.dart --flavor dev
 ```
 
 [test_driver/app.dart](test_driver/app.dart) هو نفس التطبيق مع `enableFlutterDriverExtension()`،

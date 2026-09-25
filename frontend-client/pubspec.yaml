@@ -145,6 +145,10 @@ dev_dependencies:
 # After changing the logo:
 #   python tool/make_branding_assets.py
 #   dart run flutter_launcher_icons
+#
+# **وأيقونةُ نسخة الاختبار في `flutter_launcher_icons-dev.yaml`**، وما دام ذلك الملفُّ موجوداً
+# لا يقرأ المولّدُ هذا الإعداد — الملفُّ نفسُه يشرح الترتيب. بعد تغيير الشعار يُعاد رسمُ الشريط:
+#   python3 tool/make_test_flavour_icons.py
 flutter_launcher_icons:
   # The composed artwork, edge to edge. 1024 because that is the size iOS requires — see the
   # note in the script about the master being 512.
@@ -172,6 +176,9 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  # النكهةُ حين لا يُمرَّر `--flavor`: `flutter run` و`flutter build` بلا وسائط يبنيان الإنتاج كما
+  # كانا قبل النكهات. ونسخةُ المُختبِرين `--flavor dev` — انظر README «البناء».
+  default-flavor: prod
 
   assets:
     # One per Flavor, and both have to be listed: a flavour whose env file is not bundled
