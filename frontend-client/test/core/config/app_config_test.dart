@@ -52,4 +52,89 @@ void main() {
       expect(Flavor.prod.isDevelopment, isFalse);
     });
   });
+
+  // الحالاتُ الخمس نفسُها في تطبيق الموظفين (frontend/test/core/config/app_config_test.dart)،
+  // حيث وصلت نسخةُ مُختبِرٍ تطلب `10.0.2.2` من هاتفٍ حقيقيّ.
+  group('the API address a build talks to', () {
+    // العنوانُ الافتراضيّ في كلّ اختبارات هذه المجموعة: ما يقوله ملفُّ البيئة.
+    const server = 'https://primulatest.server.ly/api/v1';
+    const emulator = 'http://10.0.2.2:8000/api/v1';
+
+    test('a released test build never rewrites the host to the emulator address', () {
+      // Arrange — نكهةُ `dev`، بناءٌ مُصدَّر، أندرويد، وملفُّ بيئةٍ فيه `BASE_URL_ANDROID`.
+      // و`10.0.2.2` هو المضيفُ كما يراه مُحاكي أندرويد وحدَه؛ على هاتفٍ حقيقيّ لا يُوجَّه إلى
+      // شيء، فتقف الشاشةُ على التحميل بلا رسالةِ خطأ.
+      // Act
+      final url = AppConfig.resolveBaseUrl(
+        isDevFlavor: true,
+        isDebugBuild: false,
+        isAndroid: true,
+        androidUrl: emulator,
+        url: server,
+      );
+
+      // Assert
+      expect(url, server);
+    });
+
+    test('the emulator rewrite still applies where it belongs: a debug run', () {
+      // Arrange — مُحاكي أندرويد لا يصل `127.0.0.1` الماك، لأن ذاك العنوان هو المُحاكي نفسُه.
+      // Act
+      final url = AppConfig.resolveBaseUrl(
+        isDevFlavor: true,
+        isDebugBuild: true,
+        isAndroid: true,
+        androidUrl: emulator,
+        url: 'http://127.0.0.1:8000/api/v1',
+      );
+
+      // Assert
+      expect(url, emulator);
+    });
+
+    test('production never rewrites, whatever the env file happens to hold', () {
+      // Arrange — النكهةُ هي الحارس لا الملفّ.
+      // Act
+      final url = AppConfig.resolveBaseUrl(
+        isDevFlavor: false,
+        isDebugBuild: true,
+        isAndroid: true,
+        androidUrl: emulator,
+        url: 'https://api.daaya.ly/api/v1',
+      );
+
+      // Assert
+      expect(url, 'https://api.daaya.ly/api/v1');
+    });
+
+    test('a blank BASE_URL_ANDROID is treated as absent, not as an empty host', () {
+      // Arrange — «BASE_URL_ANDROID=» بلا قيمة يردّه dotenv نصّاً فارغاً لا null.
+      // Act
+      final url = AppConfig.resolveBaseUrl(
+        isDevFlavor: true,
+        isDebugBuild: true,
+        isAndroid: true,
+        androidUrl: '',
+        url: server,
+      );
+
+      // Assert
+      expect(url, server);
+    });
+
+    test('iOS reads BASE_URL even in a debug run; the rewrite is Android-only', () {
+      // Arrange
+      // Act
+      final url = AppConfig.resolveBaseUrl(
+        isDevFlavor: true,
+        isDebugBuild: true,
+        isAndroid: false,
+        androidUrl: emulator,
+        url: server,
+      );
+
+      // Assert
+      expect(url, server);
+    });
+  });
 }
