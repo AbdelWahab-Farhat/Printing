@@ -30,6 +30,31 @@ android {
         versionName = flutter.versionName
     }
 
+    // نكهتان: ما يصل المتجر، وما يصل المُختبِر — كما في تطبيق الموظفين منذ ٢١ سبتمبر.
+    //
+    // **والغرضُ أن تتعايشا على الجهاز نفسه.** المُختبِرُ يحمل الاثنتين، فلو تشاركتا
+    // `applicationId` لحلّت إحداهما محلّ الأخرى عند التنصيب — ولو تشابهتا في الأيقونة والاسم
+    // لفتح الخطأَ وأبلغ عن عطلٍ في غير موضعه. فاللاحقةُ تفصل الحزمتين، و`src/dev/res` يحمل
+    // اسماً وأيقونةً مختلفين.
+    //
+    // اسمُ النكهة `dev` لا `test`: `test` اسمٌ محجوزٌ لمجموعة مصادر اختبارات الوحدة في Gradle.
+    // وهو الاسمُ نفسه الذي يختار به `AppConfig` ملفَّ البيئة (`--flavor dev` ← `.env.dev`)،
+    // و`default-flavor: prod` في pubspec يُبقي `flutter run` بلا `--flavor` على الإنتاج.
+    flavorDimensions += "env"
+
+    productFlavors {
+        create("prod") {
+            dimension = "env"
+        }
+
+        create("dev") {
+            dimension = "env"
+            // ly.dayaa.client.dev — حزمةٌ أخرى، فتُنصَّب بجانب الإنتاج لا فوقه.
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-test"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

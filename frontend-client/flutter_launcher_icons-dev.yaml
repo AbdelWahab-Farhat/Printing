@@ -1,0 +1,26 @@
+# أيقوناتُ نسخة الاختبار (نكهة `dev`).
+#
+# ملفٌّ مستقلٌّ باسم `flutter_launcher_icons-<flavor>.yaml` هو ما يفهمه المولّد نكهةً: يكتب
+# أندرويد في `android/app/src/dev/res/` و iOS في `AppIcon-dev.appiconset`، فلا تدوس أيقونةُ
+# الاختبار أيقونةَ الإنتاج.
+#
+#   python3 tool/make_test_flavour_icons.py
+#   dart run flutter_launcher_icons
+#
+# **ما دام هذا الملفُّ موجوداً لا يقرأ المولّدُ إلا ملفاتِ النكهات** — إعدادُ الإنتاج في
+# `pubspec.yaml` يُتجاهَل. فتوليدُ أيقونة الإنتاج من جديد يمرّ بإزاحة هذا الملف جانباً ثم إعادته،
+# ثم تشغيل الأمر مرةً ثانية لنسخة الاختبار. والتهيئات `*-dev` في Xcode تشير إلى `AppIcon-dev`
+# بيدٍ في project.pbxproj، لا بهذا المولّد.
+#
+# والباقي هو إعدادُ `pubspec.yaml` نفسُه بصورتَي الشريط.
+flutter_launcher_icons:
+  image_path: assets/branding/icon_1024_test.png
+
+  android: true
+  adaptive_icon_foreground: assets/branding/adaptive_foreground_test.png
+  adaptive_icon_background: "#16243c"
+  min_sdk_android: 24
+
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#16243c"

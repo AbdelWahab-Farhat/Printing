@@ -2,10 +2,12 @@ import 'dart:io' show Platform;
 
 import 'package:dayaa_client/core/realtime/realtime_client.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show appFlavor;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Which build this is. Chosen at compile time with `--dart-define=FLAVOR=dev`, so a release
-/// build cannot be talked into pointing at the development API by anything at runtime.
+/// Which build this is. Chosen at compile time — by `--flavor dev`, or by `--dart-define=FLAVOR=dev`
+/// — so a release build cannot be talked into pointing at the development API by anything at
+/// runtime. See [resolve] for which of the two wins.
 ///
 /// **One file each, and no two share one.** The env file is the only thing deciding which API a
 /// build talks to, so a flavour without its own would be a build silently pointed at whichever
@@ -33,8 +35,23 @@ enum Flavor {
   /// and reach nothing at all.
   bool get isDevelopment => this == Flavor.dev;
 
-  static Flavor get current {
-    const name = String.fromEnvironment('FLAVOR', defaultValue: 'prod');
+  static Flavor get current => resolve(
+    defined: const String.fromEnvironment('FLAVOR'),
+    gradleFlavor: appFlavor,
+  );
+
+  /// أيُّ النكهتين هذه، من مفتاحَي البناء — بلا ثوابتِ ترجمة، ليكون للقرار اختبار.
+  ///
+  /// **`--flavor` وحده يكفي.** هو ما يعطي الحزمةَ اسمَها وأيقونتَها («فلايركس تجريبي» و`.dev`)،
+  /// فلو بقي ملفُّ البيئة معلّقاً بـ`--dart-define` وحده لخرجت نسخةٌ تقول «تجريبي» وتكلّم الإنتاج
+  /// متى نُسي المفتاحُ الثاني. و Flutter يمرّر `--flavor` إلى Dart باسم [appFlavor].
+  ///
+  /// **و`--dart-define=FLAVOR` المكتوبُ صراحةً يغلب.** `default-flavor: prod` في pubspec يجعل
+  /// [appFlavor] «prod» في كل أمرٍ بلا `--flavor`، والأمرُ القديم `--dart-define=FLAVOR=dev`
+  /// يجب أن يبقى على ملف التطوير كما كان.
+  @visibleForTesting
+  static Flavor resolve({required String defined, required String? gradleFlavor}) {
+    final name = defined.isNotEmpty ? defined : (gradleFlavor ?? 'prod');
 
     // Falls back to `prod` rather than throwing: a typo in a build command must not produce a
     // release pointed at a developer's laptop.

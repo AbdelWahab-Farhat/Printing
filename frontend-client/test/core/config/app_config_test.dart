@@ -34,14 +34,41 @@ void main() {
       // is pinned here is the *default* it resolves to. A typo in a build command must not
       // produce a release pointed at 127.0.0.1.
       // Act
-      final resolved = Flavor.values.firstWhere(
-        (flavor) => flavor.name == 'typo',
-        orElse: () => Flavor.prod,
-      );
+      final resolved = Flavor.resolve(defined: 'typo', gradleFlavor: null);
 
       // Assert
       expect(resolved, Flavor.prod);
       expect(Flavor.current, isNot(Flavor.dev));
+    });
+
+    test('--flavor dev alone picks the dev env file, with no --dart-define beside it', () {
+      // Arrange — «flutter build apk --flavor dev» بلا `--dart-define=FLAVOR=dev`. لو قُرئ
+      // الـ dart-define وحده لخرجت حزمةُ الاختبار — أيقونتُها واسمُها «تجريبي» — تكلّم الإنتاج،
+      // ولأنشأ المُختبِرُ طلبياتٍ حقيقية.
+      // Act
+      final resolved = Flavor.resolve(defined: '', gradleFlavor: 'dev');
+
+      // Assert
+      expect(resolved, Flavor.dev);
+    });
+
+    test('an explicit --dart-define=FLAVOR still wins over the default flavour', () {
+      // Arrange — «flutter run --dart-define=FLAVOR=dev» كما كُتب قبل النكهات: `default-flavor:
+      // prod` في pubspec يجعل `appFlavor` «prod»، والأمرُ القديم يجب أن يبقى على ملف التطوير.
+      // Act
+      final resolved = Flavor.resolve(defined: 'dev', gradleFlavor: 'prod');
+
+      // Assert
+      expect(resolved, Flavor.dev);
+    });
+
+    test('with neither given, the build is prod', () {
+      // Arrange
+      // Act
+      final resolved = Flavor.resolve(defined: '', gradleFlavor: null);
+
+      // Assert
+      expect(resolved, Flavor.prod);
     });
 
     test('only the development flavour is treated as development', () {
