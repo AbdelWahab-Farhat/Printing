@@ -72,7 +72,8 @@ class OrderCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _Cell(label: 'رقم الطلبية', value: '#${order.code}')),
+                  // الرقم وحده بلا «#»: اسم الخانة فوقه يقول ما هو.
+                  Expanded(child: _Cell(label: 'رقم الطلبية', value: order.code)),
                   Expanded(
                     child: _Cell(
                       label: 'تاريخ الطلب',

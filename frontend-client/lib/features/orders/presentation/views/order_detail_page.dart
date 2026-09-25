@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
-import 'package:dayaa_client/core/utils/bidi.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/app_speed_dial.dart';
@@ -94,9 +93,10 @@ class _Loaded extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        // **الرمز معزولاً من اليسار**، وإلا نزلت «#» على يمين الرقم: «1304#».
+        // **الرقم وحده** (طلب صاحب العمل، ٢٠٢٦-٠٩-٢٥): «طلبية» تقولها الشاشة كلها، و«#» زينةٌ
+        // لا تقول شيئاً — كانت «طلبية #1304».
         title: Text(
-          'طلبية ${'#${order.code}'.ltrIsolated}',
+          order.code,
           style: context.textTheme.titleLarge?.copyWith(
             fontSize: 20.sp,
             fontWeight: FontWeight.w800,

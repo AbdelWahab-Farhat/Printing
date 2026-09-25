@@ -35,7 +35,8 @@ class ActiveOrderCard extends StatelessWidget {
         Row(
           children: [
             Text(
-              '#${order.code}',
+              // الرقم وحده، بلا «#» — كعنوان الطلبية حين تُفتح.
+              order.code,
               style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             if (order.placedAt case final placedAt?) ...[

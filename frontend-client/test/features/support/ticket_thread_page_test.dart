@@ -302,6 +302,22 @@ void main() {
     PaintingBinding.instance.imageCache.clear();
   });
 
+  /// الرقم وحده، بلا «#» (طلب صاحب العمل، ٢٠٢٦-٠٩-٢٥): «بخصوص الطلبية» فوقه تقول ما هو.
+  testWidgets('the order it is about is pinned by its number alone', (tester) async {
+    // Arrange
+    when(() => support.ticket(41)).thenAnswer(
+      (_) async => Right(thread().copyWith(order: const TicketOrderRef(id: 7, code: '1228'))),
+    );
+
+    // Act
+    await open(tester);
+
+    // Assert
+    expect(find.text('بخصوص الطلبية'), findsOne);
+    expect(find.text('1228'), findsOne);
+    expect(find.text('#1228'), findsNothing);
+  });
+
   testWidgets('the send key sends nothing while the box is empty', (tester) async {
     // Arrange
     stubReply(() async => Right(thread()));

@@ -315,7 +315,8 @@ class _ThreadBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// «بخصوص الطلبية #1220» مثبّتةً تحت العنوان — كرسالةٍ مثبّتة في تيليغرام — تفتح الطلبية.
+/// «بخصوص الطلبية» فوق رقمها «1220»، مثبّتةً تحت العنوان — كرسالةٍ مثبّتة في تيليغرام — تفتح
+/// الطلبية.
 class _PinnedOrder extends StatelessWidget {
   const _PinnedOrder({required this.order});
 
@@ -357,7 +358,8 @@ class _PinnedOrder extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '#${order.code}',
+                      // الرقم وحده بلا «#»: «بخصوص الطلبية» فوقه تقول ما هو.
+                      order.code,
                       style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ],

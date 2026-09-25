@@ -164,7 +164,7 @@ void main() {
 
     // Assert
     expect(find.text('طلبياتي الجارية'), findsOneWidget);
-    expect(find.text('#1228'), findsOneWidget);
+    expect(find.text('1228'), findsOneWidget);
     expect(find.text('قيد الإنتاج'), findsOneWidget);
     expect(find.text('الإنتاج'), findsOneWidget);
   });
@@ -204,7 +204,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Act
-    await tester.tap(find.text('#1228'));
+    await tester.tap(find.text('1228'));
     await tester.pumpAndSettle();
 
     // Assert
@@ -253,7 +253,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('#1228'), findsOneWidget);
+    expect(find.text('1228'), findsOneWidget);
     expect(find.text('لا يوجد اتصال'), findsNothing);
   });
 

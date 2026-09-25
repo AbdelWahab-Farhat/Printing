@@ -109,6 +109,23 @@ void main() {
     expect(find.text('سؤال قديم'), findsNothing);
   });
 
+  /// الرقم وحده، بلا «طلبية» ولا «#» (طلب صاحب العمل، ٢٠٢٦-٠٩-٢٥).
+  testWidgets('a ticket about an order is tagged with its number alone', (tester) async {
+    // Arrange
+    when(() => support.tickets(page: any(named: 'page'), openOnly: true)).thenAnswer(
+      (_) async =>
+          Right(page([live.copyWith(order: const TicketOrderRef(id: 7, code: '1228'))])),
+    );
+    await tester.pumpWidget(host());
+
+    // Act
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('1228'), findsOne);
+    expect(find.text('طلبية #1228'), findsNothing);
+  });
+
   testWidgets('«الكل» is gone — the question is always open or closed', (tester) async {
     // Arrange
     await tester.pumpWidget(host());

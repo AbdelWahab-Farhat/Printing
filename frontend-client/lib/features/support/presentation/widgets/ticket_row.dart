@@ -115,7 +115,10 @@ class TicketRow extends StatelessWidget {
                           ),
                         if (ticket.order case final order?)
                           _Tag(
-                            label: 'طلبية #${order.code}',
+                            // الرقم وحده، بلا «طلبية» ولا «#» (طلب صاحب العمل، ٢٠٢٦-٠٩-٢٥).
+                            // وأيقونة الطلبيات قبله مكان الكلمة: رقمٌ عارٍ في شارة لا يقول ما هو.
+                            label: order.code,
+                            icon: AppIcons.orders,
                             fill: scheme.surfaceContainerHigh,
                             ink: scheme.onSurfaceVariant,
                           ),
@@ -179,21 +182,36 @@ class _UnreadCount extends StatelessWidget {
 }
 
 class _Tag extends StatelessWidget {
-  const _Tag({required this.label, required this.fill, required this.ink});
+  const _Tag({required this.label, required this.fill, required this.ink, this.icon});
 
   final String label;
   final Color fill;
   final Color ink;
 
+  /// ما يقول ما هي الشارة حين لا تقوله كلمتها — رقم الطلبية وحده.
+  final IconData? icon;
+
   @override
   Widget build(BuildContext context) {
+    final text = Text(
+      label,
+      style: context.textTheme.labelMedium?.copyWith(color: ink, fontWeight: FontWeight.w700),
+    );
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 2.h),
       decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(999.r)),
-      child: Text(
-        label,
-        style: context.textTheme.labelMedium?.copyWith(color: ink, fontWeight: FontWeight.w700),
-      ),
+      child: switch (icon) {
+        null => text,
+        final icon => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13.sp, color: ink),
+            SizedBox(width: 4.w),
+            text,
+          ],
+        ),
+      },
     );
   }
 }

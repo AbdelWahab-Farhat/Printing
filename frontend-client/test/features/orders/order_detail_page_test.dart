@@ -286,15 +286,20 @@ void main() {
   });
 
   group('the order number', () {
-    testWidgets('keeps its hash on the left of the digits in the title', (tester) async {
+    /// الرقم وحده عنواناً (طلب صاحب العمل، ٢٠٢٦-٠٩-٢٥): «طلبية» تقولها الشاشة كلها، و«#»
+    /// زينةٌ لا تقول شيئاً.
+    testWidgets('is the title alone, with no «طلبية» and no «#»', (tester) async {
       // Arrange
       final order = order1304();
 
       // Act
       await open(tester, order);
 
-      // Assert — بلا عزلٍ تجعله القاعدة W2 رقماً عربياً، فتنزل «#» على يمينه: «1304#».
-      expect(find.text('طلبية \u2066#1304\u2069'), findsOneWidget);
+      // Assert
+      final bar = find.byType(AppBar);
+      expect(find.descendant(of: bar, matching: find.text('1304')), findsOneWidget);
+      expect(find.descendant(of: bar, matching: find.textContaining('طلبية')), findsNothing);
+      expect(find.textContaining('#'), findsNothing);
     });
 
     testWidgets('is copied from the bar, for reading out on the phone', (tester) async {
