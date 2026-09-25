@@ -697,9 +697,10 @@ class _Versions extends StatelessWidget {
             style: text.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
           )
         else
-          // **Every version ever uploaded, oldest first, and none is ever removed.** That is what
-          // «الاحتفاظ بجميع نسخ التصميم السابقة» looks like on a screen.
-          for (final version in ticket.versions)
+          // **Every version ever uploaded, newest first, and none is ever removed.** That is what
+          // «الاحتفاظ بجميع نسخ التصميم السابقة» looks like on a screen. The API sends them
+          // oldest first — `newestVersion` reads `.last` — so the flip is here and only here.
+          for (final version in ticket.versions.reversed)
             DesignVersionTile(
               version: version,
               onTap: () {
@@ -718,7 +719,7 @@ class _Versions extends StatelessWidget {
                 // reviewer swipes between rounds instead of closing and reopening: comparing
                 // «قبل» with «بعد» is the reason to open one at all.
                 final pictures = [
-                  for (final file in ticket.versions)
+                  for (final file in ticket.versions.reversed)
                     if (file.thumbnailUrl ?? file.fileUrl case final url?) (file, url),
                 ];
 
