@@ -25,16 +25,12 @@ class InvestorProfitTile extends StatefulWidget {
     required this.available,
     super.key,
     this.icon,
-    this.header,
   });
 
   final String awaitingDelivery;
   final String pending;
   final String available;
   final IconData? icon;
-
-  /// فوق الاسم — [InvestorMoneyTile.header].
-  final Widget? header;
 
   @override
   State<InvestorProfitTile> createState() => _InvestorProfitTileState();
@@ -60,7 +56,6 @@ class _InvestorProfitTileState extends State<InvestorProfitTile> {
       label: label,
       amount: amount,
       icon: widget.icon,
-      header: widget.header,
       footer: Wrap(
         spacing: 8.w,
         runSpacing: 8.h,
