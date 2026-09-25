@@ -8,6 +8,7 @@ import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/repositories/auth_repository.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/auth/usecases/has_stored_session.dart';
+import 'package:dayaa_client/features/auth/usecases/logout.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit.dart';
 import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
@@ -22,6 +23,7 @@ import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
+import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -59,7 +61,7 @@ class _StubAuth implements AuthRepository {
   @override
   Future<Either<Failure, Unit>> logout() => throw UnimplementedError();
 
-  /// الحارس في [AppRouter] يسأل هذا وحده، فالجواب «نعم» يفتح الرئيسية بدل شاشة الدخول.
+  /// الحارس في [AppRouter] وشاشة البداية يسألان هذا، فالجواب «نعم» يفتح الرئيسية بدل شاشة الدخول.
   @override
   bool get hasStoredToken => true;
 }
@@ -106,6 +108,13 @@ void main() {
     sl
       ..registerLazySingleton<HasStoredSession>(() => HasStoredSession(auth))
       ..registerLazySingleton<GetCurrentCustomer>(() => GetCurrentCustomer(auth))
+      ..registerFactory<SplashCubit>(
+        () => SplashCubit(
+          hasStoredSession: HasStoredSession(auth),
+          getCurrentCustomer: GetCurrentCustomer(auth),
+          logout: Logout(auth),
+        ),
+      )
       ..registerFactory<BillboardCubit>(
         () => BillboardCubit(get: GetBillboards(_StubBillboards())),
       )
@@ -135,8 +144,9 @@ void main() {
       ),
     );
 
-    // Act
+    // Act — شاشة البداية أولاً، ودوّارها لا يهدأ، فيُتجاوز وقتها صراحةً قبل انتظار الهدوء.
     await tester.pumpWidget(app);
+    await tester.pump(SplashCubit.minimumDisplay + const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
 
     // Assert

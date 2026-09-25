@@ -68,6 +68,7 @@ import 'package:dayaa_client/features/shops/usecases/list_business_fields.dart';
 import 'package:dayaa_client/features/shops/usecases/list_shops.dart';
 import 'package:dayaa_client/features/shops/usecases/remove_shop.dart';
 import 'package:dayaa_client/features/shops/usecases/update_shop.dart';
+import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/attachment_files_cubit.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/open_thread.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_badge_feed.dart';
@@ -194,6 +195,15 @@ abstract final class Injector {
       ..registerLazySingleton(() => Logout(sl<AuthRepository>()))
       ..registerLazySingleton(() => GetCurrentCustomer(sl<AuthRepository>()))
       ..registerLazySingleton(() => HasStoredSession(sl<AuthRepository>()))
+      // A singleton here would keep the answer of the first check for the life of the process —
+      // exactly wrong for a screen whose whole job is to check again.
+      ..registerFactory(
+        () => SplashCubit(
+          hasStoredSession: sl<HasStoredSession>(),
+          getCurrentCustomer: sl<GetCurrentCustomer>(),
+          logout: sl<Logout>(),
+        ),
+      )
       ..registerFactory(() => LoginCubit(login: sl<Login>()))
       ..registerFactory(() => RegisterCubit(register: sl<Register>()));
   }

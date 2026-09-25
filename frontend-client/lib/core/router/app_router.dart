@@ -18,6 +18,7 @@ import 'package:dayaa_client/features/shops/models/shop.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shop_details_page.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shop_form_page.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shops_page.dart';
+import 'package:dayaa_client/features/splash/presentation/views/splash_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/support_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa_client/features/tools/presentation/views/bag_preview_page.dart';
@@ -31,6 +32,9 @@ import 'package:go_router/go_router.dart';
 /// و`context.push` ثابتاً من هنا ولا يأخذان نصاً أبداً. وحيث يحمل المسار رقماً تُستعمل دالة لا
 /// ثابت: `Routes.order(7)` لا يمكن بناؤه والرقم في غير مكانه.
 abstract final class Routes {
+  /// أول ما يُفتح: يتحقق من الجلسة مع الخادم قبل الرئيسية. انظر `SplashPage`.
+  static const String splash = '/splash';
+
   static const String home = '/';
   static const String login = '/login';
   static const String register = '/register';
@@ -102,9 +106,12 @@ abstract final class Routes {
 /// والطلبية والمحادثة فأماكن تذهب إليها ثم تعود، فتغطي الشريط ولها زر رجوع.
 abstract final class AppRouter {
   static final GoRouter instance = GoRouter(
-    initialLocation: Routes.home,
+    // **شاشة البداية دائماً، لا الرئيسية.** التوكن المحفوظ يُسأل عنه الخادم مرةً هنا، فإن لم
+    // يُجب قيل ذلك للعميل في مكانٍ واحد بدل رئيسيةٍ يفشل كل قسمٍ فيها وحده.
+    initialLocation: Routes.splash,
     redirect: _guard,
     routes: [
+      GoRoute(path: Routes.splash, builder: (context, state) => const SplashPage()),
       GoRoute(path: Routes.login, builder: (context, state) => const LoginPage()),
       GoRoute(path: Routes.register, builder: (context, state) => const RegisterPage()),
 
@@ -209,6 +216,10 @@ abstract final class AppRouter {
   /// التوكن يجيب عنها أول طلب يستعمله: `AuthInterceptor` يحوّل الـ 401 إلى `onUnauthorized`،
   /// فتُمسح الجلسة ويعود العميل إلى هنا.
   static String? _guard(BuildContext context, GoRouterState state) {
+    // شاشة البداية تقرر بنفسها إلى أين، ولكلا الحالين: من يحمل توكناً لو أُبعد عنها كما يُبعد عن
+    // شاشة الدخول لذهب إلى الرئيسية قبل أن يُسأل الخادم عن توكنه.
+    if (state.matchedLocation == Routes.splash) return null;
+
     final signedIn = sl<HasStoredSession>()();
     final isPublic = _public.contains(state.matchedLocation);
 
