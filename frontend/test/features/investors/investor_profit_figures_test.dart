@@ -16,8 +16,8 @@ class _MockRecordWalletEntry extends Mock implements RecordWalletEntry {}
 
 /// الأرقامُ الثلاثة على صفحة المستثمر — §٠.٨ من مواصفة الصندوق.
 ///
-/// المديرُ يرى ما يراه صاحبُ المال على بوابته: مجموعَ الربح، وزرّاً لكل بوّابة — **قيد التسليم**،
-/// و**معلّقة**، و**متاحة للسحب**.
+/// المديرُ يرى ما يراه صاحبُ المال على بوابته: مجموعَ الربح وبوّاباتِه الثلاث — **قيد التسليم**،
+/// و**معلّقة**، و**متاحة للسحب** — ظاهرةً معه بلا زرّ، والبوابةُ تبقى بأزرارها.
 ///
 /// Arrange - Act - Assert في كلٍّ منها.
 void main() {
@@ -77,30 +77,15 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — المجموعُ أولاً: 750 + 1,500 + 300.
-    expect(find.text('إجمالي الأرباح'), findsOneWidget);
+    // Assert — المجموعُ أولاً: 750 + 1,500 + 300، وبوّاباتُه الثلاث ظاهرةٌ معه بلا لمسة
+    // («أ · لمحة واحدة»، 2026-09-25).
+    expect(find.text('الأرباح'), findsOneWidget);
     expect(find.text('2,550 د.ل'), findsOneWidget);
-
-    // Act
-    await tester.tap(find.text('قيد التسليم'));
-    await tester.pump();
-
-    // Assert
+    expect(find.text('قيد التسليم'), findsOneWidget);
     expect(find.text('750 د.ل'), findsOneWidget);
-
-    // Act
-    await tester.tap(find.text('معلّقة'));
-    await tester.pump();
-
-    // Assert
+    expect(find.text('معلّقة'), findsOneWidget);
     expect(find.text('1,500 د.ل'), findsOneWidget);
-
-    // Act
-    await tester.tap(find.text('متاحة للسحب'));
-    await tester.pump();
-
-    // Assert
-    expect(find.text('أرباح متاحة للسحب'), findsOneWidget);
+    expect(find.text('متاحة للسحب'), findsOneWidget);
     expect(find.text('300 د.ل'), findsOneWidget);
   });
 }

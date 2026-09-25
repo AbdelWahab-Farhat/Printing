@@ -438,7 +438,11 @@ $FundShareCopyWith<$Res>? get fund {
 mixin _$InvestorPeriod {
 
  int get id; String get code;/// سالبٌ في فترةٍ خسر فيها.
- String get profit;
+ String get profit;/// **مدّتُها وحالُها اختياريّةٌ عمداً**: خادمٌ نُشر قبلها يرسل الصفَّ بلا هذه الحقول، وحقلٌ
+/// مطلوبٌ غائب كان يُسقط الصفحةَ كلَّها بدل أن يُسقط سطراً.
+@JsonKey(name: 'starts_on') String? get startsOn;@JsonKey(name: 'ends_on') String? get endsOn;/// `open` أو `closing` أو `closed`.
+ String get status;/// «مفتوحة» أو «قيد الإغلاق» أو «مغلقة» — بلفظ الخادم، كما في سجلّ الفترات.
+@JsonKey(name: 'status_label') String? get statusLabel;
 /// Create a copy of InvestorPeriod
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -451,16 +455,16 @@ $InvestorPeriodCopyWith<InvestorPeriod> get copyWith => _$InvestorPeriodCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,profit);
+int get hashCode => Object.hash(runtimeType,id,code,profit,startsOn,endsOn,status,statusLabel);
 
 @override
 String toString() {
-  return 'InvestorPeriod(id: $id, code: $code, profit: $profit)';
+  return 'InvestorPeriod(id: $id, code: $code, profit: $profit, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel)';
 }
 
 
@@ -471,7 +475,7 @@ abstract mixin class $InvestorPeriodCopyWith<$Res>  {
   factory $InvestorPeriodCopyWith(InvestorPeriod value, $Res Function(InvestorPeriod) _then) = _$InvestorPeriodCopyWithImpl;
 @useResult
 $Res call({
- int id, String code, String profit
+ int id, String code, String profit,@JsonKey(name: 'starts_on') String? startsOn,@JsonKey(name: 'ends_on') String? endsOn, String status,@JsonKey(name: 'status_label') String? statusLabel
 });
 
 
@@ -488,12 +492,16 @@ class _$InvestorPeriodCopyWithImpl<$Res>
 
 /// Create a copy of InvestorPeriod
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? profit = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? profit = null,Object? startsOn = freezed,Object? endsOn = freezed,Object? status = null,Object? statusLabel = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
-as String,
+as String,startsOn: freezed == startsOn ? _self.startsOn : startsOn // ignore: cast_nullable_to_non_nullable
+as String?,endsOn: freezed == endsOn ? _self.endsOn : endsOn // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: freezed == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -578,10 +586,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String profit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code,  String profit, @JsonKey(name: 'starts_on')  String? startsOn, @JsonKey(name: 'ends_on')  String? endsOn,  String status, @JsonKey(name: 'status_label')  String? statusLabel)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvestorPeriod() when $default != null:
-return $default(_that.id,_that.code,_that.profit);case _:
+return $default(_that.id,_that.code,_that.profit,_that.startsOn,_that.endsOn,_that.status,_that.statusLabel);case _:
   return orElse();
 
 }
@@ -599,10 +607,10 @@ return $default(_that.id,_that.code,_that.profit);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String profit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code,  String profit, @JsonKey(name: 'starts_on')  String? startsOn, @JsonKey(name: 'ends_on')  String? endsOn,  String status, @JsonKey(name: 'status_label')  String? statusLabel)  $default,) {final _that = this;
 switch (_that) {
 case _InvestorPeriod():
-return $default(_that.id,_that.code,_that.profit);case _:
+return $default(_that.id,_that.code,_that.profit,_that.startsOn,_that.endsOn,_that.status,_that.statusLabel);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -619,10 +627,10 @@ return $default(_that.id,_that.code,_that.profit);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String profit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code,  String profit, @JsonKey(name: 'starts_on')  String? startsOn, @JsonKey(name: 'ends_on')  String? endsOn,  String status, @JsonKey(name: 'status_label')  String? statusLabel)?  $default,) {final _that = this;
 switch (_that) {
 case _InvestorPeriod() when $default != null:
-return $default(_that.id,_that.code,_that.profit);case _:
+return $default(_that.id,_that.code,_that.profit,_that.startsOn,_that.endsOn,_that.status,_that.statusLabel);case _:
   return null;
 
 }
@@ -634,13 +642,21 @@ return $default(_that.id,_that.code,_that.profit);case _:
 @JsonSerializable()
 
 class _InvestorPeriod implements InvestorPeriod {
-  const _InvestorPeriod({required this.id, required this.code, required this.profit});
+  const _InvestorPeriod({required this.id, required this.code, required this.profit, @JsonKey(name: 'starts_on') this.startsOn, @JsonKey(name: 'ends_on') this.endsOn, this.status = '', @JsonKey(name: 'status_label') this.statusLabel});
   factory _InvestorPeriod.fromJson(Map<String, dynamic> json) => _$InvestorPeriodFromJson(json);
 
 @override final  int id;
 @override final  String code;
 /// سالبٌ في فترةٍ خسر فيها.
 @override final  String profit;
+/// **مدّتُها وحالُها اختياريّةٌ عمداً**: خادمٌ نُشر قبلها يرسل الصفَّ بلا هذه الحقول، وحقلٌ
+/// مطلوبٌ غائب كان يُسقط الصفحةَ كلَّها بدل أن يُسقط سطراً.
+@override@JsonKey(name: 'starts_on') final  String? startsOn;
+@override@JsonKey(name: 'ends_on') final  String? endsOn;
+/// `open` أو `closing` أو `closed`.
+@override@JsonKey() final  String status;
+/// «مفتوحة» أو «قيد الإغلاق» أو «مغلقة» — بلفظ الخادم، كما في سجلّ الفترات.
+@override@JsonKey(name: 'status_label') final  String? statusLabel;
 
 /// Create a copy of InvestorPeriod
 /// with the given fields replaced by the non-null parameter values.
@@ -655,16 +671,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,profit);
+int get hashCode => Object.hash(runtimeType,id,code,profit,startsOn,endsOn,status,statusLabel);
 
 @override
 String toString() {
-  return 'InvestorPeriod(id: $id, code: $code, profit: $profit)';
+  return 'InvestorPeriod(id: $id, code: $code, profit: $profit, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel)';
 }
 
 
@@ -675,7 +691,7 @@ abstract mixin class _$InvestorPeriodCopyWith<$Res> implements $InvestorPeriodCo
   factory _$InvestorPeriodCopyWith(_InvestorPeriod value, $Res Function(_InvestorPeriod) _then) = __$InvestorPeriodCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code, String profit
+ int id, String code, String profit,@JsonKey(name: 'starts_on') String? startsOn,@JsonKey(name: 'ends_on') String? endsOn, String status,@JsonKey(name: 'status_label') String? statusLabel
 });
 
 
@@ -692,12 +708,16 @@ class __$InvestorPeriodCopyWithImpl<$Res>
 
 /// Create a copy of InvestorPeriod
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? profit = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? profit = null,Object? startsOn = freezed,Object? endsOn = freezed,Object? status = null,Object? statusLabel = freezed,}) {
   return _then(_InvestorPeriod(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
-as String,
+as String,startsOn: freezed == startsOn ? _self.startsOn : startsOn // ignore: cast_nullable_to_non_nullable
+as String?,endsOn: freezed == endsOn ? _self.endsOn : endsOn // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,statusLabel: freezed == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

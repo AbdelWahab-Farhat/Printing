@@ -200,6 +200,12 @@ abstract final class AppIcons {
   static IconData get fundWithdraw =>
       _pick(Icons.output_rounded, CupertinoIcons.arrow_up_circle);
 
+  /// رأسُ مالٍ في الصندوق لم تنقضِ مدّةُ حبسه — بجانب موعد فكّه على صفحة المستثمر.
+  static IconData get locked => _pick(Icons.lock_outline_rounded, CupertinoIcons.lock);
+
+  /// وما انقضت مدّتُه: يُستردّ متى شاء.
+  static IconData get unlocked => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
+
   /// A cost the fund carries — «تسجيل مصروف». A receipt, because what is recorded is a bill.
   static IconData get expense =>
       _pick(Icons.receipt_long_outlined, CupertinoIcons.doc_text);

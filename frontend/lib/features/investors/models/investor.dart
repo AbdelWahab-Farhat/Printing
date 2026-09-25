@@ -57,6 +57,17 @@ abstract class InvestorPeriod with _$InvestorPeriod {
 
     /// سالبٌ في فترةٍ خسر فيها.
     required String profit,
+
+    /// **مدّتُها وحالُها اختياريّةٌ عمداً**: خادمٌ نُشر قبلها يرسل الصفَّ بلا هذه الحقول، وحقلٌ
+    /// مطلوبٌ غائب كان يُسقط الصفحةَ كلَّها بدل أن يُسقط سطراً.
+    @JsonKey(name: 'starts_on') String? startsOn,
+    @JsonKey(name: 'ends_on') String? endsOn,
+
+    /// `open` أو `closing` أو `closed`.
+    @Default('') String status,
+
+    /// «مفتوحة» أو «قيد الإغلاق» أو «مغلقة» — بلفظ الخادم، كما في سجلّ الفترات.
+    @JsonKey(name: 'status_label') String? statusLabel,
   }) = _InvestorPeriod;
 
   factory InvestorPeriod.fromJson(Map<String, dynamic> json) => _$InvestorPeriodFromJson(json);

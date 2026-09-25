@@ -31,7 +31,8 @@ final class InvestorPeriods
     ) {}
 
     /**
-     * @return list<array{id: int, code: string, profit: string}> الأحدثُ أوّلاً
+     * @return list<array{id: int, code: string, starts_on: string, ends_on: string, status: string,
+     *     status_label: string, profit: string}> الأحدثُ أوّلاً
      */
     public function forInvestor(int $investorId): array
     {
@@ -55,6 +56,13 @@ final class InvestorPeriods
             $rows[] = [
                 'id' => $periodId,
                 'code' => (string) $period->code,
+
+                // «سواء منتهية أو مستمرة» — الصفُّ يقول أيَّهما، وبلفظ سجلّ الفترات نفسِه.
+                'starts_on' => $period->starts_on->toDateString(),
+                'ends_on' => $period->ends_on->toDateString(),
+                'status' => $period->status->value,
+                'status_label' => $period->status->label(),
+
                 'profit' => $taken['amount'] ?? '0.00',
             ];
         }

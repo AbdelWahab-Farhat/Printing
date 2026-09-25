@@ -53,6 +53,10 @@ _InvestorPeriod _$InvestorPeriodFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       code: json['code'] as String,
       profit: json['profit'] as String,
+      startsOn: json['starts_on'] as String?,
+      endsOn: json['ends_on'] as String?,
+      status: json['status'] as String? ?? '',
+      statusLabel: json['status_label'] as String?,
     );
 
 Map<String, dynamic> _$InvestorPeriodToJson(_InvestorPeriod instance) =>
@@ -60,6 +64,10 @@ Map<String, dynamic> _$InvestorPeriodToJson(_InvestorPeriod instance) =>
       'id': instance.id,
       'code': instance.code,
       'profit': instance.profit,
+      'starts_on': instance.startsOn,
+      'ends_on': instance.endsOn,
+      'status': instance.status,
+      'status_label': instance.statusLabel,
     };
 
 _InvestorBalances _$InvestorBalancesFromJson(Map<String, dynamic> json) =>

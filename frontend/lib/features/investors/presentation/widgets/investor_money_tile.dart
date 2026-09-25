@@ -39,9 +39,9 @@ class InvestorMoneyTile extends StatelessWidget {
     required String this.artwork,
     super.key,
     this.caption,
+    this.footer,
   }) : emphasis = true,
-       icon = null,
-       footer = null;
+       icon = null;
 
   final String label;
 
@@ -59,7 +59,8 @@ class InvestorMoneyTile extends StatelessWidget {
   /// The asset painted on the hero card — `'assets/images/wallet.png'`.
   final String? artwork;
 
-  /// ما يُرسم تحت الرقم على عرض البطاقة كلّه — أزرارُ `InvestorProfitTile`. للبطاقة العادية وحدها.
+  /// ما يُرسم تحت الرقم على عرض البطاقة كلّه — أزرارُ `InvestorProfitTile`، وعلى البطاقة الكبيرة
+  /// أين رأسُ مال المستثمر: محفظتُه وصندوقُه جنباً إلى جنب.
   final Widget? footer;
 
   @override
@@ -237,24 +238,34 @@ class _Hero extends StatelessWidget {
               ],
             ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: _Figure(
-                  label: tile.label,
-                  amount: tile.amount,
-                  caption: tile.caption,
-                  ink: scheme.onPrimary,
-                  muted: scheme.onPrimary.withValues(alpha: 0.85),
-                  big: true,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Figure(
+                      label: tile.label,
+                      amount: tile.amount,
+                      caption: tile.caption,
+                      ink: scheme.onPrimary,
+                      muted: scheme.onPrimary.withValues(alpha: 0.85),
+                      big: true,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  // Excluded from semantics: it is the card's picture of itself, and «محفظة» read
+                  // out before «رصيد المحفظة» is the same word twice.
+                  ExcludeSemantics(
+                    child: Image.asset(artwork, height: 84.w, width: 84.w),
+                  ),
+                ],
               ),
-              SizedBox(width: 12.w),
-              // Excluded from semantics: it is the card's picture of itself, and «محفظة» read
-              // out before «رصيد المحفظة» is the same word twice.
-              ExcludeSemantics(
-                child: Image.asset(artwork, height: 84.w, width: 84.w),
-              ),
+              if (tile.footer case final footer?) ...[
+                SizedBox(height: 14.h),
+                footer,
+              ],
             ],
           ),
         ),

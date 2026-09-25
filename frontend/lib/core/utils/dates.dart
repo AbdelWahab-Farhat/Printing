@@ -54,6 +54,23 @@ abstract final class AppDates {
         : day(local);
   }
 
+  /// «23 – 30 سبتمبر 2026» — من يومٍ إلى يوم، والشهرُ والسنةُ مرّةً حين يشترك فيهما اليومان.
+  ///
+  /// «28 سبتمبر – 27 أكتوبر 2026» حين يعبر شهراً، و«15 ديسمبر 2026 – 14 يناير 2027» حين يعبر
+  /// سنة. مدّةُ فترةٍ من فترات الصندوق على صفحة المستثمر.
+  static String span(DateTime from, DateTime to) {
+    final start = from.toLocal();
+    final end = to.toLocal();
+
+    if (start.year != end.year) return '${day(start)} – ${day(end)}';
+
+    final head = start.month == end.month
+        ? '${start.day}'
+        : '${start.day} ${_months[start.month - 1]}';
+
+    return '$head – ${day(end)}';
+  }
+
   /// «2:00 م» — twelve-hour, because that is how the time is said here.
   ///
   /// Midnight reads «12:00 ص» rather than «0:00», which is a clock nobody in the shop owns.

@@ -37,6 +37,44 @@ void main() {
     });
   });
 
+  group('the span', () {
+    test('says the month and the year once when both days share them', () {
+      // Arrange — فترةٌ من سبتمبر: «23 – 30 سبتمبر 2026»، لا الشهرُ مرّتين.
+      final from = DateTime(2026, 9, 23);
+      final to = DateTime(2026, 9, 30);
+
+      // Act
+      final span = AppDates.span(from, to);
+
+      // Assert
+      expect(span, '23 – 30 سبتمبر 2026');
+    });
+
+    test('names both months when it crosses one', () {
+      // Arrange
+      final from = DateTime(2026, 9, 28);
+      final to = DateTime(2026, 10, 27);
+
+      // Act
+      final span = AppDates.span(from, to);
+
+      // Assert
+      expect(span, '28 سبتمبر – 27 أكتوبر 2026');
+    });
+
+    test('names both years when it crosses one', () {
+      // Arrange
+      final from = DateTime(2026, 12, 15);
+      final to = DateTime(2027, 1, 14);
+
+      // Act
+      final span = AppDates.span(from, to);
+
+      // Assert
+      expect(span, '15 ديسمبر 2026 – 14 يناير 2027');
+    });
+  });
+
   group('the time', () {
     test('is twelve-hour, as the shop says it', () {
       // Arrange - Act - Assert

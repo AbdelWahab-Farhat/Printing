@@ -109,6 +109,8 @@ final class InvestorBalances
             ->whereIn('investor_id', $investorIds)
             ->get();
 
+        $folded = $this->foldedDealIds();
+
         $totals = [];
 
         foreach ($investorIds as $id) {
@@ -127,9 +129,15 @@ final class InvestorBalances
             // «رأس ماله عندنا» is both places his capital can be — in his wallet and committed
             // to deals — because from where he stands they are one sum he handed over. The two
             // are told apart on his own screen, where the distinction is the point.
+            //
+            // **إلا ما بقي في صفقةٍ طُويت في الصندوق** — قرارُ المالك 2026-09-25: «مالناش علاقة
+            // بيها». صفحتُه لا ترسمها، فعدُّها هنا يجعل السجلَّ يقول غيرَ رقمِ صفحته. ومجموعُ
+            // رأسِ مالِها يصير صفراً يومَ تُقفَل، وباقيها يُعَدّ حينئذٍ من محفظته.
+            $inDeal = isset($folded[(int) $entry->investor_deal_id]) ? '0' : $deltas['capital_deal'];
+
             $totals[$id]['capital'] = bcadd(
                 $totals[$id]['capital'],
-                bcadd($deltas['capital_wallet'], $deltas['capital_deal'], 8),
+                bcadd($deltas['capital_wallet'], $inDeal, 8),
                 8,
             );
             $totals[$id]['profit'] = bcadd(
@@ -319,6 +327,18 @@ final class InvestorBalances
      * @param  TQuery  $query
      * @return TQuery
      */
+    /**
+     * @return array<int, true>
+     */
+    private function foldedDealIds(): array
+    {
+        return DB::table('investor_deals')
+            ->whereNotNull('folded_into_fund_at')
+            ->pluck('id')
+            ->mapWithKeys(fn ($id): array => [(int) $id => true])
+            ->all();
+    }
+
     private function withoutFoldedDeals($query)
     {
         return $query->whereNotIn(

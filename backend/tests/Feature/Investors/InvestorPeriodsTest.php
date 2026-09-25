@@ -190,6 +190,32 @@ class InvestorPeriodsTest extends TestCase
             ->assertJsonPath('data.periods.1.profit', '500.00');
     }
 
+    public function test_each_period_says_its_dates_and_whether_it_is_still_open(): void
+    {
+        // Arrange — «سواء منتهية أو مستمرة»: سبتمبر مُقفلة وأكتوبر مفتوحة، وهو شريكٌ فيهما.
+        $ahmad = Investor::factory()->create();
+
+        $september = $this->september();
+        $this->share($september, $ahmad, '100.000000');
+        $this->seal($september);
+
+        $this->share($this->october(), $ahmad, '100.000000');
+
+        // Act
+        $response = $this->withHeaders($this->headers())->getJson("/api/v1/investors/{$ahmad->id}");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.periods.0.starts_on', '2026-10-01')
+            ->assertJsonPath('data.periods.0.ends_on', '2026-10-31')
+            ->assertJsonPath('data.periods.0.status', 'open')
+            ->assertJsonPath('data.periods.0.status_label', 'مفتوحة')
+            ->assertJsonPath('data.periods.1.starts_on', '2026-09-01')
+            ->assertJsonPath('data.periods.1.ends_on', '2026-09-30')
+            ->assertJsonPath('data.periods.1.status', 'closed')
+            ->assertJsonPath('data.periods.1.status_label', 'مغلقة');
+    }
+
     public function test_a_period_he_had_no_share_in_is_not_on_his_page(): void
     {
         // Arrange — سالم وحده شريكُ سبتمبر؛ أحمد لم يدخلها.
