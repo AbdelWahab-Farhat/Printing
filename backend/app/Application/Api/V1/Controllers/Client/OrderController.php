@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers\Client;
 
+use App\Application\Api\V1\Requests\Client\Order\QuoteBasketRequest;
 use App\Application\Api\V1\Requests\Client\Order\RequestOrderRequest;
+use App\Application\Api\V1\Resources\Client\ClientBasketQuoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderDetailResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Order\Actions\QuoteBasket;
 use App\Domain\Order\Actions\RequestOrder;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderItemData;
@@ -44,6 +47,7 @@ class OrderController extends Controller
     public function __construct(
         private readonly OrderService $orders,
         private readonly RequestOrder $requestOrder,
+        private readonly QuoteBasket $quoteBasket,
     ) {}
 
     /**
@@ -106,9 +110,9 @@ class OrderController extends Controller
             cityId: (int) $validated['city_id'],
             customerShopId: isset($validated['customer_shop_id']) ? (int) $validated['customer_shop_id'] : null,
             regionId: isset($validated['region_id']) ? (int) $validated['region_id'] : null,
-            recipientName: $validated['recipient_name'] ?? null,
+            // لا اسمَ مستلمٍ ولا عنوانَ حرّاً: المستلم هو العميل نفسه، والوجهة مدينةٌ ومنطقةٌ
+            // ومتجر — انظر `RequestOrderRequest`.
             recipientPhone: $validated['recipient_phone'] ?? null,
-            addressDetails: $validated['address_details'] ?? null,
             // What the customer wrote lands in the order's note, prefixed so whoever reviews it
             // can see at a glance that these are the customer's words and not a colleague's.
             notes: isset($validated['customer_note'])
@@ -136,9 +140,32 @@ class OrderController extends Controller
         ));
 
         return $this->created(
-            new ClientOrderDetailResource($order->load(['items', 'transitions'])),
+            new ClientOrderDetailResource($order->load(['items.product.images', 'transitions'])),
             'تم إرسال طلبك، وسنراجعه ونؤكده قريباً',
         );
+    }
+
+    /**
+     * Price a basket
+     *
+     * سعر كل سطرٍ ووحدته، ومجموع البضاعة، ورسم التوصيل إلى `city_id` حين تُرسل، والتكلفة النهائية —
+     * بالطريق الذي تُسعَّر به الطلبية حين تُرسل، فما تعرضه السلة هو ما تكلّفه. **POST ولا يكتب
+     * شيئاً**، كتسعير المنتج: السطور جسمٌ لا رابط.
+     */
+    public function quote(QuoteBasketRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $quote = ($this->quoteBasket)(
+            array_map(
+                fn (array $item, int $index) => OrderItemData::fromArray($item, $index, allowsQuoteLater: true),
+                $validated['items'],
+                array_keys($validated['items']),
+            ),
+            isset($validated['city_id']) ? (int) $validated['city_id'] : null,
+        );
+
+        return $this->success(new ClientBasketQuoteResource($quote));
     }
 
     /**

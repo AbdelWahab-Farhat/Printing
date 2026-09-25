@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
@@ -5,6 +7,7 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
 import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa/features/support/repositories/support_repository.dart';
@@ -26,11 +29,15 @@ import 'package:mocktail/mocktail.dart';
 /// a closed ticket saying it is closed rather than showing a dead box, and the ticket going back
 /// to the queue on the way out so the list can patch itself without a refetch.
 ///
+/// **ويُضاف ما جعل الشاشةَ حيّة**: سطرُ العميل يظهر ساعةَ يصل من المقبس بلا سحب، والملفُّ المرفق
+/// يُرسم باسمه، وردُّ المحل الذي رآه العميل يحمل ✓✓، وزرُّ إعادة الفتح يعيد صندوق الرد.
+///
 /// Arrange - Act - Assert throughout.
 class _MockSupportRepository extends Mock implements SupportRepository {}
 
 void main() {
   late _MockSupportRepository repository;
+  late StreamController<TicketChange> changes;
 
   const me = 7;
 
@@ -51,6 +58,7 @@ void main() {
     TicketStatus status = TicketStatus.open,
     int? assignedTo,
     TicketAssignee? assignee,
+    int? customerReadUpTo,
     List<TicketMessage> messages = const [fromCustomer, fromDesk],
   }) => SupportTicket(
     id: 12,
@@ -60,6 +68,7 @@ void main() {
     customer: const TicketCustomer(id: 4, name: 'سالم', code: 'A-1001', phone: '0910000000'),
     assignedTo: assignedTo,
     assignee: assignee,
+    customerReadUpTo: customerReadUpTo,
     messages: messages,
   );
 
@@ -70,8 +79,11 @@ void main() {
     await Injector.reset();
 
     repository = _MockSupportRepository();
+    changes = StreamController<TicketChange>.broadcast();
 
     when(() => repository.ticket(any())).thenAnswer((_) async => Right(ticket));
+    when(() => repository.watchChanges()).thenAnswer((_) => changes.stream);
+    when(() => repository.liveResumed).thenAnswer((_) => const Stream<void>.empty());
 
     sl
       ..registerSingleton<Session>(
@@ -92,6 +104,8 @@ void main() {
           reply: ReplyToTicket(repository),
           assign: AssignTicket(repository),
           close: CloseTicket(repository),
+          reopen: ReopenTicket(repository),
+          watch: WatchTicketChanges(repository),
         ),
       );
   }
@@ -117,7 +131,10 @@ void main() {
   /// sent and the test failed for a reason that had nothing to do with what it asserts.
   final sendButton = find.widgetWithIcon(IconButton, AppIcons.send);
 
-  tearDown(Injector.reset);
+  tearDown(() async {
+    await Injector.reset();
+    await changes.close();
+  });
 
   testWidgets('it draws the conversation, and who is having it', (tester) async {
     // Arrange
@@ -206,10 +223,128 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert — the server refuses a staff reply on a closed ticket. Saying so beats letting
-      // somebody type a paragraph into a box that will throw it away.
+      // somebody type a paragraph into a box that will throw it away — and the one way back
+      // into it is right there.
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('التذكرة مغلقة. ردّ العميل يعيد فتحها.'), findsOneWidget);
+      expect(
+        find.text('التذكرة مغلقة. أعد فتحها لتكتب فيها، أو يعيدها ردُّ العميل.'),
+        findsOneWidget,
+      );
+      expect(find.text('إعادة فتح التذكرة'), findsOneWidget);
       expect(find.text('خذها'), findsNothing);
+    });
+
+    testWidgets('reopening it brings the reply box back', (tester) async {
+      // Arrange
+      await arrange(ticketWith(status: TicketStatus.closed));
+
+      when(() => repository.reopen(any())).thenAnswer(
+        (_) async => Right(ticketWith(status: TicketStatus.inProgress)),
+      );
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('إعادة فتح التذكرة'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      verify(() => repository.reopen(12)).called(1);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('إعادة فتح التذكرة'), findsNothing);
+    });
+
+    testWidgets('a reader who may not write is told only that the customer can reopen it', (
+      tester,
+    ) async {
+      // Arrange
+      await arrange(ticketWith(status: TicketStatus.closed), permissions: const ['support.view']);
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('التذكرة مغلقة. ردُّ العميل يعيد فتحها.'), findsOneWidget);
+      expect(find.text('إعادة فتح التذكرة'), findsNothing);
+    });
+  });
+
+  group('live', () {
+    testWidgets('what the customer writes appears without a refresh', (tester) async {
+      // Arrange
+      await arrange(ticketWith());
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act — سطرٌ جديد من المقبس.
+      changes.add(
+        TicketChange(
+          ticket: ticketWith(),
+          message: const TicketMessage(id: 3, from: MessageAuthor.customer, body: 'هل من جديد؟'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('هل من جديد؟'), findsOneWidget);
+    });
+  });
+
+  group('what a message carries', () {
+    testWidgets('a file is drawn by its name and size', (tester) async {
+      // Arrange
+      await arrange(
+        ticketWith(
+          messages: const [
+            TicketMessage(
+              id: 1,
+              from: MessageAuthor.customer,
+              attachment: TicketAttachment(
+                kind: AttachmentKind.pdf,
+                kindLabel: 'PDF',
+                name: 'التصميم.pdf',
+                sizeBytes: 3355443,
+                url: 'https://example.test/signed',
+              ),
+            ),
+          ],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — رسالةٌ بلا نصّ لا تُسقط الخيط؛ الملفُّ نفسه هو الرسالة.
+      expect(find.text('التصميم.pdf'), findsOneWidget);
+      expect(find.text('3.2 م.ب'), findsOneWidget);
+    });
+
+    testWidgets('a reply the customer has seen carries ✓✓, one they have not carries ✓', (
+      tester,
+    ) async {
+      // Arrange — رأى العميل حتى الرسالة ٢، ولم يرَ الرسالة ٣.
+      await arrange(
+        ticketWith(
+          customerReadUpTo: 2,
+          messages: const [
+            fromCustomer,
+            fromDesk,
+            TicketMessage(id: 3, from: MessageAuthor.staff, authorName: 'محمد', body: 'وأخرى'),
+          ],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — ولا علامة على رسالة العميل نفسه.
+      expect(find.byIcon(AppIcons.readMark), findsOneWidget);
+      expect(find.byIcon(AppIcons.sentMark), findsOneWidget);
     });
   });
 

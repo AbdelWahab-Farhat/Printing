@@ -98,13 +98,18 @@ class SupportController extends Controller
     {
         $owned = $this->support->findForCustomer((int) $this->customer($request)->getKey(), $ticket);
 
-        $this->support->markRead($owned, staff: false);
+        // حتى آخر رسالةٍ حُمّلت هنا، لا حتى «الآن» — انظر MarkTicketRead.
+        $lastLoaded = $owned->messages->max('id');
+        $this->support->markRead($owned, staff: false, upToMessageId: $lastLoaded === null ? null : (int) $lastLoaded);
 
         return $this->success(new ClientSupportTicketResource($owned->load(['messages', 'order'])));
     }
 
     /**
      * Reply
+     *
+     * كلامٌ، أو ملفٌّ (صورة أو PDF، `multipart/form-data`)، أو كلاهما. `client_token` يجعل
+     * الإعادة بعد انقطاع الاتصال آمنة: الرمز نفسه يُرجع الرسالة نفسها.
      *
      * **A reply to a closed ticket reopens it.** Writing into a thread you can still see means
      * it is not finished, and reopening is what you meant — see `PostTicketMessage`.
@@ -114,7 +119,13 @@ class SupportController extends Controller
         $customer = $this->customer($request);
         $owned = $this->support->findForCustomer((int) $customer->getKey(), $ticket);
 
-        $this->support->replyAsCustomer($owned, $customer, $request->string('body')->toString());
+        $this->support->replyAsCustomer(
+            $owned,
+            $customer,
+            $request->filled('body') ? $request->string('body')->toString() : null,
+            $request->file('file'),
+            $request->filled('client_token') ? $request->string('client_token')->toString() : null,
+        );
 
         return $this->created(
             new ClientSupportTicketResource($owned->refresh()->load(['messages', 'order'])),

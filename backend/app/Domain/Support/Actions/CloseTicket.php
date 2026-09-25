@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Support\Actions;
 
 use App\Domain\Identity\Models\User;
+use App\Domain\Support\Enums\TicketChange;
 use App\Domain\Support\Enums\TicketStatus;
+use App\Domain\Support\Events\TicketChanged;
 use App\Domain\Support\Models\SupportTicket;
 
 /**
@@ -31,6 +33,9 @@ final class CloseTicket
         $ticket->closed_at = now();
         $ticket->closed_by = $staff?->getKey();
         $ticket->save();
+
+        // بعد الإغلاق الفعلي وحده: الضغطةُ الثانية لم تكتب شيئاً، فليس عندها ما تقوله.
+        TicketChanged::dispatch((int) $ticket->getKey(), TicketChange::Closed);
 
         return $ticket->refresh();
     }

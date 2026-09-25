@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
 import 'package:dayaa/features/support/repositories/support_repository.dart';
 import 'package:dayaa/features/support/usecases/support_usecases.dart';
@@ -19,11 +23,20 @@ import 'package:mocktail/mocktail.dart';
 /// The second is the double-tap guard. «إغلاق» is one press, and two requests would put two
 /// closures in the audit trail for one decision.
 ///
+/// **والثالث أن الخيط حيّ ولا يكذب**: ما يصل من المقبس يُلحق مرةً واحدة، ورسالةُ العميل تُقرأ
+/// بصمت، وقراءةٌ صامتة تجاوزها خبرٌ أحدث لا تُعرض — ولا يُسقط جوابُ طلبٍ رسالةً وصلت حيّةً أثناءه.
+///
 /// Arrange - Act - Assert throughout.
 class _MockSupportRepository extends Mock implements SupportRepository {}
 
 void main() {
   late _MockSupportRepository repository;
+  late StreamController<TicketChange> changes;
+  late StreamController<void> resumes;
+
+  setUpAll(() {
+    registerFallbackValue(const PickedFile(path: 'x', name: 'x', sizeBytes: 1));
+  });
 
   SupportTicket ticketWith({
     TicketStatus status = TicketStatus.open,
@@ -58,14 +71,32 @@ void main() {
     reply: ReplyToTicket(repository),
     assign: AssignTicket(repository),
     close: CloseTicket(repository),
+    reopen: ReopenTicket(repository),
+    watch: WatchTicketChanges(repository),
   );
 
   void stubRead(SupportTicket ticket) {
     when(() => repository.ticket(any())).thenAnswer((_) async => Right(ticket));
   }
 
+  /// ما يدفعه المقبس، بعد أن تهدأ المهام المؤجّلة.
+  Future<void> live(TicketChange change) async {
+    changes.add(change);
+    await Future<void>.delayed(Duration.zero);
+  }
+
   setUp(() {
     repository = _MockSupportRepository();
+    changes = StreamController<TicketChange>.broadcast();
+    resumes = StreamController<void>.broadcast();
+
+    when(() => repository.watchChanges()).thenAnswer((_) => changes.stream);
+    when(() => repository.liveResumed).thenAnswer((_) => resumes.stream);
+  });
+
+  tearDown(() async {
+    await changes.close();
+    await resumes.close();
   });
 
   group('opening the thread', () {
@@ -170,6 +201,44 @@ void main() {
         verifyNever(() => repository.reply(any(), body: '   '));
       },
     );
+
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'a file goes up with whatever was typed as its caption, and alone when nothing was',
+      setUp: () {
+        stubRead(opened);
+        when(
+          () => repository.reply(
+            any(),
+            body: any(named: 'body'),
+            attachment: any(named: 'attachment'),
+          ),
+        ).thenAnswer((_) async => Right(answered));
+      },
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        await cubit.send('  الفاتورة  ', attachment: const PickedFile(path: '/f.pdf', name: 'f.pdf', sizeBytes: 9));
+        await cubit.send('   ', attachment: const PickedFile(path: '/p.jpg', name: 'p.jpg', sizeBytes: 9));
+      },
+      verify: (_) {
+        // Assert — التعليقُ مقصوصاً، وبلا تعليقٍ لا يُرسل نصٌّ فارغ: الخادم يقبل الملف وحده.
+        verify(
+          () => repository.reply(
+            12,
+            body: 'الفاتورة',
+            attachment: const PickedFile(path: '/f.pdf', name: 'f.pdf', sizeBytes: 9),
+          ),
+        ).called(1);
+        verify(
+          () => repository.reply(
+            12,
+            body: null,
+            attachment: const PickedFile(path: '/p.jpg', name: 'p.jpg', sizeBytes: 9),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('taking a ticket and putting it back', () {
@@ -240,6 +309,170 @@ void main() {
       // route and nothing else.
       verify: (_) => verifyNever(() => repository.close(any())),
       expect: () => <TicketThreadState>[],
+    );
+  });
+
+  group('reopening', () {
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'sends one request and draws the ticket the server returned',
+      setUp: () {
+        stubRead(ticketWith(status: TicketStatus.closed, messages: const [original]));
+        when(() => repository.reopen(any())).thenAnswer(
+          (_) async => Right(ticketWith(status: TicketStatus.inProgress, messages: const [original])),
+        );
+      },
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        expect(await cubit.reopenTicket(), isTrue);
+      },
+      verify: (cubit) {
+        // Assert
+        verify(() => repository.reopen(12)).called(1);
+        expect((cubit.state as TicketThreadLoaded).ticket.status, TicketStatus.inProgress);
+      },
+    );
+  });
+
+  group('live', () {
+    const fresh = TicketMessage(id: 3, from: MessageAuthor.customer, body: 'وصلت؟');
+
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'a customer message arriving live is added, and read at once',
+      setUp: () => stubRead(opened),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act
+        await live(TicketChange(ticket: ticketWith(), message: fresh));
+      },
+      verify: (cubit) {
+        // Assert — مرّتان: فتحُ الخيط، ثم قراءتُه الصامتة التي تُطفئ شارته عند الزملاء.
+        verify(() => repository.ticket(12)).called(2);
+        expect(
+          (cubit.state as TicketThreadLoaded).ticket.messages.map((m) => m.id),
+          containsAllInOrder(<int>[1, 3]),
+        );
+      },
+    );
+
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'a message it already holds is not added twice, and a desk message is not re-read',
+      setUp: () => stubRead(answered),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act — صدى ردّي أنا، يصل من المقبس بعد جواب الطلب.
+        await live(TicketChange(ticket: ticketWith(status: TicketStatus.inProgress), message: answer));
+      },
+      verify: (cubit) {
+        // Assert
+        verify(() => repository.ticket(12)).called(1);
+        expect((cubit.state as TicketThreadLoaded).ticket.messages, hasLength(2));
+      },
+    );
+
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'what changed on the ticket reaches the screen, and another ticket is ignored',
+      setUp: () => stubRead(opened),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act — زميلٌ أغلقها، ثم خبرٌ عن تذكرةٍ أخرى.
+        await live(TicketChange(ticket: ticketWith(status: TicketStatus.closed)));
+        await live(
+          const TicketChange(
+            ticket: SupportTicket(id: 99, subject: 'أخرى', statusLabel: 'مفتوحة'),
+            message: TicketMessage(id: 50, from: MessageAuthor.customer, body: 'ليست لك'),
+          ),
+        );
+      },
+      verify: (cubit) {
+        // Assert — الحالةُ من الحدث، والخيطُ باقٍ كما هو.
+        final ticket = (cubit.state as TicketThreadLoaded).ticket;
+
+        expect(ticket.status, TicketStatus.closed);
+        expect(ticket.messages.map((m) => m.id), [1]);
+      },
+    );
+
+    test('a quiet read overtaken by a newer event is not drawn', () async {
+      // Arrange — القراءةُ الصامتة معلّقة حتى يُطلق الاختبار جوابها.
+      final gate = Completer<Either<Failure, SupportTicket>>();
+      var reads = 0;
+      when(() => repository.ticket(any())).thenAnswer((_) {
+        reads++;
+
+        return reads == 1 ? Future.value(Right(opened)) : gate.future;
+      });
+      final cubit = build();
+      await cubit.load();
+
+      // Act — رسالةٌ تستدعي القراءة، ثم رسالةٌ أحدث قبل أن تعود.
+      await live(TicketChange(ticket: ticketWith(), message: fresh));
+      await live(
+        TicketChange(
+          ticket: ticketWith(),
+          message: const TicketMessage(id: 4, from: MessageAuthor.staff, body: 'نتابعها'),
+        ),
+      );
+      gate.complete(Right(ticketWith(messages: const [original, fresh])));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert — جوابُ القراءة لا يعرف الرسالة ٤؛ عرضُه كان سيُخفيها من الشاشة.
+      expect((cubit.state as TicketThreadLoaded).ticket.messages.map((m) => m.id), [1, 3, 4]);
+
+      await cubit.close();
+    });
+
+    test('a reply answer keeps a message that arrived live while it was in flight', () async {
+      // Arrange
+      stubRead(opened);
+      final gate = Completer<Either<Failure, SupportTicket>>();
+      when(() => repository.reply(any(), body: any(named: 'body'))).thenAnswer((_) => gate.future);
+      final cubit = build();
+      await cubit.load();
+
+      // Act — ردّي في الطريق، والعميل يكتب، ثم يصل جوابي وقد بُني قبل سطره.
+      final sending = cubit.send('نعتذر');
+      await live(TicketChange(ticket: ticketWith(), message: fresh));
+      gate.complete(Right(answered));
+      await sending;
+
+      // Assert
+      expect((cubit.state as TicketThreadLoaded).ticket.messages.map((m) => m.id), [1, 2, 3]);
+
+      await cubit.close();
+    });
+
+    blocTest<TicketThreadCubit, TicketThreadState>(
+      'when the socket comes back the thread is read again without a spinner',
+      setUp: () {
+        var reads = 0;
+        when(() => repository.ticket(any())).thenAnswer((_) async {
+          reads++;
+
+          return Right(reads == 1 ? opened : ticketWith(messages: const [original, fresh]));
+        });
+      },
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act
+        resumes.add(null);
+        await Future<void>.delayed(Duration.zero);
+      },
+      // Assert — لا `loading` ثانية: الخيطُ لا يختفي خلف دائرةٍ لأن الشبكة عادت.
+      expect: () => [
+        isA<TicketThreadLoading>(),
+        isA<TicketThreadLoaded>().having((s) => s.ticket.messages, 'messages', hasLength(1)),
+        isA<TicketThreadLoaded>().having((s) => s.ticket.messages, 'messages', hasLength(2)),
+      ],
     );
   });
 }

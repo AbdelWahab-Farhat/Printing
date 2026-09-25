@@ -60,6 +60,33 @@ class BadgeCount extends StatelessWidget {
   }
 }
 
+/// أيقونةٌ وشارتها على كتفها، لأزرار الشريط العلوي.
+///
+/// **ليست [BadgedTile]**: تلك تعلّق الشارة على زاوية مربعٍ لا شيء فيها، وزرّ الأيقونة مربعٌ
+/// شفاف عرضه ٤٨ حول رسمٍ عرضه ٢٤، فتقع شارةٌ على زاويته بعيدةً عن الرسم الذي تخصّه. هنا تُعلَّق
+/// على الرسم نفسه، في طرفه الأول (الأيمن في العربية) كما في [BadgedTile].
+class BadgedIcon extends StatelessWidget {
+  const BadgedIcon({required this.icon, required this.badge, super.key});
+
+  final IconData icon;
+  final CustomerBadge badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        PositionedDirectional(
+          top: -7.h,
+          start: -9.w,
+          child: BadgeCount(badge: badge),
+        ),
+      ],
+    );
+  }
+}
+
 /// Anything, with its badge hung on the corner the eye lands on.
 ///
 /// **Top-start**, which in this right-to-left app is the top *left*. The tiles put their label

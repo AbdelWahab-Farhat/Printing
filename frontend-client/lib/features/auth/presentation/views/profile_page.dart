@@ -1,41 +1,44 @@
+import 'dart:async';
+
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
-import 'package:dayaa_client/core/theme/theme_mode_cubit.dart';
-import 'package:dayaa_client/core/theme/theme_mode_sheet.dart';
+import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
-import 'package:dayaa_client/core/widgets/app_card.dart';
-import 'package:dayaa_client/core/widgets/app_dialog.dart';
+import 'package:dayaa_client/core/widgets/menu_card.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
+import 'package:dayaa_client/features/auth/presentation/widgets/sign_out_sheet.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/auth/usecases/logout.dart';
-import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// «حسابي».
+/// «حسابي»: بطاقةٌ تقول من أنت، وتحتها ما تفعله بحسابك.
 ///
-/// **No Cubit, deliberately.** What this screen shows is one account that changes when the
-/// account does — which is a sign-out. A ViewModel for it would be a stream nothing ever pushes
-/// to, and the read is the same `auth/me` the home screen already makes.
+/// **على شكل الملف الشخصي في المرجع الذي أرسله صاحب العمل:** بطاقةٌ بلون العلامة تحمل الصورة
+/// والاسم والهاتف وكود العميل وأين يعمل، وتحتها بطاقة صفوف. **والفرق الذي طلبه أن الكود واضحٌ بما
+/// يكفي ليعرفه العميل:** مسمّىً «كود العميل» في شارةٍ بيضاء، ويُنسخ بلمسة لأنه ما يرسله العميل إلى
+/// المتجر حين يسأل عن طلبية.
 ///
-/// **Three rows the design draws are absent, and each for its own reason**, rather than drawn
-/// as buttons that do nothing:
+/// **بطاقة صفوفٍ واحدة**، لا اثنتان: جُرّبت منفصلتين على الهاتف، وطلب صاحب العمل ضمّهما. فيها
+/// «تصاميمي» أولاً، ثم «رمز QR» و«معاينة على الكيس» — **والباب الوحيد إلى الثلاث** منذ خرج
+/// تبويب «الخدمات» من الشريط، فلا تُحذف ظنّاً أنها مكرّرة في مكانٍ آخر. ثم «الإعدادات»
+/// (و«مظهر التطبيق» داخلها الآن)، و«سياسة الخصوصية» معطّلةً بشارة «قريباً» إلى أن تُكتب، و«تسجيل
+/// الخروج» خلف ورقة تأكيد آخرَها. أما «تواصل مع الدعم» فخرج لأنه مكرّرٌ في الرئيسية.
 ///
-/// * «المظهر» — the app has one appearance. A theme switch with a single option is a control
-///   that exists to be disappointing.
-/// * «الإشعارات» and «حذف الحساب» — neither endpoint exists. «حذف الحساب» is the one worth
-///   naming twice: a destructive button that cannot destroy anything is worse than none, and
-///   an account a customer believes they deleted is a promise the server never made.
+/// **بلا Cubit، عمداً.** ما تعرضه حسابٌ واحد لا يتغيّر إلا حين يتغيّر الحساب، أي بتسجيل الخروج.
+/// ViewModel لها ستكون تياراً لا يدفع إليه شيء، والقراءة هي `auth/me` نفسها التي تقوم بها الرئيسية.
 ///
-/// **And «الحساب موثّق» is absent for a different reason.** `is_active` is not verification —
-/// it is whether the shop still sells to this account — and drawing a green «موثّق» badge from
-/// it would be the app inventing a status the business does not keep. Every account would wear
-/// it, which makes it decoration.
+/// **ولا تفترض أنها تبويب.** لا `leading` مخصّص في شريطها، فإن فُتحت فوق الرئيسية ظهر زر الرجوع
+/// وحده.
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  /// شارة كود العميل، ليجد الاختبار الاسم والرقم داخلها معاً.
+  @visibleForTesting
+  static const Key codeChipKey = Key('profile_code_chip');
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -56,24 +59,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (!mounted) return;
 
+    // قراءةٌ فشلت تُبقي ما كان معروضاً: البطاقة التي عرفت صاحبها لا تنساه لأن سحباً للتحديث لم
+    // يصل إلى الخادم.
     result.fold((_) {}, (customer) => setState(() => _customer = customer));
   }
 
   Future<void> _signOut() async {
-    final confirmed = await showDestructiveDialog(
-      context: context,
-      title: 'تسجيل الخروج؟',
-      description: 'ستحتاج إلى رقم هاتفك وكلمة المرور للدخول مرة أخرى.',
-      confirmLabel: 'خروج',
-    );
+    final confirmed = await showSignOutSheet(context);
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     setState(() => _isSigningOut = true);
 
-    // **The result is not branched on.** Logout clears the token on this device either way; a
-    // network failure means the server was not told, which is the server's problem to age out
-    // and not a reason to keep somebody signed in to a phone they are handing back.
+    // **لا يُتفرَّع على النتيجة.** الخروج يمسح التوكن من هذا الجهاز في الحالين. فشل الشبكة يعني
+    // أن الخادم لم يُبلَّغ، وتلك مشكلته تنتهي بانتهاء صلاحية التوكن، لا سببٌ لإبقاء أحدٍ داخلاً على
+    // هاتفٍ قد يسلّمه لغيره.
     await sl<Logout>()();
 
     if (!mounted) return;
@@ -83,74 +83,190 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final customer = _customer;
-    final shop = customer?.shop;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('حسابي'),
-        // The design puts leaving in the bar rather than at the foot of a list somebody has to
-        // scroll to. It is still behind a confirm dialog.
-        leading: IconButton(
-          icon: Icon(
-            AppIcons.logout,
-            color: _isSigningOut ? null : context.colorScheme.error,
-          ),
-          tooltip: 'تسجيل الخروج',
-          onPressed: _isSigningOut ? null : _signOut,
-        ),
-        actions: const [NotificationsButton()],
-      ),
+      appBar: AppBar(title: const Text('حسابي')),
       body: SafeArea(
         top: false,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
-          children: [
-            _Header(customer: customer, shop: shop),
-            SizedBox(height: 24.h),
-
-            if (customer != null) ...[
-              // The number staff read back on the phone, so the customer has to be able to read
-              // it out — and the trade, which is the one fact here the shop keeps about the
-              // business rather than the person.
-              if (customer.code case final code?)
-                _FactRow(icon: AppIcons.customers, label: 'رقم العميل', value: code),
-              _FactRow(icon: AppIcons.phone, label: 'رقم الهاتف', value: customer.phone),
-              if (shop?.businessField case final field?)
-                _FactRow(icon: AppIcons.businessField, label: 'مجال العمل', value: field),
-              SizedBox(height: 22.h),
+        child: RefreshIndicator(
+          onRefresh: _read,
+          child: ListView(
+            // يُسحب حتى حين لا يملأ المحتوى الشاشة، وإلا لم يجد السحب ما يمسك به.
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
+            children: [
+              _AccountCard(customer: _customer),
+              SizedBox(height: 20.h),
+              // قائمةٌ واحدة: ما يصنعه العميل أولاً و«تصاميمي» في رأسها، ثم إعدادات حسابه، وتسجيل
+              // الخروج آخرها.
+              MenuCard(
+                rows: [
+                  // لا طريق آخر إلى هذه الثلاث في التطبيق. و`push` لا `go`، لتعود كلٌّ منها إلى
+                  // هنا بزر الرجوع.
+                  MenuRow(
+                    icon: AppIcons.designs,
+                    label: 'تصاميمي',
+                    onTap: () => context.push(Routes.designs),
+                  ),
+                  // والبطاقة أعلاه تسمّي أول المتاجر، فتُقرأ ثانيةً بعد العودة: قد يكون أُضيف أو
+                  // عُدِّل أو حُذف.
+                  MenuRow(
+                    icon: AppIcons.shops,
+                    label: 'متاجري',
+                    onTap: () async {
+                      await context.push(Routes.shops);
+                      await _read();
+                    },
+                  ),
+                  MenuRow(
+                    icon: AppIcons.qrCode,
+                    label: 'رمز QR',
+                    onTap: () => context.push(Routes.qrTool),
+                  ),
+                  MenuRow(
+                    icon: AppIcons.bagPreview,
+                    label: 'معاينة على الكيس',
+                    onTap: () => context.push(Routes.bagPreview),
+                  ),
+                  MenuRow(
+                    icon: AppIcons.settings,
+                    label: 'الإعدادات',
+                    // `push` لا `go`: الإعدادات تُفتح فوق «حسابي» وتعود إليها.
+                    onTap: () => context.push(Routes.settings),
+                  ),
+                  // معطّلةٌ لا مخفيّة: من سمع بها يجد مكانها، و«قريباً» تقول لماذا لا تُفتح.
+                  MenuRow(
+                    icon: AppIcons.privacy,
+                    label: 'سياسة الخصوصية',
+                    badge: 'قريباً',
+                    onTap: null,
+                  ),
+                  MenuRow(
+                    icon: AppIcons.logout,
+                    label: 'تسجيل الخروج',
+                    isDestructive: true,
+                    isBusy: _isSigningOut,
+                    onTap: _signOut,
+                  ),
+                ],
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-            // First of the three, because it is the only one that changes the app rather than
-            // leaving it: «الدعم» and «سياسة الخصوصية» both take you somewhere else.
-            // The singleton is read with an explicit `bloc:` rather than from the tree, exactly
-            // as `CartButton` reads the basket: it has no scope, and a `BlocProvider.value` at
-            // the top of this screen would be ceremony around something already global.
-            BlocBuilder<ThemeModeCubit, ThemeMode>(
-              bloc: sl<ThemeModeCubit>(),
-              builder: (context, mode) => _ActionRow(
-                icon: AppIcons.appearance,
-                label: 'مظهر التطبيق',
-                // The row says what the app is wearing without being opened, which is most of
-                // why somebody taps it — to check, not to change.
-                value: mode.label,
-                onTap: () => showThemeModeSheet(context).ignore(),
+/// البطاقة التي تقول من أنت، بلون العلامة كما في المرجع.
+///
+/// **حبرها أبيض في الوضعين.** البطاقة بلون العلامة لا بلون الصفحة، فلا يتبدّل ما عليها مع المظهر.
+/// والتدرّج يمضي من البرتقالي الصريح في الزاوية البعيدة إلى [BrandTone.primaryDeep] تحت النص،
+/// ليُقرأ رقم الهاتف بحجمه العادي. انظر تعليق ذلك اللون.
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({required this.customer});
+
+  final CustomerAccount? customer;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final customer = this.customer;
+    final shop = customer?.shop;
+    final ink = scheme.onPrimary;
+    final radius = BorderRadius.circular(24.r);
+
+    // «متجر النور · طرابلس»، أو ما عند الحساب من نصفيها. حسابٌ بلا متجرٍ لا سطر له.
+    final where = [?shop?.name, ?shop?.cityName].join(' · ');
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topEnd,
+          end: AlignmentDirectional.bottomStart,
+          colors: [scheme.primary, scheme.primaryDeep],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          children: [
+            // دائرتان باهتتان في زاويتين متقابلتين، كما في المرجع.
+            PositionedDirectional(
+              top: -70.w,
+              end: -50.w,
+              child: _Halo(size: 170.w, color: ink.withValues(alpha: 0.07)),
+            ),
+            PositionedDirectional(
+              bottom: -60.w,
+              start: -40.w,
+              child: _Halo(size: 140.w, color: ink.withValues(alpha: 0.06)),
+            ),
+            // اسم العلامة علامةً مائية في الطرف الخالي من النص، حيث يكتب المرجع اسمه. في أعلى
+            // البطاقة لا في وسطها: شارة الكود تمتدّ تحت منتصفها، والعلامة خلفها تُقرأ كتراكب.
+            PositionedDirectional(
+              top: 4.h,
+              end: 20.w,
+              child: Text(
+                'FlyerX',
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.displaySmall?.copyWith(
+                  fontSize: 34.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
+                  color: ink.withValues(alpha: 0.16),
+                ),
               ),
             ),
-            SizedBox(height: 10.h),
-            _ActionRow(
-              icon: AppIcons.comments,
-              label: 'تواصل مع الدعم',
-              // **`push`, never `go`.** «الدعم» is not a tab any more — it is pushed over
-              // whatever you were doing — and `go` replaces the stack, which leaves the
-              // support screen with nothing to go back to.
-              onTap: () => context.push(Routes.support),
-            ),
-            SizedBox(height: 10.h),
-            _ActionRow(
-              icon: AppIcons.about,
-              label: 'سياسة الخصوصية',
-              onTap: () => context.showInfo('ستتوفر قريباً'),
+            Padding(
+              padding: EdgeInsets.all(18.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      _Avatar(ink: ink),
+                      SizedBox(width: 14.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              // علامةٌ لا سطرٌ فارغ أثناء القراءة: البطاقة تحفظ مكان الاسم.
+                              customer?.name ?? '…',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: ink,
+                              ),
+                            ),
+                            if (customer != null) ...[
+                              SizedBox(height: 8.h),
+                              // `Wrap` لا `Row`: على هاتفٍ ضيّق أو بخطٍّ مكبَّر تنزل الشارة إلى سطرٍ
+                              // ثانٍ بدل أن تُقصّ.
+                              Wrap(
+                                spacing: 12.w,
+                                runSpacing: 8.h,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _Phone(phone: customer.phone, ink: ink),
+                                  // تُرسم حين يصل الكود فقط: شارةٌ برقمٍ مؤقت رقمٌ ليس لصاحبه.
+                                  if (customer.code case final code?) _CodeChip(code: code),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (where.isNotEmpty) ...[
+                    SizedBox(height: 16.h),
+                    _Where(where: where, ink: ink),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -159,173 +275,165 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-/// The avatar, the name, and where the customer trades from.
-class _Header extends StatelessWidget {
-  const _Header({required this.customer, required this.shop});
+class _Halo extends StatelessWidget {
+  const _Halo({required this.size, required this.color});
 
-  final CustomerAccount? customer;
-  final CustomerShop? shop;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
+}
+
+/// حلقةٌ بيضاء حول دائرةٍ أفتح من البطاقة، كما يرسم المرجع صورة من لم يرفع صورة.
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.ink});
+
+  final Color ink;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final name = customer?.name;
+    return Container(
+      width: 72.w,
+      height: 72.w,
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: ink.withValues(alpha: 0.5), width: 2.w),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(shape: BoxShape.circle, color: ink.withValues(alpha: 0.2)),
+        child: Icon(AppIcons.person, size: 32.sp, color: ink),
+      ),
+    );
+  }
+}
 
-    // «متجر النور · بنغازي», or whichever half of it the account has. A shop with no city still
-    // has a name worth drawing.
-    final where = [?shop?.name, ?shop?.cityName].join(' · ');
+class _Phone extends StatelessWidget {
+  const _Phone({required this.phone, required this.ink});
 
-    return Column(
+  final String phone;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          height: 94.w,
-          width: 94.w,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(30.r),
-            border: Border.all(color: scheme.primary, width: 2.w),
-          ),
-          child: Icon(AppIcons.person, color: scheme.primary, size: 42.sp),
-        ),
-        SizedBox(height: 14.h),
+        Icon(AppIcons.phone, size: 16.sp, color: ink),
+        SizedBox(width: 6.w),
         Text(
-          // A placeholder rather than an empty line while the read is in flight: the column
-          // keeps its height, so nothing under it jumps when the name lands.
-          name ?? '…',
-          textAlign: TextAlign.center,
-          style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        if (where.isNotEmpty) ...[
-          SizedBox(height: 10.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(999.r),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Text(
-              where,
-              style: context.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          phone,
+          // رقمٌ ليبي يُقرأ من اليسار إلى اليمين حتى هنا.
+          textDirection: TextDirection.ltr,
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: ink,
           ),
-        ],
+        ),
       ],
     );
   }
 }
 
-/// One labelled fact, in its own card as the design draws it.
-class _FactRow extends StatelessWidget {
-  const _FactRow({required this.icon, required this.label, required this.value});
+/// «كود العميل B849»، في شارةٍ بيضاء على البطاقة البرتقالية.
+///
+/// **ما يجعله واضحاً ثلاثة أشياء:** اسمه مكتوبٌ بجانبه، فلا يُحزر من أيقونة؛ وهو الشيء الأبيض
+/// الوحيد على البطاقة، فتقع العين عليه أولاً؛ ورقمه أثقل ما في البطاقة بعد الاسم.
+///
+/// **وتُنسخ بلمسة:** الكود هو ما يرسله العميل إلى المتجر في محادثة، ونسخه أسلم من إعادة كتابته.
+///
+/// ليست `CopyText` من `core/widgets/`: تلك قيمةٌ بلا اسمٍ على سطح الصفحة، وألوانها ألوان الصفحة،
+/// وهنا اسمٌ ورقمٌ على أبيضٍ فوق البرتقالي.
+class _CodeChip extends StatelessWidget {
+  const _CodeChip({required this.code});
 
-  final IconData icon;
-  final String label;
-  final String value;
+  final String code;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final ink = scheme.primaryDeep;
+    final radius = BorderRadius.circular(12.r);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: AppCard(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
-        child: Row(
-          children: [
-            _Glyph(icon: icon),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Text(
-                label,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
+    return Material(
+      key: ProfilePage.codeChipKey,
+      color: scheme.onPrimary,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () {
+          unawaited(Clipboard.setData(ClipboardData(text: code)));
+          context.showSuccess('تم نسخ كود العميل');
+        },
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'كود العميل',
+                style: context.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: ink,
                 ),
               ),
-            ),
-            Text(
-              value,
-              // A phone number and a customer code read left to right even here.
-              textDirection: TextDirection.ltr,
-              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
+              SizedBox(width: 8.w),
+              Text(
+                code,
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  color: ink,
+                ),
+              ),
+              SizedBox(width: 6.w),
+              Icon(AppIcons.copy, size: 14.sp, color: ink),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.value,
-  });
+/// أين يعمل العميل، في شريطٍ أفتح من البطاقة كما في المرجع.
+class _Where extends StatelessWidget {
+  const _Where({required this.where, required this.ink});
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  /// What the row is currently set to, drawn before the chevron.
-  ///
-  /// Null for a row that goes somewhere rather than holds something — «تواصل مع الدعم» has no
-  /// value, and a blank space where one would be is not the same as having none.
-  final String? value;
+  final String where;
+  final Color ink;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return AppCard(
-      onTap: onTap,
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: ink.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(14.r),
+      ),
       child: Row(
         children: [
-          _Glyph(icon: icon),
-          SizedBox(width: 12.w),
+          Icon(AppIcons.mapPin, size: 18.sp, color: ink),
+          SizedBox(width: 8.w),
           Expanded(
             child: Text(
-              label,
-              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+              where,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: ink,
+              ),
             ),
           ),
-          if (value case final value?) ...[
-            Text(
-              value,
-              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            SizedBox(width: 8.w),
-          ],
-          Icon(AppIcons.forward, size: 16.sp, color: scheme.onSurfaceVariant),
         ],
       ),
-    );
-  }
-}
-
-/// The rounded tile every row on this screen carries on its leading edge.
-class _Glyph extends StatelessWidget {
-  const _Glyph({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Container(
-      width: 40.w,
-      height: 40.w,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(13.r),
-      ),
-      child: Icon(icon, size: 19.sp, color: scheme.primary),
     );
   }
 }

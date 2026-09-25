@@ -107,6 +107,43 @@ abstract class TicketAssignee with _$TicketAssignee {
       _$TicketAssigneeFromJson(json);
 }
 
+/// نوعُ الملف المرفق، كما قرّره الخادم من بايتاته لا من امتداده.
+enum AttachmentKind {
+  @JsonValue('image')
+  image,
+  @JsonValue('pdf')
+  pdf,
+
+  /// نوعٌ أضافه الخادم بعد هذا الإصدار — يُعرض ملفاً يُفتح بما في الهاتف، ولا يُسقط الخيط.
+  unknown,
+}
+
+/// ملفٌ أُرفق برسالة: صورةٌ أو PDF.
+///
+/// **[url] موقّعٌ وينتهي بعد ساعة**، ويُبنى من جديد مع كل قراءة — فالصورةُ تُخبَّأ برقم الرسالة
+/// لا برابطها، وإلا صار كلُّ فتحٍ للخيط تنزيلاً جديداً لصورةٍ لم تتغيّر.
+@freezed
+abstract class TicketAttachment with _$TicketAttachment {
+  const factory TicketAttachment({
+    @JsonKey(unknownEnumValue: AttachmentKind.unknown)
+    @Default(AttachmentKind.unknown)
+    AttachmentKind kind,
+
+    /// «صورة» أو «PDF» — عربيةُ الخادم، فنوعٌ جديد يظهر بلا إصدار.
+    @JsonKey(name: 'kind_label') String? kindLabel,
+
+    /// اسمُ الملف كما سمّاه مرسلُه، للعرض وحده.
+    String? name,
+    @JsonKey(name: 'size_bytes') int? sizeBytes,
+    @JsonKey(name: 'width_px') int? widthPx,
+    @JsonKey(name: 'height_px') int? heightPx,
+    String? url,
+  }) = _TicketAttachment;
+
+  factory TicketAttachment.fromJson(Map<String, dynamic> json) =>
+      _$TicketAttachmentFromJson(json);
+}
+
 /// One line of a thread.
 @freezed
 abstract class TicketMessage with _$TicketMessage {
@@ -122,7 +159,14 @@ abstract class TicketMessage with _$TicketMessage {
     /// business made.
     @JsonKey(name: 'author_name') String? authorName,
 
-    required String body,
+    /// **فارغٌ حين تكون الرسالةُ ملفاً بلا تعليق** — والخادم يضمن ألّا يجتمع الفراغان.
+    String? body,
+
+    TicketAttachment? attachment,
+
+    /// ما ولّده التطبيقُ المرسِل قبل الإرسال؛ الرمزُ نفسه مرتين في التذكرة نفسها رسالةٌ واحدة.
+    @JsonKey(name: 'client_token') String? clientToken,
+
     @JsonKey(name: 'sent_at') DateTime? sentAt,
   }) = _TicketMessage;
 
@@ -158,6 +202,9 @@ abstract class SupportTicket with _$SupportTicket {
     /// The **desk's** unread count — the customer's messages this side has not read. Derived
     /// from a read cursor on every request rather than stored, so it cannot drift.
     @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
+
+    /// رقمُ آخر رسالةٍ رآها العميل: ردُّ المحل مقروءٌ (✓✓) إن كان رقمه لا يتجاوزه.
+    @JsonKey(name: 'customer_read_up_to') int? customerReadUpTo,
 
     /// Empty on the list endpoint, which does not load them; full on the thread endpoint.
     @Default(<TicketMessage>[]) List<TicketMessage> messages,

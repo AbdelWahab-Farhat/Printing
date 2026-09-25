@@ -18,9 +18,9 @@ sealed class ProductDetailState with _$ProductDetailState {
     /// floor by being refused.
     @Default('1') String quantity,
 
-    /// **The server's answer, and the only source of a total on this screen.** Null while a
-    /// fresh one is being fetched — the screen shows the previous figure dimmed rather than
-    /// blanking, so the price does not flicker on every tap of the stepper.
+    /// **جواب الخادم، والمصدر الوحيد لأي سعرٍ على هذه الشاشة.** يبقى السابق ما دام الجديد في
+    /// الطريق ([isQuoting])، والشاشة تخفّته بدل أن تمحوه، فلا يرمش السعر مع كل ضغطةٍ على + أو −.
+    /// ويُمحى حين يرفض الخادم الكمية الجديدة: إجماليٌّ لكميةٍ أخرى بجانب الرفض رقمٌ كاذب.
     PriceQuote? quote,
 
     @Default(false) bool isQuoting,
@@ -63,11 +63,28 @@ extension ProductDetailStateX on ProductDetailState {
   /// owns it, and it answers with the figure and the unit — a copy of it in this app would be the
   /// one that disagrees with the shop.
   bool get hasOrderableQuantity => switch (this) {
-    ProductDetailLoaded(:final quantity) => switch (double.tryParse(quantity)) {
-      final value? => value > 0,
-      _ => false,
+    ProductDetailLoaded(:final quantity) => isOrderableQuantity(quantity),
+    _ => false,
+  };
+
+  /// هل يُنقص − شيئاً. عند الحد الأدنى لا — الخادم يرفض ما دونه — فيُرسم الزر معطّلاً.
+  bool get canDecrease => switch (this) {
+    ProductDetailLoaded(:final product, :final quantity) => switch (double.tryParse(quantity)) {
+      final value? => value > product.quantityFloor,
+      // حقلٌ فارغ: − يضع الحد الأدنى فيه.
+      _ => true,
     },
     _ => false,
+  };
+
+  /// أين يقف إبهام السلايدر: الكمية نفسها محبوسةً بين طرفيه. كميةٌ مكتوبةٌ فوق آخره تضعه على
+  /// آخره ولا تكسره، وحقلٌ فارغ يضعه على أوله.
+  double get quantityOnSlider => switch (this) {
+    ProductDetailLoaded(:final product, :final quantity) =>
+      (double.tryParse(quantity) ?? product.quantityFloor)
+          .clamp(product.quantityFloor, product.quantityCeiling)
+          .toDouble(),
+    _ => 0,
   };
 
   /// Whether to draw a total at all, or «اطلب عرض سعر» in its place.

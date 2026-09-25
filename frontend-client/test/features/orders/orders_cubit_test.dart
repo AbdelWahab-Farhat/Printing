@@ -74,16 +74,16 @@ void main() {
     /// The filter is asked in *stages* — the customer's vocabulary — and the server translates.
     /// This app never learns the workshop's nineteen statuses.
     blocTest<OrdersCubit, OrdersState>(
-      'narrowing to the open ones passes the filter through',
+      'narrowing to one stage passes it through in the server\'s own spelling',
       build: () {
         stub(page([first]));
 
         return build();
       },
-      act: (cubit) => cubit.narrowTo(OrdersFilter.open),
+      act: (cubit) => cubit.narrowTo(OrdersFilter.underReview),
       verify: (cubit) {
-        verify(() => repository.list(page: 1, openOnly: true, stage: null)).called(1);
-        expect(cubit.filter, OrdersFilter.open);
+        verify(() => repository.list(page: 1, openOnly: false, stage: 'under_review')).called(1);
+        expect(cubit.filter, OrdersFilter.underReview);
       },
     );
 
@@ -201,19 +201,19 @@ void main() {
     );
   });
 
-  /// **The filter must not become a lie.** An order that closed while «المفتوحة» is selected
-  /// leaves the list rather than sitting there until the next refresh.
+  /// **The filter must not become a lie.** An order that moved on while its stage's chip is
+  /// selected leaves the list rather than sitting there until the next refresh.
   group('belongs', () {
     blocTest<OrdersCubit, OrdersState>(
-      'an order that closed leaves a list narrowed to the open ones',
+      'an order that moved on leaves a list narrowed to its old stage',
       build: () {
         stub(page([first]));
 
         return build();
       },
       act: (cubit) async {
-        await cubit.narrowTo(OrdersFilter.open);
-        cubit.replace(first.copyWith(isOpen: false));
+        await cubit.narrowTo(OrdersFilter.underReview);
+        cubit.replace(first.copyWith(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'));
       },
       verify: (cubit) {
         expect((cubit.state as PagedLoaded<CustomerOrder>).page.items, isEmpty);

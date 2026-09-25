@@ -69,6 +69,17 @@ abstract class CustomerDesign with _$CustomerDesign {
 }
 
 extension CustomerDesignX on CustomerDesign {
+  /// هل في اسمه ما كُتب في البحث — جزءاً منه، بعد طيّ الحروف في الطرفين.
+  ///
+  /// **يُطوى ما يُكتب بأكثر من شكل**: الهمزة على الألف (أ إ آ ٱ ← ا)، والتاء المربوطة والهاء،
+  /// والألف المقصورة والياء، ويسقط التشكيل والتطويل، وتصغر اللاتينية. فمن كتب «اعلان» وجد
+  /// «إعلان»، ومن كتب «logo» وجد «Logo». والبحث الفارغ يطابق كل تصميم.
+  bool matches(String query) {
+    final needle = _foldedForSearch(query);
+
+    return needle.isEmpty || _foldedForSearch(label).contains(needle);
+  }
+
   /// «PNG · 1.2 م.ب» — the line the design draws under a design's name.
   ///
   /// **Built from the two facts the server already sent**, so the grid costs no extra request.
@@ -108,3 +119,13 @@ extension CustomerDesignX on CustomerDesign {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} م.ب';
   }
 }
+
+/// النصّ كما يُقارَن في البحث — انظر [CustomerDesignX.matches].
+String _foldedForSearch(String text) => text
+    .trim()
+    .toLowerCase()
+    // التشكيل (ً إلى ْ، والألف الخنجرية) والتطويل: زينةٌ على الحرف لا حرف.
+    .replaceAll(RegExp('[\u064B-\u0652\u0670\u0640]'), '')
+    .replaceAll(RegExp('[أإآٱ]'), 'ا')
+    .replaceAll('ة', 'ه')
+    .replaceAll('ى', 'ي');

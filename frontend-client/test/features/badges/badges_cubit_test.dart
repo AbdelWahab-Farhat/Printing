@@ -134,4 +134,32 @@ void main() {
       ],
     );
   });
+
+  group('bump', () {
+    blocTest<BadgesCubit, Map<CustomerBadge, int>>(
+      'a live reply raises the count by one without asking the server',
+      setUp: () => stub({CustomerBadge.support: 2}),
+      build: build,
+      act: (cubit) async {
+        await cubit.refresh();
+
+        // Act
+        cubit.bump(CustomerBadge.support);
+      },
+      verify: (cubit) {
+        // Assert
+        verify(() => repository.badges()).called(1);
+        expect(cubit.state.countOf(CustomerBadge.support), 3);
+      },
+    );
+
+    blocTest<BadgesCubit, Map<CustomerBadge, int>>(
+      'a badge nobody has counted yet starts at one',
+      build: build,
+      act: (cubit) => cubit.bump(CustomerBadge.support),
+      expect: () => [
+        {CustomerBadge.support: 1},
+      ],
+    );
+  });
 }

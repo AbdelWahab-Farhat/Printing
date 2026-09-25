@@ -122,11 +122,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( SupportTicket ticket,  bool isSending,  Failure? lastFailure)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( SupportTicket ticket,  List<OutgoingMessage> outbox,  Failure? lastFailure)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TicketThreadLoading() when loading != null:
 return loading();case TicketThreadLoaded() when loaded != null:
-return loaded(_that.ticket,_that.isSending,_that.lastFailure);case TicketThreadFailure() when failure != null:
+return loaded(_that.ticket,_that.outbox,_that.lastFailure);case TicketThreadFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( SupportTicket ticket,  bool isSending,  Failure? lastFailure)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( SupportTicket ticket,  List<OutgoingMessage> outbox,  Failure? lastFailure)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case TicketThreadLoading():
 return loading();case TicketThreadLoaded():
-return loaded(_that.ticket,_that.isSending,_that.lastFailure);case TicketThreadFailure():
+return loaded(_that.ticket,_that.outbox,_that.lastFailure);case TicketThreadFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( SupportTicket ticket,  bool isSending,  Failure? lastFailure)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( SupportTicket ticket,  List<OutgoingMessage> outbox,  Failure? lastFailure)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case TicketThreadLoading() when loading != null:
 return loading();case TicketThreadLoaded() when loaded != null:
-return loaded(_that.ticket,_that.isSending,_that.lastFailure);case TicketThreadFailure() when failure != null:
+return loaded(_that.ticket,_that.outbox,_that.lastFailure);case TicketThreadFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -213,15 +213,23 @@ String toString() {
 
 
 class TicketThreadLoaded implements TicketThreadState {
-  const TicketThreadLoaded(this.ticket, {this.isSending = false, this.lastFailure});
+  const TicketThreadLoaded(this.ticket, {final  List<OutgoingMessage> outbox = const <OutgoingMessage>[], this.lastFailure}): _outbox = outbox;
   
 
  final  SupportTicket ticket;
-/// A reply is in flight. The thread stays on screen and the field locks — a conversation
-/// that vanishes behind a spinner every time somebody writes into it reads as broken.
-@JsonKey() final  bool isSending;
-/// The reply that failed, cleared by the next attempt. The messages already there are
-/// still true.
+/// ما كتبه العميل ولم يقبله الخادم بعد، بترتيب كتابته — فقاعاتٌ بساعة، أو بحلقة رفعٍ للملف،
+/// أو بعلامةٍ حمراء حين ترفض. انظر [OutgoingMessage].
+ final  List<OutgoingMessage> _outbox;
+/// ما كتبه العميل ولم يقبله الخادم بعد، بترتيب كتابته — فقاعاتٌ بساعة، أو بحلقة رفعٍ للملف،
+/// أو بعلامةٍ حمراء حين ترفض. انظر [OutgoingMessage].
+@JsonKey() List<OutgoingMessage> get outbox {
+  if (_outbox is EqualUnmodifiableListView) return _outbox;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_outbox);
+}
+
+/// The last thing that failed, for the screen to say once. The messages already there are
+/// still true, and a message that failed to send stays in [outbox] with its reason.
  final  Failure? lastFailure;
 
 /// Create a copy of TicketThreadState
@@ -234,16 +242,16 @@ $TicketThreadLoadedCopyWith<TicketThreadLoaded> get copyWith => _$TicketThreadLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoaded&&(identical(other.ticket, ticket) || other.ticket == ticket)&&(identical(other.isSending, isSending) || other.isSending == isSending)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoaded&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other._outbox, _outbox)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket,isSending,lastFailure);
+int get hashCode => Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(_outbox),lastFailure);
 
 @override
 String toString() {
-  return 'TicketThreadState.loaded(ticket: $ticket, isSending: $isSending, lastFailure: $lastFailure)';
+  return 'TicketThreadState.loaded(ticket: $ticket, outbox: $outbox, lastFailure: $lastFailure)';
 }
 
 
@@ -254,7 +262,7 @@ abstract mixin class $TicketThreadLoadedCopyWith<$Res> implements $TicketThreadS
   factory $TicketThreadLoadedCopyWith(TicketThreadLoaded value, $Res Function(TicketThreadLoaded) _then) = _$TicketThreadLoadedCopyWithImpl;
 @useResult
 $Res call({
- SupportTicket ticket, bool isSending, Failure? lastFailure
+ SupportTicket ticket, List<OutgoingMessage> outbox, Failure? lastFailure
 });
 
 
@@ -271,11 +279,11 @@ class _$TicketThreadLoadedCopyWithImpl<$Res>
 
 /// Create a copy of TicketThreadState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? ticket = null,Object? isSending = null,Object? lastFailure = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? ticket = null,Object? outbox = null,Object? lastFailure = freezed,}) {
   return _then(TicketThreadLoaded(
 null == ticket ? _self.ticket : ticket // ignore: cast_nullable_to_non_nullable
-as SupportTicket,isSending: null == isSending ? _self.isSending : isSending // ignore: cast_nullable_to_non_nullable
-as bool,lastFailure: freezed == lastFailure ? _self.lastFailure : lastFailure // ignore: cast_nullable_to_non_nullable
+as SupportTicket,outbox: null == outbox ? _self._outbox : outbox // ignore: cast_nullable_to_non_nullable
+as List<OutgoingMessage>,lastFailure: freezed == lastFailure ? _self.lastFailure : lastFailure // ignore: cast_nullable_to_non_nullable
 as Failure?,
   ));
 }

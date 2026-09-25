@@ -16,8 +16,8 @@ typedef OrdersState = PagedState<CustomerOrder>;
 /// fails all live in [PagedCubit] — every one of them is a bug somebody has shipped by
 /// forgetting it, and a second copy in this file would be a second chance to.
 ///
-/// What is left is the one thing this list does that no other does: it is asked in *stages*,
-/// and [OrdersFilter] is where the four chips become the two parameters the API takes.
+/// ما يبقى هنا هو ما تنفرد به هذه القائمة: تُسأل بالمراحل، و[OrdersFilter] هو حيث يصير كل
+/// اختيارٍ من الأحد عشر قيمةَ `stage=` التي يأخذها الـ API.
 class OrdersCubit extends PagedCubit<CustomerOrder> {
   OrdersCubit({required BrowseOrders browse}) : _browse = browse;
 
@@ -25,7 +25,7 @@ class OrdersCubit extends PagedCubit<CustomerOrder> {
 
   OrdersFilter _filter = OrdersFilter.all;
 
-  /// Which of the four chips is selected.
+  /// الحالة المختارة.
   OrdersFilter get filter => _filter;
 
   /// **No `search` reaches the wire.** «طلباتي» has no search endpoint — a customer holds tens
@@ -36,11 +36,7 @@ class OrdersCubit extends PagedCubit<CustomerOrder> {
   Future<Either<Failure, Paginated<CustomerOrder>>> fetchPage({
     String? search,
     required int page,
-  }) => _browse(
-    page: page,
-    openOnly: _filter.openOnly,
-    stage: _filter.stageParameter,
-  );
+  }) => _browse(page: page, stage: _filter.stageParameter);
 
   @override
   Object identityOf(CustomerOrder item) => item.id;

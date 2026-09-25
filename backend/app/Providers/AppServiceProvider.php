@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Application\Realtime\Listeners\BroadcastTicketChange;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\ResolveNawrisDestination;
@@ -17,15 +18,15 @@ use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
+use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
-use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderScrapDrawn;
-use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderShortagesRecorded;
+use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Events\OrderStockRedrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
@@ -33,6 +34,7 @@ use App\Domain\Shortage\Events\ShortageAssigned;
 use App\Domain\Shortage\Listeners\CloseShortagesWhenOrderEnds;
 use App\Domain\Shortage\Listeners\ReopenShortagesWhenOrderIsRestored;
 use App\Domain\Shortage\Listeners\SyncWhenOrderShortagesChange;
+use App\Domain\Support\Events\TicketChanged;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -192,6 +194,20 @@ class AppServiceProvider extends ServiceProvider
         // An audience of one, unlike every other notification here — the work now belongs to a
         // named person. See ShortageAssignedToYou.
         Event::listen(ShortageAssigned::class, NotifyWhenShortageIsAssigned::class);
+
+        /*
+         * **الدعمُ يُعلن، والبثُّ الحيّ ينقل** — الاتجاه نفسه مرةً أخرى: سياقُ Support لا يعرف أن
+         * هناك مقابس، وطبقةُ النقل تقرأ التذكرة بعد التغيير وتُشكّلها لكل جمهورٍ بموارده.
+         *
+         * **متزامنٌ لكنه لا يُبطئ أحداً ولا يُسقطه.** يُؤجَّل البثُّ إلى ما بعد إرسال الرد
+         * (`defer`)، ولا ينتظر عاملَ طوابير — فعاملُ الطوابير نفسُه لم يُتحقَّق منه على أي خادم
+         * بعد (NOTIFICATIONS-BACKEND-CHANGES §١٠٫١)، وردٌّ حيٌّ يصل بعد دقيقة ليس حيّاً. وإن كان
+         * Reverb نائماً سُجّل الخطأ ومضى الردُّ سليماً. انظر BroadcastTicketChange.
+         */
+        Event::listen(TicketChanged::class, BroadcastTicketChange::class);
+
+        // قنواتُ البثّ الحيّ ومن يدخلها. من هنا لا من `withRouting` — routes/channels.php يقول لماذا.
+        require base_path('routes/channels.php');
 
         // Turns three silent classes of bug into loud exceptions everywhere except
         // production: lazy-loaded relations (N+1), reading an attribute that was never

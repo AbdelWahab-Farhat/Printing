@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Where the Sanctum bearer token lives.
@@ -18,6 +19,15 @@ class TokenStorage {
   String? _cached;
   bool _loaded = false;
 
+  final ValueNotifier<int> _revision = ValueNotifier<int>(0);
+
+  /// يرتفع مع كل كتابةٍ ومسح — دخولٌ وتسجيلٌ وخروج، ورمزٌ رفضه الخادم.
+  ///
+  /// **لمن يتبع الجلسة ولا يمرّ بشاشة الدخول**: الاشتراكُ الحيّ الذي يُضيء شارة «الدعم» يبدأ
+  /// بدخول العميل ويجب أن ينتهي بخروجه — وإلا بقيت قناةُ العميل السابق مفتوحةً على هاتفٍ صار
+  /// في يد غيره.
+  ValueListenable<int> get revision => _revision;
+
   Future<String?> read() async {
     if (_loaded) return _cached;
 
@@ -32,12 +42,14 @@ class TokenStorage {
     _cached = token;
     _loaded = true;
     await _storage.write(key: _key, value: token);
+    _revision.value++;
   }
 
   Future<void> clear() async {
     _cached = null;
     _loaded = true;
     await _storage.delete(key: _key);
+    _revision.value++;
   }
 
   /// Cheap, synchronous, and only meaningful after [read] — routing guards use it to decide

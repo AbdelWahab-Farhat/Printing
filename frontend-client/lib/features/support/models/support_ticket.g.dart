@@ -6,6 +6,42 @@ part of 'support_ticket.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_TicketAttachment _$TicketAttachmentFromJson(Map<String, dynamic> json) =>
+    _TicketAttachment(
+      kind:
+          $enumDecodeNullable(
+            _$AttachmentKindEnumMap,
+            json['kind'],
+            unknownValue: AttachmentKind.unknown,
+          ) ??
+          AttachmentKind.unknown,
+      kindLabel: json['kind_label'] as String?,
+      name: json['name'] as String?,
+      mimeType: json['mime_type'] as String?,
+      sizeBytes: (json['size_bytes'] as num?)?.toInt(),
+      widthPx: (json['width_px'] as num?)?.toInt(),
+      heightPx: (json['height_px'] as num?)?.toInt(),
+      url: json['url'] as String?,
+    );
+
+Map<String, dynamic> _$TicketAttachmentToJson(_TicketAttachment instance) =>
+    <String, dynamic>{
+      'kind': _$AttachmentKindEnumMap[instance.kind]!,
+      'kind_label': instance.kindLabel,
+      'name': instance.name,
+      'mime_type': instance.mimeType,
+      'size_bytes': instance.sizeBytes,
+      'width_px': instance.widthPx,
+      'height_px': instance.heightPx,
+      'url': instance.url,
+    };
+
+const _$AttachmentKindEnumMap = {
+  AttachmentKind.image: 'image',
+  AttachmentKind.pdf: 'pdf',
+  AttachmentKind.unknown: 'unknown',
+};
+
 _TicketMessage _$TicketMessageFromJson(Map<String, dynamic> json) =>
     _TicketMessage(
       id: (json['id'] as num).toInt(),
@@ -16,7 +52,13 @@ _TicketMessage _$TicketMessageFromJson(Map<String, dynamic> json) =>
             unknownValue: MessageAuthor.unknown,
           ) ??
           MessageAuthor.unknown,
-      body: json['body'] as String,
+      body: json['body'] as String? ?? '',
+      attachment: json['attachment'] == null
+          ? null
+          : TicketAttachment.fromJson(
+              json['attachment'] as Map<String, dynamic>,
+            ),
+      clientToken: json['client_token'] as String?,
       sentAt: json['sent_at'] == null
           ? null
           : DateTime.parse(json['sent_at'] as String),
@@ -27,6 +69,8 @@ Map<String, dynamic> _$TicketMessageToJson(_TicketMessage instance) =>
       'id': instance.id,
       'from': _$MessageAuthorEnumMap[instance.from]!,
       'body': instance.body,
+      'attachment': instance.attachment?.toJson(),
+      'client_token': instance.clientToken,
       'sent_at': instance.sentAt?.toIso8601String(),
     };
 
@@ -62,6 +106,7 @@ _SupportTicket _$SupportTicketFromJson(Map<String, dynamic> json) =>
           ? null
           : TicketOrderRef.fromJson(json['order'] as Map<String, dynamic>),
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+      supportReadUpTo: (json['support_read_up_to'] as num?)?.toInt(),
       messages:
           (json['messages'] as List<dynamic>?)
               ?.map((e) => TicketMessage.fromJson(e as Map<String, dynamic>))
@@ -86,6 +131,7 @@ Map<String, dynamic> _$SupportTicketToJson(_SupportTicket instance) =>
       'is_open': instance.isOpen,
       'order': instance.order?.toJson(),
       'unread_count': instance.unreadCount,
+      'support_read_up_to': instance.supportReadUpTo,
       'messages': instance.messages.map((e) => e.toJson()).toList(),
       'messages_count': instance.messagesCount,
       'preview': instance.preview,

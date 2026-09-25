@@ -1,0 +1,100 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Broadcaster
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default broadcaster that will be used by the
+    | framework when an event needs to be broadcast. You may set this to
+    | any of the connections defined in the "connections" array below.
+    |
+    | Supported: "reverb", "pusher", "ably", "redis", "log", "null"
+    |
+    */
+
+    /*
+     * **`reverb` على كل خادم يعمل عليه تطبيقٌ حقيقي، و`null` في الاختبارات** (phpunit.xml).
+     *
+     * `log` لا يصلح لخادمٍ حيّ: يكتب الأحداث في السجل ولا يوصلها لأحد، فتعمل كلُّ الشاشات ولا
+     * يصل ردٌّ واحدٌ حيّاً — عطلٌ لا يتركه شيء. انظر Docs/support/SUPPORT-REALTIME.md.
+     */
+    'default' => env('BROADCAST_CONNECTION', 'null'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Broadcast Connections
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define all of the broadcast connections that will be used
+    | to broadcast events to other systems or over WebSockets. Samples of
+    | each available type of connection are provided inside this array.
+    |
+    */
+
+    'connections' => [
+
+        /*
+         * **هذا هو الطريق من Laravel إلى Reverb، لا من الهاتف إليه.** Reverb يعمل على الصندوق
+         * نفسه، فـ`REVERB_HOST` هنا `127.0.0.1` و`REVERB_SCHEME` هو `http` حتى في الإنتاج؛ أمّا
+         * الهاتف فيصله عبر nginx على `wss://` — وعنوانه في ملفّ `.env` لكل تطبيق، لا هنا.
+         */
+        'reverb' => [
+            'driver' => 'reverb',
+            'key' => env('REVERB_APP_KEY'),
+            'secret' => env('REVERB_APP_SECRET'),
+            'app_id' => env('REVERB_APP_ID'),
+            'options' => [
+                'host' => env('REVERB_HOST', '127.0.0.1'),
+                'port' => env('REVERB_PORT', 8080),
+                'scheme' => env('REVERB_SCHEME', 'http'),
+                'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
+            ],
+            /*
+             * **مهلتان قصيرتان، ولا غنى عنهما.** مهلةُ Guzzle الافتراضية صفر، أي انتظارٌ بلا
+             * نهاية: لو سقط Reverb خلف جدارٍ يبتلع الحزم بدل أن يرفضها، لبقي كلُّ عامل PHP يبثّ
+             * رداً معلّقاً إلى الأبد، ثم يتوقف الموقع كله لأن العمّال نفدوا. البثُّ يقع بعد
+             * إرسال الرد (`defer`) فلا يؤخّر أحداً، لكنه يحجز العامل ما دام ينتظر.
+             */
+            'client_options' => [
+                'connect_timeout' => (float) env('REVERB_CONNECT_TIMEOUT', 2),
+                'timeout' => (float) env('REVERB_TIMEOUT', 3),
+            ],
+        ],
+
+        'pusher' => [
+            'driver' => 'pusher',
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
+            'options' => [
+                'cluster' => env('PUSHER_APP_CLUSTER'),
+                'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
+                'port' => env('PUSHER_PORT', 443),
+                'scheme' => env('PUSHER_SCHEME', 'https'),
+                'encrypted' => true,
+                'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
+            ],
+            'client_options' => [
+                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+            ],
+        ],
+
+        'ably' => [
+            'driver' => 'ably',
+            'key' => env('ABLY_KEY'),
+        ],
+
+        'log' => [
+            'driver' => 'log',
+        ],
+
+        'null' => [
+            'driver' => 'null',
+        ],
+
+    ],
+
+];

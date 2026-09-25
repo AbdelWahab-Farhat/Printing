@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/features/catalog/models/product.dart';
@@ -56,7 +57,9 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     final loaded = _loaded;
     if (loaded == null || loaded.selectedVariantId == variantId) return;
 
-    emit(loaded.copyWith(selectedVariantId: variantId, quote: null));
+    // السعر السابق يبقى إلى أن يصل الجديد، والشاشة تخفّته — رقمٌ يختفي مع كل لمسة يُقرأ
+    // سعراً انكسر.
+    emit(loaded.copyWith(selectedVariantId: variantId));
 
     unawaited(refreshQuote());
   }
@@ -65,10 +68,94 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     final loaded = _loaded;
     if (loaded == null || loaded.quantity == quantity) return;
 
-    emit(loaded.copyWith(quantity: quantity, quote: null));
+    emit(loaded.copyWith(quantity: quantity));
 
     unawaited(refreshQuote());
   }
+
+  /// زر +: خطوةٌ إلى الأعلى، إلى أول مضاعفٍ للخطوة فوق الكمية الحالية — ٤٣٧ تصير ٤٥٠ لا ٤٨٧،
+  /// فتعود الكمية إلى الدرجات التي يقف عليها السلايدر.
+  void increase() {
+    final loaded = _loaded;
+    if (loaded == null) return;
+
+    final product = loaded.product;
+    final current = double.tryParse(loaded.quantity);
+    final step = product.quantityStep;
+
+    _moveTo(
+      loaded,
+      current == null ? product.quantityFloor : ((current / step).floor() + 1) * step,
+    );
+  }
+
+  /// زر −: خطوةٌ إلى الأسفل، ولا تحت الحد الأدنى — الخادم يرفض ما دونه، فلا يعبره الزر ولا
+  /// يكلّف طلباً يعرف جوابه.
+  void decrease() {
+    final loaded = _loaded;
+    if (loaded == null) return;
+
+    final product = loaded.product;
+    final current = double.tryParse(loaded.quantity);
+    final step = product.quantityStep;
+
+    _moveTo(
+      loaded,
+      current == null
+          ? product.quantityFloor
+          : math.max(product.quantityFloor, ((current / step).ceil() - 1) * step),
+    );
+  }
+
+  /// السلايدر أثناء السحب: الكمية تتبع الإصبع على درجات الخطوة، **ولا يُطلب سعر.** السحب يطلق
+  /// عشرات القيم في الثانية؛ الطلب يخرج مرةً واحدة حين يُرفع الإصبع — [refreshQuote] في
+  /// `onChangeEnd`.
+  void slide(double value) {
+    final loaded = _loaded;
+    if (loaded == null) return;
+
+    final product = loaded.product;
+    final step = product.quantityStep;
+    final snapped = ((value / step).round() * step)
+        .clamp(product.quantityFloor, product.quantityCeiling)
+        .toDouble();
+
+    if (double.tryParse(loaded.quantity) == snapped) return;
+
+    // جوابٌ في الطريق الآن جوابٌ عن كميةٍ لم تعد على الشاشة، فيُسقَط حين يصل.
+    _quoteToken++;
+
+    emit(
+      loaded.copyWith(
+        quantity: _plain(snapped),
+        // السعر الظاهر لم يعد لهذه الكمية — إلا لمنتجٍ بلا سعرٍ أصلاً.
+        isQuoting: loaded.product.hasListedPrices,
+      ),
+    );
+  }
+
+  /// بطاقة سعر: تطلب عتبتها بالضبط — أو الحد الأدنى إن كانت العتبة دونه، فكسرٌ يبدأ من ١ على
+  /// منتجٍ لا يُطلب منه أقل من ١٠٠ يعني ١٠٠.
+  void chooseTier(PriceTier tier) {
+    final loaded = _loaded;
+    if (loaded == null) return;
+
+    _moveTo(
+      loaded,
+      math.max(double.tryParse(tier.minQuantity) ?? 0, loaded.product.quantityFloor),
+    );
+  }
+
+  /// يُقارَن بالرقم لا بالنص: «100.000» الآتية من الخادم و«100» الخارجة من زرٍّ كميةٌ واحدة.
+  void _moveTo(ProductDetailLoaded loaded, double value) {
+    if (double.tryParse(loaded.quantity) == value) return;
+
+    setQuantity(_plain(value));
+  }
+
+  /// `550` لا `550.0`: الكمية نصٌّ يُرسل إلى الخادم كما هو، والصفر العشري حشوٌ في الحقل.
+  static String _plain(double value) =>
+      value == value.roundToDouble() ? value.round().toString() : value.toString();
 
   /// Re-asks the server for the price of what is currently selected.
   Future<void> refreshQuote() async {
@@ -101,7 +188,8 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
 
     emit(
       result.fold(
-        (failure) => current.copyWith(isQuoting: false, quoteFailure: failure),
+        // الإجمالي السابق كان لكميةٍ أخرى؛ بجانب رسالة الرفض يصير رقماً كاذباً.
+        (failure) => current.copyWith(isQuoting: false, quoteFailure: failure, quote: null),
         (quote) => current.copyWith(isQuoting: false, quote: quote, quoteFailure: null),
       ),
     );

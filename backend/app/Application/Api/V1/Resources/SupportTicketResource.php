@@ -6,7 +6,6 @@ namespace App\Application\Api\V1\Resources;
 
 use App\Application\Api\V1\Resources\Client\ClientSupportTicketResource;
 use App\Domain\Support\Models\SupportTicket;
-use App\Domain\Support\Models\TicketMessage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,18 +52,11 @@ class SupportTicketResource extends JsonResource
             // The desk's own unread count — the customer's messages this side has not read.
             'unread_count' => $this->unreadFor(staff: true),
 
-            'messages' => $this->whenLoaded(
-                'messages',
-                fn () => $this->messages->map(fn (TicketMessage $m) => [
-                    'id' => $m->id,
-                    'from' => $m->isFromCustomer() ? 'customer' : 'staff',
-                    // Named on this side, unlike the customer's: «من ردّ عليه؟» is a question the
-                    // shop is entitled to ask of itself.
-                    'author_name' => $m->isFromCustomer() ? null : $m->author?->name,
-                    'body' => $m->body,
-                    'sent_at' => $m->created_at?->toIso8601String(),
-                ])->all(),
-            ),
+            // رقمُ آخر رسالةٍ رآها العميل: ردُّ المحل مقروءٌ (✓✓) إن كان رقمه لا يتجاوزه.
+            'customer_read_up_to' => $this->readUpTo(staff: false),
+
+            // الشكلُ في SupportTicketMessageResource، لأن الحدثَ الحيّ يحمل الرسالةَ نفسها وحدها.
+            'messages' => SupportTicketMessageResource::collection($this->whenLoaded('messages')),
 
             'last_message_at' => $this->last_message_at?->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),

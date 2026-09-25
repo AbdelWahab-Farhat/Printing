@@ -39,10 +39,11 @@ class CustomerAccountResource extends JsonResource
             'phone' => $this->phone,
             'is_active' => $this->is_active,
 
-            // **The shop, when the account has one, and never a list of them.** A customer may
-            // have several — the staff app manages them — but «حسابي» draws one line under a
-            // name, and picking which of four shops that line names is a decision the app cannot
-            // make. The first is the one the account was opened with.
+            // **The shop, when the account has one, and never a list of them.** «حسابي» draws one
+            // line under a name, and picking which of four shops that line names is a decision
+            // the app cannot make. The first is the one the account was opened with.
+            //
+            // القائمة كلها — وإضافةُ متجرٍ وتعديله وحذفه — في `GET /client/shops`، لا هنا.
             //
             // Loaded rather than queried: `whenLoaded` keeps this resource from firing a query
             // per customer if it is ever used on a list.
@@ -55,15 +56,16 @@ class CustomerAccountResource extends JsonResource
     /**
      * The shop the account was opened with, named and placed.
      *
-     * **Three fields and no id.** The customer app cannot edit a shop — there is no endpoint —
-     * so an id here would be a handle on something nothing can be done with. What «حسابي» draws
-     * is «متجر النور · بنغازي» and «ملابس وأحذية», and that is exactly what travels.
+     * **ثلاثة حقولٍ ولا مُعرِّف.** هذا سطرٌ في بطاقة «حسابي» لا مِقبضٌ على المتجر: ما يُعدَّل به
+     * المتجر يأتي من `GET /client/shops` بمُعرِّفه. وما ترسمه البطاقة «متجر النور · بنغازي» و«ملابس
+     * وأحذية»، وذلك بالضبط ما يُرسل.
      *
      * @return array<string, string|null>|null
      */
     protected function firstShop(): ?array
     {
-        $shop = $this->shops->first();
+        // بالمُعرِّف لا بترتيب القراءة: العلاقة بلا `orderBy`، وصفٌّ عُدِّل يعود من PostgreSQL بعد غيره.
+        $shop = $this->shops->sortBy('id')->first();
 
         if ($shop === null) {
             return null;

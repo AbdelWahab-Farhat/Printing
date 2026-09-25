@@ -1,4 +1,6 @@
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/router/fade_through_branches.dart';
+import 'package:dayaa_client/core/router/pop_result.dart';
 import 'package:dayaa_client/features/auth/presentation/views/login_page.dart';
 import 'package:dayaa_client/features/auth/presentation/views/profile_page.dart';
 import 'package:dayaa_client/features/auth/presentation/views/register_page.dart';
@@ -8,10 +10,14 @@ import 'package:dayaa_client/features/catalog/presentation/views/products_page.d
 import 'package:dayaa_client/features/designs/presentation/views/designs_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
-import 'package:dayaa_client/features/notifications/presentation/views/notifications_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/orders_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/place_order_page.dart';
+import 'package:dayaa_client/features/settings/presentation/views/settings_page.dart';
+import 'package:dayaa_client/features/shops/models/shop.dart';
+import 'package:dayaa_client/features/shops/presentation/views/shop_details_page.dart';
+import 'package:dayaa_client/features/shops/presentation/views/shop_form_page.dart';
+import 'package:dayaa_client/features/shops/presentation/views/shops_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/support_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa_client/features/tools/presentation/views/bag_preview_page.dart';
@@ -19,12 +25,11 @@ import 'package:dayaa_client/features/tools/presentation/views/qr_tool_page.dart
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-/// Every path in the app, named once.
+/// كل مسار في التطبيق، مسمّى مرة واحدة.
 ///
-/// A route typed as a string at a call site is a route nobody can rename, so `context.go` and
-/// `context.push` take a constant from here and never a literal. Functions rather than constants
-/// wherever the path carries an id — `Routes.order(7)` cannot be built with the id in the wrong
-/// place.
+/// المسار المكتوب نصاً في مكان استعماله مسارٌ لا يستطيع أحد إعادة تسميته، لذلك يأخذ `context.go`
+/// و`context.push` ثابتاً من هنا ولا يأخذان نصاً أبداً. وحيث يحمل المسار رقماً تُستعمل دالة لا
+/// ثابت: `Routes.order(7)` لا يمكن بناؤه والرقم في غير مكانه.
 abstract final class Routes {
   static const String home = '/';
   static const String login = '/login';
@@ -34,57 +39,67 @@ abstract final class Routes {
 
   static String product(int id) => '/products/$id';
 
+  /// «تصاميمي». تُفتح من «حسابي» فوق الشريط، ولم تعد تبويباً.
   static const String designs = '/designs';
 
   static const String orders = '/orders';
 
-  /// Composing one. **A literal segment under `/orders`**, which is why it is registered before
-  /// `:id` below — go_router would otherwise read «new» as an order number.
+  /// إنشاء طلبية. **مقطع ثابت تحت `/orders`**، ولهذا يُسجَّل قبل `:id` في الأسفل، وإلا قرأ
+  /// go_router كلمة «new» على أنها رقم طلبية.
   static const String newOrder = '/orders/new';
 
   static String order(int id) => '/orders/$id';
 
+  /// «حسابي». تُفتح من شريط الرئيسية العلوي فوق الشريط السفلي، ولم تعد تبويباً.
   static const String profile = '/profile';
 
-  /// «الإشعارات». Pushed rather than a tab: it is somewhere you glance at and come back from,
-  /// and the bar already draws the five places the customer lives in.
-  static const String notifications = '/notifications';
+  /// «الإعدادات». تُفتح من «حسابي» فوق الشاشة، ولها زر رجوع إليها.
+  static const String settings = '/settings';
+
+  /// «متاجري». تُفتح من «حسابي».
+  static const String shops = '/shops';
+
+  /// نموذج المتجر، ويعيد المتجر المحفوظ لمن فتحه. **إضافةٌ بلا `extra`، وتعديلٌ حين يُمرَّر فيه
+  /// المتجر** — المسار نفسه والفعل يقرّره ما يحمله، كما في نموذج العميل في تطبيق الموظفين. و`extra`
+  /// مقبولٌ هنا لأن النموذج يُدفع فوق الـ shell، لا فرعاً يُبدَّل منه وإليه.
+  static const String shopForm = '/shops/form';
+
+  /// صفحة متجرٍ واحد: تفاصيله وتعديلها، ومكتبة التصاميم. **المتجر يُمرَّر لا يُطلب** — «متاجري»
+  /// جلبته للتوّ — وما يتغيّر فيها يعود إلى القائمة عبر `pushForResult`، فالمسار ثابتٌ بلا مُعرِّف.
+  static const String shopDetails = '/shops/details';
 
   static const String support = '/support';
 
-  /// «الدعم», with a new thread already pointed at an order.
+  /// «الدعم»، ومعه محادثة جديدة موجّهة مسبقاً إلى طلبية.
   ///
-  /// **A query parameter rather than `extra`.** It rides in the location itself, so it survives
-  /// anything the router does to the route — and it is readable in a log when somebody asks why
-  /// a ticket came in attached to the wrong order. `int.tryParse` on the far side means a
-  /// malformed value is simply no order rather than a crash.
+  /// **معامل في الرابط (query) لا `extra`.** يسافر داخل الموقع نفسه، فيبقى مهما فعل الموجّه
+  /// بالمسار، ويُقرأ في السجل حين يسأل أحدهم لماذا وصلت تذكرة مربوطة بالطلبية الخطأ.
+  /// و`int.tryParse` في الطرف الآخر يعني أن القيمة المشوّهة تصير «بلا طلبية» ببساطة، لا انهياراً.
   static String supportAbout(int orderId) => '/support?order=$orderId';
 
   static String ticket(int id) => '/support/$id';
 
-  /// The QR tool, opened to be used.
+  /// أداة QR، تُفتح للاستعمال.
   static const String qrTool = '/tools/qr';
 
-  /// «معاينة على الكيس» — the artwork on a picture of the bag it will be printed on.
+  /// «معاينة على الكيس»: التصميم على صورة الكيس الذي سيُطبع عليه.
   static const String bagPreview = '/tools/bag-preview';
 
-  /// **The same screen, with another ending**: it hands the code back as a *file* to whoever
-  /// opened it, instead of giving it to the system's share sheet. That is what makes the tool
-  /// part of the app rather than a second app inside it — «تصاميمي» opens it the way it opens
-  /// the camera, and what comes back goes through the same upload.
+  /// **الشاشة نفسها بنهاية أخرى**: تُعيد الرمز *ملفاً* لمن فتحها، بدل أن تعطيه لقائمة المشاركة في
+  /// النظام. هذا ما يجعل الأداة جزءاً من التطبيق لا تطبيقاً ثانياً داخله: «تصاميمي» تفتحها كما
+  /// تفتح الكاميرا، وما يعود منها يمرّ بالرفع نفسه.
   static const String qrToolPick = '/tools/qr/pick';
 }
 
-/// The app's one `GoRouter`.
+/// الـ `GoRouter` الوحيد في التطبيق.
 ///
-/// **Order matters inside a path.** A literal segment must be registered before the `:id` that
-/// would otherwise swallow it — `/orders/new` above `/orders/:id`, or go_router reads «new» as
-/// an order number and hands it to `int.parse`.
+/// **الترتيب مهم داخل المسار الواحد.** المقطع الثابت يُسجَّل قبل `:id` الذي كان سيبتلعه:
+/// `/orders/new` فوق `/orders/:id`، وإلا قرأ go_router كلمة «new» رقمَ طلبية وسلّمها إلى
+/// `int.parse`.
 ///
-/// **The five sections live in a shell, the rest are pushed over it.** A customer moving between
-/// «المنتجات» and «طلباتي» is switching what they are looking at, not going deeper — so those
-/// keep their scroll position and their bottom bar. A product, an order, a thread: those are
-/// somewhere you go and come back from, so they cover the bar and carry a back button.
+/// **الأقسام الثلاثة تعيش في shell، والباقي يُفتح فوقه.** العميل الذي ينتقل بين «المنتجات» و«طلباتي»
+/// يبدّل ما ينظر إليه ولا يتعمّق، فيحتفظ كل قسم بموضع تمريره ويبقى الشريط السفلي. أما المنتج
+/// والطلبية والمحادثة فأماكن تذهب إليها ثم تعود، فتغطي الشريط ولها زر رجوع.
 abstract final class AppRouter {
   static final GoRouter instance = GoRouter(
     initialLocation: Routes.home,
@@ -93,8 +108,13 @@ abstract final class AppRouter {
       GoRoute(path: Routes.login, builder: (context, state) => const LoginPage()),
       GoRoute(path: Routes.register, builder: (context, state) => const RegisterPage()),
 
-      StatefulShellRoute.indexedStack(
+      // **`StatefulShellRoute` لا `.indexedStack`.** الثاني يعرض الأقسام في `IndexedStack`،
+      // فيظهر القسم الجديد فوراً بلا انتقال. [FadeThroughBranches] يحفظ الأقسام بالطريقة نفسها
+      // ويضيف التلاشي بينها.
+      StatefulShellRoute(
         builder: (context, state, shell) => HomeShell(shell: shell),
+        navigatorContainerBuilder: (context, shell, children) =>
+            FadeThroughBranches(currentIndex: shell.currentIndex, children: children),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -114,40 +134,41 @@ abstract final class AppRouter {
               GoRoute(path: Routes.orders, builder: (context, state) => const OrdersPage()),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: Routes.designs, builder: (context, state) => const DesignsPage()),
-            ],
-          ),
-          // **«حسابي» is the fifth tab, not «الدعم».** Support is reached from the home
-          // screen's «الخدمات» group — it is somewhere you go when something is wrong, which is
-          // not often enough to hold a permanent seat.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: Routes.profile, builder: (context, state) => const ProfilePage()),
-            ],
-          ),
+          // **«حسابي» و«تصاميمي» خرجتا من الشريط** (طلب المستخدم، 2026-09-25)، وكذلك «الخدمات»
+          // التي جمعت «تصاميمي» والأدوات يوماً واحداً. «حسابي» تُفتح من شريط الرئيسية العلوي بجانب
+          // الدعم، و«تصاميمي» والأدوات صفوفٌ فيها. كلتاهما تُدفعان فوق الشريط ويُرجع منهما.
         ],
       ),
 
-      // ── pushed over the shell ────────────────────────────────────────────────
-      GoRoute(
-        path: Routes.notifications,
-        builder: (context, state) => const NotificationsPage(),
-      ),
+      // ── يُفتح فوق الـ shell ──────────────────────────────────────────────────
+      GoRoute(path: Routes.profile, builder: (context, state) => const ProfilePage()),
+      GoRoute(path: Routes.designs, builder: (context, state) => const DesignsPage()),
       GoRoute(path: Routes.support, builder: (context, state) => const SupportPage()),
+      GoRoute(path: Routes.settings, builder: (context, state) => const SettingsPage()),
+      GoRoute(path: Routes.shops, builder: (context, state) => const ShopsPage()),
+      GoRoute(
+        path: Routes.shopForm,
+        builder: (context, state) => ShopFormPage(editing: state.payload as Shop?),
+      ),
+      GoRoute(
+        path: Routes.shopDetails,
+        // بلا متجرٍ لا صفحة متجر — رابطٌ فُتح بلا ما يُعرض يصل إلى «متاجري» بدل أن ينهار.
+        builder: (context, state) => switch (state.payload) {
+          final Shop shop => ShopDetailsPage(shop: shop),
+          _ => const ShopsPage(),
+        },
+      ),
       GoRoute(
         path: '/products/:id',
         builder: (context, state) =>
             ProductDetailPage(productId: int.parse(state.pathParameters['id']!)),
       ),
 
-      /// **Registered before `/orders/:id`**, so `/orders/new` is not read as an order whose id
-      /// is «new».
+      /// **يُسجَّل قبل `/orders/:id`**، حتى لا يُقرأ `/orders/new` طلبيةً رقمها «new».
       ///
-      /// The lines used to travel in `extra` — a list of objects, and a URL is not a place to
-      /// put one. They come out of the basket now, so the route carries nothing and the screen
-      /// can be reached from anywhere, including a cold link.
+      /// كانت البنود تُنقل في `extra`، وهي قائمة كائنات، والرابط ليس مكاناً لها. صارت تُؤخذ من
+      /// السلة الآن، فلا يحمل المسار شيئاً، ويمكن الوصول إلى الشاشة من أي مكان، حتى من رابط يُفتح
+      /// والتطبيق مغلق.
       GoRoute(
         path: Routes.newOrder,
         builder: (context, state) => const PlaceOrderPage(),
@@ -158,8 +179,8 @@ abstract final class AppRouter {
             OrderDetailPage(orderId: int.parse(state.pathParameters['id']!)),
       ),
 
-      // **Before `/tools/qr`**, since the literal «pick» would otherwise never be reached if a
-      // parameterised sibling were ever added under it.
+      // **قبل `/tools/qr`**: لو أُضيف تحته يوماً مسار بمعامل، لما وصل أحد إلى المقطع الثابت
+      // «pick».
       GoRoute(
         path: Routes.qrToolPick,
         builder: (context, state) => const QrToolPage.picking(),
@@ -178,24 +199,23 @@ abstract final class AppRouter {
     ],
   );
 
-  /// Where somebody without a token is allowed to be.
+  /// الأماكن المسموحة لمن لا يحمل توكناً.
   static const Set<String> _public = {Routes.login, Routes.register};
 
-  /// Sends a signed-out customer to the sign-in screen, and a signed-in one away from it.
+  /// يرسل العميل غير المسجَّل إلى شاشة الدخول، ويُبعد المسجَّل عنها.
   ///
-  /// **Synchronous, and it only ever asks whether a token exists** — never whether it is good.
-  /// `redirect` cannot await, and a guard that tried to check the token with the server would
-  /// have to block every navigation on a round trip. Whether the token is still valid is
-  /// answered by the first request that uses it: `AuthInterceptor` turns a 401 into the
-  /// `onUnauthorized` callback, which clears the session and lands back here.
+  /// **متزامن، ولا يسأل إلا هل يوجد توكن**، لا هل هو صالح. `redirect` لا يستطيع الانتظار،
+  /// والحارس الذي يتحقق من التوكن مع الخادم سيوقف كل تنقّل على رحلة ذهاب وإياب إليه. صلاحية
+  /// التوكن يجيب عنها أول طلب يستعمله: `AuthInterceptor` يحوّل الـ 401 إلى `onUnauthorized`،
+  /// فتُمسح الجلسة ويعود العميل إلى هنا.
   static String? _guard(BuildContext context, GoRouterState state) {
     final signedIn = sl<HasStoredSession>()();
     final isPublic = _public.contains(state.matchedLocation);
 
     if (!signedIn && !isPublic) return Routes.login;
 
-    // Somebody holding a token has no business on the sign-in screen — a back button that
-    // returns to it after signing in is how a customer ends up signing in twice.
+    // من يحمل توكناً لا شأن له بشاشة الدخول: زر رجوع يعيده إليها بعد الدخول هو ما يجعل العميل
+    // يسجّل دخوله مرتين.
     if (signedIn && isPublic) return Routes.home;
 
     return null;

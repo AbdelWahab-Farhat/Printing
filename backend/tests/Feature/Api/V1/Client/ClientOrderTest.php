@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Client;
 
+use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Models\ProductImage;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -337,6 +340,108 @@ class ClientOrderTest extends TestCase
             ->assertDontSee('ready_to_print');
     }
 
+    // ─────────────────────────── the card ───────────────────────────
+
+    /**
+     * صفّ «طلباتي» يُرسم ببطاقة تطبيق الموظفين: المال في ثلاث خانات، ومكان الاستلام ورقمه، وبنود
+     * الطلبية في ذيلها (طلب المستخدم، 2026-09-25). **ولا شيء منها جديدٌ على العميل**: كلها تصله
+     * أصلاً حين يفتح طلبيته. القائمة تحملها كي لا يُفتح كل صفٍّ ليُرسم.
+     */
+    public function test_a_row_carries_what_its_card_draws(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->create([
+            'customer_id' => $me->id,
+            'city_name' => 'بنغازي',
+            'recipient_phone' => '0913333333',
+        ]);
+        OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'product_name' => 'أكياس شحن - مطبوعة',
+            'variant_label' => '30*40',
+            'quantity' => '500.000',
+        ]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.city_name', 'بنغازي')
+            ->assertJsonPath('data.0.recipient_phone', '0913333333')
+            ->assertJsonPath('data.0.fulfilment_type', $order->fulfilment_type->value)
+            ->assertJsonPath('data.0.fulfilment_type_label', $order->fulfilment_type->label())
+            ->assertJsonPath('data.0.items.0.product_name', 'أكياس شحن - مطبوعة')
+            ->assertJsonPath('data.0.items.0.variant_label', '30*40')
+            ->assertJsonPath('data.0.items.0.quantity', '500.000')
+            ->assertJsonStructure(['data' => [['paid_amount', 'balance']]]);
+    }
+
+    /**
+     * «300» وحدها لا تقول 300 ماذا: كيسٌ يُباع بالقطعة وآخر بالكيلو. الوحدة تُرسل بكلمتها
+     * العربية مع كل بند، في القائمة وفي الطلبية معاً.
+     */
+    public function test_a_line_says_what_its_quantity_is_counted_in(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->create(['customer_id' => $me->id]);
+        OrderItem::factory()->create(['order_id' => $order->id, 'pricing_unit' => PricingUnit::Piece]);
+
+        // Act
+        $list = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders');
+        $one = $this->withHeaders($this->bearerFor($me))->getJson("/api/v1/client/orders/{$order->id}");
+
+        // Assert
+        $list->assertOk()->assertJsonPath('data.0.items.0.pricing_unit_label', PricingUnit::Piece->label());
+        $one->assertOk()->assertJsonPath('data.items.0.pricing_unit_label', PricingUnit::Piece->label());
+    }
+
+    /**
+     * طلبيةٌ فيها بندٌ لم يُسعَّر: مجموعها المخزَّن أصغر مما ستبلغه، فلا يُرسل من مالها شيء — في
+     * القائمة كما في الطلبية نفسها. البطاقة تكتب «يُحدَّد بعد المراجعة».
+     */
+    public function test_a_row_awaiting_a_quote_sends_no_money_at_all(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->status(OrderStatus::Requested)->create(['customer_id' => $me->id]);
+        OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'unit_price' => null,
+            'line_total' => null,
+        ]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.is_awaiting_quote', true)
+            ->assertJsonPath('data.0.total', null)
+            ->assertJsonPath('data.0.paid_amount', null)
+            ->assertJsonPath('data.0.balance', null);
+    }
+
+    /** القائمة صارت تحمل البنود، فتُمسك هنا بما تُمسك به الطلبية الواحدة. */
+    public function test_a_row_never_carries_the_cost_or_the_profit(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->create(['customer_id' => $me->id]);
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders');
+
+        // Assert
+        $response->assertOk()
+            ->assertDontSee('unit_cost')
+            ->assertDontSee('profit')
+            ->assertDontSee('cost_price');
+    }
+
     // ─────────────────────────── one order ───────────────────────────
 
     public function test_one_order_carries_its_lines_and_what_is_owed(): void
@@ -353,6 +458,40 @@ class ClientOrderTest extends TestCase
             ->assertJsonPath('data.id', $order->id)
             ->assertJsonPath('data.code', $order->code)
             ->assertJsonStructure(['data' => ['total', 'paid_amount', 'balance', 'items', 'timeline']]);
+    }
+
+    /**
+     * كل بندٍ في الطلبية المفتوحة يُرسم بصورة منتجه: الصورة الأولى في الكتالوج اليوم، كما يرسمها
+     * سطر الطلبية في تطبيق الموظفين — لا جزءاً من لقطة البند، فالفاتورة تبقى تقول ما بيع.
+     */
+    public function test_an_opened_order_draws_each_line_with_its_product_photo(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->create(['customer_id' => $me->id]);
+        $item = OrderItem::factory()->create(['order_id' => $order->id]);
+        $photo = ProductImage::factory()->primary()->create(['product_id' => $item->product_id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson("/api/v1/client/orders/{$order->id}");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.items.0.product_image_url', $photo->url());
+    }
+
+    /** منتجٌ بلا صورة يُرسل null، فيرسم التطبيق مكانها شكل الكيس بدل صورةٍ مكسورة. */
+    public function test_a_line_whose_product_has_no_photo_sends_null(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $order = Order::factory()->create(['customer_id' => $me->id]);
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson("/api/v1/client/orders/{$order->id}");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.items.0.product_image_url', null);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Application\Api\V1\Resources\SupportTicketResource;
 use App\Application\Controller;
 use App\Domain\Identity\Models\User;
 use App\Domain\Support\Enums\TicketStatus;
+use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\SupportService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,15 @@ class SupportTicketController extends Controller
     private const DEFAULT_PER_PAGE = 15;
 
     private const MAX_PER_PAGE = 50;
+
+    /**
+     * ما يرسمه جوابُ كل كتابةٍ على خيط: الخيطُ بكتّابه، ومن حوله.
+     *
+     * **`messages.author` تحديداً، وليس زينة.** الأفعالُ تُعيد قراءة التذكرة (`refresh`) فتعود
+     * رسائلها بلا كاتبها، والموردُ يسمّي كاتبَ كل ردّ — فكان الإغلاقُ والإسنادُ يسقطان بخطأ ٥٠٠
+     * خارج الإنتاج على أول خيطٍ فيه رسالتان، ويمرّان في الإنتاج باستعلامٍ لكل رسالة.
+     */
+    private const THREAD = ['messages.author', 'customer', 'order', 'assignee'];
 
     public function __construct(private readonly SupportService $support) {}
 
@@ -63,9 +73,10 @@ class SupportTicketController extends Controller
     {
         $found = $this->support->find($ticket);
 
-        $this->support->markRead($found, staff: true);
+        // حتى آخر رسالةٍ حُمّلت هنا، لا حتى «الآن» — انظر MarkTicketRead.
+        $this->support->markRead($found, staff: true, upToMessageId: $this->lastLoadedMessageId($found));
 
-        return $this->success(new SupportTicketResource($found->refresh()->load(['messages.author', 'customer', 'order', 'assignee'])));
+        return $this->success(new SupportTicketResource($found->refresh()->load(self::THREAD)));
     }
 
     /**
@@ -84,10 +95,16 @@ class SupportTicketController extends Controller
 
         assert($staff instanceof User);
 
-        $this->support->replyAsStaff($found, $staff, $request->string('body')->toString());
+        $this->support->replyAsStaff(
+            $found,
+            $staff,
+            $request->filled('body') ? $request->string('body')->toString() : null,
+            $request->file('file'),
+            $request->filled('client_token') ? $request->string('client_token')->toString() : null,
+        );
 
         return $this->created(
-            new SupportTicketResource($found->refresh()->load(['messages.author', 'customer', 'order', 'assignee'])),
+            new SupportTicketResource($found->refresh()->load(self::THREAD)),
             'تم إرسال الرد',
         );
     }
@@ -109,7 +126,7 @@ class SupportTicketController extends Controller
         );
 
         return $this->success(
-            new SupportTicketResource($updated->load(['customer', 'order', 'assignee'])),
+            new SupportTicketResource($updated->load(self::THREAD)),
             'تم إسناد التذكرة',
         );
     }
@@ -129,8 +146,31 @@ class SupportTicketController extends Controller
         $closed = $this->support->close($this->support->find($ticket), $staff);
 
         return $this->success(
-            new SupportTicketResource($closed->load(['customer', 'order', 'assignee'])),
+            new SupportTicketResource($closed->load(self::THREAD)),
             'تم إغلاق التذكرة',
         );
+    }
+
+    /**
+     * إعادة فتح تذكرة
+     *
+     * الخطوة التي يُطلب من المكتب أن يخطوها قبل أن يكتب في تذكرةٍ أغلقها. تعود «قيد المعالجة»،
+     * ويُمحى من أغلقها ومتى. وإعادةُ فتح المفتوحة لا تكتب شيئاً ولا تُعدّ خطأ، كالإغلاق.
+     */
+    public function reopen(int $ticket): JsonResponse
+    {
+        $reopened = $this->support->reopen($this->support->find($ticket));
+
+        return $this->success(
+            new SupportTicketResource($reopened->load(self::THREAD)),
+            'أُعيد فتح التذكرة',
+        );
+    }
+
+    private function lastLoadedMessageId(SupportTicket $ticket): ?int
+    {
+        $id = $ticket->messages->max('id');
+
+        return $id === null ? null : (int) $id;
     }
 }

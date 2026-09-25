@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/picked_file.dart';
@@ -60,5 +62,22 @@ class DesignRepositoryImpl implements DesignRepository {
     final result = await safeCommand(() => _dio.delete(DesignEndpoints.design(id)));
 
     return result.map((_) => unit);
+  }
+
+  @override
+  Future<Either<Failure, Uint8List>> fileBytes(String fileUrl) {
+    return safeDownload(
+      // الرابط كاملٌ وقد يشير إلى مضيف التخزين لا إلى الـ API، فيُمرَّر كما هو: Dio لا يضيف
+      // `baseUrl` إلى عنوانٍ كامل. و`bytes` كي لا يحاول Dio أن يقرأ صورةً على أنها JSON.
+      () => _dio.get<List<int>>(
+        fileUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          // ملف الطباعة ميغابايتات على اتصالٍ محمول، ومهلة الاستلام المضبوطة لصفحة JSON
+          // تتركه في منتصفه.
+          receiveTimeout: const Duration(minutes: 2),
+        ),
+      ),
+    );
   }
 }

@@ -211,6 +211,37 @@ abstract class PagedCubit<T> extends Cubit<PagedState<T>> {
     });
   }
 
+  /// يضع [item] حيث يضعه ترتيبُ القائمة نفسه، دون ذهابٍ إلى الخادم.
+  ///
+  /// **لقائمةٍ يأتيها الخبر من خارجها** — بثٌّ حيّ يقول إن صفاً تغيّر. [replace] يُبقيه في مكانه،
+  /// و[insert] يضعه أعلى القائمة؛ وهذا يسأل [compare] — ترتيبَ الخادم مكتوباً هنا — أين مكانه:
+  /// محادثةٌ جاءتها رسالةٌ الآن تصعد إلى الأعلى، وتذكرةٌ أُسندت فقط تبقى حيث هي.
+  ///
+  /// - الصفُّ الموجود يُرفع من مكانه ويوضع في مكانه الجديد، وصفٌّ جديد يُضاف في مكانه.
+  /// - صفٌّ لم يعد يطابق الفلتر ([belongs]) يغادر القائمة.
+  /// - **وصفٌّ مكانُه بعد آخر صفٍّ محمّل، وفي الخادم صفحاتٌ أخرى، لا يُضاف**: مكانه في صفحةٍ لم
+  ///   تُقرأ بعد، واختراعُ موضعٍ له هنا تخمين — ستأتي به الصفحة حين تُطلب.
+  ///
+  /// [compare] بمعنى `Comparator`: سالبٌ حين يسبق الأولُ الثاني.
+  bool place(T item, {required int Function(T a, T b) compare}) {
+    final current = state;
+    final hasMore = current is PagedLoaded<T> && current.page.hasMore;
+
+    return _patch((items) {
+      final id = identityOf(item);
+      final existing = items.indexWhere((row) => identityOf(row) == id);
+      final rest = [...items]..removeWhere((row) => identityOf(row) == id);
+
+      if (!belongs(item)) return existing < 0 ? null : rest;
+
+      final at = rest.indexWhere((row) => compare(item, row) < 0);
+
+      if (at < 0 && hasMore) return existing < 0 ? null : rest;
+
+      return rest..insert(at < 0 ? rest.length : at, item);
+    });
+  }
+
   /// Drops a row the caller knows is gone.
   ///
   /// Named for the id rather than `remove`, because several of these Cubits already own a

@@ -215,6 +215,22 @@ abstract final class AppIcons {
   static IconData get comments =>
       _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
 
+  // ── محادثة الدعم ───────────────────────────────────────────────────────────
+
+  /// إرفاقُ ملفٍ برسالة — مشبكُ الورق الذي يعرفه كلُّ من استعمل تطبيقَ محادثة.
+  static IconData get attach =>
+      _pick(Icons.attach_file_rounded, CupertinoIcons.paperclip);
+
+  /// ✓ — وصلت الرسالة ولم تُقرأ بعد.
+  static IconData get sentMark => _pick(Icons.done_rounded, CupertinoIcons.checkmark_alt);
+
+  /// ✓✓ — قرأها الطرفُ الآخر. **العلامةُ نفسها على المنصّتين**: Cupertino لا يملك علامةً
+  /// مزدوجة، وعلامةٌ مفردةٌ بلونٍ آخر تُقرأ «وصلت» لا «قُرئت» عند من اعتاد واتساب.
+  static IconData get readMark => _pick(Icons.done_all_rounded, Icons.done_all_rounded);
+
+  /// إعادةُ فتح تذكرةٍ مغلقة — قفلٌ مفتوح، مقابلُ ما أُغلق.
+  static IconData get reopen => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
+
   // ── choosing a file ────────────────────────────────────────────────────────
   // The three rows of the attachment sheet. Distinct glyphs on purpose: they sit side by side
   // and the icon is what is read, not the label under it.

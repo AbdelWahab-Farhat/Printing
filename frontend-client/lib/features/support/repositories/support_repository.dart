@@ -1,7 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/files/picked_file.dart';
+import 'package:dayaa_client/core/files/transfer_cancel.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
+import 'package:dayaa_client/features/support/models/ticket_change.dart';
 
 /// Reaching a person.
 abstract interface class SupportRepository {
@@ -25,10 +28,29 @@ abstract interface class SupportRepository {
     int? orderId,
   });
 
-  /// Replies.
+  /// Replies — كلاماً، أو ملفاً ([file]، صورة أو PDF)، أو كليهما.
   ///
   /// **A reply to a closed ticket reopens it**, and that is the server's decision, not this
   /// app's: a thread somebody is still writing into is closed on paper and open in fact, and
   /// that gap is where a customer gets ignored.
-  Future<Either<Failure, SupportTicket>> reply({required int id, required String body});
+  ///
+  /// [clientToken] يولّده التطبيق قبل الإرسال، فالإعادة بالرمز نفسه تُرجع الرسالة نفسها لا نسخةً
+  /// ثانية. [onProgress] من ٠ إلى ١ أثناء رفع الملف، و[cancel] يوقفه.
+  Future<Either<Failure, SupportTicket>> reply({
+    required int id,
+    String body = '',
+    PickedFile? file,
+    String? clientToken,
+    void Function(double progress)? onProgress,
+    TransferCancel? cancel,
+  });
+
+  /// كلُّ تغيّرٍ في تذاكري، ساعةَ يقع: ردٌّ من المحل، إغلاق، إعادة فتح، قراءة.
+  ///
+  /// **قناتي تُعرف من رقمي، ورقمي من الخادم** (`auth/me`) مرةً لكل رمز دخول. ولا يطلق شيئاً حين
+  /// لا يكون البثّ مُعدّاً أو لا جلسة — والشاشات تعمل بالسحب كما كانت. ولا يحمل خطأً قط.
+  Stream<TicketChange> watchChanges();
+
+  /// عاد الاتصال الحيّ بعد انقطاع — ما تغيّر في الانقطاع فات، فمن يرسم تذكرةً يعيد قراءتها.
+  Stream<void> get liveResumed;
 }

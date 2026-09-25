@@ -1,21 +1,16 @@
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/pagination/paged_state.dart';
-import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
-import 'package:dayaa_client/core/utils/bidi.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
-import 'package:dayaa_client/core/utils/fixed_point.dart';
+import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
-import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/core/widgets/search_field.dart';
-import 'package:dayaa_client/features/catalog/models/product.dart';
 import 'package:dayaa_client/features/catalog/presentation/viewmodel/products_cubit.dart';
-import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
+import 'package:dayaa_client/features/catalog/presentation/views/product_card.dart';
 import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// The catalogue.
 ///
@@ -44,15 +39,11 @@ class _ProductsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المنتجات'),
-        actions: const [NotificationsButton()],
+        // **السلة في الشريط، مكانَ الجرس** (طلب المستخدم، 2026-09-25). كانت زرّاً عائماً فوق
+        // الشريط السفلي يغطّي سعرَ البطاقة التي تحته، وصارت في المكان نفسه الذي تأخذه في صفحة
+        // المنتج. والجرس أُزيل من التطبيق كلّه: لا خادمَ للإشعارات بعد.
+        actions: const [CartButton()],
       ),
-      // **The basket floats here rather than sitting in the bar.** This screen is a branch of the
-      // shell, so the navigation bar is drawn under it and a floating button has somewhere to
-      // stand; and a basket that fills while the customer scrolls the catalogue is worth more
-      // where the thumb is than in a corner that has scrolled away. The product screen keeps
-      // [CartButton] in its bar — see [CartFab] for why the two differ.
-      floatingActionButton: const CartFab(),
-      floatingActionButtonLocation: CartFab.location,
       body: SafeArea(
         top: false,
         child: Column(
@@ -192,117 +183,13 @@ class _ProductGridState extends State<_ProductGrid> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  return _ProductCard(product: page.items[index]);
+                  return ProductCard(product: page.items[index]);
                 },
               ),
       ),
     };
   }
 }
-
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product});
-
-  final Product product;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final image = product.primaryImageUrl;
-    final from = product.lowestUnitPrice;
-
-    // **`shape` alone, never `shape` *and* `borderRadius`.** Material asserts on the pair, and
-    // the shape is the one that can also carry the design's hairline border.
-    return Material(
-      color: scheme.surfaceContainer,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.r),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
-      child: InkWell(
-        onTap: () => context.push(Routes.product(product.id)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ProductThumbnail(image: image),
-                  // «٤ مقاسات» — sits on the picture, where it does not cost the card a line.
-                  if (product.variantCount > 1)
-                    PositionedDirectional(
-                      top: 8.h,
-                      start: 8.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(999.r),
-                        ),
-                        child: Text(
-                          '${product.variantCount} مقاسات',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(10.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  // **The size range, when the product has one.** «٢٥×٣٥ … ٤٥×٦٠ سم» answers
-                  // the question a grid of pictures otherwise leaves open, and it costs no
-                  // request — the variants are already in the list response.
-                  if (product.sizeRange case final range?) ...[
-                    SizedBox(height: 2.h),
-                    Text(
-                      range.bidiSafe,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: 6.h),
-                  // **«اطلب عرض سعر» is a decided answer**, not this app inferring one from an
-                  // empty tier list: the server sends `has_listed_prices`, and the pricing modes
-                  // behind it are never learned here.
-                  Text(
-                    product.hasListedPrices && from != null
-                        ? 'من ${from.asMoney} د.ل'
-                        : 'اطلب عرض سعر',
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 
 class _Empty extends StatelessWidget {
   const _Empty({required this.search});
@@ -352,7 +239,7 @@ class _Retry extends StatelessWidget {
             // The server's own Arabic, never a generic apology.
             Text(message, textAlign: TextAlign.center, style: context.textTheme.bodyMedium),
             SizedBox(height: 16.h),
-            OutlinedButton(onPressed: onRetry, child: const Text('أعد المحاولة')),
+            AppButton.outlined(label: 'أعد المحاولة', onPressed: onRetry),
           ],
         ),
       ),

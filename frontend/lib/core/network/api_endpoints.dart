@@ -565,4 +565,19 @@ abstract final class SupportEndpoints {
   static String assignment(int id) => '/support/tickets/$id/assignment';
 
   static String close(int id) => '/support/tickets/$id/close';
+
+  /// إعادةُ فتح ما أغلقه المكتب، عن قصد — الموظف لا يكتب في تذكرةٍ مغلقة إلا بعدها.
+  static String reopen(int id) => '/support/tickets/$id/reopen';
+
+  /// قناةُ المكتب الحيّة: كلُّ تذكرةٍ تتغيّر تُقال هنا لكل من يقرأ الطابور (`support.view`).
+  static const String deskChannel = 'private-support.desk';
+
+  /// اسمُ الحدث على القناة — واحدٌ لكل تغيير، والحمولة `{ticket, message}`.
+  static const String changedEvent = 'support.ticket.changed';
+}
+
+/// البثّ الحيّ.
+abstract final class RealtimeEndpoints {
+  /// حيث تُوقَّع القنوات الخاصة. **جوابُه خارج المغلّف** — `{"auth": "…"}` كما يقرؤه Pusher.
+  static const String auth = '/broadcasting/auth';
 }

@@ -1,7 +1,13 @@
 import 'package:dayaa_client/core/config/app_config.dart';
 import 'package:dayaa_client/core/files/attachment_picker.dart';
 import 'package:dayaa_client/core/files/attachment_picker_impl.dart';
+import 'package:dayaa_client/core/files/attachment_store.dart';
+import 'package:dayaa_client/core/files/attachment_store_impl.dart';
+import 'package:dayaa_client/core/network/api_endpoints.dart';
 import 'package:dayaa_client/core/network/dio_client.dart';
+import 'package:dayaa_client/core/realtime/channel_signer.dart';
+import 'package:dayaa_client/core/realtime/pusher_realtime_client.dart';
+import 'package:dayaa_client/core/realtime/realtime_client.dart';
 import 'package:dayaa_client/core/storage/token_storage.dart';
 import 'package:dayaa_client/core/theme/theme_mode_cubit.dart';
 import 'package:dayaa_client/features/auth/presentation/viewmodel/login_cubit.dart';
@@ -38,7 +44,9 @@ import 'package:dayaa_client/features/designs/repositories/design_repository_imp
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/designs/usecases/remove_design.dart';
 import 'package:dayaa_client/features/designs/usecases/rename_design.dart';
+import 'package:dayaa_client/features/designs/usecases/save_design_to_device.dart';
 import 'package:dayaa_client/features/designs/usecases/upload_design.dart';
+import 'package:dayaa_client/features/home/presentation/viewmodel/active_orders_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/orders_cubit.dart';
@@ -47,15 +55,33 @@ import 'package:dayaa_client/features/orders/repositories/order_repository.dart'
 import 'package:dayaa_client/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa_client/features/orders/usecases/browse_orders.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
+import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:dayaa_client/features/orders/usecases/place_order.dart';
+import 'package:dayaa_client/features/orders/usecases/quote_basket.dart';
+import 'package:dayaa_client/features/shops/models/shop.dart';
+import 'package:dayaa_client/features/shops/presentation/viewmodel/shop_form_cubit.dart';
+import 'package:dayaa_client/features/shops/presentation/viewmodel/shops_cubit.dart';
+import 'package:dayaa_client/features/shops/repositories/shop_repository.dart';
+import 'package:dayaa_client/features/shops/repositories/shop_repository_impl.dart';
+import 'package:dayaa_client/features/shops/usecases/add_shop.dart';
+import 'package:dayaa_client/features/shops/usecases/list_business_fields.dart';
+import 'package:dayaa_client/features/shops/usecases/list_shops.dart';
+import 'package:dayaa_client/features/shops/usecases/remove_shop.dart';
+import 'package:dayaa_client/features/shops/usecases/update_shop.dart';
+import 'package:dayaa_client/features/support/presentation/viewmodel/attachment_files_cubit.dart';
+import 'package:dayaa_client/features/support/presentation/viewmodel/open_thread.dart';
+import 'package:dayaa_client/features/support/presentation/viewmodel/support_badge_feed.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_cubit.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
 import 'package:dayaa_client/features/support/repositories/support_repository.dart';
 import 'package:dayaa_client/features/support/repositories/support_repository_impl.dart';
 import 'package:dayaa_client/features/support/usecases/browse_tickets.dart';
+import 'package:dayaa_client/features/support/usecases/download_attachment.dart';
+import 'package:dayaa_client/features/support/usecases/find_attachment_on_phone.dart';
 import 'package:dayaa_client/features/support/usecases/get_ticket.dart';
 import 'package:dayaa_client/features/support/usecases/open_ticket.dart';
 import 'package:dayaa_client/features/support/usecases/reply_to_ticket.dart';
+import 'package:dayaa_client/features/support/usecases/watch_ticket_changes.dart';
 import 'package:dayaa_client/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
 import 'package:dayaa_client/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
 import 'package:dayaa_client/features/tools/usecases/generate_qr_code.dart';
@@ -126,15 +152,25 @@ abstract final class Injector {
       // nothing about it is a feature's. Behind its interface so a widget test can substitute
       // one — both packages answer through a platform channel that does not exist under
       // `flutter_test`, so the real one would hang there.
-      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new);
+      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
+      // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
+      // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول مستمعٍ ويغلقه مع آخرهم.
+      ..registerLazySingleton<RealtimeClient>(
+        () => PusherRealtimeClient(
+          endpoint: AppConfig.realtime,
+          sign: apiChannelSigner(sl<Dio>(), RealtimeEndpoints.auth),
+        ),
+      );
 
     _registerAuth();
     _registerDesigns();
     _registerCatalog();
     _registerDelivery();
+    _registerShops();
     _registerOrders();
     _registerBagPreview();
     _registerBillboards();
+    _registerHome();
     _registerSupport();
     _registerTools();
 
@@ -170,6 +206,7 @@ abstract final class Injector {
       ..registerLazySingleton(() => UploadDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => RenameDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => RemoveDesign(sl<DesignRepository>()))
+      ..registerLazySingleton(() => SaveDesignToDevice(sl<DesignRepository>()))
       ..registerFactory(
         () => DesignsCubit(
           list: sl<ListDesigns>(),
@@ -211,6 +248,30 @@ abstract final class Injector {
       ..registerLazySingleton(() => ListCities(sl<DeliveryRepository>()));
   }
 
+  /// «متاجري» — ومنها تختار السلة وجهة الطلبية.
+  ///
+  /// **`ShopFormCubit` بمُعامِل، والمُعامِل هو المتجر الذي يُعدَّل** أو `null` لمتجرٍ جديد: الفعل
+  /// يُعرف عند البناء، فلا يوجد Cubit لا يدري أيضيف أم يعدّل.
+  static void _registerShops() {
+    sl
+      ..registerLazySingleton<ShopRepository>(() => ShopRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton(() => ListShops(sl<ShopRepository>()))
+      ..registerLazySingleton(() => AddShop(sl<ShopRepository>()))
+      ..registerLazySingleton(() => UpdateShop(sl<ShopRepository>()))
+      ..registerLazySingleton(() => RemoveShop(sl<ShopRepository>()))
+      ..registerLazySingleton(() => ListBusinessFields(sl<ShopRepository>()))
+      ..registerFactory(() => ShopsCubit(list: sl<ListShops>(), remove: sl<RemoveShop>()))
+      ..registerFactoryParam<ShopFormCubit, Shop?, void>(
+        (editing, _) => ShopFormCubit(
+          cities: sl<ListCities>(),
+          businessFields: sl<ListBusinessFields>(),
+          add: sl<AddShop>(),
+          update: sl<UpdateShop>(),
+          editing: editing,
+        ),
+      );
+  }
+
   /// «طلباتي», and placing one.
   ///
   /// **One `registerFactoryParam`, and the parameter is the reason for it**: an
@@ -221,8 +282,10 @@ abstract final class Injector {
     sl
       ..registerLazySingleton<OrderRepository>(() => OrderRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton(() => BrowseOrders(sl<OrderRepository>()))
+      ..registerLazySingleton(() => ListActiveOrders(sl<OrderRepository>()))
       ..registerLazySingleton(() => GetOrder(sl<OrderRepository>()))
       ..registerLazySingleton(() => PlaceOrder(sl<OrderRepository>()))
+      ..registerLazySingleton(() => QuoteBasket(sl<OrderRepository>()))
       // **The one Cubit in this app that is a singleton, and the reason is that it outlives
       // every screen that touches it.** A basket held by the product screen empties the moment
       // that screen is popped, and «أضف إلى الطلبية» has to survive going back to the catalogue
@@ -247,6 +310,11 @@ abstract final class Injector {
         () => PlaceOrderCubit(
           cities: sl<ListCities>(),
           designs: sl<ListDesigns>(),
+          // خطوة «بيانات الطلب» تُملأ من الحساب: متاجره، ورقم هاتفه.
+          shops: sl<ListShops>(),
+          customer: sl<GetCurrentCustomer>(),
+          // التكلفة النهائية من الخادم، كلما تغيّرت السطور أو المدينة.
+          quote: sl<QuoteBasket>(),
           place: sl<PlaceOrder>(),
           cart: sl<CartCubit>(),
         ),
@@ -280,22 +348,62 @@ abstract final class Injector {
       ..registerFactory(() => BillboardCubit(get: sl<GetBillboards>()));
   }
 
+  /// قسم الرئيسية: «طلبياتي الجارية».
+  ///
+  /// **Cubit للشاشة، نسخةٌ جديدة مع كل رئيسية** (`registerFactory`)، وحالة استخدامه من ميزة
+  /// الطلبيات، مسجّلةٌ هناك قبل هذا السطر.
+  static void _registerHome() {
+    sl.registerFactory(() => ActiveOrdersCubit(list: sl<ListActiveOrders>()));
+  }
+
   /// Reaching a person.
+  ///
+  /// **[OpenThread] و[SupportBadgeFeed] وحيدان للتطبيق كله**: الأول يعرف أيُّ خيطٍ على الشاشة
+  /// الآن، والثاني يرفع شارة «الدعم» حيّةً ما دام العميل داخلاً — ويُشغَّل مرةً في `main.dart`.
   static void _registerSupport() {
     sl
-      ..registerLazySingleton<SupportRepository>(() => SupportRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<SupportRepository>(
+        () => SupportRepositoryImpl(sl<Dio>(), sl<RealtimeClient>(), sl<TokenStorage>()),
+      )
       ..registerLazySingleton(() => BrowseTickets(sl<SupportRepository>()))
       ..registerLazySingleton(() => GetTicket(sl<SupportRepository>()))
       ..registerLazySingleton(() => OpenTicket(sl<SupportRepository>()))
       ..registerLazySingleton(() => ReplyToTicket(sl<SupportRepository>()))
+      ..registerLazySingleton(() => WatchTicketChanges(sl<SupportRepository>()))
+      ..registerLazySingleton(OpenThread.new)
+      ..registerLazySingleton(
+        () => SupportBadgeFeed(
+          watch: sl<WatchTicketChanges>(),
+          badges: sl<BadgesCubit>(),
+          openThread: sl<OpenThread>(),
+          session: sl<TokenStorage>().revision,
+          isSignedIn: () => sl<TokenStorage>().hasTokenInMemory,
+        ),
+      )
       ..registerFactory(
-        () => SupportCubit(browse: sl<BrowseTickets>(), open: sl<OpenTicket>()),
+        () => SupportCubit(
+          browse: sl<BrowseTickets>(),
+          open: sl<OpenTicket>(),
+          watch: sl<WatchTicketChanges>(),
+        ),
       )
       ..registerFactoryParam<TicketThreadCubit, int, void>(
         (ticketId, _) => TicketThreadCubit(
           ticketId: ticketId,
           get: sl<GetTicket>(),
           reply: sl<ReplyToTicket>(),
+          watch: sl<WatchTicketChanges>(),
+          openThread: sl<OpenThread>(),
+        ),
+      )
+      // ملفات المحادثة على الهاتف: أين يُحفظ ملفُّ رسالة، وتنزيله بتقدّمٍ يُرى ويُلغى.
+      ..registerLazySingleton<AttachmentStore>(AttachmentStoreImpl.new)
+      ..registerLazySingleton(() => FindAttachmentOnPhone(sl<AttachmentStore>()))
+      ..registerLazySingleton(() => DownloadAttachment(sl<AttachmentStore>()))
+      ..registerFactory(
+        () => AttachmentFilesCubit(
+          find: sl<FindAttachmentOnPhone>(),
+          download: sl<DownloadAttachment>(),
         ),
       );
   }

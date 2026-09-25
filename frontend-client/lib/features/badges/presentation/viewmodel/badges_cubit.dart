@@ -21,10 +21,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 ///   * «الرئيسية» being pulled down,
 ///   * a thread being read, which is the one moment a count is known to have changed.
 ///
-/// It does **not** update while the app sits open and untouched. There are no sockets and no
-/// push notifications in this project, so a reply arriving this second is seen when the customer
-/// next returns to the app or pulls the home screen down. That is the honest limit of the cheap
-/// answer, and it is written here so nobody has to rediscover it.
+/// **ويتحدّث والتطبيقُ مفتوحٌ أيضاً**، منذ صار الدعم حيّاً: ردُّ المحل يصل من المقبس فيرفع
+/// شارة «الدعم» واحداً ([bump]) — إلا والخيطُ نفسه مفتوحٌ أمام العميل. انظر `SupportBadgeFeed`.
+/// ويبقى ما فوقه كما هو: المقبسُ لا يوقظ تطبيقاً مغلقاً، فالعودةُ إلى التطبيق تسأل الخادم.
 class BadgesCubit extends Cubit<Map<CustomerBadge, int>> {
   BadgesCubit({required GetBadges getBadges})
     : _getBadges = getBadges,
@@ -61,4 +60,12 @@ class BadgesCubit extends Cubit<Map<CustomerBadge, int>> {
 
     emit({...state, badge: 0});
   }
+
+  /// شارةٌ ترتفع واحداً دون سؤال الخادم.
+  ///
+  /// للحظةٍ يعرف فيها التطبيق أن شيئاً وصل — ردٌّ حيٌّ من المحل على خيطٍ غير مفتوح. سؤالُ
+  /// الخادم كان سيُعيد رقماً يعرف التطبيق جوابه، وقد يسبق قراءةً تقع في اللحظة نفسها.
+  ///
+  /// **متفائلة، وخطؤها آمن** كـ[clear]: التحديثُ الحقيقي التالي يصحّحها.
+  void bump(CustomerBadge badge) => emit({...state, badge: state.countOf(badge) + 1});
 }

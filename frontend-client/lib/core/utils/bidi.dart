@@ -81,6 +81,13 @@ extension BidiIsolation on String {
     return buffer.toString();
   }
 
+  /// النصّ كلّه معزولاً من اليسار إلى اليمين — «#1304» داخل عنوانٍ عربي.
+  ///
+  /// **[bidiSafe] لا يكفي هنا، لأن «#» ليست من الرقم عنده.** قبل الرمز كلمةٌ عربية، فتجعل
+  /// القاعدة W2 الأرقامَ بعدها أرقاماً عربية، و«#» التي كانت ستلتصق بها تصير محايدةً تأخذ
+  /// اتجاه السطر — فتنزل على يمين الرقم ويُقرأ العنوان «1304#». العزل هنا للرمز كلّه.
+  String get ltrIsolated => '${String.fromCharCode(_lri)}$this${String.fromCharCode(_pdi)}';
+
   bool get _hasDigit {
     for (var index = 0; index < length; index++) {
       if (_isDigit(codeUnitAt(index))) return true;

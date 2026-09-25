@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/features/tools/models/qr_code_painter.dart';
 import 'package:dayaa_client/features/tools/models/qr_ink.dart';
 import 'package:dayaa_client/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
@@ -77,8 +78,12 @@ void main() {
   ///
   /// **بعنوانه لا بترتيبه**: الشاشة صار فيها حقلان منذ صار للرمز اسم، و`byType` وحده كان يطابقهما
   /// معاً فيقع `enterText` على اثنين. الترتيب كان سيعمل اليوم ويكذب في أول إعادة ترتيب.
-  Finder fieldLabelled(String label) =>
-      find.ancestor(of: find.text(label), matching: find.byType(TextFormField));
+  ///
+  /// والعنوان فوق الصندوق لا داخله، فالطريق إلى الحقل يمرّ بـ`AppTextField` الذي يجمعهما.
+  Finder fieldLabelled(String label) => find.descendant(
+    of: find.ancestor(of: find.text(label), matching: find.byType(AppTextField)),
+    matching: find.byType(TextFormField),
+  );
 
   Future<void> generate(WidgetTester tester, String data) async {
     await tester.enterText(fieldLabelled('الرابط أو النص'), data);

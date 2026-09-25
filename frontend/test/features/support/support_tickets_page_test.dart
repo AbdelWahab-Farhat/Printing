@@ -62,6 +62,9 @@ void main() {
 
     repository = _MockSupportRepository();
 
+    when(() => repository.watchChanges()).thenAnswer((_) => const Stream.empty());
+    when(() => repository.liveResumed).thenAnswer((_) => const Stream<void>.empty());
+
     when(
       () => repository.tickets(
         page: any(named: 'page'),
@@ -90,7 +93,10 @@ void main() {
           ),
       )
       ..registerFactory<SupportTicketsCubit>(
-        () => SupportTicketsCubit(browse: BrowseTickets(repository)),
+        () => SupportTicketsCubit(
+          browse: BrowseTickets(repository),
+          watch: WatchTicketChanges(repository),
+        ),
       );
   }
 
@@ -121,8 +127,10 @@ void main() {
     // Assert — one chip per real status plus «الكل». Derived from the enum in the page, so a
     // fourth status joins the queue without anybody editing a list; this is the check that the
     // derivation is actually wired rather than replaced by a literal again.
-    expect(find.byType(FilterOptionChip), findsNWidgets(offerableTicketStatuses.length + 1));
+    // و«المسندة إليّ» آخراً، لأن الجلسة تعرف من أنا.
+    expect(find.byType(FilterOptionChip), findsNWidgets(offerableTicketStatuses.length + 2));
     expect(find.text('الكل'), findsOneWidget);
+    expect(find.text('المسندة إليّ'), findsOneWidget);
 
     // Scoped to the chips on purpose: a ticket card prints its own `status_label`, so an
     // unscoped search for «مفتوحة» finds the row as well as the chip and would pass even if
@@ -240,9 +248,35 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — the distinction matters: one says go home, the other says look elsewhere.
-    expect(find.text('لا توجد تذاكر بهذه الحالة'), findsOneWidget);
+    expect(find.text('لا توجد تذاكر بهذا الاختيار'), findsOneWidget);
     verify(
       () => repository.tickets(page: 1, status: TicketStatus.closed, assignedTo: null),
     ).called(1);
+  });
+
+  testWidgets('«المسندة إليّ» asks the server for my desk, and a second tap lets it go', (
+    tester,
+  ) async {
+    // Arrange
+    await arrange([ticketWith()]);
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act — الشريحةُ آخرُ الصفّ، والصفُّ يتمرّر أفقياً.
+    await tester.ensureVisible(find.text('المسندة إليّ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('المسندة إليّ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('المسندة إليّ'));
+    await tester.pumpAndSettle();
+
+    // Assert — رقمي من الجلسة، لا من شيءٍ على الشاشة.
+    verify(
+      () => repository.tickets(page: 1, status: null, assignedTo: 1),
+    ).called(1);
+    verify(
+      () => repository.tickets(page: 1, status: null, assignedTo: null),
+    ).called(2);
   });
 }

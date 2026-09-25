@@ -32,6 +32,10 @@ class _FakePicker implements AttachmentPicker {
 
   @override
   Future<List<PickedFile>> pick(AttachmentSource source) async => answer;
+
+  @override
+  Future<PickedFile?> pickOne(AttachmentSource source) async =>
+      answer.isEmpty ? null : answer.first;
 }
 
 void main() {

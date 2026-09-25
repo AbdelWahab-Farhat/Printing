@@ -7,12 +7,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'billboard_cubit.freezed.dart';
 part 'billboard_state.dart';
 
-/// The ViewModel for the carousel at the top of the home screen.
+/// الـ ViewModel لشريط الإعلانات أعلى الرئيسية.
 ///
-/// **A banner that will not load is not an error the customer should be shown.** The home
-/// screen's job is the shortcuts underneath it; a carousel that failed simply is not drawn, and
-/// [BillboardState.failure] exists so a retry can be offered *silently* — never as a red box
-/// across the first thing somebody sees when they open the app.
+/// **إعلانٌ لم يُحمَّل ليس خطأً يُعرض على العميل.** الشريط الذي فشل تملؤه إعلانات التطبيق
+/// نفسه (`HouseAd`)، و[BillboardState.failure] موجودةٌ كي تُعاد المحاولة *بصمت*، لا صندوقاً
+/// أحمر على أول ما يراه من يفتح التطبيق.
 class BillboardCubit extends Cubit<BillboardState> {
   BillboardCubit({required GetBillboards get})
     : _get = get,
@@ -20,13 +19,23 @@ class BillboardCubit extends Cubit<BillboardState> {
 
   final GetBillboards _get;
 
+  /// **التحميل الأول وحده يمرّ بـ [BillboardState.loading].** السحب للتحديث يُبقي ما يعرضه
+  /// الشريط حتى يصل الجواب الجديد، وإن فشل بقي كما هو: شريطٌ ينطفئ ويعود مع كل سحبةٍ وميضٌ بلا
+  /// معنى، وإعلانٌ عُرض قبل دقيقة أصدق من فراغٍ مكانه.
   Future<void> load() async {
-    emit(const BillboardState.loading());
+    final wasShowing = state is BillboardLoaded;
+
+    if (!wasShowing) emit(const BillboardState.loading());
 
     final result = await _get();
 
     if (isClosed) return;
 
-    emit(result.fold(BillboardState.failure, BillboardState.loaded));
+    result.fold(
+      (failure) {
+        if (!wasShowing) emit(BillboardState.failure(failure));
+      },
+      (billboards) => emit(BillboardState.loaded(billboards)),
+    );
   }
 }

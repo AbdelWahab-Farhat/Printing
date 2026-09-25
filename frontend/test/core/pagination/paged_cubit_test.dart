@@ -414,6 +414,109 @@ void main() {
       await cubit.close();
     });
 
+    // ── place: خبرٌ يأتي من خارج القائمة، وترتيبُها هو من يقرّر مكانه ─────────────────────
+    //
+    // الترتيب هنا تنازليٌّ بالتسمية: «ج» قبل «ب» قبل «أ»، كما يرتّب الخادم التذاكر بآخر رسالة.
+
+    int newestFirst(_Row a, _Row b) => b.label.compareTo(a.label);
+
+    test('place moves a row whose order changed to where the order puts it', () async {
+      // Arrange
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'ب'), (id: 3, label: 'أ')]));
+      await cubit.load();
+
+      // Act — «أ» جاءتها رسالةٌ الآن، فصارت أحدث الجميع.
+      final moved = cubit.place((id: 3, label: 'د'), compare: newestFirst);
+
+      // Assert
+      final page = (cubit.state as PagedLoaded<_Row>).page;
+      expect(moved, isTrue);
+      expect(page.items, [(id: 3, label: 'د'), (id: 1, label: 'ج'), (id: 2, label: 'ب')]);
+      expect(page.meta.total, 3);
+
+      await cubit.close();
+    });
+
+    test('place keeps a row whose order did not change exactly where it was', () async {
+      // Arrange
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'ب'), (id: 3, label: 'أ')]));
+      await cubit.load();
+
+      // Act — أُسندت، ولم تأتها رسالة.
+      cubit.place((id: 2, label: 'ب'), compare: newestFirst);
+
+      // Assert
+      expect(
+        (cubit.state as PagedLoaded<_Row>).page.items.map((row) => row.id),
+        [1, 2, 3],
+      );
+
+      await cubit.close();
+    });
+
+    test('place adds a row the list has never seen in its place, and counts it', () async {
+      // Arrange
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'أ')]));
+      await cubit.load();
+
+      // Act
+      cubit.place((id: 3, label: 'ب'), compare: newestFirst);
+
+      // Assert
+      final page = (cubit.state as PagedLoaded<_Row>).page;
+      expect(page.items.map((row) => row.id), [1, 3, 2]);
+      expect(page.meta.total, 3);
+
+      await cubit.close();
+    });
+
+    test('place drops a row that no longer belongs to the narrowed list', () async {
+      // Arrange
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'ب')]))
+        ..filter = (row) => row.label != 'ء';
+      await cubit.load();
+
+      // Act
+      cubit.place((id: 2, label: 'ء'), compare: newestFirst);
+
+      // Assert
+      final page = (cubit.state as PagedLoaded<_Row>).page;
+      expect(page.items, [(id: 1, label: 'ج')]);
+      expect(page.meta.total, 1);
+
+      await cubit.close();
+    });
+
+    test('place does not invent a spot past the loaded rows while more pages exist', () async {
+      // Arrange — عشرون صفاً في الخادم، واثنان على الشاشة.
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'ب')], total: 20));
+      await cubit.load();
+      final before = cubit.state;
+
+      // Act — أقدمُ من كل ما حُمّل: مكانه في صفحةٍ لم تُقرأ.
+      final added = cubit.place((id: 9, label: 'أ'), compare: newestFirst);
+
+      // Assert
+      expect(added, isFalse);
+      expect(cubit.state, before);
+
+      await cubit.close();
+    });
+
+    test('place appends at the end when the last page is already loaded', () async {
+      // Arrange
+      final cubit = _RowCubit(_rowPage([(id: 1, label: 'ج'), (id: 2, label: 'ب')]));
+      await cubit.load();
+
+      // Act
+      cubit.place((id: 9, label: 'أ'), compare: newestFirst);
+
+      // Assert
+      expect((cubit.state as PagedLoaded<_Row>).page.items.map((row) => row.id), [1, 2, 9]);
+
+      await cubit.close();
+    });
+
     test('patching before the first load is a no-op, not a crash', () async {
       // Arrange
       final cubit = _RowCubit(_rowPage([]));

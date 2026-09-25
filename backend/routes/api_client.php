@@ -4,6 +4,7 @@ use App\Application\Api\V1\Controllers\Client;
 use App\Application\Api\V1\Controllers\Client\AuthController;
 use App\Application\Api\V1\Controllers\Client\CatalogController;
 use App\Application\Api\V1\Controllers\Client\DesignController;
+use App\Application\Api\V1\Controllers\RealtimeAuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -133,6 +134,27 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('cities', [Client\DeliveryController::class, 'cities'])->name('cities.index');
 
         /*
+         * ── my shops ────────────────────────────────────────────────────────────────────
+         *
+         * متاجر العميل، وعددها ما يشاء — ومنها تختار السلةُ وجهةَ الطلبية. `{shop}` لا يُربط
+         * بنموذجه للسبب الذي لا يُربط لأجله `{design}`: `ShopController::ownedShop()` يبحث عنه في
+         * متاجر صاحب التوكن، فمتجر غيره 404 لا صفٌّ يُفحص بعد جلبه.
+         *
+         * الإضافة مُقيَّدة المعدّل كالطلبية: كلُّ متجرٍ صفٌّ يبقى في سجلّ العميل.
+         */
+        Route::get('shops', [Client\ShopController::class, 'index'])->name('shops.index');
+        Route::post('shops', [Client\ShopController::class, 'store'])
+            ->middleware('throttle:20,1')->name('shops.store');
+        Route::put('shops/{shop}', [Client\ShopController::class, 'update'])
+            ->whereNumber('shop')->name('shops.update');
+        Route::delete('shops/{shop}', [Client\ShopController::class, 'destroy'])
+            ->whereNumber('shop')->name('shops.destroy');
+
+        // منتقي «مجال العمل» في نموذج المتجر: المعروضة وحدها، كما يراها الموظف.
+        Route::get('business-fields', [Client\BusinessFieldController::class, 'index'])
+            ->name('business-fields.index');
+
+        /*
          * ── my orders ───────────────────────────────────────────────────────────────────
          *
          * `{order}` is not route-model bound, for the reason `{design}` is not: the lookup is
@@ -151,6 +173,11 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         // not put the same order on the review queue twice.
         Route::post('orders', [Client\OrderController::class, 'store'])
             ->middleware('throttle:20,1')->name('orders.store');
+
+        // تسعير السلة قبل إرسالها — «التكلفة النهائية». POST ولا يكتب شيئاً، كتسعير المنتج: السطور
+        // جسمٌ لا رابط. وثابتٌ لا يلتبس بـ`orders/{order}`، فذاك رقميٌّ وGET.
+        Route::post('orders/quote', [Client\OrderController::class, 'quote'])
+            ->name('orders.quote');
 
         Route::get('orders/{order}', [Client\OrderController::class, 'show'])
             ->whereNumber('order')->name('orders.show');
@@ -173,6 +200,16 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
             ->whereNumber('ticket')->name('support.tickets.show');
         Route::post('support/tickets/{ticket}/messages', [Client\SupportController::class, 'reply'])
             ->whereNumber('ticket')->middleware('throttle:30,1')->name('support.tickets.messages.store');
+
+        /*
+         * ── البثّ الحيّ ───────────────────────────────────────────────────────────────────
+         *
+         * بابُ العملاء إلى قنواتهم الخاصة على Reverb — الباب نفسه الذي في routes/api.php،
+         * تحت هذا الحارس. **ولا رقمَ عميلٍ في المسار هنا أيضاً**: رقمه في اسم القناة، والقناةُ
+         * `customers.{customerId}` في routes/channels.php تقارنه برمزه.
+         */
+        Route::post('broadcasting/auth', RealtimeAuthController::class)
+            ->middleware('throttle:60,1')->name('broadcasting.auth');
     });
 
 });

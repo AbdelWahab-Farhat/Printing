@@ -1,20 +1,19 @@
 part of 'billboard_cubit.dart';
 
-/// Everything the carousel can be.
+/// كل ما يمكن أن يكونه الشريط.
 @freezed
 sealed class BillboardState with _$BillboardState {
   const factory BillboardState.loading() = BillboardLoading;
 
-  /// **An empty list is a perfectly good answer**, and it is not a failure: the shop is simply
-  /// not running a campaign. The carousel takes no height at all rather than drawing an empty
-  /// box the customer has to scroll past.
+  /// **قائمةٌ فارغة جوابٌ صحيح لا فشل**: المتجر لا يعرض حملةً الآن، فيملأ التطبيق الشريط
+  /// بإعلاناته هو ([showsHouseAds]).
   const factory BillboardState.loaded(List<Billboard> billboards) = BillboardLoaded;
 
   const factory BillboardState.failure(Failure failure) = BillboardFailure;
 }
 
 extension BillboardStateX on BillboardState {
-  /// Whether the carousel should occupy any of the screen at all.
+  /// هل يعرض المتجر شيئاً من عنده؟
   bool get hasAnything => switch (this) {
     BillboardLoaded(:final billboards) => billboards.isNotEmpty,
     _ => false,
@@ -23,5 +22,14 @@ extension BillboardStateX on BillboardState {
   List<Billboard> get billboards => switch (this) {
     BillboardLoaded(:final billboards) => billboards,
     _ => const <Billboard>[],
+  };
+
+  /// هل يملأ التطبيق الشريط بإعلاناته هو؟ نعم حين لا يعرض المتجر شيئاً: لا حملة جارية، أو
+  /// شريطٌ لم يُحمَّل. **ولا أثناء التحميل**، كي لا يومض إعلانٌ من التطبيق ثم يختفي تحت إعلانٍ
+  /// حقيقي بعد لحظة.
+  bool get showsHouseAds => switch (this) {
+    BillboardLoading() => false,
+    BillboardLoaded(:final billboards) => billboards.isEmpty,
+    BillboardFailure() => true,
   };
 }

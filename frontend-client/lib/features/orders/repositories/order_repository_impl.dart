@@ -3,6 +3,7 @@ import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/api_endpoints.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
 import 'package:dayaa_client/core/network/safe_request.dart';
+import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dio/dio.dart';
@@ -47,6 +48,24 @@ class OrderRepositoryImpl implements OrderRepository {
     return safeRequest<CustomerOrderDetail>(
       () => _dio.post(OrderEndpoints.store, data: order.toJson()),
       parse: (data) => CustomerOrderDetail.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, BasketQuote>> quote({
+    required List<NewOrderLine> items,
+    int? cityId,
+  }) {
+    return safeRequest<BasketQuote>(
+      () => _dio.post(
+        OrderEndpoints.quote,
+        data: <String, dynamic>{
+          'items': [for (final item in items) item.toJson()],
+          // يُحذف ولا يُرسل null: بلا مدينةٍ لا توصيل يُسعَّر بعد.
+          'city_id': ?cityId,
+        },
+      ),
+      parse: (data) => BasketQuote.fromJson(data as Map<String, dynamic>),
     );
   }
 }

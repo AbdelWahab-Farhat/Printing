@@ -42,6 +42,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.readOnly = false,
     this.maxLength,
+    this.minLines,
     this.maxLines = 1,
     this.onChanged,
     this.onSubmitted,
@@ -79,6 +80,7 @@ class AppTextField extends StatefulWidget {
        textDirection = null,
        readOnly = false,
        maxLength = null,
+       minLines = null,
        maxLines = 1,
        onTap = null;
 
@@ -108,6 +110,10 @@ class AppTextField extends StatefulWidget {
   final bool autofocus;
   final bool readOnly;
   final int? maxLength;
+  /// يبدأ الحقلُ سطراً واحداً ويكبر مع الكلام حتى [maxLines] ثم يمرّر — كصندوق الرسالة في
+  /// المحادثة. بدونه يُحجز [maxLines] كاملاً من البداية.
+  final int? minLines;
+
   final int? maxLines;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -207,6 +213,7 @@ class _AppTextFieldState extends State<AppTextField> {
       textDirection: widget.textDirection,
       textAlignVertical: TextAlignVertical.center,
       maxLength: widget.maxLength,
+      minLines: widget.minLines,
       maxLines: widget.maxLines,
       autofillHints: widget.autofillHints,
       cursorColor: scheme.primary,

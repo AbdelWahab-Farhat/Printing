@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 
 /**
  * One conversation between a customer and the shop.
@@ -47,6 +46,8 @@ class SupportTicket extends Model
             'status' => TicketStatus::class,
             'customer_read_at' => 'datetime',
             'staff_read_at' => 'datetime',
+            'customer_read_message_id' => 'integer',
+            'staff_read_message_id' => 'integer',
             'last_message_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
@@ -107,21 +108,35 @@ class SupportTicket extends Model
     /**
      * How many messages this side has not seen.
      *
-     * **Derived from the cursor rather than kept as a counter**, which is the whole reason the
-     * schema stores a timestamp. A counter has to be incremented by every writer and decremented
-     * by every reader, and is wrong forever the first time either is missed; a cursor is written
-     * once, by the side that read, and this answer is recomputed from it every time.
+     * **Derived from the cursor rather than kept as a counter.** A counter has to be incremented
+     * by every writer and decremented by every reader, and is wrong forever the first time either
+     * is missed; a cursor is written once, by the side that read, and this answer is recomputed
+     * from it every time.
+     *
+     * **والمؤشّر رقمُ آخر رسالةٍ رآها هذا الطرف، لا ساعةُ قراءته.** الساعة بدقّة الثانية، فردٌّ
+     * يُكتب في ثانية القراءة كان يضيع: لا يُعدّ، فلا شارة ولا «ردّ جديد». انظر الترحيل
+     * `add_attachments_and_read_marks_to_support_tables`.
      *
      * Messages I wrote myself never count: I have read them by definition.
      */
     public function unreadFor(bool $staff): int
     {
-        $cursor = $staff ? $this->staff_read_at : $this->customer_read_at;
+        $cursor = $this->readUpTo($staff);
 
         return $this->messages()
             // The other side's messages: staff count the customer's, the customer counts staff's.
             ->whereNotNull($staff ? 'customer_id' : 'user_id')
-            ->when($cursor instanceof Carbon, fn ($q) => $q->where('created_at', '>', $cursor))
+            ->when($cursor !== null, fn ($q) => $q->where('id', '>', $cursor))
             ->count();
+    }
+
+    /**
+     * رقمُ آخر رسالةٍ رآها هذا الطرف، أو `null` إن لم يفتح الخيط قط.
+     *
+     * منه تُرسم علامة القراءة عند الطرف الآخر: رسالتي مقروءةٌ إن كان رقمها لا يتجاوزه.
+     */
+    public function readUpTo(bool $staff): ?int
+    {
+        return $staff ? $this->staff_read_message_id : $this->customer_read_message_id;
     }
 }

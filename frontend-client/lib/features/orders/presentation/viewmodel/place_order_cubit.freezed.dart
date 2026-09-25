@@ -12,11 +12,389 @@ part of 'place_order_cubit.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$PlaceOrderState {
+mixin _$BasketPricing implements DiagnosticableTreeMixin {
 
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'BasketPricing'))
+    ;
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricing);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'BasketPricing()';
+}
+
+
+}
+
+/// @nodoc
+class $BasketPricingCopyWith<$Res>  {
+$BasketPricingCopyWith(BasketPricing _, $Res Function(BasketPricing) __);
+}
+
+
+/// Adds pattern-matching-related methods to [BasketPricing].
+extension BasketPricingPatterns on BasketPricing {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasketPricingPending value)?  pending,TResult Function( BasketPriced value)?  priced,TResult Function( BasketPricingFailed value)?  failed,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case BasketPricingPending() when pending != null:
+return pending(_that);case BasketPriced() when priced != null:
+return priced(_that);case BasketPricingFailed() when failed != null:
+return failed(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasketPricingPending value)  pending,required TResult Function( BasketPriced value)  priced,required TResult Function( BasketPricingFailed value)  failed,}){
+final _that = this;
+switch (_that) {
+case BasketPricingPending():
+return pending(_that);case BasketPriced():
+return priced(_that);case BasketPricingFailed():
+return failed(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasketPricingPending value)?  pending,TResult? Function( BasketPriced value)?  priced,TResult? Function( BasketPricingFailed value)?  failed,}){
+final _that = this;
+switch (_that) {
+case BasketPricingPending() when pending != null:
+return pending(_that);case BasketPriced() when priced != null:
+return priced(_that);case BasketPricingFailed() when failed != null:
+return failed(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  pending,TResult Function( BasketQuote quote)?  priced,TResult Function( Failure failure)?  failed,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case BasketPricingPending() when pending != null:
+return pending();case BasketPriced() when priced != null:
+return priced(_that.quote);case BasketPricingFailed() when failed != null:
+return failed(_that.failure);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  pending,required TResult Function( BasketQuote quote)  priced,required TResult Function( Failure failure)  failed,}) {final _that = this;
+switch (_that) {
+case BasketPricingPending():
+return pending();case BasketPriced():
+return priced(_that.quote);case BasketPricingFailed():
+return failed(_that.failure);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  pending,TResult? Function( BasketQuote quote)?  priced,TResult? Function( Failure failure)?  failed,}) {final _that = this;
+switch (_that) {
+case BasketPricingPending() when pending != null:
+return pending();case BasketPriced() when priced != null:
+return priced(_that.quote);case BasketPricingFailed() when failed != null:
+return failed(_that.failure);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class BasketPricingPending with DiagnosticableTreeMixin implements BasketPricing {
+  const BasketPricingPending();
+  
+
+
+
+
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'BasketPricing.pending'))
+    ;
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingPending);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'BasketPricing.pending()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class BasketPriced with DiagnosticableTreeMixin implements BasketPricing {
+  const BasketPriced(this.quote);
+  
+
+ final  BasketQuote quote;
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BasketPricedCopyWith<BasketPriced> get copyWith => _$BasketPricedCopyWithImpl<BasketPriced>(this, _$identity);
+
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'BasketPricing.priced'))
+    ..add(DiagnosticsProperty('quote', quote));
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPriced&&(identical(other.quote, quote) || other.quote == quote));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,quote);
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'BasketPricing.priced(quote: $quote)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BasketPricedCopyWith<$Res> implements $BasketPricingCopyWith<$Res> {
+  factory $BasketPricedCopyWith(BasketPriced value, $Res Function(BasketPriced) _then) = _$BasketPricedCopyWithImpl;
+@useResult
+$Res call({
+ BasketQuote quote
+});
+
+
+$BasketQuoteCopyWith<$Res> get quote;
+
+}
+/// @nodoc
+class _$BasketPricedCopyWithImpl<$Res>
+    implements $BasketPricedCopyWith<$Res> {
+  _$BasketPricedCopyWithImpl(this._self, this._then);
+
+  final BasketPriced _self;
+  final $Res Function(BasketPriced) _then;
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? quote = null,}) {
+  return _then(BasketPriced(
+null == quote ? _self.quote : quote // ignore: cast_nullable_to_non_nullable
+as BasketQuote,
+  ));
+}
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BasketQuoteCopyWith<$Res> get quote {
+  
+  return $BasketQuoteCopyWith<$Res>(_self.quote, (value) {
+    return _then(_self.copyWith(quote: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class BasketPricingFailed with DiagnosticableTreeMixin implements BasketPricing {
+  const BasketPricingFailed(this.failure);
+  
+
+ final  Failure failure;
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BasketPricingFailedCopyWith<BasketPricingFailed> get copyWith => _$BasketPricingFailedCopyWithImpl<BasketPricingFailed>(this, _$identity);
+
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'BasketPricing.failed'))
+    ..add(DiagnosticsProperty('failure', failure));
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingFailed&&(identical(other.failure, failure) || other.failure == failure));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,failure);
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'BasketPricing.failed(failure: $failure)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BasketPricingFailedCopyWith<$Res> implements $BasketPricingCopyWith<$Res> {
+  factory $BasketPricingFailedCopyWith(BasketPricingFailed value, $Res Function(BasketPricingFailed) _then) = _$BasketPricingFailedCopyWithImpl;
+@useResult
+$Res call({
+ Failure failure
+});
+
+
+$FailureCopyWith<$Res> get failure;
+
+}
+/// @nodoc
+class _$BasketPricingFailedCopyWithImpl<$Res>
+    implements $BasketPricingFailedCopyWith<$Res> {
+  _$BasketPricingFailedCopyWithImpl(this._self, this._then);
+
+  final BasketPricingFailed _self;
+  final $Res Function(BasketPricingFailed) _then;
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? failure = null,}) {
+  return _then(BasketPricingFailed(
+null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
+as Failure,
+  ));
+}
+
+/// Create a copy of BasketPricing
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FailureCopyWith<$Res> get failure {
+  
+  return $FailureCopyWith<$Res>(_self.failure, (value) {
+    return _then(_self.copyWith(failure: value));
+  });
+}
+}
+
+/// @nodoc
+mixin _$PlaceOrderState implements DiagnosticableTreeMixin {
+
+
+
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PlaceOrderState'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
@@ -28,7 +406,7 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PlaceOrderState()';
 }
 
@@ -122,11 +500,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<OrderDraftLine> lines,  int? cityId,  int? regionId,  List<int> designIds,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading() when loading != null:
 return loading();case PlaceOrderReady() when ready != null:
-return ready(_that.cities,_that.designs,_that.lines,_that.cityId,_that.regionId,_that.designIds,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -145,11 +523,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<OrderDraftLine> lines,  int? cityId,  int? regionId,  List<int> designIds,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)  ready,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)  ready,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading():
 return loading();case PlaceOrderReady():
-return ready(_that.cities,_that.designs,_that.lines,_that.cityId,_that.regionId,_that.designIds,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure():
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +542,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<City> cities,  List<CustomerDesign> designs,  List<OrderDraftLine> lines,  int? cityId,  int? regionId,  List<int> designIds,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading() when loading != null:
 return loading();case PlaceOrderReady() when ready != null:
-return ready(_that.cities,_that.designs,_that.lines,_that.cityId,_that.regionId,_that.designIds,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -180,7 +558,7 @@ return failure(_that.failure);case _:
 /// @nodoc
 
 
-class PlaceOrderLoading implements PlaceOrderState {
+class PlaceOrderLoading with DiagnosticableTreeMixin implements PlaceOrderState {
   const PlaceOrderLoading();
   
 
@@ -188,6 +566,12 @@ class PlaceOrderLoading implements PlaceOrderState {
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PlaceOrderState.loading'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
@@ -199,7 +583,7 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PlaceOrderState.loading()';
 }
 
@@ -212,30 +596,37 @@ String toString() {
 /// @nodoc
 
 
-class PlaceOrderReady implements PlaceOrderState {
-  const PlaceOrderReady({required final  List<City> cities, final  List<CustomerDesign> designs = const <CustomerDesign>[], final  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.cityId, this.regionId, final  List<int> designIds = const <int>[], this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_lines = lines,_designIds = designIds;
+class PlaceOrderReady with DiagnosticableTreeMixin implements PlaceOrderState {
+  const PlaceOrderReady({required final  List<City> cities, final  List<CustomerDesign> designs = const <CustomerDesign>[], final  List<Shop> shops = const <Shop>[], final  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.step = CheckoutStep.products, this.shopId, this.cityId, this.regionId, final  List<int> designIds = const <int>[], this.customerPhone, this.pricing = const BasketPricing.pending(), this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_shops = shops,_lines = lines,_designIds = designIds;
   
 
-/// Every destination, with its neighbourhoods. Fetched once — the picker does not page.
+/// كل الوجهات بمناطقها، مرةً واحدة — المنتقي لا يُقلَّب صفحات.
  final  List<City> _cities;
-/// Every destination, with its neighbourhoods. Fetched once — the picker does not page.
+/// كل الوجهات بمناطقها، مرةً واحدة — المنتقي لا يُقلَّب صفحات.
  List<City> get cities {
   if (_cities is EqualUnmodifiableListView) return _cities;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_cities);
 }
 
-/// The customer's library, for attaching artwork. **Empty is fine**: attaching a design is
-/// optional, and an empty library is also what a failed fetch looks like here, because
-/// neither is worth refusing an order over.
+/// مكتبة العميل لإرفاق التصاميم. **الفارغة مقبولة**: الإرفاق اختياري، والمكتبة التي فشل
+/// تحميلها تبدو هكذا أيضاً، ولا يستحق أيٌّ منهما رفضَ طلبية.
  final  List<CustomerDesign> _designs;
-/// The customer's library, for attaching artwork. **Empty is fine**: attaching a design is
-/// optional, and an empty library is also what a failed fetch looks like here, because
-/// neither is worth refusing an order over.
+/// مكتبة العميل لإرفاق التصاميم. **الفارغة مقبولة**: الإرفاق اختياري، والمكتبة التي فشل
+/// تحميلها تبدو هكذا أيضاً، ولا يستحق أيٌّ منهما رفضَ طلبية.
 @JsonKey() List<CustomerDesign> get designs {
   if (_designs is EqualUnmodifiableListView) return _designs;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_designs);
+}
+
+/// متاجر العميل بترتيب إضافتها — ومنها تُختار الوجهة.
+ final  List<Shop> _shops;
+/// متاجر العميل بترتيب إضافتها — ومنها تُختار الوجهة.
+@JsonKey() List<Shop> get shops {
+  if (_shops is EqualUnmodifiableListView) return _shops;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_shops);
 }
 
  final  List<OrderDraftLine> _lines;
@@ -245,6 +636,9 @@ class PlaceOrderReady implements PlaceOrderState {
   return EqualUnmodifiableListView(_lines);
 }
 
+@JsonKey() final  CheckoutStep step;
+/// المتجر الذي تذهب إليه البضاعة. اختياريٌّ عند الخادم، ويُختار أولُ المتاجر عند الفتح.
+ final  int? shopId;
  final  int? cityId;
  final  int? regionId;
  final  List<int> _designIds;
@@ -254,9 +648,14 @@ class PlaceOrderReady implements PlaceOrderState {
   return EqualUnmodifiableListView(_designIds);
 }
 
+/// رقم الحساب، يُملأ به حقل «هاتف الاستلام» مرةً عند الفتح ثم يبقى الحقل للعميل. `null` حين
+/// لم تصل قراءة الحساب — فيكتبه العميل، ولا يتوقف شيء.
+ final  String? customerPhone;
+/// سعر كل سطرٍ والتكلفة النهائية، كما حسبها الخادم للسطور والمدينة الحاليّتين.
+@JsonKey() final  BasketPricing pricing;
 @JsonKey() final  bool isSubmitting;
-/// The order the shop created, once it has. **«بانتظار المراجعة»** — nothing is confirmed
-/// and nothing is priced against stock until a person has read it.
+/// الطلبية التي أنشأها المتجر. **«بانتظار المراجعة»** — لا شيء مؤكَّد ولا شيء مُسعَّر من المخزن
+/// قبل أن يقرأها أحد.
  final  CustomerOrderDetail? placed;
  final  Failure? lastFailure;
 
@@ -267,19 +666,25 @@ class PlaceOrderReady implements PlaceOrderState {
 $PlaceOrderReadyCopyWith<PlaceOrderReady> get copyWith => _$PlaceOrderReadyCopyWithImpl<PlaceOrderReady>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PlaceOrderState.ready'))
+    ..add(DiagnosticsProperty('cities', cities))..add(DiagnosticsProperty('designs', designs))..add(DiagnosticsProperty('shops', shops))..add(DiagnosticsProperty('lines', lines))..add(DiagnosticsProperty('step', step))..add(DiagnosticsProperty('shopId', shopId))..add(DiagnosticsProperty('cityId', cityId))..add(DiagnosticsProperty('regionId', regionId))..add(DiagnosticsProperty('designIds', designIds))..add(DiagnosticsProperty('customerPhone', customerPhone))..add(DiagnosticsProperty('pricing', pricing))..add(DiagnosticsProperty('isSubmitting', isSubmitting))..add(DiagnosticsProperty('placed', placed))..add(DiagnosticsProperty('lastFailure', lastFailure));
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._shops, _shops)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.step, step) || other.step == step)&&(identical(other.shopId, shopId) || other.shopId == shopId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_lines),cityId,regionId,const DeepCollectionEquality().hash(_designIds),isSubmitting,placed,lastFailure);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_lines),step,shopId,cityId,regionId,const DeepCollectionEquality().hash(_designIds),customerPhone,pricing,isSubmitting,placed,lastFailure);
 
 @override
-String toString() {
-  return 'PlaceOrderState.ready(cities: $cities, designs: $designs, lines: $lines, cityId: $cityId, regionId: $regionId, designIds: $designIds, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'PlaceOrderState.ready(cities: $cities, designs: $designs, shops: $shops, lines: $lines, step: $step, shopId: $shopId, cityId: $cityId, regionId: $regionId, designIds: $designIds, customerPhone: $customerPhone, pricing: $pricing, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
 }
 
 
@@ -290,11 +695,11 @@ abstract mixin class $PlaceOrderReadyCopyWith<$Res> implements $PlaceOrderStateC
   factory $PlaceOrderReadyCopyWith(PlaceOrderReady value, $Res Function(PlaceOrderReady) _then) = _$PlaceOrderReadyCopyWithImpl;
 @useResult
 $Res call({
- List<City> cities, List<CustomerDesign> designs, List<OrderDraftLine> lines, int? cityId, int? regionId, List<int> designIds, bool isSubmitting, CustomerOrderDetail? placed, Failure? lastFailure
+ List<City> cities, List<CustomerDesign> designs, List<Shop> shops, List<OrderDraftLine> lines, CheckoutStep step, int? shopId, int? cityId, int? regionId, List<int> designIds, String? customerPhone, BasketPricing pricing, bool isSubmitting, CustomerOrderDetail? placed, Failure? lastFailure
 });
 
 
-$CustomerOrderDetailCopyWith<$Res>? get placed;$FailureCopyWith<$Res>? get lastFailure;
+$BasketPricingCopyWith<$Res> get pricing;$CustomerOrderDetailCopyWith<$Res>? get placed;$FailureCopyWith<$Res>? get lastFailure;
 
 }
 /// @nodoc
@@ -307,15 +712,20 @@ class _$PlaceOrderReadyCopyWithImpl<$Res>
 
 /// Create a copy of PlaceOrderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? cities = null,Object? designs = null,Object? lines = null,Object? cityId = freezed,Object? regionId = freezed,Object? designIds = null,Object? isSubmitting = null,Object? placed = freezed,Object? lastFailure = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? cities = null,Object? designs = null,Object? shops = null,Object? lines = null,Object? step = null,Object? shopId = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? designIds = null,Object? customerPhone = freezed,Object? pricing = null,Object? isSubmitting = null,Object? placed = freezed,Object? lastFailure = freezed,}) {
   return _then(PlaceOrderReady(
 cities: null == cities ? _self._cities : cities // ignore: cast_nullable_to_non_nullable
 as List<City>,designs: null == designs ? _self._designs : designs // ignore: cast_nullable_to_non_nullable
-as List<CustomerDesign>,lines: null == lines ? _self._lines : lines // ignore: cast_nullable_to_non_nullable
-as List<OrderDraftLine>,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as List<CustomerDesign>,shops: null == shops ? _self._shops : shops // ignore: cast_nullable_to_non_nullable
+as List<Shop>,lines: null == lines ? _self._lines : lines // ignore: cast_nullable_to_non_nullable
+as List<OrderDraftLine>,step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
+as CheckoutStep,shopId: freezed == shopId ? _self.shopId : shopId // ignore: cast_nullable_to_non_nullable
+as int?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
 as int?,designIds: null == designIds ? _self._designIds : designIds // ignore: cast_nullable_to_non_nullable
-as List<int>,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
+as List<int>,customerPhone: freezed == customerPhone ? _self.customerPhone : customerPhone // ignore: cast_nullable_to_non_nullable
+as String?,pricing: null == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
+as BasketPricing,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,placed: freezed == placed ? _self.placed : placed // ignore: cast_nullable_to_non_nullable
 as CustomerOrderDetail?,lastFailure: freezed == lastFailure ? _self.lastFailure : lastFailure // ignore: cast_nullable_to_non_nullable
 as Failure?,
@@ -323,6 +733,15 @@ as Failure?,
 }
 
 /// Create a copy of PlaceOrderState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BasketPricingCopyWith<$Res> get pricing {
+  
+  return $BasketPricingCopyWith<$Res>(_self.pricing, (value) {
+    return _then(_self.copyWith(pricing: value));
+  });
+}/// Create a copy of PlaceOrderState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -352,7 +771,7 @@ $FailureCopyWith<$Res>? get lastFailure {
 /// @nodoc
 
 
-class PlaceOrderFailure implements PlaceOrderState {
+class PlaceOrderFailure with DiagnosticableTreeMixin implements PlaceOrderState {
   const PlaceOrderFailure(this.failure);
   
 
@@ -365,6 +784,12 @@ class PlaceOrderFailure implements PlaceOrderState {
 $PlaceOrderFailureCopyWith<PlaceOrderFailure> get copyWith => _$PlaceOrderFailureCopyWithImpl<PlaceOrderFailure>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PlaceOrderState.failure'))
+    ..add(DiagnosticsProperty('failure', failure));
+}
 
 @override
 bool operator ==(Object other) {
@@ -376,7 +801,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,failure);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PlaceOrderState.failure(failure: $failure)';
 }
 

@@ -68,6 +68,17 @@ void main() {
       tester.widget<CustomPaint>(find.byKey(AppButton.threadKey)).painter!
           as AppButtonThreadPainter;
 
+  /// ما يرسمه الزر تحت نفسه: ظلال أوّل `DecoratedBox` تحت سطحه، أو لا شيء.
+  List<BoxShadow> glowOf(WidgetTester tester) {
+    final box = tester.widget<DecoratedBox>(
+      find
+          .descendant(of: find.byKey(AppButton.surfaceKey), matching: find.byType(DecoratedBox))
+          .first,
+    );
+
+    return (box.decoration as BoxDecoration).boxShadow ?? const [];
+  }
+
   /// Holds the button down and gives the press animation room to have happened.
   ///
   /// Two pumps, not one, and the reason is easy to trip over: a tap-down is only reported once
@@ -423,6 +434,32 @@ void main() {
       // Assert
       expect(surface.color, Colors.transparent);
       expect((surface.shape! as RoundedRectangleBorder).side.width, greaterThan(0));
+    });
+
+    testWidgets('the primary variant glows under itself', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(AppButton(label: label, height: height, onPressed: () {})),
+      );
+
+      // Act
+      final glow = glowOf(tester);
+
+      // Assert
+      expect(glow, isNotEmpty);
+    });
+
+    testWidgets('a primary button told not to lift has no glow', (tester) async {
+      // Arrange — في ورقةٍ من الأسفل يسيل التوهّج على الزر المجاور، فيُقرأ لطخةً لا ارتفاعاً.
+      await tester.pumpWidget(
+        host(AppButton(label: label, height: height, lifted: false, onPressed: () {})),
+      );
+
+      // Act
+      final glow = glowOf(tester);
+
+      // Assert
+      expect(glow, isEmpty);
     });
   });
 

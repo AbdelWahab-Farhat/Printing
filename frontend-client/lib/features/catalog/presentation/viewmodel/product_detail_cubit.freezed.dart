@@ -225,9 +225,9 @@ class ProductDetailLoaded implements ProductDetailState {
 /// order quantity: the commonest correct answer, and it saves the customer discovering the
 /// floor by being refused.
 @JsonKey() final  String quantity;
-/// **The server's answer, and the only source of a total on this screen.** Null while a
-/// fresh one is being fetched — the screen shows the previous figure dimmed rather than
-/// blanking, so the price does not flicker on every tap of the stepper.
+/// **جواب الخادم، والمصدر الوحيد لأي سعرٍ على هذه الشاشة.** يبقى السابق ما دام الجديد في
+/// الطريق ([isQuoting])، والشاشة تخفّته بدل أن تمحوه، فلا يرمش السعر مع كل ضغطةٍ على + أو −.
+/// ويُمحى حين يرفض الخادم الكمية الجديدة: إجماليٌّ لكميةٍ أخرى بجانب الرفض رقمٌ كاذب.
  final  PriceQuote? quote;
 @JsonKey() final  bool isQuoting;
 /// A quote that failed. Kept apart from the product's own failure: the product is on screen

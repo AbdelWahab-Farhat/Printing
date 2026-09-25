@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'product.freezed.dart';
@@ -202,6 +204,77 @@ extension ProductX on Product {
 
     return best;
   }
+
+  /// كم تتحرّك الكمية مع كل ضغطةٍ على + أو − ومع كل درجةٍ من السلايدر.
+  ///
+  /// **خمسون للقطعة، وواحدٌ لما يوزن.** كسور الأسعار في الكتالوج تبدأ عند ١٠٠ و٣٠٠ و١٬٠٠٠ قطعة،
+  /// وكلها من مضاعفات الخمسين، فالخطوة تقف على كل كسرٍ ولا تقفز فوقه. والكيلو يُطلب واحداً
+  /// واحداً. وحدةٌ لم يسمع بها هذا الإصدار تتحرّك واحداً، كما يُعامَل ما يوزن.
+  double get quantityStep => isPricedByThePiece ? 50 : 1;
+
+  /// أول السلايدر: أقل كميةٍ يقبلها الخادم لهذا المنتج، أو واحد حين لا يذكر حداً.
+  double get quantityFloor {
+    final minimum = double.tryParse(minOrderQuantity ?? '');
+
+    return minimum == null || minimum <= 0 ? 1 : minimum;
+  }
+
+  /// آخر السلايدر — **وليس حداً للطلب.** ما فوقه يُكتب في الحقل، والإبهام يقف عند النهاية.
+  ///
+  /// ٢٬٠٠٠ قطعة و١٠٠ كجم، أو ضعف أعلى كسرٍ في الكتالوج إن كان أبعد، كي يقع آخر كسرٍ داخل
+  /// المسار لا على طرفه. ولا يقلّ عن ضعف الحد الأدنى، فلا يصير السلايدر نقطةً واحدة.
+  double get quantityCeiling {
+    var ceiling = isPricedByThePiece ? 2000.0 : 100.0;
+
+    for (final variant in variants) {
+      for (final tier in variant.priceTiers) {
+        final threshold = double.tryParse(tier.minQuantity);
+        if (threshold != null) ceiling = math.max(ceiling, threshold * 2);
+      }
+    }
+
+    return math.max(ceiling, quantityFloor * 2);
+  }
+}
+
+/// هل [quantity] كميةٌ تُطلب: رقمٌ أكبر من صفر.
+///
+/// `double.tryParse` يرسم الحدّ المطلوب بالضبط: «.» ليس رقماً — والخادم يقول ذلك أيضاً
+/// (`is_numeric('.')` خطأ) بعد رحلةٍ لا حاجة إليها — و«100.» مئة، فالنقطة الأخيرة تُترك لأنها
+/// الطريق إلى «100.5». **وحدّ المنتج الأدنى لا يُسأل هنا:** قاعدةُ الكتالوج يملكها الخادم، ويجيب
+/// عنها بالرقم والوحدة.
+bool isOrderableQuantity(String quantity) => switch (double.tryParse(quantity)) {
+  final value? => value > 0,
+  _ => false,
+};
+
+extension ProductVariantX on ProductVariant {
+  /// «25×35» — العرض في الطول بالسنتيمتر، أو null لمقاسٍ بلا سنتيمترات («كروت عاديه»).
+  String? get dimensions {
+    final width = widthCm;
+    final height = heightCm;
+    if (width == null || height == null) return null;
+
+    return '${ProductX._trim(width)}×${ProductX._trim(height)}';
+  }
+
+  /// ما يُكتب تحت اسم المقاس في صفّ المقاسات: قياساته — إلا حين يكون اسمه قياساته أصلاً
+  /// («30*30»)، فتكرارها تحته سطرٌ يقول الشيء نفسه مرتين.
+  String? get dimensionsUnderLabel {
+    final measured = dimensions;
+    if (measured == null) return null;
+
+    final spelled = label.replaceAll(RegExp(r'\s'), '').replaceAll(RegExp('[*xX]'), '×');
+
+    return spelled == measured ? null : measured;
+  }
+
+  /// الكسور من الأقل كميةً إلى الأكثر. الخادم يرسلها مرتّبة، وهذا لا يعتمد على ذلك.
+  List<PriceTier> get tiersInOrder => [...priceTiers]
+    ..sort(
+      (a, b) =>
+          (double.tryParse(a.minQuantity) ?? 0).compareTo(double.tryParse(b.minQuantity) ?? 0),
+    );
 }
 
 /// What a quantity costs — answered by the server so that the number shown and the number

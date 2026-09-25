@@ -11,10 +11,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * A support thread, as its own customer sees it.
  *
- * **Neither the assignee nor the read cursors travel.** Whose desk a ticket sits on is how the
- * shop organises itself, and «قرأها الموظف في ١٠:٤٢ ولم يرد» is a stick to beat somebody with
- * rather than information the customer can act on. What the customer gets is their own unread
- * count and whether anybody has answered — which is the whole of what they need.
+ * **The assignee does not travel, and neither does *when* anybody read.** Whose desk a ticket
+ * sits on is how the shop organises itself, and «قرأها الموظف في ١٠:٤٢ ولم يرد» is a stick to
+ * beat somebody with rather than information the customer can act on.
+ *
+ * **ما يسافر منذ ٢٠٢٦-٠٩-٢٥ هو الحدّ وحده** (`support_read_up_to`): طلب صاحب المحل علامة
+ * القراءة ✓✓ كما في تطبيقات المحادثة. هي تقول «وصلت ورآها المحل»، لا متى ولا مَن.
  *
  * @mixin SupportTicket
  */
@@ -43,6 +45,10 @@ class ClientSupportTicketResource extends JsonResource
             // `SupportTicket::unreadFor()` for why a counter would drift.
             'unread_count' => $this->unreadFor(staff: false),
 
+            // **علامةُ القراءة: الحدّ وحده، لا الساعة.** رقمُ آخر رسالةٍ رآها المحل؛ رسالتي
+            // مقروءةٌ (✓✓) إن كان رقمها لا يتجاوزه. متى قرأها ومن قرأها لا يغادران الخادم.
+            'support_read_up_to' => $this->readUpTo(staff: true),
+
             'messages' => ClientTicketMessageResource::collection($this->whenLoaded('messages')),
 
             // What the list draws under the subject: how long the thread is, and the last thing
@@ -51,7 +57,8 @@ class ClientSupportTicketResource extends JsonResource
             'messages_count' => $this->whenCounted('messages'),
             'preview' => $this->whenLoaded(
                 'latestMessage',
-                fn (): ?string => $this->latestMessage?->body,
+                // نصُّها، أو ما يُقال عن ملفها حين لا نص — «صورة»، أو اسم الـPDF.
+                fn (): ?string => $this->latestMessage?->previewText(),
             ),
 
             'last_message_at' => $this->last_message_at?->toIso8601String(),

@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
@@ -13,6 +14,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 /// تذاكر الدعم — what customers are asking from their own app.
+///
+/// **حيّة**: تذكرةٌ جديدة تظهر ساعةَ يفتحها العميل، ومحادثةٌ جاءتها رسالةٌ تصعد إلى الأعلى
+/// بشارتها — من المقبس لا بسحبٍ ولا طلب. انظر [SupportTicketsCubit].
 ///
 /// **The queue the customer app has had nobody reading.** The backend has answered
 /// `support/tickets` since the customer app shipped and this screen did not exist, so a customer
@@ -52,6 +56,7 @@ class _SupportTicketsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<SupportTicketsCubit>();
+    final me = sl<Session>().user?.id;
 
     return Scaffold(
       appBar: AppBar(title: const Text('تذاكر الدعم')),
@@ -66,9 +71,23 @@ class _SupportTicketsView extends StatelessWidget {
                   height: 44.h,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _filters.length,
+                    // الحالاتُ، ثم «المسندة إليّ» آخراً — حين يُعرف من أنا.
+                    itemCount: _filters.length + (me == null ? 0 : 1),
                     separatorBuilder: (context, index) => SizedBox(width: 8.w),
                     itemBuilder: (context, index) {
+                      if (index == _filters.length) {
+                        // **مربّعٌ لا نقطة** ([FilterOptionChip.isTicked]): يُضاف إلى الحالة
+                        // المختارة ولا يحلّ محلّها — «المفتوحة» التي على مكتبي.
+                        return Center(
+                          child: FilterOptionChip(
+                            label: 'المسندة إليّ',
+                            isTicked: true,
+                            isSelected: cubit.assignedTo == me,
+                            onTap: () => cubit.showDeskOf(cubit.assignedTo == me ? null : me),
+                          ),
+                        );
+                      }
+
                       final (label, status) = _filters[index];
 
                       return Center(
@@ -90,9 +109,9 @@ class _SupportTicketsView extends StatelessWidget {
                   state: state,
                   onLoadMore: cubit.loadMore,
                   onRefresh: cubit.refresh,
-                  emptyMessage: cubit.status == null
+                  emptyMessage: cubit.status == null && cubit.assignedTo == null
                       ? 'لا توجد تذاكر'
-                      : 'لا توجد تذاكر بهذه الحالة',
+                      : 'لا توجد تذاكر بهذا الاختيار',
                   padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
                   itemBuilder: (context, ticket, index) => _TicketCard(
                     ticket: ticket,

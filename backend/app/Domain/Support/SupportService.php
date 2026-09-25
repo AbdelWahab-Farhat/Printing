@@ -6,14 +6,17 @@ namespace App\Domain\Support;
 
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Models\User;
+use App\Domain\Support\Actions\AssignTicket;
 use App\Domain\Support\Actions\CloseTicket;
 use App\Domain\Support\Actions\MarkTicketRead;
 use App\Domain\Support\Actions\OpenTicket;
 use App\Domain\Support\Actions\PostTicketMessage;
+use App\Domain\Support\Actions\ReopenTicket;
 use App\Domain\Support\Enums\TicketStatus;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\Models\TicketMessage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 
 /**
  * The Support module's front door.
@@ -34,6 +37,8 @@ class SupportService
         private readonly PostTicketMessage $postMessage,
         private readonly CloseTicket $closeTicket,
         private readonly MarkTicketRead $markRead,
+        private readonly AssignTicket $assignTicket,
+        private readonly ReopenTicket $reopenTicket,
     ) {}
 
     // ─────────────────────────── the customer's side ───────────────────────────
@@ -62,10 +67,11 @@ class SupportService
             )
             // The shop's messages, never the customer's own.
             ->whereNotNull('user_id')
+            // المؤشّر رقمُ آخر رسالةٍ قرأها — انظر SupportTicket::unreadFor().
             ->whereRaw(
-                'ticket_messages.created_at > COALESCE('
-                .'(select customer_read_at from support_tickets where support_tickets.id = ticket_messages.support_ticket_id),'
-                ." '-infinity')"
+                'ticket_messages.id > COALESCE('
+                .'(select customer_read_message_id from support_tickets where support_tickets.id = ticket_messages.support_ticket_id),'
+                .' 0)'
             )
             ->count();
     }
@@ -113,9 +119,14 @@ class SupportService
         return ($this->openTicket)($customer, $subject, $body, $orderId);
     }
 
-    public function replyAsCustomer(SupportTicket $ticket, Customer $customer, string $body): TicketMessage
-    {
-        return ($this->postMessage)($ticket, $body, customer: $customer);
+    public function replyAsCustomer(
+        SupportTicket $ticket,
+        Customer $customer,
+        ?string $body,
+        ?UploadedFile $file = null,
+        ?string $clientToken = null,
+    ): TicketMessage {
+        return ($this->postMessage)($ticket, $body, customer: $customer, file: $file, clientToken: $clientToken);
     }
 
     // ─────────────────────────── the shop's side ───────────────────────────
@@ -144,16 +155,19 @@ class SupportService
         return SupportTicket::query()->with(['messages', 'customer', 'order', 'assignee'])->findOrFail($ticketId);
     }
 
-    public function replyAsStaff(SupportTicket $ticket, User $staff, string $body): TicketMessage
-    {
-        return ($this->postMessage)($ticket, $body, staff: $staff);
+    public function replyAsStaff(
+        SupportTicket $ticket,
+        User $staff,
+        ?string $body,
+        ?UploadedFile $file = null,
+        ?string $clientToken = null,
+    ): TicketMessage {
+        return ($this->postMessage)($ticket, $body, staff: $staff, file: $file, clientToken: $clientToken);
     }
 
     public function assign(SupportTicket $ticket, ?int $userId): SupportTicket
     {
-        $ticket->update(['assigned_to' => $userId]);
-
-        return $ticket->refresh();
+        return ($this->assignTicket)($ticket, $userId);
     }
 
     public function close(SupportTicket $ticket, ?User $staff = null): SupportTicket
@@ -161,9 +175,42 @@ class SupportService
         return ($this->closeTicket)($ticket, $staff);
     }
 
-    /** Reading a thread is what marks it read — there is no separate button to forget. */
-    public function markRead(SupportTicket $ticket, bool $staff): void
+    /** إعادةُ فتح ما أغلقه المكتب، عن قصد — انظر ReopenTicket. */
+    public function reopen(SupportTicket $ticket): SupportTicket
     {
-        ($this->markRead)($ticket, $staff);
+        return ($this->reopenTicket)($ticket);
+    }
+
+    /**
+     * Reading a thread is what marks it read — there is no separate button to forget.
+     *
+     * `$upToMessageId` آخرُ رسالةٍ حُمّلت للقارئ، فلا تُعلَّم مقروءةً رسالةٌ وصلت بعد أن قُرئ
+     * الخيط وقبل أن يتحرّك المؤشّر — انظر MarkTicketRead.
+     */
+    public function markRead(SupportTicket $ticket, bool $staff, ?int $upToMessageId = null): void
+    {
+        ($this->markRead)($ticket, $staff, $upToMessageId);
+    }
+
+    // ─────────────────────────── البثّ الحيّ ───────────────────────────
+
+    /**
+     * التذكرةُ كما يحتاجها البثّ: بما يرسمه الطابور حولها وبعدد رسائلها، بلا الخيط نفسه.
+     *
+     * **`null` لا ٤٠٤**، بخلاف {@see self::find()}: البثُّ يقع بعد إرسال الرد، وتذكرةٌ حُذفت في
+     * تلك اللحظة ليست خطأً يُرفع على أحد — لا شيء يقال عنها فحسب.
+     */
+    public function findForBroadcast(int $ticketId): ?SupportTicket
+    {
+        return SupportTicket::query()
+            ->with(['customer', 'order', 'assignee'])
+            ->withCount('messages')
+            ->find($ticketId);
+    }
+
+    /** الرسالةُ التي قيلت، وكاتبُها محمّلٌ معها — المكتبُ يسمّيه. */
+    public function findMessage(int $messageId): ?TicketMessage
+    {
+        return TicketMessage::query()->with('author')->find($messageId);
     }
 }

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/support_tickets_cubit.dart';
 import 'package:dayaa/features/support/repositories/support_repository.dart';
 import 'package:dayaa/features/support/usecases/support_usecases.dart';
@@ -20,17 +23,26 @@ import 'package:mocktail/mocktail.dart';
 /// page the server already truncated, `belongs` taking a ticket off a list it has stopped
 /// qualifying for, and `absorb` patching a row from the thread screen with no round trip.
 ///
+/// **والطابور حيّ**: ما يصل من المقبس يوضع في مكانه بترتيب الخادم — رسالةٌ جديدة تصعد بالتذكرة،
+/// وتذكرةٌ جديدة تظهر، وما خرج من الفلتر يغادر — وعودةُ الاتصال تقرأ الصفحة الأولى بلا هيكلٍ رمادي.
+///
 /// Arrange - Act - Assert throughout.
 class _MockSupportRepository extends Mock implements SupportRepository {}
 
 void main() {
   late _MockSupportRepository repository;
+  late StreamController<TicketChange> changes;
+  late StreamController<void> resumes;
+
+  /// الدقيقةُ [minute] من ساعةٍ ثابتة — آخرُ رسالةٍ في التذكرة، وبها يرتّب الخادم الطابور.
+  DateTime at(int minute) => DateTime.utc(2026, 9, 25, 12, minute);
 
   SupportTicket ticketWith({
     int id = 1,
     TicketStatus status = TicketStatus.open,
     int? assignedTo,
     int unread = 0,
+    int minute = 0,
   }) => SupportTicket(
     id: id,
     subject: 'سؤال $id',
@@ -38,6 +50,7 @@ void main() {
     statusLabel: status.label,
     assignedTo: assignedTo,
     unreadCount: unread,
+    lastMessageAt: at(minute),
   );
 
   Paginated<SupportTicket> pageOf(List<SupportTicket> tickets) => Paginated<SupportTicket>(
@@ -55,10 +68,31 @@ void main() {
     ).thenAnswer((_) async => Right(pageOf(tickets)));
   }
 
-  SupportTicketsCubit build() => SupportTicketsCubit(browse: BrowseTickets(repository));
+  SupportTicketsCubit build() => SupportTicketsCubit(
+    browse: BrowseTickets(repository),
+    watch: WatchTicketChanges(repository),
+  );
+
+  Future<void> live(TicketChange change) async {
+    changes.add(change);
+    await Future<void>.delayed(Duration.zero);
+  }
+
+  List<int> idsOf(SupportTicketsCubit cubit) =>
+      (cubit.state as PagedLoaded<SupportTicket>).page.items.map((t) => t.id).toList();
 
   setUp(() {
     repository = _MockSupportRepository();
+    changes = StreamController<TicketChange>.broadcast();
+    resumes = StreamController<void>.broadcast();
+
+    when(() => repository.watchChanges()).thenAnswer((_) => changes.stream);
+    when(() => repository.liveResumed).thenAnswer((_) => resumes.stream);
+  });
+
+  tearDown(() async {
+    await changes.close();
+    await resumes.close();
   });
 
   group('opening the queue', () {
@@ -199,6 +233,120 @@ void main() {
       // Assert — «لا توجد تذاكر» over a failed request tells the desk there is nothing to
       // answer, which is the one wrong thing this screen could say.
       expect: () => [isA<PagedLoading<SupportTicket>>(), isA<PagedFailure<SupportTicket>>()],
+    );
+  });
+
+  group('live', () {
+    blocTest<SupportTicketsCubit, SupportTicketsState>(
+      'a ticket that just got a message climbs to the top with its badge',
+      setUp: () => stub([ticketWith(id: 4, minute: 30), ticketWith(id: 5, minute: 20)]),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act
+        await live(TicketChange(ticket: ticketWith(id: 5, minute: 40, unread: 1)));
+      },
+      verify: (cubit) {
+        // Assert — بلا طلبٍ ثانٍ: الخبرُ حمل الصفّ كله.
+        verify(
+          () => repository.tickets(
+            page: any(named: 'page'),
+            status: any(named: 'status'),
+            assignedTo: any(named: 'assignedTo'),
+          ),
+        ).called(1);
+        expect(idsOf(cubit), [5, 4]);
+        expect((cubit.state as PagedLoaded<SupportTicket>).page.items.first.unreadCount, 1);
+      },
+    );
+
+    blocTest<SupportTicketsCubit, SupportTicketsState>(
+      'a ticket a customer has just opened appears in the queue',
+      setUp: () => stub([ticketWith(id: 4, minute: 30)]),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act
+        await live(TicketChange(ticket: ticketWith(id: 9, minute: 50, unread: 1)));
+      },
+      verify: (cubit) => expect(idsOf(cubit), [9, 4]),
+    );
+
+    blocTest<SupportTicketsCubit, SupportTicketsState>(
+      'an assignment keeps the ticket where it was',
+      setUp: () => stub([
+        ticketWith(id: 4, minute: 30),
+        ticketWith(id: 5, minute: 20),
+        ticketWith(id: 6, minute: 10),
+      ]),
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act — أُسندت ولم تأتها رسالة: آخرُ رسالةٍ فيها ما زالت الدقيقة ٢٠.
+        await live(TicketChange(ticket: ticketWith(id: 5, minute: 20, assignedTo: 9)));
+      },
+      verify: (cubit) {
+        expect(idsOf(cubit), [4, 5, 6]);
+        expect((cubit.state as PagedLoaded<SupportTicket>).page.items[1].assignedTo, 9);
+      },
+    );
+
+    blocTest<SupportTicketsCubit, SupportTicketsState>(
+      'a ticket closed elsewhere leaves a queue narrowed to «مفتوحة»',
+      setUp: () => stub([ticketWith(id: 4, minute: 30), ticketWith(id: 5, minute: 20)]),
+      build: build,
+      act: (cubit) async {
+        await cubit.narrowTo(TicketStatus.open);
+
+        // Act
+        await live(TicketChange(ticket: ticketWith(id: 4, minute: 30, status: TicketStatus.closed)));
+      },
+      verify: (cubit) => expect(idsOf(cubit), [5]),
+    );
+
+    blocTest<SupportTicketsCubit, SupportTicketsState>(
+      'when the socket comes back page one is read quietly and placed, with no skeleton',
+      setUp: () {
+        var reads = 0;
+        when(
+          () => repository.tickets(
+            page: any(named: 'page'),
+            status: any(named: 'status'),
+            assignedTo: any(named: 'assignedTo'),
+          ),
+        ).thenAnswer((_) async {
+          reads++;
+
+          return Right(
+            pageOf(
+              reads == 1
+                  ? [ticketWith(id: 4, minute: 30)]
+                  : [ticketWith(id: 7, minute: 45, unread: 2), ticketWith(id: 4, minute: 30)],
+            ),
+          );
+        });
+      },
+      build: build,
+      act: (cubit) async {
+        await cubit.load();
+
+        // Act — ما فات في الانقطاع: تذكرةٌ فُتحت والتطبيق في الخلفية.
+        resumes.add(null);
+        await Future<void>.delayed(Duration.zero);
+      },
+      // Assert — `loading` واحدة، للفتح الأول وحده.
+      expect: () => [
+        isA<PagedLoading<SupportTicket>>(),
+        isA<PagedLoaded<SupportTicket>>(),
+        isA<PagedLoaded<SupportTicket>>().having(
+          (s) => s.page.items.map((t) => t.id).toList(),
+          'ids',
+          [7, 4],
+        ),
+      ],
     );
   });
 }

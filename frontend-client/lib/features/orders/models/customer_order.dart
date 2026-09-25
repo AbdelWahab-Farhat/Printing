@@ -55,44 +55,41 @@ enum OrderStage {
   unknown,
 }
 
-/// What «طلباتي» is narrowed to.
+/// ما تُضيَّق إليه «طلباتي»: «كل الحالات»، ثم كل مرحلةٍ وحدها (طلب المستخدم، 2026-09-25).
 ///
-/// **Four chips, and the middle two are not the same kind of question as the outer two.** «الكل»
-/// and «قيد التنفيذ» ask *whether* an order is still moving; «جاهزة» and «مكتملة» name a single
-/// stage. Both reach the server as query parameters it already understands — `open=1` and
-/// `stage=` — so the difference stays here, where the chips are, rather than in two call sites
-/// that each decide what to send.
+/// **المراحل العشر كلها، بترتيب ما تمرّ به الطلبية** — من «بانتظار المراجعة» إلى «تم الاستلام»،
+/// ثم النهايات الثلاث الأخرى. كانت الاختيارات أربعاً تجمع المراحل في أسئلة («قيد التنفيذ»
+/// و«مكتملة»)، فلم يكن يُعرف منها أين طلبيةٌ بعينها. الآن كل اختيارٍ مرحلةٌ واحدة، تصل الخادم
+/// `stage=` بلغة التطبيق، ولا يتعلّم التطبيق حالات الورشة التسع عشرة. تُختار من ورقةٍ سفلية —
+/// انظر `StageFilterField`.
+///
+/// **الكلمات هنا لا من الطلبية**، لأن الاختيار لا طلبية في يده تقرأ منها كلمتها — واختيارٌ لا
+/// طلبية خلفه هو بالضبط الذي قد يُسأل عنه. ولذلك يمسكها `orders_filter_test` بكلمات الخادم
+/// نفسها، مقروءةً من `CustomerOrderStage.php`.
 enum OrdersFilter {
-  /// Everything, newest first.
-  all(label: 'الكل'),
-
-  /// Still being worked on.
-  ///
-  /// **Not «كل ما هو مفتوح».** A ready order is open — nobody took delivery and nobody wrote it
-  /// off — but «جاهزة» is the chip beside this one, and a chip that contains its neighbour is
-  /// two chips answering one question: the same order under both, and no way to see what is
-  /// still being made on its own. The server excludes «جاهزة» from `open=1` for the same
-  /// reason; see `Client\OrderController::openStatuses()`.
-  open(label: 'قيد التنفيذ', openOnly: true),
-
-  /// Made, and waiting to go out or be collected — «جاهزة» and «استلام مكتب» both.
+  all(label: 'كل الحالات'),
+  underReview(label: 'بانتظار المراجعة', stage: OrderStage.underReview),
+  preparing(label: 'قيد التجهيز', stage: OrderStage.preparing),
+  designing(label: 'قيد التصميم', stage: OrderStage.designing),
+  producing(label: 'قيد الإنتاج', stage: OrderStage.producing),
   ready(label: 'جاهزة', stage: OrderStage.ready),
+  onTheWay(label: 'جاري التوصيل', stage: OrderStage.onTheWay),
+  delivered(label: 'تم الاستلام', stage: OrderStage.delivered),
+  returned(label: 'مرتجعة', stage: OrderStage.returned),
+  cancelled(label: 'ملغاة', stage: OrderStage.cancelled),
+  rejected(label: 'مرفوضة', stage: OrderStage.rejected);
 
-  /// With the customer. **Not «مغلقة»:** an order that was cancelled is closed too, and putting
-  /// it under the same word as one that arrived would be the app telling somebody their
-  /// cancelled order completed.
-  done(label: 'مكتملة', stage: OrderStage.delivered);
-
-  const OrdersFilter({required this.label, this.openOnly = false, this.stage});
+  const OrdersFilter({required this.label, this.stage});
 
   final String label;
-  final bool openOnly;
+
+  /// المرحلة المختارة، وnull لـ«كل الحالات».
   final OrderStage? stage;
 
-  /// The `stage=` value the API takes, or null when this filter is not about one stage.
+  /// قيمة `stage=` كما يأخذها الـ API، أو null لـ«كل الحالات».
   ///
-  /// **The wire spelling, not the Dart member's name** — see the note on [OrderStage] about the
-  /// `@JsonValue` that was missing from two of them.
+  /// **الاسم الذي على السلك لا اسم العضو في Dart** — انظر الملاحظة على [OrderStage] عن
+  /// `@JsonValue` الذي كان ناقصاً من اثنين منها.
   String? get stageParameter => switch (stage) {
     null => null,
     OrderStage.underReview => 'under_review',
@@ -108,18 +105,11 @@ enum OrdersFilter {
     OrderStage.unknown => null,
   };
 
-  /// Whether an order still belongs in the list after it moved.
+  /// هل ما زالت الطلبية تنتمي إلى القائمة بعد أن تحرّكت.
   ///
-  /// Used by `PagedCubit.belongs`, so an order that leaves the filter while it is on screen
-  /// leaves the list too — a filter that keeps showing what no longer matches it is a lie until
-  /// the next refresh.
-  bool admits(CustomerOrder order) => switch (this) {
-    OrdersFilter.all => true,
-    // The same exclusion the request carries, so an order that becomes ready while this chip is
-    // selected leaves the list instead of sitting under a word that no longer describes it.
-    OrdersFilter.open => order.isOpen && order.stage != OrderStage.ready,
-    _ => order.stage == stage,
-  };
+  /// يغذّي `PagedCubit.belongs`، فالطلبية التي تغادر حالتها وهي على الشاشة تغادر القائمة معها:
+  /// اختيارٌ يبقي ما لم يعد يطابقه كاذبٌ حتى التحديث التالي.
+  bool admits(CustomerOrder order) => stage == null || order.stage == stage;
 }
 
 /// One line of «طلباتي».
@@ -162,6 +152,29 @@ abstract class CustomerOrder with _$CustomerOrder {
 
     @JsonKey(name: 'is_awaiting_quote') @Default(false) bool isAwaitingQuote,
 
+    // ── ما ترسمه البطاقة ─────────────────────────────────────────────────────
+    // بطاقة «طلباتي» على شكل بطاقة تطبيق الموظفين (طلب المستخدم، 2026-09-25)، وهذه خاناتها.
+    // **كلها اختيارية**: التطبيق قد يصل الهاتف قبل أن يُنشر الخادم الذي يرسلها، والبطاقة ترسم
+    // «—» حيث لا جواب بدل أن تُسقط القائمة كلها.
+
+    /// ما دُفع. **فارغٌ ما دام بندٌ بلا سعر**، كـ[total] وللسبب نفسه.
+    @JsonKey(name: 'paid_amount') String? paidAmount,
+
+    /// ما بقي على العميل. فارغٌ كذلك ما دام بندٌ بلا سعر.
+    String? balance,
+
+    /// المدينة كما سجّلتها الطلبية، لا كما هي اليوم.
+    @JsonKey(name: 'city_name') String? cityName,
+
+    @JsonKey(name: 'recipient_phone') String? recipientPhone,
+    @JsonKey(name: 'fulfilment_type') String? fulfilmentType,
+
+    /// «توصيل» أو «استلام من المكتب»، بكلمة الخادم.
+    @JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel,
+
+    /// البنود، لذيل البطاقة.
+    @Default(<OrderLine>[]) List<OrderLine> items,
+
     @JsonKey(name: 'placed_at') DateTime? placedAt,
   }) = _CustomerOrder;
 
@@ -178,11 +191,18 @@ abstract class OrderLine with _$OrderLine {
     @JsonKey(name: 'variant_label') String? variantLabel,
     required String quantity,
 
+    /// «قطعة» أو «كيلو»: «٣٠٠» وحدها لا تقول ٣٠٠ ماذا.
+    @JsonKey(name: 'pricing_unit_label') String? pricingUnitLabel,
+
     /// **Null until the shop quotes it.** A product priced «حسب الطلب» is ordered without a
     /// price — the app is never told one and must not invent one — and a zero here would read
     /// as «مجاناً» on the customer's own screen.
     @JsonKey(name: 'unit_price') String? unitPrice,
     @JsonKey(name: 'line_total') String? lineTotal,
+
+    /// صورة المنتج كما هي في الكتالوج اليوم — تصل مع الطلبية المفتوحة وحدها، و«طلباتي» لا
+    /// يصلها المفتاح. null ترسم شكل الكيس مكانها (`ProductThumbnail`).
+    @JsonKey(name: 'product_image_url') String? productImageUrl,
   }) = _OrderLine;
 
   factory OrderLine.fromJson(Map<String, dynamic> json) => _$OrderLineFromJson(json);
@@ -204,6 +224,16 @@ abstract class OrderTimelineEntry with _$OrderTimelineEntry {
 
   factory OrderTimelineEntry.fromJson(Map<String, dynamic> json) =>
       _$OrderTimelineEntryFromJson(json);
+}
+
+/// المرحلة التي بلغتها خطوة المسار، مقروءةً بالقاموس نفسه الذي تُقرأ به `stage` على الطلبية.
+///
+/// **القاموس المولَّد لا نسخةٌ ثانية منه.** `stage` هنا نصّ السلك كما هو (`'under_review'`)،
+/// وقراءته بـ`switch` مكتوبٍ باليد نسخةٌ ثالثة من أسماءٍ مكتوبة مرتين أصلاً (`@JsonValue`
+/// و`OrdersFilter.stageParameter`). ومرحلةٌ لا يعرفها هذا الإصدار تُقرأ [OrderStage.unknown].
+extension OrderTimelineEntryStage on OrderTimelineEntry {
+  OrderStage get orderStage =>
+      $enumDecode(_$OrderStageEnumMap, stage, unknownValue: OrderStage.unknown);
 }
 
 /// An order, opened.
@@ -289,6 +319,8 @@ abstract class NewOrderLine with _$NewOrderLine {
 /// price — the server prices every line. No discount, no vendor, no tracking number: those are
 /// staff decisions behind permissions a customer does not hold. See `RequestOrderRequest` in the
 /// backend for the full list and the reason for each.
+///
+/// ولا اسمَ مستلمٍ ولا عنوانَ حرّاً: المستلم هو العميل نفسه، والوجهة مدينةٌ ومنطقةٌ ومتجر.
 @freezed
 abstract class NewOrder with _$NewOrder {
   const factory NewOrder({
@@ -296,9 +328,7 @@ abstract class NewOrder with _$NewOrder {
     required List<NewOrderLine> items,
     @JsonKey(name: 'region_id') int? regionId,
     @JsonKey(name: 'customer_shop_id') int? customerShopId,
-    @JsonKey(name: 'recipient_name') String? recipientName,
     @JsonKey(name: 'recipient_phone') String? recipientPhone,
-    @JsonKey(name: 'address_details') String? addressDetails,
     @JsonKey(name: 'design_ids') @Default(<int>[]) List<int> designIds,
 
     /// What the customer wants to say about the order. It lands in the order's note prefixed

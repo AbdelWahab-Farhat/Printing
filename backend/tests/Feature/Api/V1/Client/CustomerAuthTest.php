@@ -355,11 +355,31 @@ class CustomerAuthTest extends TestCase
         $response->assertOk()->assertJsonPath('data.shop', null);
     }
 
+    /**
+     * «الأول هو الذي فُتح به الحساب» — بالمُعرِّف لا بمكان الصفّ على القرص. تعديلُ صفٍّ في
+     * PostgreSQL يكتب نسخته الجديدة بعد غيره، فتعيده قراءةٌ بلا ترتيب أخيراً — وصار العميل يعدّل
+     * متاجره من التطبيق، فكانت بطاقة «حسابي» ستتبدّل تحت اسمه بعد أول تعديل.
+     *
+     * التعديل نفسه لا يضمن النقل في كل مرة، فالاختبار يضع الصفّ الأقدم على القرص أخيراً مباشرةً.
+     */
+    public function test_me_names_the_first_shop_added_wherever_its_row_sits(): void
+    {
+        // Arrange — الثاني يُكتب أولاً، والأول بمُعرِّفٍ أصغر بعده.
+        $customer = $this->registered();
+        CustomerShop::factory()->create(['id' => 900002, 'customer_id' => $customer->id, 'name' => 'الثاني']);
+        CustomerShop::factory()->create(['id' => 900001, 'customer_id' => $customer->id, 'name' => 'الأول']);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($customer))->getJson('/api/v1/client/auth/me');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.shop.name', 'الأول');
+    }
+
     public function test_the_shop_never_carries_an_id_or_a_map_pin(): void
     {
-        // Arrange — the customer app cannot edit a shop and has no map. An id here would be a
-        // handle on something nothing can be done with, and coordinates are where somebody
-        // lives.
+        // Arrange — the card draws a line, not a handle: what edits a shop reads its id from
+        // `GET /client/shops`. And coordinates are where somebody lives.
         $customer = $this->registered();
         CustomerShop::factory()->create(['customer_id' => $customer->id]);
 

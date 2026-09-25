@@ -69,6 +69,17 @@ abstract final class DeliveryEndpoints {
   static const String cities = '/client/cities';
 }
 
+/// «متاجري» — متاجر العميل، ومنها تختار السلة وجهة الطلبية.
+abstract final class ShopEndpoints {
+  static const String index = '/client/shops';
+  static const String store = '/client/shops';
+
+  static String shop(int id) => '/client/shops/$id';
+
+  /// منتقي «مجال العمل» في نموذج المتجر: المعروضة وحدها.
+  static const String businessFields = '/client/business-fields';
+}
+
 /// «طلباتي».
 ///
 /// The workshop's nineteen statuses reach this app as eight *stages* — the server does the
@@ -77,6 +88,9 @@ abstract final class DeliveryEndpoints {
 abstract final class OrderEndpoints {
   static const String index = '/client/orders';
   static const String store = '/client/orders';
+
+  /// تسعير السلة قبل إرسالها. POST ولا يكتب شيئاً — السطور جسمٌ لا رابط.
+  static const String quote = '/client/orders/quote';
 
   static String order(int id) => '/client/orders/$id';
 }
@@ -92,4 +106,16 @@ abstract final class SupportEndpoints {
   static String ticket(int id) => '/client/support/tickets/$id';
 
   static String messages(int ticketId) => '/client/support/tickets/$ticketId/messages';
+
+  /// قناةُ العميل الحيّة — له وحده، والخادم يقارن الرقم برمز الدخول قبل أن يوقّع.
+  static String customerChannel(int customerId) => 'private-customers.$customerId';
+
+  /// اسمُ الحدث حين تتغيّر إحدى تذاكره — رسالة، إغلاق، إعادة فتح، قراءة. الحمولة `{ticket, message}`.
+  static const String changedEvent = 'support.ticket.changed';
+}
+
+/// البثّ الحيّ.
+abstract final class RealtimeEndpoints {
+  /// حيث تُوقَّع قنوات العميل الخاصة. **جوابُه خارج المغلّف** — `{"auth": "…"}` كما يقرؤه Pusher.
+  static const String auth = '/client/broadcasting/auth';
 }

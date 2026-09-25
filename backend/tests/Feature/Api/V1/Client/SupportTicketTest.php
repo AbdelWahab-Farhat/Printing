@@ -14,6 +14,7 @@ use App\Domain\Support\Models\TicketMessage;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -448,6 +449,127 @@ class SupportTicketTest extends TestCase
         // Assert
         $again->assertOk();
         $this->assertSame($closedBy, SupportTicket::query()->findOrFail($ticket->id)->closed_by);
+    }
+
+    /**
+     * **إعادةُ الفتح عن قصد** — الخطوة التي كان المكتب يُطلب منه أن يخطوها ولا زرَّ لها: الموظف
+     * لا يكتب في تذكرةٍ مغلقة، فإن كان عنده ما يضيفه يفتحها أولاً. وتعود «قيد المعالجة» لا
+     * «مفتوحة»: من فتحها موظفٌ يتابعها، فهي على مكتبٍ لا في انتظار أول جواب.
+     */
+    public function test_the_desk_can_reopen_a_closed_ticket_on_purpose(): void
+    {
+        // Arrange
+        $ticket = SupportTicket::factory()->closed()->create(['customer_id' => $this->customer()->id]);
+        $headers = $this->staff(PermissionName::ViewSupportTickets, PermissionName::ManageSupportTickets);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/support/tickets/{$ticket->id}/reopen");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'in_progress')
+            ->assertJsonPath('data.closed_at', null);
+
+        $this->assertDatabaseHas('support_tickets', [
+            'id' => $ticket->id,
+            'status' => 'in_progress',
+            'closed_at' => null,
+            'closed_by' => null,
+        ]);
+    }
+
+    public function test_a_reopened_ticket_takes_a_staff_reply_again(): void
+    {
+        // Arrange
+        $ticket = SupportTicket::factory()->closed()->create(['customer_id' => $this->customer()->id]);
+        $headers = $this->staff(PermissionName::ViewSupportTickets, PermissionName::ManageSupportTickets);
+        $this->withHeaders($headers)->postJson("/api/v1/support/tickets/{$ticket->id}/reopen")->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/support/tickets/{$ticket->id}/messages",
+            ['body' => 'نسيتُ أن أذكر موعد التسليم'],
+        );
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.status', 'in_progress');
+    }
+
+    /** كالإغلاق: ضغطتان على الزر نفسه ليستا خطأً، ولا تُحرّك الثانيةُ تذكرةً مفتوحةً أصلاً. */
+    public function test_reopening_an_open_ticket_is_not_an_error(): void
+    {
+        // Arrange
+        $ticket = SupportTicket::factory()->create(['customer_id' => $this->customer()->id]);
+        $headers = $this->staff(PermissionName::ViewSupportTickets, PermissionName::ManageSupportTickets);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/support/tickets/{$ticket->id}/reopen");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.status', 'open');
+    }
+
+    /**
+     * **كتابةٌ على خيطٍ فيه ردٌّ من موظف تعود بالخيط، لا بخطأ ٥٠٠.** الإغلاقُ والإسنادُ وإعادةُ
+     * الفتح تُعيد قراءة التذكرة (`refresh`)، فتعود رسائلها بلا كاتبها — وموردُ المكتب يسمّي
+     * كاتب كل ردّ. كان هذا يسقط خارج الإنتاج (`shouldBeStrict`) على أول تذكرةٍ ردّ فيها أحد،
+     * ويمرّ في الإنتاج باستعلامٍ لكل رسالة. وجده الاختبار الحيّ الذي يغلق تذكرةً حقيقية.
+     *
+     * @return array<string, array{0: string, 1: array<string, mixed>}>
+     */
+    public static function writesThatAnswerWithTheThread(): array
+    {
+        return [
+            'close' => ['close', []],
+            'reopen' => ['reopen', []],
+            'assign' => ['assignment', ['assigned_to' => null]],
+        ];
+    }
+
+    #[DataProvider('writesThatAnswerWithTheThread')]
+    public function test_a_write_on_a_thread_with_a_staff_reply_answers_with_the_named_thread(
+        string $verb,
+        array $payload,
+    ): void {
+        // Arrange
+        $author = User::factory()->create(['name' => 'سالم']);
+        $ticket = SupportTicket::factory()->create(['customer_id' => $this->customer()->id]);
+        TicketMessage::factory()->for($ticket, 'ticket')->fromStaff($author->id)->create(['body' => 'نتابعها']);
+        // رسالتان لا واحدة: Laravel لا يمنع التحميل الكسول لنموذجٍ قُرئ وحده، فرسالةٌ واحدة كانت
+        // ستُخفي العطب — وأول تذكرةٍ حقيقية فيها سؤالٌ وجواب.
+        TicketMessage::factory()->for($ticket, 'ticket')->fromCustomer($ticket->customer_id)->create();
+
+        if ($verb === 'reopen') {
+            $ticket->status = TicketStatus::Closed;
+            $ticket->save();
+        }
+
+        $headers = $this->staff(PermissionName::ViewSupportTickets, PermissionName::ManageSupportTickets);
+        $url = "/api/v1/support/tickets/{$ticket->id}/{$verb}";
+
+        // Act
+        $response = $verb === 'assignment'
+            ? $this->withHeaders($headers)->patchJson($url, $payload)
+            : $this->withHeaders($headers)->postJson($url, $payload);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.messages.0.author_name', 'سالم')
+            ->assertJsonPath('data.messages.0.body', 'نتابعها');
+    }
+
+    public function test_reopening_needs_more_than_reading(): void
+    {
+        // Arrange
+        $ticket = SupportTicket::factory()->closed()->create(['customer_id' => $this->customer()->id]);
+
+        // Act
+        $response = $this->withHeaders($this->staff(PermissionName::ViewSupportTickets))
+            ->postJson("/api/v1/support/tickets/{$ticket->id}/reopen");
+
+        // Assert
+        $response->assertForbidden();
+        $this->assertDatabaseHas('support_tickets', ['id' => $ticket->id, 'status' => 'closed']);
     }
 
     // ─────────────────────────── the wall ───────────────────────────

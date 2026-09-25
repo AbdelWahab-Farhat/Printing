@@ -45,6 +45,16 @@ class AppCard extends StatelessWidget {
     super.key,
   }) : _tone = _CardTone.sunken;
 
+  /// خطوةٌ فوق الصفحة لا تحتها: أبيض نهاراً على صفحةٍ أزرق رمادية، وكحليٌّ أفتح من الصفحة
+  /// ليلاً. هي بطاقة «طلباتي» (`OrderCard`) نفسها، وبها تُرسم الطلبية حين تُفتح، فلا تتبدّل
+  /// البطاقة بين القائمة وما يُفتح منها.
+  const AppCard.raised({
+    required this.child,
+    this.padding,
+    this.onTap,
+    super.key,
+  }) : _tone = _CardTone.raised;
+
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
@@ -65,6 +75,7 @@ class AppCard extends StatelessWidget {
       _CardTone.plain => (scheme.surfaceContainer, scheme.outlineVariant),
       _CardTone.accent => (scheme.surfaceContainer, scheme.primary),
       _CardTone.sunken => (scheme.surfaceContainerLow, scheme.outline.withValues(alpha: 0.45)),
+      _CardTone.raised => (scheme.surfaceContainerLow, scheme.outlineVariant),
     };
 
     final body = Padding(
@@ -86,4 +97,4 @@ class AppCard extends StatelessWidget {
   }
 }
 
-enum _CardTone { plain, accent, sunken }
+enum _CardTone { plain, accent, sunken, raised }

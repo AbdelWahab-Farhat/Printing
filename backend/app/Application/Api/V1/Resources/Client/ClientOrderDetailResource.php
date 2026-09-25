@@ -6,7 +6,6 @@ namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Models\Order;
-use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderStatusTransition;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -67,19 +66,8 @@ class ClientOrderDetailResource extends JsonResource
             'fulfilment_type' => $this->fulfilment_type->value,
             'fulfilment_type_label' => $this->fulfilment_type->label(),
 
-            'items' => $this->whenLoaded(
-                'items',
-                fn () => $this->items->map(fn (OrderItem $item) => [
-                    'id' => $item->id,
-                    'product_name' => $item->product_name,
-                    'variant_label' => $item->variant_label,
-                    'quantity' => (string) $item->quantity,
-                    // **Null, never '0.00'.** A line the shop has not quoted yet has no price,
-                    // and a zero here would read as «مجاناً» on the customer's screen.
-                    'unit_price' => $item->unit_price === null ? null : (string) $item->unit_price,
-                    'line_total' => $item->line_total === null ? null : (string) $item->line_total,
-                ])->all(),
-            ),
+            // السطر بالشكل نفسه الذي في «طلباتي» — انظر {@see ClientOrderLineResource}.
+            'items' => ClientOrderLineResource::collection($this->whenLoaded('items')),
 
             // Every number here is one the customer is owed an answer about. `total_cogs`,
             // `unit_cost` and the margin columns live on the staff resource and stay there.

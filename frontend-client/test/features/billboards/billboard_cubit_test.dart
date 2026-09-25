@@ -79,6 +79,83 @@ void main() {
     },
   );
 
+  /// السحب للتحديث لا يطفئ الشريط ثم يعيده: ما يعرضه يبقى حتى يصل الجواب الجديد.
+  blocTest<BillboardCubit, BillboardState>(
+    'loading again keeps what is showing until the new answer arrives',
+    build: () {
+      when(() => repository.showing()).thenAnswer((_) async => const Right(<Billboard>[]));
+
+      return build();
+    },
+    seed: () => const BillboardState.loaded([banner]),
+    act: (cubit) => cubit.load(),
+    expect: () => const [
+      BillboardState.loaded(<Billboard>[]),
+    ],
+  );
+
+  blocTest<BillboardCubit, BillboardState>(
+    'loading again and failing keeps the banners that were showing',
+    build: () {
+      when(
+        () => repository.showing(),
+      ).thenAnswer((_) async => const Left(NetworkFailure(message: 'لا يوجد اتصال')));
+
+      return build();
+    },
+    seed: () => const BillboardState.loaded([banner]),
+    act: (cubit) => cubit.load(),
+    expect: () => <BillboardState>[],
+  );
+
+  /// إعلانات التطبيق الثلاثة تملأ الشريط حين لا يعرض المتجر شيئاً — لا حملة جارية، أو شريطٌ لم
+  /// يُحمَّل. وأثناء التحميل لا تظهر، كي لا تومض ثم تختفي تحت إعلانٍ حقيقي.
+  group('showsHouseAds', () {
+    test('no campaign running fills the carousel with the app\'s own ads', () {
+      // Arrange
+      const state = BillboardState.loaded(<Billboard>[]);
+
+      // Act
+      final shows = state.showsHouseAds;
+
+      // Assert
+      expect(shows, isTrue);
+    });
+
+    test('a carousel that did not load does too, rather than an error', () {
+      // Arrange
+      const state = BillboardState.failure(NetworkFailure(message: 'لا يوجد اتصال'));
+
+      // Act
+      final shows = state.showsHouseAds;
+
+      // Assert
+      expect(shows, isTrue);
+    });
+
+    test('the shop\'s own banners replace them', () {
+      // Arrange
+      const state = BillboardState.loaded([banner]);
+
+      // Act
+      final shows = state.showsHouseAds;
+
+      // Assert
+      expect(shows, isFalse);
+    });
+
+    test('while the answer is on its way, neither is drawn yet', () {
+      // Arrange
+      const state = BillboardState.loading();
+
+      // Act
+      final shows = state.showsHouseAds;
+
+      // Assert
+      expect(shows, isFalse);
+    });
+  });
+
   group('target', () {
     test('a product banner parses into something the app can navigate with', () {
       final parsed = Billboard.fromJson(const {

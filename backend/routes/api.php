@@ -26,6 +26,7 @@ use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\ProfitAndLossController;
 use App\Application\Api\V1\Controllers\PurchaseOrderController;
+use App\Application\Api\V1\Controllers\RealtimeAuthController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
 use App\Application\Api\V1\Controllers\SalesStatisticsController;
@@ -106,6 +107,13 @@ Route::prefix('v1')->group(function (): void {
         // landing screen, and a permission here would show a blank front door to somebody whose
         // job is a single status transition.
         Route::get('home/summary', [HomeController::class, 'summary'])->name('home.summary');
+
+        // ── البثّ الحيّ ──────────────────────────────────────────────────────────────────
+        // التوقيعُ الذي تدخل به الشاشةُ قناةً خاصة على Reverb. **بلا `can:` هنا أيضاً، عن
+        // قصد**: الإذن يختلف باختلاف القناة، فمكانه القناةُ نفسها في routes/channels.php — قناةُ
+        // المكتب تسأل `support.view`. ومُقيَّد، لأن كل عودةٍ للاتصال تطرق هذا الباب من جديد.
+        Route::post('broadcasting/auth', RealtimeAuthController::class)
+            ->middleware('throttle:60,1')->name('broadcasting.auth');
 
         // ── access management ───────────────────────────────────────────────────────────
         Route::get('permissions', [PermissionController::class, 'index'])
@@ -225,6 +233,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('support/tickets/{ticket}/close', [SupportTicketController::class, 'close'])
             ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.close');
+
+        // الموظفُ لا يكتب في تذكرةٍ مغلقة، فهذا طريقُه إليها: يفتحها عن قصد ثم يكتب.
+        Route::post('support/tickets/{ticket}/reopen', [SupportTicketController::class, 'reopen'])
+            ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.reopen');
 
         // ── مجالات العمل ────────────────────────────────────────────────────────────────
         // What a customer's shop sells. Reading is granted to every role — the customer form

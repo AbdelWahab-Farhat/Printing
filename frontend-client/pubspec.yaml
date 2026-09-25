@@ -46,12 +46,24 @@ dependencies:
 
   # ── ui ───────────────────────────────────────────────────────────────────────
   flutter_screenutil: ^5.9.3
-  google_fonts: ^7.0.0 # the generated theme's util.dart needs it
   cached_network_image: ^3.4.1
   # One floating button that opens into the two or three things a screen can do. Chosen over a
   # row of buttons or an overflow menu because the actions here are reversible and frequent, and
   # an overflow menu hides them behind a glyph nobody presses.
   flutter_speed_dial: ^7.0.0
+  # شريط الإعلانات أعلى الرئيسية: تقليبٌ تلقائي يتوقف تحت الإصبع، ويلتفّ من الأخير إلى الأول.
+  # الحزمة نفسها التي في تطبيق بريمولا. **`enlargeCenterPage` مطفأٌ ويبقى مطفأً**: هو الخيار
+  # الوحيد فيها الذي يكبّر ويصغّر، وقواعد الحركة لا تسمح إلا بالإزاحة والشفافية (RULES §7).
+  carousel_slider: ^5.1.2
+  # الشريط السفلي العائم، أيقوناتٍ بلا كلمات. **بلا نصٍّ لا يتحرك فيه إلا لونان**: خلفية الأيقونة
+  # النشطة تظهر بالتلاشي ولونها يتبدّل. أما النصّ فيه فيفتح الزرّ عرضاً، ولذلك لا يُمرَّر له أبداً.
+  # فُحصت بدائلها قبل اختيارها: `water_drop_nav_bar` و`stylish_bottom_bar` تكبّران الأيقونة.
+  google_nav_bar: ^5.0.7
+  # شريط الخطوتين أعلى السلة: «المنتجات» ثم «بيانات الطلب». الحزمة نفسها التي يرسم بها تطبيق بريمولا
+  # معالجَه. **`showLoadingAnimation` مطفأٌ و`disableScroll` مفعّل، ويبقيان كذلك**: الأول رسمُ Lottie
+  # يدور داخل الخطوة النشطة بلا توقّف، والثاني تمريرٌ متحرّك إليها — وكلاهما حركةٌ لا تسمح بها قواعد
+  # الحركة (RULES §7). بهما لا يعمل في الشريط أيُّ Ticker.
+  easy_stepper: ^0.8.5+1
 
   # ── getting a file off the phone ─────────────────────────────────────────────
   # Two pickers, not one, and that is not duplication. `file_picker` opens the system's document
@@ -70,6 +82,14 @@ dependencies:
   # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
   # so it expires — which is the point.
   url_launcher: ^6.3.2
+  # يسلّم ملفاً **على الهاتف** لعارضه: ملفُّ PDF نُزّل من محادثة الدعم يُفتح في معاينة iOS نفسها
+  # داخل التطبيق، وفي عارض PDF على أندرويد. `url_launcher` يفتح روابط لا ملفات: iOS لا يفتح
+  # مسار ملفٍّ من صندوق التطبيق، وأندرويد يمنع `file://` بلا FileProvider.
+  #
+  # **`open_file` لا `open_filex`**، والفرق في ما يضيفانه إلى البناء: `open_filex` بـCocoaPods
+  # وحدها، ويضيف إلى أندرويد أذوناتِ قراءة التخزين والصور والفيديو — أذوناتٌ يسأل عنها متجر Play
+  # ولا حاجة لنا بها. `open_file` يدعم Swift Package Manager على iOS، ولا يضيف إلا FileProvider.
+  open_file: ^4.0.0
   # Handing a generated file to the system's own share sheet, where «حفظ الصورة» and «حفظ في
   # الملفات» are rows the OS provides. Deliberately not a gallery-writing package (gal,
   # image_gallery_saver): those need the photo-library permission on both platforms, and a
@@ -95,6 +115,14 @@ dependencies:
   flutter_dotenv: ^5.2.1
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
+  # أيقونات SVG لما لا تملكه Material ولا Cupertino، وأولها عربة «سلتك» المرسومة على مثالٍ أرسله
+  # المستخدم (assets/icons/cart.svg). من فريق Flutter نفسه، ودارت خالصة بلا كودٍ أصلي على iOS.
+  flutter_svg: ^2.3.0
+  # ── البثّ الحيّ ─────────────────────────────────────────────────────────────
+  # عميلُ بروتوكول Pusher الذي يتكلمه Reverb — تذاكر الدعم حيّة. Dart خالصة بلا كودٍ أصلي، وناشرٌ
+  # موثّق. لا تعرفه الشاشات: فوقه `RealtimeClient` في core/realtime، فلو تبدّلت الحزمة تبدّل ملفٌ واحد.
+  # ولماذا مقابس لا سؤالٌ كل ثوانٍ ولا FCM: Docs/support/SUPPORT-REALTIME.md §١.
+  dart_pusher_channels: ^1.3.1
 
 dev_dependencies:
   flutter_test:
@@ -150,7 +178,34 @@ flutter:
     # throws at launch rather than failing the build.
     - .env
     - .env.dev
+    # أيقونات SVG تُرسم بلون `IconTheme` كأي `Icon` — انظر `SvgIcon`.
+    - assets/icons/
+    # رسوم SVG بألوانٍ بديلة تُستبدل بألوان الثيم، كالسلة الفارغة — انظر `EmptyBasket`.
+    - assets/illustrations/
     # The five bags «معاينة على الكيس» draws on. ~130 KB the whole set, and they never change —
     # bundled rather than fetched so the tool works on a phone with no signal, which is where a
     # customer standing in a shop deciding on a size usually is.
     - assets/mockups/
+    # إعلانات التطبيق الثلاثة: تملأ شريط الرئيسية ما دام المتجر لا يعرض إعلاناً حقيقياً. محزومةٌ
+    # لا مجلوبة، لأنها تظهر بالضبط حين لم يصل من الخادم شيء.
+    - assets/billboards/
+    # رخصة Cairo (SIL OFL 1.1) تُرفق بالخط حيث يُوزَّع، وتُسجَّل في `main.dart`.
+    - assets/fonts/OFL.txt
+
+  # خط التطبيق بأوزانه الستة الحقيقية، محزوماً لا مجلوباً. `google_fonts` كان يسجّل كل وزنٍ عائلةً
+  # مستقلة، فيُرسم كل خطٍّ عريضٍ في التطبيق عادياً مُثخَّناً بالحساب — أنحف مما رسمه التصميم. هنا
+  # العائلة واحدة، فيجد `FontWeight.w700` وجهَ Bold نفسه. ≈١ ميجابايت، ويعمل بلا شبكة من أول فتح.
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cairo-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Cairo-Black.ttf
+          weight: 900

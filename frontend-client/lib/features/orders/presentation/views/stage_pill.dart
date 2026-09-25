@@ -1,4 +1,5 @@
 import 'package:dayaa_client/core/theme/app_tones.dart';
+import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,28 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
   };
 }
 
+/// أيقونة المرحلة: أيقونة حالة الورشة المقابلة لها في تطبيق الموظفين (`OrderStatusChip.iconFor`
+/// هناك)، فيرى العميل الشكل الذي يراه الموظف (طلب المستخدم، 2026-09-25).
+///
+/// **حين تجمع المرحلة حالاتٍ عدة تُؤخذ أيقونة أولاها:** «قيد التجهيز» تبدأ بـ«جديدة»، و«قيد
+/// الإنتاج» بالمطبعة، و«مرتجعة» بأول الرواجع. ولا `default`: مرحلةٌ تُضاف توقف البناء هنا حتى
+/// تُعطى شكلها.
+IconData stageIcon(OrderStage stage) => switch (stage) {
+  OrderStage.underReview => AppIcons.comments,
+  OrderStage.preparing => AppIcons.statusNew,
+  OrderStage.designing => AppIcons.designs,
+  OrderStage.producing => AppIcons.printedProduct,
+  OrderStage.ready => AppIcons.activate,
+  OrderStage.onTheWay => AppIcons.outForDelivery,
+  OrderStage.delivered => AppIcons.ordersReceived,
+  OrderStage.returned => AppIcons.returnedCourier,
+  OrderStage.cancelled => AppIcons.ordersCancelled,
+  OrderStage.rejected => AppIcons.close,
+  // لا يُدّعى شيءٌ عن مرحلةٍ لم يسمع بها هذا الإصدار: كلمتها وصلت معها وتقول ما هي.
+  OrderStage.unknown => AppIcons.unknownStatus,
+};
+
+/// المرحلة في شارةٍ صغيرة: أيقونتها ثم كلمتها.
 class StagePill extends StatelessWidget {
   const StagePill({required this.label, required this.stage, super.key});
 
@@ -78,13 +101,65 @@ class StagePill extends StatelessWidget {
         color: tone.background,
         borderRadius: BorderRadius.circular(999.r),
       ),
-      child: Text(
-        // **The label the server sent**, never a translation of the value.
-        label,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: tone.foreground,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(stageIcon(stage), size: 14.sp, color: tone.foreground),
+          SizedBox(width: 5.w),
+          Text(
+            // **The label the server sent**, never a translation of the value.
+            label,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: tone.foreground,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// المرحلة شريطاً بعرض البطاقة، كشريط الحالة أعلى بطاقة الطلبية في تطبيق الموظفين: الكلمة في
+/// الوسط وأيقونتها بعدها — في آخر السطر العربي — على لون المرحلة.
+///
+/// **المرحلة أول ما تُمسح البطاقة لأجله**، فتُعطى عرض البطاقة كله لا زاويةً منها.
+class StageBanner extends StatelessWidget {
+  const StageBanner({required this.label, required this.stage, super.key});
+
+  /// كلمة الخادم كما هي.
+  final String label;
+  final OrderStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = stageTone(context.colorScheme, stage);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: tone.background,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.labelLarge?.copyWith(
+                color: tone.foreground,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Icon(stageIcon(stage), size: 20.sp, color: tone.foreground),
+        ],
       ),
     );
   }

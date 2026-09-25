@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:dayaa_client/core/realtime/realtime_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -72,6 +73,26 @@ abstract final class AppConfig {
     assert(url != null && url.isNotEmpty, 'BASE_URL is missing from ${flavor.envFile}');
 
     return url ?? '';
+  }
+
+  /// خادمُ البثّ الحيّ (Reverb) — أو `null` حين لا يكون مُعدّاً، فتعمل الشاشات بالسحب كما كانت.
+  ///
+  /// **لا يُكتب فيه إلا المفتاحُ والمنفذ**، والباقي يُشتقّ من [baseUrl]: المضيفُ مضيفُه — ومنه
+  /// `10.0.2.2` لمحاكي أندرويد بلا سطرٍ ثانٍ — والمخطّطُ `wss` حين يكون الـ API على `https`.
+  static RealtimeEndpoint? get realtime {
+    final key = dotenv.env['REVERB_APP_KEY']?.trim();
+    if (key == null || key.isEmpty) return null;
+
+    final api = Uri.parse(baseUrl);
+    final host = dotenv.env['REVERB_HOST']?.trim();
+    final scheme = dotenv.env['REVERB_SCHEME']?.trim();
+
+    return RealtimeEndpoint(
+      scheme: (scheme == null || scheme.isEmpty) ? (api.scheme == 'https' ? 'wss' : 'ws') : scheme,
+      host: (host == null || host.isEmpty) ? api.host : host,
+      port: int.tryParse(dotenv.env['REVERB_PORT']?.trim() ?? ''),
+      key: key,
+    );
   }
 
   /// Long enough for a slow Libyan mobile connection, short enough that a dead server does not

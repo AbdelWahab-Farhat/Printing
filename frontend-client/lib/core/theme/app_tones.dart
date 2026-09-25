@@ -76,3 +76,80 @@ extension StageTone on ColorScheme {
 
   Color get onPendingContainer => _dark ? const Color(0xffe0a83c) : const Color(0xff5a3f05);
 }
+
+/// الطرف الأعمق من برتقالي العلامة، لتدرّج بطاقة الحساب في «حسابي».
+///
+/// **لماذا لا يكفي `primary` وحده:** الأبيض على `#F4622A` تباينه ٣٫٢ إلى ١، وهذا يكفي لاسمٍ
+/// بخطٍّ كبير ولا يكفي لرقم هاتفٍ بحجم النص. التدرّج يضع النص على هذا الطرف (٤٫٧ إلى ١) ويُبقي
+/// البرتقالي الصريح في الزاوية المقابلة، فتبقى البطاقة بلون العلامة ويُقرأ ما عليها. الدرجة نفسها
+/// (١٦°)، والإضاءة وحدها أخفض.
+///
+/// **قيمةٌ واحدة للوضعين:** البطاقة بلون العلامة لا بلون الصفحة، فلا تتبدّل مع المظهر، كما لا
+/// يتبدّل `primary` نفسه. `app_tones_test.dart` يثبّت التباين والدرجة، لا القيمة.
+extension BrandTone on ColorScheme {
+  Color get primaryDeep => const Color(0xffcf410b);
+}
+
+/// الترويسة الكحلية فوق شاشتي الدخول وإنشاء الحساب، والنصّ الذي يُكتب عليها.
+///
+/// **كحليّةٌ في الوضعين، ولذلك هي هنا لا في `ColorScheme`.** لا دور في المخطط يكون كحلياً في
+/// النهار والليل معاً: كحليّ الوضع الداكن هو `surface`، وكحليّ الوضع الفاتح هو `onSurface` — لونُ
+/// نصٍّ لا خلفية.
+///
+/// * [header] — `#0F2138` في النهار كما في التصميم؛ وفي الليل أعمق درجةً من الصفحة التي هي
+///   `#0F2138` نفسها، كي تبقى الترويسة شريطاً فوق الصفحة لا امتداداً لها.
+/// * [onHeader] — العنوان والشعار: أبيض.
+/// * [onHeaderVariant] — السطر تحت العنوان، `#9FB0C8` من التصميم.
+///
+/// `app_tones_test.dart` يثبّت الكحلي والتباين، لا القيم.
+extension HeaderTone on ColorScheme {
+  bool get _night => brightness == Brightness.dark;
+
+  Color get header => _night ? const Color(0xff0a1826) : const Color(0xff0f2138);
+
+  Color get onHeader => const Color(0xffffffff);
+
+  Color get onHeaderVariant => const Color(0xff9fb0c8);
+}
+
+/// ألوان محادثة الدعم: فقاعتي، وفقاعة الدعم، وما خلفهما.
+///
+/// **وُلدت من شكوى: «الألوان غير واضحة».** كانت فقاعة العميل `primaryContainer` — البرتقالي الصريح
+/// — بنصٍّ أبيض تباينه ٣٫٢ إلى ١، ووقتُها بلون `onSurfaceVariant` الرمادي على البرتقالي: ١٫٦ إلى
+/// ١، لا يُقرأ. فالقاعدة هنا ما يفعله تطبيق المحادثة المرجع (تيليغرام): **فقاعتي بلون العلامة
+/// باهتاً والنصُّ عليها بالحبر**، لا العلامة صريحةً والنصّ أبيض عليها.
+///
+/// * نهاراً: فقاعتي خوخيّةٌ `#FFE3D4` بالحبر الكحلي، وفقاعة الدعم بيضاء، وكلتاهما على خلفيةٍ
+///   أزرق رمادية أغمق قليلاً من الصفحة كي تُرى حوافّ البيضاء. والشعرة حولهما كما في `AppCard`:
+///   الفقاعات تنفصل بالتعبئة والشعرة، بلا ظلّ.
+/// * ليلاً: فقاعتي برتقاليٌّ محروق `#8F3510` بنصٍّ أبيض (٧٫٨ إلى ١)، وفقاعة الدعم كحليّة.
+///
+/// **الوقت وعلامة القراءة بلونٍ واحد على كل فقاعة**، كما في المرجع: ✓ و✓✓ تُفرَّقان بعددهما لا
+/// بلونهما. `chat_tone_test.dart` يثبّت التباين (النصّ ٧ إلى ١، الوقت ٤٫٥ إلى ١) لا القيم.
+extension ChatTone on ColorScheme {
+  bool get _chatNight => brightness == Brightness.dark;
+
+  /// ما خلف الفقاعات، بين شريط العنوان وصندوق الكتابة.
+  Color get chatBackdrop => _chatNight ? const Color(0xff0a1826) : const Color(0xffecf1f7);
+
+  Color get outgoingBubble => _chatNight ? const Color(0xff8f3510) : const Color(0xffffe3d4);
+
+  Color get onOutgoingBubble => _chatNight ? const Color(0xffffffff) : const Color(0xff0f2138);
+
+  /// الوقت وعلامة القراءة على فقاعتي.
+  Color get outgoingMeta => _chatNight ? const Color(0xffffc9b3) : const Color(0xffa8410f);
+
+  /// شعرة فقاعتي. ليلاً لا شعرة: البرتقالي المحروق يبين وحده على الكحلي.
+  Color get outgoingBubbleEdge =>
+      _chatNight ? const Color(0x00000000) : const Color(0xfff6cdb9);
+
+  Color get incomingBubble => _chatNight ? const Color(0xff1a3652) : const Color(0xffffffff);
+
+  Color get onIncomingBubble => _chatNight ? const Color(0xffe8eef5) : const Color(0xff0f2138);
+
+  /// الوقت على فقاعة الدعم.
+  Color get incomingMeta => _chatNight ? const Color(0xff8fa3ba) : const Color(0xff56708c);
+
+  Color get incomingBubbleEdge =>
+      _chatNight ? const Color(0x00000000) : const Color(0xffdce5ef);
+}

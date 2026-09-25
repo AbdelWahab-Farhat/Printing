@@ -1,4 +1,5 @@
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Decoding a thread the way `SupportTicketResource` actually sends one.
@@ -157,6 +158,114 @@ void main() {
       // that was not theirs is the worse of the two mistakes.
       expect(message.from, MessageAuthor.unknown);
       expect(message.from, isNot(MessageAuthor.customer));
+    });
+  });
+
+  group('the live desk feed', () {
+    /// ما يرسله `DeskTicketChanged::broadcastWith()` حرفاً: التذكرة بلا خيط، والرسالة وحدها.
+    Map<String, dynamic> change({Map<String, dynamic>? message}) => <String, dynamic>{
+      'ticket': <String, dynamic>{
+        'id': 12,
+        'subject': 'أين طلبيتي؟',
+        'status': 'open',
+        'status_label': 'مفتوحة',
+        'customer': {'id': 4, 'code': 'A-1001', 'name': 'سالم', 'phone': '0910000000'},
+        'order': null,
+        'assigned_to': null,
+        'assignee': null,
+        'unread_count': 1,
+        'customer_read_up_to': 2,
+        'last_message_at': '2026-09-25T12:40:00+00:00',
+        'closed_at': null,
+        'created_at': '2026-09-25T12:00:00+00:00',
+      },
+      'message': message,
+    };
+
+    test('a change carries the queue row and the new message', () {
+      // Arrange
+      final json = change(
+        message: {
+          'id': 3,
+          'from': 'customer',
+          'author_name': null,
+          'body': 'هل من جديد؟',
+          'attachment': null,
+          'client_token': 'a1b2',
+          'sent_at': '2026-09-25T12:40:00+00:00',
+        },
+      );
+
+      // Act
+      final decoded = TicketChange.fromJson(json);
+
+      // Assert
+      expect(decoded.ticket.id, 12);
+      expect(decoded.ticket.unreadCount, 1);
+      expect(decoded.ticket.customerReadUpTo, 2);
+      expect(decoded.ticket.messages, isEmpty);
+      expect(decoded.message?.body, 'هل من جديد؟');
+      expect(decoded.message?.clientToken, 'a1b2');
+    });
+
+    test('a change with nothing said — an assignment, a closure, a read — has no message', () {
+      // Act
+      final decoded = TicketChange.fromJson(change());
+
+      // Assert
+      expect(decoded.message, isNull);
+    });
+
+    test('a file sent without a caption decodes with no body and its attachment', () {
+      // Arrange
+      final json = change(
+        message: {
+          'id': 4,
+          'from': 'customer',
+          'author_name': null,
+          'body': null,
+          'attachment': {
+            'kind': 'pdf',
+            'kind_label': 'PDF',
+            'name': 'التصميم.pdf',
+            'mime_type': 'application/pdf',
+            'size_bytes': 3355443,
+            'width_px': null,
+            'height_px': null,
+            'url': 'https://api.test/signed',
+          },
+          'client_token': null,
+          'sent_at': '2026-09-25T12:41:00+00:00',
+        },
+      );
+
+      // Act
+      final decoded = TicketChange.fromJson(json);
+
+      // Assert — رسالةٌ هي ملفٌ فقط لا تُسقط الخيط ولا التيار.
+      expect(decoded.message?.body, isNull);
+      expect(decoded.message?.attachment?.kind, AttachmentKind.pdf);
+      expect(decoded.message?.attachment?.name, 'التصميم.pdf');
+      expect(decoded.message?.attachment?.sizeBytes, 3355443);
+    });
+
+    test('a file kind this build has not heard of is still a file, not a crash', () {
+      // Arrange
+      final json = change(
+        message: {
+          'id': 5,
+          'from': 'customer',
+          'body': null,
+          'attachment': {'kind': 'video', 'kind_label': 'فيديو', 'url': 'https://api.test/v'},
+          'sent_at': '2026-09-25T12:42:00+00:00',
+        },
+      );
+
+      // Act
+      final decoded = TicketChange.fromJson(json);
+
+      // Assert
+      expect(decoded.message?.attachment?.kind, AttachmentKind.unknown);
     });
   });
 }

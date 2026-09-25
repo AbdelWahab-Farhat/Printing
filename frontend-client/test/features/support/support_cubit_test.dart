@@ -6,10 +6,12 @@ import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
 import 'package:dayaa_client/core/pagination/paged_state.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
+import 'package:dayaa_client/features/support/models/ticket_change.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_cubit.dart';
 import 'package:dayaa_client/features/support/repositories/support_repository.dart';
 import 'package:dayaa_client/features/support/usecases/browse_tickets.dart';
 import 'package:dayaa_client/features/support/usecases/open_ticket.dart';
+import 'package:dayaa_client/features/support/usecases/watch_ticket_changes.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,6 +19,8 @@ class _MockSupportRepository extends Mock implements SupportRepository {}
 
 void main() {
   late _MockSupportRepository repository;
+  late StreamController<TicketChange> changes;
+  late StreamController<void> resumes;
 
   const first = SupportTicket(
     id: 1,
@@ -42,10 +46,30 @@ void main() {
     meta: PageMeta(currentPage: current, perPage: 15, lastPage: last, total: items.length),
   );
 
-  setUp(() => repository = _MockSupportRepository());
+  setUp(() {
+    repository = _MockSupportRepository();
+    changes = StreamController<TicketChange>.broadcast();
+    resumes = StreamController<void>.broadcast();
 
-  SupportCubit build() =>
-      SupportCubit(browse: BrowseTickets(repository), open: OpenTicket(repository));
+    when(() => repository.watchChanges()).thenAnswer((_) => changes.stream);
+    when(() => repository.liveResumed).thenAnswer((_) => resumes.stream);
+  });
+
+  tearDown(() async {
+    await changes.close();
+    await resumes.close();
+  });
+
+  SupportCubit build() => SupportCubit(
+    browse: BrowseTickets(repository),
+    open: OpenTicket(repository),
+    watch: WatchTicketChanges(repository),
+  );
+
+  Future<void> live(TicketChange change) async {
+    changes.add(change);
+    await Future<void>.delayed(Duration.zero);
+  }
 
   void stubList(Paginated<SupportTicket> result) {
     when(
@@ -268,6 +292,73 @@ void main() {
     );
   });
 
+  group('absorb across the two tabs', () {
+    /// «الدعم» تبويبان لكلٍّ قائمته: تذكرةٌ أعاد ردُّ العميل فتحها تظهر في «المفتوحة» ساعةَ
+    /// يعود من المحادثة، بلا طلب — والمعاينة ردُّه هو.
+    blocTest<SupportCubit, SupportState>(
+      'a ticket that reopened arrives in the open list with the words just written',
+      build: () {
+        stubList(
+          page([
+            second.copyWith(
+              isOpen: true,
+              status: TicketStatus.inProgress,
+              lastMessageAt: DateTime(2026, 9, 1),
+            ),
+          ]),
+        );
+
+        return build();
+      },
+      act: (cubit) async {
+        await cubit.narrowTo(true);
+        cubit.absorb(
+          first.copyWith(
+            isOpen: true,
+            status: TicketStatus.open,
+            lastMessageAt: DateTime(2030),
+            messages: const [TicketMessage(id: 90, from: MessageAuthor.me, body: 'ما زالت المشكلة')],
+          ),
+        );
+      },
+      verify: (cubit) {
+        final items = (cubit.state as PagedLoaded<SupportTicket>).page.items;
+
+        expect(items.map((t) => t.id), [first.id, second.id]);
+        expect(items.first.preview, 'ما زالت المشكلة');
+        expect(items.first.messages, isEmpty);
+      },
+    );
+
+    blocTest<SupportCubit, SupportState>(
+      'a file sent with no words is previewed by what it is',
+      build: () {
+        stubList(page([first]));
+
+        return build();
+      },
+      act: (cubit) async {
+        await cubit.load();
+        cubit.absorb(
+          first.copyWith(
+            messages: const [
+              TicketMessage(
+                id: 91,
+                from: MessageAuthor.me,
+                attachment: TicketAttachment(kind: AttachmentKind.pdf, name: 'quote.pdf'),
+              ),
+            ],
+          ),
+        );
+      },
+      verify: (cubit) {
+        final items = (cubit.state as PagedLoaded<SupportTicket>).page.items;
+
+        expect(items.single.preview, 'quote.pdf');
+      },
+    );
+  });
+
   /// A status this build has not heard of must not crash the list — it draws the label the
   /// server sent.
   test('an unknown status falls back rather than throwing', () {
@@ -280,5 +371,107 @@ void main() {
 
     expect(parsed.status, TicketStatus.unknown);
     expect(parsed.statusLabel, 'تم التصعيد');
+  });
+
+  group('live', () {
+    DateTime at(int minute) => DateTime.utc(2026, 9, 25, 12, minute);
+
+    SupportTicket row(int id, {int minute = 0, bool isOpen = true, int unread = 0, String? preview}) =>
+        SupportTicket(
+          id: id,
+          subject: 'سؤال $id',
+          status: isOpen ? TicketStatus.open : TicketStatus.closed,
+          statusLabel: isOpen ? 'مفتوحة' : 'مغلقة',
+          isOpen: isOpen,
+          unreadCount: unread,
+          preview: preview,
+          messagesCount: 1,
+          lastMessageAt: at(minute),
+        );
+
+    List<int> ids(SupportCubit cubit) =>
+        (cubit.state as PagedLoaded<SupportTicket>).page.items.map((t) => t.id).toList();
+
+    test('a reply from the shop lifts its thread to the top, with the reply as its preview', () async {
+      // Arrange
+      stubList(page([row(1, minute: 30, preview: 'سؤالي'), row(2, minute: 20, preview: 'سؤالٌ آخر')]));
+      final cubit = build();
+      await cubit.load();
+
+      // Act — الحدثُ بلا `preview`؛ الرسالةُ نفسها فيه.
+      await live(
+        TicketChange(
+          ticket: row(2, minute: 40, unread: 1).copyWith(preview: null),
+          message: const TicketMessage(id: 9, from: MessageAuthor.support, body: 'وصلت الشحنة'),
+        ),
+      );
+
+      // Assert
+      final top = (cubit.state as PagedLoaded<SupportTicket>).page.items.first;
+      expect(ids(cubit), [2, 1]);
+      expect(top.unreadCount, 1);
+      expect(top.preview, 'وصلت الشحنة');
+
+      await cubit.close();
+    });
+
+    test('a change with nothing said keeps the preview the row was drawn with', () async {
+      // Arrange
+      stubList(page([row(1, minute: 30, preview: 'سؤالي')]));
+      final cubit = build();
+      await cubit.load();
+
+      // Act — أُغلقت، ولم يُقل شيء.
+      await live(TicketChange(ticket: row(1, minute: 30, isOpen: false).copyWith(preview: null)));
+
+      // Assert
+      final only = (cubit.state as PagedLoaded<SupportTicket>).page.items.single;
+      expect(only.isOpen, isFalse);
+      expect(only.preview, 'سؤالي');
+
+      await cubit.close();
+    });
+
+    test('a thread closed while «المفتوحة» is chosen leaves the list', () async {
+      // Arrange
+      stubList(page([row(1, minute: 30), row(3, minute: 10)]));
+      final cubit = build();
+      await cubit.narrowTo(true);
+
+      // Act
+      await live(TicketChange(ticket: row(1, minute: 30, isOpen: false)));
+
+      // Assert
+      expect(ids(cubit), [3]);
+
+      await cubit.close();
+    });
+
+    test('when the socket comes back page one is read quietly and placed', () async {
+      // Arrange
+      var reads = 0;
+      when(
+        () => repository.tickets(page: any(named: 'page'), openOnly: any(named: 'openOnly')),
+      ).thenAnswer((_) async {
+        reads++;
+
+        return Right(page(reads == 1 ? [row(1, minute: 30)] : [row(5, minute: 50, unread: 1), row(1, minute: 30)]));
+      });
+      final cubit = build();
+      await cubit.load();
+      final states = <SupportState>[];
+      final watching = cubit.stream.listen(states.add);
+
+      // Act
+      resumes.add(null);
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert — لا هيكلَ رمادياً: القائمةُ لا تختفي لأن الشبكة عادت.
+      expect(states.whereType<PagedLoading<SupportTicket>>(), isEmpty);
+      expect(ids(cubit), [5, 1]);
+
+      await watching.cancel();
+      await cubit.close();
+    });
   });
 }

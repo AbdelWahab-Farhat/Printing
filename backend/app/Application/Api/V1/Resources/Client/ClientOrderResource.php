@@ -35,6 +35,9 @@ class ClientOrderResource extends JsonResource
     {
         $stage = CustomerOrderStage::forStatus($this->status);
 
+        // يُسأل مرةً واحدة: ثلاثة حقولٍ من المال أدناه تتوقف على الجواب.
+        $awaitingQuote = $this->hasUnpricedLines();
+
         return [
             'id' => $this->id,
             // «1228» — what the customer reads out when they ring.
@@ -59,8 +62,22 @@ class ClientOrderResource extends JsonResource
             // {@see ClientOrderDetailResource}: the stored figure is the sum of the priced lines
             // only, and a row in «طلباتي» showing it would quote the customer a number smaller
             // than what they will be asked to pay. The card draws «يُحدَّد بعد المراجعة».
-            'total' => $this->hasUnpricedLines() ? null : (string) $this->grand_total,
-            'is_awaiting_quote' => $this->hasUnpricedLines(),
+            'total' => $awaitingQuote ? null : (string) $this->grand_total,
+            'is_awaiting_quote' => $awaitingQuote,
+
+            // **ما ترسمه بطاقة القائمة، وكلّه يصل العميل أصلاً حين يفتح طلبيته**
+            // ({@see ClientOrderDetailResource}). البطاقة على شكل بطاقة تطبيق الموظفين (طلب
+            // المستخدم، 2026-09-25): المال في ثلاث خانات، ومكان الاستلام ورقمه، والبنود في
+            // ذيلها — فالقائمة تحملها كي لا تُفتح كل طلبيةٍ لتُرسم.
+            //
+            // والمدفوع والمتبقي فارغان ما دام بندٌ بلا سعر، للسبب نفسه الذي يُفرغ `total`.
+            'paid_amount' => $awaitingQuote ? null : (string) $this->paid_amount,
+            'balance' => $awaitingQuote ? null : $this->remainingAmount(),
+            'city_name' => $this->city_name,
+            'recipient_phone' => $this->recipient_phone,
+            'fulfilment_type' => $this->fulfilment_type->value,
+            'fulfilment_type_label' => $this->fulfilment_type->label(),
+            'items' => ClientOrderLineResource::collection($this->whenLoaded('items')),
 
             'placed_at' => $this->placed_at?->toIso8601String(),
         ];

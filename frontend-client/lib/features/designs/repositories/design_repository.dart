@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/picked_file.dart';
@@ -31,4 +33,10 @@ abstract interface class DesignRepository {
 
   /// Hides one from the library. The file is kept, so an order that used it still resolves.
   Future<Either<Failure, Unit>> remove(int id);
+
+  /// بايتات الملف نفسه، من رابطه الموقَّع — لـ«تحميل».
+  ///
+  /// **الرابط يُمرَّر ولا يُخزَّن**: يُوقَّع مع كل طلب وتنتهي صلاحيته، فيُجلب بما تحمله الشاشة
+  /// الآن.
+  Future<Either<Failure, Uint8List>> fileBytes(String fileUrl);
 }

@@ -13,9 +13,303 @@ part of 'support_ticket.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
+mixin _$TicketAttachment {
+
+@JsonKey(unknownEnumValue: AttachmentKind.unknown) AttachmentKind get kind;/// «صورة» أو «PDF» — كلمة الخادم، فلا جدول ترجمةٍ هنا.
+@JsonKey(name: 'kind_label') String? get kindLabel;/// ما سمّاه مرسله. للعرض وحده.
+ String? get name;@JsonKey(name: 'mime_type') String? get mimeType;@JsonKey(name: 'size_bytes') int? get sizeBytes;/// للصور وحدها: يحجز مكان الصورة بنسبتها قبل أن تصل، فلا تقفز المحادثة تحت الإصبع.
+@JsonKey(name: 'width_px') int? get widthPx;@JsonKey(name: 'height_px') int? get heightPx; String? get url;
+/// Create a copy of TicketAttachment
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TicketAttachmentCopyWith<TicketAttachment> get copyWith => _$TicketAttachmentCopyWithImpl<TicketAttachment>(this as TicketAttachment, _$identity);
+
+  /// Serializes this TicketAttachment to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketAttachment&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.url, url) || other.url == url));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,kind,kindLabel,name,mimeType,sizeBytes,widthPx,heightPx,url);
+
+@override
+String toString() {
+  return 'TicketAttachment(kind: $kind, kindLabel: $kindLabel, name: $name, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, url: $url)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TicketAttachmentCopyWith<$Res>  {
+  factory $TicketAttachmentCopyWith(TicketAttachment value, $Res Function(TicketAttachment) _then) = _$TicketAttachmentCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(unknownEnumValue: AttachmentKind.unknown) AttachmentKind kind,@JsonKey(name: 'kind_label') String? kindLabel, String? name,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx, String? url
+});
+
+
+
+
+}
+/// @nodoc
+class _$TicketAttachmentCopyWithImpl<$Res>
+    implements $TicketAttachmentCopyWith<$Res> {
+  _$TicketAttachmentCopyWithImpl(this._self, this._then);
+
+  final TicketAttachment _self;
+  final $Res Function(TicketAttachment) _then;
+
+/// Create a copy of TicketAttachment
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? kindLabel = freezed,Object? name = freezed,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? url = freezed,}) {
+  return _then(_self.copyWith(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AttachmentKind,kindLabel: freezed == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,widthPx: freezed == widthPx ? _self.widthPx : widthPx // ignore: cast_nullable_to_non_nullable
+as int?,heightPx: freezed == heightPx ? _self.heightPx : heightPx // ignore: cast_nullable_to_non_nullable
+as int?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TicketAttachment].
+extension TicketAttachmentPatterns on TicketAttachment {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TicketAttachment value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TicketAttachment() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TicketAttachment value)  $default,){
+final _that = this;
+switch (_that) {
+case _TicketAttachment():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TicketAttachment value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TicketAttachment() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: AttachmentKind.unknown)  AttachmentKind kind, @JsonKey(name: 'kind_label')  String? kindLabel,  String? name, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx,  String? url)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TicketAttachment() when $default != null:
+return $default(_that.kind,_that.kindLabel,_that.name,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.url);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: AttachmentKind.unknown)  AttachmentKind kind, @JsonKey(name: 'kind_label')  String? kindLabel,  String? name, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx,  String? url)  $default,) {final _that = this;
+switch (_that) {
+case _TicketAttachment():
+return $default(_that.kind,_that.kindLabel,_that.name,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.url);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(unknownEnumValue: AttachmentKind.unknown)  AttachmentKind kind, @JsonKey(name: 'kind_label')  String? kindLabel,  String? name, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx,  String? url)?  $default,) {final _that = this;
+switch (_that) {
+case _TicketAttachment() when $default != null:
+return $default(_that.kind,_that.kindLabel,_that.name,_that.mimeType,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.url);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TicketAttachment implements TicketAttachment {
+  const _TicketAttachment({@JsonKey(unknownEnumValue: AttachmentKind.unknown) this.kind = AttachmentKind.unknown, @JsonKey(name: 'kind_label') this.kindLabel, this.name, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, this.url});
+  factory _TicketAttachment.fromJson(Map<String, dynamic> json) => _$TicketAttachmentFromJson(json);
+
+@override@JsonKey(unknownEnumValue: AttachmentKind.unknown) final  AttachmentKind kind;
+/// «صورة» أو «PDF» — كلمة الخادم، فلا جدول ترجمةٍ هنا.
+@override@JsonKey(name: 'kind_label') final  String? kindLabel;
+/// ما سمّاه مرسله. للعرض وحده.
+@override final  String? name;
+@override@JsonKey(name: 'mime_type') final  String? mimeType;
+@override@JsonKey(name: 'size_bytes') final  int? sizeBytes;
+/// للصور وحدها: يحجز مكان الصورة بنسبتها قبل أن تصل، فلا تقفز المحادثة تحت الإصبع.
+@override@JsonKey(name: 'width_px') final  int? widthPx;
+@override@JsonKey(name: 'height_px') final  int? heightPx;
+@override final  String? url;
+
+/// Create a copy of TicketAttachment
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TicketAttachmentCopyWith<_TicketAttachment> get copyWith => __$TicketAttachmentCopyWithImpl<_TicketAttachment>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TicketAttachmentToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketAttachment&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.url, url) || other.url == url));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,kind,kindLabel,name,mimeType,sizeBytes,widthPx,heightPx,url);
+
+@override
+String toString() {
+  return 'TicketAttachment(kind: $kind, kindLabel: $kindLabel, name: $name, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, url: $url)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TicketAttachmentCopyWith<$Res> implements $TicketAttachmentCopyWith<$Res> {
+  factory _$TicketAttachmentCopyWith(_TicketAttachment value, $Res Function(_TicketAttachment) _then) = __$TicketAttachmentCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(unknownEnumValue: AttachmentKind.unknown) AttachmentKind kind,@JsonKey(name: 'kind_label') String? kindLabel, String? name,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx, String? url
+});
+
+
+
+
+}
+/// @nodoc
+class __$TicketAttachmentCopyWithImpl<$Res>
+    implements _$TicketAttachmentCopyWith<$Res> {
+  __$TicketAttachmentCopyWithImpl(this._self, this._then);
+
+  final _TicketAttachment _self;
+  final $Res Function(_TicketAttachment) _then;
+
+/// Create a copy of TicketAttachment
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? kind = null,Object? kindLabel = freezed,Object? name = freezed,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? url = freezed,}) {
+  return _then(_TicketAttachment(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AttachmentKind,kindLabel: freezed == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
+as String?,sizeBytes: freezed == sizeBytes ? _self.sizeBytes : sizeBytes // ignore: cast_nullable_to_non_nullable
+as int?,widthPx: freezed == widthPx ? _self.widthPx : widthPx // ignore: cast_nullable_to_non_nullable
+as int?,heightPx: freezed == heightPx ? _self.heightPx : heightPx // ignore: cast_nullable_to_non_nullable
+as int?,url: freezed == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$TicketMessage {
 
- int get id;@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor get from; String get body;@JsonKey(name: 'sent_at') DateTime? get sentAt;
+ int get id;@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor get from;/// **فارغٌ لرسالةٍ هي ملفٌّ بلا تعليق** — يصل `null` ويُقرأ هنا نصاً فارغاً، كي لا يسأل كلُّ
+/// من يرسم رسالةً «هل لها نص؟» بنوعٍ قد يكون `null`.
+ String get body; TicketAttachment? get attachment;/// الرمز الذي ولّده هذا التطبيق قبل الإرسال. به تُعرف الفقاعة المعلّقة التي صارت هذه
+/// الرسالة، وبه يُعيد الخادم الرسالة نفسها لا نسخةً ثانية حين يُعاد الإرسال.
+@JsonKey(name: 'client_token') String? get clientToken;@JsonKey(name: 'sent_at') DateTime? get sentAt;
 /// Create a copy of TicketMessage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +322,16 @@ $TicketMessageCopyWith<TicketMessage> get copyWith => _$TicketMessageCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.body, body) || other.body == body)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.body, body) || other.body == body)&&(identical(other.attachment, attachment) || other.attachment == attachment)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,from,body,sentAt);
+int get hashCode => Object.hash(runtimeType,id,from,body,attachment,clientToken,sentAt);
 
 @override
 String toString() {
-  return 'TicketMessage(id: $id, from: $from, body: $body, sentAt: $sentAt)';
+  return 'TicketMessage(id: $id, from: $from, body: $body, attachment: $attachment, clientToken: $clientToken, sentAt: $sentAt)';
 }
 
 
@@ -48,11 +342,11 @@ abstract mixin class $TicketMessageCopyWith<$Res>  {
   factory $TicketMessageCopyWith(TicketMessage value, $Res Function(TicketMessage) _then) = _$TicketMessageCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor from, String body,@JsonKey(name: 'sent_at') DateTime? sentAt
+ int id,@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor from, String body, TicketAttachment? attachment,@JsonKey(name: 'client_token') String? clientToken,@JsonKey(name: 'sent_at') DateTime? sentAt
 });
 
 
-
+$TicketAttachmentCopyWith<$Res>? get attachment;
 
 }
 /// @nodoc
@@ -65,16 +359,30 @@ class _$TicketMessageCopyWithImpl<$Res>
 
 /// Create a copy of TicketMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? from = null,Object? body = null,Object? sentAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? from = null,Object? body = null,Object? attachment = freezed,Object? clientToken = freezed,Object? sentAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as MessageAuthor,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,sentAt: freezed == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
+as String,attachment: freezed == attachment ? _self.attachment : attachment // ignore: cast_nullable_to_non_nullable
+as TicketAttachment?,clientToken: freezed == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
+as String?,sentAt: freezed == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
+/// Create a copy of TicketMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TicketAttachmentCopyWith<$Res>? get attachment {
+    if (_self.attachment == null) {
+    return null;
+  }
 
+  return $TicketAttachmentCopyWith<$Res>(_self.attachment!, (value) {
+    return _then(_self.copyWith(attachment: value));
+  });
+}
 }
 
 
@@ -156,10 +464,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body, @JsonKey(name: 'sent_at')  DateTime? sentAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body,  TicketAttachment? attachment, @JsonKey(name: 'client_token')  String? clientToken, @JsonKey(name: 'sent_at')  DateTime? sentAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TicketMessage() when $default != null:
-return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
+return $default(_that.id,_that.from,_that.body,_that.attachment,_that.clientToken,_that.sentAt);case _:
   return orElse();
 
 }
@@ -177,10 +485,10 @@ return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body, @JsonKey(name: 'sent_at')  DateTime? sentAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body,  TicketAttachment? attachment, @JsonKey(name: 'client_token')  String? clientToken, @JsonKey(name: 'sent_at')  DateTime? sentAt)  $default,) {final _that = this;
 switch (_that) {
 case _TicketMessage():
-return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
+return $default(_that.id,_that.from,_that.body,_that.attachment,_that.clientToken,_that.sentAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +505,10 @@ return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body, @JsonKey(name: 'sent_at')  DateTime? sentAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(unknownEnumValue: MessageAuthor.unknown)  MessageAuthor from,  String body,  TicketAttachment? attachment, @JsonKey(name: 'client_token')  String? clientToken, @JsonKey(name: 'sent_at')  DateTime? sentAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TicketMessage() when $default != null:
-return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
+return $default(_that.id,_that.from,_that.body,_that.attachment,_that.clientToken,_that.sentAt);case _:
   return null;
 
 }
@@ -212,12 +520,18 @@ return $default(_that.id,_that.from,_that.body,_that.sentAt);case _:
 @JsonSerializable()
 
 class _TicketMessage implements TicketMessage {
-  const _TicketMessage({required this.id, @JsonKey(unknownEnumValue: MessageAuthor.unknown) this.from = MessageAuthor.unknown, required this.body, @JsonKey(name: 'sent_at') this.sentAt});
+  const _TicketMessage({required this.id, @JsonKey(unknownEnumValue: MessageAuthor.unknown) this.from = MessageAuthor.unknown, this.body = '', this.attachment, @JsonKey(name: 'client_token') this.clientToken, @JsonKey(name: 'sent_at') this.sentAt});
   factory _TicketMessage.fromJson(Map<String, dynamic> json) => _$TicketMessageFromJson(json);
 
 @override final  int id;
 @override@JsonKey(unknownEnumValue: MessageAuthor.unknown) final  MessageAuthor from;
-@override final  String body;
+/// **فارغٌ لرسالةٍ هي ملفٌّ بلا تعليق** — يصل `null` ويُقرأ هنا نصاً فارغاً، كي لا يسأل كلُّ
+/// من يرسم رسالةً «هل لها نص؟» بنوعٍ قد يكون `null`.
+@override@JsonKey() final  String body;
+@override final  TicketAttachment? attachment;
+/// الرمز الذي ولّده هذا التطبيق قبل الإرسال. به تُعرف الفقاعة المعلّقة التي صارت هذه
+/// الرسالة، وبه يُعيد الخادم الرسالة نفسها لا نسخةً ثانية حين يُعاد الإرسال.
+@override@JsonKey(name: 'client_token') final  String? clientToken;
 @override@JsonKey(name: 'sent_at') final  DateTime? sentAt;
 
 /// Create a copy of TicketMessage
@@ -233,16 +547,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.body, body) || other.body == body)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.body, body) || other.body == body)&&(identical(other.attachment, attachment) || other.attachment == attachment)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,from,body,sentAt);
+int get hashCode => Object.hash(runtimeType,id,from,body,attachment,clientToken,sentAt);
 
 @override
 String toString() {
-  return 'TicketMessage(id: $id, from: $from, body: $body, sentAt: $sentAt)';
+  return 'TicketMessage(id: $id, from: $from, body: $body, attachment: $attachment, clientToken: $clientToken, sentAt: $sentAt)';
 }
 
 
@@ -253,11 +567,11 @@ abstract mixin class _$TicketMessageCopyWith<$Res> implements $TicketMessageCopy
   factory _$TicketMessageCopyWith(_TicketMessage value, $Res Function(_TicketMessage) _then) = __$TicketMessageCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor from, String body,@JsonKey(name: 'sent_at') DateTime? sentAt
+ int id,@JsonKey(unknownEnumValue: MessageAuthor.unknown) MessageAuthor from, String body, TicketAttachment? attachment,@JsonKey(name: 'client_token') String? clientToken,@JsonKey(name: 'sent_at') DateTime? sentAt
 });
 
 
-
+@override $TicketAttachmentCopyWith<$Res>? get attachment;
 
 }
 /// @nodoc
@@ -270,17 +584,31 @@ class __$TicketMessageCopyWithImpl<$Res>
 
 /// Create a copy of TicketMessage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? from = null,Object? body = null,Object? sentAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? from = null,Object? body = null,Object? attachment = freezed,Object? clientToken = freezed,Object? sentAt = freezed,}) {
   return _then(_TicketMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as MessageAuthor,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,sentAt: freezed == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
+as String,attachment: freezed == attachment ? _self.attachment : attachment // ignore: cast_nullable_to_non_nullable
+as TicketAttachment?,clientToken: freezed == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
+as String?,sentAt: freezed == sentAt ? _self.sentAt : sentAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
 
+/// Create a copy of TicketMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TicketAttachmentCopyWith<$Res>? get attachment {
+    if (_self.attachment == null) {
+    return null;
+  }
 
+  return $TicketAttachmentCopyWith<$Res>(_self.attachment!, (value) {
+    return _then(_self.copyWith(attachment: value));
+  });
+}
 }
 
 
@@ -555,7 +883,10 @@ mixin _$SupportTicket {
 
  int get id; String get subject;@JsonKey(unknownEnumValue: TicketStatus.unknown) TicketStatus get status;/// Drawn instead of translating [status] here, so a status added to the business appears
 /// correctly without an app release.
-@JsonKey(name: 'status_label') String get statusLabel;@JsonKey(name: 'is_open') bool get isOpen; TicketOrderRef? get order;@JsonKey(name: 'unread_count') int get unreadCount;/// Present on the thread endpoint, empty in the list — the list draws a subject and a badge.
+@JsonKey(name: 'status_label') String get statusLabel;@JsonKey(name: 'is_open') bool get isOpen; TicketOrderRef? get order;@JsonKey(name: 'unread_count') int get unreadCount;/// **علامة القراءة**: رقمُ آخر رسالةٍ رآها المحل، أو `null` إن لم يفتح الخيط بعد. رسالتي
+/// مقروءةٌ (✓✓) إن كان رقمها لا يتجاوزه — انظر [SupportTicketX.isReadBySupport]. الحدّ وحده
+/// يصل: متى قرأها ومن قرأها لا يغادران الخادم.
+@JsonKey(name: 'support_read_up_to') int? get supportReadUpTo;/// Present on the thread endpoint, empty in the list — the list draws a subject and a badge.
  List<TicketMessage> get messages;/// How long the thread is, and the last thing anybody said in it.
 ///
 /// **Both come from the list endpoint only**, where [messages] is empty — the thread
@@ -575,16 +906,16 @@ $SupportTicketCopyWith<SupportTicket> get copyWith => _$SupportTicketCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&const DeepCollectionEquality().equals(other.messages, messages)&&(identical(other.messagesCount, messagesCount) || other.messagesCount == messagesCount)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.supportReadUpTo, supportReadUpTo) || other.supportReadUpTo == supportReadUpTo)&&const DeepCollectionEquality().equals(other.messages, messages)&&(identical(other.messagesCount, messagesCount) || other.messagesCount == messagesCount)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,isOpen,order,unreadCount,const DeepCollectionEquality().hash(messages),messagesCount,preview,lastMessageAt,createdAt);
+int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,isOpen,order,unreadCount,supportReadUpTo,const DeepCollectionEquality().hash(messages),messagesCount,preview,lastMessageAt,createdAt);
 
 @override
 String toString() {
-  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, order: $order, unreadCount: $unreadCount, messages: $messages, messagesCount: $messagesCount, preview: $preview, lastMessageAt: $lastMessageAt, createdAt: $createdAt)';
+  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, order: $order, unreadCount: $unreadCount, supportReadUpTo: $supportReadUpTo, messages: $messages, messagesCount: $messagesCount, preview: $preview, lastMessageAt: $lastMessageAt, createdAt: $createdAt)';
 }
 
 
@@ -595,7 +926,7 @@ abstract mixin class $SupportTicketCopyWith<$Res>  {
   factory $SupportTicketCopyWith(SupportTicket value, $Res Function(SupportTicket) _then) = _$SupportTicketCopyWithImpl;
 @useResult
 $Res call({
- int id, String subject,@JsonKey(unknownEnumValue: TicketStatus.unknown) TicketStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_open') bool isOpen, TicketOrderRef? order,@JsonKey(name: 'unread_count') int unreadCount, List<TicketMessage> messages,@JsonKey(name: 'messages_count') int? messagesCount, String? preview,@JsonKey(name: 'last_message_at') DateTime? lastMessageAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String subject,@JsonKey(unknownEnumValue: TicketStatus.unknown) TicketStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_open') bool isOpen, TicketOrderRef? order,@JsonKey(name: 'unread_count') int unreadCount,@JsonKey(name: 'support_read_up_to') int? supportReadUpTo, List<TicketMessage> messages,@JsonKey(name: 'messages_count') int? messagesCount, String? preview,@JsonKey(name: 'last_message_at') DateTime? lastMessageAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -612,7 +943,7 @@ class _$SupportTicketCopyWithImpl<$Res>
 
 /// Create a copy of SupportTicket
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? subject = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? order = freezed,Object? unreadCount = null,Object? messages = null,Object? messagesCount = freezed,Object? preview = freezed,Object? lastMessageAt = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? subject = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? order = freezed,Object? unreadCount = null,Object? supportReadUpTo = freezed,Object? messages = null,Object? messagesCount = freezed,Object? preview = freezed,Object? lastMessageAt = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
@@ -621,7 +952,8 @@ as TicketStatus,statusLabel: null == statusLabel ? _self.statusLabel : statusLab
 as String,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as TicketOrderRef?,unreadCount: null == unreadCount ? _self.unreadCount : unreadCount // ignore: cast_nullable_to_non_nullable
-as int,messages: null == messages ? _self.messages : messages // ignore: cast_nullable_to_non_nullable
+as int,supportReadUpTo: freezed == supportReadUpTo ? _self.supportReadUpTo : supportReadUpTo // ignore: cast_nullable_to_non_nullable
+as int?,messages: null == messages ? _self.messages : messages // ignore: cast_nullable_to_non_nullable
 as List<TicketMessage>,messagesCount: freezed == messagesCount ? _self.messagesCount : messagesCount // ignore: cast_nullable_to_non_nullable
 as int?,preview: freezed == preview ? _self.preview : preview // ignore: cast_nullable_to_non_nullable
 as String?,lastMessageAt: freezed == lastMessageAt ? _self.lastMessageAt : lastMessageAt // ignore: cast_nullable_to_non_nullable
@@ -723,10 +1055,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount, @JsonKey(name: 'support_read_up_to')  int? supportReadUpTo,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SupportTicket() when $default != null:
-return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
+return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.supportReadUpTo,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
   return orElse();
 
 }
@@ -744,10 +1076,10 @@ return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount, @JsonKey(name: 'support_read_up_to')  int? supportReadUpTo,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _SupportTicket():
-return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
+return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.supportReadUpTo,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -764,10 +1096,10 @@ return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String subject, @JsonKey(unknownEnumValue: TicketStatus.unknown)  TicketStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_open')  bool isOpen,  TicketOrderRef? order, @JsonKey(name: 'unread_count')  int unreadCount, @JsonKey(name: 'support_read_up_to')  int? supportReadUpTo,  List<TicketMessage> messages, @JsonKey(name: 'messages_count')  int? messagesCount,  String? preview, @JsonKey(name: 'last_message_at')  DateTime? lastMessageAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _SupportTicket() when $default != null:
-return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
+return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOpen,_that.order,_that.unreadCount,_that.supportReadUpTo,_that.messages,_that.messagesCount,_that.preview,_that.lastMessageAt,_that.createdAt);case _:
   return null;
 
 }
@@ -779,7 +1111,7 @@ return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.isOp
 @JsonSerializable()
 
 class _SupportTicket implements SupportTicket {
-  const _SupportTicket({required this.id, required this.subject, @JsonKey(unknownEnumValue: TicketStatus.unknown) this.status = TicketStatus.unknown, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_open') this.isOpen = true, this.order, @JsonKey(name: 'unread_count') this.unreadCount = 0, final  List<TicketMessage> messages = const <TicketMessage>[], @JsonKey(name: 'messages_count') this.messagesCount, this.preview, @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages;
+  const _SupportTicket({required this.id, required this.subject, @JsonKey(unknownEnumValue: TicketStatus.unknown) this.status = TicketStatus.unknown, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_open') this.isOpen = true, this.order, @JsonKey(name: 'unread_count') this.unreadCount = 0, @JsonKey(name: 'support_read_up_to') this.supportReadUpTo, final  List<TicketMessage> messages = const <TicketMessage>[], @JsonKey(name: 'messages_count') this.messagesCount, this.preview, @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages;
   factory _SupportTicket.fromJson(Map<String, dynamic> json) => _$SupportTicketFromJson(json);
 
 @override final  int id;
@@ -791,6 +1123,10 @@ class _SupportTicket implements SupportTicket {
 @override@JsonKey(name: 'is_open') final  bool isOpen;
 @override final  TicketOrderRef? order;
 @override@JsonKey(name: 'unread_count') final  int unreadCount;
+/// **علامة القراءة**: رقمُ آخر رسالةٍ رآها المحل، أو `null` إن لم يفتح الخيط بعد. رسالتي
+/// مقروءةٌ (✓✓) إن كان رقمها لا يتجاوزه — انظر [SupportTicketX.isReadBySupport]. الحدّ وحده
+/// يصل: متى قرأها ومن قرأها لا يغادران الخادم.
+@override@JsonKey(name: 'support_read_up_to') final  int? supportReadUpTo;
 /// Present on the thread endpoint, empty in the list — the list draws a subject and a badge.
  final  List<TicketMessage> _messages;
 /// Present on the thread endpoint, empty in the list — the list draws a subject and a badge.
@@ -824,16 +1160,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&const DeepCollectionEquality().equals(other._messages, _messages)&&(identical(other.messagesCount, messagesCount) || other.messagesCount == messagesCount)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.supportReadUpTo, supportReadUpTo) || other.supportReadUpTo == supportReadUpTo)&&const DeepCollectionEquality().equals(other._messages, _messages)&&(identical(other.messagesCount, messagesCount) || other.messagesCount == messagesCount)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,isOpen,order,unreadCount,const DeepCollectionEquality().hash(_messages),messagesCount,preview,lastMessageAt,createdAt);
+int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,isOpen,order,unreadCount,supportReadUpTo,const DeepCollectionEquality().hash(_messages),messagesCount,preview,lastMessageAt,createdAt);
 
 @override
 String toString() {
-  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, order: $order, unreadCount: $unreadCount, messages: $messages, messagesCount: $messagesCount, preview: $preview, lastMessageAt: $lastMessageAt, createdAt: $createdAt)';
+  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, order: $order, unreadCount: $unreadCount, supportReadUpTo: $supportReadUpTo, messages: $messages, messagesCount: $messagesCount, preview: $preview, lastMessageAt: $lastMessageAt, createdAt: $createdAt)';
 }
 
 
@@ -844,7 +1180,7 @@ abstract mixin class _$SupportTicketCopyWith<$Res> implements $SupportTicketCopy
   factory _$SupportTicketCopyWith(_SupportTicket value, $Res Function(_SupportTicket) _then) = __$SupportTicketCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String subject,@JsonKey(unknownEnumValue: TicketStatus.unknown) TicketStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_open') bool isOpen, TicketOrderRef? order,@JsonKey(name: 'unread_count') int unreadCount, List<TicketMessage> messages,@JsonKey(name: 'messages_count') int? messagesCount, String? preview,@JsonKey(name: 'last_message_at') DateTime? lastMessageAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String subject,@JsonKey(unknownEnumValue: TicketStatus.unknown) TicketStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_open') bool isOpen, TicketOrderRef? order,@JsonKey(name: 'unread_count') int unreadCount,@JsonKey(name: 'support_read_up_to') int? supportReadUpTo, List<TicketMessage> messages,@JsonKey(name: 'messages_count') int? messagesCount, String? preview,@JsonKey(name: 'last_message_at') DateTime? lastMessageAt,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -861,7 +1197,7 @@ class __$SupportTicketCopyWithImpl<$Res>
 
 /// Create a copy of SupportTicket
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? subject = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? order = freezed,Object? unreadCount = null,Object? messages = null,Object? messagesCount = freezed,Object? preview = freezed,Object? lastMessageAt = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? subject = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? order = freezed,Object? unreadCount = null,Object? supportReadUpTo = freezed,Object? messages = null,Object? messagesCount = freezed,Object? preview = freezed,Object? lastMessageAt = freezed,Object? createdAt = freezed,}) {
   return _then(_SupportTicket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
@@ -870,7 +1206,8 @@ as TicketStatus,statusLabel: null == statusLabel ? _self.statusLabel : statusLab
 as String,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as TicketOrderRef?,unreadCount: null == unreadCount ? _self.unreadCount : unreadCount // ignore: cast_nullable_to_non_nullable
-as int,messages: null == messages ? _self._messages : messages // ignore: cast_nullable_to_non_nullable
+as int,supportReadUpTo: freezed == supportReadUpTo ? _self.supportReadUpTo : supportReadUpTo // ignore: cast_nullable_to_non_nullable
+as int?,messages: null == messages ? _self._messages : messages // ignore: cast_nullable_to_non_nullable
 as List<TicketMessage>,messagesCount: freezed == messagesCount ? _self.messagesCount : messagesCount // ignore: cast_nullable_to_non_nullable
 as int?,preview: freezed == preview ? _self.preview : preview // ignore: cast_nullable_to_non_nullable
 as String?,lastMessageAt: freezed == lastMessageAt ? _self.lastMessageAt : lastMessageAt // ignore: cast_nullable_to_non_nullable

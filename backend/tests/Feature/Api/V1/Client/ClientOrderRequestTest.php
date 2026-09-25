@@ -11,6 +11,7 @@ use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -314,6 +315,119 @@ class ClientOrderRequestTest extends TestCase
         // Assert
         $response->assertCreated();
         $this->assertDatabaseHas('orders', ['id' => $response->json('data.id'), 'customer_id' => $me->id]);
+    }
+
+    // ─────────────────────── المستلم والمتجر ───────────────────────
+
+    /**
+     * **المستلم هو العميل نفسه، باسمه.** الاسم على الطلبية أصلاً عبر `customer_id`، و`recipient_name`
+     * الفارغ يعني صاحبَ الطلبية في تطبيق الموظفين كما هنا — فالتطبيق لا يسأل عنه، والخادم لا يقبله
+     * منه. و«تفاصيل العنوان» خرجت معه: الوجهة مدينةٌ ومنطقةٌ ومتجرٌ من متاجره.
+     */
+    public function test_a_posted_recipient_name_and_address_are_ignored(): void
+    {
+        // Arrange
+        $me = $this->customer();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), [
+                'recipient_name' => 'شخص آخر',
+                'address_details' => 'شارع الجمهورية',
+            ]),
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertDatabaseHas('orders', [
+            'id' => $response->json('data.id'),
+            'recipient_name' => null,
+            'address_details' => null,
+        ]);
+    }
+
+    /**
+     * الهاتف وحده يبقى: هو ما يتصل به المندوب، وقد يكون أحياناً رقمَ غيره — أخٍ في المحل أو سائق.
+     */
+    public function test_the_recipient_phone_is_still_the_customers_to_give(): void
+    {
+        // Arrange
+        $me = $this->customer();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), ['recipient_phone' => '0923456789']),
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertDatabaseHas('orders', [
+            'id' => $response->json('data.id'),
+            'recipient_phone' => '0923456789',
+        ]);
+    }
+
+    public function test_an_order_may_name_one_of_my_shops(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $shop = CustomerShop::factory()->create(['customer_id' => $me->id, 'name' => 'متجر النور']);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), [
+                'customer_shop_id' => $shop->id,
+                'city_id' => $shop->city_id,
+            ]),
+        );
+
+        // Assert — والاسم يُنسخ على الطلبية، فتبقى تسمّيه ولو حُذف المتجر بعدها.
+        $response->assertCreated();
+        $this->assertDatabaseHas('orders', [
+            'id' => $response->json('data.id'),
+            'customer_shop_id' => $shop->id,
+            'customer_shop_name' => 'متجر النور',
+        ]);
+    }
+
+    public function test_another_customers_shop_cannot_be_named_on_my_order(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $theirs = CustomerShop::factory()->create([
+            'customer_id' => $this->customer('0922222222')->id,
+        ]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), ['customer_shop_id' => $theirs->id]),
+        );
+
+        // Assert
+        $response->assertUnprocessable();
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_a_removed_shop_cannot_be_named_on_a_new_order(): void
+    {
+        // Arrange
+        $me = $this->customer();
+        $removed = CustomerShop::factory()->create(['customer_id' => $me->id]);
+        $removed->delete();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->postJson(
+            '/api/v1/client/orders',
+            $this->payload($this->product(), ['customer_shop_id' => $removed->id]),
+        );
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('customer_shop_id');
+        $this->assertDatabaseCount('orders', 0);
     }
 
     // ─────────────────────── what the server prices ───────────────────────

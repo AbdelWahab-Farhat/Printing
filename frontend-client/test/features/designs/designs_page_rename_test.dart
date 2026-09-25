@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/utils/validators.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/dismiss_keyboard.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
@@ -82,14 +83,18 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Tapping the card *is* the rename — `_DesignCard` wires `onTap: onRename` on its
-    // [AppCard]. Reached through the label rather than by position: the screen draws a second
-    // [AppCard] for the «ارفع شعارك مرة واحدة» hint, and it is the one that comes first.
-    await tester.tap(
-      find.ancestor(of: find.text('شعار المتجر'), matching: find.byType(AppCard)),
-    );
+    // التسمية في زرّ خيارات البطاقة: الضغط على البطاقة نفسها يفتح الملف، انظر
+    // `designs_page_view_test.dart`. ويُوصل إلى الزر عبر بطاقته لا بموضعه في الشاشة.
+    final card = find.ancestor(of: find.text('شعار المتجر'), matching: find.byType(AppCard));
+    await tester.tap(find.descendant(of: card, matching: find.byTooltip('خيارات التصميم')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إعادة التسمية'));
     await tester.pumpAndSettle();
   }
+
+  /// حقل الاسم في النافذة — وفي الشاشة حقلٌ آخر، حقل البحث.
+  Finder nameField() =>
+      find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextFormField));
 
   testWidgets('opens on the current name', (tester) async {
     // Arrange
@@ -123,7 +128,7 @@ void main() {
     await openRenameDialog(tester);
 
     // Act
-    await tester.enterText(find.byType(TextFormField), 'شعار');
+    await tester.enterText(nameField(), 'شعار');
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ'));
     await tester.pumpAndSettle();
@@ -131,5 +136,21 @@ void main() {
     // Assert
     verify(() => repository.rename(id: 1, label: 'شعار')).called(1);
     expect(find.text('تسمية التصميم'), findsNothing);
+  });
+
+  testWidgets('الاسم الممسوح يُردّ برسالةٍ تحت الحقل ولا يُرسل', (tester) async {
+    // Arrange — النافذة نفسها تسمّي التصميم الجديد قبل رفعه، والاسم فيها مطلوبٌ في الحالين.
+    await arrange();
+    await openRenameDialog(tester);
+
+    // Act
+    await tester.enterText(nameField(), '');
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text(ValidationMessages.required), findsOneWidget);
+    expect(find.text('تسمية التصميم'), findsOneWidget);
+    verifyNever(() => repository.rename(id: any(named: 'id'), label: any(named: 'label')));
   });
 }

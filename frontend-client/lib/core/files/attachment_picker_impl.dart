@@ -27,14 +27,25 @@ class AttachmentPickerImpl implements AttachmentPicker {
     AttachmentSource.camera => _camera(),
   };
 
+  @override
+  Future<PickedFile?> pickOne(AttachmentSource source) async {
+    final files = await switch (source) {
+      AttachmentSource.documents => _documents(multiple: false),
+      AttachmentSource.photos => _photo(),
+      AttachmentSource.camera => _camera(),
+    };
+
+    return files.isEmpty ? null : files.first;
+  }
+
   /// The system document browser, filtered to the formats the API accepts.
   ///
   /// The filter is a courtesy — the server sniffs the bytes and refuses anything else — but it
   /// stops somebody walking through their whole Files app to pick a `.docx` that was never
   /// going to be accepted.
-  Future<List<PickedFile>> _documents() async {
+  Future<List<PickedFile>> _documents({bool multiple = true}) async {
     final result = await FilePicker.pickFiles(
-      allowMultiple: true,
+      allowMultiple: multiple,
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
       // The bytes are never held in memory: a 25 MB design multiplied by a multi-select is how
@@ -58,6 +69,13 @@ class AttachmentPickerImpl implements AttachmentPicker {
     final files = await _images.pickMultiImage();
 
     return [for (final file in files) await _fromXFile(file)];
+  }
+
+  /// صورةٌ واحدة من الاستوديو — منتقي النظام نفسه يُفتح على اختيارٍ واحد.
+  Future<List<PickedFile>> _photo() async {
+    final file = await _images.pickImage(source: ImageSource.gallery);
+
+    return file == null ? const [] : [await _fromXFile(file)];
   }
 
   /// Taken now — for the customer who walks in with a printed sample.

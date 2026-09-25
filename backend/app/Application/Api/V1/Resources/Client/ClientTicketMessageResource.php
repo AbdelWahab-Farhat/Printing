@@ -29,7 +29,11 @@ class ClientTicketMessageResource extends JsonResource
             'id' => $this->id,
             // Decided here rather than left to the app to infer from two nullable ids.
             'from' => $this->isFromCustomer() ? 'me' : 'support',
+            // `null` لرسالةٍ هي ملفٌّ بلا تعليق.
             'body' => $this->body,
+            'attachment' => TicketAttachmentResource::for($this->resource),
+            // الرمز الذي ولّده التطبيق قبل الإرسال، فيعرف أيّ فقاعةٍ معلّقة صارت هذه الرسالة.
+            'client_token' => $this->client_token,
             'sent_at' => $this->created_at?->toIso8601String(),
         ];
     }

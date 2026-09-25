@@ -1,20 +1,13 @@
 import 'package:dayaa_client/core/di/injector.dart';
-import 'package:dayaa_client/core/router/app_router.dart';
-import 'package:dayaa_client/core/utils/bidi.dart';
-import 'package:dayaa_client/core/utils/context_extensions.dart';
-import 'package:dayaa_client/core/utils/dates.dart';
-import 'package:dayaa_client/core/utils/fixed_point.dart';
-import 'package:dayaa_client/core/widgets/app_card.dart';
-import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
-import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:dayaa_client/features/orders/presentation/views/order_card.dart';
 import 'package:dayaa_client/features/orders/presentation/views/stage_pill.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/stage_filter_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// «طلباتي».
 ///
@@ -46,37 +39,19 @@ class _OrdersView extends StatelessWidget {
     final cubit = context.read<OrdersCubit>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('طلباتي'),
-        actions: const [NotificationsButton()],
-      ),
+      appBar: AppBar(title: const Text('طلباتي')),
       body: SafeArea(
         top: false,
         child: Column(
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-              // The design's four, and each one is a question the API already answers:
-              // «الكل» is no filter, «قيد التنفيذ» is `open=1`, and the other two are `stage=`.
+              // الحالات خلف حقلٍ واحد يفتح ورقةً سفلية — انظر [StageFilterField] لماذا لا شرائح
+              // ولا قائمة منسدلة.
               child: BlocBuilder<OrdersCubit, OrdersState>(
-                builder: (context, state) => SizedBox(
-                  height: 44.h,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: OrdersFilter.values.length,
-                    separatorBuilder: (context, index) => SizedBox(width: 8.w),
-                    itemBuilder: (context, index) {
-                      final filter = OrdersFilter.values[index];
-
-                      return Center(
-                        child: FilterOptionChip(
-                          label: filter.label,
-                          isSelected: cubit.filter == filter,
-                          onTap: () => cubit.narrowTo(filter),
-                        ),
-                      );
-                    },
-                  ),
+                builder: (context, state) => StageFilterField(
+                  selected: cubit.filter,
+                  onChanged: cubit.narrowTo,
                 ),
               ),
             ),
@@ -87,128 +62,22 @@ class _OrdersView extends StatelessWidget {
                   state: state,
                   onLoadMore: cubit.loadMore,
                   onRefresh: cubit.refresh,
-                  // The empty list says which question was asked. «لم تطلب شيئاً بعد» under a
-                  // «جاهزة» chip would tell a customer with nine orders that they have none.
-                  emptyMessage: switch (cubit.filter) {
-                    OrdersFilter.all => 'لم تطلب شيئاً بعد',
-                    OrdersFilter.open => 'لا توجد طلبيات قيد التنفيذ',
-                    OrdersFilter.ready => 'لا توجد طلبيات جاهزة',
-                    OrdersFilter.done => 'لم تستلم أي طلبية بعد',
-                  },
+                  // القائمة الفارغة تقول أيّ سؤالٍ سُئل: «لم تطلب شيئاً بعد» تحت شريحة «جاهزة»
+                  // تُخبر عميلاً له تسع طلبيات أنه لا يملك شيئاً.
+                  emptyMessage: cubit.filter == OrdersFilter.all
+                      ? 'لم تطلب شيئاً بعد'
+                      : 'لا طلبيات «${cubit.filter.label}»',
                   padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
-                  itemBuilder: (context, order, index) => _OrderCard(order: order),
+                  itemBuilder: (context, order, index) => Padding(
+                    padding: EdgeInsets.only(bottom: 14.h),
+                    child: OrderCard(order: order),
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order});
-
-  final CustomerOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              '#${order.code}',
-              style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            if (order.placedAt case final placedAt?) ...[
-              SizedBox(width: 8.w),
-              Text(
-                placedAt.relativeDayLabel,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const Spacer(),
-            StagePill(label: order.stageLabel, stage: order.stage),
-          ],
-        ),
-
-        SizedBox(height: 12.h),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // «كيس شحن فلاير ٣٠×٤٠ و٢ أخرى» — built by the server, so the list draws
-                  // without opening every order to write itself a subtitle.
-                  Text(
-                    order.summary?.bidiSafe ?? 'طلبية',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (order.itemsCount case final count? when count > 1) ...[
-                    SizedBox(height: 3.h),
-                    Text(
-                      '$count منتجات',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            SizedBox(width: 10.w),
-            // Smaller type for the phrase than for a figure: it is a sentence standing in for
-            // a number, and at `titleSmall` weight it shouts over the order code.
-            Text(
-              order.total == null
-                  ? awaitingQuoteLabel
-                  : '${order.total!.asMoney} د.ل',
-              style: order.total == null
-                  ? context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    )
-                  : context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-            ),
-          ],
-        ),
-
-        // **The line under the divider, when the stage has one.** «تم الاستلام» and «ملغاة»
-        // send none — the design draws no line under a finished order either, and a reassuring
-        // sentence about something that is over is filler.
-        if (order.stageHint case final hint?) ...[
-          Divider(height: 22.h, color: scheme.outlineVariant),
-          Text(
-            hint,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
-      ],
-    );
-
-    void open() => context.push(Routes.order(order.id));
-
-    // The design gives the order that wants you an orange hairline. «بانتظار المراجعة» is the
-    // one stage that is the customer's move to make — by waiting — and «قيد التصميم» the one
-    // where they may be asked for something.
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: order.stage == OrderStage.underReview || order.stage == OrderStage.designing
-          ? AppCard.accent(onTap: open, child: body)
-          : AppCard(onTap: open, child: body),
     );
   }
 }

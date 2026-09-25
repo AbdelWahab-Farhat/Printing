@@ -24,6 +24,17 @@ _CustomerOrder _$CustomerOrderFromJson(Map<String, dynamic> json) =>
       itemsCount: (json['items_count'] as num?)?.toInt(),
       total: json['total'] as String?,
       isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
+      paidAmount: json['paid_amount'] as String?,
+      balance: json['balance'] as String?,
+      cityName: json['city_name'] as String?,
+      recipientPhone: json['recipient_phone'] as String?,
+      fulfilmentType: json['fulfilment_type'] as String?,
+      fulfilmentTypeLabel: json['fulfilment_type_label'] as String?,
+      items:
+          (json['items'] as List<dynamic>?)
+              ?.map((e) => OrderLine.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <OrderLine>[],
       placedAt: json['placed_at'] == null
           ? null
           : DateTime.parse(json['placed_at'] as String),
@@ -41,6 +52,13 @@ Map<String, dynamic> _$CustomerOrderToJson(_CustomerOrder instance) =>
       'items_count': instance.itemsCount,
       'total': instance.total,
       'is_awaiting_quote': instance.isAwaitingQuote,
+      'paid_amount': instance.paidAmount,
+      'balance': instance.balance,
+      'city_name': instance.cityName,
+      'recipient_phone': instance.recipientPhone,
+      'fulfilment_type': instance.fulfilmentType,
+      'fulfilment_type_label': instance.fulfilmentTypeLabel,
+      'items': instance.items.map((e) => e.toJson()).toList(),
       'placed_at': instance.placedAt?.toIso8601String(),
     };
 
@@ -63,8 +81,10 @@ _OrderLine _$OrderLineFromJson(Map<String, dynamic> json) => _OrderLine(
   productName: json['product_name'] as String,
   variantLabel: json['variant_label'] as String?,
   quantity: json['quantity'] as String,
+  pricingUnitLabel: json['pricing_unit_label'] as String?,
   unitPrice: json['unit_price'] as String?,
   lineTotal: json['line_total'] as String?,
+  productImageUrl: json['product_image_url'] as String?,
 );
 
 Map<String, dynamic> _$OrderLineToJson(_OrderLine instance) =>
@@ -73,8 +93,10 @@ Map<String, dynamic> _$OrderLineToJson(_OrderLine instance) =>
       'product_name': instance.productName,
       'variant_label': instance.variantLabel,
       'quantity': instance.quantity,
+      'pricing_unit_label': instance.pricingUnitLabel,
       'unit_price': instance.unitPrice,
       'line_total': instance.lineTotal,
+      'product_image_url': instance.productImageUrl,
     };
 
 _OrderTimelineEntry _$OrderTimelineEntryFromJson(Map<String, dynamic> json) =>
@@ -189,9 +211,7 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
       .toList(),
   regionId: (json['region_id'] as num?)?.toInt(),
   customerShopId: (json['customer_shop_id'] as num?)?.toInt(),
-  recipientName: json['recipient_name'] as String?,
   recipientPhone: json['recipient_phone'] as String?,
-  addressDetails: json['address_details'] as String?,
   designIds:
       (json['design_ids'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
@@ -205,9 +225,7 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'items': instance.items.map((e) => e.toJson()).toList(),
   'region_id': instance.regionId,
   'customer_shop_id': instance.customerShopId,
-  'recipient_name': instance.recipientName,
   'recipient_phone': instance.recipientPhone,
-  'address_details': instance.addressDetails,
   'design_ids': instance.designIds,
   'customer_note': instance.customerNote,
 };

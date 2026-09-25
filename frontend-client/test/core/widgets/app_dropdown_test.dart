@@ -1,4 +1,5 @@
 import 'package:dayaa_client/core/widgets/app_dropdown.dart';
+import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,6 +42,41 @@ void main() {
       ),
     );
   }
+
+  // المنتقي وحقل النص في نموذجٍ واحد بهيئةٍ واحدة: العنوان فوق الصندوق، والصندوقان بارتفاعٍ واحد.
+  testWidgets('it wears the same frame as a text field beside it', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(
+        Column(
+          children: [
+            AppDropdown<_Place>(
+              items: places,
+              value: tripoli,
+              labelOf: (place) => place.name,
+              label: 'المدينة',
+              onChanged: (_) {},
+            ),
+            const AppTextField(label: 'العنوان', hint: 'الشارع'),
+          ],
+        ),
+      ),
+    );
+
+    // Act
+    final picker = tester.getRect(find.byType(InputDecorator).first);
+    final field = tester.getRect(find.byType(InputDecorator).last);
+    final label = tester.getRect(find.text('المدينة'));
+    final inside = find.descendant(
+      of: find.byType(InputDecorator).first,
+      matching: find.text('المدينة'),
+    );
+
+    // Assert
+    expect(inside, findsNothing);
+    expect(label.bottom, lessThanOrEqualTo(picker.top));
+    expect(picker.height, closeTo(field.height, 1));
+  });
 
   testWidgets('it draws the label of whatever model it was handed', (tester) async {
     // Arrange
@@ -148,6 +184,39 @@ void main() {
 
     // Assert
     expect(find.text('رقم 3'), findsOneWidget);
+  });
+
+  // سعر التوصيل بجانب المدينة، في الصندوق المطويّ وفي كل صفٍّ من القائمة (طلب المستخدم،
+  // 2026-09-25) — قيمةٌ قصيرة في الطرف، لا سطرٌ ثانٍ يطوّل الحقل.
+  testWidgets('a trailing value sits beside the label, closed and on every row', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(
+        AppDropdown<_Place>(
+          items: places,
+          value: tripoli,
+          labelOf: (place) => place.name,
+          trailingOf: (place) => place.id == 3 ? null : '${place.id * 10} د.ل',
+          onChanged: (_) {},
+        ),
+      ),
+    );
+
+    // Act
+    final closed = find.descendant(
+      of: find.byType(InputDecorator),
+      matching: find.text('10 د.ل'),
+    );
+    final closedBeside =
+        tester.getCenter(closed.first).dy - tester.getCenter(find.text('طرابلس').first).dy;
+    await tester.tap(find.byType(AppDropdown<_Place>));
+    await tester.pumpAndSettle();
+
+    // Assert — على سطر الاسم نفسه لا تحته، وصفٌّ بلا قيمةٍ لا يرسم شيئاً مكانها.
+    expect(closed, findsWidgets);
+    expect(closedBeside.abs(), lessThan(2));
+    expect(find.text('20 د.ل'), findsWidgets);
+    expect(find.text('30 د.ل'), findsNothing);
   });
 
   testWidgets('there is no blank first row unless one was asked for', (tester) async {

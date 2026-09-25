@@ -230,6 +230,369 @@ void main() {
     );
   });
 
+  // ── صفحة المنتج الجديدة: زرّا + و− على طرفي السلايدر، والسلايدر نفسه، وبطاقات الأسعار ──
+
+  /// منتجٌ يُباع بالقطعة من ١٠٠ — خطوته ٥٠، وسلايدره من ١٠٠ إلى ٢٬٠٠٠.
+  const printed = Product(
+    id: 7,
+    name: 'أكياس شحن - مطبوعة',
+    pricingUnit: 'piece',
+    minOrderQuantity: '100.000',
+    variants: [ProductVariant(id: 20, label: 'متوسط')],
+  );
+
+  /// منتجٌ يُباع بالكيلو من ١ — خطوته ١.
+  const plain = Product(
+    id: 12,
+    name: 'أكياس شفافه - ساده',
+    pricingUnit: 'kilogram',
+    minOrderQuantity: '1.000',
+    variants: [ProductVariant(id: 40, label: 'صغير جدا')],
+  );
+
+  ProductDetailState printedAt(String quantity, {PriceQuote? quote}) =>
+      ProductDetailState.loaded(
+        product: printed,
+        selectedVariantId: 20,
+        quantity: quantity,
+        quote: quote,
+      );
+
+  group('stepping', () {
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '+ moves up one step and asks the server for the new quantity',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500'),
+      act: (cubit) => cubit.increase(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) {
+        expect((cubit.state as ProductDetailLoaded).quantity, '550');
+        verify(
+          () => repository.quote(productId: 7, variantId: 20, quantity: '550'),
+        ).called(1);
+      },
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '+ from between two steps lands on the next step, not a step beyond it',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('437'),
+      act: (cubit) => cubit.increase(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '450'),
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '− moves down one step',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500'),
+      act: (cubit) => cubit.decrease(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '450'),
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '− from between two steps lands on the step below',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('437'),
+      act: (cubit) => cubit.decrease(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '400'),
+    );
+
+    /// الحدّ الأدنى هو ما يرفض الخادم ما دونه، فلا يعبره الزر ولا يكلّف طلباً يعرف جوابه.
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '− stops at the minimum and asks nothing',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('100.000'),
+      act: (cubit) => cubit.decrease(),
+      wait: const Duration(milliseconds: 30),
+      expect: () => const <ProductDetailState>[],
+      verify: (_) {
+        verifyNever(
+          () => repository.quote(
+            productId: any(named: 'productId'),
+            variantId: any(named: 'variantId'),
+            quantity: any(named: 'quantity'),
+          ),
+        );
+      },
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      '+ on an empty field starts at the minimum',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt(''),
+      act: (cubit) => cubit.increase(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '100'),
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'a kilogram steps by one, and a fraction steps onto the whole kilogram beside it',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => const ProductDetailState.loaded(
+        product: plain,
+        selectedVariantId: 40,
+        quantity: '2.5',
+      ),
+      act: (cubit) => cubit.increase(),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '3'),
+    );
+  });
+
+  group('sliding', () {
+    /// السحب يطلق عشرات القيم في الثانية. تُرسم الكمية مع الإصبع، والسعر يُطلب مرةً واحدة حين
+    /// يُرفع الإصبع — وحتى ذلك الحين يبقى السعر السابق ظاهراً ومعلَّماً بأنه يتجدّد.
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'the thumb snaps to a step and nothing is asked until it is let go',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500', quote: quote),
+      act: (cubit) => cubit.slide(537),
+      expect: () => [
+        const ProductDetailState.loaded(
+          product: printed,
+          selectedVariantId: 20,
+          quantity: '550',
+          quote: quote,
+          isQuoting: true,
+        ),
+      ],
+      verify: (_) {
+        verifyNever(
+          () => repository.quote(
+            productId: any(named: 'productId'),
+            variantId: any(named: 'variantId'),
+            quantity: any(named: 'quantity'),
+          ),
+        );
+      },
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'the thumb cannot take the quantity past either end',
+      build: build,
+      seed: () => printedAt('500'),
+      act: (cubit) => cubit
+        ..slide(20)
+        ..slide(99999),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '2000'),
+    );
+
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'letting go asks once, for where the thumb stopped',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500'),
+      act: (cubit) async {
+        cubit
+          ..slide(620)
+          ..slide(690)
+          ..slide(700);
+        await cubit.refreshQuote();
+      },
+      verify: (_) {
+        verify(
+          () => repository.quote(productId: 7, variantId: 20, quantity: '700'),
+        ).called(1);
+        verifyNoMoreInteractions(repository);
+      },
+    );
+
+    /// جوابٌ كان في الطريق حين تحرّك الإبهام جوابٌ عن كميةٍ لم تعد على الشاشة.
+    test('an answer still on its way when the thumb moves is dropped', () async {
+      // Arrange
+      when(
+        () => repository.quote(
+          productId: any(named: 'productId'),
+          variantId: any(named: 'variantId'),
+          quantity: any(named: 'quantity'),
+        ),
+      ).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+
+        return const Right(cheaper);
+      });
+      final cubit = build()..emit(printedAt('500', quote: quote));
+
+      // Act
+      final slow = cubit.refreshQuote();
+      cubit.slide(800);
+      await slow;
+      final settled = cubit.state as ProductDetailLoaded;
+
+      // Assert
+      expect(settled.quantity, '800');
+      expect(settled.quote, quote);
+      expect(settled.isQuoting, isTrue);
+      await cubit.close();
+    });
+  });
+
+  group('the price breaks', () {
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'choosing a break orders exactly its threshold',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500'),
+      act: (cubit) => cubit.chooseTier(
+        const PriceTier(id: 3, minQuantity: '1000.000', unitPrice: '1.160'),
+      ),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) {
+        expect((cubit.state as ProductDetailLoaded).quantity, '1000');
+        verify(
+          () => repository.quote(productId: 7, variantId: 20, quantity: '1000'),
+        ).called(1);
+      },
+    );
+
+    /// كسرٌ يبدأ من ١ على منتجٍ لا يُطلب منه أقل من ١٠٠ — ما يُطلب فعلاً هو ١٠٠.
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'a break below the product minimum orders the minimum',
+      build: () {
+        stubQuote();
+
+        return build();
+      },
+      seed: () => printedAt('500'),
+      act: (cubit) => cubit.chooseTier(
+        const PriceTier(id: 1, minQuantity: '1.000', unitPrice: '1.720'),
+      ),
+      wait: const Duration(milliseconds: 30),
+      verify: (cubit) => expect((cubit.state as ProductDetailLoaded).quantity, '100'),
+    );
+  });
+
+  group('while a new price is on its way', () {
+    /// الرقم الذي يختفي مع كل لمسة يُقرأ سعراً انكسر. يبقى السابق، والشاشة تخفّته.
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'the last price stays on screen, marked as being refreshed',
+      build: () {
+        stubQuote(cheaper);
+
+        return build();
+      },
+      seed: () => printedAt('500', quote: quote),
+      act: (cubit) => cubit.setQuantity('600'),
+      wait: const Duration(milliseconds: 30),
+      expect: () => [
+        printedAt('600', quote: quote),
+        const ProductDetailState.loaded(
+          product: printed,
+          selectedVariantId: 20,
+          quantity: '600',
+          quote: quote,
+          isQuoting: true,
+        ),
+        printedAt('600', quote: cheaper),
+      ],
+    );
+
+    /// إجماليٌّ لكميةٍ أخرى بجانب رسالة الرفض أسوأ من لا إجمالي.
+    blocTest<ProductDetailCubit, ProductDetailState>(
+      'a refusal clears the old price rather than leaving it beside the new quantity',
+      build: () {
+        when(
+          () => repository.quote(
+            productId: any(named: 'productId'),
+            variantId: any(named: 'variantId'),
+            quantity: any(named: 'quantity'),
+          ),
+        ).thenAnswer(
+          (_) async => const Left(ServerFailure(message: 'أقل كمية ١٠٠ قطعة')),
+        );
+
+        return build();
+      },
+      seed: () => printedAt('50', quote: quote),
+      act: (cubit) => cubit.refreshQuote(),
+      skip: 1,
+      expect: () => const [
+        ProductDetailState.loaded(
+          product: printed,
+          selectedVariantId: 20,
+          quantity: '50',
+          quoteFailure: ServerFailure(message: 'أقل كمية ١٠٠ قطعة'),
+        ),
+      ],
+    );
+  });
+
+  group('canDecrease', () {
+    test('is false at the minimum', () {
+      // Arrange
+      final state = printedAt('100.000');
+
+      // Act
+      final canDecrease = state.canDecrease;
+
+      // Assert
+      expect(canDecrease, isFalse);
+    });
+
+    test('is true above it', () {
+      // Arrange
+      final state = printedAt('150');
+
+      // Act
+      final canDecrease = state.canDecrease;
+
+      // Assert
+      expect(canDecrease, isTrue);
+    });
+  });
+
+  test('a typed quantity beyond the slider sits the thumb at the end', () {
+    // Arrange
+    final state = printedAt('5000');
+
+    // Act
+    final onSlider = state.quantityOnSlider;
+
+    // Assert
+    expect(onSlider, 2000);
+  });
+
   group('hasOrderableQuantity', () {
     /// The state as the screen holds it, with [quantity] in the field.
     ProductDetailState withQuantity(String quantity) =>

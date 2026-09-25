@@ -1,10 +1,12 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 import 'package:dayaa/features/support/repositories/support_repository.dart';
 
-/// One file for the desk's five verbs.
+/// One file for the desk's verbs.
 ///
 /// **Five classes rather than five files**, which is a departure from the one-per-file habit
 /// elsewhere: each of these is a single call with no logic of its own, and the feature is small
@@ -37,8 +39,12 @@ class ReplyToTicket {
 
   final SupportRepository _repository;
 
-  Future<Either<Failure, SupportTicket>> call(int id, {required String body}) =>
-      _repository.reply(id, body: body);
+  /// كلامٌ، أو ملفٌ بتعليقٍ اختياري.
+  Future<Either<Failure, SupportTicket>> call(
+    int id, {
+    String? body,
+    PickedFile? attachment,
+  }) => _repository.reply(id, body: body, attachment: attachment);
 }
 
 class AssignTicket {
@@ -57,4 +63,25 @@ class CloseTicket {
   final SupportRepository _repository;
 
   Future<Either<Failure, SupportTicket>> call(int id) => _repository.close(id);
+}
+
+/// إعادةُ فتح ما أغلقه المكتب — الموظف لا يكتب في المغلقة إلا بعدها.
+class ReopenTicket {
+  const ReopenTicket(this._repository);
+
+  final SupportRepository _repository;
+
+  Future<Either<Failure, SupportTicket>> call(int id) => _repository.reopen(id);
+}
+
+/// المكتبُ حيّاً: كلُّ تذكرةٍ تتغيّر ساعةَ تتغيّر، و[resumed] حين يعود الاتصال بعد انقطاع.
+class WatchTicketChanges {
+  const WatchTicketChanges(this._repository);
+
+  final SupportRepository _repository;
+
+  Stream<TicketChange> call() => _repository.watchChanges();
+
+  /// ما تغيّر في الانقطاع فات — من يرسم تذكرةً يعيد قراءتها هنا.
+  Stream<void> get resumed => _repository.liveResumed;
 }

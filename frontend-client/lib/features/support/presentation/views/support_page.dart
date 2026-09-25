@@ -1,17 +1,13 @@
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
-import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
-import 'package:dayaa_client/core/utils/dates.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
-import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
-import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
-import 'package:dayaa_client/features/notifications/presentation/views/notifications_button.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_cubit.dart';
+import 'package:dayaa_client/features/support/presentation/widgets/ticket_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,27 +15,68 @@ import 'package:go_router/go_router.dart';
 
 /// «الدعم» — a thread per question.
 ///
+/// **تبويبان في الأعلى: «المفتوحة» و«المغلقة».** كانت ثلاث شرائح تحت بطاقة الساعات، و«الكل»
+/// أولها؛ والعميل يسأل أحد سؤالين — ما الذي ينتظر جواباً، وما الذي انتهى — فصار لكلٍّ تبويبه
+/// وقائمته، وتبقى كلٌّ في مكانها حين يُتنقّل بينهما. «المفتوحة» تشمل «قيد المعالجة»: هي التذاكر
+/// الحيّة كلها، والصفّ يقول أيّها أجاب عنه أحد.
+///
+/// **وساعاتُ الدعم سطرٌ تحت العنوان، لا بطاقةٌ فوق القائمة** — المعلومة نفسها، بلا لوحةٍ تأخذ
+/// سطرين من كل شاشة.
+///
 /// **No employee is ever named.** Which member of staff answered is the shop's internal
 /// arrangement, and putting a name on a reply would make one person the target of a complaint
 /// about a decision the business made. The server sends `me` or `support` and nothing else.
-class SupportPage extends StatelessWidget {
+class SupportPage extends StatefulWidget {
   const SupportPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<SupportCubit>(
-      create: (_) => sl<SupportCubit>()..load(),
-      child: const _SupportView(),
-    );
-  }
+  State<SupportPage> createState() => _SupportPageState();
 }
 
-class _SupportView extends StatelessWidget {
-  const _SupportView();
+class _SupportPageState extends State<SupportPage> with SingleTickerProviderStateMixin {
+  TabController? _tabs;
 
-  Future<void> _compose(BuildContext context) async {
-    final cubit = context.read<SupportCubit>();
+  /// قائمتان مستقلتان، لكلّ تبويبٍ واحدة — تبقى كلٌّ بتمريرها وصفحاتها حين يُتنقّل بينهما.
+  /// «المغلقة» تُنشأ حين تُفتح أول مرة: قلّ من يزورها، فلا طلب لها قبل ذلك.
+  late final SupportCubit _open = sl<SupportCubit>()..narrowTo(true);
+  SupportCubit? _closedCubit;
 
+  SupportCubit get _closed => _closedCubit ??= sl<SupportCubit>()..narrowTo(false);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // الانزلاق بين التبويبين إزاحةٌ، وهي مسموحة — وتغيب كلها مع «تقليل الحركة».
+    _tabs ??= TabController(
+      length: 2,
+      vsync: this,
+      animationDuration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabs?.dispose();
+    _open.close();
+    _closedCubit?.close();
+    super.dispose();
+  }
+
+  Future<void> _openThread(SupportTicket ticket) async {
+    final updated = await context.push<SupportTicket>(Routes.ticket(ticket.id));
+
+    if (updated == null || !mounted) return;
+
+    // يُسلَّم للتبويبين وكلٌّ يأخذ ما يخصّه: تذكرةٌ أعاد ردُّ العميل فتحها تغادر «المغلقة»
+    // وتظهر أعلى «المفتوحة» — بلا طلبٍ وبلا رجوعٍ إلى أعلى القائمة. انظر `SupportCubit.absorb`.
+    _open.absorb(updated);
+    _closedCubit?.absorb(updated);
+  }
+
+  Future<void> _compose() async {
     // The order this thread is about, when the customer came here from one — read from the
     // location so it survives the branch switch, so they do not have to describe which order
     // they mean. A malformed value is simply no order, never a crash.
@@ -54,99 +91,84 @@ class _SupportView extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (sheetContext) => BlocProvider<SupportCubit>.value(
-        value: cubit,
+        value: _open,
         child: _ComposeSheet(orderId: orderId),
       ),
     );
 
-    if (ticket == null || !context.mounted) return;
+    if (ticket == null || !mounted) return;
+
+    // التذكرة الجديدة مفتوحةٌ بطبيعتها، فتبويبها «المفتوحة».
+    _tabs?.index = 0;
 
     // Straight into the thread — which is what somebody who has just written a question
     // expects to happen next.
-    await context.push(Routes.ticket(ticket.id));
+    await _openThread(ticket);
   }
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<SupportCubit>();
+    final scheme = context.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الدعم'),
-        actions: const [NotificationsButton()],
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('الدعم'),
+            Text(
+              'السبت–الخميس · 9 ص – 5 م',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        bottom: TabBar(
+          controller: _tabs,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorColor: scheme.primary,
+          dividerColor: scheme.outlineVariant,
+          labelColor: scheme.primary,
+          unselectedLabelColor: scheme.onSurfaceVariant,
+          labelStyle: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          unselectedLabelStyle: context.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          tabs: [
+            Tab(height: 46.h, text: 'المفتوحة'),
+            Tab(height: 46.h, text: 'المغلقة'),
+          ],
+        ),
       ),
       body: SafeArea(
         top: false,
         child: Column(
           children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 14.h),
-              child: const _HoursCard(),
-            ),
-
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-              child: BlocBuilder<SupportCubit, SupportState>(
-                builder: (context, state) => Row(
-                  children: [
-                    // **Three chips, because the filter has three states.** «الكل» is a real
-                    // answer and not the absence of one.
-                    FilterOptionChip(
-                      label: 'الكل',
-                      isSelected: cubit.openOnly == null,
-                      onTap: () => cubit.narrowTo(null),
-                    ),
-                    SizedBox(width: 8.w),
-                    FilterOptionChip(
-                      label: 'المفتوحة',
-                      isSelected: cubit.openOnly == true,
-                      onTap: () => cubit.narrowTo(true),
-                    ),
-                    SizedBox(width: 8.w),
-                    FilterOptionChip(
-                      label: 'المغلقة',
-                      isSelected: cubit.openOnly == false,
-                      onTap: () => cubit.narrowTo(false),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             Expanded(
-              child: BlocBuilder<SupportCubit, SupportState>(
-                builder: (context, state) => PagedListView<SupportTicket>(
-                  state: state,
-                  onLoadMore: cubit.loadMore,
-                  onRefresh: cubit.refresh,
-                  emptyMessage: 'لا توجد تذاكر — اسألنا عن أي شيء',
-                  padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
-                  itemBuilder: (context, ticket, index) => _TicketCard(
-                    ticket: ticket,
-                    onOpen: () async {
-                      final updated = await context.push<SupportTicket>(
-                        Routes.ticket(ticket.id),
-                      );
-
-                      // Patched from what the thread screen was holding — no refetch, and the
-                      // scroll position survives.
-                      if (updated != null) cubit.absorb(updated);
-                    },
+              child: TabBarView(
+                controller: _tabs,
+                children: [
+                  _TicketsTab(
+                    cubit: _open,
+                    emptyMessage: 'لا توجد تذاكر مفتوحة',
+                    onOpen: _openThread,
                   ),
-                ),
+                  // Builder كي لا تُنشأ قائمة «المغلقة» قبل أن تُرسم.
+                  Builder(
+                    builder: (context) => _TicketsTab(
+                      cubit: _closed,
+                      emptyMessage: 'لا توجد تذاكر مغلقة',
+                      onOpen: _openThread,
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // **A button on the floor, not a floating one.** The design draws it full width
-            // across the bottom, and it also settles the hero-tag problem the FAB had: «الدعم»
-            // is a pushed route now, not a tab, but the two screens can still be alive at once.
+            // **A button on the floor, not a floating one.** Full width across the bottom, as
+            // every action button in this app is.
             Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
-              child: AppButton(
-                label: 'تذكرة جديدة',
-                icon: AppIcons.add,
-                onPressed: () => _compose(context),
-              ),
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+              child: AppButton(label: 'تذكرة جديدة', icon: AppIcons.add, onPressed: _compose),
             ),
           ],
         ),
@@ -155,206 +177,44 @@ class _SupportView extends StatelessWidget {
   }
 }
 
-/// «الفريق متاح الآن» — when somebody is here to answer.
-///
-/// **The hours are the shop's, and they are written here.** There is no endpoint for them and
-/// inventing one for two lines that change once a decade would be machinery for its own sake.
-/// What the card deliberately does *not* claim is that anybody is available right now: the
-/// design says «الفريق متاح الآن» in green, and this app has no way to know that — the server
-/// sends no presence, and a green dot that is always green is a lie the first evening somebody
-/// writes at eleven and hears nothing.
-class _HoursCard extends StatelessWidget {
-  const _HoursCard();
+/// قائمة تبويبٍ واحد، **حيّةٌ ما دامت الشاشة حيّة** — التنقّل إلى التبويب الآخر والعودة لا يعيد
+/// تحميلها ولا يرجعها إلى أعلاها.
+class _TicketsTab extends StatefulWidget {
+  const _TicketsTab({required this.cubit, required this.emptyMessage, required this.onOpen});
+
+  final SupportCubit cubit;
+  final String emptyMessage;
+  final Future<void> Function(SupportTicket ticket) onOpen;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return AppCard.sunken(
-      padding: EdgeInsets.all(16.w),
-      child: Row(
-        children: [
-          Container(
-            width: 46.w,
-            height: 46.w,
-            decoration: BoxDecoration(
-              color: scheme.paidContainer,
-              borderRadius: BorderRadius.circular(14.r),
-            ),
-            child: Icon(AppIcons.comments, size: 22.sp, color: scheme.onPaidContainer),
-          ),
-          SizedBox(width: 13.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'اسألنا عن أي شيء',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  'السبت–الخميس · 9 ص – 5 م',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  State<_TicketsTab> createState() => _TicketsTabState();
 }
 
-class _TicketCard extends StatelessWidget {
-  const _TicketCard({required this.ticket, required this.onOpen});
-
-  final SupportTicket ticket;
-  final VoidCallback onOpen;
+class _TicketsTabState extends State<_TicketsTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final hasReply = ticket.unreadCount > 0;
+    super.build(context);
 
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                ticket.subject,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            _StatusPill(ticket: ticket),
-          ],
+    return BlocBuilder<SupportCubit, SupportState>(
+      bloc: widget.cubit,
+      builder: (context, state) => PagedListView<SupportTicket>(
+        state: state,
+        onLoadMore: widget.cubit.loadMore,
+        onRefresh: widget.cubit.refresh,
+        emptyMessage: widget.emptyMessage,
+        skeletonHeight: 84.h,
+        padding: EdgeInsets.only(top: 4.h, bottom: 12.h),
+        separatorBuilder: (context, _) => Divider(
+          height: 1,
+          thickness: 1,
+          indent: 78.w,
+          color: context.colorScheme.outlineVariant,
         ),
-
-        if (ticket.order case final order?) ...[
-          SizedBox(height: 5.h),
-          Text(
-            'بخصوص الطلبية #${order.code}',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.primary),
-          ),
-        ],
-
-        // The last thing anybody said, one line of it. Only the list endpoint sends this — a
-        // card patched from the thread screen keeps the preview it was drawn with.
-        if (ticket.preview case final preview?) ...[
-          SizedBox(height: 9.h),
-          Text(
-            preview,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              height: 1.6,
-            ),
-          ),
-        ],
-
-        Divider(height: 22.h, color: scheme.outlineVariant),
-
-        Row(
-          children: [
-            // **«ردّ جديد», not a red count.** A number in a red circle is a notification
-            // badge — the grammar of something gone wrong — and an answer from the shop is the
-            // thing the customer came here hoping for. The count is still said, after the words.
-            if (hasReply) ...[
-              Container(
-                width: 8.w,
-                height: 8.w,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 7.w),
-              Text(
-                ticket.unreadCount > 1 ? 'ردود جديدة' : 'ردّ جديد',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ] else if (ticket.messagesCount case final count? when count > 0)
-              Text(
-                count == 1 ? 'رسالة واحدة' : '$count رسائل',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-
-            const Spacer(),
-            if (ticket.lastMessageAt case final at?)
-              Text(
-                at.relativeDayLabel,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 11.h),
-      child: Opacity(
-        // A closed thread is still readable, and still dimmer than a live one.
-        opacity: ticket.isOpen ? 1 : 0.65,
-        child: hasReply
-            ? AppCard.accent(onTap: onOpen, child: body)
-            : AppCard(onTap: onOpen, child: body),
-      ),
-    );
-  }
-}
-
-/// «مفتوحة» · «قيد المعالجة» · «مغلقة».
-///
-/// **The Arabic is the server's and the colour is not.** `status_label` travels with the value
-/// so a status added to the business needs no app release; the fill is chosen here, and an
-/// unrecognised status gets the neutral one rather than none.
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.ticket});
-
-  final SupportTicket ticket;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    final (background, foreground) = switch (ticket.status) {
-      TicketStatus.open => (scheme.attentionContainer, scheme.onAttentionContainer),
-      TicketStatus.inProgress => (scheme.infoContainer, scheme.onInfoContainer),
-      TicketStatus.closed ||
-      TicketStatus.unknown => (scheme.surfaceContainerHigh, scheme.onSurfaceVariant),
-    };
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 5.h),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999.r),
-      ),
-      child: Text(
-        ticket.statusLabel,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
+        itemBuilder: (context, ticket, _) =>
+            TicketRow(ticket: ticket, onOpen: () => widget.onOpen(ticket)),
       ),
     );
   }
@@ -421,20 +281,11 @@ class _ComposeSheetState extends State<_ComposeSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'تذكرة جديدة',
+                  widget.orderId == null ? 'تذكرة جديدة' : 'تذكرة عن الطلبية',
                   style: context.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (widget.orderId != null) ...[
-                  SizedBox(height: 4.h),
-                  Text(
-                    'ستُرفق بالطلبية التي كنت تشاهدها.',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
                 SizedBox(height: 16.h),
 
                 AppTextField(

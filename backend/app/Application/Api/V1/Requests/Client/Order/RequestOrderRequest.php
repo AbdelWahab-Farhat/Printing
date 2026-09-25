@@ -31,6 +31,10 @@ use Illuminate\Validation\Validator;
  * - `design_source`, `design_fee` — what the shop charges to draw something is a conversation,
  *   not a field.
  * - `tracking_number`, `is_urgent`, `notes` on the order — operational, staff-written.
+ * - `recipient_name` — المستلم هو العميل نفسه باسمه، والاسم على الطلبية أصلاً عبر `customer_id`.
+ *   `recipient_name` الفارغ يعني صاحبَ الطلبية في تطبيق الموظفين كما هنا.
+ * - `address_details` — الوجهة مدينةٌ ومنطقةٌ ومتجرٌ من متاجر العميل، والسطر الحرّ خرج من السلة
+ *   بطلب صاحب العمل.
  *
  * `design_ids` *is* accepted, and the domain checks each one belongs to this customer — see
  * `AddOrderDesign`. A foreign design takes the whole order down rather than leaving one standing
@@ -55,9 +59,9 @@ class RequestOrderRequest extends FormRequest
             'region_id' => ['nullable', 'integer', Rule::exists('regions', 'id')->withoutTrashed()],
             'customer_shop_id' => ['nullable', 'integer', Rule::exists('customer_shops', 'id')->withoutTrashed()],
 
-            'recipient_name' => ['nullable', 'string', 'max:255'],
+            // الرقم الذي يتصل به المندوب. التطبيق يملؤه برقم العميل ويتركه قابلاً للتغيير، لأنه
+            // أحياناً رقمُ غيره — أخٍ في المحل أو سائق.
             'recipient_phone' => ['nullable', 'string', 'max:20'],
-            'address_details' => ['nullable', 'string', 'max:1000'],
 
             // The same cap staff have. A hundred distinct lines from a phone is a mistake, and
             // the ceiling costs an honest order nothing.

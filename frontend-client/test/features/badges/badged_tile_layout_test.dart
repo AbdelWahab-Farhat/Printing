@@ -6,8 +6,8 @@ import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart
 import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
 import 'package:dayaa_client/features/badges/usecases/get_badges.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 

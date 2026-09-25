@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
+import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 
 /// «طلباتي» — and placing one.
@@ -29,4 +30,9 @@ abstract interface class OrderRepository {
   /// goods off the shelf. Nothing checked this one, so it waits to be read. The screen should
   /// say so rather than implying the order is confirmed.
   Future<Either<Failure, CustomerOrderDetail>> place(NewOrder order);
+
+  /// يسعّر سلةً قبل إرسالها، بالطريق الذي تُسعَّر به الطلبية — ولا يكتب شيئاً.
+  ///
+  /// [cityId] يضيف رسم التوصيل إليها حين تُختار المدينة.
+  Future<Either<Failure, BasketQuote>> quote({required List<NewOrderLine> items, int? cityId});
 }

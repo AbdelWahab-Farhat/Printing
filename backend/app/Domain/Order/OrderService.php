@@ -141,7 +141,8 @@ class OrderService
     {
         return Order::query()
             ->where('customer_id', $customerId)
-            ->with(['items', 'transitions'])
+            // منتج كل بندٍ بصوره، لصورة البند على الشاشة: استعلامان للطلبية كلها لا اثنان لكل بند.
+            ->with(['items.product.images', 'transitions'])
             ->findOrFail($orderId);
     }
 

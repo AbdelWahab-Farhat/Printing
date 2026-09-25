@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
+import 'package:dayaa/features/support/models/ticket_change.dart';
 
 /// What the desk can do about the threads customers start.
 ///
@@ -32,7 +34,13 @@ abstract interface class SupportRepository {
   ///
   /// The author is never sent: the server stamps the signed-in user, which is what makes it
   /// impossible to sign a colleague's name to a sentence. Puts the ticket on «قيد المعالجة».
-  Future<Either<Failure, SupportTicket>> reply(int id, {required String body});
+  ///
+  /// [attachment] صورةٌ أو PDF، و[body] حينها تعليقٌ اختياريّ — والخادم يرفض الفراغين معاً.
+  Future<Either<Failure, SupportTicket>> reply(
+    int id, {
+    String? body,
+    PickedFile? attachment,
+  });
 
   /// Puts a ticket on somebody's desk, or [userId] null to put it back in the unassigned queue.
   Future<Either<Failure, SupportTicket>> assign(int id, {required int? userId});
@@ -42,4 +50,17 @@ abstract interface class SupportRepository {
   /// **Idempotent on the server** — two people pressing it is not a failure, and the second
   /// press must not overwrite the first one's name.
   Future<Either<Failure, SupportTicket>> close(int id);
+
+  /// يعيد فتحَ تذكرةٍ أغلقها المكتب، عن قصد — الموظف لا يكتب في المغلقة إلا بعدها. تعود
+  /// «قيد المعالجة». وإعادةُ فتح المفتوحة لا تُعدّ خطأ.
+  Future<Either<Failure, SupportTicket>> reopen(int id);
+
+  /// كلُّ تذكرةٍ تتغيّر في المكتب، ساعةَ تتغيّر: رسالة، إسناد، إغلاق، إعادة فتح، قراءة.
+  ///
+  /// **لا يطلق شيئاً حين لا يكون البثّ مُعدّاً**، والشاشات تعمل بالسحب كما كانت. ولا يحمل
+  /// خطأً قط: الاتصال الذي سقط يُعاد تحته، ويُقال ذلك في [liveResumed].
+  Stream<TicketChange> watchChanges();
+
+  /// عاد الاتصال الحيّ بعد انقطاع — ما تغيّر في الانقطاع فات، فمن يرسم تذكرةً يعيد قراءتها.
+  Stream<void> get liveResumed;
 }

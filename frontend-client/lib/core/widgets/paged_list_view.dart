@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dayaa_client/core/pagination/paged_state.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
+import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/appear.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -237,10 +238,10 @@ class _FailureView extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h),
-            FilledButton.icon(
+            AppButton(
+              label: 'إعادة المحاولة',
+              icon: AppIcons.refresh,
               onPressed: () => unawaited(onRetry()),
-              icon: Icon(AppIcons.refresh),
-              label: const Text('إعادة المحاولة'),
             ),
           ],
         ),

@@ -1,8 +1,12 @@
 import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/attachment_picker_impl.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/dio_client.dart';
 import 'package:dayaa/core/push/push_service.dart';
+import 'package:dayaa/core/realtime/channel_signer.dart';
+import 'package:dayaa/core/realtime/pusher_realtime_client.dart';
+import 'package:dayaa/core/realtime/realtime_client.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
@@ -346,7 +350,15 @@ abstract final class Injector {
       // an order's attachments next. Behind its interface so a widget test can substitute one
       // — both packages answer through a platform channel that does not exist under
       // `flutter_test`, so the real one would hang there.
-      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new);
+      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
+      // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
+      // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول شاشةٍ تستمع ويغلقه مع آخرها.
+      ..registerLazySingleton<RealtimeClient>(
+        () => PusherRealtimeClient(
+          endpoint: AppConfig.realtime,
+          sign: apiChannelSigner(sl<Dio>(), RealtimeEndpoints.auth),
+        ),
+      );
 
     _registerAccess();
     _registerAudit();
@@ -1104,14 +1116,20 @@ abstract final class Injector {
   /// nullable field set afterwards is a Cubit that can exist not knowing what it is showing.
   static void _registerSupport() {
     sl
-      ..registerLazySingleton<SupportRepository>(() => SupportRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<SupportRepository>(
+        () => SupportRepositoryImpl(sl<Dio>(), sl<RealtimeClient>()),
+      )
       ..registerLazySingleton<BrowseTickets>(() => BrowseTickets(sl<SupportRepository>()))
       ..registerLazySingleton<GetTicket>(() => GetTicket(sl<SupportRepository>()))
       ..registerLazySingleton<ReplyToTicket>(() => ReplyToTicket(sl<SupportRepository>()))
       ..registerLazySingleton<AssignTicket>(() => AssignTicket(sl<SupportRepository>()))
       ..registerLazySingleton<CloseTicket>(() => CloseTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<ReopenTicket>(() => ReopenTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<WatchTicketChanges>(
+        () => WatchTicketChanges(sl<SupportRepository>()),
+      )
       ..registerFactory<SupportTicketsCubit>(
-        () => SupportTicketsCubit(browse: sl<BrowseTickets>()),
+        () => SupportTicketsCubit(browse: sl<BrowseTickets>(), watch: sl<WatchTicketChanges>()),
       )
       ..registerFactoryParam<TicketThreadCubit, int, void>(
         (ticketId, _) => TicketThreadCubit(
@@ -1120,6 +1138,8 @@ abstract final class Injector {
           reply: sl<ReplyToTicket>(),
           assign: sl<AssignTicket>(),
           close: sl<CloseTicket>(),
+          reopen: sl<ReopenTicket>(),
+          watch: sl<WatchTicketChanges>(),
         ),
       );
   }
