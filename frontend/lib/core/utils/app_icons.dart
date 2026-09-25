@@ -200,6 +200,19 @@ abstract final class AppIcons {
   static IconData get fundWithdraw =>
       _pick(Icons.output_rounded, CupertinoIcons.arrow_up_circle);
 
+  /// ربحٌ على سجلّ المستثمر — كُسب، أو أُتيح للسحب، أو صار رأسَ مال.
+  static IconData get profit =>
+      _pick(Icons.trending_up_rounded, CupertinoIcons.arrow_up_right);
+
+  /// وخسارةٌ بكلّ أشكالها: على طلبية، أو من رأس المال، أو مرحّلةٌ بين فترتين.
+  static IconData get loss =>
+      _pick(Icons.trending_down_rounded, CupertinoIcons.arrow_down_right);
+
+  /// سجلُّ حركات مالٍ — دفترٌ بسطوره. Deliberately not [history]: that clock opens a record's
+  /// change log, and this opens the money that moved.
+  static IconData get statement =>
+      _pick(Icons.receipt_long_rounded, CupertinoIcons.list_bullet);
+
   /// رأسُ مالٍ في الصندوق لم تنقضِ مدّةُ حبسه — بجانب موعد فكّه على صفحة المستثمر.
   static IconData get locked => _pick(Icons.lock_outline_rounded, CupertinoIcons.lock);
 

@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Actions\DepositToFund;
+use App\Domain\Investor\Actions\WithdrawFromFund;
 use App\Domain\Investor\Enums\PeriodStatus;
+use App\Domain\Investor\Enums\WalletEntryCategory;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\PeriodIsClosed;
 use App\Domain\Investor\Queries\PeriodForEntry;
@@ -127,6 +131,21 @@ class InvestorWalletEntry extends Model
     }
 
     /**
+     * The units a fund subscription issued, or a fund redemption cancelled.
+     *
+     * `HasOne` because each of {@see DepositToFund} and
+     * {@see WithdrawFromFund} writes exactly one units row
+     * pointing back here. Every other type has none.
+     *
+     * @return HasOne<InvestmentUnit, $this>
+     */
+    public function fundUnits(): HasOne
+    {
+        return $this->hasOne(InvestmentUnit::class, 'source_id')
+            ->where('source_type', AuditSubject::InvestorWalletEntry->value);
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
@@ -208,10 +227,46 @@ class InvestorWalletEntry extends Model
         return '0.00';
     }
 
-    /** Whether it has already been undone. */
+    /**
+     * Whether it has already been undone.
+     *
+     * Read off `reversedBy` when a list eager-loaded it, so a page of the statement does not ask
+     * the database once per row.
+     */
     public function isReversed(): bool
     {
+        if ($this->relationLoaded('reversedBy')) {
+            return $this->reversedBy !== null;
+        }
+
         return self::query()->where('reverses_entry_id', $this->getKey())->exists();
+    }
+
+    /**
+     * What a statement calls this row.
+     *
+     * Named for the fund when it sits in the fund, and a reversal names what it undid — «عكس
+     * حركة» alone leaves the reader to find the other row and guess.
+     */
+    public function label(): string
+    {
+        if ($this->type === WalletEntryType::Reversal) {
+            $original = $this->reversedEntry;
+
+            return $original === null
+                ? $this->type->label()
+                : $this->type->label().': '.$original->label();
+        }
+
+        return $this->deal?->isTheFund() === true
+            ? $this->type->fundLabel()
+            : $this->type->label();
+    }
+
+    /** The statement filter this row answers to — a reversal's is that of the row it undoes. */
+    public function category(): ?WalletEntryCategory
+    {
+        return $this->effectiveType()->category();
     }
 
     /**

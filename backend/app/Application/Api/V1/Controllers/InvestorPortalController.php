@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Investor\InvestorStatementRequest;
 use App\Application\Api\V1\Resources\InvestorPortfolioResource;
 use App\Application\Api\V1\Resources\InvestorWalletEntryResource;
 use App\Application\Controller;
@@ -12,6 +13,7 @@ use App\Domain\Investor\Exceptions\InvestorHasNoAccount;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundStanding;
+use App\Domain\Investor\Queries\InvestorStatementQuery;
 use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -62,7 +64,7 @@ class InvestorPortalController extends Controller
      * Every movement of my own money — where each dinar came from and, when something was taken
      * back, which order or expense took it.
      */
-    public function statement(Request $request): JsonResponse
+    public function statement(InvestorStatementRequest $request, InvestorStatementQuery $query): JsonResponse
     {
         $investor = $this->investors->investorFor($request->user());
 
@@ -70,14 +72,7 @@ class InvestorPortalController extends Controller
             throw InvestorHasNoAccount::make();
         }
 
-        $perPage = min(max((int) $request->integer('per_page', 25), 1), 100);
-
-        $entries = InvestorWalletEntry::query()
-            ->with(['deal', 'reversedEntry'])
-            ->where('investor_id', $investor->getKey())
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('id')
-            ->paginate($perPage);
+        $entries = $query((int) $investor->getKey(), $request->filters(), $request->perPage());
 
         return $this->successWithPagination(InvestorWalletEntryResource::collection($entries));
     }

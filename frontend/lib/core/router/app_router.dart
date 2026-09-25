@@ -49,6 +49,7 @@ import 'package:dayaa/features/investors/presentation/views/deal_orders_page.dar
 import 'package:dayaa/features/investors/presentation/views/deals_page.dart';
 import 'package:dayaa/features/investors/presentation/views/fund_purchase_order_page.dart';
 import 'package:dayaa/features/investors/presentation/views/investor_detail_page.dart';
+import 'package:dayaa/features/investors/presentation/views/investor_statement_page.dart';
 import 'package:dayaa/features/investors/presentation/views/investors_page.dart';
 import 'package:dayaa/features/location/presentation/views/pick_location_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
@@ -164,6 +165,10 @@ abstract final class Routes {
   static const String investmentSettings = '/investment-settings';
 
   static String investor(int id) => '/investors/$id';
+
+  /// Every movement of one investor's money. **Registered before `/investors/:id`** for the
+  /// reason [investorDealOrders] gives.
+  static String investorStatement(int id) => '/investors/$id/statement';
 
   static String investorDeal(int id) => '/investor-deals/$id';
 
@@ -571,6 +576,13 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investors,
         builder: (context, state) => const InvestorsPage(),
+      ),
+      GoRoute(
+        path: '/investors/:id/statement',
+        builder: (context, state) => InvestorStatementPage(
+          investorId: int.parse(state.pathParameters['id']!),
+          investorName: state.payload as String?,
+        ),
       ),
       GoRoute(
         path: '/investors/:id',

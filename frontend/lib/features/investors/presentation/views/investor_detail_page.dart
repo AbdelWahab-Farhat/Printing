@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
@@ -51,6 +52,24 @@ class _InvestorDetailView extends StatelessWidget {
             state is InvestorDetailLoaded ? state.investor.name : 'المستثمر',
           ),
         ),
+        actions: [
+          // **سجلُّ الحركات** — كلُّ ما جرى لماله. إلغاءُ حركةٍ هناك يغيّر أرصدته هنا، فتُعاد
+          // قراءتُها عند العودة؛ وإن لم يُلغَ شيءٌ فلا طلب.
+          BlocBuilder<InvestorDetailCubit, InvestorDetailState>(
+            builder: (context, state) => IconButton(
+              tooltip: 'سجل الحركات',
+              icon: Icon(AppIcons.statement),
+              onPressed: () async {
+                final changed = await context.pushForResult<bool>(
+                  Routes.investorStatement(investorId),
+                  extra: state is InvestorDetailLoaded ? state.investor.name : null,
+                );
+
+                if (changed == true && context.mounted) await cubit.load(investorId);
+              },
+            ),
+          ),
+        ],
       ),
       // **The action is a bar across the bottom, not a floating button.** There is one thing to
       // do on this screen and it is done with a thumb; a button the width of the phone is the
