@@ -130,4 +130,116 @@ void main() {
     // Assert
     expect(typed, ['0912345678']);
   });
+
+  // الكمية في صفحة المنتج رقمٌ كبير في صندوقٍ صغير، والصندوق نفسه صندوق كل الحقول.
+  testWidgets('a style from the caller is laid over the field\'s own, which keeps its colour', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(const AppTextField(style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900))),
+    );
+
+    // Act
+    final style = field(tester).style!;
+
+    // Assert
+    expect(style.fontSize, 30);
+    expect(style.fontWeight, FontWeight.w900);
+    expect(style.color, isNotNull);
+  });
+
+  // العنوان فوق الصندوق لا داخله — «حقولٌ معنونة» كما في تصميم شاشة الدخول، في كل حقول التطبيق.
+  group('the label', () {
+    testWidgets('sits above the box, not inside it', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(const AppTextField(label: 'رقم الهاتف', hint: '09X')));
+
+      // Act
+      final label = tester.getRect(find.text('رقم الهاتف'));
+      final box = tester.getRect(find.byType(InputDecorator));
+      final inside = find.descendant(
+        of: find.byType(InputDecorator),
+        matching: find.text('رقم الهاتف'),
+      );
+
+      // Assert
+      expect(inside, findsNothing);
+      expect(label.bottom, lessThanOrEqualTo(box.top));
+    });
+
+    testWidgets('an action can share its line, at the far end', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(const AppTextField.password(labelAction: Text('نسيتها؟'))),
+      );
+
+      // Act
+      final label = tester.getRect(find.text('كلمة المرور'));
+      final action = tester.getRect(find.text('نسيتها؟'));
+      final box = tester.getRect(find.byType(InputDecorator));
+
+      // Assert — العنوان على اليمين حيث تبدأ القراءة، والإجراء على اليسار، وكلاهما فوق الصندوق.
+      expect(action.right, lessThanOrEqualTo(label.left));
+      expect(action.bottom, lessThanOrEqualTo(box.top));
+      expect(label.bottom, lessThanOrEqualTo(box.top));
+    });
+
+    testWidgets('a field without one adds nothing above its box', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(const AppTextField(hint: 'اكتب ردك…')));
+
+      // Act
+      final field = tester.getRect(find.byType(AppTextField));
+      final box = tester.getRect(find.byType(InputDecorator));
+
+      // Assert
+      expect(box.top, field.top);
+    });
+  });
+
+  testWidgets('a password field carries no lock of its own, only the eye', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(const AppTextField.password()));
+
+    // Act
+    final lock = find.byIcon(AppIcons.password);
+    final eye = find.byIcon(AppIcons.passwordVisible);
+
+    // Assert
+    expect(lock, findsNothing);
+    expect(eye, findsOneWidget);
+  });
+
+  // صندوق الرسالة في محادثة الدعم: يبدأ بسطرٍ واحد كأي حقل، ويطول مع الكلام حتى سقفه ثم يمرّر.
+  testWidgets('a message box starts one line tall and grows only to its cap', (tester) async {
+    // Arrange
+    final long = TextEditingController(text: List.filled(9, 'سطر').join('\n'));
+    addTearDown(long.dispose);
+    await tester.pumpWidget(
+      host(
+        Column(
+          children: [
+            const AppTextField(key: Key('single')),
+            const AppTextField(key: Key('empty'), minLines: 1, maxLines: 4),
+            AppTextField(key: const Key('long'), controller: long, minLines: 1, maxLines: 4),
+          ],
+        ),
+      ),
+    );
+
+    // Act
+    double heightOf(String key) => tester.getSize(find.byKey(Key(key))).height;
+    final single = heightOf('single');
+    final empty = heightOf('empty');
+    final grown = heightOf('long');
+    final cap = tester.widget<TextField>(
+      find.descendant(of: find.byKey(const Key('long')), matching: find.byType(TextField)),
+    );
+
+    // Assert
+    expect(empty, single);
+    expect(grown, greaterThan(single));
+    expect(cap.maxLines, 4);
+  });
 }

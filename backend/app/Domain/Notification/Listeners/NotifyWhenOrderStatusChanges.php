@@ -116,7 +116,18 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
             OrderStatus::Designing,
             OrderStatus::Printing,
             OrderStatus::Manufacturing,
-            OrderStatus::Shortage => false,
+            OrderStatus::Shortage,
+
+            // **The intake pair is silent, and it is the line above that says so.** A bell is
+            // for work somebody is in the middle of; nobody is in the middle of a request. It
+            // was never accepted, no goods were reserved against it and no bench was booked for
+            // it — so refusing one interrupts nothing, and putting one back in the queue is the
+            // reviewer's own move on the reviewer's own screen.
+            //
+            // Both are reachable here only because a refusal can be undone: «بانتظار المراجعة»
+            // used to be a status nothing led to.
+            OrderStatus::Requested,
+            OrderStatus::RequestRejected => false,
         };
     }
 }

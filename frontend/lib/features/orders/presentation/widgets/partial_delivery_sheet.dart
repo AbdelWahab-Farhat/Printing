@@ -138,14 +138,14 @@ class _LineBlock extends StatelessWidget {
   /// قيمة البند لو أخذ الزبون كلّ ما كان مستحقّاً له — انظر شرح [showPartialDeliverySheet].
   String get _priceBefore => multiplyToMoney(
     addDecimals(item.billableQuantity ?? item.quantity, item.undeliveredQuantity ?? '0'),
-    item.unitPrice,
+    item.unitPriceOrZero,
   );
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final before = _priceBefore;
-    final after = item.lineTotal;
+    final after = item.lineTotalOrZero;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

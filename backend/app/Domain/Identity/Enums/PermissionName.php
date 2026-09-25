@@ -64,6 +64,17 @@ enum PermissionName: string
 
     // Delivery map — cities and the regions inside them share one pair: a region is never
     // administered by anyone who is not also administering its city.
+    // The home screen's banners. **One permission, not a view/manage pair**, because nobody
+    // reads this list except to change it — the customer app's own endpoint carries no
+    // permission at all, and staff have no screen that merely displays posters.
+    case ManageBillboards = 'billboards.manage';
+
+    // The support desk. A view/manage pair, unlike billboards: reading what customers are asking
+    // is something a whole shift may need while answering them is a job, and the business
+    // composes the two however it likes.
+    case ViewSupportTickets = 'support.view';
+    case ManageSupportTickets = 'support.manage';
+
     case ViewDeliveryLocations = 'cities.view';
     case ManageDeliveryLocations = 'cities.manage';
 
@@ -368,6 +379,9 @@ enum PermissionName: string
             self::ViewProducts => 'عرض المنتجات والأسعار',
             self::ManageProducts => 'إضافة وتعديل المنتجات والأسعار',
             self::ViewProductCost => 'عرض سعر تكلفة المنتجات الوسيطة',
+            self::ManageBillboards => 'إدارة لوحة الإعلانات في تطبيق العميل',
+            self::ViewSupportTickets => 'عرض تذاكر الدعم',
+            self::ManageSupportTickets => 'الرد على التذاكر وإسنادها وإغلاقها',
             self::ViewDeliveryLocations => 'عرض مدن ومناطق التوصيل',
             self::ManageDeliveryLocations => 'إضافة وتعديل مدن ومناطق التوصيل',
             self::ViewShippingCompanies => 'عرض شركات التوصيل',
@@ -459,6 +473,7 @@ enum PermissionName: string
             self::ModerateComments => 'الملاحظات',
             self::ViewBusinessFields, self::ManageBusinessFields => 'مجالات العمل',
             self::ViewProducts, self::ManageProducts, self::ViewProductCost => 'المنتجات',
+            self::ManageBillboards, self::ViewSupportTickets, self::ManageSupportTickets => 'تطبيق العميل',
             self::ViewDeliveryLocations, self::ManageDeliveryLocations => 'مدن ومناطق التوصيل',
             self::ViewShippingCompanies, self::ManageShippingCompanies => 'شركات التوصيل',
             self::ViewCarrierParcels, self::ManageCarrierParcels => 'شحنات نورس',

@@ -47,12 +47,14 @@ When the environment is production:
 | API auth | **Sanctum** personal access tokens (Bearer) |
 | API spec | **Scramble** → OpenAPI 3.1, generated from code |
 | Tests | **PHPUnit** (not Pest — a deliberate choice, keep it) |
+| Realtime | **Reverb** (WebSockets, Pusher protocol) — تذاكر الدعم حيّة؛ انظر [SUPPORT-REALTIME.md](../Docs/support/SUPPORT-REALTIME.md) |
 | Style | **Laravel Pint**, the single source of style truth |
 | Tooling | Laravel Boost (MCP), Pail, Tinker |
 
 Adopt only when a real requirement calls for it: `spatie/laravel-permission` (RBAC), Filament
-(admin UI), Redis + Horizon (queues at scale), Reverb (websockets). **Every dependency is a
-decision — justify it.**
+(admin UI), Redis + Horizon (queues at scale). **Every dependency is a decision — justify it.**
+Reverb was on this list until 2026-09-25, when live support conversations became the real
+requirement — the justification is §١ of the realtime doc linked in the table above.
 
 ### Commands
 

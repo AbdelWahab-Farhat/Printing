@@ -242,6 +242,20 @@ class OrderStatusTest extends TestCase
                 continue;
             }
 
+            // «بانتظار المراجعة» sits *before* the walk begins rather than on any road: it is
+            // where an order from the app is created, and `reachableOn()` starts from «جديدة».
+            // An order already moving can never return to it, which is the point of it.
+            if ($status === OrderStatus::Requested) {
+                continue;
+            }
+
+            // «رُفض الطلب» for the same reason, and it is the other half of the same pair: the
+            // only way into it is from «بانتظار المراجعة», which is where the walk has not
+            // started. Refusing a request is intake's work, not a road an order travels.
+            if ($status === OrderStatus::RequestRejected) {
+                continue;
+            }
+
             $this->assertContains(
                 $status,
                 $shortRoad,
@@ -647,12 +661,19 @@ class OrderStatusTest extends TestCase
         // transit are physically outside the building, so they come back to «راجع مكتب» first
         // and are cancelled from there; «تم الاستلام» is past the point of being written off —
         // it is settled or it is disputed, not cancelled.
+        //
+        // **And the intake pair, which is a different rule wearing the same shape.** «بانتظار
+        // المراجعة» and «رُفض الطلب» reach no cancellation because an order nobody accepted has
+        // nothing to write off — it is *refused*, which is its own status and its own reason
+        // column. See {@see OrderStatus::RequestRejected}.
         $this->assertEqualsCanonicalizing([
             OrderStatus::New->value,
             OrderStatus::OutForDelivery->value,
             OrderStatus::ReturnedCourier->value,
             OrderStatus::ReturnedCarrier->value,
             OrderStatus::Delivered->value,
+            OrderStatus::Requested->value,
+            OrderStatus::RequestRejected->value,
         ], $withoutCancel);
     }
 
@@ -726,7 +747,7 @@ class OrderStatusTest extends TestCase
 
     // ─────────────────────────────── what a move records ───────────────────────────────
 
-    public function test_only_writing_an_order_off_demands_an_explanation(): void
+    public function test_only_ending_an_order_against_the_customer_demands_an_explanation(): void
     {
         // Act
         $demanding = array_values(array_filter(
@@ -734,8 +755,14 @@ class OrderStatusTest extends TestCase
             fn (OrderStatus $s) => $s->requiresReason(),
         ));
 
-        // Assert
-        $this->assertSame([OrderStatus::Cancelled], $demanding);
+        // Assert — two, and they are the two moves that end an order *against* what the
+        // customer asked for. Everything else is ordinary work whose reason is the status
+        // itself, and demanding a sentence for each would fill a column with "ok".
+        //
+        // «رُفض الطلب» earns it more plainly than «إلغاء تام» does: the sentence is the shop's
+        // answer to the person who placed the order, and it travels to their phone. A refusal
+        // with nothing attached reaches them as a door shut without a word.
+        $this->assertSame([OrderStatus::Cancelled, OrderStatus::RequestRejected], $demanding);
     }
 
     public function test_each_milestone_stamps_its_own_column(): void
@@ -800,11 +827,14 @@ class OrderStatusTest extends TestCase
         // waiting on and «عربون مدفوع» is money that arrived and work nobody has started, but a
         // board opens on what the shop has, and most orders never walk that road at all.
         $this->assertSame([
+            // Alone at the head, and drawn full width rather than paired: it is the only card
+            // here that is not the workshop's work but a decision about whether work begins,
+            // and its reader is whoever reviews what the customer app sent.
+            'requested',
             'new', 'shortage',
             'awaiting_deposit', 'deposit_paid',
             'designing', 'ready_to_print',
             'printing', 'manufacturing',
-            'ready',
         ], $opening);
     }
 
@@ -878,9 +908,16 @@ class OrderStatusTest extends TestCase
         }
 
         // Act
+        // **«بانتظار المراجعة» joins «جديدة» as a status nothing leads to, and that is the
+        // whole of what it is.** Both are doors an order is *created* at rather than moved to:
+        // the clerk's and the customer's. Nothing in the map produces either, which is what
+        // keeps «has anyone looked at this?» answerable — an order cannot fall back into the
+        // review queue once somebody has accepted it.
+        $entryPoints = [OrderStatus::Requested, OrderStatus::New];
+
         $orphans = array_values(array_filter(
             OrderStatus::cases(),
-            fn (OrderStatus $s) => $s !== OrderStatus::New && ! isset($reachable[$s->value]),
+            fn (OrderStatus $s) => ! in_array($s, $entryPoints, true) && ! isset($reachable[$s->value]),
         ));
 
         // Assert — a status nothing leads to is dead code wearing a business name.
@@ -898,9 +935,43 @@ class OrderStatusTest extends TestCase
             }
         }
 
-        // Assert — `new` is the entry point and nothing may return to it, so "has this order
-        // been started?" stays answerable.
-        $this->assertArrayNotHasKey(OrderStatus::New->value, $reachable);
+        // Assert — **exactly one thing leads to «بانتظار المراجعة», and it is the refusal.**
+        //
+        // This rule used to read "nothing leads here at all", and the reason it gave still
+        // stands word for word: an order that could fall back into the review queue *after
+        // being accepted* would make «هل نظر أحد في هذه؟» unanswerable. What changed is that
+        // «رُفض الطلب» is not an order that was accepted — it is one refused at the door, and
+        // undoing that refusal puts it back in the queue it never left. Nothing was reserved,
+        // nothing was promised, and no acceptance is being walked back.
+        //
+        // So the invariant is narrowed rather than dropped, and narrowed it says *more* than it
+        // did: the way back exists, and there is precisely one of it.
+        $leadingToRequested = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::Requested, $s->allowedNext(), true),
+        ));
+
+        $this->assertSame([OrderStatus::RequestRejected], $leadingToRequested);
+
+        // And the half that matters most: **nothing an order reaches after acceptance can send
+        // it back to the queue.** Walked from «جديدة» rather than asserted status by status, so
+        // a future arm added three moves downstream cannot quietly open a road back.
+        $this->assertNotContains(
+            OrderStatus::Requested,
+            self::reachableOn(OrderFlow::Standard),
+            'an accepted order found its way back into the review queue',
+        );
+
+        // And «جديدة» is reached from exactly one place: the review queue being accepted. It
+        // was once reached from nowhere at all, which is the sentence this test used to carry.
+        // What survives of that rule is the part that mattered — nothing *inside* the workshop
+        // returns an order to «جديدة», so it still means «verified, not started».
+        $leadingToNew = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::New, $s->allowedNext(), true),
+        ));
+
+        $this->assertSame([OrderStatus::Requested], $leadingToNew);
     }
 
     public function test_can_move_to_agrees_with_the_map_for_every_pair(): void

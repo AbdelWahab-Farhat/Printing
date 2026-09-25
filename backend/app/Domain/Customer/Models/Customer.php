@@ -10,16 +10,21 @@ use App\Domain\Comment\Concerns\HasComments;
 use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Actions\AllocateCustomerIdentifier;
+use App\Domain\Identity\Models\User;
 use Database\Factories\CustomerFactory;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
- * A customer of the printing business.
+ * A customer of the printing business — and, when they install the app, an account that signs in.
  *
  * `code` is deliberately absent from the fillable list: it is allocated by
  * {@see AllocateCustomerIdentifier} and must never be
@@ -27,14 +32,45 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * Soft deleting does not change the standing rule that a customer is *deactivated*, never
  * deleted — there is still no destroy route. It is the floor under that rule: if one is ever
- * removed, by a console command or a future endpoint, the row and its history survive.
+ * removed, by a console command or a future endpoint, the row and its history survive. It is
+ * also what makes a removed customer stop authenticating the same instant: the global scope
+ * applies to the provider's token lookup, so no line of auth code has to check for it.
+ *
+ * **Authenticatable, but deliberately not Authorizable.** The obvious move is to extend
+ * `Illuminate\Foundation\Auth\User` the way {@see User} does. That
+ * class carries the `Authorizable` trait, which would give this model a `can()` — and
+ * `AppServiceProvider::boot()` registers `Gate::before(fn (User $user) => ...)`, type-hinted on
+ * the employee model. A `Customer` reaching that closure is a `TypeError`, i.e. a 500 from
+ * whatever resource happened to ask. Taking the bare `Authenticatable` contract instead means a
+ * customer has no `can()` at all, so the mistake is a missing method at the call site rather than
+ * a crash in production — and the rule it enforces is the real one: **a customer is never
+ * authorised, only identified.** Client resources must never ask the gate anything.
+ *
+ * `HasApiTokens` issues ordinary personal access tokens from the same table the staff app uses.
+ * What keeps the two apart is the `customer` guard's provider in config/auth.php, not the token.
  */
 #[UseFactory(CustomerFactory::class)]
 #[Fillable(['name', 'phone', 'is_active'])]
-class Customer extends Model implements Commentable, HasAuditTrail
+#[Hidden(['password'])]
+class Customer extends Model implements Authenticatable, Commentable, HasAuditTrail
 {
     /** @use HasFactory<CustomerFactory> */
-    use Auditable, HasComments, HasFactory, SoftDeletes;
+    use Auditable, AuthenticatableTrait, HasApiTokens, HasComments, HasFactory, SoftDeletes;
+
+    /**
+     * Remember tokens belong to session authentication, and this account only ever arrives
+     * holding a Sanctum token.
+     *
+     * Overridden as a method rather than by redeclaring the trait's `$rememberTokenName`
+     * property — PHP refuses that composition outright, because the trait already defines it.
+     * An empty name is what `Authenticatable::getRememberToken()` checks for, so the whole
+     * mechanism switches off and nothing reaches for a `remember_token` column the migration
+     * deliberately did not add.
+     */
+    public function getRememberTokenName(): string
+    {
+        return '';
+    }
 
     /**
      * Everything {@see CustomerShopResource} renders about a shop.
@@ -54,6 +90,10 @@ class Customer extends Model implements Commentable, HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
+            // Hashed on the way in, so no caller can store a plaintext password by forgetting to
+            // hash it — the same guard `User` relies on. `password` is absent from the fillable
+            // list as well: it is set by the two actions that own it and by nothing else.
+            'password' => 'hashed',
             // Not a column: {@see \App\Domain\Customer\Queries\CustomerListQuery} selects it as
             // a subquery when the list is sorted by it, and a cast is what turns the string the
             // driver hands back into the date the resource formats. Absent on every other path,

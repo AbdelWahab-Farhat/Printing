@@ -778,8 +778,16 @@ abstract class OrderItem with _$OrderItem {
     /// counted.
     @JsonKey(name: 'warehouse_quantity') String? warehouseQuantity,
 
-    @JsonKey(name: 'unit_price') required String unitPrice,
-    @JsonKey(name: 'line_total') required String lineTotal,
+    /// **Null on a line nobody has priced yet**, which happens in exactly one place: a request
+    /// from the app for a product the catalogue prices «حسب الطلب». The customer is never shown
+    /// a price for such a product and cannot send one, so the line arrives blank and the
+    /// reviewer names the figure on the move that accepts it — see `TransitionFields`.
+    ///
+    /// Null rather than `'0.00'` all the way down: a zero here would be a line that reads as
+    /// free, and the whole point of the column being nullable is that the two are different
+    /// facts. Every screen below draws [awaitingQuoteLabel] where the number would be.
+    @JsonKey(name: 'unit_price') String? unitPrice,
+    @JsonKey(name: 'line_total') String? lineTotal,
 
     /// The accrual side of [lineTotal]: what this line cost to make, split three ways and
     /// summed. **All four null until the line has reached «جاهزة»** — a line nobody has
@@ -884,6 +892,26 @@ abstract class OrderItem with _$OrderItem {
   /// figure: that is a server that was charging for the whole line, and guessing otherwise would
   /// draw a free order.
   String get pricedQuantity => billableQuantity ?? quantity;
+
+  /// Whether this line has a price at all — see [unitPrice].
+  bool get isPriced => unitPrice != null;
+
+  /// The price, for the screens an unpriced line cannot reach.
+  ///
+  /// **The invariant these lean on, written once here rather than as `?? '0'` scattered across
+  /// six files.** A line with no price exists only on a request sitting in «بانتظار المراجعة»:
+  /// the server refuses to let one leave that status, and collects the missing figures on the
+  /// move that accepts it. So the partial-delivery sheet, the shortages sheet and the invoice
+  /// editor — all of which live far downstream of «جديدة» — are unreachable with one.
+  ///
+  /// Zero is the fallback because these are *arithmetic* sites: a line drawn as worth nothing is
+  /// visibly wrong to whoever is looking at it, where a thrown exception in a build would take
+  /// the screen down instead. Screens that merely *display* a price use [awaitingQuoteLabel] and
+  /// say the honest thing.
+  String get unitPriceOrZero => unitPrice ?? '0';
+
+  /// The line's value, under the same invariant as [unitPriceOrZero].
+  String get lineTotalOrZero => lineTotal ?? '0';
 }
 
 /// One version of the artwork, and what the customer said about it.

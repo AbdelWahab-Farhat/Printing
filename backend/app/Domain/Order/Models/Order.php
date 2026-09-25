@@ -183,6 +183,7 @@ class Order extends Model implements HasAuditTrail
             'settled_at' => 'datetime',
             'returned_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'request_rejected_at' => 'datetime',
         ];
     }
 
@@ -703,6 +704,19 @@ class Order extends Model implements HasAuditTrail
      * side of the move, which is why {@see ChangeOrderStatus} writes the status before the
      * attachment in one direction and after it in the other.
      *
+     * **«بانتظار المراجعة» accepts one because it is «جديدة» seen from the other door.** An
+     * order a clerk types in is born «جديدة» and may carry the customer's file at that moment;
+     * the same order arriving from the app is born «بانتظار المراجعة» — see {@see RequestOrder},
+     * where the *only* difference is the status it opens in — and it carries the file for the
+     * same reason and by the same code path in {@see CreateOrder}. Leaving it off this list did
+     * not make requests safer, it made them impossible: every order sent from the app with a
+     * design attached was refused by {@see AddOrderDesign} before it could be reviewed, which is
+     * the one thing the designs library exists to let a customer do.
+     *
+     * The status is more cautious than «جديدة» about what the *shop* may do next — nothing has
+     * been verified yet — and that caution belongs in the transitions, not here. Artwork is not
+     * a move on the order; it is what the customer already had in hand.
+     *
      * **A different line from {@see itemsAreEditable()}, deliberately.** A quantity is a number
      * the shop floor can still act on; a design is a decision that has already been acted on.
      */
@@ -710,9 +724,33 @@ class Order extends Model implements HasAuditTrail
     {
         return in_array(
             $this->status,
-            [OrderStatus::New, OrderStatus::ReadyToPrint, OrderStatus::Designing],
+            [
+                OrderStatus::Requested,
+                OrderStatus::New,
+                OrderStatus::ReadyToPrint,
+                OrderStatus::Designing,
+            ],
             true,
         );
+    }
+
+    /**
+     * Whether any line is still waiting to be quoted.
+     *
+     * **The one question every money reader must ask of an order in «بانتظار المراجعة».** A
+     * product priced «حسب الطلب» reaches this API from the customer app with no price — the app
+     * is never told one and must not invent one — so the line is written null and the shop names
+     * the figure on the move that accepts the request.
+     *
+     * While that is true the order's `items_total` and `grand_total` are understatements, and
+     * the resources send null instead of them rather than show a customer a total that is not
+     * the price. {@see \App\Domain\Order\Actions\RecalculateOrderTotals} explains why the stored
+     * columns are allowed to be wrong, and {@see \App\Domain\Order\Actions\ChangeOrderStatus}
+     * is what keeps the wrongness confined to a status nothing bills from.
+     */
+    public function hasUnpricedLines(): bool
+    {
+        return $this->items->contains(fn (OrderItem $item) => ! $item->isPriced());
     }
 
     /**

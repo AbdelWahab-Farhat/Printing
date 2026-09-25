@@ -266,6 +266,29 @@ final class TransitionField
     }
 
     /**
+     * The outside workshop making this order.
+     *
+     * No options travel with it — see {@see TransitionFieldType::Vendor} — and no default
+     * either, unlike the carrier: there is no «الوسيط المعتاد», because which vendor makes a job
+     * depends on the job. An empty box that suggests nothing is honest; one that suggests the
+     * last vendor used would be a guess somebody taps past.
+     */
+    public static function vendor(
+        string $key,
+        string $label,
+        bool $required = false,
+        ?string $hint = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Vendor,
+            label: $label,
+            required: $required,
+            hint: $hint,
+        );
+    }
+
+    /**
      * A warehouse, chosen from the ones the business maintains.
      *
      * No options travel with it — see {@see TransitionFieldType::Warehouse}.
@@ -408,6 +431,16 @@ final class TransitionField
                 ],
             ],
 
+            // withoutTrashed, exactly as the carrier above: a vendor removed from the list may
+            // not be given new work, which is the same answer the picker gives.
+            TransitionFieldType::Vendor => [
+                "fields.{$this->key}" => [
+                    $presence,
+                    'integer',
+                    Rule::exists('vendors', 'id')->withoutTrashed(),
+                ],
+            ],
+
             // whereNull('deleted_at'), the same exists-rule purchase orders already use for a
             // warehouse: a deleted one may not be chosen for a new deduction.
             TransitionFieldType::Warehouse => [
@@ -459,6 +492,10 @@ final class TransitionField
             TransitionFieldType::ShippingCompany => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",
                 "fields.{$this->key}.exists" => 'شركة التوصيل المختارة غير موجودة',
+            ],
+            TransitionFieldType::Vendor => [
+                "fields.{$this->key}.required" => 'قبول الطلبية يتطلب تحديد الوسيط الذي سيصنعها',
+                "fields.{$this->key}.exists" => 'الوسيط المختار غير موجود',
             ],
             TransitionFieldType::Warehouse => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",

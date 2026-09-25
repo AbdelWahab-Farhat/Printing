@@ -42,6 +42,7 @@ use App\Domain\Investor\Models\InvestorDealItem;
 use App\Domain\Investor\Models\InvestorDealShare;
 use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Marketing\Models\Billboard;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
@@ -56,6 +57,8 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Settings\Models\CompanySetting;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Shortage\Models\ShortageSupply;
+use App\Domain\Support\Models\SupportTicket;
+use App\Domain\Support\Models\TicketMessage;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
@@ -162,6 +165,13 @@ enum AuditSubject: string
     case DesignTicket = 'design_ticket';
     case DesignTicketFile = 'design_ticket_file';
 
+    // What the shop shows its customers
+    case Billboard = 'billboard';
+
+    // What the customer says to the shop
+    case SupportTicket = 'support_ticket';
+    case TicketMessage = 'ticket_message';
+
     // Company-wide settings
     case CompanySetting = 'company_setting';
 
@@ -234,6 +244,9 @@ enum AuditSubject: string
             self::DesignTicket => DesignTicket::class,
             self::DesignTicketFile => DesignTicketFile::class,
             self::ShortageSupply => ShortageSupply::class,
+            self::Billboard => Billboard::class,
+            self::SupportTicket => SupportTicket::class,
+            self::TicketMessage => TicketMessage::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
         };
@@ -298,6 +311,9 @@ enum AuditSubject: string
             self::DesignTicket => 'تذكرة تصميم',
             self::DesignTicketFile => 'ملف تذكرة تصميم',
             self::ShortageSupply => 'عملية توفير',
+            self::Billboard => 'لوحة إعلانات',
+            self::SupportTicket => 'تذكرة دعم',
+            self::TicketMessage => 'رسالة تذكرة',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',
         };

@@ -111,8 +111,12 @@ class OrderItemResource extends JsonResource
             // subtrahends rather than one.
             'billable_quantity' => $this->billableQuantity(),
 
-            'unit_price' => (string) $this->unit_price,
-            'line_total' => (string) $this->line_total,
+            // **Null, not `''`.** A line on a request for something priced «حسب الطلب» has no
+            // price until the reviewer quotes it on the accept — see
+            // {@see \App\Domain\Order\Actions\AddOrderItem}. Casting null to a string sent
+            // an empty string to the app, which is neither a number nor an honest absence.
+            'unit_price' => $this->unit_price === null ? null : (string) $this->unit_price,
+            'line_total' => $this->line_total === null ? null : (string) $this->line_total,
 
             'notes' => $this->notes,
             'sort_order' => $this->sort_order,

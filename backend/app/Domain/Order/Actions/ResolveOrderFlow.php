@@ -41,7 +41,15 @@ final class ResolveOrderFlow
         //
         // Which road an order walks is a decision taken when it is taken. After that it is
         // history, exactly like the city name beside it.
-        if ($order->status !== OrderStatus::New) {
+        //
+        // **«بانتظار المراجعة» is admitted beside «جديدة», because the guard is about work
+        // having *started*, not about the status being «جديدة».** A request from the customer
+        // app has not started: its lines are not editable either, and nothing has been weighed
+        // or queued. Resolving its road at intake is what lets the review screen say «هذه
+        // تحتاج وسيطاً» before anybody accepts it — without it the order would sit on the
+        // default road, and the vendor it needs would be discovered at the moment of
+        // acceptance, by a refusal.
+        if (! in_array($order->status, [OrderStatus::New, OrderStatus::Requested], true)) {
             return $order;
         }
 

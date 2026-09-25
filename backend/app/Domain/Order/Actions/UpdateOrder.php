@@ -9,6 +9,7 @@ use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
@@ -139,7 +140,14 @@ final class UpdateOrder
             // order still in «جديدة» does exactly that — and an order that arrived there with no
             // vendor named would be one nobody could chase. Refused whole, inside the
             // transaction, so the lines are not left rewritten around a hole.
-            if ($order->production_flow->needsAVendor() && $order->vendor_id === null) {
+            //
+            // **And skipped for a request under review, for the reason `CreateOrder` skips it.**
+            // Staff correcting an address on something the customer app sent must not be refused
+            // because they have not yet decided who will make it. The rule binds once, at
+            // acceptance, in `ChangeOrderStatus`.
+            if ($order->status !== OrderStatus::Requested
+                && $order->production_flow->needsAVendor()
+                && $order->vendor_id === null) {
                 throw OutsourcedOrderNeedsAVendor::make();
             }
 

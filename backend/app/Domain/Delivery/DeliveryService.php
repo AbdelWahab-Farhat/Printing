@@ -25,6 +25,7 @@ use App\Domain\Delivery\Queries\RegionListQuery;
 use App\Domain\Delivery\Queries\ShippingCompanyFilters;
 use App\Domain\Delivery\Queries\ShippingCompanyListQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * The Delivery module's public front door.
@@ -56,6 +57,25 @@ class DeliveryService
     public function paginateCities(CityFilters $filters, int $perPage = 15): LengthAwarePaginator
     {
         return ($this->cityListQuery)($filters, $perPage);
+    }
+
+    /**
+     * Everywhere an order can be sent, with the regions inside each one.
+     *
+     * **Not paged, and not filtered.** This is the customer app's destination picker, which is
+     * one screen that has to contain every answer — a paged picker is a picker somebody scrolls
+     * off the end of and concludes we do not deliver to their city. The list is a country's
+     * worth of places and a handful of neighbourhoods each; it is loaded once and kept.
+     *
+     * Ordered by id for the reason `CityListQuery` is: insertion order *is* the business's
+     * order, the office-pickup branches were seeded first and belong at the top, and sorting
+     * Arabic names alphabetically depends on the database's collation.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, City>
+     */
+    public function deliveryMap(): \Illuminate\Database\Eloquent\Collection
+    {
+        return City::query()->with('regions')->orderBy('id')->get();
     }
 
     /**

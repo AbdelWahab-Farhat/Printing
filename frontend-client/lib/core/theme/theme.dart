@@ -1,389 +1,307 @@
-import "package:flutter/material.dart";
+import 'package:flutter/material.dart';
 
+/// The app's palette.
+///
+/// **Not a Material Theme Builder export, and that is the one deliberate departure from
+/// RULES §7.** The staff app's `theme.dart` is generated from a seed colour and replaced
+/// wholesale; this one is written from the design's own hexes, because the design *has* them and
+/// a seed would only approximate them. Feeding `#F4622A` to the generator produces a warm grey
+/// dark scheme, not the navy the mockup is built on — the surfaces are a second decision the
+/// designer made, and a seed cannot carry it.
+///
+/// The rule the generated file exists to protect still holds and still matters: **no screen in
+/// this app writes a `Color(0xff…)`.** Every hex in the product lives here, once. Changing the
+/// palette is changing this file and nothing else.
+///
+/// The mapping, so the next person can check it against the design rather than guess:
+///
+/// | Design | Role |
+/// |---|---|
+/// | `#0F2138` page background | `surface` |
+/// | `#132A43` nav bar, raised strip | `surfaceContainerLow` |
+/// | `#16304A` cards, chips | `surfaceContainer` |
+/// | `#1D3C5A` | `surfaceContainerHigh` |
+/// | `#24425F` card borders | `surfaceContainerHighest`, `outlineVariant` |
+/// | `#E8EEF5` body text | `onSurface` |
+/// | `#8FA3BA` secondary text | `onSurfaceVariant` |
+/// | `#F4622A` buttons, selected chips, active tab | `primary` |
+///
+/// **`primaryContainer` is the solid orange, not a muted tone.** Material's convention is a
+/// desaturated container behind `onPrimaryContainer` text, but the design fills a selected chip
+/// with `#F4622A` and puts white on it — and selected chips are the most common use of the pair
+/// in this app. Following the convention here would mean every chip in the app disagreeing with
+/// every chip in the design.
 class MaterialTheme {
-  final TextTheme textTheme;
-
   const MaterialTheme(this.textTheme);
 
-  static ColorScheme lightScheme() {
-    return const ColorScheme(
-      brightness: Brightness.light,
-      primary: Color(0xff006a69),
-      surfaceTint: Color(0xff006a69),
-      onPrimary: Color(0xffffffff),
-      primaryContainer: Color(0xff9cf1ef),
-      onPrimaryContainer: Color(0xff00504f),
-      secondary: Color(0xff4a6362),
-      onSecondary: Color(0xffffffff),
-      secondaryContainer: Color(0xffcce8e6),
-      onSecondaryContainer: Color(0xff324b4a),
-      tertiary: Color(0xff4a607c),
-      onTertiary: Color(0xffffffff),
-      tertiaryContainer: Color(0xffd2e4ff),
-      onTertiaryContainer: Color(0xff334863),
-      error: Color(0xffba1a1a),
-      onError: Color(0xffffffff),
-      errorContainer: Color(0xffffdad6),
-      onErrorContainer: Color(0xff93000a),
-      surface: Color(0xfff4fbfa),
-      onSurface: Color(0xff161d1c),
-      onSurfaceVariant: Color(0xff3f4948),
-      outline: Color(0xff6f7978),
-      outlineVariant: Color(0xffbec9c8),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xff2b3231),
-      inversePrimary: Color(0xff80d5d3),
-      primaryFixed: Color(0xff9cf1ef),
-      onPrimaryFixed: Color(0xff00201f),
-      primaryFixedDim: Color(0xff80d5d3),
-      onPrimaryFixedVariant: Color(0xff00504f),
-      secondaryFixed: Color(0xffcce8e6),
-      onSecondaryFixed: Color(0xff051f1f),
-      secondaryFixedDim: Color(0xffb0ccca),
-      onSecondaryFixedVariant: Color(0xff324b4a),
-      tertiaryFixed: Color(0xffd2e4ff),
-      onTertiaryFixed: Color(0xff031c35),
-      tertiaryFixedDim: Color(0xffb2c8e8),
-      onTertiaryFixedVariant: Color(0xff334863),
-      surfaceDim: Color(0xffd5dbda),
-      surfaceBright: Color(0xfff4fbfa),
-      surfaceContainerLowest: Color(0xffffffff),
-      surfaceContainerLow: Color(0xffeff5f4),
-      surfaceContainer: Color(0xffe9efee),
-      surfaceContainerHigh: Color(0xffe3e9e8),
-      surfaceContainerHighest: Color(0xffdde4e3),
-    );
-  }
+  final TextTheme textTheme;
 
-  ThemeData light() {
-    return theme(lightScheme());
-  }
+  /// The design's palette — the appearance the mockup was drawn in.
+  static const ColorScheme darkScheme = ColorScheme(
+    brightness: Brightness.dark,
 
-  static ColorScheme lightMediumContrastScheme() {
-    return const ColorScheme(
-      brightness: Brightness.light,
-      primary: Color(0xff003d3d),
-      surfaceTint: Color(0xff006a69),
-      onPrimary: Color(0xffffffff),
-      primaryContainer: Color(0xff177978),
-      onPrimaryContainer: Color(0xffffffff),
-      secondary: Color(0xff213a3a),
-      onSecondary: Color(0xffffffff),
-      secondaryContainer: Color(0xff587271),
-      onSecondaryContainer: Color(0xffffffff),
-      tertiary: Color(0xff213751),
-      onTertiary: Color(0xffffffff),
-      tertiaryContainer: Color(0xff596f8b),
-      onTertiaryContainer: Color(0xffffffff),
-      error: Color(0xff740006),
-      onError: Color(0xffffffff),
-      errorContainer: Color(0xffcf2c27),
-      onErrorContainer: Color(0xffffffff),
-      surface: Color(0xfff4fbfa),
-      onSurface: Color(0xff0c1212),
-      onSurfaceVariant: Color(0xff2e3838),
-      outline: Color(0xff4a5454),
-      outlineVariant: Color(0xff656f6e),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xff2b3231),
-      inversePrimary: Color(0xff80d5d3),
-      primaryFixed: Color(0xff177978),
-      onPrimaryFixed: Color(0xffffffff),
-      primaryFixedDim: Color(0xff005f5e),
-      onPrimaryFixedVariant: Color(0xffffffff),
-      secondaryFixed: Color(0xff587271),
-      onSecondaryFixed: Color(0xffffffff),
-      secondaryFixedDim: Color(0xff405959),
-      onSecondaryFixedVariant: Color(0xffffffff),
-      tertiaryFixed: Color(0xff596f8b),
-      onTertiaryFixed: Color(0xffffffff),
-      tertiaryFixedDim: Color(0xff415671),
-      onTertiaryFixedVariant: Color(0xffffffff),
-      surfaceDim: Color(0xffc1c8c7),
-      surfaceBright: Color(0xfff4fbfa),
-      surfaceContainerLowest: Color(0xffffffff),
-      surfaceContainerLow: Color(0xffeff5f4),
-      surfaceContainer: Color(0xffe3e9e8),
-      surfaceContainerHigh: Color(0xffd8dedd),
-      surfaceContainerHighest: Color(0xffccd3d2),
-    );
-  }
+    primary: Color(0xfff4622a),
+    onPrimary: Color(0xffffffff),
+    // Solid, for the reason in the class doc — a selected chip is `#F4622A` with white on it.
+    primaryContainer: Color(0xfff4622a),
+    onPrimaryContainer: Color(0xffffffff),
 
-  ThemeData lightMediumContrast() {
-    return theme(lightMediumContrastScheme());
-  }
+    // The muted blue-grey the design uses for everything that is present but not shouting.
+    secondary: Color(0xffa9bcd1),
+    onSecondary: Color(0xff0f2138),
+    secondaryContainer: Color(0xff1d3c5a),
+    onSecondaryContainer: Color(0xffc6d6e6),
 
-  static ColorScheme lightHighContrastScheme() {
-    return const ColorScheme(
-      brightness: Brightness.light,
-      primary: Color(0xff003232),
-      surfaceTint: Color(0xff006a69),
-      onPrimary: Color(0xffffffff),
-      primaryContainer: Color(0xff005251),
-      onPrimaryContainer: Color(0xffffffff),
-      secondary: Color(0xff173030),
-      onSecondary: Color(0xffffffff),
-      secondaryContainer: Color(0xff344e4d),
-      onSecondaryContainer: Color(0xffffffff),
-      tertiary: Color(0xff172d46),
-      onTertiary: Color(0xffffffff),
-      tertiaryContainer: Color(0xff354b65),
-      onTertiaryContainer: Color(0xffffffff),
-      error: Color(0xff600004),
-      onError: Color(0xffffffff),
-      errorContainer: Color(0xff98000a),
-      onErrorContainer: Color(0xffffffff),
-      surface: Color(0xfff4fbfa),
-      onSurface: Color(0xff000000),
-      onSurfaceVariant: Color(0xff000000),
-      outline: Color(0xff242e2d),
-      outlineVariant: Color(0xff414b4a),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xff2b3231),
-      inversePrimary: Color(0xff80d5d3),
-      primaryFixed: Color(0xff005251),
-      onPrimaryFixed: Color(0xffffffff),
-      primaryFixedDim: Color(0xff003939),
-      onPrimaryFixedVariant: Color(0xffffffff),
-      secondaryFixed: Color(0xff344e4d),
-      onSecondaryFixed: Color(0xffffffff),
-      secondaryFixedDim: Color(0xff1e3736),
-      onSecondaryFixedVariant: Color(0xffffffff),
-      tertiaryFixed: Color(0xff354b65),
-      onTertiaryFixed: Color(0xffffffff),
-      tertiaryFixedDim: Color(0xff1e344d),
-      onTertiaryFixedVariant: Color(0xffffffff),
-      surfaceDim: Color(0xffb4bab9),
-      surfaceBright: Color(0xfff4fbfa),
-      surfaceContainerLowest: Color(0xffffffff),
-      surfaceContainerLow: Color(0xffecf2f1),
-      surfaceContainer: Color(0xffdde4e3),
-      surfaceContainerHigh: Color(0xffcfd6d5),
-      surfaceContainerHighest: Color(0xffc1c8c7),
-    );
-  }
+    // Warm amber, and the one colour not taken from the design: it carries «اطلب أكثر وينزل
+    // السعر», which has to read as a saving rather than as another orange call to action.
+    tertiary: Color(0xffe8a33d),
+    onTertiary: Color(0xff0f2138),
+    tertiaryContainer: Color(0xff5a4210),
+    onTertiaryContainer: Color(0xffffdfa8),
 
-  ThemeData lightHighContrast() {
-    return theme(lightHighContrastScheme());
-  }
+    error: Color(0xffffb4ab),
+    onError: Color(0xff690005),
+    errorContainer: Color(0xff93000a),
+    onErrorContainer: Color(0xffffdad6),
 
-  static ColorScheme darkScheme() {
-    return const ColorScheme(
-      brightness: Brightness.dark,
-      primary: Color(0xff80d5d3),
-      surfaceTint: Color(0xff80d5d3),
-      onPrimary: Color(0xff003736),
-      primaryContainer: Color(0xff00504f),
-      onPrimaryContainer: Color(0xff9cf1ef),
-      secondary: Color(0xffb0ccca),
-      onSecondary: Color(0xff1b3534),
-      secondaryContainer: Color(0xff324b4a),
-      onSecondaryContainer: Color(0xffcce8e6),
-      tertiary: Color(0xffb2c8e8),
-      onTertiary: Color(0xff1b324b),
-      tertiaryContainer: Color(0xff334863),
-      onTertiaryContainer: Color(0xffd2e4ff),
-      error: Color(0xffffb4ab),
-      onError: Color(0xff690005),
-      errorContainer: Color(0xff93000a),
-      onErrorContainer: Color(0xffffdad6),
-      surface: Color(0xff0e1514),
-      onSurface: Color(0xffdde4e3),
-      onSurfaceVariant: Color(0xffbec9c8),
-      outline: Color(0xff889392),
-      outlineVariant: Color(0xff3f4948),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xffdde4e3),
-      inversePrimary: Color(0xff006a69),
-      primaryFixed: Color(0xff9cf1ef),
-      onPrimaryFixed: Color(0xff00201f),
-      primaryFixedDim: Color(0xff80d5d3),
-      onPrimaryFixedVariant: Color(0xff00504f),
-      secondaryFixed: Color(0xffcce8e6),
-      onSecondaryFixed: Color(0xff051f1f),
-      secondaryFixedDim: Color(0xffb0ccca),
-      onSecondaryFixedVariant: Color(0xff324b4a),
-      tertiaryFixed: Color(0xffd2e4ff),
-      onTertiaryFixed: Color(0xff031c35),
-      tertiaryFixedDim: Color(0xffb2c8e8),
-      onTertiaryFixedVariant: Color(0xff334863),
-      surfaceDim: Color(0xff0e1514),
-      surfaceBright: Color(0xff343a3a),
-      surfaceContainerLowest: Color(0xff090f0f),
-      surfaceContainerLow: Color(0xff161d1c),
-      surfaceContainer: Color(0xff1a2120),
-      surfaceContainerHigh: Color(0xff252b2b),
-      surfaceContainerHighest: Color(0xff2f3636),
-    );
-  }
+    surface: Color(0xff0f2138),
+    onSurface: Color(0xffe8eef5),
+    onSurfaceVariant: Color(0xff8fa3ba),
+    surfaceTint: Color(0xfff4622a),
 
-  ThemeData dark() {
-    return theme(darkScheme());
-  }
+    surfaceDim: Color(0xff0a1826),
+    surfaceBright: Color(0xff2e5175),
+    surfaceContainerLowest: Color(0xff0a1826),
+    surfaceContainerLow: Color(0xff132a43),
+    surfaceContainer: Color(0xff16304a),
+    surfaceContainerHigh: Color(0xff1d3c5a),
+    surfaceContainerHighest: Color(0xff24425f),
 
-  static ColorScheme darkMediumContrastScheme() {
-    return const ColorScheme(
-      brightness: Brightness.dark,
-      primary: Color(0xff96ebe9),
-      surfaceTint: Color(0xff80d5d3),
-      onPrimary: Color(0xff002b2a),
-      primaryContainer: Color(0xff479e9c),
-      onPrimaryContainer: Color(0xff000000),
-      secondary: Color(0xffc6e2e0),
-      onSecondary: Color(0xff102a29),
-      secondaryContainer: Color(0xff7b9695),
-      onSecondaryContainer: Color(0xff000000),
-      tertiary: Color(0xffc8deff),
-      onTertiary: Color(0xff0f2740),
-      tertiaryContainer: Color(0xff7d92b0),
-      onTertiaryContainer: Color(0xff000000),
-      error: Color(0xffffd2cc),
-      onError: Color(0xff540003),
-      errorContainer: Color(0xffff5449),
-      onErrorContainer: Color(0xff000000),
-      surface: Color(0xff0e1514),
-      onSurface: Color(0xffffffff),
-      onSurfaceVariant: Color(0xffd4dedd),
-      outline: Color(0xffaab4b3),
-      outlineVariant: Color(0xff889291),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xffdde4e3),
-      inversePrimary: Color(0xff005150),
-      primaryFixed: Color(0xff9cf1ef),
-      onPrimaryFixed: Color(0xff001414),
-      primaryFixedDim: Color(0xff80d5d3),
-      onPrimaryFixedVariant: Color(0xff003d3d),
-      secondaryFixed: Color(0xffcce8e6),
-      onSecondaryFixed: Color(0xff001414),
-      secondaryFixedDim: Color(0xffb0ccca),
-      onSecondaryFixedVariant: Color(0xff213a3a),
-      tertiaryFixed: Color(0xffd2e4ff),
-      onTertiaryFixed: Color(0xff001226),
-      tertiaryFixedDim: Color(0xffb2c8e8),
-      onTertiaryFixedVariant: Color(0xff213751),
-      surfaceDim: Color(0xff0e1514),
-      surfaceBright: Color(0xff3f4645),
-      surfaceContainerLowest: Color(0xff040808),
-      surfaceContainerLow: Color(0xff181f1e),
-      surfaceContainer: Color(0xff232929),
-      surfaceContainerHigh: Color(0xff2d3433),
-      surfaceContainerHighest: Color(0xff383f3e),
-    );
-  }
+    // `outline` is what a border has to be *seen*; `outlineVariant` is the card hairline the
+    // design draws at `#24425F`.
+    outline: Color(0xff5b7a99),
+    outlineVariant: Color(0xff24425f),
 
-  ThemeData darkMediumContrast() {
-    return theme(darkMediumContrastScheme());
-  }
+    shadow: Color(0xff000000),
+    scrim: Color(0xff000000),
 
-  static ColorScheme darkHighContrastScheme() {
-    return const ColorScheme(
-      brightness: Brightness.dark,
-      primary: Color(0xffaafffd),
-      surfaceTint: Color(0xff80d5d3),
-      onPrimary: Color(0xff000000),
-      primaryContainer: Color(0xff7cd1cf),
-      onPrimaryContainer: Color(0xff000e0e),
-      secondary: Color(0xffd9f6f4),
-      onSecondary: Color(0xff000000),
-      secondaryContainer: Color(0xffadc8c7),
-      onSecondaryContainer: Color(0xff000e0e),
-      tertiary: Color(0xffe9f0ff),
-      onTertiary: Color(0xff000000),
-      tertiaryContainer: Color(0xffaec4e4),
-      onTertiaryContainer: Color(0xff000c1c),
-      error: Color(0xffffece9),
-      onError: Color(0xff000000),
-      errorContainer: Color(0xffffaea4),
-      onErrorContainer: Color(0xff220001),
-      surface: Color(0xff0e1514),
-      onSurface: Color(0xffffffff),
-      onSurfaceVariant: Color(0xffffffff),
-      outline: Color(0xffe8f2f1),
-      outlineVariant: Color(0xffbac5c4),
-      shadow: Color(0xff000000),
-      scrim: Color(0xff000000),
-      inverseSurface: Color(0xffdde4e3),
-      inversePrimary: Color(0xff005150),
-      primaryFixed: Color(0xff9cf1ef),
-      onPrimaryFixed: Color(0xff000000),
-      primaryFixedDim: Color(0xff80d5d3),
-      onPrimaryFixedVariant: Color(0xff001414),
-      secondaryFixed: Color(0xffcce8e6),
-      onSecondaryFixed: Color(0xff000000),
-      secondaryFixedDim: Color(0xffb0ccca),
-      onSecondaryFixedVariant: Color(0xff001414),
-      tertiaryFixed: Color(0xffd2e4ff),
-      onTertiaryFixed: Color(0xff000000),
-      tertiaryFixedDim: Color(0xffb2c8e8),
-      onTertiaryFixedVariant: Color(0xff001226),
-      surfaceDim: Color(0xff0e1514),
-      surfaceBright: Color(0xff4b5151),
-      surfaceContainerLowest: Color(0xff000000),
-      surfaceContainerLow: Color(0xff1a2120),
-      surfaceContainer: Color(0xff2b3231),
-      surfaceContainerHigh: Color(0xff363d3c),
-      surfaceContainerHighest: Color(0xff414848),
-    );
-  }
-
-  ThemeData darkHighContrast() {
-    return theme(darkHighContrastScheme());
-  }
-
-
-  ThemeData theme(ColorScheme colorScheme) => ThemeData(
-     useMaterial3: true,
-     brightness: colorScheme.brightness,
-     colorScheme: colorScheme,
-     textTheme: textTheme.apply(
-       bodyColor: colorScheme.onSurface,
-       displayColor: colorScheme.onSurface,
-     ),
-     scaffoldBackgroundColor: colorScheme.background,
-     canvasColor: colorScheme.surface,
+    inverseSurface: Color(0xffe8eef5),
+    onInverseSurface: Color(0xff0f2138),
+    inversePrimary: Color(0xff9c3a15),
   );
 
+  /// The same app in daylight.
+  ///
+  /// **Derived from the design rather than drawn by it**, and that is worth saying plainly: the
+  /// mockup specifies one appearance, so every hex below is reasoned from [darkScheme] instead of
+  /// chosen by the designer. It is the honest way to ship a light mode without inventing a second
+  /// brand — but it is also why a screen that looks wrong in daylight is a bug in this table and
+  /// not in the screen.
+  ///
+  /// The reasoning, so the next person can check it rather than guess:
+  ///
+  ///   * **`primary` does not move.** `#F4622A` is the brand; an orange that changed with the
+  ///     time of day would be two brands. White still sits on it at both brightnesses, so
+  ///     `primaryContainer` stays solid for the same reason it is solid in the dark — see the
+  ///     class doc on selected chips.
+  ///   * **The navy becomes the ink.** `#0F2138` is the page in the dark and the text in the
+  ///     light; `#E8EEF5` is the text in the dark and the raised surface in the light. The pair
+  ///     the design already balanced against each other simply swaps ends.
+  ///   * **The surface ladder climbs the other way.** Dark stacks navy upward from `#0F2138`;
+  ///     light stacks blue-grey downward from white, so a card is still one step from the page
+  ///     and a border is still one step from the card.
+  ///   * **Amber and red darken.** `#E8A33D` and `#FFB4AB` are legible on navy and vanish on
+  ///     white, so each takes the tone that carries the same meaning against paper.
+  static const ColorScheme lightScheme = ColorScheme(
+    brightness: Brightness.light,
 
-  List<ExtendedColor> get extendedColors => [
-  ];
-}
+    primary: Color(0xfff4622a),
+    onPrimary: Color(0xffffffff),
+    primaryContainer: Color(0xfff4622a),
+    onPrimaryContainer: Color(0xffffffff),
 
-class ExtendedColor {
-  final Color seed, value;
-  final ColorFamily light;
-  final ColorFamily lightHighContrast;
-  final ColorFamily lightMediumContrast;
-  final ColorFamily dark;
-  final ColorFamily darkHighContrast;
-  final ColorFamily darkMediumContrast;
+    secondary: Color(0xff3d5a77),
+    onSecondary: Color(0xffffffff),
+    secondaryContainer: Color(0xffdce5ef),
+    onSecondaryContainer: Color(0xff1d3c5a),
 
-  const ExtendedColor({
-    required this.seed,
-    required this.value,
-    required this.light,
-    required this.lightHighContrast,
-    required this.lightMediumContrast,
-    required this.dark,
-    required this.darkHighContrast,
-    required this.darkMediumContrast,
-  });
-}
+    tertiary: Color(0xff8a6100),
+    onTertiary: Color(0xffffffff),
+    tertiaryContainer: Color(0xffffdfa8),
+    onTertiaryContainer: Color(0xff2b1f00),
 
-class ColorFamily {
-  const ColorFamily({
-    required this.color,
-    required this.onColor,
-    required this.colorContainer,
-    required this.onColorContainer,
-  });
+    error: Color(0xffba1a1a),
+    onError: Color(0xffffffff),
+    errorContainer: Color(0xffffdad6),
+    onErrorContainer: Color(0xff410002),
 
-  final Color color;
-  final Color onColor;
-  final Color colorContainer;
-  final Color onColorContainer;
+    surface: Color(0xfff7f9fc),
+    onSurface: Color(0xff0f2138),
+    onSurfaceVariant: Color(0xff56708c),
+    surfaceTint: Color(0xfff4622a),
+
+    surfaceDim: Color(0xffdfe6ef),
+    surfaceBright: Color(0xffffffff),
+    surfaceContainerLowest: Color(0xffffffff),
+    surfaceContainerLow: Color(0xffffffff),
+    surfaceContainer: Color(0xfff1f5fa),
+    surfaceContainerHigh: Color(0xffe9eff7),
+    surfaceContainerHighest: Color(0xffdce5ef),
+
+    // Same division of labour as the dark scheme: `outline` is a border meant to be seen,
+    // `outlineVariant` is the card hairline.
+    outline: Color(0xff8fa3ba),
+    outlineVariant: Color(0xffdce5ef),
+
+    shadow: Color(0xff000000),
+    scrim: Color(0xff000000),
+
+    inverseSurface: Color(0xff0f2138),
+    onInverseSurface: Color(0xffe8eef5),
+    inversePrimary: Color(0xffffb59a),
+  );
+
+  ThemeData dark() => theme(darkScheme);
+
+  ThemeData light() => theme(lightScheme);
+
+  ThemeData theme(ColorScheme colorScheme) => ThemeData(
+    useMaterial3: true,
+    brightness: colorScheme.brightness,
+    colorScheme: colorScheme,
+    textTheme: textTheme.apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    ),
+    scaffoldBackgroundColor: colorScheme.surface,
+    canvasColor: colorScheme.surface,
+
+    // ── the design's component grammar, set once ─────────────────────────────
+    //
+    // Written here rather than in each screen for the reason the colours are: these are
+    // decisions the design made about the whole app, and a radius typed into a widget is a
+    // radius that stops matching the moment somebody changes their mind.
+    appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+    ),
+
+    // `#132A43` with a `#24425F` hairline above it, and the active item in orange.
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: colorScheme.surfaceContainerLow,
+      indicatorColor: Colors.transparent,
+      elevation: 0,
+      height: 74,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          size: 22,
+          color: states.contains(WidgetState.selected)
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: states.contains(WidgetState.selected)
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ),
+
+    // Cards: `#16304A` inside a `#24425F` hairline, 20px corners.
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainer,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+    ),
+
+    // 52px tall, 16px corners — the design's one button.
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(52),
+        foregroundColor: colorScheme.onSurface,
+        side: BorderSide(color: colorScheme.outlineVariant),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+      ),
+    ),
+
+    // Filter chips: 38px, 12px corners, `#16304A` with a `#24425F` edge — and solid orange
+    // once chosen.
+    chipTheme: ChipThemeData(
+      backgroundColor: colorScheme.surfaceContainer,
+      selectedColor: colorScheme.primary,
+      side: BorderSide(color: colorScheme.outlineVariant),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: colorScheme.onSurface,
+      ),
+      secondaryLabelStyle: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: colorScheme.onPrimary,
+      ),
+      showCheckmark: false,
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: colorScheme.surfaceContainer,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+      ),
+      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+      labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+    ),
+
+    dividerTheme: DividerThemeData(color: colorScheme.outlineVariant, thickness: 1),
+
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colorScheme.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+    ),
+
+    dialogTheme: DialogThemeData(
+      backgroundColor: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: colorScheme.primary),
+  );
 }

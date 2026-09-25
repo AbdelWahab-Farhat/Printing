@@ -253,7 +253,7 @@ class _LineField extends StatelessWidget {
         if (billable != null) ...[
           SizedBox(height: 6.h),
           Text(
-            'يُحاسَب على ${billable.grouped} ${item.pricingUnitLabel} × ${item.unitPrice.grouped}',
+            'يُحاسَب على ${billable.grouped} ${item.pricingUnitLabel} × ${item.unitPriceOrZero.grouped}',
             style: context.textTheme.bodySmall?.copyWith(
               color: scheme.primary,
               fontWeight: FontWeight.w700,

@@ -115,6 +115,13 @@ Future<Either<Failure, Uint8List>> safeDownload(
   });
 }
 
+/// نقلُ ملفٍّ إلى قرص الهاتف أو منه — لا ظرفَ فيه ولا شيء يُحلَّل.
+///
+/// **الحارس نفسه الذي يمرّ به كل طلب**: رابطٌ موقَّع انتهى 403، والاتصال المنقطع فشلُ شبكة، وقرصٌ
+/// امتلأ فشلٌ غير متوقّع — تصل الشاشةَ بالأنواع نفسها التي تعرف رسمها. و`try`/`catch` يبقى في هذا
+/// الملف وحده.
+Future<Either<Failure, T>> safeTransfer<T>(Future<T> Function() run) => _guard(run);
+
 /// A call whose answer is the *message*, not a body — logout, delete.
 Future<Either<Failure, String>> safeCommand(Future<Response<dynamic>> Function() send) async {
   return _guard(() async {

@@ -13,6 +13,8 @@ import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
+import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +70,11 @@ class TransitionFieldInput extends StatelessWidget {
       TransitionFieldType.shippingCompany => _Carrier(
         field: field,
         chosen: value is ShippingCompany ? value! as ShippingCompany : null,
+        onChanged: onChanged,
+      ),
+      TransitionFieldType.vendor => _Vendor(
+        field: field,
+        chosen: value is Vendor ? value! as Vendor : null,
         onChanged: onChanged,
       ),
       TransitionFieldType.file => _File(
@@ -340,6 +347,54 @@ class _Carrier extends StatelessWidget {
         AppButton.tonal(
           label: chosen?.name ?? 'اختيار شركة التوصيل',
           icon: AppIcons.warehouse,
+          onPressed: () => _pick(context),
+        ),
+      ],
+    );
+  }
+}
+
+/// Who is going to make it, for the one road where it is not us.
+///
+/// The twin of [_Carrier], and deliberately the same shape: the list is this app's own, so the
+/// picker fetches it and only the vendor travels back.
+class _Vendor extends StatelessWidget {
+  const _Vendor({required this.field, required this.chosen, required this.onChanged});
+
+  final TransitionField field;
+  final Vendor? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showVendorPicker(context: context);
+
+    // Null is a dismissal and changes nothing. There is no "clear": an order being accepted onto
+    // the وسيط road has a vendor, and the server refuses the move without one.
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.isRequired ? field.label : '${field.label} (اختياري)',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        AppButton.tonal(
+          label: chosen?.name ?? 'اختيار المورد',
+          icon: AppIcons.vendors,
           onPressed: () => _pick(context),
         ),
       ],

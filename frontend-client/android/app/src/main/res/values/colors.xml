@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The one place Android needs to know the app's colour.
+
+  The window is painted by the OS before Flutter has drawn a frame, so `ColorScheme` cannot
+  reach it — this has to be stated again here. It is the design's `#0F2138`, and it matters:
+  the default is white, which means a white flash on every cold start of an app that is navy.
+
+  Kept in step with `MaterialTheme.darkScheme.surface` by hand. There is no generator between
+  the two, and this is the only duplicate of that value in the project.
+-->
+<resources>
+    <color name="brand_surface">#0F2138</color>
+
+    <!--
+      Written by `dart run flutter_launcher_icons` from `adaptive_icon_background` in
+      pubspec.yaml, and rewritten every time it runs. Change it there, not here.
+
+      It is the logo artwork's own navy, half a shade off `brand_surface` above — the icon is
+      cut against one and the window painted with the other, and neither is ever drawn touching
+      the other.
+    -->
+    <color name="ic_launcher_background">#16243c</color>
+</resources>

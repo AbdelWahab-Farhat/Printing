@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Catalog\Enums;
 
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Order\Exceptions\OutsourcedLineCannotShareAnOrder;
 
 /**
  * How goods under a heading come to exist — the lever an order's road is decided by.
@@ -48,6 +49,31 @@ enum ProductionMode: string
      * the one mode that deducts no stock. See OUTSOURCED-PRODUCTS.md.
      */
     case Outsourced = 'outsourced';
+
+    /**
+     * Which orders this mode may share.
+     *
+     * **Two groups, and the line between them is not «how much work» but «whose».** «سادة» and
+     * «مطبوعة» are both ours — one is pulled off a shelf and the other is printed, and an order
+     * holding both walks the standard road perfectly well. «وسيط» is somebody else's bench: the
+     * order goes out of the building and comes back, there is no press of ours in it and no
+     * shelf of ours behind it, and `OrderFlow` has a whole road of its own for that. Mixing the
+     * two would ask one order to walk two roads, and the order would quietly take the wrong one
+     * — see {@see OutsourcedLineCannotShareAnOrder}.
+     *
+     * **This is the Catalog's half of an Order rule, and it is phrased so it stays the Catalog's
+     * half.** The method answers a question about *this heading* — «مع من يُطلب؟» — and names no
+     * order, no flow and no exception. `ResolveOrderFlow` maps it to a road; the client resource
+     * sends it as an opaque token so the customer app can refuse a basket without ever learning
+     * what «وسيط» is. Catalog stays ignorant of Order, RULES.md §3.
+     */
+    public function orderGroup(): string
+    {
+        return match ($this) {
+            self::InHouse, self::None => 'shared',
+            self::Outsourced => 'exclusive',
+        };
+    }
 
     public function label(): string
     {

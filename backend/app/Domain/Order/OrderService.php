@@ -102,6 +102,52 @@ class OrderService
     }
 
     /**
+     * One customer's own orders, newest first — what the customer app's «طلباتي» reads.
+     *
+     * **Here rather than as a relation on `Customer`.** Dependencies run one way: `Order` may
+     * depend on `Customer` and never the reverse, so a `$customer->orders()` would point the
+     * Customer context at this one. The confinement is the `where` below, and it is the whole of
+     * what keeps one customer out of another's orders — the endpoints carry no customer id at
+     * all, so nothing else could be.
+     *
+     * [$openOnly] narrows to the orders still moving. The statuses are passed in rather than
+     * decided here, because «still moving» is a question in the *customer's* vocabulary — see
+     * `CustomerOrderStage` — and this context does not know that vocabulary.
+     *
+     * @param  list<string>|null  $onlyStatuses
+     * @return LengthAwarePaginator<int, Order>
+     */
+    public function paginateForCustomer(
+        int $customerId,
+        int $perPage = 15,
+        ?array $onlyStatuses = null,
+    ): LengthAwarePaginator {
+        return Order::query()
+            ->where('customer_id', $customerId)
+            ->when($onlyStatuses !== null, fn ($q) => $q->whereIn('status', $onlyStatuses))
+            ->with('items')
+            ->withCount('items')
+            ->latest('id')
+            ->paginate($perPage);
+    }
+
+    /**
+     * One of a given customer's orders, or a 404.
+     *
+     * **Scoped in the query, never checked after the fact.** `Order::find()` followed by an
+     * ownership test is the shape that goes wrong the day somebody forgets the test; a `where`
+     * on the customer means a foreign id never becomes an object.
+     */
+    public function findForCustomer(int $customerId, int $orderId): Order
+    {
+        return Order::query()
+            ->where('customer_id', $customerId)
+            // منتج كل بندٍ بصوره، لصورة البند على الشاشة: استعلامان للطلبية كلها لا اثنان لكل بند.
+            ->with(['items.product.images', 'transitions'])
+            ->findOrFail($orderId);
+    }
+
+    /**
      * How many orders sit in each status, under the same filters as the list beside it.
      *
      * @return array<string, int>

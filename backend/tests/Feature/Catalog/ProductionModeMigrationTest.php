@@ -37,16 +37,20 @@ class ProductionModeMigrationTest extends TestCase
     /**
      * Steps back until the boolean exists again, rather than assuming it is one step away.
      *
-     * Generously bounded, and the loop ends the moment it finds the column — every migration
-     * added after this one puts another step between here and there, and a tight count would turn
-     * unrelated work into a failure in this file. See the same note in
-     * `DropProductTypeMigrationTest`.
+     * Bounded by the schema, not by a number — every migration added after this one puts another
+     * step between here and there. It was a count of 80, and that count fell the day the
+     * investment periods and the customer app's support tables met in one tree. Running out of
+     * migrations without finding the column means the migration this test is about is gone — a
+     * real failure, and said so. See the same note in `DropProductTypeMigrationTest`.
      */
-    private function rollBackToTheSchemaThatStillHadTheBoolean(int $mostSteps = 80): void
+    private function rollBackToTheSchemaThatStillHadTheBoolean(): void
     {
-        for ($step = 0; $step < $mostSteps; $step++) {
-            if (Schema::hasColumn('product_categories', 'skips_production')) {
-                return;
+        while (! Schema::hasColumn('product_categories', 'skips_production')) {
+            if (DB::table('migrations')->count() === 0) {
+                self::fail(
+                    'Rolled the whole schema back without ever finding skips_production on '
+                    .'product_categories — the migration this test exists to exercise is no longer there.'
+                );
             }
 
             Artisan::call('migrate:rollback', ['--step' => 1]);

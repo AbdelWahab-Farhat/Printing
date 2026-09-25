@@ -1,6 +1,5 @@
-import 'dart:math' as math;
-
 import 'package:dayaa_client/core/utils/context_extensions.dart';
+import 'package:dayaa_client/core/widgets/field_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -12,6 +11,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// same argument [AppTextField] settles for inputs, settled once more for choices, and the two
 /// are drawn to match on purpose: a form whose text field and whose picker disagree about their
 /// own border reads as two forms.
+///
+/// **والتطابق مكتوبٌ لا موعود:** الصندوق وألوان حالاته في [FieldFrame]، والعنوان فوق الصندوق في
+/// [LabelledField] — الملف نفسه الذي يرسم منه `AppTextField`، فلا يفترقان.
 ///
 /// **Generic over the item, not over an id.** `AppDropdown<PaymentMethod>`, `AppDropdown<City>`,
 /// `AppDropdown<BusinessField>` — the caller says how to draw one ([labelOf]) and, when the
@@ -41,6 +43,7 @@ class AppDropdown<T> extends StatefulWidget {
     this.prefixIcon,
     this.iconOf,
     this.subtitleOf,
+    this.trailingOf,
     this.validator,
     this.enabled = true,
     this.placeholder,
@@ -53,6 +56,13 @@ class AppDropdown<T> extends StatefulWidget {
 
   /// An optional second line — «موقوف», a price, a code. Drawn muted under the label.
   final String Function(T item)? subtitleOf;
+
+  /// قيمةٌ قصيرة في طرف الصفّ — سعر التوصيل بجانب المدينة — **في الصندوق المطويّ وفي القائمة
+  /// معاً**، على سطر الاسم نفسه لا تحته. `null` لصفٍّ لا قيمة له، فلا يُرسم مكانها شيء.
+  ///
+  /// ليست [subtitleOf]: تلك سطرٌ ثانٍ للقائمة وحدها، يُقرأ حين يُختار ثم يُترك. هذه تبقى ظاهرةً بعد
+  /// الاختيار لأنها ما يُختار من أجله أحياناً.
+  final String? Function(T item)? trailingOf;
 
   /// An optional glyph per row, for lists where the icon is read before the word.
   final IconData Function(T item)? iconOf;
@@ -135,56 +145,38 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
     final scheme = context.colorScheme;
     final textTheme = context.textTheme;
 
-    final hasError = widget.errorText != null;
-    final radius = BorderRadius.circular(14.r);
-
-    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
-      borderRadius: radius,
-      borderSide: BorderSide(color: color, width: width),
+    // حالاتٌ ثلاث بلونٍ واحد، والأيقونة والحدّ متفقان دائماً — كما في `AppTextField`.
+    final accent = FieldFrame.accent(
+      scheme,
+      isEnabled: widget.enabled,
+      isFocused: _isFocused,
+      hasError: widget.errorText != null,
     );
 
-    // Three states, one colour: idle, focused, wrong. The icon and the border always agree —
-    // the same rule AppTextField follows, so the two sit together without arguing.
-    final accent = !widget.enabled
-        ? scheme.onSurfaceVariant.withValues(alpha: 0.45)
-        : hasError
-        ? scheme.error
-        : _isFocused
-        ? scheme.primary
-        : scheme.onSurfaceVariant;
-
-    final slot = BoxConstraints(minWidth: 48.w, minHeight: 48.w);
-
     final hasSubtitle = widget.subtitleOf != null;
+    final trailingOf = widget.trailingOf;
 
-    return DropdownButtonFormField<T>(
+    final picker = DropdownButtonFormField<T>(
       initialValue: _selected,
       focusNode: _node,
       isExpanded: true,
-      borderRadius: radius,
-      // A two-line row does not fit the default row height, and the overflow is drawn as
-      // Flutter's yellow-and-black stripes rather than merely looking cramped. Only raised when
-      // there is a second line to make room for.
-      //
-      // Floored at `kMinInteractiveDimension`, which Flutter asserts on: `.h` scales with the
-      // screen, and on a short one 60 scales *below* the minimum — an assertion in a debug
-      // build and a crash the first tester on a small phone would find.
-      itemHeight: hasSubtitle
-          ? math.max(60.h, kMinInteractiveDimension)
-          : kMinInteractiveDimension,
+      borderRadius: BorderRadius.circular(FieldFrame.radius),
+      // **كل صفٍّ بارتفاع ما فيه**، وأقلّه ٤٨ من Flutter نفسه. الارتفاع الثابت — ٤٨ لسطرٍ و٦٠ لسطرين —
+      // كان يفيض بخطوط Flutter الصفراء حين يكبر الخط: بحجم حقول التصميم، وبتكبيرٍ من إعدادات
+      // الهاتف فوقه. وبلا رقمٍ هنا لا شيء يُقاس بـ `.h` فيهبط تحت الحدّ الأدنى على هاتفٍ قصير.
+      itemHeight: null,
       // **The closed field shows the label alone.** The row in the menu carries the subtitle
       // because that is where somebody is choosing; repeating it in the field would spend two
       // lines of a form on a fact they have already acted on — and it is what overflowed.
-      selectedItemBuilder: hasSubtitle
+      selectedItemBuilder: hasSubtitle || trailingOf != null
           ? (context) => [
               if (widget.placeholder != null) const SizedBox.shrink(),
               for (final item in widget.items)
                 Align(
                   alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    widget.labelOf(item),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: _Closed(
+                    label: widget.labelOf(item),
+                    trailing: trailingOf?.call(item),
                   ),
                 ),
             ]
@@ -194,41 +186,17 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
       // changed", which is also what greys the field.
       onChanged: widget.enabled ? widget.onChanged : null,
       icon: Icon(Icons.keyboard_arrow_down_rounded, color: accent),
-      style: textTheme.bodyLarge?.copyWith(
-        color: widget.enabled ? scheme.onSurface : scheme.onSurfaceVariant,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hint,
+      style: FieldFrame.textStyle(context, isEnabled: widget.enabled),
+      decoration: FieldFrame.decoration(
+        context,
+        isEnabled: widget.enabled,
+        isFocused: _isFocused,
+        hint: widget.hint,
         helperText: widget.helperText,
         errorText: widget.errorText,
-        filled: true,
-        fillColor: !widget.enabled
-            ? scheme.surfaceContainerHigh.withValues(alpha: 0.4)
-            : _isFocused
-            ? scheme.surfaceContainerLowest
-            : scheme.surfaceContainerLow,
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        labelStyle: textTheme.bodyMedium?.copyWith(color: accent),
-        floatingLabelStyle: textTheme.bodySmall?.copyWith(
-          color: accent,
-          fontWeight: FontWeight.w600,
-        ),
-        helperStyle: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error, height: 1.4),
-        errorMaxLines: 2,
-        prefixIcon: widget.prefixIcon == null
+        prefix: widget.prefixIcon == null
             ? null
             : Icon(widget.prefixIcon, size: 22.sp, color: accent),
-        prefixIconConstraints: slot,
-        border: border(scheme.outlineVariant, 1),
-        enabledBorder: border(scheme.outlineVariant, 1),
-        focusedBorder: border(scheme.primary, 1.8),
-        errorBorder: border(scheme.error, 1),
-        focusedErrorBorder: border(scheme.error, 1.8),
-        disabledBorder: border(scheme.outlineVariant.withValues(alpha: 0.5), 1),
       ),
       items: [
         if (widget.placeholder case final placeholder?)
@@ -244,24 +212,70 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
             child: _Row(
               label: widget.labelOf(item),
               subtitle: widget.subtitleOf?.call(item),
+              trailing: trailingOf?.call(item),
               icon: widget.iconOf?.call(item),
             ),
           ),
       ],
     );
+
+    return LabelledField(label: widget.label, field: picker);
   }
 }
 
+/// الصندوق المطويّ: الاسم، وقيمته في الطرف إن كانت له قيمة.
+class _Closed extends StatelessWidget {
+  const _Closed({required this.label, this.trailing});
+
+  final String label;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+
+    return switch (trailing) {
+      final value? => Row(
+        children: [
+          Expanded(child: title),
+          SizedBox(width: 6.w),
+          _Trailing(value),
+        ],
+      ),
+      null => title,
+    };
+  }
+}
+
+/// القيمة في طرف الصفّ: أهدأ من الاسم، لا تُقصّ.
+class _Trailing extends StatelessWidget {
+  const _Trailing(this.value);
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    value,
+    maxLines: 1,
+    style: context.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: context.colorScheme.onSurfaceVariant,
+    ),
+  );
+}
+
 class _Row extends StatelessWidget {
-  const _Row({required this.label, this.subtitle, this.icon});
+  const _Row({required this.label, this.subtitle, this.trailing, this.icon});
 
   final String label;
   final String? subtitle;
+  final String? trailing;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final title = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
 
     return Row(
       children: [
@@ -270,12 +284,15 @@ class _Row extends StatelessWidget {
           SizedBox(width: 10.w),
         ],
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-              if (subtitle case final line? when line.isNotEmpty)
+          // **بلا `Column` حين لا سطر ثانياً.** الحقل المطويّ بارتفاع سطر خطّه تماماً، والسطر
+          // المرسوم يزيد عليه كسر بكسل بأحجام الخط غير الصحيحة — فيرسم `Column` ذو الابن الواحد
+          // خطوط الفيضان الصفراء، بينما النص وحده يُقصّ بذلك الكسر ولا يُرى.
+          child: switch (subtitle) {
+            final line? when line.isNotEmpty => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                title,
                 Text(
                   line,
                   maxLines: 1,
@@ -284,9 +301,15 @@ class _Row extends StatelessWidget {
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-            ],
-          ),
+              ],
+            ),
+            _ => title,
+          },
         ),
+        if (trailing case final value?) ...[
+          SizedBox(width: 8.w),
+          _Trailing(value),
+        ],
       ],
     );
   }

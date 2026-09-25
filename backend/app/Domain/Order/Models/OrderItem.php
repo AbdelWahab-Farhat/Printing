@@ -277,9 +277,28 @@ class OrderItem extends Model
      * 300-tier rate; delivering 200 of it is our failure, and looking the price up again would
      * charge the customer *more* per bag because we came up short.
      */
-    public function deriveLineTotal(): string
+    public function deriveLineTotal(): ?string
     {
+        // **No price, no total — and deliberately not zero.** A line priced «حسب الطلب» that
+        // nobody has quoted yet has no number, and inventing 0.00 here would make it
+        // indistinguishable from a line given away free. See the migration that made these
+        // columns nullable.
+        if ($this->unit_price === null) {
+            return null;
+        }
+
         return Money::round(bcmul((string) $this->unit_price, $this->billableQuantity(), 6));
+    }
+
+    /**
+     * Whether this line has a price at all.
+     *
+     * Only ever false on an order still sitting in «بانتظار المراجعة»: the move that accepts a
+     * request collects the missing prices and is refused without them.
+     */
+    public function isPriced(): bool
+    {
+        return $this->unit_price !== null;
     }
 
     /**

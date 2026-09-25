@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\Exceptions\CustomerIsInactive;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
@@ -14,8 +15,10 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
+use App\Domain\Order\Exceptions\OutsourcedLineCannotShareAnOrder;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\Money;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
@@ -45,14 +48,23 @@ final class CreateOrder
     ) {}
 
     /**
+     * [$initialStatus] is the door this order came through, and the only caller that passes
+     * anything but the default is {@see RequestOrder} — the customer app's. It changes three
+     * things and nothing else: the status written, the status the opening timeline row records,
+     * and whether the vendor rule binds now or at acceptance.
+     *
      * @throws OrderNeedsAtLeastOneItem
      * @throws DiscountRequiresPermission
      * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
      * @throws OutsourcedOrderNeedsAVendor
+     * @throws OutsourcedLineCannotShareAnOrder
      */
-    public function __invoke(OrderData $data, ?User $actor = null): Order
-    {
+    public function __invoke(
+        OrderData $data,
+        ?User $actor = null,
+        OrderStatus $initialStatus = OrderStatus::New,
+    ): Order {
         if ($data->items === null || $data->items === []) {
             throw OrderNeedsAtLeastOneItem::make();
         }
@@ -80,7 +92,7 @@ final class CreateOrder
             ? null
             : (string) $this->vendors->find($data->vendorId)->name;
 
-        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor): Order {
+        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus): Order {
             $order = new Order;
 
             $order->fill([
@@ -115,7 +127,7 @@ final class CreateOrder
             // unfillable is what stops an update moving one between customers.
             $order->forceFill([
                 'customer_id' => $customer->getKey(),
-                'status' => OrderStatus::New,
+                'status' => $initialStatus,
                 'design_fee' => $data->designSource->isChargeable() ? $data->designFee : '0.00',
                 'delivery_price' => $destination->deliveryPrice,
                 'discount' => $data->discount,
@@ -161,22 +173,72 @@ final class CreateOrder
             // already made.
             ($this->resolveFlow)($order);
 
+            // **The lines must agree about whose bench they are made on.**
+            // `ResolveOrderFlow` above wants them unanimous and falls back to the standard road
+            // when they are not — right for «سادة» beside «مطبوعة», and wrong the moment a
+            // وسيط line is in the order: that order would walk «قيد التصميم» and «قيد الطباعة»
+            // for goods no press of ours touches, and `deductsStock()` would ask a warehouse for
+            // goods that were never on a shelf of ours.
+            //
+            // Asked here for the reason the vendor rule below is: the answer is read off the
+            // lines' categories, so it cannot be had until the lines exist. Inside the same
+            // transaction, so a refused order is rolled back whole — and *both* doors come
+            // through here, the clerk's and the app's, so there is one rule and no way round it.
+            $this->guardOneBench($order);
+
             // **Asked here and nowhere earlier, because here is the first place it can be
             // asked.** Whether an order owes a vendor depends on the road it walks, and the road
             // is read off the lines that were written moments ago — a rule in the request would
             // have to guess at it from product ids. Inside the transaction, so an order that
             // should have named a vendor is rolled back whole rather than left standing without
             // one.
-            if ($order->production_flow->needsAVendor() && $order->vendor_id === null) {
+            //
+            // **Except for a request, which is allowed to be incomplete.** An order the customer
+            // app sent cannot name a vendor — the customer does not know we outsource anything,
+            // and it is not their choice to make. So the rule binds at *acceptance* instead:
+            // `ChangeOrderStatus` refuses «بانتظار المراجعة» → «جديدة» until a vendor is named,
+            // which is the moment a real order comes into being. A request under review may be
+            // incomplete; an order may not.
+            if ($initialStatus !== OrderStatus::Requested
+                && $order->production_flow->needsAVendor()
+                && $order->vendor_id === null) {
                 throw OutsourcedOrderNeedsAVendor::make();
             }
 
             // `from` is null exactly once per order, which is what makes "when was this taken"
             // a query on the timeline rather than a special case somewhere else.
-            ($this->record)($order, null, OrderStatus::New, null, $actor);
+            ($this->record)($order, null, $initialStatus, null, $actor);
 
             return $order->refresh();
         });
+    }
+
+    /**
+     * Refuses an order whose lines are not all made in the same kind of place.
+     *
+     * **Unanimity about the group, not a limit on lines.** Several وسيط lines in one order are
+     * fine: the road is unanimous and the vendor is named once, at acceptance. What cannot
+     * happen is a وسيط line beside one that is not.
+     *
+     * A line whose product has no heading — the column is nullable — answers `in_house`, the
+     * same assumption {@see ResolveOrderFlow} makes. The unknown case takes the road that asks
+     * more of the shop, never the one that asks less.
+     *
+     * @throws OutsourcedLineCannotShareAnOrder
+     */
+    private function guardOneBench(Order $order): void
+    {
+        $order->loadMissing('items.product.productCategory.parent');
+
+        $groups = $order->items
+            ->map(fn (OrderItem $item): string => (
+                $item->product?->productCategory?->productionMode() ?? ProductionMode::InHouse
+            )->orderGroup())
+            ->unique();
+
+        if ($groups->count() > 1) {
+            throw OutsourcedLineCannotShareAnOrder::make();
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Models\User;
 
 return [
@@ -42,6 +43,37 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        /*
+         * **`provider` here is a security control, not boilerplate — do not remove it.**
+         *
+         * Sanctum registers this guard itself, in `SanctumServiceProvider::register()`, with
+         * `'provider' => null`. And `Guard::hasValidProvider()` returns `true` whenever the
+         * provider is null — meaning the default `auth:sanctum` accepts a token issued to *any*
+         * tokenable model. That was harmless while `users` was the only one; the moment
+         * `Customer` started issuing tokens it stopped being harmless, because a customer's token
+         * would have satisfied every staff route.
+         *
+         * Permissions would not have saved it: `GET /v1/home/summary` is deliberately the one
+         * endpoint in routes/api.php with no `can:` beside it, so a customer holding a valid
+         * staff-guard token would have been served the workshop's home screen.
+         *
+         * Naming `users` here is what makes the two apps two populations. `CustomerAuthTest`
+         * watches this line from both directions.
+         */
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+
+        /*
+         * The customer app's guard. Same driver and the same token table — a customer's token is
+         * an ordinary personal access token — and the provider below is the entire separation.
+         */
+        'customer' => [
+            'driver' => 'sanctum',
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -65,6 +97,15 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        // The customer app's population. Separate from `users` because that table is
+        // employee-shaped — a required unique email and a burned employee code on every row —
+        // and neither fits somebody who just wants to reorder bags. See
+        // Docs/customer-app/CUSTOMER-APP-DESIGN.md §٢.
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => Customer::class,
         ],
 
         // 'users' => [

@@ -50,6 +50,14 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [PLAIN-TRANSFER-PRICE-DESIGN.md](costing/PLAIN-TRANSFER-PRICE-DESIGN.md) | سعر السادة — المطبعة تشتري بضاعة المستثمر عند خروجها. **مُنفَّذ.** |
 | [PROFIT-FIELDS-MAP.md](costing/PROFIT-FIELDS-MAP.md) | **مرجع:** كل حقل له علاقة بالربح — مصدره وكاتبه ومتى يُكتب، بترتيب حياة الطلبية. |
 
+## [customer-app/](customer-app/)
+
+| Document | |
+|---|---|
+| [CUSTOMER-APP-DESIGN.md](customer-app/CUSTOMER-APP-DESIGN.md) | تطبيق العميل — حارس `customer`، حالة «بانتظار المراجعة»، اللوحة والتذاكر. القرارات المعمارية وحُجَجُها. |
+| [IMPLEMENTED-PLAN.md](customer-app/IMPLEMENTED-PLAN.md) | **ما بُني ويعمل** — الوجهات والشاشات، وأرقامُ الاختبارات مُشغَّلةً لا منقولة. |
+| [FUTURE-FEATURES-PLAN.md](customer-app/FUTURE-FEATURES-PLAN.md) | **ما لم يُبنَ بعد** — تسعةُ بنود، خطّةُ كلٍّ منها وعائقُه الحقيقيّ، وكروتُ الشحن مؤجَّلة. |
+
 ## [customers/](customers/)
 
 | Document | |

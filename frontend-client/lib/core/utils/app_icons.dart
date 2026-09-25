@@ -73,6 +73,14 @@ abstract final class AppIcons {
   static IconData get plainProduct =>
       _pick(Icons.crop_din_rounded, CupertinoIcons.square);
 
+  /// «بالقطعة» تحت اسم منتجٍ يُعدّ: صندوق، والصناديق تُعدّ.
+  static IconData get soldByPiece =>
+      _pick(Icons.inventory_2_outlined, CupertinoIcons.cube_box);
+
+  /// «بالكجم» تحت اسم منتجٍ يوزن. ميزان في Material؛ ومجموعة Cupertino لا ميزان فيها، فالمقياس
+  /// أقرب ما عندها إلى «يُقاس ولا يُعدّ».
+  static IconData get soldByWeight => _pick(Icons.scale_rounded, CupertinoIcons.gauge);
+
   static IconData get menu =>
       _pick(Icons.menu_rounded, CupertinoIcons.line_horizontal_3);
 
@@ -111,6 +119,9 @@ abstract final class AppIcons {
   /// specific thing to create.
   static IconData get add => _pick(Icons.add_rounded, CupertinoIcons.add);
 
+  /// «واحدٌ أقل» — نظير [add] على طرف السلايدر الآخر في صفحة المنتج. ليس [delete]: لا شيء يُحذف.
+  static IconData get remove => _pick(Icons.remove_rounded, CupertinoIcons.minus);
+
   /// Removes a row the user added. Distinct from [clear], which empties a field.
   static IconData get delete =>
       _pick(Icons.delete_outline_rounded, CupertinoIcons.delete);
@@ -134,6 +145,21 @@ abstract final class AppIcons {
 
   static IconData get activate =>
       _pick(Icons.check_circle_outline_rounded, CupertinoIcons.check_mark_circled);
+
+  /// A bare tick, with no circle of its own.
+  ///
+  /// Distinct from [activate] and [ordersReceived], which both carry their own ring: this one
+  /// goes *inside* something already drawn — the filled dot on the order timeline that says the
+  /// step was reached.
+  static IconData get check => _pick(Icons.check_rounded, CupertinoIcons.check_mark);
+
+  /// How the app looks: light, dark, or whatever the phone says.
+  ///
+  /// A half-filled circle rather than a sun or a moon, because the setting has *three* answers
+  /// and «حسب النظام» is neither of those two — a sun on a row whose value reads «داكن» is a row
+  /// arguing with itself.
+  static IconData get appearance =>
+      _pick(Icons.brightness_6_rounded, CupertinoIcons.circle_lefthalf_fill);
 
   /// Moves an order along its route. Two arrows passing, because a status change is a *move*
   /// from one place to another — not [refresh], which fetches the same thing again.
@@ -267,6 +293,13 @@ abstract final class AppIcons {
 
   static IconData get copy => _pick(Icons.copy_rounded, CupertinoIcons.doc_on_doc);
 
+  /// يُرفق ملفاً برسالة — مشبكُ الورق الذي يعرفه كل من استعمل تطبيق محادثة.
+  static IconData get attach => _pick(Icons.attach_file_rounded, CupertinoIcons.paperclip);
+
+  /// يرسل الرسالة: طائرةٌ ورقية إلى الأمام، والأمام في هذا التطبيق العربي إلى اليسار — وهي من
+  /// الأيقونات التي يعكسها الاتجاه بنفسه. بدلُ سهم [forward] الذي كان يُقرأ «رجوع».
+  static IconData get send => _pick(Icons.send_rounded, CupertinoIcons.paperplane_fill);
+
   static IconData get refresh =>
       _pick(Icons.refresh_rounded, CupertinoIcons.refresh);
 
@@ -341,6 +374,14 @@ abstract final class AppIcons {
   /// paper and never on screen: no view draws this one beside either of those.
   static IconData get businessField =>
       _pick(Icons.storefront_outlined, CupertinoIcons.building_2_fill);
+
+  /// «متاجري» — متاجر العميل نفسه، التي تذهب إليها طلبياته. متجرٌ بمظلّته، لا [officePickup] الذي
+  /// هو مكتبنا يُستلم منه.
+  ///
+  /// iOS لا يملك واجهة متجر، فيأخذ المبنى الذي يأخذه [city] — مكرّرٌ على الورق لا على الشاشة: لا
+  /// شاشة ترسمهما معاً، وخطوة «بيانات الطلب» تميّز المتجر المختار بإطاره لا بأيقونة.
+  static IconData get shops =>
+      _pick(Icons.store_rounded, CupertinoIcons.building_2_fill);
 
   /// التصنيف — a heading in the catalogue: أكياس, علب وكراتين, ستيكرات.
   ///
@@ -488,6 +529,11 @@ abstract final class AppIcons {
 
   static IconData get about =>
       _pick(Icons.info_outline_rounded, CupertinoIcons.info);
+
+  /// «سياسة الخصوصية». اليد المرفوعة على iOS هي رمز الخصوصية في إعدادات الهاتف نفسه، فيعرفها
+  /// صاحبه قبل أن يقرأ الاسم. ولا يُستعمل [about] هنا: الدائرة بحرف i تعني «عن التطبيق».
+  static IconData get privacy =>
+      _pick(Icons.privacy_tip_outlined, CupertinoIcons.hand_raised);
 
   /// The connection, not the server: a dropped line is a different problem from a refusal, and
   /// the two are fixed by different people.

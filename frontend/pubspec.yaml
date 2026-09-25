@@ -138,6 +138,11 @@ dependencies:
   # له ٢٠٢١. ما نحتاجه منه ثلاثون سطراً من `CustomPainter` نملكها ونختبرها — نفس قرار
   # `flutter_map` أعلاه وللسبب نفسه.
   qr: ^3.0.2
+  # ── البثّ الحيّ ─────────────────────────────────────────────────────────────
+  # عميلُ بروتوكول Pusher الذي يتكلمه Reverb — تذاكر الدعم حيّة. Dart خالصة بلا كودٍ أصلي، وناشرٌ
+  # موثّق. لا تعرفه الشاشات: فوقه `RealtimeClient` في core/realtime، فلو تبدّلت الحزمة تبدّل ملفٌ واحد.
+  # ولماذا مقابس لا سؤالٌ كل ثوانٍ ولا FCM: Docs/support/SUPPORT-REALTIME.md §١.
+  dart_pusher_channels: ^1.3.1
 
 dev_dependencies:
   flutter_test:

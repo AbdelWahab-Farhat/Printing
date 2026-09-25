@@ -653,3 +653,40 @@ abstract final class NotificationEndpoints {
 
   static String read(int id) => '/notifications/$id/read';
 }
+
+/// تذاكر الدعم — the desk, as staff read it.
+///
+/// **No `store`.** A ticket is a customer starting a conversation; the shop opening one on
+/// somebody's behalf would be a thread the customer never asked for. The customer app's
+/// `client/support/tickets` is the only door that creates one.
+abstract final class SupportEndpoints {
+  /// Most recently active first, paginated. `?status=` and `?assigned_to=` narrow it.
+  static const String tickets = '/support/tickets';
+
+  /// The whole thread. **Opening it marks the desk's side read** — a GET with a side effect,
+  /// which is the server's decision and worth knowing about here: the unread badge clears
+  /// because the screen was opened, not because a button was pressed.
+  static String ticket(int id) => '/support/tickets/$id';
+
+  static String messages(int id) => '/support/tickets/$id/messages';
+
+  /// `assigned_to: null` puts it back in the unassigned queue.
+  static String assignment(int id) => '/support/tickets/$id/assignment';
+
+  static String close(int id) => '/support/tickets/$id/close';
+
+  /// إعادةُ فتح ما أغلقه المكتب، عن قصد — الموظف لا يكتب في تذكرةٍ مغلقة إلا بعدها.
+  static String reopen(int id) => '/support/tickets/$id/reopen';
+
+  /// قناةُ المكتب الحيّة: كلُّ تذكرةٍ تتغيّر تُقال هنا لكل من يقرأ الطابور (`support.view`).
+  static const String deskChannel = 'private-support.desk';
+
+  /// اسمُ الحدث على القناة — واحدٌ لكل تغيير، والحمولة `{ticket, message}`.
+  static const String changedEvent = 'support.ticket.changed';
+}
+
+/// البثّ الحيّ.
+abstract final class RealtimeEndpoints {
+  /// حيث تُوقَّع القنوات الخاصة. **جوابُه خارج المغلّف** — `{"auth": "…"}` كما يقرؤه Pusher.
+  static const String auth = '/broadcasting/auth';
+}

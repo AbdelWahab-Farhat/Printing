@@ -43,8 +43,22 @@ final class RecalculateOrderTotals
      */
     public function __invoke(Order $order): Order
     {
+        // **Unpriced lines contribute nothing, and the order is not really totalled at all.**
+        // A line priced «حسب الطلب» and not yet quoted has no number to add; casting its null to
+        // a string would feed `''` to bcmath and quietly read as zero. Skipping it explicitly
+        // says the same thing out loud.
+        //
+        // The figure this leaves behind is an understatement, and that is safe for exactly one
+        // reason: an unpriced line cannot exist outside «بانتظار المراجعة» — `ChangeOrderStatus`
+        // refuses the move that would let it — and nothing invoices, charges or reports on an
+        // order nobody has accepted. Every resource asks {@see Order::hasUnpricedLines()} and
+        // sends null instead of this number. Remove that guard and this becomes a bill for less
+        // than the goods are worth.
         $itemsTotal = Money::sum(
-            ...$order->items()->get()->map(fn (OrderItem $item) => (string) $item->line_total)->all(),
+            ...$order->items()->get()
+                ->filter(fn (OrderItem $item) => $item->isPriced())
+                ->map(fn (OrderItem $item) => (string) $item->line_total)
+                ->all(),
         );
 
         $designFee = $order->design_source->isChargeable() ? (string) $order->design_fee : '0.00';

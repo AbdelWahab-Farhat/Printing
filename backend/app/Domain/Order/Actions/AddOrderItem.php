@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Catalog\CatalogService;
+use App\Domain\Catalog\Exceptions\QuantityBelowMinimum;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Order\DTOs\OrderItemData;
@@ -33,6 +34,7 @@ final class AddOrderItem
 
     /**
      * @throws ManualPriceRequired
+     * @throws QuantityBelowMinimum
      */
     public function __invoke(Order $order, OrderItemData $data): OrderItem
     {
@@ -41,6 +43,21 @@ final class AddOrderItem
         /** @var ProductVariant $variant */
         $variant = $product->variants->firstWhere('id', $data->productVariantId)
             ?? $product->variants()->with('priceTiers')->findOrFail($data->productVariantId);
+
+        // **Before the pricing branch, so it binds to every product and not just the priced
+        // ones.** {@see QuoteProductPrice} has always refused a quantity under the minimum, but
+        // only a product with listed prices is ever quoted — so «حسب الطلب» products, the whole
+        // reinforced-bag and card half of the catalogue, carried a `min_order_quantity` that was
+        // required when the product was created and then never once read. The rule is the
+        // catalogue's, not the price list's.
+        if (! $product->meetsMinimumOrder($data->quantity)) {
+            throw QuantityBelowMinimum::make(
+                $data->quantity,
+                (string) $product->min_order_quantity,
+                $product->pricing_unit,
+                $product->name,
+            );
+        }
 
         $unitPrice = $product->hasListedPrices()
             ? $this->catalog->quote($product, $variant, $data->quantity)->unitPrice
@@ -85,12 +102,27 @@ final class AddOrderItem
     /**
      * @throws ManualPriceRequired
      */
-    private function manual(Product $product, OrderItemData $data): string
+    private function manual(Product $product, OrderItemData $data): ?string
     {
-        if ($data->unitPrice === null) {
-            throw ManualPriceRequired::make($product->name);
+        if ($data->unitPrice !== null) {
+            return $data->unitPrice;
         }
 
-        return $data->unitPrice;
+        // **A customer may leave it blank; a clerk may not.**
+        //
+        // The customer app cannot name a price — it is never sent one for a product priced
+        // «حسب الطلب», and a client that could post one could buy at a price it invented. So a
+        // request from the app arrives unpriced on purpose, and the shop quotes it on the move
+        // that accepts it. Refusing here made a whole category of the catalogue — the
+        // reinforced 3D bags, the cards — impossible to order from the app at all.
+        //
+        // Staff are still refused, and that is not an inconsistency: a clerk writing an order
+        // at the counter *is* the person who names the price, and an order typed in with the
+        // box left empty is a mistake rather than a request awaiting a quote.
+        if ($data->allowsQuoteLater) {
+            return null;
+        }
+
+        throw ManualPriceRequired::make($product->name);
     }
 }

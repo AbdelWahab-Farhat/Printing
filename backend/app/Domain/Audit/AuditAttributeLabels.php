@@ -295,6 +295,11 @@ final class AuditAttributeLabels
             'returned_at' => 'تاريخ الإرجاع',
             'cancelled_at' => 'تاريخ الإلغاء',
             'cancellation_reason' => 'سبب الإلغاء',
+            'request_rejected_at' => 'تاريخ رفض الطلب',
+            // Named apart from «سبب الإلغاء» on the history screen for the same reason it is a
+            // separate column: one is why we wrote an order off, the other is what we told the
+            // customer when we would not take theirs.
+            'rejection_reason' => 'سبب رفض الطلب',
             'created_by' => 'أنشأها',
             'paid_amount' => 'المدفوع',
             // ── العربون ──────────────────────────────────────────────────────────────────
@@ -713,6 +718,48 @@ final class AuditAttributeLabels
             'reverses_supply_id' => 'تعكس عملية',
             'recorded_by_user_id' => 'سجّلها',
         ],
+        // The home screen's banners. `sort_order` and `is_active` are absent because SHARED
+        // already names them — the whole point of that list.
+        'billboard' => [
+            'title' => 'عنوان اللوحة',
+            'product_id' => 'المنتج الذي تفتحه',
+            'external_url' => 'الرابط',
+            'starts_at' => 'تبدأ في',
+            'ends_at' => 'تنتهي في',
+            'created_by' => 'أضافها',
+        ],
+
+        // The support desk. `status` is in SHARED already.
+        'support_ticket' => [
+            'subject' => 'موضوع التذكرة',
+            'order_id' => 'الطلبية',
+            'assigned_to' => 'مُسندة إلى',
+            'customer_id' => 'العميل',
+            'customer_read_at' => 'قرأها العميل في',
+            'staff_read_at' => 'قرأها الموظف في',
+            'customer_read_message_id' => 'قرأ العميل حتى الرسالة',
+            'staff_read_message_id' => 'قرأ الموظف حتى الرسالة',
+            'last_message_at' => 'آخر رسالة',
+            'closed_at' => 'أُغلقت في',
+            'closed_by' => 'أغلقها',
+        ],
+
+        'ticket_message' => [
+            'support_ticket_id' => 'التذكرة',
+            'body' => 'نص الرسالة',
+            'user_id' => 'كتبها الموظف',
+            'customer_id' => 'كتبها العميل',
+            'attachment_disk' => 'قرص المرفق',
+            'attachment_path' => 'مسار المرفق',
+            'attachment_filename' => 'اسم المرفق',
+            'attachment_mime_type' => 'نوع ملف المرفق',
+            'attachment_kind' => 'صنف المرفق',
+            'attachment_size_bytes' => 'حجم المرفق',
+            'attachment_width_px' => 'عرض الصورة',
+            'attachment_height_px' => 'ارتفاع الصورة',
+            'client_token' => 'رمز الإرسال',
+        ],
+
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
             // المددُ الأربع. تُنسَخ على صفّ الفترة يوم تُفتح ولا تُقرأ من هنا بعدها — فتغييرُها

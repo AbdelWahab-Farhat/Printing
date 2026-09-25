@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:dayaa/core/realtime/realtime_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -96,6 +97,29 @@ abstract final class AppConfig {
     assert(url != null && url.isNotEmpty, 'BASE_URL is missing from ${flavor.envFile}');
 
     return url ?? '';
+  }
+
+  /// خادمُ البثّ الحيّ (Reverb) — أو `null` حين لا يكون مُعدّاً، فتعمل الشاشات بالسحب كما كانت.
+  ///
+  /// **لا يُكتب فيه إلا المفتاحُ والمنفذ**، والباقي يُشتقّ من [baseUrl]: المضيفُ مضيفُه — ومنه
+  /// `10.0.2.2` لمحاكي أندرويد بلا سطرٍ ثانٍ — والمخطّطُ `wss` حين يكون الـ API على `https`. مضيفٌ
+  /// مكتوبٌ باليد هنا كان سيصير `127.0.0.1` في `.env.dev`، أي المحاكي نفسه لا الماك.
+  ///
+  /// `REVERB_HOST` و`REVERB_SCHEME` موجودان لليوم الذي يُنقل فيه البثّ إلى مضيفٍ غير الـ API.
+  static RealtimeEndpoint? get realtime {
+    final key = dotenv.env['REVERB_APP_KEY']?.trim();
+    if (key == null || key.isEmpty) return null;
+
+    final api = Uri.parse(baseUrl);
+    final host = dotenv.env['REVERB_HOST']?.trim();
+    final scheme = dotenv.env['REVERB_SCHEME']?.trim();
+
+    return RealtimeEndpoint(
+      scheme: (scheme == null || scheme.isEmpty) ? (api.scheme == 'https' ? 'wss' : 'ws') : scheme,
+      host: (host == null || host.isEmpty) ? api.host : host,
+      port: int.tryParse(dotenv.env['REVERB_PORT']?.trim() ?? ''),
+      key: key,
+    );
   }
 
   /// Where map tiles come from.

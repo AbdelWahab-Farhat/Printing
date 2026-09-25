@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- ألوانٌ بديلة يستبدلها EmptyBasket بألوان الثيم وقت القراءة؛ انظر empty_basket.dart -->
+  <circle cx="100" cy="106" r="86" fill="#FF00FF"/>
+  <ellipse cx="103" cy="170" rx="58" ry="6" fill="#00FFFF"/>
+  <path d="M94 64C94 34 126 34 126 64" fill="none" stroke="#990000" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+  <path d="M56 72L72 62H150L134 72Z" fill="#330000"/>
+  <path d="M134 72L150 62V156L134 166Z" fill="#990000"/>
+  <path d="M72 62H150" stroke="#990000" stroke-width="2" stroke-linecap="round"/>
+  <path d="M56 72H134V160Q134 166 128 166H62Q56 166 56 160Z" fill="#FF0000"/>
+  <path d="M56 80H134" stroke="#990000" stroke-width="2" opacity="0.45"/>
+  <path d="M78 84C78 44 112 44 112 84" fill="none" stroke="#990000" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="78" cy="84" r="2.6" fill="#330000"/>
+  <circle cx="112" cy="84" r="2.6" fill="#330000"/>
+  <rect x="73" y="102" width="44" height="40" rx="8" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.9"/>
+  <path d="M40 50L42.6 57.4L50 60L42.6 62.6L40 70L37.4 62.6L30 60L37.4 57.4Z" fill="#FF0000" opacity="0.55"/>
+  <circle cx="168" cy="48" r="4" fill="#0000FF" opacity="0.45"/>
+  <path d="M170 112L171.6 116.4L176 118L171.6 119.6L170 124L168.4 119.6L164 118L168.4 116.4Z" fill="#0000FF" opacity="0.45"/>
+  <circle cx="34" cy="128" r="3" fill="#FF0000" opacity="0.4"/>
+</svg>

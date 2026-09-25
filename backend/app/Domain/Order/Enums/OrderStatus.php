@@ -6,6 +6,7 @@ namespace App\Domain\Order\Enums;
 
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Order\Actions\RequestOrder;
 
 /**
  * Where an order is, and the only moves it may make from there.
@@ -36,6 +37,13 @@ use App\Domain\Identity\Enums\PermissionName;
 enum OrderStatus: string
 {
     // ── the ones the workshop lives in, in the order the board reads them ────────────────────
+    // **«بانتظار المراجعة» stands at the head, alone, in front of the pairs.** It is the only
+    // card on this board that is not a piece of the workshop's work but a decision about whether
+    // work begins at all, and its audience is whoever reviews what the app sent rather than
+    // whoever is at a bench. So it is drawn full width above the grid rather than paired with
+    // «جديدة» — pairing the two would say «هذا وذاك نوعان من العمل», and one of them is not
+    // work yet. The pairs below are unchanged.
+    //
     // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
     // in beside what could not be started; «انتظار العربون»/«عربون مدفوع» is the money the job
     // waits on beside the money that arrived; «قيد التصميم»/«جاهزة للطباعة» is the artwork beside
@@ -48,7 +56,33 @@ enum OrderStatus: string
     // phone. The app holds no list of its own, so this sequence is the board — see
     // `HomeSummaryResource`.
 
-    /** Taken, not started. The only status nothing leads back to. */
+    /**
+     * A customer placed this from the app, and nobody has looked at it yet.
+     *
+     * **The only status no member of staff can move an order into**, and the only one an order
+     * can be created in without a member of staff. Nothing in {@see allowedNext()} leads here:
+     * the way in is {@see RequestOrder}, called by the customer
+     * API and by nothing else.
+     *
+     * It exists because «جديدة» means *verified*. An order a clerk types in carries an invisible
+     * check — a person spoke to the customer before writing it down — and from «جديدة» the next
+     * move is «جاهزة للطباعة», which takes the goods off the shelf. An order that arrived at 2am
+     * from a phone carries no such check, and landing it in «جديدة» would put it in the same
+     * column of the same board as one that does.
+     *
+     * Two ways out and no others: accepted, at which point it becomes an ordinary «جديدة» and
+     * everything downstream is untouched; or refused, with a reason, like any other write-off.
+     */
+    case Requested = 'requested';
+
+    /**
+     * Taken, not started.
+     *
+     * **No longer the status nothing leads back to** — «بانتظار المراجعة» leads here, and it is
+     * the only thing that does. What has not changed is that nothing leads back to it from
+     * *inside* the workshop: every arm above it is still one-way, and an order that reaches
+     * «جديدة» has been verified by somebody whichever door it came through.
+     */
     case New = 'new';
 
     /**
@@ -143,6 +177,28 @@ enum OrderStatus: string
 
     case Cancelled = 'cancelled';
 
+    /**
+     * A request from the app that the shop would not take.
+     *
+     * **Not «إلغاء تام», and the difference is not a name.** Cancelling writes off an order the
+     * shop *accepted*: it reverses stock if any left, closes the shortages raised against it,
+     * carries a `cancellation_reason` and lands in the write-off reporting. A request refused at
+     * the door has none of that behind it — nothing was reserved, nothing was promised, and no
+     * money was ever owed. Sending it down the cancellation road made every one of those
+     * mechanisms run over an order they were not written for, and put refusals in the same
+     * column as genuine write-offs so that both counts were wrong.
+     *
+     * **And it cost the wrong authority.** «إلغاء تام» is `orders.status.cancelled`, the grant
+     * for writing off real money. Declining an order nobody has accepted is the reviewer's own
+     * work, so this carries `ManageOrders` — the same grant that let them see the request in
+     * the first place.
+     *
+     * **Reversible, unlike a cancellation.** It leads back to «بانتظار المراجعة» and nowhere
+     * else. A mis-tap on the intake queue should not be permanent, and there is nothing to
+     * unwind in going back: the order never left the door.
+     */
+    case RequestRejected = 'request_rejected';
+
     // ── the two that are over ────────────────────────────────────────────────────────────────
     // **Last, and last on purpose.** Everything above still needs somebody to do something; a
     // full board is skimmed past the finished work rather than through it. See the note at the
@@ -160,6 +216,7 @@ enum OrderStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::Requested => 'بانتظار المراجعة',
             self::New => 'جديدة',
             self::AwaitingDeposit => 'انتظار العربون',
             self::DepositPaid => 'عربون مدفوع',
@@ -183,6 +240,7 @@ enum OrderStatus: string
             // the app prints on a chip, in a filter and on a timeline. One status, one word,
             // wherever it is drawn.
             self::Cancelled => 'إلغاء تام',
+            self::RequestRejected => 'رُفض الطلب',
         };
     }
 
@@ -333,6 +391,26 @@ enum OrderStatus: string
             // orders are started without one, so making the deposit compulsory would put a hop
             // through an empty figure on every order in the shop. The clerk takes the road that
             // matches the deal they made.
+            // **Accepted, or refused.** Nothing else: a request under review has no deposit to
+            // ask for, no shortage to discover and no press to queue for, because none of that
+            // has been agreed with anybody yet. Accepting makes it «جديدة» and every arm below
+            // applies from there exactly as it always did.
+            //
+            // **Written here, on the standard road, and inherited by the other two.** Both
+            // `noProductionNext()` and `outsourcedNext()` end in `default => $this->standardNext()`,
+            // and that fallthrough is the right answer rather than a convenient one: which road
+            // an order walks is decided from its lines by `ResolveOrderFlow`, and that runs only
+            // once the order is «جديدة». A request has no road yet, so accepting one cannot
+            // differ by road. Three copies of this arm would be three chances to disagree.
+            // **Refused rather than cancelled.** See {@see RequestRejected}: an order nobody
+            // accepted has no stock to reverse and no money to write off, and «إلغاء تام»
+            // would run all of that machinery over it and file it with the write-offs.
+            self::Requested => [self::New, self::RequestRejected],
+
+            // Back to the queue it came from, and nowhere else. A refusal is undoable because
+            // nothing happened — which is exactly what separates it from a cancellation.
+            self::RequestRejected => [self::Requested],
+
             self::New => [self::AwaitingDeposit, self::ReadyToPrint, self::Shortage],
 
             // Waiting on money: it arrives, or the order is written off. Nothing else can happen
@@ -518,6 +596,16 @@ enum OrderStatus: string
     public function permission(): PermissionName
     {
         return match ($this) {
+            // **Never actually consulted for an entry, because nothing leads here.** The map
+            // offers no arm producing «بانتظار المراجعة», so `ChangeOrderStatus` refuses the
+            // move before a permission is ever asked for; the case is answered because the enum
+            // is total and a `match` without it is a runtime error waiting for the first person
+            // to add a status. `orders.manage` is the honest answer regardless: creating an
+            // order is what this status is a request for.
+            self::Requested => PermissionName::ManageOrders,
+
+            // Accepting a customer's request costs exactly what typing the order in by hand
+            // costs, because that is what accepting it is.
             self::New => PermissionName::ManageOrders,
             // One grant each, like every status that is not the dispatch pair: asking a customer
             // for a deposit and declaring that they paid it are two different claims, and the
@@ -545,6 +633,11 @@ enum OrderStatus: string
             self::ReturnedOffice => PermissionName::RecordOfficeReturn,
             self::Resend => PermissionName::ResendOrders,
             self::Cancelled => PermissionName::CancelOrders,
+            // **Not `CancelOrders`.** Declining a request is the reviewer's own work and costs
+            // the grant that showed them the queue — see the case's docblock. A dedicated
+            // permission would have shipped a button nobody could press until every role was
+            // edited.
+            self::RequestRejected => PermissionName::ManageOrders,
         };
     }
 
@@ -556,7 +649,10 @@ enum OrderStatus: string
      */
     public function requiresReason(): bool
     {
-        return $this === self::Cancelled;
+        // Writing an order off, and refusing one. **The refusal is the customer's answer** —
+        // «رُفض الطلب» with no sentence attached reaches their phone as a door closed without a
+        // word, which is worse than the refusal itself.
+        return $this === self::Cancelled || $this === self::RequestRejected;
     }
 
     /**
@@ -596,6 +692,7 @@ enum OrderStatus: string
             self::Settled => 'settled_at',
             self::ReturnedCourier, self::ReturnedCarrier, self::ReturnedOffice => 'returned_at',
             self::Cancelled => 'cancelled_at',
+            self::RequestRejected => 'request_rejected_at',
             // A re-send is visited more than once by the orders that visit it at all — a parcel
             // goes out, comes back and goes out again — so a single column would keep the last
             // visit and quietly lose the first. A shortage is entered at most once now that
@@ -604,6 +701,13 @@ enum OrderStatus: string
             // answer. The day a report wants "orders parked short this week", this is a `case`
             // and a migration.
             self::Shortage, self::Resend => null,
+
+            // **Null, and now reachable — which it was not before.** Nothing used to lead to
+            // «بانتظار المراجعة»: an order was *created* there and left once. A refusal can be
+            // undone now, so an order can enter it more than once, and a single column would
+            // keep the last visit and quietly lose the first — the same reason «إعادة إرسال»
+            // and «انتظار العربون» have none. `order_status_transitions` holds every visit.
+            self::Requested => null,
         };
     }
 

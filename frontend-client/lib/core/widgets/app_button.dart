@@ -77,6 +77,7 @@ class AppButton extends StatefulWidget {
     this.icon,
     this.height,
     this.expands = true,
+    this.lifted = true,
     this.variant = AppButtonVariant.primary,
   });
 
@@ -89,7 +90,8 @@ class AppButton extends StatefulWidget {
     this.icon,
     this.height,
     this.expands = true,
-  }) : variant = AppButtonVariant.tonal;
+  }) : variant = AppButtonVariant.tonal,
+       lifted = false;
 
   /// The way out of a screen. A border and nothing behind it.
   const AppButton.outlined({
@@ -100,7 +102,8 @@ class AppButton extends StatefulWidget {
     this.icon,
     this.height,
     this.expands = true,
-  }) : variant = AppButtonVariant.outlined;
+  }) : variant = AppButtonVariant.outlined,
+       lifted = false;
 
   final String label;
 
@@ -112,7 +115,7 @@ class AppButton extends StatefulWidget {
   final bool isLoading;
   final IconData? icon;
 
-  /// Defaults to 54 logical pixels at the reference design size.
+  /// ٦٠ عند المقاس المرجعي: ٥٤ نقطة على الهاتف الذي رُسم عليه التصميم (عرض ٣٩٠).
   final double? height;
 
   /// Whether the button takes the whole width it is given.
@@ -127,6 +130,13 @@ class AppButton extends StatefulWidget {
   /// and note that a button inside a `Row` should be wrapped in `Expanded` instead, which is
   /// what every one of them in this app already does.
   final bool expands;
+
+  /// هل يتوهّج الزر الرئيسي تحته. الوهج هو ما يرسمه `_shadow` في الحالة.
+  ///
+  /// `false` حيث السطح مرتفعٌ أصلاً وضيّق، كورقةٍ من الأسفل: هناك يسيل الوهج على الزر المجاور
+  /// فيُقرأ لطخةً لا ارتفاعاً، وقد نزعه صاحب العمل من ورقة تسجيل الخروج حين رآه على الهاتف.
+  /// الزرّان الآخران لا يتوهّجان أصلاً، فهي `false` لهما دائماً.
+  final bool lifted;
 
   final AppButtonVariant variant;
 
@@ -270,10 +280,10 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
     final isDisabled = widget.onPressed == null;
     final canTap = !isDisabled && !widget.isLoading;
 
-    final height = widget.height ?? 54.h;
+    final height = widget.height ?? 60.h;
     // A constant, and it stays a constant. The corner radius is the first thing an animation
     // reaches for and the first thing that makes a button change shape.
-    final radius = BorderRadius.circular(16.r);
+    final radius = BorderRadius.circular(15.r);
     final palette = _paletteFor(context.colorScheme, isDisabled: isDisabled);
 
     return Semantics(
@@ -415,15 +425,18 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
   }
 
   /// Lifts the primary button off the page. One value, never animated.
+  ///
+  /// توهّجٌ برتقالي ليّن تحت الزر كما في تصميم شاشة الدخول، مقيسٌ على لقطته: قويٌّ ملاصقاً للزر،
+  /// ويخبو على مدى نحو عشرين نقطة تحته.
   List<BoxShadow>? _shadow(_Palette palette) {
     final color = palette.shadow;
-    if (color == null) return null;
+    if (color == null || !widget.lifted) return null;
 
     return [
       BoxShadow(
-        color: color.withValues(alpha: 0.26),
-        blurRadius: 16.r,
-        offset: Offset(0, 8.h),
+        color: color.withValues(alpha: 0.28),
+        blurRadius: 22.r,
+        offset: Offset(0, 11.h),
       ),
     ];
   }

@@ -1,28 +1,33 @@
+import 'dart:math' as math;
+
 import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// «مدفوعة بالكامل» — الأخضر، وكم يبعد عن تيركواز التطبيق.
+/// «مدفوعة بالكامل» — الأخضر، وكم يبعد عن برتقالي التطبيق.
 ///
-/// The one colour in this app written as a hex, so it is the one colour with nothing generated
-/// keeping it honest. These tests pin the *intent* rather than the six values: the family sits in
-/// the green band, stays well clear of the teal `primary` it exists to be distinguishable from,
-/// and each container still carries text anybody can read. A future re-export of the palette
-/// cannot quietly drag this back towards the teal without one of them failing.
+/// The one colour in this app written outside `theme.dart`, so it is the one colour with nothing
+/// else keeping it honest. These tests pin the *intent* rather than the six values: the family
+/// sits in the green band, stays well clear of the `primary` it exists to be distinguishable
+/// from, and each container still carries text anybody can read.
+///
+/// **They have just earned their keep.** The palette moved from the staff app's teal to this
+/// app's orange, and the distance assertion below was written without `.abs()` — it passed only
+/// because teal's hue happened to be the larger of the two. Against orange it went negative and
+/// failed, which is exactly the kind of quiet wrong these tests exist to catch.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
   double hueOf(Color colour) => HSLColor.fromColor(colour).hue;
 
-  /// 120° is pure green; 180° is the cyan `primary` sits on. The paid family belongs nearer the
-  /// first — it used to sit around 148°, near enough the teal that «مدفوعة بالكامل» beside «سعر
-  /// الطلبية» read as one colour printed twice.
+  /// 120° is pure green. The band was chosen to keep «مدفوعة بالكامل» clear of the teal it used
+  /// to sit beside; against orange it has an easier job and is kept as it was.
   const green = (low: 130.0, high: 145.0);
 
-  test('the paid tones sit in the green band, in light', () {
+  test('the paid tones sit in the green band', () {
     // Arrange
-    final scheme = MaterialTheme.lightScheme();
+    const scheme = MaterialTheme.darkScheme;
 
     // Act
     final hues = [hueOf(scheme.paid), hueOf(scheme.paidContainer), hueOf(scheme.onPaidContainer)];
@@ -33,25 +38,14 @@ void main() {
     }
   });
 
-  test('the paid tones sit in the green band, in dark', () {
+  test('the green is far enough from the app\'s orange to read as another colour', () {
     // Arrange
-    final scheme = MaterialTheme.darkScheme();
+    const scheme = MaterialTheme.darkScheme;
 
-    // Act
-    final hues = [hueOf(scheme.paid), hueOf(scheme.paidContainer), hueOf(scheme.onPaidContainer)];
-
-    // Assert
-    for (final hue in hues) {
-      expect(hue, inInclusiveRange(green.low, green.high));
-    }
-  });
-
-  test('the green is far enough from the app\'s teal to read as another colour', () {
-    // Arrange
-    final scheme = MaterialTheme.lightScheme();
-
-    // Act
-    final gap = hueOf(scheme.primary) - hueOf(scheme.paid);
+    // Act — **`.abs()`, because a hue gap has no sign.** Which of the two is the larger number
+    // is an accident of where each one lands on the wheel, and the question being asked is how
+    // far apart they are.
+    final gap = (hueOf(scheme.primary) - hueOf(scheme.paid)).abs();
 
     // Assert — a chip and the price directly beneath it must not look like the same decision.
     expect(gap, greaterThan(35));
@@ -59,82 +53,108 @@ void main() {
 
   test('the pale fill still carries its text', () {
     // Arrange
-    final schemes = [MaterialTheme.lightScheme(), MaterialTheme.darkScheme()];
+    const scheme = MaterialTheme.darkScheme;
 
     // Act - Assert — leaning greener must not cost the pair its contrast.
-    for (final scheme in schemes) {
-      final gap =
-          (scheme.paidContainer.computeLuminance() - scheme.onPaidContainer.computeLuminance())
-              .abs();
+    final gap =
+        (scheme.paidContainer.computeLuminance() - scheme.onPaidContainer.computeLuminance())
+            .abs();
 
-      expect(gap, greaterThan(0.4));
-    }
+    expect(gap, greaterThan(0.4));
   });
 
-  /// Amber, and deliberately at the orange end of it: a shelf running low is neither fine nor
-  /// broken, and pure yellow has no dark step that stays yellow for the light theme to use.
-  const amber = (low: 30.0, high: 50.0);
+  group('the deep end of the account card', () {
+    /// نسبة التباين كما تعرّفها WCAG: الأفتح على الأغمق، وكلٌّ منهما مزاحٌ بـ ٠٫٠٥.
+    double contrast(Color a, Color b) {
+      final (lighter, darker) = a.computeLuminance() > b.computeLuminance()
+          ? (a.computeLuminance(), b.computeLuminance())
+          : (b.computeLuminance(), a.computeLuminance());
 
-  test('the low-stock tones sit in the amber band, in light', () {
-    // Arrange
-    final scheme = MaterialTheme.lightScheme();
-
-    // Act
-    final hues = [hueOf(scheme.warn), hueOf(scheme.warnContainer), hueOf(scheme.onWarnContainer)];
-
-    // Assert
-    for (final hue in hues) {
-      expect(hue, inInclusiveRange(amber.low, amber.high));
+      return (lighter + 0.05) / (darker + 0.05);
     }
+
+    test('carries white text at body size, in both appearances', () {
+      // Arrange — البطاقة بلون العلامة في الوضعين، فالزوج نفسه يُفحص مرتين.
+      const schemes = [MaterialTheme.lightScheme, MaterialTheme.darkScheme];
+
+      // Act
+      final ratios = [for (final s in schemes) contrast(s.onPrimary, s.primaryDeep)];
+
+      // Assert — ٤٫٥ إلى ١ هي عتبة النص بحجمه العادي، ورقم الهاتف يجلس على هذا الطرف.
+      for (final ratio in ratios) {
+        expect(ratio, greaterThanOrEqualTo(4.5));
+      }
+    });
+
+    test('is still the brand\'s orange, only deeper', () {
+      // Arrange
+      const scheme = MaterialTheme.lightScheme;
+
+      // Act
+      final gap = (hueOf(scheme.primaryDeep) - hueOf(scheme.primary)).abs();
+
+      // Assert — تدرّجٌ من البرتقالي إلى الأحمر بطاقةٌ بلونين، لا بطاقةٌ بلون العلامة.
+      expect(gap, lessThan(6));
+      expect(
+        scheme.primaryDeep.computeLuminance(),
+        lessThan(scheme.primary.computeLuminance()),
+      );
+    });
   });
 
-  test('the low-stock tones sit in the amber band, in dark', () {
-    // Arrange
-    final scheme = MaterialTheme.darkScheme();
+  // الترويسة الكحلية فوق شاشتي الدخول وإنشاء الحساب: كحليّةٌ في الوضعين، ونصّها مقروء عليها.
+  group('the sign-in header', () {
+    /// نسبة التباين في WCAG: ١ للونين متطابقين، و٢١ للأسود على الأبيض.
+    double contrast(Color a, Color b) {
+      final (x, y) = (a.computeLuminance(), b.computeLuminance());
 
-    // Act
-    final hues = [hueOf(scheme.warn), hueOf(scheme.warnContainer), hueOf(scheme.onWarnContainer)];
-
-    // Assert
-    for (final hue in hues) {
-      expect(hue, inInclusiveRange(amber.low, amber.high));
+      return (math.max(x, y) + 0.05) / (math.min(x, y) + 0.05);
     }
-  });
 
-  test('«تحت الحد» is far enough from «نافد» to be a different state, not a paler one', () {
-    // Arrange — the two sit side by side in one bar, and one of them has to stop somebody
-    final schemes = [MaterialTheme.lightScheme(), MaterialTheme.darkScheme()];
+    const schemes = [MaterialTheme.lightScheme, MaterialTheme.darkScheme];
 
-    // Act - Assert
-    for (final scheme in schemes) {
-      final gap = (hueOf(scheme.warn) - hueOf(scheme.error)).abs();
+    test('it stays navy in daylight and in the dark', () {
+      // Arrange
+      final headers = [for (final scheme in schemes) scheme.header];
 
-      expect(gap, greaterThan(20));
-    }
-  });
+      // Act
+      final colours = headers.map(HSLColor.fromColor).toList();
 
-  test('«تحت الحد» is nowhere near the teal «سليم» is drawn in', () {
-    // Arrange
-    final scheme = MaterialTheme.lightScheme();
+      // Assert — أزرق الصبغة، وداكنٌ جداً في الحالتين.
+      for (final colour in colours) {
+        expect(colour.hue, inInclusiveRange(200, 230));
+        expect(colour.lightness, lessThan(0.2));
+      }
+    });
 
-    // Act
-    final gap = (hueOf(scheme.primary) - hueOf(scheme.warn)).abs();
+    test('in the dark it sits a step below the page, so it still reads as a band', () {
+      // Arrange
+      const scheme = MaterialTheme.darkScheme;
 
-    // Assert
-    expect(gap, greaterThan(60));
-  });
+      // Act
+      final header = scheme.header.computeLuminance();
+      final page = scheme.surface.computeLuminance();
 
-  test('the amber fill still carries its text', () {
-    // Arrange
-    final schemes = [MaterialTheme.lightScheme(), MaterialTheme.darkScheme()];
+      // Assert
+      expect(header, lessThan(page));
+    });
 
-    // Act - Assert
-    for (final scheme in schemes) {
-      final gap =
-          (scheme.warnContainer.computeLuminance() - scheme.onWarnContainer.computeLuminance())
-              .abs();
+    test('the title and the line under it both read on it', () {
+      // Arrange
+      final pairs = [
+        for (final scheme in schemes) ...[
+          (ink: scheme.onHeader, on: scheme.header, floor: 7.0),
+          (ink: scheme.onHeaderVariant, on: scheme.header, floor: 4.5),
+        ],
+      ];
 
-      expect(gap, greaterThan(0.4));
-    }
+      // Act
+      final ratios = [for (final pair in pairs) contrast(pair.ink, pair.on)];
+
+      // Assert
+      for (final (index, ratio) in ratios.indexed) {
+        expect(ratio, greaterThan(pairs[index].floor));
+      }
+    });
   });
 }

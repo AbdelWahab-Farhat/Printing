@@ -938,11 +938,15 @@ class OrderTransitionFieldsTest extends TestCase
                 $this->assertNotNull($note, "«{$move}» carries no note field");
                 $this->assertTrue($note->multiline, "«{$move}»: a note is a sentence, not a word");
 
-                // Optional everywhere, and demanded in exactly one place. Writing an order off
-                // is the only move that owes an explanation; asking for one each time would
-                // fill the timeline with «تمام».
+                // Optional everywhere, and demanded in exactly two places — the two moves that
+                // end an order against what the customer asked for. Asking for a sentence on
+                // every move would fill the timeline with «تمام».
+                //
+                // **Listed here rather than read from `requiresReason()`**, which is what the
+                // production code asks: a test that called the same method would agree with the
+                // implementation by construction and notice nothing.
                 $this->assertSame(
-                    $target === OrderStatus::Cancelled,
+                    in_array($target, [OrderStatus::Cancelled, OrderStatus::RequestRejected], true),
                     $note->required,
                     "«{$move}» asks for the note on the wrong terms",
                 );

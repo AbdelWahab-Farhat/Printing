@@ -21,6 +21,19 @@ enum OrderStatus {
   // `OrderStatus.php`'s declaration order so the filter sheet reads down the way the board does.
   // It is *not* the order the state machine walks; the server sends the moves, so this app never
   // needs that one.
+  /// An order the **customer** sent from their own app, which nobody has read yet.
+  ///
+  /// **First, because it comes before «جديدة» in every sense.** «جديدة» means a person checked
+  /// it — a clerk wrote it down after speaking to the customer — and from «جديدة» the next move
+  /// takes goods off the shelf. An order that arrived at 2am from a phone carries no such
+  /// check, and putting it in the same column as one that does is how it gets acted on.
+  ///
+  /// Two ways out: accepted, at which point it becomes an ordinary «جديدة» and everything
+  /// downstream is untouched; or refused with a reason, like any other write-off. See
+  /// `CUSTOMER-APP-DESIGN.md` §٣.
+  @JsonValue('requested')
+  requested('requested', 'بانتظار المراجعة'),
+
   @JsonValue('new')
   taken('new', 'جديدة'),
   @JsonValue('shortage')
@@ -75,6 +88,15 @@ enum OrderStatus {
   resend('resend', 'إعادة إرسال'),
   @JsonValue('cancelled')
   cancelled('cancelled', 'إلغاء تام'),
+
+  /// A request from the app the shop would not take.
+  ///
+  /// **Not «إلغاء تام», and the server draws the line rather than this app.** Cancelling writes
+  /// off an order that was *accepted*; this refuses one at the door, before anything was
+  /// reserved or promised. It carries its own reason — the one the customer reads — and its own
+  /// grant, and unlike a cancellation it can be undone back to «بانتظار المراجعة».
+  @JsonValue('request_rejected')
+  requestRejected('request_rejected', 'رُفض الطلب'),
 
   // The two that are over, last — the same order `OrderStatus.php` declares, so the filter
   // sheet reads down in the order the home board does. What still needs doing comes first.
@@ -182,7 +204,12 @@ enum OrderStatus {
     // فهما معاً في هدوء «جديدة»: طلبيةٌ أوّلها، لم يُبدأ فيها عمل، ولا شيء فيها يستدعي أحداً.
     // والشكل هو ما يفرّق بينهما — ساعةٌ رمليّة وأوراقٌ نقديّة — وهي القاعدة التي يقوم عليها
     // `iconFor` أصلاً: اللون يقول النوع، والأيقونة تقول الحالة بعينها.
-    OrderStatus.awaitingDeposit || OrderStatus.depositPaid => OrderStatusTone.fresh,
+    // «بانتظار المراجعة» takes «جديدة»'s quiet too: it is the very start of an order and there
+    // is nothing wrong with it. What it needs is somebody to *read* it, which is a queue
+    // position rather than an alarm.
+    OrderStatus.requested ||
+    OrderStatus.awaitingDeposit ||
+    OrderStatus.depositPaid => OrderStatusTone.fresh,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,
     OrderStatus.delivered || OrderStatus.settled => OrderStatusTone.done,
     OrderStatus.returnedCourier ||
@@ -190,7 +217,9 @@ enum OrderStatus {
     OrderStatus.returnedOffice => OrderStatusTone.returned,
     // On our shelf and going out again — the same colour as anything else waiting to leave.
     OrderStatus.resend => OrderStatusTone.ready,
-    OrderStatus.cancelled => OrderStatusTone.cancelled,
+    // The same family as «إلغاء تام»: both are endings that reached nobody, and a colour of
+    // its own would be a thirteenth thing to learn for a distinction the label already makes.
+    OrderStatus.cancelled || OrderStatus.requestRejected => OrderStatusTone.cancelled,
     OrderStatus.unknown => OrderStatusTone.neutral,
   };
 }

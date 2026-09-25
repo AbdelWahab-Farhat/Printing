@@ -30,4 +30,11 @@ abstract interface class AttachmentPicker {
   /// `Failure`, because a person changing their mind is the expected ending of this call and
   /// nothing should be reported to them about it.
   Future<List<PickedFile>> pick(AttachmentSource source);
+
+  /// ملفٌ واحد، أو `null` إن خرج المستخدم بلا ملف.
+  ///
+  /// **لما يُسمّى ملفاً ملفاً.** «تصاميمي» تسأل عن اسم كل تصميمٍ قبل رفعه، ونافذةُ اسمٍ واحدة
+  /// أمام خمس صورٍ اختيرت معاً لا تقول أيّها تسمّي. فالمنتقي يُفتح هنا على اختيارٍ واحد من
+  /// الأصل، بدل أن يَقبل الكثير ثم يُرمى ما زاد دون أن يعلم صاحبه.
+  Future<PickedFile?> pickOne(AttachmentSource source);
 }

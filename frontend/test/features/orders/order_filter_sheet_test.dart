@@ -106,6 +106,16 @@ void main() {
 
   /// Scrolls first, because in the test font the chips run past the fold on a phone even though
   /// they do not on a real one.
+  /// Every status label the sheet draws, «الكل» included.
+  ///
+  /// Derived from the enum rather than written out, so a status added to the business joins this
+  /// check without anybody remembering to add it here.
+  final statusLabels = <String>[
+    'الكل',
+    for (final status in OrderStatus.values)
+      if (status != OrderStatus.unknown) status.label,
+  ];
+
   Future<void> tapOption(WidgetTester tester, String label) async {
     await tester.ensureVisible(find.text(label));
     await tester.pumpAndSettle();
@@ -181,8 +191,20 @@ void main() {
     // Act
     await openTheSheet(tester);
 
-    // Assert — the two shortest labels sit side by side rather than one under the other.
-    expect(tester.getCenter(find.text('الكل')).dy, tester.getCenter(find.text('جديدة')).dy);
+    // Assert — **counted rather than named.** This used to assert «الكل» and «جديدة» share a
+    // line, being the two shortest labels and adjacent. They stopped being adjacent the day
+    // «بانتظار المراجعة» was added to the enum ahead of «جديدة», and the test went red over a
+    // new status rather than over the property it is guarding. What it means is that the
+    // options wrap — so that is what it now measures: fewer lines than options.
+    final lines = <double>{
+      for (final label in statusLabels) tester.getCenter(find.text(label)).dy,
+    };
+
+    expect(
+      lines.length,
+      lessThan(statusLabels.length),
+      reason: 'every option is on a line of its own — these are rows, not wrapped chips',
+    );
   });
 
   testWidgets('picking a status and applying answers with it', (tester) async {

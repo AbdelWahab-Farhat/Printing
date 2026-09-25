@@ -1,8 +1,12 @@
 import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/attachment_picker_impl.dart';
+import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/dio_client.dart';
 import 'package:dayaa/core/push/push_service.dart';
+import 'package:dayaa/core/realtime/channel_signer.dart';
+import 'package:dayaa/core/realtime/pusher_realtime_client.dart';
+import 'package:dayaa/core/realtime/realtime_client.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
@@ -243,6 +247,11 @@ import 'package:dayaa/features/stock_items/usecases/get_stock_items.dart';
 import 'package:dayaa/features/stock_items/usecases/save_stock_item.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_unit.dart';
 import 'package:dayaa/features/stock_items/usecases/set_stock_item_variants.dart';
+import 'package:dayaa/features/support/presentation/viewmodel/support_tickets_cubit.dart';
+import 'package:dayaa/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
+import 'package:dayaa/features/support/repositories/support_repository.dart';
+import 'package:dayaa/features/support/repositories/support_repository_impl.dart';
+import 'package:dayaa/features/support/usecases/support_usecases.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
 import 'package:dayaa/features/tools/usecases/generate_qr_code.dart';
@@ -356,7 +365,15 @@ abstract final class Injector {
       // an order's attachments next. Behind its interface so a widget test can substitute one
       // — both packages answer through a platform channel that does not exist under
       // `flutter_test`, so the real one would hang there.
-      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new);
+      ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
+      // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
+      // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول شاشةٍ تستمع ويغلقه مع آخرها.
+      ..registerLazySingleton<RealtimeClient>(
+        () => PusherRealtimeClient(
+          endpoint: AppConfig.realtime,
+          sign: apiChannelSigner(sl<Dio>(), RealtimeEndpoints.auth),
+        ),
+      );
 
     _registerAccess();
     _registerAudit();
@@ -380,6 +397,7 @@ abstract final class Injector {
     _registerShippingCompanies();
     _registerShortages();
     _registerDesignTickets();
+    _registerSupport();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -1236,6 +1254,41 @@ abstract final class Injector {
           removeAttachment: sl<RemoveDesignTicketAttachment>(),
           submitVersion: sl<SubmitDesignVersion>(),
           reviewVersion: sl<ReviewDesignVersion>(),
+        ),
+      );
+  }
+
+  /// تذاكر الدعم — the desk.
+  ///
+  /// **A `registerFactoryParam` for the thread**, for the reason the order screen's is: a
+  /// `TicketThreadCubit` is built *for* one ticket and needs that id at construction. A
+  /// nullable field set afterwards is a Cubit that can exist not knowing what it is showing.
+  static void _registerSupport() {
+    sl
+      ..registerLazySingleton<SupportRepository>(
+        () => SupportRepositoryImpl(sl<Dio>(), sl<RealtimeClient>()),
+      )
+      ..registerLazySingleton<BrowseTickets>(() => BrowseTickets(sl<SupportRepository>()))
+      ..registerLazySingleton<GetTicket>(() => GetTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<ReplyToTicket>(() => ReplyToTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<AssignTicket>(() => AssignTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<CloseTicket>(() => CloseTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<ReopenTicket>(() => ReopenTicket(sl<SupportRepository>()))
+      ..registerLazySingleton<WatchTicketChanges>(
+        () => WatchTicketChanges(sl<SupportRepository>()),
+      )
+      ..registerFactory<SupportTicketsCubit>(
+        () => SupportTicketsCubit(browse: sl<BrowseTickets>(), watch: sl<WatchTicketChanges>()),
+      )
+      ..registerFactoryParam<TicketThreadCubit, int, void>(
+        (ticketId, _) => TicketThreadCubit(
+          ticketId: ticketId,
+          get: sl<GetTicket>(),
+          reply: sl<ReplyToTicket>(),
+          assign: sl<AssignTicket>(),
+          close: sl<CloseTicket>(),
+          reopen: sl<ReopenTicket>(),
+          watch: sl<WatchTicketChanges>(),
         ),
       );
   }

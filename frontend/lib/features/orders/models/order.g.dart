@@ -260,6 +260,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
 };
 
 const _$OrderStatusEnumMap = {
+  OrderStatus.requested: 'requested',
   OrderStatus.taken: 'new',
   OrderStatus.shortage: 'shortage',
   OrderStatus.awaitingDeposit: 'awaiting_deposit',
@@ -276,6 +277,7 @@ const _$OrderStatusEnumMap = {
   OrderStatus.returnedOffice: 'returned_office',
   OrderStatus.resend: 'resend',
   OrderStatus.cancelled: 'cancelled',
+  OrderStatus.requestRejected: 'request_rejected',
   OrderStatus.delivered: 'delivered',
   OrderStatus.settled: 'settled',
   OrderStatus.unknown: 'unknown',
@@ -387,8 +389,8 @@ _OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => _OrderItem(
   deliveryLoss: json['delivery_loss'] as String?,
   billableQuantity: json['billable_quantity'] as String?,
   warehouseQuantity: json['warehouse_quantity'] as String?,
-  unitPrice: json['unit_price'] as String,
-  lineTotal: json['line_total'] as String,
+  unitPrice: json['unit_price'] as String?,
+  lineTotal: json['line_total'] as String?,
   materialCost: json['material_cost'] as String?,
   materialCostActual: json['material_cost_actual'] as String?,
   stockPurchasedAt: json['stock_purchased_at'] as String?,

@@ -56,6 +56,9 @@ void main() {
       AppIcons.customers,
       AppIcons.warehouse,
       AppIcons.products,
+      AppIcons.soldByPiece,
+      AppIcons.soldByWeight,
+      AppIcons.remove,
       AppIcons.menu,
       AppIcons.back,
       AppIcons.forward,
@@ -63,6 +66,7 @@ void main() {
       AppIcons.copy,
       AppIcons.refresh,
       AppIcons.logout,
+      AppIcons.privacy,
       AppIcons.orders,
       AppIcons.today,
       AppIcons.month,
@@ -89,6 +93,8 @@ void main() {
       AppIcons.openExternal,
       AppIcons.statusChange,
       AppIcons.share,
+      AppIcons.attach,
+      AppIcons.send,
       AppIcons.empty,
     ].last;
 
