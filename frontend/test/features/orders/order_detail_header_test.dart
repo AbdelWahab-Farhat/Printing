@@ -33,6 +33,7 @@ void main() {
     String fulfilmentLabel = 'توصيل',
     String city = 'طرابلس',
     String? region = 'الحشان',
+    DateTime? deletedAt,
   }) => Order(
     id: 1,
     code: '1',
@@ -56,6 +57,7 @@ void main() {
     regionName: region,
     notes: notes,
     customer: who,
+    deletedAt: deletedAt,
   );
 
   /// The same frame the app boots into, with the header in the scroll view it is a sliver of.
@@ -148,6 +150,31 @@ void main() {
     // Assert — one status, one look, wherever it is drawn.
     expect(chip.status, OrderStatus.shortage);
     expect(chip.label, 'نواقص');
+  });
+
+  testWidgets('a deleted order says so beside its state', (tester) async {
+    // Arrange — trashed while it stood at «جاهزة», which is still the status it carries.
+    await tester.pumpWidget(
+      host(OrderDetailHeader(order: order(deletedAt: DateTime.utc(2026, 9, 20)))),
+    );
+
+    // Act
+    await tester.pumpAndSettle();
+
+    // Assert — the state is kept, and the deletion is read beside it rather than instead of it.
+    expect(find.text('محذوفة'), findsOneWidget);
+    expect(tester.widget<OrderStatusChip>(find.byType(OrderStatusChip)).label, 'جاهزة');
+  });
+
+  testWidgets('an order in the shop carries no such badge', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(OrderDetailHeader(order: order())));
+
+    // Act
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('محذوفة'), findsNothing);
   });
 
   testWidgets('both records are offered when there is something behind each', (tester) async {

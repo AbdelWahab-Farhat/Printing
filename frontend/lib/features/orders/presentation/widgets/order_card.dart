@@ -8,6 +8,7 @@ import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_deleted_badge.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:dayaa/features/orders/presentation/widgets/partial_delivery_badge.dart';
 import 'package:flutter/material.dart';
@@ -87,7 +88,13 @@ class OrderCard extends StatelessWidget {
                   // محجوز لها ولا شرطة، فالبطاقة التي لا شارة فيها هي البطاقة كما كانت.
                   Row(
                     children: [
-                      if (order.isUrgent) ...[
+                      // **«محذوفة» تأخذ مكان «مستعجل» لا مكاناً بجانبها.** طلبيةٌ خرجت من المحل
+                      // لا يستعجلها أحد — والشارات الثلاث معاً لا يتّسع لها أضيق هاتف. انظر
+                      // [OrderDeletedBadge].
+                      if (order.isArchived) ...[
+                        const OrderDeletedBadge(besideBanner: true),
+                        SizedBox(width: 8.w),
+                      ] else if (order.isUrgent) ...[
                         const _UrgentBadge(),
                         SizedBox(width: 8.w),
                       ],

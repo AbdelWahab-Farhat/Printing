@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_deleted_badge.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -367,6 +368,11 @@ class _Customer extends StatelessWidget {
           ),
         ),
         SizedBox(width: 10.w),
+        // بجانب الحالة لا بدلاً منها — انظر [OrderDeletedBadge].
+        if (order.isArchived) ...[
+          const OrderDeletedBadge(),
+          SizedBox(width: 6.w),
+        ],
         // The plate is the point — see the class comment. Clipped to the chip's own radius so
         // the two corners agree.
         Container(
