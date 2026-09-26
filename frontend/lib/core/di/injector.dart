@@ -955,6 +955,9 @@ abstract final class Injector {
       // A use case rather than a Cubit, for the reason RecordScrapLoss is one: the menu item
       // asks, sends, and shows what came back — there is no state left over to hold.
       ..registerLazySingleton<LodgeOrder>(() => LodgeOrder(sl<CarrierRepository>()))
+      ..registerLazySingleton<LodgeOrdersTogether>(
+        () => LodgeOrdersTogether(sl<CarrierRepository>()),
+      )
       ..registerLazySingleton<ResendCarrierShipment>(
         () => ResendCarrierShipment(sl<CarrierRepository>()),
       )

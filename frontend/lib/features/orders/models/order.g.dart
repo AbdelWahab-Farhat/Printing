@@ -306,6 +306,13 @@ _NawrisParcelRef _$NawrisParcelRefFromJson(Map<String, dynamic> json) =>
       code: json['code'] as String,
       barCode: json['bar_code'] as String?,
       isOpen: json['is_open'] as bool? ?? false,
+      sharedWith:
+          (json['shared_with'] as List<dynamic>?)
+              ?.map(
+                (e) => SharedParcelOrder.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <SharedParcelOrder>[],
     );
 
 Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
@@ -313,7 +320,17 @@ Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
       'code': instance.code,
       'bar_code': instance.barCode,
       'is_open': instance.isOpen,
+      'shared_with': instance.sharedWith.map((e) => e.toJson()).toList(),
     };
+
+_SharedParcelOrder _$SharedParcelOrderFromJson(Map<String, dynamic> json) =>
+    _SharedParcelOrder(
+      id: (json['id'] as num).toInt(),
+      code: json['code'] as String,
+    );
+
+Map<String, dynamic> _$SharedParcelOrderToJson(_SharedParcelOrder instance) =>
+    <String, dynamic>{'id': instance.id, 'code': instance.code};
 
 _OrderProgress _$OrderProgressFromJson(Map<String, dynamic> json) =>
     _OrderProgress(

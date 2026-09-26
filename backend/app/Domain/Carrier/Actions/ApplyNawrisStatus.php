@@ -136,7 +136,9 @@ final class ApplyNawrisStatus
                 $parcel->forceFill(['conflict_resolved_at' => now()])->save();
             }
 
-            if ($code->closesTheParcel()) {
+            // Once, by whichever order of a shared parcel moves first. The loop carries on over
+            // its siblings regardless: they were loaded before any of this ran.
+            if ($code->closesTheParcel() && $parcel->closed_at === null) {
                 $parcel->forceFill(['closed_at' => now()])->save();
             }
         }, attempts: 3);
@@ -180,6 +182,11 @@ final class ApplyNawrisStatus
      * `carrier_collection_recorded_at` is the last line of defence against a duplicate delivery
      * notice writing either entry twice, and it lives on the *order* so it survives the parcel
      * being deleted, re-created or re-dispatched.
+     *
+     * **Each order is paid its own share, never the parcel's figure.** In a shared parcel the
+     * parcel's figure is every order's money summed, and paying it to each would credit three
+     * orders with three parcels' worth. The share is the link row's, written at dispatch and on
+     * every edit — see `DispatchToNawris::record()`.
      */
     private function settleMoney(Order $order, NawrisParcel $parcel, User $actor): void
     {
@@ -189,8 +196,12 @@ final class ApplyNawrisStatus
             return;
         }
 
-        $remitted = (string) $parcel->amount_to_collect;
-        $fee = (string) $parcel->delivery_price_deducted;
+        $remitted = $this->shareOf($parcel, $order);
+
+        // **Only a parcel of one order ever carried a fee.** The deduction ended before shared
+        // parcels existed, so every shared parcel reads zero here — and if one somehow did not,
+        // there would be no telling which order the fee belonged to.
+        $fee = $parcel->links()->count() === 1 ? (string) $parcel->delivery_price_deducted : '0.00';
 
         // Clamped to what is actually outstanding: `RecordOrderPayment` refuses anything over the
         // remainder, and a webhook must never blow up on an order somebody part-paid at the
@@ -292,6 +303,19 @@ final class ApplyNawrisStatus
         ])->save();
 
         unset($code);
+    }
+
+    /**
+     * This order's part of what the parcel collects, as last sent to Nawris.
+     *
+     * Falls back to the parcel's own figure for a link that never recorded one, which can only
+     * be a parcel of one order — where the two are the same number.
+     */
+    private function shareOf(NawrisParcel $parcel, Order $order): string
+    {
+        $share = $parcel->links()->where('order_id', $order->getKey())->value('amount_to_collect');
+
+        return (string) ($share ?? $parcel->amount_to_collect);
     }
 
     private function clamp(string $amount, string $ceiling): string

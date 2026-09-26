@@ -1220,7 +1220,12 @@ mixin _$NawrisParcelRef {
  String get code;/// What is physically scanned at handover. Rarely shown; kept because it is the one
 /// identifier that survives a resend announced under a code nobody has seen.
 @JsonKey(name: 'bar_code') String? get barCode;/// Whether it is still out there — read off `closed_at`, not off a status list.
-@JsonKey(name: 'is_open') bool get isOpen;
+@JsonKey(name: 'is_open') bool get isOpen;/// **The other orders in the same parcel** — empty for a parcel of one.
+///
+/// What the screen reads to say «طرد مشترك مع …», and to warn that deleting, unlinking or
+/// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
+/// parcel as a whole, so every carrier action on it is an action on all of them.
+@JsonKey(name: 'shared_with') List<SharedParcelOrder> get sharedWith;
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1233,16 +1238,16 @@ $NawrisParcelRefCopyWith<NawrisParcelRef> get copyWith => _$NawrisParcelRefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other.sharedWith, sharedWith));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,barCode,isOpen);
+int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(sharedWith));
 
 @override
 String toString() {
-  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen)';
+  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith)';
 }
 
 
@@ -1253,7 +1258,7 @@ abstract mixin class $NawrisParcelRefCopyWith<$Res>  {
   factory $NawrisParcelRefCopyWith(NawrisParcelRef value, $Res Function(NawrisParcelRef) _then) = _$NawrisParcelRefCopyWithImpl;
 @useResult
 $Res call({
- String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen
+ String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith
 });
 
 
@@ -1270,12 +1275,13 @@ class _$NawrisParcelRefCopyWithImpl<$Res>
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,}) {
   return _then(_self.copyWith(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,barCode: freezed == barCode ? _self.barCode : barCode // ignore: cast_nullable_to_non_nullable
 as String?,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,sharedWith: null == sharedWith ? _self.sharedWith : sharedWith // ignore: cast_nullable_to_non_nullable
+as List<SharedParcelOrder>,
   ));
 }
 
@@ -1360,10 +1366,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef() when $default != null:
-return $default(_that.code,_that.barCode,_that.isOpen);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
   return orElse();
 
 }
@@ -1381,10 +1387,10 @@ return $default(_that.code,_that.barCode,_that.isOpen);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)  $default,) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef():
-return $default(_that.code,_that.barCode,_that.isOpen);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1401,10 +1407,10 @@ return $default(_that.code,_that.barCode,_that.isOpen);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)?  $default,) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef() when $default != null:
-return $default(_that.code,_that.barCode,_that.isOpen);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
   return null;
 
 }
@@ -1416,7 +1422,7 @@ return $default(_that.code,_that.barCode,_that.isOpen);case _:
 @JsonSerializable()
 
 class _NawrisParcelRef implements NawrisParcelRef {
-  const _NawrisParcelRef({required this.code, @JsonKey(name: 'bar_code') this.barCode, @JsonKey(name: 'is_open') this.isOpen = false});
+  const _NawrisParcelRef({required this.code, @JsonKey(name: 'bar_code') this.barCode, @JsonKey(name: 'is_open') this.isOpen = false, @JsonKey(name: 'shared_with') final  List<SharedParcelOrder> sharedWith = const <SharedParcelOrder>[]}): _sharedWith = sharedWith;
   factory _NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
 
 /// Their handle on the parcel, and what a customer is read over the phone.
@@ -1426,6 +1432,23 @@ class _NawrisParcelRef implements NawrisParcelRef {
 @override@JsonKey(name: 'bar_code') final  String? barCode;
 /// Whether it is still out there — read off `closed_at`, not off a status list.
 @override@JsonKey(name: 'is_open') final  bool isOpen;
+/// **The other orders in the same parcel** — empty for a parcel of one.
+///
+/// What the screen reads to say «طرد مشترك مع …», and to warn that deleting, unlinking or
+/// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
+/// parcel as a whole, so every carrier action on it is an action on all of them.
+ final  List<SharedParcelOrder> _sharedWith;
+/// **The other orders in the same parcel** — empty for a parcel of one.
+///
+/// What the screen reads to say «طرد مشترك مع …», and to warn that deleting, unlinking or
+/// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
+/// parcel as a whole, so every carrier action on it is an action on all of them.
+@override@JsonKey(name: 'shared_with') List<SharedParcelOrder> get sharedWith {
+  if (_sharedWith is EqualUnmodifiableListView) return _sharedWith;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_sharedWith);
+}
+
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
@@ -1440,16 +1463,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other._sharedWith, _sharedWith));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,barCode,isOpen);
+int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(_sharedWith));
 
 @override
 String toString() {
-  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen)';
+  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith)';
 }
 
 
@@ -1460,7 +1483,7 @@ abstract mixin class _$NawrisParcelRefCopyWith<$Res> implements $NawrisParcelRef
   factory _$NawrisParcelRefCopyWith(_NawrisParcelRef value, $Res Function(_NawrisParcelRef) _then) = __$NawrisParcelRefCopyWithImpl;
 @override @useResult
 $Res call({
- String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen
+ String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith
 });
 
 
@@ -1477,12 +1500,279 @@ class __$NawrisParcelRefCopyWithImpl<$Res>
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,}) {
   return _then(_NawrisParcelRef(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,barCode: freezed == barCode ? _self.barCode : barCode // ignore: cast_nullable_to_non_nullable
 as String?,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,sharedWith: null == sharedWith ? _self._sharedWith : sharedWith // ignore: cast_nullable_to_non_nullable
+as List<SharedParcelOrder>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SharedParcelOrder {
+
+ int get id; String get code;
+/// Create a copy of SharedParcelOrder
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SharedParcelOrderCopyWith<SharedParcelOrder> get copyWith => _$SharedParcelOrderCopyWithImpl<SharedParcelOrder>(this as SharedParcelOrder, _$identity);
+
+  /// Serializes this SharedParcelOrder to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SharedParcelOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,code);
+
+@override
+String toString() {
+  return 'SharedParcelOrder(id: $id, code: $code)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SharedParcelOrderCopyWith<$Res>  {
+  factory $SharedParcelOrderCopyWith(SharedParcelOrder value, $Res Function(SharedParcelOrder) _then) = _$SharedParcelOrderCopyWithImpl;
+@useResult
+$Res call({
+ int id, String code
+});
+
+
+
+
+}
+/// @nodoc
+class _$SharedParcelOrderCopyWithImpl<$Res>
+    implements $SharedParcelOrderCopyWith<$Res> {
+  _$SharedParcelOrderCopyWithImpl(this._self, this._then);
+
+  final SharedParcelOrder _self;
+  final $Res Function(SharedParcelOrder) _then;
+
+/// Create a copy of SharedParcelOrder
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SharedParcelOrder].
+extension SharedParcelOrderPatterns on SharedParcelOrder {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SharedParcelOrder value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SharedParcelOrder() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SharedParcelOrder value)  $default,){
+final _that = this;
+switch (_that) {
+case _SharedParcelOrder():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SharedParcelOrder value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SharedParcelOrder() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SharedParcelOrder() when $default != null:
+return $default(_that.id,_that.code);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code)  $default,) {final _that = this;
+switch (_that) {
+case _SharedParcelOrder():
+return $default(_that.id,_that.code);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code)?  $default,) {final _that = this;
+switch (_that) {
+case _SharedParcelOrder() when $default != null:
+return $default(_that.id,_that.code);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SharedParcelOrder implements SharedParcelOrder {
+  const _SharedParcelOrder({required this.id, required this.code});
+  factory _SharedParcelOrder.fromJson(Map<String, dynamic> json) => _$SharedParcelOrderFromJson(json);
+
+@override final  int id;
+@override final  String code;
+
+/// Create a copy of SharedParcelOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SharedParcelOrderCopyWith<_SharedParcelOrder> get copyWith => __$SharedParcelOrderCopyWithImpl<_SharedParcelOrder>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SharedParcelOrderToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SharedParcelOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,code);
+
+@override
+String toString() {
+  return 'SharedParcelOrder(id: $id, code: $code)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SharedParcelOrderCopyWith<$Res> implements $SharedParcelOrderCopyWith<$Res> {
+  factory _$SharedParcelOrderCopyWith(_SharedParcelOrder value, $Res Function(_SharedParcelOrder) _then) = __$SharedParcelOrderCopyWithImpl;
+@override @useResult
+$Res call({
+ int id, String code
+});
+
+
+
+
+}
+/// @nodoc
+class __$SharedParcelOrderCopyWithImpl<$Res>
+    implements _$SharedParcelOrderCopyWith<$Res> {
+  __$SharedParcelOrderCopyWithImpl(this._self, this._then);
+
+  final _SharedParcelOrder _self;
+  final $Res Function(_SharedParcelOrder) _then;
+
+/// Create a copy of SharedParcelOrder
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,}) {
+  return _then(_SharedParcelOrder(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

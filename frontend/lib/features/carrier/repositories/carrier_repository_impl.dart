@@ -21,6 +21,14 @@ class CarrierRepositoryImpl implements CarrierRepository {
   }
 
   @override
+  Future<Either<Failure, NawrisParcel>> lodgeTogether(List<int> orderIds) {
+    return safeRequest<NawrisParcel>(
+      () => _dio.post(CarrierEndpoints.sharedParcel, data: {'order_ids': orderIds}),
+      parse: (data) => NawrisParcel.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, NawrisParcel?>> resend(int orderId) =>
       _letGo(CarrierEndpoints.resend(orderId));
 

@@ -15,6 +15,12 @@ abstract interface class CarrierRepository {
   /// A screen that advanced the status itself would be describing a journey nobody had started.
   Future<Either<Failure, NawrisParcel>> lodge(int orderId);
 
+  /// `POST /carrier/parcels` — several orders of one customer, to one door, as one parcel.
+  ///
+  /// Moves no status, like [lodge]. Refused as a whole when any order does not fit, with the
+  /// server's sentence naming it.
+  Future<Either<Failure, NawrisParcel>> lodgeTogether(List<int> orderIds);
+
   /// `POST /carrier/orders/{id}/resend` — sends a returned parcel out again.
   ///
   /// **Answers a different parcel from the one that went out.** A second journey is a second

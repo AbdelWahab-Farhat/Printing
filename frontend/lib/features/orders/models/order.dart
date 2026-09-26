@@ -617,9 +617,28 @@ abstract class NawrisParcelRef with _$NawrisParcelRef {
 
     /// Whether it is still out there — read off `closed_at`, not off a status list.
     @JsonKey(name: 'is_open') @Default(false) bool isOpen,
+
+    /// **The other orders in the same parcel** — empty for a parcel of one.
+    ///
+    /// What the screen reads to say «طرد مشترك مع …», and to warn that deleting, unlinking or
+    /// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
+    /// parcel as a whole, so every carrier action on it is an action on all of them.
+    @JsonKey(name: 'shared_with') @Default(<SharedParcelOrder>[]) List<SharedParcelOrder> sharedWith,
   }) = _NawrisParcelRef;
 
   factory NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
+}
+
+/// Another order in the same Nawris parcel — enough to name it and open it.
+@freezed
+abstract class SharedParcelOrder with _$SharedParcelOrder {
+  const factory SharedParcelOrder({
+    required int id,
+    required String code,
+  }) = _SharedParcelOrder;
+
+  factory SharedParcelOrder.fromJson(Map<String, dynamic> json) =>
+      _$SharedParcelOrderFromJson(json);
 }
 
 @freezed

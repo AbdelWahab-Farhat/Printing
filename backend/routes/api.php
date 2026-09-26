@@ -487,6 +487,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/orders/{order}/lodge', [CarrierController::class, 'lodge'])
             ->middleware('can:carrier.manage')->name('carrier.lodge');
 
+        // Several orders in one parcel. The same grant as lodging one: neither moves a status,
+        // so neither asks for a status permission.
+        Route::post('carrier/parcels', [CarrierController::class, 'storeShared'])
+            ->middleware('can:carrier.manage')->name('carrier.parcels.store');
+
         Route::post('carrier/orders/{order}/cancel-shipment', [CarrierController::class, 'cancelShipment'])
             ->middleware('can:carrier.manage')->name('carrier.cancel-shipment');
 

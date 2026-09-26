@@ -48,23 +48,52 @@ final class BuildNawrisPayload
         ?string $area = null,
         ?string $code = null,
     ): array {
+        return $this->forOrders([$order], $government, $area, $code);
+    }
+
+    /**
+     * The full payload for a parcel holding one or more orders.
+     *
+     * **One order is the case every field was written for, and it sends exactly what it always
+     * did.** Several change four fields and no others: `receiver` names every order, the COD is
+     * their sum, `pieces_count` counts them, and the summary says how many. The phone is the
+     * first order's — a group shares one recipient phone, which `DispatchToNawris` checks before
+     * this is ever reached.
+     *
+     * **The caller passes the orders in a stable order**, sorted by id, and create, edit and
+     * resend all do: `receiver` is replayed on every edit, and a label whose codes shuffled
+     * between calls would be an edit nobody asked for.
+     *
+     * @param  list<Order>  $orders
+     * @return array<string, mixed>
+     */
+    public function forOrders(
+        array $orders,
+        string $government,
+        ?string $area = null,
+        ?string $code = null,
+    ): array {
         $defaults = (array) ($this->config['defaults'] ?? []);
+
+        $first = $orders[0];
+        $grouped = count($orders) > 1;
 
         $payload = [
             // **Not a person's name.** It is what gets read off the label at handover, and the
-            // order code is what a person here can act on when a courier rings about it.
-            'receiver' => (string) $order->code,
+            // order code is what a person here can act on when a courier rings about it. A shared
+            // parcel names every order in it, joined the way the carrier's own system joins them.
+            'receiver' => implode('+', array_map(fn (Order $order): string => (string) $order->code, $orders)),
 
-            'phone1' => $this->phone($order),
+            'phone1' => $this->phone($first),
 
             'government' => $government,
             'area' => $area,
 
-            'order_summary' => 'طلبية أكياس',
+            'order_summary' => $grouped ? count($orders).' طلبيات أكياس' : 'طلبية أكياس',
 
-            'amount_to_be_collected' => (float) $this->amountToCollect($order),
+            'amount_to_be_collected' => (float) $this->amountToCollectFor($orders),
 
-            'remote_order_id' => $this->reference($order),
+            'remote_order_id' => $this->reference($first),
 
             'return_amount' => 0.0,
 
@@ -76,7 +105,9 @@ final class BuildNawrisPayload
             'can_open' => (int) ($defaults['can_open'] ?? 0),
             'is_measurable' => (int) ($defaults['is_measurable'] ?? 0),
             'is_order' => (int) ($defaults['is_order'] ?? 0),
-            'pieces_count' => (int) ($defaults['pieces_count'] ?? 1),
+            // One piece per order in a shared parcel — what the courier counts at handover. A
+            // single order keeps the configured figure.
+            'pieces_count' => $grouped ? count($orders) : (int) ($defaults['pieces_count'] ?? 1),
             'extra_cost_payer' => (int) ($defaults['extra_cost_payer'] ?? 1),
             'is_office_given' => (int) ($defaults['is_office_given'] ?? 0),
             'is_fragile' => (int) ($defaults['is_fragile'] ?? 0),
@@ -118,6 +149,26 @@ final class BuildNawrisPayload
     }
 
     /**
+     * What a parcel collects: the sum of each order's own {@see amountToCollect()}.
+     *
+     * **Summed after clamping, never before.** An overpaid order contributes zero rather than a
+     * negative that would quietly discount its siblings — its customer is owed a refund, which is
+     * not something the courier can hand over at another order's door.
+     *
+     * @param  list<Order>  $orders
+     */
+    public function amountToCollectFor(array $orders): string
+    {
+        $total = '0.00';
+
+        foreach ($orders as $order) {
+            $total = bcadd($total, $this->amountToCollect($order), Money::SCALE);
+        }
+
+        return Money::round($total);
+    }
+
+    /**
      * Our correlation id, minted here and echoed back by every webhook.
      *
      * Unique per *parcel* rather than per order, so a re-send gets a fresh one while the order
@@ -144,8 +195,11 @@ final class BuildNawrisPayload
      * Falls back to the configured placeholder when we simply do not have one, so a parcel is
      * never refused over a field the customer never gave us. The order's own recipient wins over
      * the customer's, because it is the person actually receiving the parcel.
+     *
+     * Public because it is also the test for whether orders may share a parcel: two numbers that
+     * send the same thing are the same recipient, however each was typed.
      */
-    private function phone(Order $order): string
+    public function phone(Order $order): string
     {
         $raw = $order->recipient_phone ?? $order->customer?->phone;
 
