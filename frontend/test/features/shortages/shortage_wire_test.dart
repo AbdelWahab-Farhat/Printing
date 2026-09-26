@@ -102,6 +102,29 @@ void main() {
       expect((captured.data! as Map<String, dynamic>)['warehouse_id'], 3);
     });
 
+    test('does not confirm a surplus nobody confirmed', () async {
+      // Act
+      await repository.recordSupply(41, quantity: '20', amount: '500', method: 'cash', warehouseId: 3);
+
+      // Assert — absent, so a quantity beyond the remainder is still refused as a typo.
+      expect((captured.data! as Map<String, dynamic>).containsKey('accept_surplus'), isFalse);
+    });
+
+    test('sends the confirmation once the extra was accepted', () async {
+      // Act
+      await repository.recordSupply(
+        41,
+        quantity: '40',
+        amount: '1000',
+        method: 'cash',
+        warehouseId: 3,
+        acceptSurplus: true,
+      );
+
+      // Assert
+      expect((captured.data! as Map<String, dynamic>)['accept_surplus'], isTrue);
+    });
+
     test('the undo is a POST to the row, not a DELETE', () async {
       // Act
       await repository.reverseSupply(41, 77, reason: 'سُجّلت مرتين');

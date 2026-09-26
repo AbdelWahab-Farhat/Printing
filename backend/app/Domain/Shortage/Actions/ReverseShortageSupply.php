@@ -107,6 +107,8 @@ final class ReverseShortageSupply
                 // worked around.
                 'kind' => SupplyKind::Purchased,
                 'quantity' => $original->quantity,
+                // Mirrored like the rest, so the pair describes the same sack from both ends.
+                'surplus_quantity' => $original->surplus_quantity,
                 'amount' => $original->amount,
                 'method' => $original->method,
                 'reference' => $original->reference,

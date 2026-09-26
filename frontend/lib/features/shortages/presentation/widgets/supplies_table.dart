@@ -119,6 +119,29 @@ class _SupplyRow extends StatelessWidget {
             ),
           ],
         ),
+        // **The extra, named on the row that brought it.** The quantity above is what reached the
+        // shelf; this is the part the shortage did not count, because nothing was missing of it.
+        if (supply.hasSurplus) ...[
+          SizedBox(height: 4.h),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: scheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Text(
+                'فائض ${shortage.withUnit(supply.surplusQuantity)} للمخزن',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: scheme.onTertiaryContainer,
+                  fontWeight: FontWeight.w700,
+                  decoration: struck ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+          ),
+        ],
         SizedBox(height: 4.h),
         Row(
           children: [

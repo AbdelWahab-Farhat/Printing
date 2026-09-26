@@ -89,8 +89,10 @@ class Shortage extends Model implements HasAuditTrail
             // shortage is measured off the same scale the order line was.
             'required_quantity' => 'decimal:3',
             'supplied_quantity' => 'decimal:3',
+            'surplus_quantity' => 'decimal:3',
             // Money, so two — and never a float, because this one is summed across a screen.
             'total_paid' => 'decimal:2',
+            'surplus_value' => 'decimal:2',
         ];
     }
 
@@ -256,13 +258,18 @@ class Shortage extends Model implements HasAuditTrail
      * with a *positive* quantity, so summing the table counts a purchase and its undoing as two
      * arrivals, and a requirement restated from it would grow every time an entry was corrected.
      * {@see liveSupplies()} is what "actually" means.
+     *
+     * **And "come back" means toward this shortage.** A supply bigger than what was missing
+     * carries its extra as `surplus_quantity`, and that part is stock rather than supply — summing
+     * `quantity` here would let the sync's `required = missing + Σ supplied` grow by every surplus
+     * and reopen a shortage that was met. See {@see ShortageSupply::appliedQuantity()}.
      */
     public function liveSuppliedQuantity(): string
     {
         $quantity = '0.000';
 
         foreach ($this->liveSupplies() as $supply) {
-            $quantity = bcadd($quantity, (string) $supply->quantity, 3);
+            $quantity = bcadd($quantity, $supply->appliedQuantity(), 3);
         }
 
         return $quantity;

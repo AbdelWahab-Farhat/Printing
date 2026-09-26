@@ -31,6 +31,10 @@ class ShortageSupplyResource extends JsonResource
             // client exactly, without a float's opinion in the middle.
             'quantity' => (string) $this->quantity,
 
+            // The part of `quantity` beyond what the shortage was missing — shelf stock, not
+            // supply. `'0.000'` on every entry that fitted.
+            'surplus_quantity' => (string) $this->surplus_quantity,
+
             // Null on a quantity that merely arrived from the order — nothing was bought, so
             // there is no price and no method. See SupplyKind.
             'amount' => $this->amount === null ? null : (string) $this->amount,

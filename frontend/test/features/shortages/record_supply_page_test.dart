@@ -146,9 +146,9 @@ void main() {
     expect(find.textContaining('6'), findsWidgets);
   });
 
-  testWidgets('a quantity above the remainder is refused before the request', (tester) async {
-    // Arrange
-    await tester.pumpWidget(host(shortage()));
+  testWidgets('a quantity above the remainder is refused where there is no shelf', (tester) async {
+    // Arrange — the extra would have nowhere to go.
+    await tester.pumpWidget(host(shortage(isStockable: false)));
     await tester.enterText(find.byType(AppTextField).first, '40');
 
     // Act
@@ -158,5 +158,21 @@ void main() {
     // Assert — the server checks it again under a lock, so the 422 can still arrive; this only
     // spares the ordinary case a round trip.
     expect(find.textContaining('أكبر من المتبقي'), findsOneWidget);
+  });
+
+  testWidgets('a quantity above the remainder on a shelf says where the extra goes', (tester) async {
+    // Arrange — forty bought against ten missing: the shortage counts ten, the shelf gets thirty.
+    await tester.pumpWidget(host(shortage()));
+    await tester.enterText(find.byType(AppTextField).first, '40');
+    await tester.pump();
+
+    // Act
+    await tester.tap(find.text('تسجيل'));
+    await tester.pumpAndSettle();
+
+    // Assert — said before the button, and not refused as a typo; the dialog confirms it later.
+    expect(find.textContaining('يذهب للمخزن'), findsOneWidget);
+    expect(find.textContaining('30'), findsWidgets);
+    expect(find.textContaining('أكبر من المتبقي'), findsNothing);
   });
 }

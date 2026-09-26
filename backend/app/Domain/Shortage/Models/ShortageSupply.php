@@ -52,6 +52,7 @@ class ShortageSupply extends Model
             'kind' => SupplyKind::class,
             'method' => PaymentMethod::class,
             'quantity' => 'decimal:3',
+            'surplus_quantity' => 'decimal:3',
             'amount' => 'decimal:2',
             'occurred_on' => 'date',
             'receipt_size_bytes' => 'integer',
@@ -102,6 +103,38 @@ class ShortageSupply extends Model
         return $disk->providesTemporaryUrls()
             ? $disk->temporaryUrl($this->receipt_path, now()->addMinutes(config('media.temporary_url_minutes')))
             : $disk->url($this->receipt_path);
+    }
+
+    /**
+     * How much of this arrival went toward the shortage.
+     *
+     * **`quantity` is what reached the shelf; this is what the shortage counts.** They differ only
+     * on a purchase bigger than what was missing — the thirty-kilo sack against a twenty-kilo
+     * shortage — where the ten left over is ordinary stock. See the migration that added
+     * `surplus_quantity`.
+     */
+    public function appliedQuantity(): string
+    {
+        return bcsub((string) $this->quantity, (string) ($this->surplus_quantity ?? '0'), 3);
+    }
+
+    /**
+     * The extra's share of what was paid — «منها للمخزن» for this one row.
+     *
+     * Apportioned by quantity, the only bridge there is: the whole sack was bought at one price,
+     * so every kilo of it cost the same. Zero on a row that fitted, and on one that bought nothing.
+     */
+    public function surplusValue(): string
+    {
+        if ($this->amount === null || bccomp((string) ($this->surplus_quantity ?? '0'), '0', 3) <= 0) {
+            return '0';
+        }
+
+        return bcdiv(
+            bcmul((string) $this->amount, (string) $this->surplus_quantity, 8),
+            (string) $this->quantity,
+            8,
+        );
     }
 
     /** Whether this row undoes another one. */

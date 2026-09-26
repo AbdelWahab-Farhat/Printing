@@ -177,6 +177,7 @@ class RecordShortageSupply {
     String? occurredOn,
     String? notes,
     PickedFile? receipt,
+    bool acceptSurplus = false,
   }) {
     return _repository.recordSupply(
       shortageId,
@@ -187,6 +188,7 @@ class RecordShortageSupply {
       occurredOn: occurredOn,
       notes: notes,
       receipt: receipt,
+      acceptSurplus: acceptSurplus,
     );
   }
 }

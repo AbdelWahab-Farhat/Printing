@@ -122,6 +122,7 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
         occurredOn: entry.occurredOn,
         notes: entry.notes,
         receipt: entry.receipt,
+        acceptSurplus: entry.acceptSurplus,
       ),
     );
   }
@@ -275,6 +276,18 @@ class _Numbers extends StatelessWidget {
           ),
           SizedBox(height: 10.h),
           _Line(label: 'إجمالي المدفوع', value: '${shortage.totalPaid.grouped} د.ل'),
+          // «منها للمخزن»: the part of that payment that bought stock beyond the shortage. The
+          // total above stays the whole payment — the sack was bought whole.
+          if (shortage.hasSurplus) ...[
+            SizedBox(height: 10.h),
+            _Line(
+              label: 'منها للمخزن',
+              value:
+                  '${shortage.withUnit(shortage.surplusQuantity)} · '
+                  '${shortage.surplusValue.grouped} د.ل',
+              tone: scheme.tertiary,
+            ),
+          ],
         ],
       ),
     );

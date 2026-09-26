@@ -68,6 +68,11 @@ class ShortageResource extends JsonResource
             'remaining_quantity' => $this->remainingQuantity(),
             'total_paid' => (string) $this->total_paid,
 
+            // «منها للمخزن»: what was bought beyond the shortage and went to the shelf as company
+            // stock, and its share of `total_paid` — which still holds the whole payment.
+            'surplus_quantity' => (string) $this->surplus_quantity,
+            'surplus_value' => (string) $this->surplus_value,
+
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'is_final' => $this->status->isFinal(),

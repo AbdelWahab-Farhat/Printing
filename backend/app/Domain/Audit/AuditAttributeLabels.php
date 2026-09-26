@@ -661,6 +661,9 @@ final class AuditAttributeLabels
             // is always the consequence of an entry in that ledger rather than somebody typing.
             'supplied_quantity' => 'الكمية التي تم توفيرها',
             'total_paid' => 'إجمالي المدفوع',
+            // The same ledger's «منها للمخزن»: bought beyond the shortage, now company stock.
+            'surplus_quantity' => 'الكمية الزائدة للمخزن',
+            'surplus_value' => 'قيمة الزائد للمخزن',
             'assigned_to_user_id' => 'الموظف المسؤول',
             'created_by_user_id' => 'سجّله',
             'description' => 'الوصف',
@@ -702,6 +705,8 @@ final class AuditAttributeLabels
         'shortage_supply' => [
             'shortage_id' => 'النقص',
             'kind' => 'نوع العملية',
+            // The part of `quantity` beyond what was missing — shelf stock, not supply.
+            'surplus_quantity' => 'منها زائد للمخزن',
             'method' => 'طريقة الدفع',
             'reference' => 'رقم العملية',
             'receipt_disk' => 'قرص الإيصال',

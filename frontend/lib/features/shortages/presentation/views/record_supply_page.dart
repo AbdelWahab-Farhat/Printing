@@ -5,6 +5,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
@@ -26,6 +27,7 @@ class SupplyEntry {
     this.occurredOn,
     this.notes,
     this.receipt,
+    this.acceptSurplus = false,
   });
 
   final String quantity;
@@ -37,6 +39,9 @@ class SupplyEntry {
 
   /// الواصل, and null on most entries — see [RecordSupplyPage].
   final PickedFile? receipt;
+
+  /// True once the employee confirmed that what is beyond the remainder goes to the shelf.
+  final bool acceptSurplus;
 }
 
 /// «تسجيل توفير» — what was bought, what it cost, where it landed, and the paper it came with.
@@ -72,6 +77,12 @@ class SupplyEntry {
 /// **The quantity box is not pre-filled with the remainder.** `receive_arrival_sheet` argues this
 /// at length for shipments and it holds here: pre-filling turns «كم وصل» into «أكّد ما كنا
 /// نأمله».
+///
+/// **More than the remainder is allowed on a stockable shortage — once confirmed.** A thirty-kilo
+/// sack bought against twenty missing all lands on the shelf; the shortage counts twenty and the
+/// ten left over is company stock. The form says so live («يذهب للمخزن …»), asks before it
+/// sends, and only then sets `accept_surplus`. A shortage with no shelf has nowhere to put the
+/// extra, so there the box is still capped.
 class RecordSupplyPage extends StatefulWidget {
   const RecordSupplyPage({required this.shortage, super.key});
 
@@ -114,6 +125,19 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
     return left < 0 ? null : left.toStringAsFixed(3);
   }
 
+  /// What is typed beyond the remainder — null while it fits, or while the box holds no number.
+  ///
+  /// Only meaningful on a stockable shortage; on one without a shelf the validator refuses it
+  /// before this is ever read.
+  String? get _surplus {
+    final typed = double.tryParse(Validators.toWesternDigits(_quantity.text));
+    final remaining = double.tryParse(widget.shortage.remainingQuantity);
+
+    if (typed == null || remaining == null || typed <= remaining) return null;
+
+    return (typed - remaining).toStringAsFixed(3);
+  }
+
   Future<void> _pickWarehouse(FormFieldState<Warehouse> field) async {
     final picked = await showWarehousePicker(context: context);
 
@@ -139,8 +163,29 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
     setState(() => _receipt = files.first);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final shortage = widget.shortage;
+    final surplus = _surplus;
+
+    // **Asked, never assumed.** The ordinary cause of thirty against a remainder of three is
+    // still a slipped keystroke, so the extra is spelled out and confirmed before it is sent.
+    if (surplus != null) {
+      final confirmed = await showCustomDialog(
+        context: context,
+        title: 'الكمية أكبر من المتبقي',
+        description:
+            'المتبقي ${shortage.withUnit(shortage.remainingQuantity)}، '
+            'والمُدخل ${shortage.withUnit(Validators.toWesternDigits(_quantity.text.trim()))}.\n'
+            'يُحتسب للنقص المتبقي فقط، ويدخل الزائد (${shortage.withUnit(surplus)}) '
+            'المخزن كمخزونٍ للشركة.',
+        confirmLabel: 'تسجيل وإدخال الزائد',
+        severity: DialogSeverity.warning,
+      );
+
+      if (!(confirmed ?? false) || !mounted) return;
+    }
 
     context.pop(
       SupplyEntry(
@@ -151,6 +196,7 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
         warehouseId: widget.shortage.isStockable ? _warehouse?.id : null,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
         receipt: _receipt,
+        acceptSurplus: surplus != null,
       ),
     );
   }
@@ -199,14 +245,28 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
 
                   if (typed == null || typed <= 0) return 'أدخل كمية';
 
-                  // The cap is here so the refusal is met before the request — but the server
-                  // checks it again under a lock, so «أكبر من المتبقي» can still arrive: two
-                  // clerks can record the last ten kilos at once.
-                  if (typed > remaining) return 'أكبر من المتبقي (${remaining.toStringAsFixed(3)})';
+                  // More than is left goes to the shelf — but only where there is a shelf. The
+                  // server checks the remainder again under a lock, so «أكبر من المتبقي» can
+                  // still arrive: two clerks can record the last ten kilos at once.
+                  if (typed > remaining && !shortage.isStockable) {
+                    return 'أكبر من المتبقي (${remaining.toStringAsFixed(3)}) — لا مخزن لهذا النقص';
+                  }
 
                   return null;
                 },
               ),
+              // Said before the button, not only in the dialog after it.
+              if (_surplus case final extra? when shortage.isStockable) ...[
+                SizedBox(height: 6.h),
+                Text(
+                  'المتبقي ${shortage.withUnit(shortage.remainingQuantity)} · '
+                  'يذهب للمخزن ${shortage.withUnit(extra)}',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.tertiary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
               // The whole point of the form: the user sees they are leaving it open.
               if (_remainderAfter case final left?) ...[
                 SizedBox(height: 6.h),

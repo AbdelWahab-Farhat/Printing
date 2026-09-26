@@ -46,7 +46,9 @@ final class CreateShortage
             // them back, so the row returned to the client would carry '' where a screen expects
             // «٠٫٠٠٠» — and a refresh to fetch two zeros is a query for nothing.
             'supplied_quantity' => '0.000',
+            'surplus_quantity' => '0.000',
             'total_paid' => '0.00',
+            'surplus_value' => '0.00',
             'product_id' => $data->productId,
             'product_variant_id' => $data->productVariantId,
             'description' => $data->description,

@@ -57,6 +57,10 @@ abstract class ShortageSupply with _$ShortageSupply {
     /// Negative on a reversal, which is how the ledger adds up to the remainder.
     required String quantity,
 
+    /// The part of [quantity] bought beyond what the shortage was missing — company stock, not
+    /// supply. `'0.000'` on every entry that fitted.
+    @JsonKey(name: 'surplus_quantity') @Default('0.000') String surplusQuantity,
+
     /// **Null on a `resolved_externally` row**, and the reason the table prints a dash rather
     /// than a zero there.
     String? amount,
@@ -109,6 +113,9 @@ abstract class ShortageSupply with _$ShortageSupply {
 
   /// Whether this row carries money at all — false on an arrival from the order.
   bool get hasMoney => amount != null;
+
+  /// Whether some of this arrival went to the shelf beyond the shortage — the «فائض» badge.
+  bool get hasSurplus => (double.tryParse(surplusQuantity) ?? 0) > 0;
 
   /// Whether the row is a correction, either because it is one or because one was made against
   /// it. Both are drawn struck through: the table shows the whole history and the arithmetic

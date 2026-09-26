@@ -258,7 +258,9 @@ final class SyncShortagesFromOrder
             // Explicit for the reason CreateShortage gives: an unsaved model does not read the
             // column defaults back, and this row is handed straight to the recalculation.
             'supplied_quantity' => '0.000',
+            'surplus_quantity' => '0.000',
             'total_paid' => '0.00',
+            'surplus_value' => '0.00',
             'status' => ShortageStatus::New,
             // **Unassigned, on purpose.** An order that lands in «نواقص» at two in the morning
             // belongs to nobody until somebody picks it up, and quietly assigning it to whoever

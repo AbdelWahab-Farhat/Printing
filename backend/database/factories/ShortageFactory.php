@@ -42,7 +42,9 @@ class ShortageFactory extends Factory
             'unit' => PricingUnit::Kilogram,
             'required_quantity' => '30.000',
             'supplied_quantity' => '0.000',
+            'surplus_quantity' => '0.000',
             'total_paid' => '0.00',
+            'surplus_value' => '0.00',
             'status' => ShortageStatus::New,
         ];
     }

@@ -33,6 +33,7 @@ class ShortageSupplyFactory extends Factory
             'shortage_id' => Shortage::factory(),
             'kind' => SupplyKind::Purchased,
             'quantity' => '10.000',
+            'surplus_quantity' => '0.000',
             'amount' => '250.00',
             'method' => PaymentMethod::Cash,
             'occurred_on' => now()->toDateString(),
