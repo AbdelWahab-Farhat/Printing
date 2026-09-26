@@ -3,8 +3,8 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
-import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/app_tab_bar.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customers_cubit.dart';
 import 'package:dayaa/features/customers/presentation/views/customers_page.dart';
@@ -14,7 +14,6 @@ import 'package:dayaa/features/vendors/presentation/viewmodel/vendors_cubit.dart
 import 'package:dayaa/features/vendors/presentation/views/vendors_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 /// The three registers of people the business deals with, under one tab.
@@ -158,41 +157,12 @@ class _PartiesView extends StatelessWidget {
           children: [
             // Only when there is a choice to make. One register left is a list, and a tab bar
             // over a single tab is a control that cannot do anything.
-            if (visible.length > 1) _Tabs(registers: visible),
-            Expanded(
-              child: TabBarView(
-                children: [for (final register in visible) register.body],
-              ),
-            ),
+            if (visible.length > 1)
+              AppTabBar(labels: [for (final register in visible) register.label]),
+            Expanded(child: TabBarView(children: [for (final register in visible) register.body])),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Tabs extends StatelessWidget {
-  const _Tabs({required this.registers});
-
-  final List<_Register> registers;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return TabBar(
-      // Sized to the screen rather than scrolling: three short words fit, and a bar that can be
-      // scrolled hides the tab at its end from anybody who never drags it.
-      isScrollable: false,
-      indicatorSize: TabBarIndicatorSize.tab,
-      dividerColor: scheme.outlineVariant.withValues(alpha: 0.5),
-      labelColor: scheme.primary,
-      unselectedLabelColor: scheme.onSurfaceVariant,
-      labelStyle: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
-      unselectedLabelStyle: context.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-      tabs: [for (final register in registers) Tab(height: 44.h, text: register.label)],
     );
   }
 }
