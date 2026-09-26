@@ -7,6 +7,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/wallet_entry.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -93,6 +94,53 @@ class InvestorRepositoryImpl implements InvestorRepository {
       parse: (_) => unit,
     );
   }
+
+  @override
+  Future<Either<Failure, Paginated<WalletEntry>>> statement(
+    int investorId, {
+    WalletEntryCategory? category,
+    DateTime? from,
+    DateTime? to,
+    int page = 1,
+    int perPage = 25,
+  }) {
+    return safePaginatedRequest<WalletEntry>(
+      () => _dio.get(
+        InvestorEndpoints.statement(investorId),
+        queryParameters: <String, dynamic>{
+          'page': page,
+          'per_page': perPage,
+          if (category != null) 'category': category.value,
+          // The day alone: the server counts `to` to the end of its day, and a time sent here
+          // would cut that day short in whichever timezone the phone happens to be in.
+          if (from != null) 'from': _day(from),
+          if (to != null) 'to': _day(to),
+        },
+      ),
+      parseItem: (row) => WalletEntry.fromJson(row),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Unit>> reverseWalletEntry({
+    required int investorId,
+    required int entryId,
+    String? notes,
+  }) {
+    return safeRequest<Unit>(
+      () => _dio.post(
+        InvestorEndpoints.walletReversal(investorId, entryId),
+        data: <String, dynamic>{
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      ),
+      parse: (_) => unit,
+    );
+  }
+
+  static String _day(DateTime at) =>
+      '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-'
+      '${at.day.toString().padLeft(2, '0')}';
 
   @override
   Future<Either<Failure, Paginated<InvestorDeal>>> deals({

@@ -271,7 +271,12 @@ void main() {
     expect(inProfit('50 د.ل'), findsOneWidget);
     expect(find.byType(FilterOptionChip), findsNothing);
     expect(find.byWidgetPredicate((widget) => widget is SegmentedButton), findsNothing);
-    expect(find.byType(IconButton), findsNothing);
+    // Within the page's own list: the bar above it carries «سجل الحركات», which opens another
+    // screen and hides no figure of this one.
+    expect(
+      find.descendant(of: find.byType(ListView), matching: find.byType(IconButton)),
+      findsNothing,
+    );
   });
 
   testWidgets('without the three figures the profit card says what can be withdrawn', (

@@ -6,6 +6,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/wallet_entry.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 
 /// One page of the investors list.
@@ -175,6 +176,37 @@ class RecordDealExpense {
     // under a Libyan thumb produces, and the server's `numeric` rule refuses it.
     amount: Validators.toWesternDigits(amount.trim()),
     incurredOn: incurredOn,
+    notes: notes?.trim(),
+  );
+}
+
+/// One page of an investor's movements.
+class GetInvestorStatement {
+  const GetInvestorStatement(this._repository);
+
+  final InvestorRepository _repository;
+
+  Future<Either<Failure, Paginated<WalletEntry>>> call(
+    int investorId, {
+    WalletEntryCategory? category,
+    DateTime? from,
+    DateTime? to,
+    int page = 1,
+  }) => _repository.statement(investorId, category: category, from: from, to: to, page: page);
+}
+
+class ReverseWalletEntry {
+  const ReverseWalletEntry(this._repository);
+
+  final InvestorRepository _repository;
+
+  Future<Either<Failure, Unit>> call({
+    required int investorId,
+    required int entryId,
+    String? notes,
+  }) => _repository.reverseWalletEntry(
+    investorId: investorId,
+    entryId: entryId,
     notes: notes?.trim(),
   );
 }

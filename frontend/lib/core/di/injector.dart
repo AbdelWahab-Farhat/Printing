@@ -116,6 +116,7 @@ import 'package:dayaa/features/investors/presentation/viewmodel/deal_detail_cubi
 import 'package:dayaa/features/investors/presentation/viewmodel/deal_orders_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/deals_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/investor_statement_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
@@ -778,6 +779,12 @@ abstract final class Injector {
       ..registerLazySingleton<RecordDealExpense>(
         () => RecordDealExpense(sl<InvestorRepository>()),
       )
+      ..registerLazySingleton<GetInvestorStatement>(
+        () => GetInvestorStatement(sl<InvestorRepository>()),
+      )
+      ..registerLazySingleton<ReverseWalletEntry>(
+        () => ReverseWalletEntry(sl<InvestorRepository>()),
+      )
       // Factories: each screen owns its Cubit and closes it on dispose.
       ..registerFactory<InvestorsCubit>(() => InvestorsCubit(getInvestors: sl<GetInvestors>()))
       ..registerFactory<DealsCubit>(() => DealsCubit(getDeals: sl<GetInvestorDeals>()))
@@ -785,6 +792,12 @@ abstract final class Injector {
         () => InvestorDetailCubit(
           getInvestor: sl<GetInvestor>(),
           recordWalletEntry: sl<RecordWalletEntry>(),
+        ),
+      )
+      ..registerFactory<InvestorStatementCubit>(
+        () => InvestorStatementCubit(
+          getStatement: sl<GetInvestorStatement>(),
+          reverseEntry: sl<ReverseWalletEntry>(),
         ),
       )
       ..registerFactory<OrderInvestorSharesCubit>(

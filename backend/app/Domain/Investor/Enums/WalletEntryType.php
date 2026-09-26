@@ -117,6 +117,42 @@ enum WalletEntryType: string
         };
     }
 
+    /**
+     * The same row, named for the fund rather than for a deal.
+     *
+     * The labels above were written when every allocation went into a lorry's deal. Into the
+     * fund the same row is a subscription, and «تمويل صفقة» on an investor's statement names
+     * something he never did. Only the three types whose wording is about a deal change; a
+     * writedown or a carried loss reads the same either way.
+     */
+    public function fundLabel(): string
+    {
+        return match ($this) {
+            self::Allocation => 'اشتراك في الصندوق',
+            self::Release => 'استرداد من الصندوق',
+            self::ProfitRelease => 'إتاحة أرباح الفترة للسحب',
+            default => $this->label(),
+        };
+    }
+
+    /**
+     * Which statement filter this row answers to.
+     *
+     * A reversal returns null: it is filed under the row it undoes, which only the row knows.
+     */
+    public function category(): ?WalletEntryCategory
+    {
+        return match ($this) {
+            self::Deposit, self::Withdrawal => WalletEntryCategory::Capital,
+            self::Allocation, self::Release => WalletEntryCategory::Investment,
+            self::Profit, self::ProfitRelease, self::ProfitWithdrawal,
+            self::ProfitCapitalisation => WalletEntryCategory::Profit,
+            self::Loss, self::CapitalWritedown, self::LossAbsorbedByCompany,
+            self::LossCarriedOut, self::LossCarriedIn => WalletEntryCategory::Loss,
+            self::Reversal => null,
+        };
+    }
+
     /** Whether the row adds to whichever total it belongs to. */
     public function isCredit(): bool
     {

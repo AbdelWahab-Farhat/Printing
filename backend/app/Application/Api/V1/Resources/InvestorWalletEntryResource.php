@@ -29,7 +29,10 @@ class InvestorWalletEntryResource extends JsonResource
             'id' => $this->id,
 
             'type' => $this->type->value,
-            'type_label' => $this->type->label(),
+            // Named for the fund when the row sits in it, and a reversal names what it undid.
+            'type_label' => $this->label(),
+            // Which statement filter this row answers to; a reversal takes its original's.
+            'category' => $this->category()?->value,
 
             'amount' => (string) $this->amount,
             'signed_amount' => $this->signedAmount(),
@@ -42,8 +45,22 @@ class InvestorWalletEntryResource extends JsonResource
             'investor_deal_id' => $this->investor_deal_id,
             'deal' => $this->whenLoaded('deal', fn (): ?array => $this->deal === null ? null : [
                 'id' => $this->deal->id,
+                // No `name`: the column was dropped, and «D25» is the deal's only name now.
                 'code' => $this->deal->code,
-                'name' => $this->deal->name,
+                'is_fund' => $this->deal->isTheFund(),
+            ]),
+
+            'period' => $this->whenLoaded('period', fn (): ?array => $this->period === null ? null : [
+                'id' => $this->period->id,
+                'code' => $this->period->code,
+            ]),
+
+            // A fund subscription's units, or a redemption's — what the money bought or gave up
+            // at that day's price. Null for every row that did not touch the fund's units.
+            'fund_units' => $this->whenLoaded('fundUnits', fn (): ?array => $this->fundUnits === null ? null : [
+                'units' => (string) $this->fundUnits->units,
+                'unit_price' => (string) $this->fundUnits->unit_price,
+                'locked_until' => $this->fundUnits->locked_until?->toDateString(),
             ]),
 
             // Where the money came from — an order, an expense. This is «من أين جاء كل دينار»,

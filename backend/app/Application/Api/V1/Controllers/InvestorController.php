@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Investor\InvestorStatementRequest;
 use App\Application\Api\V1\Requests\Investor\StoreInvestorRequest;
 use App\Application\Api\V1\Requests\Investor\StoreWalletEntryRequest;
 use App\Application\Api\V1\Requests\Investor\UpdateInvestorRequest;
@@ -22,6 +23,7 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundStanding;
 use App\Domain\Investor\Queries\InvestorPeriods;
+use App\Domain\Investor\Queries\InvestorStatementQuery;
 use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
 use App\Support\ResponseTrait;
@@ -174,21 +176,13 @@ class InvestorController extends Controller
      * four balances. `deposit`, `withdrawal`, `allocation` and `profit_withdrawal` were recorded
      * by a person; `profit`, `loss`, `release` and `profit_release` were written by an order or
      * by a deal closing, and each names the source it came from.
+     *
+     * Filter with `category` (capital · investment · profit · loss — a reversal follows the row
+     * it undoes), `investor_deal_id`, `from` and `to`.
      */
-    public function statement(Request $request, Investor $investor): JsonResponse
+    public function statement(InvestorStatementRequest $request, Investor $investor, InvestorStatementQuery $query): JsonResponse
     {
-        $perPage = min(max((int) $request->integer('per_page', 25), 1), 100);
-
-        $entries = InvestorWalletEntry::query()
-            ->with(['deal', 'recordedBy', 'reversedEntry'])
-            ->where('investor_id', $investor->getKey())
-            ->when(
-                $request->filled('investor_deal_id'),
-                fn ($q) => $q->where('investor_deal_id', $request->integer('investor_deal_id')),
-            )
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('id')
-            ->paginate($perPage);
+        $entries = $query((int) $investor->getKey(), $request->filters(), $request->perPage());
 
         return $this->successWithPagination(InvestorWalletEntryResource::collection($entries));
     }

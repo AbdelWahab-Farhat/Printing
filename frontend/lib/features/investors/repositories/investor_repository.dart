@@ -5,6 +5,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/wallet_entry.dart';
 
 /// The staff side of investors: the people, their money, and their deals.
 abstract class InvestorRepository {
@@ -33,6 +34,24 @@ abstract class InvestorRepository {
     int? investorDealId,
     String? method,
     String? reference,
+    String? notes,
+  });
+
+  /// Every movement of his money, newest first — optionally one family of them, within a range
+  /// of days. A reversal answers to the family of the row it undoes.
+  Future<Either<Failure, Paginated<WalletEntry>>> statement(
+    int investorId, {
+    WalletEntryCategory? category,
+    DateTime? from,
+    DateTime? to,
+    int page,
+    int perPage,
+  });
+
+  /// Undoes one hand-recorded movement, and with it the fund units and treasury row it wrote.
+  Future<Either<Failure, Unit>> reverseWalletEntry({
+    required int investorId,
+    required int entryId,
     String? notes,
   });
 
