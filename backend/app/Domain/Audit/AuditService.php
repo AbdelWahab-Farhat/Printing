@@ -53,6 +53,16 @@ class AuditService
     }
 
     /**
+     * The fields one record's history has something to say about — what its field search offers.
+     *
+     * @return list<AuditField>
+     */
+    public function fieldsFor(HasAuditTrail $record): array
+    {
+        return $this->listQuery->fieldsIn($record->auditTrailSubjects());
+    }
+
+    /**
      * Everything that has happened, newest first.
      *
      * @return LengthAwarePaginator<int, ActivityLog>

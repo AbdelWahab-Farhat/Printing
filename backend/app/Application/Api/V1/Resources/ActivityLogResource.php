@@ -63,8 +63,8 @@ class ActivityLogResource extends JsonResource
         // the values, their labels and their translations. Narrowing in one place is what keeps
         // the three in step: a column dropped from `changes` but still named in
         // `attribute_labels` is a label for a line nobody draws.
-        $old = AuditHiddenAttributes::strip($this->attribute_changes?->get('old'));
-        $new = AuditHiddenAttributes::strip($this->attribute_changes?->get('attributes'));
+        $old = AuditHiddenAttributes::strip($this->attribute_changes?->get('old'), $subject);
+        $new = AuditHiddenAttributes::strip($this->attribute_changes?->get('attributes'), $subject);
 
         $valueLabels = AuditValueLabels::forChanges($subject, $old, $new, $this->referenceNames);
         $propertyLabels = AuditValueLabels::forProperties($this->properties);
@@ -91,9 +91,9 @@ class ActivityLogResource extends JsonResource
             // Saying so explicitly beats an empty object the client has to interpret.
             'causer' => $this->whenLoaded('causer', fn () => $this->causerSummary()),
 
-            // What actually moved — minus how the bytes are kept, which is not something anybody
-            // opens a history to find out. See AuditHiddenAttributes: the columns are still
-            // logged, they are simply not drawn. `old` is absent on a creation and `attributes`
+            // What actually moved — minus how the bytes are kept and what the application moves
+            // by itself, neither of which anybody opens a history to find out. See
+            // AuditHiddenAttributes: the columns are still logged, they are simply not drawn. `old` is absent on a creation and `attributes`
             // on a deletion, because there is no such half in either case.
             //
             // Cast to an object so a half that is left empty by the stripping — an upload that

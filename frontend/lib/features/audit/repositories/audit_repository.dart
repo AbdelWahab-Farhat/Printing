@@ -16,10 +16,14 @@ abstract interface class AuditRepository {
   /// The counts behind the filter chips come back in `Paginated.extraMeta['event_counts']` and
   /// describe the **whole** trail, unaffected by [event] — a chip has to say what tapping it
   /// would give.
+  ///
+  /// [field] narrows to the entries about one field — the `key` of an `AuditFieldOption`. The
+  /// options themselves come back in `Paginated.extraMeta['fields']`.
   Future<Either<Failure, Paginated<ActivityLogEntry>>> logs(
     AuditSubject subject,
     int recordId, {
     AuditEvent? event,
+    String? field,
     int page,
     int perPage,
   });

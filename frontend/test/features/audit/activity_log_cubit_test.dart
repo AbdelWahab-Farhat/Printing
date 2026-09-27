@@ -4,6 +4,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/features/audit/models/activity_log_entry.dart';
 import 'package:dayaa/features/audit/models/audit_event.dart';
+import 'package:dayaa/features/audit/models/audit_field_option.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/audit/presentation/viewmodel/activity_log_cubit.dart';
 import 'package:dayaa/features/audit/repositories/audit_repository.dart';
@@ -201,4 +202,117 @@ void main() {
       expect(cubit.state, isA<PagedFailure<ActivityLogEntry>>());
     },
   );
+
+  group('the field search', () {
+    const unitPrice = AuditFieldOption(
+      key: 'order_item:unit_price',
+      label: 'سعر الوحدة',
+      subjectLabel: 'بند الطلبية',
+    );
+
+    Paginated<ActivityLogEntry> withFields(List<ActivityLogEntry> items) =>
+        Paginated<ActivityLogEntry>(
+          items: items,
+          meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: items.length),
+          extraMeta: const {
+            'fields': [
+              {'key': 'order_item:unit_price', 'label': 'سعر الوحدة', 'subject_label': 'بند الطلبية'},
+              // Malformed — skipped rather than shown as a blank suggestion.
+              {'label': 'بلا مفتاح'},
+            ],
+          },
+        );
+
+    void whenAskingField(
+      String? field,
+      Paginated<ActivityLogEntry> answer, {
+      AuditEvent? event,
+    }) {
+      when(
+        () => repository.logs(
+          any(),
+          any(),
+          event: event,
+          field: field,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(answer));
+    }
+
+    test('the fields to suggest come from the server', () async {
+      // Arrange
+      whenAskingField(null, withFields([updated, created]));
+
+      // Act
+      await cubit.load();
+
+      // Assert
+      expect(cubit.fields, [unitPrice]);
+      expect(cubit.fields.single.subjectLabel, 'بند الطلبية');
+    });
+
+    test('picking a field asks the server for that field alone', () async {
+      // Arrange
+      whenAskingField(null, withFields([updated, created]));
+      whenAskingField('order_item:unit_price', page([updated]));
+      await cubit.load();
+
+      // Act
+      await cubit.filterByField(unitPrice);
+
+      // Assert — and the suggestions survive a response that did not repeat them.
+      verify(
+        () => repository.logs(
+          AuditSubject.customer,
+          7,
+          field: 'order_item:unit_price',
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+      expect(cubit.field, unitPrice);
+      expect((cubit.state as PagedLoaded<ActivityLogEntry>).page.items, [updated]);
+      expect(cubit.fields, [unitPrice]);
+    });
+
+    test('a field and an event narrow together', () async {
+      // Arrange — «who *changed* the price» is both at once.
+      whenAskingField(null, withFields([updated, created]));
+      whenAskingField('order_item:unit_price', page([updated, created]));
+      whenAskingField('order_item:unit_price', page([updated]), event: AuditEvent.updated);
+      await cubit.load();
+      await cubit.filterByField(unitPrice);
+
+      // Act
+      await cubit.filterBy(AuditEvent.updated);
+
+      // Assert
+      verify(
+        () => repository.logs(
+          any(),
+          any(),
+          event: AuditEvent.updated,
+          field: 'order_item:unit_price',
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    });
+
+    test('letting go of the field brings the whole trail back', () async {
+      // Arrange
+      whenAskingField(null, withFields([updated, created]));
+      whenAskingField('order_item:unit_price', page([updated]));
+      await cubit.load();
+      await cubit.filterByField(unitPrice);
+
+      // Act
+      await cubit.filterByField(null);
+
+      // Assert
+      expect(cubit.field, isNull);
+      expect((cubit.state as PagedLoaded<ActivityLogEntry>).page.items, [updated, created]);
+    });
+  });
 }

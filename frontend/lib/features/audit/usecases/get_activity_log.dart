@@ -16,7 +16,15 @@ class GetActivityLog {
     AuditSubject subject,
     int recordId, {
     AuditEvent? event,
+    String? field,
     int page = 1,
     int perPage = 20,
-  }) => _repository.logs(subject, recordId, event: event, page: page, perPage: perPage);
+  }) => _repository.logs(
+    subject,
+    recordId,
+    event: event,
+    field: field,
+    page: page,
+    perPage: perPage,
+  );
 }

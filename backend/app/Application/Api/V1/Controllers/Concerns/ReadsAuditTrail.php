@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers\Concerns;
 
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Resources\ActivityLogResource;
+use App\Domain\Audit\AuditField;
 use App\Domain\Audit\AuditService;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Support\ResponseTrait;
@@ -45,6 +46,11 @@ trait ReadsAuditTrail
                 // `data`, because a client counting the rows in front of it is counting one
                 // page — and the count under an «إنشاء» chip has to mean the whole trail.
                 'event_counts' => $audit->eventCountsFor($record, $filters),
+
+                // What the field search offers: `{key, label, subject_label}`, where `key` is
+                // what goes back as `?field=`. Only fields this record's entries actually touch,
+                // so every suggestion leads somewhere.
+                'fields' => array_map(fn (AuditField $field) => $field->toArray(), $audit->fieldsFor($record)),
             ],
         );
     }

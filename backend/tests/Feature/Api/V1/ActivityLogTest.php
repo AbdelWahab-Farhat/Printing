@@ -710,6 +710,12 @@ class ActivityLogTest extends TestCase
             'a date that is not a date' => ['from=not-a-date', 'from'],
             'a range that runs backwards' => ['from=2026-07-31&to=2026-07-01', 'to'],
             'a causer that is not an id' => ['causer_id=abc', 'causer_id'],
+            'a field with no subject' => ['field=unit_price', 'field'],
+            'a field on a subject that does not exist' => ['field=spaceship:name', 'field'],
+            'a column the subject does not have' => ['field=product:colour', 'field'],
+            'a column the screen hides' => ['field=product:slug', 'field'],
+            'a storage column' => ['field=design_ticket_file:checksum', 'field'],
+            'something that is not a column at all' => ["field=product:name')--", 'field'],
         ];
     }
 
