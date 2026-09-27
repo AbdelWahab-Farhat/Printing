@@ -35,6 +35,7 @@ class OrderDetailHeader extends StatelessWidget {
     required this.order,
     this.onOpenNotes,
     this.onOpenLog,
+    this.onOpenStock,
     this.onSendToCarrier,
     this.onResendShipment,
     this.onDeleteShipment,
@@ -45,6 +46,7 @@ class OrderDetailHeader extends StatelessWidget {
   /// Let tests reach the buttons without matching on Arabic that may be reworded.
   static const Key notesKey = Key('order-header-notes');
   static const Key logKey = Key('order-header-log');
+  static const Key stockKey = Key('order-header-stock');
   static const Key overflowKey = Key('order-header-overflow');
   static const Key sendToCarrierKey = Key('order-header-send-to-carrier');
   static const Key resendShipmentKey = Key('order-header-resend-shipment');
@@ -60,6 +62,10 @@ class OrderDetailHeader extends StatelessWidget {
   /// Null without `logs.view`, for the reason the customer card's chevron is: an affordance
   /// promising a screen that would answer 403 is worse than no affordance.
   final VoidCallback? onOpenLog;
+
+  /// What this order moved in the warehouse. Null without `inventory.view`, and on an order that
+  /// never drew — the notes' rule: an empty screen behind a button is a wasted tap.
+  final VoidCallback? onOpenStock;
 
   /// «إرسال للنورس» — null unless this particular order can actually go.
   ///
@@ -149,7 +155,12 @@ class OrderDetailHeader extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         // `background` rather than `title`, because this is a block of facts and not a heading:
         // it fades out as the bar collapses, leaving the order's number behind it.
-        background: _Header(order: order, onOpenNotes: onOpenNotes, onOpenLog: onOpenLog),
+        background: _Header(
+          order: order,
+          onOpenNotes: onOpenNotes,
+          onOpenLog: onOpenLog,
+          onOpenStock: onOpenStock,
+        ),
       ),
     );
   }
@@ -277,11 +288,17 @@ class _CarrierMenu extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.order, required this.onOpenNotes, required this.onOpenLog});
+  const _Header({
+    required this.order,
+    required this.onOpenNotes,
+    required this.onOpenLog,
+    required this.onOpenStock,
+  });
 
   final Order order;
   final VoidCallback? onOpenNotes;
   final VoidCallback? onOpenLog;
+  final VoidCallback? onOpenStock;
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +344,7 @@ class _Header extends StatelessWidget {
             _Records(
               onOpenNotes: onOpenNotes,
               onOpenLog: onOpenLog,
+              onOpenStock: onOpenStock,
             ),
           ],
         ),
@@ -460,10 +478,11 @@ class _Vendor extends StatelessWidget {
 /// the card edges below it. A single soft plate divided by a hairline reads as one control with
 /// two doors — and it stays one control when only one door is open.
 class _Records extends StatelessWidget {
-  const _Records({required this.onOpenNotes, required this.onOpenLog});
+  const _Records({required this.onOpenNotes, required this.onOpenLog, required this.onOpenStock});
 
   final VoidCallback? onOpenNotes;
   final VoidCallback? onOpenLog;
+  final VoidCallback? onOpenStock;
 
   @override
   Widget build(BuildContext context) {
@@ -475,6 +494,15 @@ class _Records extends StatelessWidget {
           key: OrderDetailHeader.logKey,
           label: 'السجل',
           icon: AppIcons.history,
+          onTap: open,
+        ),
+      // «المخزون» rather than «حركات المخزون»: three sections share the header's width, and the
+      // longer label ellipsised on a phone.
+      if (onOpenStock case final open?)
+        _Segment(
+          key: OrderDetailHeader.stockKey,
+          label: 'المخزون',
+          icon: AppIcons.warehouse,
           onTap: open,
         ),
       if (onOpenNotes case final open?)

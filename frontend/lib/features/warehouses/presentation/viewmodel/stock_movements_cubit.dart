@@ -11,8 +11,12 @@ import 'package:dayaa/features/warehouses/usecases/get_stock_movements.dart';
 /// Read-only: a row here is written by the recording sheet and never edited afterwards, which
 /// is what makes the ledger add up to the balances beside it.
 class StockMovementsCubit extends PagedCubit<StockMovement> {
-  StockMovementsCubit({required GetStockMovements getMovements, this.warehouseId, this.stockItemId})
-    : _getMovements = getMovements;
+  StockMovementsCubit({
+    required GetStockMovements getMovements,
+    this.warehouseId,
+    this.stockItemId,
+    this.orderId,
+  }) : _getMovements = getMovements;
 
   final GetStockMovements _getMovements;
 
@@ -26,12 +30,16 @@ class StockMovementsCubit extends PagedCubit<StockMovement> {
   /// rows that explain its balance are all of them together.
   final int? stockItemId;
 
+  /// One order's movements — «ماذا أخذت هذه الطلبية من المخزن». Which rows those are is the
+  /// server's call, and it is narrower than every row carrying the order's number.
+  final int? orderId;
+
   @override
   Object identityOf(StockMovement item) => item.id;
 
   @override
   Future<Either<Failure, Paginated<StockMovement>>> fetchPage({String? search, required int page}) {
-    return _getMovements(warehouseId: warehouseId, stockItemId: stockItemId, page: page);
+    return _getMovements(warehouseId: warehouseId, stockItemId: stockItemId, orderId: orderId, page: page);
   }
 }
 

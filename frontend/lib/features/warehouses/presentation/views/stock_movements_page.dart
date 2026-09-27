@@ -32,8 +32,18 @@ import 'package:go_router/go_router.dart';
 /// day, with a header that says what the shelf holds and (to a reader allowed to know) what it
 /// is worth, and a second tab over the cost layers the next issue will draw from. Without one
 /// it is the feed it always was, with the sign added.
+///
+/// **And sideways, one order.** With an [orderId] it is the same feed narrowed to what that
+/// order moved — opened from the order's own header, beside its log.
 class StockMovementsPage extends StatelessWidget {
-  const StockMovementsPage({this.warehouseId, this.warehouseName, this.stock, super.key});
+  const StockMovementsPage({
+    this.warehouseId,
+    this.warehouseName,
+    this.stock,
+    this.orderId,
+    this.orderCode,
+    super.key,
+  });
 
   final int? warehouseId;
 
@@ -41,16 +51,29 @@ class StockMovementsPage extends StatelessWidget {
 
   final WarehouseStock? stock;
 
+  /// One order's movements, from every shelf it touched.
+  final int? orderId;
+
+  /// The order's number for the title. Carried by the caller, which already has the order; a
+  /// deep link brings none and the title says «طلبية» alone rather than fetching an order.
+  final String? orderCode;
+
   @override
   Widget build(BuildContext context) {
     final shelf = stock;
     final warehouse = warehouseId;
+    final order = orderId;
     final showCost = shelf != null && warehouse != null && sl<Session>().can(AppPermission.viewStockCost);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider<StockMovementsCubit>(
-          create: (_) => sl<StockMovementsCubit>(param1: warehouseId, param2: shelf?.stockItemId)..load(),
+          // The factory takes two params and both are spoken for, so an order's feed is built
+          // here — the same cubit, one more filter.
+          create: (_) => (order != null
+                  ? StockMovementsCubit(getMovements: sl(), orderId: order)
+                  : sl<StockMovementsCubit>(param1: warehouseId, param2: shelf?.stockItemId))
+            ..load(),
         ),
         // The layers are only fetched for someone who may see them: they are money, and a
         // request whose answer is never drawn is a request that should not be made.
@@ -69,7 +92,18 @@ class StockMovementsPage extends StatelessWidget {
               warehouseName: warehouseName,
               showCost: showCost,
             )
-          : _FeedView(warehouseName: warehouseName),
+          : order != null
+          ? _FeedView(
+              subtitle: [
+                'طلبية',
+                if (orderCode case final code? when code.isNotEmpty) '#$code',
+              ].join(' '),
+              // Every row on this screen is this order; a link on each would open the page the
+              // reader just came from.
+              opensOrders: false,
+              emptyMessage: 'لم تُحرّك هذه الطلبية شيئاً من المخزون',
+            )
+          : _FeedView(subtitle: warehouseName),
     );
   }
 }
@@ -77,16 +111,25 @@ class StockMovementsPage extends StatelessWidget {
 // ── the feed: the workshop, or one warehouse ────────────────────────────────────────────
 
 class _FeedView extends StatelessWidget {
-  const _FeedView({this.warehouseName});
+  const _FeedView({
+    this.subtitle,
+    this.opensOrders = true,
+    this.emptyMessage = 'لا توجد حركات مسجّلة بعد',
+  });
 
-  final String? warehouseName;
+  /// The warehouse, or the order — whatever the feed is narrowed to.
+  final String? subtitle;
+
+  final bool opensOrders;
+
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<StockMovementsCubit>();
 
     return Scaffold(
-      appBar: AppBar(title: _Title(subtitle: warehouseName)),
+      appBar: AppBar(title: _Title(subtitle: subtitle)),
       body: BlocBuilder<StockMovementsCubit, StockMovementsState>(
         builder: (context, state) {
           final items = state is StockMovementsLoaded ? state.page.items : const <StockMovement>[];
@@ -96,7 +139,7 @@ class _FeedView extends StatelessWidget {
           // the one thing a ledger is for — the order things happened in.
           return PagedListView<StockMovement>(
             state: state,
-            emptyMessage: 'لا توجد حركات مسجّلة بعد',
+            emptyMessage: emptyMessage,
             onLoadMore: cubit.loadMore,
             onRefresh: cubit.refresh,
             skeletonHeight: 84.h,
@@ -108,7 +151,7 @@ class _FeedView extends StatelessWidget {
               row: MovementRow(
                 key: ValueKey(movement.id),
                 movement: movement,
-                onOpenOrder: (id) => context.push(Routes.order(id)),
+                onOpenOrder: opensOrders ? (id) => context.push(Routes.order(id)) : null,
               ),
             ),
           );

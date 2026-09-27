@@ -13,12 +13,14 @@ class GetStockMovements {
   Future<Either<Failure, Paginated<StockMovement>>> call({
     int? warehouseId,
     int? stockItemId,
+    int? orderId,
     int page = 1,
     int perPage = 20,
   }) {
     return _repository.movements(
       warehouseId: warehouseId,
       stockItemId: stockItemId,
+      orderId: orderId,
       page: page,
       perPage: perPage,
     );

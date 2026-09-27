@@ -175,6 +175,9 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // shows what everyone has done, including prices the reader may have no other
               // way to see.
               onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
+              // `inventory.view`, the ledger's own grant. Whether this order has drawn anything
+              // to show is the order's own condition and is read in [_Body].
+              onOpenStock: sl<Session>().can(AppPermission.viewInventory) ? _openStock : null,
               // «إرسال للنورس». `carrier.manage` is the grant — a different one from
               // `orders.manage`, because handing goods to a courier is not editing paperwork.
               // The other two conditions are the order's own and are read in [_Body].
@@ -752,6 +755,16 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     context.push(Routes.activityLog(AuditSubject.order, order.id)).ignore();
   }
 
+  /// Opens what this order moved in the warehouse: its draws, what came back, what was scrapped.
+  ///
+  /// Read-only like the log beside it, so nothing is awaited. The code goes along for the title.
+  void _openStock() {
+    final order = context.read<OrderDetailCubit>().state.order;
+    if (order == null) return;
+
+    context.push(Routes.orderStockMovements(order.id), extra: order.code).ignore();
+  }
+
   /// Hands the move to its own screen, and takes back whatever it did.
   ///
   /// **Nothing about the move is decided here.** The destinations, the fields each of them asks
@@ -780,6 +793,7 @@ class _Body extends StatelessWidget {
     required this.onScrap,
     required this.onOpenNotes,
     required this.onOpenLog,
+    required this.onOpenStock,
     required this.onSendToCarrier,
     required this.onResendShipment,
     required this.onDeleteShipment,
@@ -825,6 +839,9 @@ class _Body extends StatelessWidget {
   /// Null without `logs.view`.
   final VoidCallback? onOpenLog;
 
+  /// Null without `inventory.view`. Offered only once the order has drawn — see [_hasDrawn].
+  final VoidCallback? onOpenStock;
+
   /// Null unless the server said this order's cancellation may be undone — see the call site.
   final Future<void> Function(BuildContext context)? onReinstate;
 
@@ -866,6 +883,11 @@ class _Body extends StatelessWidget {
 
   /// Either moment: goods about to go, or goods that came back.
   bool get _mayTouchTheCarrier => _maySendToCarrier || _mayResendToCarrier;
+
+  /// Whether stock has ever left a shelf for this order. `fulfillmentWarehouseId` is set at that
+  /// moment and never cleared, so a cancelled order that drew — and put it back — still has its
+  /// history to show; one that never drew would open onto an empty screen.
+  bool get _hasDrawn => order.fulfillmentWarehouseId != null;
 
   /// Whether this order is one the carrier could be asked to deliver again.
   ///
@@ -909,6 +931,7 @@ class _Body extends StatelessWidget {
           order: order,
           onOpenNotes: onOpenNotes,
           onOpenLog: onOpenLog,
+          onOpenStock: _hasDrawn ? onOpenStock : null,
           onSendToCarrier: _maySendToCarrier ? onSendToCarrier : null,
           onResendShipment: _mayResendToCarrier ? onResendShipment : null,
           // Offered wherever either of the two above is: whichever moment the order is in, a

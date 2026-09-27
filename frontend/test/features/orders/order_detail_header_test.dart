@@ -244,6 +244,36 @@ void main() {
     expect(log.width, closeTo(notes.width, 1));
   });
 
+  testWidgets('the stock door sits between the two records and opens its own screen', (tester) async {
+    // Arrange
+    var stock = 0;
+
+    await tester.pumpWidget(
+      host(
+        OrderDetailHeader(
+          order: order(),
+          onOpenNotes: () {},
+          onOpenLog: () {},
+          onOpenStock: () => stock++,
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(OrderDetailHeader.stockKey));
+    await tester.pump();
+    final log = tester.getSize(find.byKey(OrderDetailHeader.logKey));
+    final section = tester.getSize(find.byKey(OrderDetailHeader.stockKey));
+    final notes = tester.getSize(find.byKey(OrderDetailHeader.notesKey));
+
+    // Assert — thirds of one plate, none reading as the heading and the others as afterthoughts.
+    expect(stock, 1);
+    expect(find.text('المخزون'), findsOneWidget);
+    expect(section.width, closeTo(log.width, 1));
+    expect(section.width, closeTo(notes.width, 1));
+  });
+
   testWidgets('the state wears its own glyph up here', (tester) async {
     // Arrange
     await tester.pumpWidget(

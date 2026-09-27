@@ -552,6 +552,12 @@ abstract final class Routes {
 
   static String orderNotes(int id) => '/orders/$id/notes';
 
+  /// What the order moved in the warehouse — its draws, what came back, what was scrapped.
+  /// The order's code travels as `extra`, for the title, the way it does to the payments.
+  static const String orderStockMovementsPath = 'stock-movements';
+
+  static String orderStockMovements(int id) => '/orders/$id/stock-movements';
+
   /// Choosing a point on the map. Outside the shell, and returns a `LatLng` through `pop`.
   static const String pickLocation = '/pick-location';
 }
@@ -905,6 +911,19 @@ abstract final class AppRouter {
             builder: (context, state) => OrderPaymentsPage(
               orderId: int.parse(state.pathParameters['id']!),
               orderCode: state.payload is String ? state.payload! as String : '',
+            ),
+          ),
+          // `inventory.view`, the ledger's own grant — guarded here for the reason the payments
+          // are: a deep link must not reach a screen whose every request answers 403.
+          GoRoute(
+            path: Routes.orderStockMovementsPath,
+            redirect: (context, state) =>
+                sl<Session>().can(AppPermission.viewInventory)
+                ? null
+                : Routes.order(int.parse(state.pathParameters['id']!)),
+            builder: (context, state) => StockMovementsPage(
+              orderId: int.parse(state.pathParameters['id']!),
+              orderCode: state.payload is String ? state.payload! as String : null,
             ),
           ),
         ],

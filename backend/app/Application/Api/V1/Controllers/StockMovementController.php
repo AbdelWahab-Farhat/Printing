@@ -16,6 +16,7 @@ use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Queries\MovementFilters;
 use App\Domain\Investor\InvestorService;
+use App\Domain\Order\OrderService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,7 @@ class StockMovementController extends Controller
     public function __construct(
         private readonly InventoryService $inventory,
         private readonly InvestorService $investors,
+        private readonly OrderService $orders,
     ) {}
 
     /**
@@ -54,7 +56,12 @@ class StockMovementController extends Controller
      * "everything that happened at the main store" — arrivals and despatches together.
      *
      * Filter with `warehouse_id`, `stock_item_id`, `movement_type`, `employee_id`,
-     * `reference_id`, `from` and `to`. Dates are inclusive: `to=2026-08-03` includes that whole day.
+     * `reference_id`, `order_id`, `from` and `to`. Dates are inclusive: `to=2026-08-03` includes
+     * that whole day.
+     *
+     * `order_id` is everything one order moved — its draws, what was put back, what was scrapped —
+     * and is not the same question as `reference_id`, which also matches unrelated rows that
+     * happen to carry the same number.
      */
     /**
      * Says which deal each outgoing movement drew its goods from — and which of it was ours.
@@ -127,8 +134,13 @@ class StockMovementController extends Controller
     {
         $filters = MovementFilters::fromArray($request->only([
             'warehouse_id', 'stock_item_id', 'movement_type', 'adjustment_reason',
-            'employee_id', 'reference_id', 'from', 'to',
+            'employee_id', 'reference_id', 'order_id', 'from', 'to',
         ]));
+
+        // Only Orders knows which draw each line holds today; the ledger finds the rest itself.
+        if ($filters->orderId !== null) {
+            $filters = $filters->withOrderDraws($this->orders->fulfillmentMovementIdsFor($filters->orderId));
+        }
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         $page = $this->inventory->paginateMovements(

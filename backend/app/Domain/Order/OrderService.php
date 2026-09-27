@@ -471,6 +471,28 @@ class OrderService
     }
 
     /**
+     * The stock movement each of this order's lines draws on today — the door the order's stock
+     * history is read through.
+     *
+     * **`withTrashed()` on the lines.** A line removed from the order is still the reason its
+     * draw left the shelf, and a draw nobody reversed is still standing; hiding it would leave
+     * the ledger short of a row it plainly owes. Draws that *were* reversed are found by the
+     * ledger itself, through the reversal, so this only has to name what the lines hold now.
+     *
+     * @return list<int>
+     */
+    public function fulfillmentMovementIdsFor(int $orderId): array
+    {
+        return OrderItem::withTrashed()
+            ->where('order_id', $orderId)
+            ->whereNotNull('fulfillment_stock_movement_id')
+            ->orderBy('id')
+            ->pluck('fulfillment_stock_movement_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
      * Every line of this order with what is still missing from it — the door Shortages reads
      * through.
      *

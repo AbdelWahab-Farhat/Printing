@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Queries;
 
+use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\Models\StockMovement;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,6 +66,7 @@ final class MovementListQuery
             )
             ->when($filters->employeeId !== null, fn (Builder $q) => $q->where('employee_id', $filters->employeeId))
             ->when($filters->referenceId !== null, fn (Builder $q) => $q->where('reference_id', $filters->referenceId))
+            ->when($filters->orderId !== null, fn (Builder $q) => $this->movedByOrder($q, $filters))
             ->when($filters->from !== null, fn (Builder $q) => $q->where('created_at', '>=', $filters->from))
             ->when($filters->to !== null, fn (Builder $q) => $q->where('created_at', '<=', $filters->to));
 
@@ -104,6 +106,47 @@ final class MovementListQuery
             // them between pages. The id is the only total order there is.
             ->orderByDesc('stock_movements.id')
             ->paginate($perPage);
+    }
+
+    /**
+     * Every row one order moved: what its lines draw now, what they drew before a restatement or
+     * a partial delivery put it back, what a cancellation returned, and what a spoiled run threw
+     * away.
+     *
+     * **Not `reference_id` on its own.** That column has no foreign key and no type: an arrival
+     * stamps its receipt there, and the generic fulfillment endpoint takes whatever it is sent,
+     * so «reference_id = 1250» would sweep in arrival #1250 beside order #1250. It is trusted here
+     * only on the two types the order code alone writes — `order_reversal` and `scrap_loss` —
+     * which is the same line `OrderInvestorSharesQuery` draws.
+     *
+     * The current draws come in from Orders as ids. The earlier ones are found through the
+     * reversals that undid them, which is also what keeps a cancelled or archived order's history
+     * readable after its lines have gone.
+     */
+    private function movedByOrder(Builder $query, MovementFilters $filters): void
+    {
+        $systemWritten = [MovementType::OrderReversal->value, MovementType::ScrapLoss->value];
+
+        // Grouped for the same reason as the warehouse filter: an OR set left loose would swallow
+        // every filter beside it.
+        $query->where(function (Builder $q) use ($filters, $systemWritten) {
+            $q->where(function (Builder $q) use ($filters, $systemWritten) {
+                $q->whereIn('stock_movements.movement_type', $systemWritten)
+                    ->where('stock_movements.reference_id', $filters->orderId);
+            })
+                ->orWhereIn('stock_movements.id', function (QueryBuilder $sub) use ($filters) {
+                    $sub->select('reversal.reverses_movement_id')
+                        ->from('stock_movements as reversal')
+                        ->where('reversal.movement_type', MovementType::OrderReversal->value)
+                        ->where('reversal.reference_id', $filters->orderId)
+                        ->whereNotNull('reversal.reverses_movement_id')
+                        ->whereNull('reversal.deleted_at');
+                });
+
+            if ($filters->orderDrawIds !== []) {
+                $q->orWhereIn('stock_movements.id', $filters->orderDrawIds);
+            }
+        });
     }
 
     /**
