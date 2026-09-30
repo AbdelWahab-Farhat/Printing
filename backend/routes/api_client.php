@@ -182,6 +182,10 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('orders/{order}', [Client\OrderController::class, 'show'])
             ->whereNumber('order')->name('orders.show');
 
+        // ملاحظات المراجعة والرفض. **لا مسار «قرأتها»**، كالدعم: فتحها هو ما يعلّمها مقروءة.
+        Route::get('orders/{order}/notes', [Client\OrderController::class, 'notes'])
+            ->whereNumber('order')->name('orders.notes');
+
         /*
          * ── support ─────────────────────────────────────────────────────────────────────
          *

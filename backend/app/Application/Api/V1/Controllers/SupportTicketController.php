@@ -7,7 +7,10 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Requests\Client\Support\PostTicketMessageRequest;
 use App\Application\Api\V1\Resources\SupportTicketResource;
 use App\Application\Controller;
+use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Identity\Models\User;
+use App\Domain\Notification\Enums\NotificationType;
+use App\Domain\Notification\NotificationService;
 use App\Domain\Support\Enums\TicketStatus;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\SupportService;
@@ -67,14 +70,26 @@ class SupportTicketController extends Controller
     /**
      * One ticket
      *
-     * The whole thread. Opening it marks the desk's side read.
+     * The whole thread. Opening it marks the desk's side read — and this reader's bell for it.
+     *
+     * **مَن فتح المحادثة قرأ جرسها أيضاً**، كما تفعل تعليقات التصميم: صفُّ الإشعار ورسالةُ
+     * العميل خبرٌ واحد، وإبقاؤه في الجرس بعد قراءة المحادثة يجعل الرقمَ فوق الجرس كذبةً صغيرة.
+     * لهذا القارئ وحده: موظفٌ آخر لم يفتحها لم يقرأها. و`NotificationService` في التابع لا في
+     * الباني، لأن هذا التابع وحده يحتاجه.
      */
-    public function show(int $ticket): JsonResponse
+    public function show(Request $request, int $ticket, NotificationService $notifications): JsonResponse
     {
         $found = $this->support->find($ticket);
 
         // حتى آخر رسالةٍ حُمّلت هنا، لا حتى «الآن» — انظر MarkTicketRead.
         $this->support->markRead($found, staff: true, upToMessageId: $this->lastLoadedMessageId($found));
+
+        $notifications->markSubjectAsRead(
+            AuditSubject::SupportTicket->value,
+            (int) $found->getKey(),
+            (int) $request->user()->getKey(),
+            NotificationType::SupportCustomerMessage,
+        );
 
         return $this->success(new SupportTicketResource($found->refresh()->load(self::THREAD)));
     }

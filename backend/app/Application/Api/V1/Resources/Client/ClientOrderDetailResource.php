@@ -97,6 +97,13 @@ class ClientOrderDetailResource extends JsonResource
 
             'timeline' => $this->whenLoaded('transitions', fn () => $this->timeline()),
 
+            // شارة «الملاحظات»: ما كُتب عند المراجعة والرفض بعد آخر ما قرأه العميل. من الانتقالات
+            // المحمّلة للمسار أعلاه، فلا استعلام ثانٍ — والشرط شرطُ النموذج نفسه.
+            'unread_notes_count' => $this->whenLoaded('transitions', fn () => $this->transitions
+                ->filter(fn (OrderStatusTransition $transition): bool => $transition->isNoteForCustomer()
+                    && $transition->id > (int) $this->customer_read_transition_id)
+                ->count()),
+
             'placed_at' => $this->placed_at?->toIso8601String(),
         ];
     }

@@ -24,10 +24,12 @@ use App\Domain\Notification\Channels\CustomerPushChannel;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenOrderStageChanges;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenSupportReplies;
+use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
+use App\Domain\Notification\Listeners\NotifyWhenOrderIsRequested;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
 use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
@@ -36,6 +38,7 @@ use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderProfitUnwound;
+use App\Domain\Order\Events\OrderRequested;
 use App\Domain\Order\Events\OrderScrapDrawn;
 use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Events\OrderStatusChanged;
@@ -185,6 +188,10 @@ class AppServiceProvider extends ServiceProvider
         // touching Orders. Same queued, after-commit bargain as the line above.
         Event::listen(OrderStatusChanged::class, NotifyWhenOrderStatusChanges::class);
 
+        // وولادةُ الطلبية من التطبيق ليست انتقالاً يسمعه السطرُ أعلاه — تولد «بانتظار المراجعة»
+        // ولا تنتقل إليها — فلها حدثُها. البرنامجُ نفسه: مُدرَجٌ وبعد الإيداع.
+        Event::listen(OrderRequested::class, NotifyWhenOrderIsRequested::class);
+
         // **والحدثُ نفسه يسمعه العميلُ أيضاً**، بمستمِعٍ ثانٍ لا بتعديلٍ في الطلبيات — وهذا ما
         // يعنيه «المستمِعُ صاحبُ الرأي»: يريد مجموعةً أخرى من الانتقالات، بلغة المراحل لا الحالات.
         // دفعٌ فقط، بلا جرس. مُدرَجٌ وبعد الإيداع كجيرانه. انظر NotifyCustomerWhenOrderStageChanges.
@@ -249,7 +256,12 @@ class AppServiceProvider extends ServiceProvider
          */
         Event::listen(TicketChanged::class, BroadcastTicketChange::class);
 
-        // وردُّ المحل يصل إلى هاتف العميل — مستمِعٌ آخر على الحدث نفسه، وهو الذي كان جرسُ
+        // **والحدثُ نفسه يُصغي إليه الجرسُ أيضاً** (2026-09-25): رسالةُ العميل تصل إلى مَن على
+        // المكتب، أو إلى كلّ مَن يستطيع الردّ. مستمِعٌ ثانٍ لا حدثٌ ثانٍ، مُدرَجٌ وبعد الإيداع
+        // كجيرانه في الإشعارات. انظر NotifyWhenCustomerWritesToSupport.
+        Event::listen(TicketChanged::class, NotifyWhenCustomerWritesToSupport::class);
+
+        // وردُّ المحل يصل إلى هاتف العميل — المستمِعُ الثالث على الحدث نفسه، وهو الذي كان جرسُ
         // الموظفين يتركه له («ردُّ المحل خبرٌ للعميل»). انظر NotifyCustomerWhenSupportReplies.
         Event::listen(TicketChanged::class, NotifyCustomerWhenSupportReplies::class);
 

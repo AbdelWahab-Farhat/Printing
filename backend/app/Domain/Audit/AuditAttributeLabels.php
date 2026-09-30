@@ -300,6 +300,9 @@ final class AuditAttributeLabels
             // separate column: one is why we wrote an order off, the other is what we told the
             // customer when we would not take theirs.
             'rejection_reason' => 'سبب رفض الطلب',
+            // لا يصل السجلَّ عملياً — `MarkOrderNotesRead` يحفظه بلا أحداث — واسمه هنا لأن كل عمودٍ
+            // يمكن أن يُسجَّل له اسم.
+            'customer_read_transition_id' => 'آخر ملاحظةٍ قرأها العميل',
             'created_by' => 'أنشأها',
             'paid_amount' => 'المدفوع',
             // ── العربون ──────────────────────────────────────────────────────────────────

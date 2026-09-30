@@ -8,6 +8,7 @@ use App\Application\Api\V1\Requests\Client\Order\QuoteBasketRequest;
 use App\Application\Api\V1\Requests\Client\Order\RequestOrderRequest;
 use App\Application\Api\V1\Resources\Client\ClientBasketQuoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderDetailResource;
+use App\Application\Api\V1\Resources\Client\ClientOrderNoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
@@ -181,6 +182,22 @@ class OrderController extends Controller
         );
 
         return $this->success(new ClientOrderDetailResource($owned));
+    }
+
+    /**
+     * The notes on one order
+     *
+     * ما كتبه المتجر عند مراجعة الطلبية ورفضها، من الأقدم، بلا اسم من كتب. **وفتحها يعلّمها
+     * مقروءة**، فتنطفئ شارة «الملاحظات» — `unread_notes_count` في الطلبية المفتوحة.
+     */
+    public function notes(Request $request, int $order): JsonResponse
+    {
+        $notes = $this->orders->readNotesForCustomer(
+            (int) $this->customer($request)->getKey(),
+            $order,
+        );
+
+        return $this->success(ClientOrderNoteResource::collection($notes));
     }
 
     /**

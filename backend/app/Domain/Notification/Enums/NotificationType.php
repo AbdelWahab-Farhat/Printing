@@ -6,10 +6,12 @@ namespace App\Domain\Notification\Enums;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\CustomerWroteToSupport;
 use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
+use App\Domain\Notification\Definitions\OrderAwaitsReview;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
 use App\Domain\Notification\Definitions\OrderReachedStatus;
 use App\Domain\Notification\Definitions\ShortageAssignedToYou;
@@ -39,6 +41,15 @@ enum NotificationType: string
      * status itself rides in the payload. See {@see OrderReachedStatus}.
      */
     case OrderStatusChanged = 'order.status';
+
+    /**
+     * طلبيةٌ وصلت من تطبيق العميل، وتنتظر مَن يقبلها أو يرفضها.
+     *
+     * **ليس حالةً من حالات {@see OrderStatusChanged}**: الطلبيةُ تولد «بانتظار المراجعة» ولا تنتقل
+     * إليها، والجمهورُ غير جمهوره — مَن يراجع (`orders.manage`) لا كلُّ مَن يقرأ. انظر
+     * {@see OrderAwaitsReview}.
+     */
+    case OrderRequested = 'order.requested';
 
     /**
      * A shortage is now somebody's to chase.
@@ -74,6 +85,14 @@ enum NotificationType: string
      */
     case DesignTicketComment = 'design_ticket.comment';
 
+    /**
+     * كتب عميلٌ إلى الدعم — تذكرةٌ جديدة، أو رسالةٌ في تذكرةٍ قائمة.
+     *
+     * **نوعٌ واحد للاثنين**: جمهورٌ واحد ووجهةٌ واحدة، والفرقُ جملةُ العنوان وحدها، وهي تُقرأ من
+     * الحمولة. انظر {@see CustomerWroteToSupport}.
+     */
+    case SupportCustomerMessage = 'support.customer_message';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -91,10 +110,12 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => OrderReachedShortage::class,
             self::OrderStatusChanged => OrderReachedStatus::class,
+            self::OrderRequested => OrderAwaitsReview::class,
             self::ShortageAssigned => ShortageAssignedToYou::class,
             self::DesignTicketAssigned => DesignTicketAssignedToYou::class,
             self::DesignTicketStatus => DesignTicketReachedStatus::class,
             self::DesignTicketComment => DesignTicketCommentPosted::class,
+            self::SupportCustomerMessage => CustomerWroteToSupport::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -111,6 +132,8 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => 'warning',
             self::OrderStatusChanged => 'order',
+            // المفتاحُ نفسه: طلبيةٌ هي الخبر، والتطبيقُ يعرف رسمها منذ أول نسخة.
+            self::OrderRequested => 'order',
             // Not 'warning': a shortage landing in somebody's queue is work arriving, not an
             // alarm — and the app falls back to a plain bell on a key it does not know, so a
             // build compiled last month degrades gracefully rather than drawing the wrong thing.
@@ -123,6 +146,9 @@ enum NotificationType: string
             // مفتاحٌ جديد على الخادم، وجرسٌ عاديٌّ في نسخةٍ قديمة من التطبيق حتى تُحدَّث — وهو
             // بالضبط ما يجعل نوعاً يُشحن اليوم يظهر في بناءٍ جُمّع الشهر الماضي.
             self::DesignTicketComment => 'comment',
+            // مفتاحٌ يعرفه التطبيقُ أصلاً — فقاعةُ كلام — فيظهر النوعُ الجديد في نسخةٍ جُمّعت
+            // قبله بلا تعديل.
+            self::SupportCustomerMessage => 'comment',
             self::Announcement => 'announcement',
         };
     }
@@ -135,10 +161,12 @@ enum NotificationType: string
         return match ($this) {
             self::OrderShortage => 'نواقص طلبية',
             self::OrderStatusChanged => 'حالة طلبية',
+            self::OrderRequested => 'طلبية من التطبيق',
             self::ShortageAssigned => 'نقص مُسنَد',
             self::DesignTicketAssigned => 'طلب تصميم',
             self::DesignTicketStatus => 'حالة طلب تصميم',
             self::DesignTicketComment => 'تعليق على طلب تصميم',
+            self::SupportCustomerMessage => 'رسالة دعم من عميل',
             self::Announcement => 'إشعار عام',
         };
     }

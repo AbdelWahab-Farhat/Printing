@@ -1007,7 +1007,7 @@ class OrderStatusTest extends TestCase
         // customer, so nothing about the order may be edited any more, but the money has not
         // been agreed yet, so the order is not finished. One flag could not say both.
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::Delivered, OrderStatus::Settled, OrderStatus::Cancelled],
+            [OrderStatus::Delivered, OrderStatus::Settled, OrderStatus::Cancelled, OrderStatus::RequestRejected],
             $closed,
         );
         $this->assertEqualsCanonicalizing([OrderStatus::Settled, OrderStatus::Cancelled], $final);
@@ -1016,6 +1016,24 @@ class OrderStatusTest extends TestCase
         foreach ($final as $status) {
             $this->assertTrue($status->isClosed(), "{$status->value} is final but not closed");
         }
+    }
+
+    /**
+     * «رُفض الطلب» انتهى ولم يُحسم نهائياً.
+     *
+     * **مغلقٌ لأن أحداً لا يعمل عليه**: كان يُحسب في «الطلبات الجارية» على شاشة العميل في تطبيق
+     * الموظفين، وهي قائمةُ ما يدين له أحدٌ بقرار (طلب المستخدم، 2026-09-25: «اصلحها»). **وغيرُ نهائيٍّ
+     * لأن الرفض يُتراجع عنه** إلى «بانتظار المراجعة» — والنهائيُّ لا شيء بعده.
+     */
+    public function test_a_refused_request_is_closed_but_not_final_because_it_can_be_put_back(): void
+    {
+        // Act
+        $status = OrderStatus::RequestRejected;
+
+        // Assert
+        $this->assertTrue($status->isClosed());
+        $this->assertFalse($status->isFinal());
+        $this->assertSame([OrderStatus::Requested], $status->allowedNext());
     }
 
     public function test_a_final_status_goes_nowhere(): void

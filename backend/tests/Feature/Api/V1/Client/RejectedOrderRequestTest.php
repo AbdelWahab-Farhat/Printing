@@ -223,6 +223,30 @@ class RejectedOrderRequestTest extends TestCase
         $this->assertNull($order->request_rejected_at);
     }
 
+    /**
+     * رفضٌ انتهى: مغلقٌ للتعديل كأيّ طلبيةٍ انتهت، ولا يُحسب في «الجارية» على شاشة العميل في
+     * تطبيق الموظفين (طلب المستخدم، 2026-09-25). ويبقى غيرَ نهائي: التراجع عنه ممكن.
+     */
+    public function test_a_refused_request_reads_as_closed_to_staff_and_not_final(): void
+    {
+        // Arrange
+        $order = $this->requestedOrder($this->customer());
+        $headers = $this->staff(PermissionName::ManageOrders, PermissionName::ViewOrders);
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::RequestRejected->value,
+            'reason' => 'المقاس غير متوفر',
+        ])->assertOk();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.is_closed', true)
+            ->assertJsonPath('data.is_final', false);
+    }
+
     // ───────────────────────── what the customer sees ─────────────────────────
 
     public function test_the_customer_is_told_it_was_refused_and_why(): void

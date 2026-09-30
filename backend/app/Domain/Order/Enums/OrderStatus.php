@@ -550,10 +550,15 @@ enum OrderStatus: string
      * touched again; but the money it went out to collect has not been agreed yet, so the order
      * still has a move to make. One flag was asked to mean both and could only be right about
      * one of them.
+     *
+     * **«رُفض الطلب» مغلقٌ أيضاً، وغيرُ نهائي** (طلب المستخدم، 2026-09-25). لا أحد يعمل على طلبٍ
+     * رُفض عند الباب، فكان يُحسب في «الطلبات الجارية» على شاشة العميل في تطبيق الموظفين، وهي قائمةُ
+     * ما يدين له أحدٌ بقرار. لكنه لا يدخل {@see isFinal()}: الرفض يُتراجع عنه إلى «بانتظار
+     * المراجعة»، ومن هناك يُعدَّل إن لزم. و`isFinished` في تطبيق الموظفين يقرأ هذا التابع نفسه.
      */
     public function isClosed(): bool
     {
-        return $this === self::Delivered || $this->isFinal();
+        return $this === self::Delivered || $this === self::RequestRejected || $this->isFinal();
     }
 
     /** The order has left the workshop and is with — or waiting for — the customer. */

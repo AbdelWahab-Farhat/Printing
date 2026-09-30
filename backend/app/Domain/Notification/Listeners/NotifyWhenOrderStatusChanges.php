@@ -126,6 +126,10 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
             //
             // Both are reachable here only because a refusal can be undone: «بانتظار المراجعة»
             // used to be a status nothing led to.
+            //
+            // **وصولُ الطلب نفسه ليس صامتاً** (طلب المستخدم، 2026-09-25): يُعلَن عند الولادة لا
+            // هنا، لأن الطلبية تولد «بانتظار المراجعة» ولا تنتقل إليها. انظر
+            // NotifyWhenOrderIsRequested. أما الحركتان هنا فتبقيان حركتَي المراجِع على شاشته.
             OrderStatus::Requested,
             OrderStatus::RequestRejected => false,
         };

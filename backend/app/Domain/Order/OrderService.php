@@ -10,6 +10,7 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
+use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RecordScrapLoss;
@@ -38,6 +39,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Models\OrderStatusTransition;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Queries\ManufacturingCostRateFilters;
 use App\Domain\Order\Queries\ManufacturingCostRateListQuery;
@@ -72,6 +74,7 @@ class OrderService
         private readonly ReinstateCancelledOrder $reinstateOrder,
         private readonly SetOrderShortages $setShortages,
         private readonly MarkReadyMessageSent $markReadyMessageSent,
+        private readonly MarkOrderNotesRead $markNotesRead,
         private readonly ConfirmDepositReceipt $confirmDepositReceipt,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
@@ -145,6 +148,27 @@ class OrderService
             // منتج كل بندٍ بصوره، لصورة البند على الشاشة: استعلامان للطلبية كلها لا اثنان لكل بند.
             ->with(['items.product.images', 'transitions'])
             ->findOrFail($orderId);
+    }
+
+    /**
+     * ملاحظات طلبيةٍ من طلبيات العميل، من الأقدم — ما كُتب عند المراجعة والرفض وحدهما
+     * ({@see OrderStatusTransition::CUSTOMER_NOTE_STATUSES}).
+     *
+     * **وقراءتها تعلّمها مقروءة**، كفتح محادثةٍ في الدعم: قراءة الملاحظات هي ما يجعلها مقروءة،
+     * وزرٌّ منفصل لذلك شيءٌ يُنسى. والمؤشّر يتقدّم إلى آخر ما حُمّل هنا — انظر
+     * {@see MarkOrderNotesRead}.
+     *
+     * @return Collection<int, OrderStatusTransition>
+     */
+    public function readNotesForCustomer(int $customerId, int $orderId): Collection
+    {
+        $order = Order::query()->where('customer_id', $customerId)->findOrFail($orderId);
+        $notes = $order->transitions()->notesForCustomer()->get();
+
+        $lastShown = $notes->max('id');
+        ($this->markNotesRead)($order, $lastShown === null ? null : (int) $lastShown);
+
+        return $notes;
     }
 
     /**

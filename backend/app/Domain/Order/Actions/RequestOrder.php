@@ -6,6 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Events\OrderRequested;
 use App\Domain\Order\Models\Order;
 
 /**
@@ -38,8 +39,17 @@ final class RequestOrder
 {
     public function __construct(private readonly CreateOrder $createOrder) {}
 
+    /**
+     * **ويُعلَن وصولُها**، لأن ولادتها «بانتظار المراجعة» ليست انتقالاً يسمعه مستمِعُ الحالات —
+     * انظر {@see OrderRequested}. ومستمِعُه مُدرَجٌ في الطابور وبعد الإيداع، فإعلانٌ عن طلبيةٍ
+     * تراجعت معاملتُها لا يصل إلى أحد.
+     */
     public function __invoke(OrderData $data): Order
     {
-        return ($this->createOrder)($data, null, OrderStatus::Requested);
+        $order = ($this->createOrder)($data, null, OrderStatus::Requested);
+
+        OrderRequested::dispatch((int) $order->getKey());
+
+        return $order;
     }
 }
