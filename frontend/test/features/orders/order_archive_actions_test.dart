@@ -577,10 +577,12 @@ void main() {
 
   // ───────────────────── what an archived order says about itself ─────────────────────
 
-  testWidgets('an archived order says so, instead of blaming the reader', (tester) async {
-    // Arrange — every grant there is. A trashed order arrives with no `available_transitions`
-    // at all (§٦), so `hasActions` is false and the note used to fall through to «لا تملك
-    // صلاحية» — telling an administrator holding everything that they lack a permission.
+  testWidgets('an archived order draws no note — the badge in the header says it', (
+    tester,
+  ) async {
+    // Arrange — every grant there is. The note that used to stand here explained why nothing
+    // could be moved; `OrderDeletedBadge` beside the status already says where the order is,
+    // and the user had the sentence removed.
     await sign(
       [
         'orders.view',
@@ -596,7 +598,7 @@ void main() {
 
     // Assert
     expect(find.text('لا تملك صلاحية تغيير حالة هذه الطلبية'), findsNothing);
-    expect(find.text('الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'), findsOneWidget);
+    expect(find.text('الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'), findsNothing);
   });
 
   testWidgets('an archived cancelled order is offered no «تراجع عن الإلغاء»', (tester) async {
@@ -626,6 +628,5 @@ void main() {
 
     // Assert
     expect(find.textContaining('تراجع عن الإلغاء'), findsNothing);
-    expect(find.text('الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'), findsOneWidget);
   });
 }
