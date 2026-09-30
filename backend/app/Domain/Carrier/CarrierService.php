@@ -10,6 +10,8 @@ use App\Domain\Carrier\Actions\DetachNawrisParcel;
 use App\Domain\Carrier\Actions\DispatchToNawris;
 use App\Domain\Carrier\Actions\EditNawrisParcel;
 use App\Domain\Carrier\Actions\ResendNawrisParcel;
+use App\Domain\Carrier\Enums\NawrisStatusCode;
+use App\Domain\Carrier\Exceptions\DeliveryWasReportedByTheCarrier;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Order\Enums\OrderStatus;
@@ -137,6 +139,28 @@ final class CarrierService
             ->first();
 
         return $parcel !== null ? ($this->resend)($parcel) : null;
+    }
+
+    /**
+     * Refuses when Nawris is the one that said this order was delivered.
+     *
+     * Asked by the controller before a delivery is undone — `Order` may not know that a carrier
+     * exists, so the domain action cannot ask it. **The latest parcel decides**, read the way
+     * {@see parcelCodesFor()} reads it: a resent order sits in several parcels, and only the most
+     * recent one describes the delivery being undone.
+     *
+     * @throws DeliveryWasReportedByTheCarrier
+     */
+    public function refuseIfCarrierReportedDelivery(Order $order): void
+    {
+        $parcel = NawrisParcel::query()
+            ->whereHas('links', fn ($q) => $q->where('order_id', $order->getKey()))
+            ->latest('id')
+            ->first();
+
+        if ($parcel !== null && $parcel->remote_status_code === NawrisStatusCode::Delivered->value) {
+            throw DeliveryWasReportedByTheCarrier::make((string) ($parcel->code ?? $parcel->getKey()));
+        }
     }
 
     /**

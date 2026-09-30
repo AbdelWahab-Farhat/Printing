@@ -27,6 +27,9 @@ final class ProfitAttributionQuery
      *     code: string,
      *     status: string,
      *     grand_total: string,
+     *     paid_amount: string,
+     *     written_off_amount: string,
+     *     carrier_settled_amount: string,
      *     items_total: string,
      *     total_cogs: ?string,
      *     gross_profit: ?string,
@@ -56,6 +59,9 @@ final class ProfitAttributionQuery
      *     code: string,
      *     status: string,
      *     grand_total: string,
+     *     paid_amount: string,
+     *     written_off_amount: string,
+     *     carrier_settled_amount: string,
      *     items_total: string,
      *     total_cogs: ?string,
      *     gross_profit: ?string,
@@ -119,6 +125,15 @@ final class ProfitAttributionQuery
             'code' => (string) $order->id,
             'status' => $order->status->value,
             'grand_total' => (string) $order->grand_total,
+            // **The three totals that close a debt**, for whoever splits the order's money by
+            // what has actually come in. `PostFundProceedsForOrder` read `paid_amount` from here
+            // for as long as it existed and this array never carried it, so the fund's treasury
+            // was never credited for a plain sale at all — the key defaulted to zero and the
+            // target with it. Cash, what was forgiven, and what the carrier took at the door are
+            // told apart because they answer who pays: see `PaymentStatus::between()`.
+            'paid_amount' => (string) $order->paid_amount,
+            'written_off_amount' => (string) $order->written_off_amount,
+            'carrier_settled_amount' => (string) $order->carrier_settled_amount,
             'items_total' => (string) $order->items_total,
             'total_cogs' => $order->total_cogs === null ? null : (string) $order->total_cogs,
             'gross_profit' => $order->grossProfit(),

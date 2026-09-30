@@ -6,8 +6,10 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderPaymentType;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\EntryCannotBeReversed;
 use App\Domain\Order\Exceptions\PaymentAlreadyReversed;
+use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +38,10 @@ use Illuminate\Support\Facades\DB;
  * wrong order is the same kind of mistake as a figure mistyped at the counter, and the debt it
  * closed comes back exactly as it stood: the order returns to «مدفوعة جزئياً» and «تم التسوية»
  * refuses it again, which is the correct outcome and not a regression.
+ *
+ * **Except under «تم التسوية».** There the same outcome is a contradiction rather than a state —
+ * settled and owing — so it is refused until somebody takes the order back to «تم الاستلام»
+ * with {@see UnsettleOrder}. See {@see SettledOrderMustBeUnsettledFirst}.
  */
 final class ReverseOrderPayment
 {
@@ -83,6 +89,13 @@ final class ReverseOrderPayment
             $reversal->save();
 
             ($this->recalculate)($locked);
+
+            // Asked of the totals the ledger now holds rather than predicted from this row: which
+            // of the three totals a reversal lands on is `OrderPayment::affectsWriteOff()`'s
+            // business, and the transaction takes the row back with the refusal.
+            if ($locked->status === OrderStatus::Settled && $locked->paymentStatus()->isOutstanding()) {
+                throw SettledOrderMustBeUnsettledFirst::make();
+            }
 
             return $reversal;
         });

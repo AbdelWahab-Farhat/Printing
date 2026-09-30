@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Enums;
 
+use App\Domain\Investor\Actions\PostFundProceedsForOrder;
+
 /**
  * كلُّ طريقٍ يتحرّك به نقدُ الصندوق — والاتجاهُ لا يسكن إشارةً أبداً.
  *
@@ -68,6 +70,16 @@ enum CashEntryType: string
      */
     case LegacyTransfer = 'legacy_transfer';
 
+    /**
+     * نصيبُ الصندوق من فرقٍ شُطب على طلبية — تدفعه الشركة، مصدرُه الطلبية.
+     *
+     * قرارُ المالك: خطرُ العميل على المطبعة لا على المستثمر، كما في الإلغاء — «استلم الزبون ما
+     * استلمش، المطبعة تتحمّل». فالشطبُ لا يُنقص ما يقبضه الصندوق عن بيع بضاعته: ما لم يدفعه
+     * العميلُ تدفعه الشركة، ويُكتب هنا باسمه بدل أن يختفي فرقاً في سعر الوحدة. ويُعكَس إن عُكس
+     * الشطب — {@see PostFundProceedsForOrder} يحسب الهدفَ ويقارن كعادته.
+     */
+    case WriteOffCoveredByCompany = 'write_off_covered_by_company';
+
     /** يُبطل صفّاً واحداً سابقاً، حاملاً مبلغَه كما هو. */
     case Reversal = 'reversal';
 
@@ -83,6 +95,7 @@ enum CashEntryType: string
             self::CapitalReturn => 'إرجاع رأس مال',
             self::StockSoldToPress => 'بيع سادة للمطبعة',
             self::LegacyTransfer => 'تحويل من صفقة سابقة',
+            self::WriteOffCoveredByCompany => 'شطب تحمّلته الشركة',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -96,7 +109,8 @@ enum CashEntryType: string
     public function isInflow(): bool
     {
         return match ($this) {
-            self::Deposit, self::SaleProceeds, self::StockSoldToPress, self::LegacyTransfer => true,
+            self::Deposit, self::SaleProceeds, self::StockSoldToPress, self::LegacyTransfer,
+            self::WriteOffCoveredByCompany => true,
             default => false,
         };
     }

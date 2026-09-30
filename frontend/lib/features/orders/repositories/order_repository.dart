@@ -168,6 +168,13 @@ abstract interface class OrderRepository {
   /// and putting the warehouse right afterwards is done by hand.
   Future<Either<Failure, Order>> reinstate(int orderId, {String? reason});
 
+  /// Takes a settled order back to «تم الاستلام». [reason] is required by the server.
+  Future<Either<Failure, Order>> unsettle(int orderId, {required String reason});
+
+  /// Takes back a delivery recorded by mistake — the order goes back where it was delivered
+  /// from, and the investors' profit comes off with it. [reason] is required by the server.
+  Future<Either<Failure, Order>> undoDelivery(int orderId, {required String reason});
+
   /// [fields] is whatever the chosen transition asked for, keyed as the server described it —
   /// see `TransitionField`. Nothing here knows what those keys mean.
   Future<Either<Failure, Order>> changeStatus(

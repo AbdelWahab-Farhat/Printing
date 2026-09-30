@@ -9,6 +9,7 @@ import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
+import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -37,6 +38,8 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required AddOrderDesign addDesign,
     required ReviewOrderDesign reviewDesign,
     required ReinstateOrder reinstateOrder,
+    required UnsettleOrder unsettleOrder,
+    required UndoOrderDelivery undoOrderDelivery,
     required DeleteOrder deleteOrder,
     required RestoreOrder restoreOrder,
     required ConfirmReadyMessage confirmReadyMessage,
@@ -46,6 +49,8 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _addDesign = addDesign,
        _reviewDesign = reviewDesign,
        _reinstateOrder = reinstateOrder,
+       _unsettleOrder = unsettleOrder,
+       _undoOrderDelivery = undoOrderDelivery,
        _deleteOrder = deleteOrder,
        _restoreOrder = restoreOrder,
        _confirmReadyMessage = confirmReadyMessage,
@@ -63,6 +68,11 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// server reads where the order goes off its own timeline — so sending somebody to a screen
   /// that would draw one button and no fields is a screen for the sake of symmetry.
   final ReinstateOrder _reinstateOrder;
+
+  /// The two other undos of one recorded move, held here for the reason [_reinstateOrder] is:
+  /// no destination to choose, no fields beyond a reason, and the answer *is* the order.
+  final UnsettleOrder _unsettleOrder;
+  final UndoOrderDelivery _undoOrderDelivery;
 
   /// **The other two statuses this Cubit writes**, and they are not statuses at all — which is
   /// why they are here beside the reinstate rather than on the move screen. Neither offers a
@@ -141,13 +151,26 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// The order comes back changed in more than its status — it is no longer final, its
   /// `available_transitions` are a real list again, and the cancellation banner is gone — so the
   /// response replaces what is on screen rather than being followed by a re-read.
-  Future<Failure?> reinstate({String? reason}) async {
+  Future<Failure?> reinstate({String? reason}) =>
+      _undo(() => _reinstateOrder(_orderId, reason: reason));
+
+  /// «تراجع عن التسوية» — back to «تم الاستلام», so money on the order can be corrected.
+  Future<Failure?> unsettle({required String reason}) =>
+      _undo(() => _unsettleOrder(_orderId, reason: reason));
+
+  /// «تراجع عن التسليم» — back to wherever the order was delivered from.
+  Future<Failure?> undoDelivery({required String reason}) =>
+      _undo(() => _undoOrderDelivery(_orderId, reason: reason));
+
+  /// The shape the three undos share: spin, send, and put the answer on screen — or the order as
+  /// it was, beside the failure, when the server refuses.
+  Future<Failure?> _undo(Future<Either<Failure, Order>> Function() send) async {
     final order = state.order;
     if (order == null || state.isWorking) return null;
 
     emit(OrderDetailState.loaded(order: order, isWorking: true));
 
-    final result = await _reinstateOrder(_orderId, reason: reason);
+    final result = await send();
 
     if (isClosed) return null;
 

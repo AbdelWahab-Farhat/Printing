@@ -114,6 +114,13 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
     unknownValue: OrderStatus.unknown,
   ),
   reinstateToLabel: json['reinstate_to_label'] as String?,
+  canUnsettle: json['can_unsettle'] as bool? ?? false,
+  undoDeliveryTo: $enumDecodeNullable(
+    _$OrderStatusEnumMap,
+    json['undo_delivery_to'],
+    unknownValue: OrderStatus.unknown,
+  ),
+  undoDeliveryToLabel: json['undo_delivery_to_label'] as String?,
   progress: json['progress'] == null
       ? OrderProgress.unknown
       : OrderProgress.fromJson(json['progress'] as Map<String, dynamic>),
@@ -233,6 +240,9 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'cancellation_reason': instance.cancellationReason,
   'reinstate_to': _$OrderStatusEnumMap[instance.reinstateTo],
   'reinstate_to_label': instance.reinstateToLabel,
+  'can_unsettle': instance.canUnsettle,
+  'undo_delivery_to': _$OrderStatusEnumMap[instance.undoDeliveryTo],
+  'undo_delivery_to_label': instance.undoDeliveryToLabel,
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
   'designs_are_editable': instance.designsAreEditable,

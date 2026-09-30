@@ -6,6 +6,7 @@ namespace App\Domain\Investor\Queries;
 
 use App\Domain\Investor\Actions\PostPressPurchaseProceeds;
 use App\Domain\Investor\Support\OrderDealSlices;
+use App\Domain\Investor\Support\StillOwed;
 use App\Domain\Order\Enums\OrderStatus;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -56,14 +57,14 @@ final class FundDraws
     /**
      * وصلت العميل ولم يُحصَّل ثمنُها كاملاً.
      *
-     * `paid_amount < grand_total` لا حالةُ «تمت التسوية»: الواقعةُ المالية لا زرٌّ يضغطه موظّف،
+     * {@see StillOwed} لا حالةُ «تمت التسوية»: الواقعةُ المالية لا زرٌّ يضغطه موظّف،
      * وهو الشرطُ بعينه الذي تفتح به {@see InvestorBalances::releasableInPeriod()} بوّابةَ الإفراج.
      */
     public function uncollected(?int $dealId = null): Builder
     {
         return $this->base($dealId)
             ->whereIn('o.status', [OrderStatus::Delivered->value, OrderStatus::Settled->value])
-            ->whereColumn('o.paid_amount', '<', 'o.grand_total');
+            ->whereRaw(StillOwed::sql('o'));
     }
 
     /** كلُّ سحبٍ من طبقةٍ ممولة إلى سطرِ طلبيةٍ ما زال قائماً. */

@@ -316,6 +316,19 @@ final class InvestorService
     }
 
     /**
+     * A delivery was taken back — reverse what it made final, to be posted afresh on the next.
+     *
+     * The same reversal as {@see unwindEarningsForOrder()}, named for what happened: the order is
+     * alive and going out again, and the investor's statement should not call it deleted.
+     *
+     * @return list<InvestorWalletEntry> always empty; what this writes is reversals
+     */
+    public function unwindEarningsForUndoneDelivery(int $orderId): array
+    {
+        return ($this->unwindEarnings)($orderId, UnwindDealEarningsForOrder::REASON_DELIVERY_UNDONE);
+    }
+
+    /**
      * The press has taken its plain material off the shelf — pay whoever sold it.
      *
      * Called from `ChangeOrderStatus` on the way into «جاهزة للطباعة» and «جاهزة», through
