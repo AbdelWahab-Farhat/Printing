@@ -137,23 +137,12 @@ class _Body extends StatelessWidget {
                   ),
                 ),
 
-              // The fields of the chosen path, and only of it. Rebuilt from scratch on every
-              // change of destination — keyed by the status, so a controller from one path is
-              // never handed the answer typed for another.
-              if (transition != null && transition.fields.isNotEmpty) ...[
-                SizedBox(height: 12.h),
-                for (final field in transition.fields)
-                  Padding(
-                    key: ValueKey('${transition.status.wire}:${field.key}'),
-                    padding: EdgeInsets.only(bottom: 16.h),
-                    child: TransitionFieldInput(
-                      field: field,
-                      value: values[field.key],
-                      customerId: order.customerId,
-                      onChanged: (value) => onValueChanged(field.key, value),
-                    ),
-                  ),
-              ],
+              _TransitionFields(
+                transition: transition,
+                values: values,
+                customerId: order.customerId,
+                onValueChanged: onValueChanged,
+              ),
             ],
           ),
         ),
@@ -252,6 +241,98 @@ class _Destination extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The fields of the chosen path, and only of it.
+///
+/// Rebuilt from scratch on every change of destination — keyed by the status, so a controller
+/// from one path is never handed the answer typed for another.
+///
+/// **تدخل ولا تقفز.** الحقول تظهر تحت الوجهات فتدفع ما تحتها، وظهورها في إطارٍ واحد يُفقد
+/// العين مكانها. فالمساحة تنفتح بالتدريج، والحقول القديمة تخفت في أول الحركة ثم تظهر الجديدة
+/// في آخرها — فلا يتراكب حقلان في مكانٍ واحد عند الانتقال من وجهةٍ إلى أخرى. ومن طلب تقليل
+/// الحركة من هاتفه تظهر له في الإطار نفسه، كما في `Appear`.
+class _TransitionFields extends StatelessWidget {
+  const _TransitionFields({
+    required this.transition,
+    required this.values,
+    required this.customerId,
+    required this.onValueChanged,
+  });
+
+  final OrderTransition? transition;
+  final Map<String, Object?> values;
+  final int customerId;
+  final void Function(String key, Object? value) onValueChanged;
+
+  static const Duration _duration = Duration(milliseconds: 300);
+
+  @override
+  Widget build(BuildContext context) {
+    final transition = this.transition;
+
+    final Widget fields = transition == null || transition.fields.isEmpty
+        ? const SizedBox.shrink()
+        : Column(
+            key: ValueKey(transition.status),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // داخل الحركة لا خارجها، وإلا قفز هذا الفراغ وحده قبل أن تبدأ.
+              SizedBox(height: 12.h),
+              for (final field in transition.fields)
+                Padding(
+                  key: ValueKey('${transition.status.wire}:${field.key}'),
+                  padding: EdgeInsets.only(bottom: 16.h),
+                  child: TransitionFieldInput(
+                    field: field,
+                    value: values[field.key],
+                    customerId: customerId,
+                    onChanged: (value) => onValueChanged(field.key, value),
+                  ),
+                ),
+            ],
+          );
+
+    if (MediaQuery.disableAnimationsOf(context)) return fields;
+
+    return AnimatedSize(
+      duration: _duration,
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: _duration,
+        // الخروج يُقرأ من آخره إلى أوّله: القديمة تنطفئ في أول ٤٠٪ من الوقت، والجديدة تبدأ
+        // بعدها.
+        switchInCurve: const Interval(0.4, 1, curve: Curves.easeOut),
+        switchOutCurve: const Interval(0.6, 1, curve: Curves.easeIn),
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          // انزلاقٌ قصير إلى الأعلى كبطاقات `Appear`، بالنقاط لا بنسبةٍ من الارتفاع: حقل
+          // التصميم أطول من الشاشة، ونسبةٌ منه رحلةٌ لا انزلاقة.
+          child: AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(0, (1 - animation.value) * 12.h),
+              child: child,
+            ),
+            child: child,
+          ),
+        ),
+        // الجديدة وحدها تقرر الارتفاع، والقديمة فوقها تخفت. ولو قررتا معاً لاتّسعت المساحة
+        // لأطولهما ثم عادت، أي حركتين بدل واحدة.
+        layoutBuilder: (current, previous) => Stack(
+          fit: StackFit.passthrough,
+          alignment: Alignment.topCenter,
+          children: [
+            for (final child in previous)
+              Positioned(top: 0, left: 0, right: 0, child: IgnorePointer(child: child)),
+            ?current,
+          ],
+        ),
+        child: fields,
       ),
     );
   }
