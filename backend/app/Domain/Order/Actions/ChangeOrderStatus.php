@@ -30,6 +30,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
+use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
@@ -87,7 +88,28 @@ final class ChangeOrderStatus
         // only place an order's total is decided, so a quoted request reaches the same figure a
         // clerk-typed one would.
         private readonly RecalculateOrderTotals $recalculateTotals,
+        private readonly TreasuryService $treasury,
     ) {}
+
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    private static function idIn(array $fields, string $key): ?int
+    {
+        $value = $fields[$key] ?? null;
+
+        return $value === null || $value === '' ? null : (int) $value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    private static function amountIn(array $fields, string $key): ?string
+    {
+        $value = $fields[$key] ?? null;
+
+        return $value === null || $value === '' ? null : Money::normalize($value);
+    }
 
     /**
      * @param  array<string, mixed>  $fields  What the move asked for — see {@see TransitionFields}.
@@ -250,6 +272,19 @@ final class ChangeOrderStatus
             // {@see SettlementRequiresFullPayment}.
             if ($target === OrderStatus::Settled && $order->paymentStatus()->isOutstanding()) {
                 throw SettlementRequiresFullPayment::make($order->remainingAmount());
+            }
+
+            // **The money follows the order to «تم التسوية».** What Nawris or a driver still holds
+            // for it moves to the account it reached — one transfer, no second payment. Nothing
+            // held, nothing written. TREASURY-DESIGN §٦.
+            if ($target === OrderStatus::Settled) {
+                $this->treasury->settleCustody(
+                    (int) $order->getKey(),
+                    self::idIn($fields, TransitionFields::SETTLEMENT_ACCOUNT),
+                    self::amountIn($fields, TransitionFields::SETTLEMENT_FEE),
+                    $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                    (string) $order->code,
+                );
             }
 
             // **Two statuses can be the one where stock leaves, and `stock_deducted_at` decides
@@ -571,6 +606,8 @@ final class ChangeOrderStatus
             // attached with no amount beside it reaches nothing, because the guard above has
             // already returned: a receipt with no entry to hang on would be an orphan.
             'receipt' => $fields[TransitionFields::PAYMENT_RECEIPT] ?? null,
+            // Empty unless the person picked one — the treasury then decides (TREASURY-DESIGN §٥).
+            'treasury_account_id' => $fields[TransitionFields::PAYMENT_ACCOUNT] ?? null,
         ]), $actor);
 
         // `RecordOrderPayment` recalculates against its own locked copy, so the instance this

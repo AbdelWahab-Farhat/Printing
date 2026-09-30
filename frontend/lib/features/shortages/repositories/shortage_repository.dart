@@ -121,6 +121,7 @@ abstract class ShortageRepository {
     String? occurredOn,
     String? notes,
     PickedFile? receipt,
+    int? treasuryAccountId,
   });
 
   /// Saying how much the warehouse is short, in the unit it will be bought in.

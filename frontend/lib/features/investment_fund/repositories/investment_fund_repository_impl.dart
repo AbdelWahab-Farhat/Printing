@@ -119,6 +119,7 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
     required String amount,
     required String incurredOn,
     String? notes,
+    int? treasuryAccountId,
   }) {
     return safeRequest<Unit>(
       () => _dio.post(
@@ -129,6 +130,8 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
           'amount': amount,
           'incurred_on': incurredOn,
           'notes': ?notes,
+          // The drawer that paid; absent, the cash box (TREASURY-DESIGN §٧).
+          'treasury_account_id': ?treasuryAccountId,
         },
       ),
       parse: (_) => unit,

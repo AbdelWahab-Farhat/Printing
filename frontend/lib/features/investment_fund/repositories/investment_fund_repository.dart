@@ -53,5 +53,6 @@ abstract interface class InvestmentFundRepository {
     required String amount,
     required String incurredOn,
     String? notes,
+    int? treasuryAccountId,
   });
 }

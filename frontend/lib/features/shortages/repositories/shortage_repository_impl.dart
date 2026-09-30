@@ -208,6 +208,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
     String? occurredOn,
     String? notes,
     PickedFile? receipt,
+    int? treasuryAccountId,
   }) async {
     final body = <String, dynamic>{
       'quantity': quantity,
@@ -220,6 +221,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
       // nothing rather than this phone's idea of the day.
       'occurred_on': ?occurredOn,
       'notes': ?notes,
+      'treasury_account_id': ?treasuryAccountId,
     };
 
     // **JSON when there is no paper, multipart when there is** — the arrangement the order's

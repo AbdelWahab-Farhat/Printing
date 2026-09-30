@@ -45,6 +45,7 @@ class InvestorDetailCubit extends Cubit<InvestorDetailState> {
     int? investorDealId,
     String? method,
     String? notes,
+    int? treasuryAccountId,
   }) async {
     final result = await _recordWalletEntry(
       investorId: investorId,
@@ -53,6 +54,7 @@ class InvestorDetailCubit extends Cubit<InvestorDetailState> {
       investorDealId: investorDealId,
       method: method,
       notes: notes,
+      treasuryAccountId: treasuryAccountId,
     );
 
     if (isClosed) return null;

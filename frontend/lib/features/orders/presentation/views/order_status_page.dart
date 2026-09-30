@@ -3,6 +3,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
@@ -110,6 +111,15 @@ class _Body extends StatelessWidget {
   final void Function(String key, Object? value) onValueChanged;
   final Future<void> Function() onSubmit;
 
+  /// The payment method answered on this move, if it asks for one — what «الحساب» narrows by.
+  String? _methodIn(OrderTransition? transition) {
+    final methodField = transition?.fields
+        .where((f) => f.type == TransitionFieldType.paymentMethod)
+        .firstOrNull;
+
+    return methodField == null ? null : values[methodField.key] as String?;
+  }
+
   @override
   Widget build(BuildContext context) {
     final transition = selected;
@@ -150,7 +160,18 @@ class _Body extends StatelessWidget {
                       field: field,
                       value: values[field.key],
                       customerId: order.customerId,
-                      onChanged: (value) => onValueChanged(field.key, value),
+                      paymentMethod: _methodIn(transition),
+                      orderId: order.id,
+                      onChanged: (value) {
+                        onValueChanged(field.key, value);
+
+                        // An account picked for cash does not fit a transfer — the list
+                        // changes with the method, and so must the answer.
+                        if (field.type == TransitionFieldType.paymentMethod &&
+                            values[TransitionFieldInput.paymentAccountKey] != null) {
+                          onValueChanged(TransitionFieldInput.paymentAccountKey, null);
+                        }
+                      },
                     ),
                   ),
               ],

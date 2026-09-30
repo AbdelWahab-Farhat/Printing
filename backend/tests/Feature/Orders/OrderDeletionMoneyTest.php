@@ -36,6 +36,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\StockEffectPreview;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -254,6 +255,8 @@ class OrderDeletionMoneyTest extends TestCase
         $refund->order_id = $order->getKey();
         $refund->type = OrderPaymentType::Refund;
         $refund->recorded_by = $actor->getKey();
+        // Money that left names the drawer it left from — the database refuses one that does not.
+        $refund->treasury_account_id = TreasuryAccount::query()->where('kind', 'cash')->where('is_default', true)->value('id');
         $refund->save();
 
         // Act

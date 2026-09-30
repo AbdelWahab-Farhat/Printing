@@ -15,6 +15,10 @@ use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +42,7 @@ final class RecordOrderPayment
     public function __construct(
         private readonly RecalculateOrderPayments $recalculate,
         private readonly StoreReceipt $storeReceipt,
+        private readonly TreasuryService $treasury,
     ) {}
 
     public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -113,6 +118,20 @@ final class RecordOrderPayment
         $payment->type = OrderPaymentType::Payment;
         $payment->recorded_by = $actor?->getKey();
 
+        // **Where the money landed.** The person's choice if they made one, otherwise — for cash
+        // on an order waiting at a branch — that branch's box, otherwise their own account,
+        // otherwise the method's default (TREASURY-DESIGN §٥, §١٩). Stamped, never fillable:
+        // the account is decided here, by the rules, not by whatever a payload claims. The
+        // order is the locked copy, read before this move writes its new status.
+        $account = $this->treasury->accountFor(
+            $data->method->value,
+            $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            $data->treasuryAccountId,
+            pickupCityId: $order->pickupOfficeId(),
+        );
+
+        $payment->treasury_account_id = $account->getKey();
+
         if ($data->receipt !== null) {
             // forceFill, because the five receipt columns are not fillable: a payload that could
             // set `receipt_path` could claim a receipt exists at a path of its choosing. What is
@@ -121,6 +140,21 @@ final class RecordOrderPayment
         }
 
         $payment->save();
+
+        // In the same transaction as the row: the payment and the money it put in an account
+        // stand or fall together.
+        $this->treasury->post(new MovementData(
+            accountId: (int) $account->getKey(),
+            direction: MovementDirection::In,
+            kind: MovementKind::Payment,
+            amount: (string) $payment->amount,
+            occurredAt: $payment->paid_at,
+            sourceType: $payment->getMorphClass(),
+            sourceId: (int) $payment->getKey(),
+            orderId: (int) $order->getKey(),
+            notes: "دفعة على الطلبية {$order->code}",
+            recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
+        ));
 
         return $payment;
     }

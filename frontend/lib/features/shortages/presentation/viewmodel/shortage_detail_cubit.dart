@@ -86,6 +86,7 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
     String? occurredOn,
     String? notes,
     PickedFile? receipt,
+    int? treasuryAccountId,
   }) {
     return _write(
       () => _recordSupply(
@@ -97,6 +98,7 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
         occurredOn: occurredOn,
         notes: notes,
         receipt: receipt,
+        treasuryAccountId: treasuryAccountId,
       ),
     );
   }

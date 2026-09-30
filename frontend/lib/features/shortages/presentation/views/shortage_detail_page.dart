@@ -122,6 +122,7 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
         occurredOn: entry.occurredOn,
         notes: entry.notes,
         receipt: entry.receipt,
+        treasuryAccountId: entry.treasuryAccountId,
       ),
     );
   }

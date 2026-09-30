@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Treasury\Exceptions;
+
+use App\Support\Exceptions\DomainException;
+
+/**
+ * An operation the treasury will not write, each for a reason it names.
+ */
+final class OperationRefused extends DomainException
+{
+    public function __construct(string $message, private readonly ?string $field = null)
+    {
+        parent::__construct($message);
+    }
+
+    public static function openingExists(string $account): self
+    {
+        return new self("لـ«{$account}» رصيد افتتاحي مسجَّل — صحّحه بجرد الحساب", 'to_account_id');
+    }
+
+    public static function balanceUnchanged(string $account): self
+    {
+        return new self("الرصيد المعدود يطابق رصيد «{$account}» — لا فرق يُسجَّل", 'counted_balance');
+    }
+
+    public static function categoryNeedsEmployee(string $category): self
+    {
+        return new self("تصنيف «{$category}» يتطلب تحديد الموظف", 'employee_id');
+    }
+
+    public static function categoryInactive(string $category): self
+    {
+        return new self("تصنيف «{$category}» معطَّل", 'category_id');
+    }
+
+    public static function notReversible(string $type): self
+    {
+        return new self("عملية «{$type}» لا تُعكس من هنا");
+    }
+
+    public static function isAReversal(): self
+    {
+        return new self('هذه العملية عكسٌ لغيرها — تُعكس العملية الأصلية لا عكسها');
+    }
+
+    public static function alreadyReversed(): self
+    {
+        return new self('هذه العملية معكوسة مسبقاً');
+    }
+
+    public static function beforeOpening(string $account, string $date): self
+    {
+        return new self("لا تُسجَّل حركة يدوية على «{$account}» قبل رصيده الافتتاحي ({$date})", 'occurred_at');
+    }
+
+    public static function locked(string $until, string $field = 'occurred_at'): self
+    {
+        return new self("الحسابات مقفلة حتى {$until} — لا تُسجَّل عملية يدوية بتاريخٍ قبله", $field);
+    }
+
+    public static function reasonRequired(): self
+    {
+        return new self('السبب مطلوب عند السحب', 'notes');
+    }
+
+    public function fieldErrors(): array
+    {
+        return $this->field === null ? [] : [$this->field => [$this->getMessage()]];
+    }
+}

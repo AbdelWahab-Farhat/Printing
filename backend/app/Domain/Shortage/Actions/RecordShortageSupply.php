@@ -23,7 +23,12 @@ use App\Domain\Shortage\Exceptions\SupplyNeedsAWarehouse;
 use App\Domain\Shortage\Exceptions\SupplyRequiresAnActor;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Shortage\Models\ShortageSupply;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use App\Support\Media\StoreReceipt;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -91,6 +96,7 @@ final class RecordShortageSupply
         // And the same arrangement with Inventory: one public door, nothing of its internals.
         private readonly InventoryService $inventory,
         private readonly StoreReceipt $storeReceipt,
+        private readonly TreasuryService $treasury,
     ) {}
 
     /**
@@ -163,6 +169,17 @@ final class RecordShortageSupply
             // transaction, so an entry refused for exceeding the remainder leaves an object
             // behind with no row — storage, and nothing else. The reverse would be a row whose
             // proof cannot be produced.
+            // The drawer it was paid from: the buyer's pick, else their own account, else the
+            // method's default. Never custody — money out comes from a real drawer.
+            $account = $this->treasury->accountFor(
+                $data->method->value,
+                $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                $data->treasuryAccountId,
+                incoming: false,
+            );
+
+            $supply->forceFill(['treasury_account_id' => $account->getKey()]);
+
             if ($data->receipt !== null) {
                 $supply->forceFill(
                     ($this->storeReceipt)("supply-receipts/{$locked->getKey()}", $data->receipt),
@@ -170,6 +187,19 @@ final class RecordShortageSupply
             }
 
             $supply->save();
+
+            $this->treasury->post(new MovementData(
+                accountId: (int) $account->getKey(),
+                direction: MovementDirection::Out,
+                kind: MovementKind::SupplyPurchase,
+                amount: (string) $supply->amount,
+                occurredAt: Carbon::parse($data->occurredOn),
+                sourceType: $supply->getMorphClass(),
+                sourceId: (int) $supply->getKey(),
+                orderId: $locked->order_id === null ? null : (int) $locked->order_id,
+                notes: 'توفير نقص '.$locked->code,
+                recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            ));
 
             // **Before the totals are restated.** A shortage that had been abandoned is being
             // chased again the moment something is bought against it, and «مكتمل» — if this entry

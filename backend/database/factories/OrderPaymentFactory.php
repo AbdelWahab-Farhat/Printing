@@ -9,6 +9,8 @@ use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -41,7 +43,30 @@ class OrderPaymentFactory extends Factory
             'notes' => null,
             'reverses_payment_id' => null,
             'recorded_by' => User::factory(),
+            // The default account of the method's kind, exactly where the treasury would put it
+            // — the database refuses a payment or refund that names none. A factory row posts
+            // no movement; tests that need the balance record through RecordOrderPayment.
+            'treasury_account_id' => fn (array $attributes) => self::defaultAccountFor($attributes),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function defaultAccountFor(array $attributes): ?int
+    {
+        $type = $attributes['type'] ?? OrderPaymentType::Payment;
+        $type = $type instanceof OrderPaymentType ? $type : OrderPaymentType::from((string) $type);
+        $method = $attributes['method'] ?? null;
+
+        if (! $type->movedCash() || $method === null) {
+            return null;
+        }
+
+        $method = $method instanceof PaymentMethod ? $method : PaymentMethod::from((string) $method);
+        $kind = AccountKind::forMethod($method->value)[0];
+
+        return TreasuryAccount::query()->where('kind', $kind->value)->where('is_default', true)->value('id');
     }
 
     public function forOrder(Order $order): static

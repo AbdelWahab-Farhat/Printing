@@ -14,6 +14,10 @@ use App\Domain\Shortage\Exceptions\SupplyDoesNotBelongToShortage;
 use App\Domain\Shortage\Exceptions\SupplyRequiresAnActor;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Shortage\Models\ShortageSupply;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -49,6 +53,7 @@ final class ReverseShortageSupply
     public function __construct(
         private readonly RecalculateShortageTotals $recalculate,
         private readonly InventoryService $inventory,
+        private readonly TreasuryService $treasury,
     ) {}
 
     /**
@@ -116,12 +121,50 @@ final class ReverseShortageSupply
                 'notes' => $reason,
                 'reverses_supply_id' => $original->getKey(),
                 'recorded_by_user_id' => $actor?->getKey(),
+                // The drawer the purchase came out of, which the money goes back into. A purchase
+                // from before the treasury names none; it was counted into the opening, so it
+                // returns to the method's default (TREASURY-DESIGN §١١).
+                'treasury_account_id' => $original->treasury_account_id
+                    ?? $this->treasury->accountFor($original->method->value, null, incoming: false)->getKey(),
             ])->save();
+
+            $this->returnTheMoney($original, $reversal, $reason, $actor);
 
             ($this->recalculate)($locked->refresh());
 
             return $reversal;
         });
+    }
+
+    /**
+     * Puts the money back into the drawer it was paid from — the mirror of the purchase's own
+     * movement, or, for a purchase from before the treasury, a fresh one into the default.
+     */
+    private function returnTheMoney(
+        ShortageSupply $original,
+        ShortageSupply $reversal,
+        ?string $reason,
+        ?User $actor,
+    ): void {
+        $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
+
+        $mirrored = $this->treasury->reverseSource($original->getMorphClass(), (int) $original->getKey(), $reason, $actorId);
+
+        if ($mirrored !== [] || $original->treasury_account_id !== null) {
+            return;
+        }
+
+        $this->treasury->post(new MovementData(
+            accountId: (int) $reversal->treasury_account_id,
+            direction: MovementDirection::In,
+            kind: MovementKind::SupplyPurchase,
+            amount: (string) $reversal->amount,
+            occurredAt: now(),
+            sourceType: $reversal->getMorphClass(),
+            sourceId: (int) $reversal->getKey(),
+            notes: $reason,
+            recordedBy: $actorId,
+        ));
     }
 
     /**

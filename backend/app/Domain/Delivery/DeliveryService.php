@@ -16,6 +16,7 @@ use App\Domain\Delivery\Actions\UpdateShippingCompany;
 use App\Domain\Delivery\DTOs\CityData;
 use App\Domain\Delivery\DTOs\RegionData;
 use App\Domain\Delivery\DTOs\ShippingCompanyData;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
@@ -76,6 +77,20 @@ class DeliveryService
     public function deliveryMap(): \Illuminate\Database\Eloquent\Collection
     {
         return City::query()->with('regions')->orderBy('id')->get();
+    }
+
+    /**
+     * The branches customers collect from — the «استلام مكتب» rows, in the map's own order.
+     * The treasury links a cash box to each (TREASURY-DESIGN §١٩).
+     *
+     * @return Collection<int, City>
+     */
+    public function pickupOffices(): Collection
+    {
+        return City::query()
+            ->where('fulfilment_type', FulfilmentType::OfficePickup->value)
+            ->orderBy('id')
+            ->get();
     }
 
     /**

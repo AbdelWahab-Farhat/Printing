@@ -292,9 +292,18 @@ class OrderService
      *
      * @return Collection<int, OrderPayment>
      */
+    /**
+     * The branch an order is waiting at, or null — for the account picker's «تلقائي», which
+     * names that branch's cash box (TREASURY-DESIGN §١٩).
+     */
+    public function pickupOfficeOf(int $orderId): ?int
+    {
+        return Order::query()->find($orderId)?->pickupOfficeId();
+    }
+
     public function payments(Order $order): Collection
     {
-        return $order->payments()->with(['recorder', 'reversal', 'reversedPayment'])->get();
+        return $order->payments()->with(['recorder', 'reversal', 'reversedPayment', 'treasuryAccount'])->get();
     }
 
     public function recordPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment

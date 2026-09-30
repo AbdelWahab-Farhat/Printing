@@ -46,6 +46,9 @@ final readonly class ShortageSupplyData
          * **Never required**, unlike a customer's payment: see the request's own note.
          */
         public ?UploadedFile $receipt = null,
+
+        // Which drawer paid for it — null lets the treasury decide (TREASURY-DESIGN §٥).
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -73,6 +76,9 @@ final readonly class ShortageSupplyData
                 : null,
             receipt: ($validated['receipt'] ?? null) instanceof UploadedFile
                 ? $validated['receipt']
+                : null,
+            treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
+                ? (int) $validated['treasury_account_id']
                 : null,
         );
     }

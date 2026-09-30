@@ -48,14 +48,15 @@ class OrderPaymentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<OrderPaymentsCubit>(
       create: (_) => sl<OrderPaymentsCubit>(param1: orderId)..load(),
-      child: _OrderPaymentsView(orderCode: orderCode),
+      child: _OrderPaymentsView(orderId: orderId, orderCode: orderCode),
     );
   }
 }
 
 class _OrderPaymentsView extends StatefulWidget {
-  const _OrderPaymentsView({required this.orderCode});
+  const _OrderPaymentsView({required this.orderId, required this.orderCode});
 
+  final int orderId;
   final String orderCode;
 
   @override
@@ -111,6 +112,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       direction: direction,
       remainingAmount: summary.remainingAmount,
       paidAmount: summary.paidAmount,
+      orderId: widget.orderId,
     );
 
     if (draft == null || !mounted) return;
@@ -123,6 +125,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
             notes: draft.notes,
             receiptPath: draft.receipt?.path,
             receiptFilename: draft.receipt?.name,
+            treasuryAccountId: draft.accountId,
           )
         : await cubit.refund(
             amount: draft.amount,
@@ -131,6 +134,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
             notes: draft.notes,
             receiptPath: draft.receipt?.path,
             receiptFilename: draft.receipt?.name,
+            treasuryAccountId: draft.accountId,
           );
 
     if (!mounted) return;

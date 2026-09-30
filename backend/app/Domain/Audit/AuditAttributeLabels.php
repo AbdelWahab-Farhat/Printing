@@ -376,6 +376,7 @@ final class AuditAttributeLabels
         'order_payment' => [
             'type' => 'نوع الدفعة',
             'method' => 'طريقة الدفع',
+            'treasury_account_id' => 'الحساب',
             'reference' => 'المرجع',
             'paid_at' => 'تاريخ الدفع',
             // The reversal, not the reversed: a payment is never edited, it is undone by a
@@ -476,6 +477,7 @@ final class AuditAttributeLabels
         ],
 
         'purchase_order' => [
+            'predates_treasury' => 'سابق لنظام الحسابات',
             'order_date' => 'تاريخ الأمر',
             'expected_date' => 'التاريخ المتوقع',
             'total_amount' => 'الإجمالي',
@@ -554,6 +556,7 @@ final class AuditAttributeLabels
         ],
         'investor_deal_expense' => [
             'investor_deal_id' => 'الصفقة',
+            'treasury_account_id' => 'الحساب',
             'kind' => 'نوع المصروف',
             'name' => 'بيان المصروف',
             // The column somebody must be able to see change: a landed cost is already inside
@@ -566,6 +569,7 @@ final class AuditAttributeLabels
         ],
         'investor_wallet_entry' => [
             'investor_id' => 'المستثمر',
+            'treasury_account_id' => 'الحساب',
             'investor_deal_id' => 'الصفقة',
             'type' => 'نوع الحركة',
             'method' => 'طريقة الدفع',
@@ -701,6 +705,7 @@ final class AuditAttributeLabels
         ],
         'shortage_supply' => [
             'shortage_id' => 'النقص',
+            'treasury_account_id' => 'الحساب',
             'kind' => 'نوع العملية',
             'method' => 'طريقة الدفع',
             'reference' => 'رقم العملية',
@@ -718,6 +723,75 @@ final class AuditAttributeLabels
             'reverses_supply_id' => 'تعكس عملية',
             'recorded_by_user_id' => 'سجّلها',
         ],
+        // الحسابات والخزائن. `notes`, `is_active`, `amount`, `order_id` and `recorded_by` are named
+        // by SHARED.
+        'treasury_setting' => [
+            'own_account_first' => 'الحساب الشخصي أولاً',
+            'block_overdraft' => 'منع الرصيد السالب في العمليات اليدوية',
+            'withdrawal_needs_reason' => 'السبب إجباري عند السحب',
+            'ask_carrier_fee' => 'سؤال «احتفظ به الناقل» عند التسوية',
+            'locked_until' => 'مقفل حتى تاريخ',
+            'collect_cash' => 'تجميع النقد عند التسوية',
+            'collect_cash_into_id' => 'يُجمع النقد في',
+            'collect_bank' => 'تجميع المصارف عند التسوية',
+            'collect_bank_into_id' => 'تُجمع المصارف في',
+            'collect_wallet' => 'تجميع المحافظ عند التسوية',
+            'collect_wallet_into_id' => 'تُجمع المحافظ في',
+            'updated_by' => 'عدّلها',
+        ],
+        'treasury_account' => [
+            'name' => 'اسم الحساب',
+            'kind' => 'نوع الحساب',
+            'holder_user_id' => 'صاحب الحساب',
+            'system_code' => 'رمز النظام',
+            'settles_into_account_id' => 'تُسوّى إلى',
+            'is_collected' => 'يُجمَع عند التسوية',
+            'pickup_city_id' => 'خزنة مكتب الاستلام',
+            'is_default' => 'الحساب الافتراضي لنوعه',
+            'currency' => 'العملة',
+            'created_by' => 'أنشأه',
+        ],
+        'treasury_operation' => [
+            'type' => 'نوع العملية',
+            'from_account_id' => 'من حساب',
+            'to_account_id' => 'إلى حساب',
+            'category_id' => 'تصنيف المصروف',
+            'employee_id' => 'الموظف',
+            'system_balance' => 'رصيد النظام',
+            'counted_balance' => 'الرصيد المعدود',
+            'occurred_at' => 'تاريخ العملية',
+            'reverses_operation_id' => 'تعكس عملية',
+        ],
+        'treasury_movement' => [
+            'account_id' => 'الحساب',
+            'direction' => 'الاتجاه',
+            'kind' => 'نوع الحركة',
+            'occurred_at' => 'تاريخ الحركة',
+            'source_type' => 'مصدر الحركة',
+            'source_id' => 'رقم المصدر',
+            'operation_id' => 'العملية',
+            'counterpart_account_id' => 'الحساب المقابل',
+            'reverses_movement_id' => 'تعكس حركة',
+        ],
+        'vendor_payment' => [
+            'purchase_order_id' => 'أمر الشراء',
+            'type' => 'نوع الحركة',
+            'method' => 'طريقة الدفع',
+            'treasury_account_id' => 'الحساب',
+            'reference' => 'المرجع',
+            'receipt_disk' => 'قرص الإيصال',
+            'receipt_path' => 'مسار الإيصال',
+            'receipt_original_filename' => 'اسم ملف الإيصال',
+            'receipt_size_bytes' => 'حجم الإيصال',
+            'receipt_checksum' => 'بصمة الإيصال',
+            'paid_at' => 'تاريخ الدفع',
+            'reverses_payment_id' => 'تعكس دفعة',
+        ],
+        'treasury_expense_category' => [
+            'name' => 'اسم التصنيف',
+            'requires_employee' => 'يتطلب موظفاً',
+        ],
+
         // The home screen's banners. `sort_order` and `is_active` are absent because SHARED
         // already names them — the whole point of that list.
         'billboard' => [

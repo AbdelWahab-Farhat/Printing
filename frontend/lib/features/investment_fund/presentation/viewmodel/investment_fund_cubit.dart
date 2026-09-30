@@ -134,6 +134,7 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
     required String amount,
     required String incurredOn,
     String? notes,
+    int? treasuryAccountId,
   }) async {
     final result = await _recordExpense(
       kind: kind,
@@ -141,6 +142,7 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
       amount: amount,
       incurredOn: incurredOn,
       notes: notes,
+      treasuryAccountId: treasuryAccountId,
     );
 
     if (isClosed) return null;

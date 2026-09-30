@@ -26,6 +26,8 @@ final readonly class WalletEntryData
         public ?string $reference = null,
         public ?CarbonImmutable $occurredAt = null,
         public ?string $notes = null,
+        // Where a deposit landed or a withdrawal was paid from; null lets the treasury decide.
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -47,6 +49,9 @@ final readonly class WalletEntryData
                 : null,
             notes: isset($validated['notes']) && trim((string) $validated['notes']) !== ''
                 ? trim((string) $validated['notes'])
+                : null,
+            treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
+                ? (int) $validated['treasury_account_id']
                 : null,
         );
     }

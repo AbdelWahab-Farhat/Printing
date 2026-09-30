@@ -12,6 +12,7 @@ use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Shortage\Actions\RecalculateShortageTotals;
 use App\Domain\Shortage\Enums\SupplyKind;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Support\Media\StoreReceipt;
 use Database\Factories\ShortageSupplyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -190,5 +191,15 @@ class ShortageSupply extends Model
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+
+    /**
+     * The drawer the purchase was paid from — null on entries from before the treasury.
+     *
+     * @return BelongsTo<TreasuryAccount, $this>
+     */
+    public function treasuryAccount(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
     }
 }

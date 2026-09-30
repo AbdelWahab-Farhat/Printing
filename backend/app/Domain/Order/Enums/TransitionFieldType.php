@@ -102,4 +102,13 @@ enum TransitionFieldType: string
     case Notice = 'notice';
 
     case Warehouse = 'warehouse';
+
+    /**
+     * Which treasury account the money lands in or reaches. `options` carries every account a
+     * person may pick, each with the `methods` it accepts, so the picker narrows as the method
+     * changes without asking again. **Optional by nature**: empty means the treasury decides
+     * (TREASURY-DESIGN §٥) — and an app that predates this type skips it as unknown, which is
+     * the same answer.
+     */
+    case TreasuryAccount = 'treasury_account';
 }

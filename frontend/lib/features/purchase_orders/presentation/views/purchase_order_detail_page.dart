@@ -14,6 +14,7 @@ import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/reverse_receipt_sheet.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/purchase_order_payments_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -436,6 +437,9 @@ class _Body extends StatelessWidget {
             ],
           ),
         ),
+        // Paid and still owed to the vendor — TREASURY-DESIGN §٨. Draws nothing for somebody
+        // without `vendors.payments.view`, and loads on its own so the order never waits for it.
+        PurchaseOrderPaymentsSection(purchaseOrderId: order.id, vendorId: order.vendorId),
         // Itemised, and only when there is something to itemise. This is what answers «why is
         // this line dearer than the invoice said» — without it the allocated shares on the lines
         // below are a number with no source.

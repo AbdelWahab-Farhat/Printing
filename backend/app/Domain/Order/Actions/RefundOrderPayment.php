@@ -13,6 +13,10 @@ use App\Domain\Order\Exceptions\RefundExceedsPaid;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +42,7 @@ final class RefundOrderPayment
     public function __construct(
         private readonly RecalculateOrderPayments $recalculate,
         private readonly StoreReceipt $storeReceipt,
+        private readonly TreasuryService $treasury,
     ) {}
 
     public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -88,11 +93,36 @@ final class RefundOrderPayment
         $refund->type = OrderPaymentType::Refund;
         $refund->recorded_by = $actor?->getKey();
 
+        // Paid out of a real drawer — never out of Nawris's custody, which empties only by
+        // settlement. Not refused for balance: the money already went back to the customer, and
+        // the treasury records facts (TREASURY-DESIGN §١٢).
+        $account = $this->treasury->accountFor(
+            $data->method->value,
+            $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            $data->treasuryAccountId,
+            incoming: false,
+        );
+
+        $refund->treasury_account_id = $account->getKey();
+
         if ($data->receipt !== null) {
             $refund->forceFill(($this->storeReceipt)("payment-receipts/{$order->getKey()}", $data->receipt));
         }
 
         $refund->save();
+
+        $this->treasury->post(new MovementData(
+            accountId: (int) $account->getKey(),
+            direction: MovementDirection::Out,
+            kind: MovementKind::Refund,
+            amount: (string) $refund->amount,
+            occurredAt: $refund->paid_at,
+            sourceType: $refund->getMorphClass(),
+            sourceId: (int) $refund->getKey(),
+            orderId: (int) $order->getKey(),
+            notes: "ردّ مبلغ على الطلبية {$order->code}",
+            recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
+        ));
 
         return $refund;
     }

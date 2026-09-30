@@ -75,6 +75,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _write(
       () => _recordPayment(
@@ -86,6 +87,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
         notes: notes,
         receiptPath: receiptPath,
         receiptFilename: receiptFilename,
+        treasuryAccountId: treasuryAccountId,
       ),
     );
   }
@@ -99,6 +101,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _write(
       () => _refundPayment(
@@ -110,6 +113,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
         notes: notes,
         receiptPath: receiptPath,
         receiptFilename: receiptFilename,
+        treasuryAccountId: treasuryAccountId,
       ),
     );
   }

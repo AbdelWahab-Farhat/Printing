@@ -38,6 +38,12 @@ final readonly class OrderPaymentData
          * we have nowhere to put it.
          */
         public ?UploadedFile $receipt = null,
+        /**
+         * The account the person chose for the money, or null to let the treasury decide —
+         * their own account if they hold one that fits, otherwise the method's default.
+         * TREASURY-DESIGN §٥. Null is what every screen that predates the treasury sends.
+         */
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -46,6 +52,7 @@ final readonly class OrderPaymentData
     public static function fromArray(array $validated): self
     {
         $receipt = $validated['receipt'] ?? null;
+        $account = $validated['treasury_account_id'] ?? null;
 
         return new self(
             amount: self::amount($validated['amount']),
@@ -54,6 +61,7 @@ final readonly class OrderPaymentData
             paidAt: self::paidAt($validated['paid_at'] ?? null),
             notes: self::textOrNull($validated['notes'] ?? null),
             receipt: $receipt instanceof UploadedFile ? $receipt : null,
+            treasuryAccountId: $account === null || $account === '' ? null : (int) $account,
         );
     }
 

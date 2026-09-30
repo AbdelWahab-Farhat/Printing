@@ -7,6 +7,7 @@ namespace App\Domain\Investor\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Enums\DealExpenseKind;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use Database\Factories\InvestorDealExpenseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -68,6 +69,16 @@ class InvestorDealExpense extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * The drawer the expense was paid from — null on the ones from before the treasury.
+     *
+     * @return BelongsTo<TreasuryAccount, $this>
+     */
+    public function treasuryAccount(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
     }
 
     public function isReversed(): bool

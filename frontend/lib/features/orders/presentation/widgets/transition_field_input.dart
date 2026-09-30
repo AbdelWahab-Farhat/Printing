@@ -13,6 +13,7 @@ import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
@@ -34,10 +35,22 @@ class TransitionFieldInput extends StatelessWidget {
     required this.value,
     required this.customerId,
     required this.onChanged,
+    this.paymentMethod,
+    this.orderId,
     super.key,
   });
 
+  /// The order being moved — lets «تلقائي» name the pickup branch's box (§١٩).
+  final int? orderId;
+
+  /// «الحساب» that goes with a payment on the move — narrowed to the accounts [paymentMethod]
+  /// fits. The settle screen's «استُلم المال في» has no method and keeps the server's list.
+  static const paymentAccountKey = 'payment_account_id';
+
   final TransitionField field;
+
+  /// The method picked on the same move, for [paymentAccountKey]. Null until one is picked.
+  final String? paymentMethod;
 
   /// Whatever this kind of field holds — a `String`, a `List<CustomerDesign>`, or null.
   final Object? value;
@@ -92,8 +105,117 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is Warehouse ? value! as Warehouse : null,
         onChanged: onChanged,
       ),
+      TransitionFieldType.treasuryAccount when field.key == paymentAccountKey => _PaymentAccount(
+        field: field,
+        method: paymentMethod,
+        orderId: orderId,
+        chosen: value is String ? value! as String : null,
+        onChanged: onChanged,
+      ),
+      TransitionFieldType.treasuryAccount => _Account(
+        field: field,
+        chosen: value is String ? value! as String : null,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
+  }
+}
+
+/// Which account the money lands in — «الحساب» with a payment, «استُلم المال في» at settlement.
+///
+/// **«تلقائي» is the first chip and a real answer**, not a gap: left there, the server puts the
+/// money in the person's own account or the method's default (TREASURY-DESIGN §٥). The accounts
+/// come with the field, so this build lists whatever the treasury allows today; whether one fits
+/// the chosen method is the server's rule, and a mismatch comes back under this field.
+class _Account extends StatelessWidget {
+  const _Account({required this.field, required this.chosen, required this.onChanged});
+
+  final TransitionField field;
+  final String? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${field.label} (اختياري)',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: [
+            ChoiceChip(
+              label: const Text('تلقائي'),
+              selected: chosen == null,
+              onSelected: (_) => onChanged(null),
+            ),
+            for (final option in field.options)
+              ChoiceChip(
+                label: Text(option.label),
+                selected: option.value == chosen,
+                onSelected: (_) => onChanged(option.value),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// «الحساب» beside a payment on the move — only the accounts the chosen method fits, asked of
+/// the server like the payments sheet does, with «تلقائي» naming where the money will land.
+///
+/// **Before a method is picked there is nothing to narrow by**, so only «تلقائي» is offered —
+/// never a bank account next to a cash payment. The status page clears the pick when the method
+/// changes, so a stale account never travels with a new method.
+class _PaymentAccount extends StatelessWidget {
+  const _PaymentAccount({
+    required this.field,
+    required this.method,
+    required this.orderId,
+    required this.chosen,
+    required this.onChanged,
+  });
+
+  final TransitionField field;
+  final String? method;
+  final int? orderId;
+  final String? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final method = this.method;
+
+    if (method == null) {
+      return _Account(
+        field: field.copyWith(options: const [], hint: 'اختر طريقة الدفع لتظهر حساباتها'),
+        chosen: null,
+        onChanged: onChanged,
+      );
+    }
+
+    return TreasuryAccountPicker(
+      method: method,
+      orderId: orderId,
+      label: '${field.label} (اختياري)',
+      value: int.tryParse(chosen ?? ''),
+      onChanged: (id) => onChanged(id?.toString()),
+    );
   }
 }
 

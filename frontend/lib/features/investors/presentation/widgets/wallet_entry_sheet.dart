@@ -7,6 +7,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -74,6 +75,9 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
 
   WalletAction _action = WalletAction.deposit;
   PaymentMethod _method = PaymentMethod.cash;
+
+  /// The treasury account the money lands in or leaves from; null lets the server decide.
+  int? _accountId;
   bool _saving = false;
 
   @override
@@ -114,6 +118,7 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
       // وهو يرفضها لأن ذكرَها يوحي بأن شيئاً سُلِّم.
       method: _action.movesCash ? _method.wire : null,
       notes: _notes.text,
+      treasuryAccountId: _action.movesCash ? _accountId : null,
     );
 
     if (!mounted) return;
@@ -203,8 +208,19 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                   onChanged: (method) {
                     if (method == null) return;
 
-                    setState(() => _method = method);
+                    setState(() {
+                      _method = method;
+                      _accountId = null;
+                    });
                   },
+                ),
+                SizedBox(height: 16.h),
+                // A deposit lands in an account; a withdrawal leaves one — never Nawris's custody.
+                TreasuryAccountPicker(
+                  method: _method.wire,
+                  incoming: _action == WalletAction.deposit,
+                  value: _accountId,
+                  onChanged: (id) => setState(() => _accountId = id),
                 ),
                 SizedBox(height: 16.h),
               ],

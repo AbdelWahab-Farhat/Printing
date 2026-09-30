@@ -35,6 +35,7 @@ abstract class InvestorRepository {
     String? method,
     String? reference,
     String? notes,
+    int? treasuryAccountId,
   });
 
   /// Every movement of his money, newest first — optionally one family of them, within a range

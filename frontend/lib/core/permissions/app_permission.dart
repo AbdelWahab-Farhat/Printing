@@ -317,6 +317,19 @@ enum AppPermission {
   submitDesignTickets('design_tickets.submit', 'رفع تصميم داخل التذكرة'),
   reviewDesignTickets('design_tickets.review', 'الموافقة على التصميم أو طلب تعديل'),
 
+  // الحسابات والخزائن — TREASURY-DESIGN §١٠. Without `treasury.view` a person still reads the
+  // accounts in their own name; the server decides that per account.
+  viewTreasury('treasury.view', 'عرض الحسابات والخزائن'),
+  recordTreasuryOperations('treasury.record', 'إيداع وسحب ومصروف وتحويل'),
+  adjustTreasuryBalances('treasury.adjust', 'جرد الحسابات'),
+  reverseTreasuryOperations('treasury.reverse', 'عكس عملية على الحسابات'),
+  manageTreasury('treasury.manage', 'إدارة الحسابات والتصنيفات'),
+
+  // Paying vendors — the `orders.payments.*` split, pointed the other way.
+  viewVendorPayments('vendors.payments.view', 'عرض دفعات الموردين'),
+  recordVendorPayments('vendors.payments.record', 'تسجيل دفعة لمورد'),
+  reverseVendorPayments('vendors.payments.reverse', 'عكس دفعة مورد'),
+
   // The company's editable defaults. Its own pair rather than riding on an existing one:
   // everybody's screens read them and almost nobody should change them.
   viewCompanySettings('settings.view', 'عرض إعدادات الشركة'),

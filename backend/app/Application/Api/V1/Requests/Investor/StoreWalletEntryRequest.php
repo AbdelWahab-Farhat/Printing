@@ -61,6 +61,14 @@ class StoreWalletEntryRequest extends FormRequest
             'reference' => ['nullable', 'string', 'max:100'],
             'occurred_at' => ['nullable', 'date', 'before_or_equal:now'],
             'notes' => ['nullable', 'string', 'max:2000'],
+
+            // Where a deposit landed or a withdrawal was paid from. Optional: left out, the
+            // recorder's own account or the method's default — TREASURY-DESIGN §٥.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 

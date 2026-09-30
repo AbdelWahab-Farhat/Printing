@@ -92,12 +92,14 @@ class RecordFundExpense {
     required String amount,
     required String incurredOn,
     String? notes,
+    int? treasuryAccountId,
   }) => _repository.recordExpense(
     kind: kind,
     name: name,
     amount: amount,
     incurredOn: incurredOn,
     notes: notes,
+    treasuryAccountId: treasuryAccountId,
   );
 }
 

@@ -14,6 +14,7 @@ use App\Domain\Investor\Enums\WalletEntryCategory;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\PeriodIsClosed;
 use App\Domain\Investor\Queries\PeriodForEntry;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use Database\Factories\InvestorWalletEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -61,6 +62,17 @@ class InvestorWalletEntry extends Model
     public function investor(): BelongsTo
     {
         return $this->belongsTo(Investor::class);
+    }
+
+    /**
+     * Where a deposit landed or a withdrawal was paid from. Null on everything that moved no
+     * money, and on the entries from before the treasury.
+     *
+     * @return BelongsTo<TreasuryAccount, $this>
+     */
+    public function treasuryAccount(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
     }
 
     /**

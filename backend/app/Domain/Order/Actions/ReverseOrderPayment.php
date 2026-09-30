@@ -10,6 +10,10 @@ use App\Domain\Order\Exceptions\EntryCannotBeReversed;
 use App\Domain\Order\Exceptions\PaymentAlreadyReversed;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -39,7 +43,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class ReverseOrderPayment
 {
-    public function __construct(private readonly RecalculateOrderPayments $recalculate) {}
+    public function __construct(
+        private readonly RecalculateOrderPayments $recalculate,
+        private readonly TreasuryService $treasury,
+    ) {}
 
     public function __invoke(
         Order $order,
@@ -82,9 +89,62 @@ final class ReverseOrderPayment
 
             $reversal->save();
 
+            $this->reverseTheMoney($locked, $payment, $reason, $actor);
+
             ($this->recalculate)($locked);
 
             return $reversal;
         });
+    }
+
+    /**
+     * Takes the money back out of the account it went into.
+     *
+     * A write-off and a carrier settlement moved no money, so there is nothing to undo. A
+     * payment's movement is mirrored on its own account — after any settlement that carried it
+     * onward has been undone first, so the money comes back out of the account it actually
+     * reached rather than leaving custody below zero (TREASURY-DESIGN §٦).
+     *
+     * **A payment from before the treasury has no movement to mirror**, yet it was counted into
+     * the opening balances like everything else in the drawer that day. Undoing it is still
+     * money that turns out never to have been there, so it comes out of the account a payment by
+     * that method lands in by default (§١١).
+     */
+    private function reverseTheMoney(Order $order, OrderPayment $payment, string $reason, ?User $actor): void
+    {
+        if (! $payment->type->movedCash() || $payment->method === null) {
+            return;
+        }
+
+        $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
+
+        // Only what carried this payment's own account onward: reversing Ali's transfer leaves
+        // Omar's collection where it went. A payment from before the treasury names no account,
+        // so everything is unwound, as before (§١٨).
+        $this->treasury->unwindSettlementOf(
+            (int) $order->getKey(),
+            $reason,
+            $actorId,
+            $payment->treasury_account_id === null ? null : (int) $payment->treasury_account_id,
+        );
+
+        $mirrored = $this->treasury->reverseSource($payment->getMorphClass(), (int) $payment->getKey(), $reason, $actorId);
+
+        if ($mirrored !== [] || $payment->treasury_account_id !== null) {
+            return;
+        }
+
+        $this->treasury->post(new MovementData(
+            accountId: (int) $this->treasury->accountFor($payment->method->value, null)->getKey(),
+            direction: MovementDirection::Out,
+            kind: MovementKind::Payment,
+            amount: (string) $payment->amount,
+            occurredAt: now(),
+            sourceType: $payment->getMorphClass(),
+            sourceId: (int) $payment->getKey(),
+            orderId: (int) $order->getKey(),
+            notes: $reason,
+            recordedBy: $actorId,
+        ));
     }
 }

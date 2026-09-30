@@ -91,6 +91,14 @@ class RecordShortageSupplyRequest extends FormRequest
              * would have to re-derive `Shortage::isStockable()` in a second place.
              */
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+
+            // Which drawer paid. Optional: left out, the buyer's own account or the method's
+            // default — TREASURY-DESIGN §٥.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 

@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Support\Media\StoreReceipt;
 use Database\Factories\OrderPaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -146,6 +147,19 @@ class OrderPayment extends Model
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * Where the money landed — the cash box, «مصرف علي», Nawris's custody.
+     *
+     * Null on the entries that moved no money, and on every entry written before the treasury
+     * existed: those were counted into the opening balances instead (TREASURY-DESIGN §١١).
+     *
+     * @return BelongsTo<TreasuryAccount, $this>
+     */
+    public function treasuryAccount(): BelongsTo
+    {
+        return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
     }
 
     /**

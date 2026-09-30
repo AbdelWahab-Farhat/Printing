@@ -84,4 +84,5 @@ const Set<String> _wireValues = {
   'warehouse',
   'notice',
   'vendor',
+  'treasury_account',
 };

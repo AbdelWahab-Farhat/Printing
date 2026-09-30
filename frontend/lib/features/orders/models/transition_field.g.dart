@@ -75,6 +75,7 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.paymentMethod: 'payment_method',
   TransitionFieldType.file: 'file',
   TransitionFieldType.vendor: 'vendor',
+  TransitionFieldType.treasuryAccount: 'treasury_account',
   TransitionFieldType.unknown: 'unknown',
 };
 

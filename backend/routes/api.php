@@ -12,6 +12,7 @@ use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
+use App\Application\Api\V1\Controllers\ExpenseCategoryController;
 use App\Application\Api\V1\Controllers\FundBreakdownController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
@@ -42,9 +43,14 @@ use App\Application\Api\V1\Controllers\StockItemController;
 use App\Application\Api\V1\Controllers\StockItemGroupController;
 use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\SupportTicketController;
+use App\Application\Api\V1\Controllers\TreasuryAccountController;
+use App\Application\Api\V1\Controllers\TreasuryOperationController;
+use App\Application\Api\V1\Controllers\TreasuryOverviewController;
+use App\Application\Api\V1\Controllers\TreasurySettingsController;
 use App\Application\Api\V1\Controllers\UserController;
 use App\Application\Api\V1\Controllers\VendorCommentController;
 use App\Application\Api\V1\Controllers\VendorController;
+use App\Application\Api\V1\Controllers\VendorPaymentController;
 use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
 use App\Application\Api\V1\Middleware\ArchivedOrderShortagesNeedTheArchiveGrant;
@@ -665,6 +671,18 @@ Route::prefix('v1')->group(function (): void {
         Route::post('purchase-orders/{purchase_order}/receipt-reversal', [PurchaseOrderController::class, 'reverseReceipt'])
             ->middleware('can:inventory.manage')->name('purchase-orders.receipt-reversal');
 
+        // ── دفعات الموردين — TREASURY-DESIGN §٨ ────────────────────────────────────────────
+        // Money out to a vendor, from a drawer that must hold it. Its own trio of grants: seeing
+        // what was paid, paying, and undoing a payment entered in error.
+        Route::get('vendors/{vendor}/payments', [VendorPaymentController::class, 'index'])
+            ->middleware('can:vendors.payments.view')->name('vendors.payments.index');
+        Route::post('vendors/{vendor}/payments', [VendorPaymentController::class, 'store'])
+            ->middleware('can:vendors.payments.record')->name('vendors.payments.store');
+        Route::post('vendors/{vendor}/payments/{payment}/reverse', [VendorPaymentController::class, 'reverse'])
+            ->middleware('can:vendors.payments.reverse')->name('vendors.payments.reverse');
+        Route::get('purchase-orders/{purchaseOrder}/payments', [VendorPaymentController::class, 'forPurchaseOrder'])
+            ->middleware('can:vendors.payments.view')->name('purchase-orders.payments');
+
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them
         // would produce guards that cannot usefully be granted alone: whoever may transfer
@@ -1123,6 +1141,69 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->name('shortages.supplies.reversal');
 
+        // ── الحسابات والخزائن ─────────────────────────────────────────────────────────────
+        // TREASURY-DESIGN §١٠. Reading an account is not behind middleware: `treasury.view` opens
+        // every one, and a person reads the accounts in their own name without it — the rule is
+        // asked in the controller, per account.
+        Route::get('treasury/accounts', [TreasuryAccountController::class, 'index'])
+            ->name('treasury.accounts.index');
+
+        // Open to anybody signed in: it names accounts, not balances, and every payment form asks.
+        Route::get('treasury/account-options', [TreasuryAccountController::class, 'options'])
+            ->name('treasury.accounts.options');
+
+        Route::get('treasury/accounts/{account}', [TreasuryAccountController::class, 'show'])
+            ->name('treasury.accounts.show');
+
+        Route::get('treasury/accounts/{account}/movements', [TreasuryAccountController::class, 'movements'])
+            ->name('treasury.accounts.movements');
+
+        Route::middleware('can:treasury.manage')->group(function (): void {
+            Route::post('treasury/accounts', [TreasuryAccountController::class, 'store'])
+                ->name('treasury.accounts.store');
+            Route::put('treasury/accounts/{account}', [TreasuryAccountController::class, 'update'])
+                ->name('treasury.accounts.update');
+
+            Route::put('treasury/settings', [TreasurySettingsController::class, 'update'])
+                ->name('treasury.settings.update');
+
+            Route::post('treasury/expense-categories', [ExpenseCategoryController::class, 'store'])
+                ->name('treasury.expense-categories.store');
+            Route::put('treasury/expense-categories/{category}', [ExpenseCategoryController::class, 'update'])
+                ->name('treasury.expense-categories.update');
+        });
+
+        // The expense form needs the list, and so does «إعدادات المالية» — so recording and
+        // managing both read it. The controller asks which one the caller holds.
+        Route::get('treasury/expense-categories', [ExpenseCategoryController::class, 'index'])
+            ->name('treasury.expense-categories.index');
+
+        // «إعدادات المالية». Read by anybody who sees the treasury, changed only by `treasury.manage`.
+        Route::get('treasury/settings', [TreasurySettingsController::class, 'show'])
+            ->middleware('can:treasury.view')
+            ->name('treasury.settings.show');
+
+        Route::middleware('can:treasury.view')->group(function (): void {
+            Route::get('treasury/ownership', [TreasuryOverviewController::class, 'ownership'])
+                ->name('treasury.ownership');
+            Route::get('treasury/inventory-value', [TreasuryOverviewController::class, 'inventoryValue'])
+                ->name('treasury.inventory-value');
+
+            Route::get('treasury/operations', [TreasuryOperationController::class, 'index'])
+                ->name('treasury.operations.index');
+            Route::get('treasury/operations/{operation}', [TreasuryOperationController::class, 'show'])
+                ->name('treasury.operations.show');
+        });
+
+        // Which grant a new operation needs depends on its type — opening, count or the rest — so
+        // the request checks it; see StoreTreasuryOperationRequest.
+        Route::post('treasury/operations', [TreasuryOperationController::class, 'store'])
+            ->name('treasury.operations.store');
+
+        Route::post('treasury/operations/{operation}/reverse', [TreasuryOperationController::class, 'reverse'])
+            ->middleware('can:treasury.reverse')
+            ->name('treasury.operations.reverse');
+
         // ── reports ─────────────────────────────────────────────────────────────────────
         // Revenue against cost of goods sold, over a period. Its own permission rather than a
         // ride on `orders.view`: this is the one screen that puts every order's money and every
@@ -1209,6 +1290,13 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('purchase-orders/{purchase_order}/logs', [PurchaseOrderController::class, 'logs'])
                 ->name('purchase-orders.logs');
+
+            Route::get('treasury/accounts/{account}/logs', [TreasuryAccountController::class, 'logs'])
+                ->name('treasury.accounts.logs');
+            Route::get('treasury/operations/{operation}/logs', [TreasuryOperationController::class, 'logs'])
+                ->name('treasury.operations.logs');
+            Route::get('treasury/settings/logs', [TreasurySettingsController::class, 'logs'])
+                ->name('treasury.settings.logs');
 
             Route::get('manufacturing-cost-rates/{manufacturing_cost_rate}/logs', [ManufacturingCostRateController::class, 'logs'])
                 ->name('manufacturing-cost-rates.logs');

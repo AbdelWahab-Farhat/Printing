@@ -175,6 +175,8 @@ class InvestmentFundController extends Controller
             'amount' => ['required', 'numeric', 'gt:0'],
             'incurred_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            // The drawer that paid; left out, the cash box — TREASURY-DESIGN §٧.
+            'treasury_account_id' => ['nullable', 'integer', 'exists:treasury_accounts,id'],
         ]);
 
         $expense = ($this->expense)(
@@ -184,6 +186,7 @@ class InvestmentFundController extends Controller
                 amount: (string) $validated['amount'],
                 incurredOn: $validated['incurred_on'],
                 notes: $validated['notes'] ?? null,
+                treasuryAccountId: isset($validated['treasury_account_id']) ? (int) $validated['treasury_account_id'] : null,
             ),
             $request->user()?->id,
         );

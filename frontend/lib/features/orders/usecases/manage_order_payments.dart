@@ -31,6 +31,7 @@ class RecordOrderPayment {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _repository.record(
       orderId,
@@ -41,6 +42,7 @@ class RecordOrderPayment {
       notes: notes,
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
+      treasuryAccountId: treasuryAccountId,
     );
   }
 }
@@ -60,6 +62,7 @@ class RefundOrderPayment {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _repository.refund(
       orderId,
@@ -70,6 +73,7 @@ class RefundOrderPayment {
       notes: notes,
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
+      treasuryAccountId: treasuryAccountId,
     );
   }
 }

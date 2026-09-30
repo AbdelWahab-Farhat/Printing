@@ -260,6 +260,9 @@ import 'package:dayaa/features/tools/usecases/load_bag_mockup.dart';
 import 'package:dayaa/features/tools/usecases/load_design_image.dart';
 import 'package:dayaa/features/tools/usecases/save_bag_preview_image.dart';
 import 'package:dayaa/features/tools/usecases/save_qr_code_image.dart';
+import 'package:dayaa/features/treasury/repositories/treasury_repository.dart';
+import 'package:dayaa/features/treasury/repositories/treasury_repository_impl.dart';
+import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/save_vendor_cubit.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
@@ -385,6 +388,7 @@ abstract final class Injector {
     _registerInvestors();
     _registerInvestmentSettings();
     _registerInvestmentFund();
+    _registerTreasury();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -690,6 +694,35 @@ abstract final class Injector {
       ..registerFactory<InvestorPortalCubit>(
         () => InvestorPortalCubit(getPortfolio: sl<GetInvestorPortfolio>()),
       );
+  }
+
+  /// الحسابات والخزائن — the accounts, their history, and the pickers every payment form asks.
+  static void _registerTreasury() {
+    sl
+      ..registerLazySingleton<TreasuryRepository>(() => TreasuryRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetTreasuryAccount>(() => GetTreasuryAccount(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetAccountMovements>(() => GetAccountMovements(sl<TreasuryRepository>()))
+      ..registerLazySingleton<SaveTreasuryAccount>(() => SaveTreasuryAccount(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(sl<TreasuryRepository>()))
+      ..registerLazySingleton<RecordTreasuryOperation>(
+        () => RecordTreasuryOperation(sl<TreasuryRepository>()),
+      )
+      ..registerLazySingleton<ReverseTreasuryOperation>(
+        () => ReverseTreasuryOperation(sl<TreasuryRepository>()),
+      )
+      ..registerLazySingleton<GetExpenseCategories>(() => GetExpenseCategories(sl<TreasuryRepository>()))
+      ..registerLazySingleton<SaveExpenseCategory>(() => SaveExpenseCategory(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetTreasurySettings>(() => GetTreasurySettings(sl<TreasuryRepository>()))
+      ..registerLazySingleton<SaveTreasurySettings>(() => SaveTreasurySettings(sl<TreasuryRepository>()))
+      ..registerLazySingleton<SetSettlesInto>(() => SetSettlesInto(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetTreasuryOwnership>(() => GetTreasuryOwnership(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetInventoryValue>(() => GetInventoryValue(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetPurchaseOrderPayments>(
+        () => GetPurchaseOrderPayments(sl<TreasuryRepository>()),
+      )
+      ..registerLazySingleton<PayVendor>(() => PayVendor(sl<TreasuryRepository>()))
+      ..registerLazySingleton<ReverseVendorPayment>(() => ReverseVendorPayment(sl<TreasuryRepository>()));
   }
 
   /// The staff side: the people whose money finances stock, and the deals it finances.

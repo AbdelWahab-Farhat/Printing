@@ -34,6 +34,12 @@ class StoreDealExpenseRequest extends FormRequest
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999.99'],
             'incurred_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // The drawer that paid; left out, the cash box — TREASURY-DESIGN §٧.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 
