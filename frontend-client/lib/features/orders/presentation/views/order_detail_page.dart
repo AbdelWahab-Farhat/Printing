@@ -11,6 +11,7 @@ import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail
 import 'package:dayaa_client/features/orders/presentation/widgets/order_destination_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_lines_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_money_card.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_button.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,7 +71,11 @@ class _OrderDetailView extends StatelessWidget {
           ),
         ),
 
-        OrderDetailLoaded(:final order) => _Loaded(order: order, onRefresh: cubit.refresh),
+        OrderDetailLoaded(:final order) => _Loaded(
+          order: order,
+          onRefresh: cubit.refresh,
+          onNotesRead: cubit.notesRead,
+        ),
       },
     );
   }
@@ -82,10 +87,13 @@ class _OrderDetailView extends StatelessWidget {
 /// **والسؤال زرٌّ عائم**، بطلبه: كان زراً بعرض الشاشة في آخرها («لديك سؤال عن هذه الطلبية؟»).
 /// العائم في مكانه أينما وصل التمرير، ولا يأخذ من الصفحة سطراً.
 class _Loaded extends StatelessWidget {
-  const _Loaded({required this.order, required this.onRefresh});
+  const _Loaded({required this.order, required this.onRefresh, required this.onNotesRead});
 
   final CustomerOrderDetail order;
   final Future<void> Function() onRefresh;
+
+  /// تُسلَّم لشاشة «الملاحظات» فتطفئ الشارة هنا حين تُعرض الملاحظات هناك.
+  final VoidCallback onNotesRead;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +149,13 @@ class _Loaded extends StatelessWidget {
           ),
           children: [
             OrderStageCard(order: order),
+            SizedBox(height: 12.h),
+            // تحت بطاقة الحالة مباشرة (طلب المستخدم، 2026-09-25): ما كتبه المتجر عند المراجعة
+            // والرفض كلامٌ عن المرحلة نفسها، فمكانه بجانبها.
+            OrderNotesButton(
+              unread: order.unreadNotesCount,
+              onPressed: () => context.push(Routes.orderNotes(order.id), extra: onNotesRead),
+            ),
             SizedBox(height: 24.h),
             OrderMoneyCard(order: order),
             SizedBox(height: 24.h),

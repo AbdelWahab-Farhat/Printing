@@ -7,5 +7,5 @@
         موردٌ لا نصٌّ مباشر في المانيفست: نكهةُ `dev` تحمل اسماً آخر، و`src/dev/res/values/strings.xml`
         يَجبُّ هذا المورد لها وحدها — والمانيفستُ لا يُجَبّ.
     -->
-    <string name="app_name">فلايركس</string>
+    <string name="app_name">FlyerX</string>
 </resources>

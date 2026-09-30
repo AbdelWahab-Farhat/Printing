@@ -75,6 +75,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailing,
     this.height,
     this.expands = true,
     this.lifted = true,
@@ -88,6 +89,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailing,
     this.height,
     this.expands = true,
   }) : variant = AppButtonVariant.tonal,
@@ -100,6 +102,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailing,
     this.height,
     this.expands = true,
   }) : variant = AppButtonVariant.outlined,
@@ -114,6 +117,10 @@ class AppButton extends StatefulWidget {
 
   final bool isLoading;
   final IconData? icon;
+
+  /// ما يُرسم بعد الكلمة داخل الزر، كعدد ما لم يُقرأ على «الملاحظات». جزءٌ من الكتابة نفسها: يغوص
+  /// معها حين يُضغط الزر ويبهت معها حين ينشغل، ولا يغيّر مقاس الزر.
+  final Widget? trailing;
 
   /// ٦٠ عند المقاس المرجعي: ٥٤ نقطة على الهاتف الذي رُسم عليه التصميم (عرض ٣٩٠).
   final double? height;
@@ -359,6 +366,7 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
             Flexible(
               child: Text(widget.label, softWrap: false, overflow: TextOverflow.ellipsis),
             ),
+            if (widget.trailing case final trailing?) ...[SizedBox(width: 8.w), trailing],
           ],
         ),
       ),

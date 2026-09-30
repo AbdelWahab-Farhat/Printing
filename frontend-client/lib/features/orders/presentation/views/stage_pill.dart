@@ -86,17 +86,25 @@ IconData stageIcon(OrderStage stage) => switch (stage) {
 
 /// المرحلة في شارةٍ صغيرة: أيقونتها ثم كلمتها.
 class StagePill extends StatelessWidget {
-  const StagePill({required this.label, required this.stage, super.key});
+  const StagePill({required this.label, required this.stage, super.key}) : large = false;
+
+  /// بحجم نصف ما يقوله الصف، لا شارةٍ في زاويته — رأس بطاقة ملاحظةٍ في «الملاحظات»، كما تُرسم
+  /// الحالة بحجمها الكامل في شاشة ملاحظات الموظفين.
+  const StagePill.large({required this.label, required this.stage, super.key}) : large = true;
 
   final String label;
   final OrderStage stage;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
     final tone = stageTone(context.colorScheme, stage);
+    final text = large ? context.textTheme.labelLarge : context.textTheme.labelSmall;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 5.h),
+      padding: large
+          ? EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h)
+          : EdgeInsets.symmetric(horizontal: 11.w, vertical: 5.h),
       decoration: BoxDecoration(
         color: tone.background,
         borderRadius: BorderRadius.circular(999.r),
@@ -104,12 +112,12 @@ class StagePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(stageIcon(stage), size: 14.sp, color: tone.foreground),
-          SizedBox(width: 5.w),
+          Icon(stageIcon(stage), size: large ? 17.sp : 14.sp, color: tone.foreground),
+          SizedBox(width: large ? 6.w : 5.w),
           Text(
             // **The label the server sent**, never a translation of the value.
             label,
-            style: context.textTheme.labelSmall?.copyWith(
+            style: text?.copyWith(
               color: tone.foreground,
               fontWeight: FontWeight.w700,
             ),
@@ -120,15 +128,13 @@ class StagePill extends StatelessWidget {
   }
 }
 
-/// المرحلة شريطاً بعرض البطاقة، كشريط الحالة أعلى بطاقة الطلبية في تطبيق الموظفين: الكلمة في
-/// الوسط وأيقونتها بعدها — في آخر السطر العربي — على لون المرحلة.
+/// أيقونة المرحلة في مربّعٍ بلونها، أوّل ما في بطاقة «طلباتي» من اليمين.
 ///
-/// **المرحلة أول ما تُمسح البطاقة لأجله**، فتُعطى عرض البطاقة كله لا زاويةً منها.
-class StageBanner extends StatelessWidget {
-  const StageBanner({required this.label, required this.stage, super.key});
+/// **لونٌ واحد مع شارة المرحلة وبطاقة الحالة** ([stageTone])، فلا يتبدّل لون الطلبية بين
+/// الرئيسية والقائمة وما يُفتح منهما.
+class StageTile extends StatelessWidget {
+  const StageTile({required this.stage, super.key});
 
-  /// كلمة الخادم كما هي.
-  final String label;
   final OrderStage stage;
 
   @override
@@ -136,31 +142,13 @@ class StageBanner extends StatelessWidget {
     final tone = stageTone(context.colorScheme, stage);
 
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      width: 46.w,
+      height: 46.w,
       decoration: BoxDecoration(
         color: tone.background,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(14.r),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.labelLarge?.copyWith(
-                color: tone.foreground,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Icon(stageIcon(stage), size: 20.sp, color: tone.foreground),
-        ],
-      ),
+      child: Icon(stageIcon(stage), size: 22.sp, color: tone.foreground),
     );
   }
 }

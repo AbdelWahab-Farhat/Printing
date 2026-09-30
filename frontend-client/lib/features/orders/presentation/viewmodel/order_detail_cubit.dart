@@ -48,6 +48,15 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     );
   }
 
+  /// قُرئت ملاحظات الطلبية على شاشتها، فتنطفئ شارة «الملاحظات» — بلا طلب: الخادم علّمها مقروءةً
+  /// حين أرسلها، والشاشة تعرف ذلك.
+  void notesRead() {
+    final loaded = _loaded;
+    if (loaded == null || loaded.order.unreadNotesCount == 0) return;
+
+    emit(loaded.copyWith(order: loaded.order.copyWith(unreadNotesCount: 0)));
+  }
+
   OrderDetailLoaded? get _loaded => switch (state) {
     final OrderDetailLoaded loaded => loaded,
     _ => null,

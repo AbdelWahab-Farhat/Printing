@@ -7,7 +7,6 @@ import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/search_field.dart';
 import 'package:dayaa_client/features/catalog/presentation/viewmodel/products_cubit.dart';
 import 'package:dayaa_client/features/catalog/presentation/views/product_card.dart';
-import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,14 +35,10 @@ class _ProductsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<ProductsCubit>();
 
+    // **بلا شريطٍ علويٍّ خاص** (طلب المستخدم، 2026-09-25): «المنتجات» تلبس شريط الـ shell
+    // (`HomeAppBar`) كالرئيسية و«طلباتي»، والسلة فيه لا عائمةً فوق الشبكة — كانت زرّاً عائماً
+    // يغطّي سعرَ البطاقة التي تحته.
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('المنتجات'),
-        // **السلة في الشريط، مكانَ الجرس** (طلب المستخدم، 2026-09-25). كانت زرّاً عائماً فوق
-        // الشريط السفلي يغطّي سعرَ البطاقة التي تحته، وصارت في المكان نفسه الذي تأخذه في صفحة
-        // المنتج. والجرس أُزيل من التطبيق كلّه: لا خادمَ للإشعارات بعد.
-        actions: const [CartButton()],
-      ),
       body: SafeArea(
         top: false,
         child: Column(

@@ -159,6 +159,7 @@ _CustomerOrderDetail _$CustomerOrderDetailFromJson(Map<String, dynamic> json) =>
       placedAt: json['placed_at'] == null
           ? null
           : DateTime.parse(json['placed_at'] as String),
+      unreadNotesCount: (json['unread_notes_count'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$CustomerOrderDetailToJson(
@@ -188,6 +189,7 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'is_awaiting_quote': instance.isAwaitingQuote,
   'timeline': instance.timeline.map((e) => e.toJson()).toList(),
   'placed_at': instance.placedAt?.toIso8601String(),
+  'unread_notes_count': instance.unreadNotesCount,
 };
 
 _NewOrderLine _$NewOrderLineFromJson(Map<String, dynamic> json) =>

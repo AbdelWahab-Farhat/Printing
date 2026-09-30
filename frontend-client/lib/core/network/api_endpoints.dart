@@ -93,6 +93,9 @@ abstract final class OrderEndpoints {
   static const String quote = '/client/orders/quote';
 
   static String order(int id) => '/client/orders/$id';
+
+  /// ملاحظات المراجعة والرفض. **لا مسار «قرأتها»**: فتحها هو ما يعلّمها مقروءة، كالدعم.
+  static String notes(int id) => '/client/orders/$id/notes';
 }
 
 /// Reaching a person.

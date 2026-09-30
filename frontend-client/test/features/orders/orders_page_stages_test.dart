@@ -143,4 +143,18 @@ void main() {
     final readyRow = find.ancestor(of: inSheet(find.text('جاهزة')), matching: find.byType(InkWell));
     expect(find.descendant(of: readyRow.first, matching: find.byIcon(AppIcons.check)), findsOneWidget);
   });
+
+  testWidgets('«طلباتي» draws no top bar of its own: the shell\'s is shared by every place', (
+    tester,
+  ) async {
+    // Arrange
+    final app = host();
+
+    // Act
+    await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(AppBar), findsNothing);
+  });
 }

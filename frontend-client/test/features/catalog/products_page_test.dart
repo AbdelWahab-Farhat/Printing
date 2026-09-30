@@ -18,7 +18,8 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockCatalogRepository extends Mock implements CatalogRepository {}
 
-/// شريط «المنتجات» العلوي: السلة فيه لا عائمةً فوق الشبكة، ولا جرس (طلب المستخدم، 2026-09-25).
+/// «المنتجات» بلا شريطٍ علويٍّ خاص: تلبس شريط الـ shell الذي تلبسه الرئيسية و«طلباتي»، والسلة فيه
+/// لا عائمةً فوق الشبكة (طلب المستخدم، 2026-09-25).
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -77,8 +78,10 @@ void main() {
     ),
   );
 
-  testWidgets('the basket sits in the top bar, not floating over the grid', (tester) async {
-    // Arrange
+  testWidgets('the catalogue draws no top bar of its own, and nothing floats over the grid', (
+    tester,
+  ) async {
+    // Arrange — شيءٌ في السلة، فلو رسمت الصفحة سلّتها لظهرت.
     sl<CartCubit>().add(
       const OrderDraftLine(
         line: NewOrderLine(productId: 1, productVariantId: 1, quantity: '100'),
@@ -90,23 +93,10 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — الزرّ العائم كان يغطّي سعرَ البطاقة التي تحته.
-    expect(
-      find.descendant(of: find.byType(AppBar), matching: find.byTooltip('سلتك')),
-      findsOneWidget,
-    );
+    // Assert — السلة في شريط الـ shell المشترك (`HomeAppBar`)، والزرّ العائم كان يغطّي سعرَ
+    // البطاقة التي تحته.
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byTooltip('سلتك'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
-  });
-
-  testWidgets('the bar has no bell', (tester) async {
-    // Arrange
-    final app = host();
-
-    // Act
-    await tester.pumpWidget(app);
-    await tester.pumpAndSettle();
-
-    // Assert — لا خادمَ للإشعارات بعد، فالجرس زرٌّ لا يفعل شيئاً.
-    expect(find.byTooltip('الإشعارات'), findsNothing);
   });
 }

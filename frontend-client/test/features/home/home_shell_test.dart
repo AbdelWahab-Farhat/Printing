@@ -1,13 +1,28 @@
+import 'package:dartz/dartz.dart';
+import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
+import 'package:dayaa_client/features/badges/models/customer_badge.dart';
+import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit.dart';
+import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
+import 'package:dayaa_client/features/badges/usecases/get_badges.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
+import 'package:dayaa_client/features/home/presentation/widgets/home_app_bar.dart';
+import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
-/// الشريط السفلي: ثلاثة أماكن، أيقوناتٍ بلا كلمات.
+class _StubBadges implements BadgeRepository {
+  @override
+  Future<Either<Failure, Map<CustomerBadge, int>>> badges() async => const Right({});
+}
+
+/// الشريط السفلي: أربعة أماكن، أيقوناتٍ بلا كلمات. والشريط العلوي فوقها واحدٌ للأربعة.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -26,6 +41,7 @@ void main() {
             branch('/', 'صفحة الرئيسية'),
             branch('/products', 'صفحة المنتجات'),
             branch('/orders', 'صفحة الطلبيات'),
+            branch('/profile', 'صفحة حسابي'),
           ],
         ),
       ],
@@ -33,44 +49,55 @@ void main() {
 
     return ScreenUtilInit(
       designSize: const Size(430, 932),
-      builder: (context, _) => MaterialApp.router(
-        locale: const Locale('ar'),
-        supportedLocales: const [Locale('ar')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        routerConfig: router,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
-          child: child!,
+      builder: (context, _) => BlocProvider<BadgesCubit>(
+        create: (_) => BadgesCubit(getBadges: GetBadges(_StubBadges())),
+        child: MaterialApp.router(
+          locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          routerConfig: router,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+            child: child!,
+          ),
         ),
       ),
     );
   }
 
+  /// أماكن الشريط السفلي وحده، لا الشريط العلوي الذي فيه «حسابي» أيقونةً.
+  Finder inTabBar(Finder finder) => find.descendant(of: find.byType(GNav), matching: finder);
+
   setUp(() {
+    // السلة في الشريط العلوي تقرأ المفرَد من `sl` مباشرة.
+    sl.registerLazySingleton<CartCubit>(CartCubit.new);
+
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
     view.physicalSize = const Size(430, 932);
     view.devicePixelRatio = 1;
   });
 
-  tearDown(() {
+  tearDown(() async {
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
     view.resetPhysicalSize();
     view.resetDevicePixelRatio();
+    await sl.reset();
   });
 
-  /// «حسابي» في شريط الرئيسية العلوي، و«تصاميمي» والأدوات صفوفٌ فيها. و«الخدمات» كانت تبويباً
-  /// رابعاً ثم نُزعت في اليوم نفسه (طلب المستخدم، 2026-09-25): صفوفها كلها في «حسابي».
-  testWidgets('three places, in reading order, and none of «حسابي» «تصاميمي» «الخدمات»', (
+  /// «حسابي» عادت إلى الشريط السفلي رابعةً (طلب المستخدم، 2026-09-25: «حط بروفايل تحت») بعد
+  /// أن كانت أيقونةً في الشريط العلوي. و«تصاميمي» والأدوات صفوفٌ فيها. و«الخدمات» كانت تبويباً
+  /// رابعاً ثم نُزعت: صفوفها كلها في «حسابي».
+  testWidgets('four places, in reading order, «حسابي» last and none of «تصاميمي» «الخدمات»', (
     tester,
   ) async {
     // Arrange
     final semantics = tester.ensureSemantics();
 
-    const places = ['الرئيسية', 'المنتجات', 'طلباتي'];
+    const places = ['الرئيسية', 'المنتجات', 'طلباتي', 'حسابي'];
 
     // Act
     await tester.pumpWidget(host());
@@ -82,9 +109,8 @@ void main() {
       for (final place in places) tester.getCenter(find.bySemanticsLabel(place)).dx,
     ];
     expect(fromTheRight, [...fromTheRight]..sort((a, b) => b.compareTo(a)));
-    expect(find.bySemanticsLabel('حسابي'), findsNothing);
-    expect(find.bySemanticsLabel('تصاميمي'), findsNothing);
-    expect(find.bySemanticsLabel('الخدمات'), findsNothing);
+    expect(inTabBar(find.bySemanticsLabel('تصاميمي')), findsNothing);
+    expect(inTabBar(find.bySemanticsLabel('الخدمات')), findsNothing);
 
     semantics.dispose();
   });
@@ -121,7 +147,7 @@ void main() {
 
     // Act
     final written = [
-      for (final label in ['الرئيسية', 'المنتجات', 'طلباتي']) find.text(label),
+      for (final label in ['الرئيسية', 'المنتجات', 'طلباتي', 'حسابي']) find.text(label),
     ];
 
     // Assert
@@ -153,5 +179,61 @@ void main() {
 
     // Assert
     expect(bar.duration, Duration.zero);
+  });
+
+  // كان لكل قسمٍ شريطه: الاسم والدعم و«حسابي» في الرئيسية، و«المنتجات» والسلة في الكتالوج،
+  // و«طلباتي» وحدها في الطلبيات — فيتبدّل أعلى الشاشة مع كل لمسةٍ في أسفلها. صار شريطاً واحداً
+  // على الـ shell (طلب المستخدم، 2026-09-25).
+  for (final (icon, place) in [
+    (AppIcons.home, 'الرئيسية'),
+    (AppIcons.products, 'المنتجات'),
+    (AppIcons.orders, 'طلباتي'),
+    (AppIcons.account, 'حسابي'),
+  ]) {
+    testWidgets('«$place» wears the shared top bar: the name and support', (
+      tester,
+    ) async {
+      // Arrange
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byIcon(icon));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(HomeAppBar), findsOneWidget);
+      expect(find.text('FlyerX', findRichText: true), findsOneWidget);
+      expect(find.byTooltip('الدعم'), findsOneWidget);
+      // «حسابي» مكانٌ في الشريط السفلي الآن، لا أيقونةٌ في العلوي.
+      expect(find.byTooltip('حسابي'), findsNothing);
+    });
+  }
+
+  testWidgets('tapping «حسابي» opens that section', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byIcon(AppIcons.account));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('صفحة حسابي'), findsOneWidget);
+  });
+
+  testWidgets('changing place keeps the one bar rather than fading a new one in', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    final bar = tester.element(find.byType(HomeAppBar));
+
+    // Act
+    await tester.tap(find.byIcon(AppIcons.products));
+    await tester.pumpAndSettle();
+
+    // Assert — العنصر نفسه لا نسخةٌ في كل قسم: يبقى ساكناً والصفحة تحته تتلاشى.
+    expect(tester.element(find.byType(HomeAppBar)), same(bar));
   });
 }

@@ -10,6 +10,9 @@ import 'package:go_router/go_router.dart';
 
 /// The basket, in the bar of every screen a product can be added from.
 ///
+/// **يعني ذلك شريطين:** شريط الـ shell المشترك (`HomeAppBar`) فوق الأقسام الثلاثة، وشريط صفحة
+/// المنتج فوق صورته. وهو لا يضع لنفسه هامشاً: موضعه بين جيرانه قرارُ الشريط الذي يحمله.
+///
 /// **It is not in the bottom navigation, and that is deliberate.** The design draws five tabs
 /// and the basket is not one of them — nor should it be: a tab is a place you live in, and a
 /// basket is a thing you pass through on the way out. It sits where the thing being collected
@@ -39,41 +42,38 @@ class CartButton extends StatelessWidget {
 
         final backdrop = this.backdrop;
 
-        return Padding(
-          padding: backdrop == null ? EdgeInsetsDirectional.only(end: 4.w) : EdgeInsets.zero,
-          child: IconButton(
-            icon: Stack(
-              // الشارة تتدلّى خارج حدود الرسم، فلا يُقصّ ما تجاوزها.
-              clipBehavior: Clip.none,
-              children: [
-                const SvgIcon(SvgIcon.cart),
-                // **معلّقةٌ على الرسم نفسه لا على زاوية الزرّ**، كما يعلّق `BadgedIcon` شارة الدعم،
-                // فتقع على كتف السلّة في الشريط وفوق صورة المنتج معاً. و`right` لا `start`: الرسم
-                // لا ينقلب مع اتجاه النص — مقبضه يساراً كما في المثال — فالشارة تتبعه هو.
-                Positioned(
-                  top: -6.h,
-                  right: -8.w,
-                  child: _CountBadge(
-                    count: state.count,
-                    // أحمر كشارة الدعم وكالمثال الذي أرسله المستخدم، لا برتقالي العلامة.
-                    background: scheme.error,
-                    foreground: scheme.onError,
-                    // حلقةٌ بلون الشريط، لتُقرأ الشارةُ شارةً لا لطخةً حيث تغطّي الرسم.
-                    ring: scheme.surface,
-                  ),
+        return IconButton(
+          icon: Stack(
+            // الشارة تتدلّى خارج حدود الرسم، فلا يُقصّ ما تجاوزها.
+            clipBehavior: Clip.none,
+            children: [
+              const SvgIcon(SvgIcon.cart),
+              // **معلّقةٌ على الرسم نفسه لا على زاوية الزرّ**، كما يعلّق `BadgedIcon` شارة الدعم،
+              // فتقع على كتف السلّة في الشريط وفوق صورة المنتج معاً. و`right` لا `start`: الرسم
+              // لا ينقلب مع اتجاه النص — مقبضه يساراً كما في المثال — فالشارة تتبعه هو.
+              Positioned(
+                top: -6.h,
+                right: -8.w,
+                child: _CountBadge(
+                  count: state.count,
+                  // أحمر كشارة الدعم وكالمثال الذي أرسله المستخدم، لا برتقالي العلامة.
+                  background: scheme.error,
+                  foreground: scheme.onError,
+                  // حلقةٌ بلون الشريط، لتُقرأ الشارةُ شارةً لا لطخةً حيث تغطّي الرسم.
+                  ring: scheme.surface,
                 ),
-              ],
-            ),
-            tooltip: 'سلتك',
-            style: backdrop == null
-                ? null
-                : IconButton.styleFrom(
-                    backgroundColor: backdrop,
-                    fixedSize: Size.square(44.w),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-                  ),
-            onPressed: () => context.push(Routes.newOrder),
+              ),
+            ],
           ),
+          tooltip: 'سلتك',
+          style: backdrop == null
+              ? null
+              : IconButton.styleFrom(
+                  backgroundColor: backdrop,
+                  fixedSize: Size.square(44.w),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                ),
+          onPressed: () => context.push(Routes.newOrder),
         );
       },
     );

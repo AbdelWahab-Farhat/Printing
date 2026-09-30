@@ -148,6 +148,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// «حسابي» تبويبٌ رابع في الشريط السفلي (طلب المستخدم، 2026-09-25)، تحت الشريط العلوي المشترك.
+  testWidgets('draws no top bar of its own: it is a tab under the shared bar', (tester) async {
+    // Arrange
+    await open(tester);
+
+    // Act
+    final bars = find.byType(AppBar);
+
+    // Assert — شريطٌ هنا تحت شريط الـ shell شريطان.
+    expect(bars, findsNothing);
+  });
+
   group('the card', () {
     testWidgets('carries the name, the phone and the customer code', (tester) async {
       // Arrange & Act

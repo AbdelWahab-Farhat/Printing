@@ -3,12 +3,14 @@ import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
+import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit.dart';
 import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
 import 'package:dayaa_client/features/badges/usecases/get_badges.dart';
 import 'package:dayaa_client/features/billboards/models/billboard.dart';
 import 'package:dayaa_client/features/billboards/presentation/viewmodel/billboard_cubit.dart';
+import 'package:dayaa_client/features/billboards/presentation/views/billboard_carousel.dart';
 import 'package:dayaa_client/features/billboards/repositories/billboard_repository.dart';
 import 'package:dayaa_client/features/billboards/usecases/get_billboards.dart';
 import 'package:dayaa_client/features/home/presentation/viewmodel/active_orders_cubit.dart';
@@ -19,11 +21,14 @@ import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../helpers/cairo_font.dart';
 
 class _StubBillboards implements BillboardRepository {
   @override
@@ -70,8 +75,8 @@ class _StubOrders implements OrderRepository {
       throw UnimplementedError();
 }
 
-/// الرئيسية: الإعلانات، ثم «طلبياتي الجارية». «منتجاتنا» نُزع (طلب المستخدم، 2026-09-25): تبويب
-/// «المنتجات» تحت الإبهام يعرضها كلها.
+/// الرئيسية: الإعلانات، ثم الأداتان في صفٍّ خفيف، ثم «طلبياتي الجارية». «منتجاتنا» نُزع (طلب
+/// المستخدم، 2026-09-25): تبويب «المنتجات» تحت الإبهام يعرضها كلها.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -115,6 +120,8 @@ void main() {
           path: '/products/:id',
           builder: (context, state) => page('منتج ${state.pathParameters['id']}'),
         ),
+        GoRoute(path: Routes.qrTool, builder: (context, state) => page('شاشة رمز QR')),
+        GoRoute(path: Routes.bagPreview, builder: (context, state) => page('شاشة المعاينة')),
       ],
     );
 
@@ -123,6 +130,7 @@ void main() {
       builder: (context, _) => BlocProvider<BadgesCubit>(
         create: (_) => BadgesCubit(getBadges: GetBadges(_StubBadges())),
         child: MaterialApp.router(
+          theme: ThemeData(fontFamily: 'Cairo'),
           locale: const Locale('ar'),
           supportedLocales: const [Locale('ar')],
           localizationsDelegates: const [
@@ -140,6 +148,13 @@ void main() {
       ),
     );
   }
+
+  // الخطّ الحقيقي: اختباراتٌ هنا تسأل هل يتّسع نص.
+  setUpAll(loadCairo);
+
+  /// بطاقة الأداة التي تحمل [label].
+  Finder tool(String label) =>
+      find.ancestor(of: find.text(label), matching: find.byType(AppCard));
 
   setUp(() {
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
@@ -268,5 +283,88 @@ void main() {
     // Assert
     expect(find.text('منتجاتنا'), findsNothing);
     expect(find.text('عرض الكل'), findsOneWidget);
+  });
+
+  testWidgets('the home draws no top bar of its own: the shell\'s is shared by every place', (
+    tester,
+  ) async {
+    // Arrange
+    register(moving: const Right(<CustomerOrder>[]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — شريطٌ هنا تحت شريط الـ shell شريطان.
+    expect(find.byType(AppBar), findsNothing);
+  });
+
+  /// الأداتان على الرئيسية بخفّة (طلب المستخدم، 2026-09-25): صفٌّ واحد من بطاقتين صغيرتين بلا
+  /// عنوان قسم. **فوق الطلبيات لا تحتها**: تحتها تُدفعان إلى الأسفل مع كل طلبيةٍ جديدة.
+  testWidgets('the two tools sit side by side between the ads and the orders', (tester) async {
+    // Arrange
+    register(moving: Right([producing]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — «رمز QR» أولاً، أي يميناً، كما في «حسابي».
+    final qr = tester.getRect(tool('رمز QR'));
+    final bag = tester.getRect(tool('معاينة على الكيس'));
+    final ads = tester.getRect(find.byType(BillboardCarousel));
+    final orders = tester.getRect(find.text('طلبياتي الجارية'));
+
+    expect(qr.top, bag.top);
+    expect(qr.size, bag.size);
+    expect(qr.left, greaterThan(bag.right));
+    expect(qr.top, greaterThan(ads.bottom));
+    expect(qr.bottom, lessThan(orders.top));
+  });
+
+  testWidgets('the tools row stays light: no taller than a list row', (tester) async {
+    // Arrange
+    register(moving: const Right(<CustomerOrder>[]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(tester.getSize(tool('رمز QR')).height, lessThanOrEqualTo(60));
+  });
+
+  for (final (label, screen) in [
+    ('رمز QR', 'شاشة رمز QR'),
+    ('معاينة على الكيس', 'شاشة المعاينة'),
+  ]) {
+    testWidgets('«$label» opens over the home screen, with a way back', (tester) async {
+      // Arrange
+      register(moving: const Right(<CustomerOrder>[]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+
+      // Assert — `push` لا `go`: الأداة مكانٌ يُذهب إليه ويُرجع منه.
+      expect(find.text(screen), findsOneWidget);
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+  }
+
+  testWidgets('the longer name fits whole on a narrow phone', (tester) async {
+    // Arrange
+    tester.view.physicalSize = const Size(360, 780);
+    register(moving: const Right(<CustomerOrder>[]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    final name = tester.renderObject<RenderParagraph>(find.text('معاينة على الكيس'));
+    expect(name.didExceedMaxLines, isFalse);
   });
 }

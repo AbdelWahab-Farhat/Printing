@@ -54,8 +54,11 @@ import 'package:dayaa_client/features/notifications/usecases/register_device_tok
 import 'package:dayaa_client/features/notifications/usecases/release_device_token.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa_client/features/orders/presentation/viewmodel/order_notes_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/place_order_cubit.dart';
+import 'package:dayaa_client/features/orders/repositories/order_notes_repository.dart';
+import 'package:dayaa_client/features/orders/repositories/order_notes_repository_impl.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa_client/features/orders/usecases/browse_orders.dart';
@@ -63,6 +66,7 @@ import 'package:dayaa_client/features/orders/usecases/get_order.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:dayaa_client/features/orders/usecases/place_order.dart';
 import 'package:dayaa_client/features/orders/usecases/quote_basket.dart';
+import 'package:dayaa_client/features/orders/usecases/read_order_notes.dart';
 import 'package:dayaa_client/features/shops/models/shop.dart';
 import 'package:dayaa_client/features/shops/presentation/viewmodel/shop_form_cubit.dart';
 import 'package:dayaa_client/features/shops/presentation/viewmodel/shops_cubit.dart';
@@ -330,6 +334,8 @@ abstract final class Injector {
       ..registerLazySingleton(() => GetOrder(sl<OrderRepository>()))
       ..registerLazySingleton(() => PlaceOrder(sl<OrderRepository>()))
       ..registerLazySingleton(() => QuoteBasket(sl<OrderRepository>()))
+      ..registerLazySingleton<OrderNotesRepository>(() => OrderNotesRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton(() => ReadOrderNotes(sl<OrderNotesRepository>()))
       // **The one Cubit in this app that is a singleton, and the reason is that it outlives
       // every screen that touches it.** A basket held by the product screen empties the moment
       // that screen is popped, and «أضف إلى الطلبية» has to survive going back to the catalogue
@@ -345,6 +351,9 @@ abstract final class Injector {
       ..registerFactory(() => OrdersCubit(browse: sl<BrowseOrders>()))
       ..registerFactoryParam<OrderDetailCubit, int, void>(
         (orderId, _) => OrderDetailCubit(orderId: orderId, get: sl<GetOrder>()),
+      )
+      ..registerFactoryParam<OrderNotesCubit, int, void>(
+        (orderId, _) => OrderNotesCubit(orderId: orderId, read: sl<ReadOrderNotes>()),
       )
       // **No parameter any more.** It used to be built *for* a set of lines, because the only
       // way to this screen was one product pushing one of them. The lines are the basket's now,

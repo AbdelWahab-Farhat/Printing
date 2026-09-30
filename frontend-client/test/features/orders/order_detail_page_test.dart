@@ -2,9 +2,13 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_snackbar.dart';
+import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_money_card.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_button.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +57,7 @@ void main() {
     String stageLabel = 'بانتظار المراجعة',
     List<OrderTimelineEntry>? timeline,
     String? rejectionReason,
+    int unreadNotesCount = 0,
   }) => CustomerOrderDetail(
     id: 1304,
     code: '1304',
@@ -81,6 +86,7 @@ void main() {
           ),
         ],
     placedAt: september(25, 14, 51),
+    unreadNotesCount: unreadNotesCount,
   );
 
   tearDown(() async {
@@ -108,6 +114,17 @@ void main() {
           path: '/orders/:id',
           builder: (context, state) =>
               OrderDetailPage(orderId: int.parse(state.pathParameters['id']!)),
+        ),
+        // «الملاحظات» كما تفعل الشاشة الحقيقية: تُخبر الطلبية خلفها أنها قُرئت حين تُعرض.
+        GoRoute(
+          path: '/orders/:id/notes',
+          builder: (context, state) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => (state.extra as VoidCallback?)?.call(),
+            );
+
+            return Scaffold(appBar: AppBar(), body: const Text('ملاحظات الطلبية'));
+          },
         ),
         GoRoute(
           path: '/support',
@@ -332,6 +349,76 @@ void main() {
 
       resetSnackBars();
       await tester.pump();
+    });
+  });
+
+  group('the notes', () {
+    testWidgets('a full-width «الملاحظات» sits right under the stage card', (tester) async {
+      // Arrange
+      await open(tester, order1304());
+
+      // Act
+      final button = find.byType(OrderNotesButton);
+
+      // Assert
+      expect(find.descendant(of: button, matching: find.text('الملاحظات')), findsOneWidget);
+      final stageBottom = tester.getBottomLeft(find.byType(OrderStageCard)).dy;
+      expect(tester.getTopLeft(button).dy, greaterThan(stageBottom));
+      expect(tester.getTopLeft(button).dy, lessThan(tester.getTopLeft(find.byType(OrderMoneyCard)).dy));
+      expect(
+        tester.getSize(button).width,
+        tester.getSize(find.byType(OrderStageCard)).width,
+      );
+    });
+
+    testWidgets('carries how many notes are still unread', (tester) async {
+      // Arrange
+      await open(tester, order1304(unreadNotesCount: 3));
+
+      // Act
+      final pill = find.descendant(
+        of: find.byType(OrderNotesButton),
+        matching: find.byType(CountPill),
+      );
+
+      // Assert
+      expect(pill, findsOneWidget);
+      expect(find.descendant(of: pill, matching: find.text('3')), findsOneWidget);
+    });
+
+    testWidgets('with nothing unread there is no badge — but the button stays', (tester) async {
+      // Arrange
+      await open(tester, order1304());
+
+      // Act
+      final pill = find.descendant(
+        of: find.byType(OrderNotesButton),
+        matching: find.byType(CountPill),
+      );
+
+      // Assert
+      expect(pill, findsNothing);
+      expect(find.byType(OrderNotesButton), findsOneWidget);
+    });
+
+    testWidgets('opening the notes reads them, and the badge is out on the way back', (
+      tester,
+    ) async {
+      // Arrange
+      await open(tester, order1304(unreadNotesCount: 3));
+
+      // Act
+      await tester.tap(find.text('الملاحظات'));
+      await tester.pumpAndSettle();
+      expect(find.text('ملاحظات الطلبية'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(
+        find.descendant(of: find.byType(OrderNotesButton), matching: find.byType(CountPill)),
+        findsNothing,
+      );
     });
   });
 }

@@ -1,20 +1,26 @@
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
+import 'package:dayaa_client/features/home/presentation/widgets/home_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
-/// الشريط الذي تعيش خلفه الأقسام الثلاثة.
+/// الشريطان اللذان تعيش بينهما الأقسام الأربعة: [HomeAppBar] فوقها، والكبسولة العائمة تحتها.
 ///
 /// **الأقسام تبقى في الشجرة وإن لم تُعرض**، فيحتفظ كلٌّ منها بموضع تمريره وبالـ Cubit الخاص به:
 /// العميل الذي ينزل إلى منتصف الكتالوج ثم يلقي نظرةً على طلبية يعود فيجده حيث تركه. الحاوية
 /// التي تحفظها وتنقل بينها بالتلاشي هي `FadeThroughBranches`، يبنيها الموجّه لا هذا الملف.
 ///
-/// **ثلاثة أماكن، أيقوناتٍ بلا كلمات** (طلب المستخدم، 2026-09-25): الرئيسية، والمنتجات،
-/// وطلباتي. «حسابي» في شريط الرئيسية العلوي، و«تصاميمي» والأدوات صفوفٌ في «حسابي». و«الخدمات»
-/// كانت تبويباً رابعاً ثم نُزعت في اليوم نفسه، لأن صفوفها كلها في «حسابي». والكلمات لم تختفِ
-/// تماماً: كل أيقونةٍ تحمل اسمها لقارئ الشاشة.
+/// **أربعة أماكن، أيقوناتٍ بلا كلمات** (طلب المستخدم، 2026-09-25): الرئيسية، والمنتجات،
+/// وطلباتي، و«حسابي». و«حسابي» كانت أيقونةً في الشريط العلوي ثم نزلت إلى هنا في اليوم نفسه
+/// («حط بروفايل تحت»)، و«تصاميمي» والأدوات صفوفٌ فيها. و«الخدمات» كانت تبويباً رابعاً ثم نُزعت،
+/// لأن صفوفها كلها في «حسابي». والكلمات لم تختفِ تماماً: كل أيقونةٍ تحمل اسمها لقارئ الشاشة.
+///
+/// **والشريط العلوي هنا، لا في الأقسام** (طلب المستخدم، 2026-09-25): واحدٌ للأربعة، ساكنٌ فوقها
+/// والقسم تحته يتلاشى، ولا يرسم أيُّ قسمٍ شريطاً خاصاً به. ولهذا لا يحمل فرعٌ من فروع الـ shell غير
+/// صفحته الأولى: ما يُفتح من قسمٍ يُدفع فوق الـ shell بشريطه وزرّ رجوعه (`AppRouter`)، ولو دُفع
+/// داخل فرعه لظهر تحت هذا الشريط.
 class HomeShell extends StatelessWidget {
   const HomeShell({required this.shell, super.key});
 
@@ -23,6 +29,7 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const HomeAppBar(),
       body: shell,
       bottomNavigationBar: _FloatingTabBar(
         currentIndex: shell.currentIndex,
@@ -42,6 +49,7 @@ List<({IconData icon, String label})> get _tabs => [
   (icon: AppIcons.home, label: 'الرئيسية'),
   (icon: AppIcons.products, label: 'المنتجات'),
   (icon: AppIcons.orders, label: 'طلباتي'),
+  (icon: AppIcons.account, label: 'حسابي'),
 ];
 
 /// أيقونة مكانٍ في الشريط، باسمها وبأنها المعروضة لقارئ الشاشة.

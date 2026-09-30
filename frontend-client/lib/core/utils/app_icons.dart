@@ -491,6 +491,10 @@ abstract final class AppIcons {
   static IconData get person =>
       _pick(Icons.person_outline_rounded, CupertinoIcons.person);
 
+  /// «حسابي» في الشريط السفلي. **ممتلئةٌ لا مفرغة**، كجاراتها الثلاث هناك — [home] و[products]
+  /// و[orders] — فلا تبدو الرابعةُ أخفَّ منهنّ وكأنها معطّلة. أما [person] فبادئةُ حقلٍ في نموذج.
+  static IconData get account => _pick(Icons.person_rounded, CupertinoIcons.person_fill);
+
   static IconData get phone => _pick(Icons.phone_outlined, CupertinoIcons.phone);
 
   /// The other thing an account signs in with. Beside [phone] on the same form, so it has to

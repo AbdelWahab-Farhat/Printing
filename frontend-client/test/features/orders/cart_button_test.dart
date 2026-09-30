@@ -16,7 +16,8 @@ import 'package:go_router/go_router.dart';
 ///
 /// كانت زرّاً عائماً فوق الشريط السفلي يغطّي سعرَ البطاقة التي تحته، وبأيقونة المستند نفسها التي
 /// يلبسها تبويب «طلباتي»، فبدت اختصاراً إليه. الآن هي عربةُ تسوّقٍ SVG على مثالٍ أرسله المستخدم،
-/// في أقصى يسار الشريط، والعددُ أحمرُ على كتفها الأيمن.
+/// في يسار الشريط، والعددُ أحمرُ على كتفها الأيمن. وأين تقف بين الدعم و«حسابي» في الشريط المشترك
+/// يختبره `home_app_bar_test`.
 ///
 /// **مقيسةٌ لا منظورة:** خطأ التخطيط لا يرمي استثناءً ولا يُحمِّر اختباراً.
 ///
@@ -30,7 +31,7 @@ void main() {
   setUp(() => sl.registerLazySingleton<CartCubit>(CartCubit.new));
   tearDown(() => sl.reset());
 
-  /// شريط «المنتجات» كما هو: العنوان، والسلة وحدها في `actions`.
+  /// شريطٌ فيه السلة وحدها في `actions`: الزرّ نفسه، بلا ما يجاوره في الشريط المشترك.
   Widget host() {
     final router = GoRouter(
       routes: [
@@ -75,7 +76,7 @@ void main() {
     expect(find.byTooltip('سلتك'), findsNothing);
   });
 
-  testWidgets('it sits at the far left of the top bar, where the bell was', (tester) async {
+  testWidgets('it sits in the top bar, on its left side', (tester) async {
     // Arrange
     sl<CartCubit>().add(line());
 

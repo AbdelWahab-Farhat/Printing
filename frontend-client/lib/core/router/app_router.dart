@@ -11,6 +11,7 @@ import 'package:dayaa_client/features/designs/presentation/views/designs_page.da
 import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa_client/features/orders/presentation/views/order_notes_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/orders_page.dart';
 import 'package:dayaa_client/features/orders/presentation/views/place_order_page.dart';
 import 'package:dayaa_client/features/settings/presentation/views/settings_page.dart';
@@ -54,7 +55,11 @@ abstract final class Routes {
 
   static String order(int id) => '/orders/$id';
 
-  /// «حسابي». تُفتح من شريط الرئيسية العلوي فوق الشريط السفلي، ولم تعد تبويباً.
+  /// «الملاحظات» على الطلبية. تُفتح من زرّها تحت بطاقة الحالة، و`extra` فيه ما يطفئ شارته هناك
+  /// — دالّةٌ لا بيانات، فرابطٌ يُفتح بلا `extra` يعرض الملاحظات ولا يطفئ شيئاً.
+  static String orderNotes(int id) => '/orders/$id/notes';
+
+  /// «حسابي». التبويب الرابع في الشريط السفلي.
   static const String profile = '/profile';
 
   /// «الإعدادات». تُفتح من «حسابي» فوق الشاشة، ولها زر رجوع إليها.
@@ -101,7 +106,7 @@ abstract final class Routes {
 /// `/orders/new` فوق `/orders/:id`، وإلا قرأ go_router كلمة «new» رقمَ طلبية وسلّمها إلى
 /// `int.parse`.
 ///
-/// **الأقسام الثلاثة تعيش في shell، والباقي يُفتح فوقه.** العميل الذي ينتقل بين «المنتجات» و«طلباتي»
+/// **الأقسام الأربعة تعيش في shell، والباقي يُفتح فوقه.** العميل الذي ينتقل بين «المنتجات» و«طلباتي»
 /// يبدّل ما ينظر إليه ولا يتعمّق، فيحتفظ كل قسم بموضع تمريره ويبقى الشريط السفلي. أما المنتج
 /// والطلبية والمحادثة فأماكن تذهب إليها ثم تعود، فتغطي الشريط ولها زر رجوع.
 abstract final class AppRouter {
@@ -141,14 +146,18 @@ abstract final class AppRouter {
               GoRoute(path: Routes.orders, builder: (context, state) => const OrdersPage()),
             ],
           ),
-          // **«حسابي» و«تصاميمي» خرجتا من الشريط** (طلب المستخدم، 2026-09-25)، وكذلك «الخدمات»
-          // التي جمعت «تصاميمي» والأدوات يوماً واحداً. «حسابي» تُفتح من شريط الرئيسية العلوي بجانب
-          // الدعم، و«تصاميمي» والأدوات صفوفٌ فيها. كلتاهما تُدفعان فوق الشريط ويُرجع منهما.
+          // **«حسابي» عادت تبويباً** (طلب المستخدم، 2026-09-25: «حط بروفايل تحت») بعد يومٍ
+          // كانت فيه أيقونةً في الشريط العلوي. و«تصاميمي» والأدوات صفوفٌ فيها (والأداتان على
+          // الرئيسية أيضاً)، تُدفع فوق الشريط ويُرجع منها. و«الخدمات» التي جمعتها يوماً نُزعت.
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: Routes.profile, builder: (context, state) => const ProfilePage()),
+            ],
+          ),
         ],
       ),
 
       // ── يُفتح فوق الـ shell ──────────────────────────────────────────────────
-      GoRoute(path: Routes.profile, builder: (context, state) => const ProfilePage()),
       GoRoute(path: Routes.designs, builder: (context, state) => const DesignsPage()),
       GoRoute(path: Routes.support, builder: (context, state) => const SupportPage()),
       GoRoute(path: Routes.settings, builder: (context, state) => const SettingsPage()),
@@ -184,6 +193,16 @@ abstract final class AppRouter {
         path: '/orders/:id',
         builder: (context, state) =>
             OrderDetailPage(orderId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(
+        path: '/orders/:id/notes',
+        builder: (context, state) => OrderNotesPage(
+          orderId: int.parse(state.pathParameters['id']!),
+          onRead: switch (state.extra) {
+            final VoidCallback onRead => onRead,
+            _ => null,
+          },
+        ),
       ),
 
       // **قبل `/tools/qr`**: لو أُضيف تحته يوماً مسار بمعامل، لما وصل أحد إلى المقطع الثابت

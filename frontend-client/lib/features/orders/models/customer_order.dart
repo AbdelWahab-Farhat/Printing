@@ -153,7 +153,7 @@ abstract class CustomerOrder with _$CustomerOrder {
     @JsonKey(name: 'is_awaiting_quote') @Default(false) bool isAwaitingQuote,
 
     // ── ما ترسمه البطاقة ─────────────────────────────────────────────────────
-    // بطاقة «طلباتي» على شكل بطاقة تطبيق الموظفين (طلب المستخدم، 2026-09-25)، وهذه خاناتها.
+    // ما ترسمه بطاقة «طلباتي» (`OrderCard`) تحت رأسها: المال والمدينة والهاتف والبنود.
     // **كلها اختيارية**: التطبيق قد يصل الهاتف قبل أن يُنشر الخادم الذي يرسلها، والبطاقة ترسم
     // «—» حيث لا جواب بدل أن تُسقط القائمة كلها.
 
@@ -168,6 +168,9 @@ abstract class CustomerOrder with _$CustomerOrder {
 
     @JsonKey(name: 'recipient_phone') String? recipientPhone,
     @JsonKey(name: 'fulfilment_type') String? fulfilmentType,
+
+    // طريقة التسليم تصل ولا ترسمها البطاقة: قال المستخدم إن «التسليم» عليها غير ضروري
+    // (2026-09-25)، والطلبية المفتوحة تقولها.
 
     /// «توصيل» أو «استلام من المكتب»، بكلمة الخادم.
     @JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel,
@@ -295,6 +298,10 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     @Default(<OrderTimelineEntry>[]) List<OrderTimelineEntry> timeline,
 
     @JsonKey(name: 'placed_at') DateTime? placedAt,
+
+    /// ما لم يقرأه العميل من ملاحظات المراجعة والرفض — شارة «الملاحظات». صفرٌ من خادمٍ أقدم لا
+    /// يرسله: لا شارة، لا خطأ.
+    @JsonKey(name: 'unread_notes_count') @Default(0) int unreadNotesCount,
   }) = _CustomerOrderDetail;
 
   factory CustomerOrderDetail.fromJson(Map<String, dynamic> json) =>

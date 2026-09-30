@@ -35,7 +35,7 @@ class DayaaClientApp extends StatelessWidget {
         return BlocBuilder<ThemeModeCubit, ThemeMode>(
           bloc: sl<ThemeModeCubit>(),
           builder: (context, themeMode) => MaterialApp.router(
-            title: 'دعاية',
+            title: 'FlyerX',
             debugShowCheckedModeBanner: false,
             // **Both palettes ship, and the phone chooses by default.** The mockup was drawn in
             // the dark one and that is still the app's own appearance — see `MaterialTheme.light`

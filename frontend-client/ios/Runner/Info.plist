@@ -9,7 +9,7 @@
 	<key>CFBundleDisplayName</key>
 	<!--
 	متغيّرٌ لا نصّ: نكهةُ الاختبار تحمل اسماً آخر تحت الأيقونة، وهذا الملفُّ واحدٌ للنكهتين.
-	القيمةُ الفعلية في `APP_DISPLAY_NAME` على كل تهيئة في project.pbxproj — «فلايركس تجريبي»
+	القيمةُ الفعلية في `APP_DISPLAY_NAME` على كل تهيئة في project.pbxproj — «FlyerX تجريبي»
 	لـ`*-dev`. و`INFOPLIST_KEY_CFBundleDisplayName` لا ينفع هنا: لا يقرؤه Xcode إلا حين يولّد
 	الـplist بنفسه، ومشروع Flutter يشير إلى ملفٍّ صريح.
 	-->

@@ -4,7 +4,7 @@ import 'package:dayaa_client/features/billboards/presentation/viewmodel/billboar
 import 'package:dayaa_client/features/billboards/presentation/views/billboard_carousel.dart';
 import 'package:dayaa_client/features/home/presentation/viewmodel/active_orders_cubit.dart';
 import 'package:dayaa_client/features/home/presentation/widgets/active_orders_section.dart';
-import 'package:dayaa_client/features/home/presentation/widgets/home_app_bar.dart';
+import 'package:dayaa_client/features/home/presentation/widgets/home_tools.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,6 +16,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// نفسه: صفٌّ من الكتالوج وتبويب «المنتجات» تحته يعرضه كله. مكانها ما يهتم به العميل: أين طلبيته.
 ///
 /// **قسمان، كلٌّ منهما يحمّل وحده ويفشل وحده.** إعلانٌ لم يُحمَّل لا يُخفي طلبيةً في الطريق.
+/// وبينهما الأداتان في صفٍّ خفيف ([HomeTools])، ولا شيء خلفهما يُحمَّل.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -36,8 +37,8 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // **بلا شريطٍ علويٍّ خاص**: شريط الـ shell (`HomeAppBar`) فوق الأقسام الثلاثة.
     return Scaffold(
-      appBar: const HomeAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
           await Future.wait([
@@ -54,6 +55,8 @@ class _HomeView extends StatelessWidget {
           padding: EdgeInsets.only(top: 8.h, bottom: 24.h),
           children: [
             const BillboardCarousel(),
+            SizedBox(height: 16.h),
+            const HomeTools(),
             SizedBox(height: 22.h),
             const ActiveOrdersSection(),
           ],

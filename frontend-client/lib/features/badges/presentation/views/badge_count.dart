@@ -18,9 +18,6 @@ class BadgeCount extends StatelessWidget {
 
   final CustomerBadge badge;
 
-  /// Above nine hundred and ninety-nine nobody reads the digits, and the pill stops fitting.
-  static String _label(int count) => count > 99 ? '+٩٩' : '$count';
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<BadgesCubit, Map<CustomerBadge, int>>(
@@ -31,31 +28,49 @@ class BadgeCount extends StatelessWidget {
       builder: (context, counts) {
         final count = counts.countOf(badge);
 
-        if (count == 0) return const SizedBox.shrink();
-
-        final scheme = context.colorScheme;
-
-        return Container(
-          constraints: BoxConstraints(minWidth: 20.w),
-          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-          decoration: BoxDecoration(
-            color: scheme.error,
-            borderRadius: BorderRadius.circular(999.r),
-            // A ring in the surface colour, so the pill reads as sitting *on* the tile rather
-            // than being part of it wherever the two colours are close.
-            border: Border.all(color: scheme.surface, width: 1.5),
-          ),
-          child: Text(
-            _label(count),
-            textAlign: TextAlign.center,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: scheme.onError,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-            ),
-          ),
-        );
+        return CountPill(count: count);
       },
+    );
+  }
+}
+
+/// الحبّة الحمراء بالعدد نفسها، لكل شارةٍ في التطبيق: [BadgeCount] تقرؤها من الشارات، ومن يعرف
+/// عدده بنفسه — كـ«الملاحظات» في الطلبية — يرسمها به.
+///
+/// **لا ترسم شيئاً عند الصفر**، للسبب نفسه في [BadgeCount].
+class CountPill extends StatelessWidget {
+  const CountPill({required this.count, super.key});
+
+  final int count;
+
+  /// Above nine hundred and ninety-nine nobody reads the digits, and the pill stops fitting.
+  static String _label(int count) => count > 99 ? '+٩٩' : '$count';
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) return const SizedBox.shrink();
+
+    final scheme = context.colorScheme;
+
+    return Container(
+      constraints: BoxConstraints(minWidth: 20.w),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: scheme.error,
+        borderRadius: BorderRadius.circular(999.r),
+        // A ring in the surface colour, so the pill reads as sitting *on* the tile rather
+        // than being part of it wherever the two colours are close.
+        border: Border.all(color: scheme.surface, width: 1.5),
+      ),
+      child: Text(
+        _label(count),
+        textAlign: TextAlign.center,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: scheme.onError,
+          fontWeight: FontWeight.w800,
+          height: 1.1,
+        ),
+      ),
     );
   }
 }

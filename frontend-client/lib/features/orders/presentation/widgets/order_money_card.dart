@@ -1,17 +1,14 @@
-import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_money_cells.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// مال الطلبية: ثلاث خاناتٍ كخانات بطاقة «طلباتي» — سعر الطلبية، والمدفوع، والمتبقي — وتحتها
-/// ما ليس منها.
-///
-/// **كل رقمٍ هنا رقم الخادم.** المتبقي لا يُطرح في الهاتف من السعر والمدفوع: رقمان لسؤالٍ
-/// واحد، واحدٌ من الخادم وآخر من الهاتف، يختلفان يوماً مع الفاتورة التي في يد العميل.
+/// مال الطلبية: خاناتها الثلاث ([OrderMoneyCells]، هي نفسها في بطاقة «طلباتي») — سعر الطلبية،
+/// والمدفوع، والمتبقي — وتحتها ما ليس منها.
 ///
 /// **والتوصيل تحت الخانات لا بينها**، باسم «التوصيل للمندوب»: ليس من سعر الطلبية ولا من
 /// المتبقي — يأخذه المندوب عند الباب على حسابه (قرار صاحب العمل، ٢٠٢٦-٠٩-٠٨). فوق «المتبقي»
@@ -24,12 +21,6 @@ class OrderMoneyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final balance = order.balance;
-
-    // مستحقٌّ ما بقي شيء: برتقالي العلامة لا أحمر الإنذار — مالٌ على طلبيةٍ تسير جيداً ليس
-    // خطأً. وصفرٌ أخضر: الطلبية مسدّدة.
-    final owesSomething = balance != null && thousandths(balance) > BigInt.zero;
-
     final extras = [
       if (order.designFee case final fee? when fee._isSomething) _Extra('التصميم', fee),
       if (order.discount case final discount? when discount._isSomething)
@@ -42,41 +33,11 @@ class OrderMoneyCard extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(8.w, 16.h, 8.w, 14.h),
       child: Column(
         children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _Cell(
-                    label: 'سعر الطلبية',
-                    amount: order.total,
-                    // **جملةٌ مكان الرقم ما دام بندٌ بلا سعر**: الرقم المخزَّن مجموع البنود
-                    // المسعَّرة وحدها، أصغر مما سيُطلب — والخادم يرسل null لذلك.
-                    missing: order.isAwaitingQuote ? awaitingQuoteLabel : '—',
-                    tone: scheme.onSurface,
-                  ),
-                ),
-                VerticalDivider(width: 1, thickness: 1, color: scheme.surfaceContainerHigh),
-                Expanded(
-                  child: _Cell(
-                    label: 'المدفوع',
-                    amount: order.paidAmount,
-                    tone: (order.paidAmount?._isSomething ?? false)
-                        ? scheme.paid
-                        : scheme.onSurfaceVariant,
-                  ),
-                ),
-                VerticalDivider(width: 1, thickness: 1, color: scheme.surfaceContainerHigh),
-                Expanded(
-                  child: _Cell(
-                    label: 'المتبقي',
-                    amount: balance,
-                    tone: owesSomething ? scheme.primary : scheme.paid,
-                    heavy: true,
-                  ),
-                ),
-              ],
-            ),
+          OrderMoneyCells(
+            total: order.total,
+            paidAmount: order.paidAmount,
+            balance: order.balance,
+            isAwaitingQuote: order.isAwaitingQuote,
           ),
           if (extras.isNotEmpty) ...[
             Padding(
@@ -86,93 +47,6 @@ class OrderMoneyCard extends StatelessWidget {
             for (final extra in extras)
               Padding(padding: EdgeInsets.fromLTRB(8.w, 12.h, 8.w, 0), child: extra),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-/// خانةٌ من الثلاث: اسمها فوقها، ورقمها تحته بعملته.
-class _Cell extends StatelessWidget {
-  const _Cell({
-    required this.label,
-    required this.amount,
-    required this.tone,
-    this.missing = '—',
-    this.heavy = false,
-  });
-
-  final String label;
-
-  /// رقم الخادم، أو null حين لا جواب.
-  final String? amount;
-
-  /// ما يُكتب حين لا رقم.
-  final String missing;
-
-  final Color tone;
-
-  /// «المتبقي» أثقل الثلاثة: هو ما جاء العميل يسأل عنه.
-  final bool heavy;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final figure = context.textTheme.titleLarge?.copyWith(
-      fontSize: 20.sp,
-      fontWeight: heavy ? FontWeight.w900 : FontWeight.w800,
-      height: 1.3,
-      color: tone,
-    );
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w),
-      child: Column(
-        children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyMedium?.copyWith(
-              fontSize: 13.5.sp,
-              fontWeight: FontWeight.w700,
-              height: 1.4,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          if (amount case final amount?)
-            Text.rich(
-              TextSpan(
-                text: amount.asMoney,
-                style: figure,
-                children: [
-                  TextSpan(
-                    // عملةٌ بجانب الرقم أصغر منه، فيبقى الرقم ما تقع عليه العين.
-                    text: ' د.ل',
-                    style: TextStyle(
-                      fontSize: 12.5.sp,
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-            )
-          else if (missing == '—')
-            Text(missing, textAlign: TextAlign.center, style: figure?.copyWith(color: scheme.onSurfaceVariant))
-          else
-            Text(
-              missing,
-              textAlign: TextAlign.center,
-              style: context.textTheme.bodySmall?.copyWith(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
         ],
       ),
     );

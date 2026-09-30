@@ -38,8 +38,8 @@ class _OrdersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<OrdersCubit>();
 
+    // **بلا شريطٍ علويٍّ خاص**: شريط الـ shell (`HomeAppBar`) فوق الأقسام الثلاثة.
     return Scaffold(
-      appBar: AppBar(title: const Text('طلباتي')),
       body: SafeArea(
         top: false,
         child: Column(

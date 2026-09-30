@@ -22,6 +22,7 @@ import 'package:dayaa_client/features/home/presentation/viewmodel/active_orders_
 import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
@@ -129,7 +130,9 @@ void main() {
       )
       ..registerFactory<ActiveOrdersCubit>(
         () => ActiveOrdersCubit(list: ListActiveOrders(_StubOrders())),
-      );
+      )
+      // الشريط العلوي المشترك فوق الأقسام يحمل السلة، وهي تقرأ المفرَد من `sl` كما في `injector`.
+      ..registerLazySingleton<CartCubit>(CartCubit.new);
   });
 
   tearDown(() => sl.reset());
