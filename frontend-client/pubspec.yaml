@@ -124,6 +124,14 @@ dependencies:
   # ولماذا مقابس لا سؤالٌ كل ثوانٍ ولا FCM: Docs/support/SUPPORT-REALTIME.md §١.
   dart_pusher_channels: ^1.3.1
 
+  # ── الإشعارات (FCM) ──────────────────────────────────────────────────────────
+  # مشروعُ Firebase نفسُه الذي يستعمله تطبيق الموظفين، `daya-bdf70`: الخادم مضبوطٌ على مشروعٍ
+  # واحد (FCM_PROJECT_ID) فيُرسل إلى التطبيقين بمفتاحٍ واحد. و`firebase_core` ليس زيادة: هو ما
+  # يُهيّئ التطبيق قبل أن يطلب `firebase_messaging` أوّل توكن، وبدونه يرمي بدل أن يُرجع null.
+  # الإصداران نفسُهما في `frontend/` — لا يفترق التطبيقان على حزمةٍ أصليّة.
+  firebase_core: ^4.1.1
+  firebase_messaging: ^16.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -20,7 +20,10 @@ use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\ReleaseProfitWhenBothGatesOpen;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
+use App\Domain\Notification\Channels\CustomerPushChannel;
 use App\Domain\Notification\Channels\PushChannel;
+use App\Domain\Notification\Listeners\NotifyCustomerWhenOrderStageChanges;
+use App\Domain\Notification\Listeners\NotifyCustomerWhenSupportReplies;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
@@ -112,6 +115,12 @@ class AppServiceProvider extends ServiceProvider
             PushChannel::class,
             fn ($app) => new PushChannel((array) $app['config']->get('services.fcm', [])),
         );
+
+        // ونظيرُه لهواتف العملاء، بالإعدادات نفسها: مشروعُ Firebase واحدٌ للتطبيقين.
+        $this->app->bind(
+            CustomerPushChannel::class,
+            fn ($app) => new CustomerPushChannel((array) $app['config']->get('services.fcm', [])),
+        );
     }
 
     /**
@@ -176,6 +185,11 @@ class AppServiceProvider extends ServiceProvider
         // touching Orders. Same queued, after-commit bargain as the line above.
         Event::listen(OrderStatusChanged::class, NotifyWhenOrderStatusChanges::class);
 
+        // **والحدثُ نفسه يسمعه العميلُ أيضاً**، بمستمِعٍ ثانٍ لا بتعديلٍ في الطلبيات — وهذا ما
+        // يعنيه «المستمِعُ صاحبُ الرأي»: يريد مجموعةً أخرى من الانتقالات، بلغة المراحل لا الحالات.
+        // دفعٌ فقط، بلا جرس. مُدرَجٌ وبعد الإيداع كجيرانه. انظر NotifyCustomerWhenOrderStageChanges.
+        Event::listen(OrderStatusChanged::class, NotifyCustomerWhenOrderStageChanges::class);
+
         /*
          * **Orders announces, the shortages section mirrors** — the same one-way dependency once
          * more, and the reason `Domain/Order` gained exactly one line for this whole feature:
@@ -234,6 +248,10 @@ class AppServiceProvider extends ServiceProvider
          * Reverb نائماً سُجّل الخطأ ومضى الردُّ سليماً. انظر BroadcastTicketChange.
          */
         Event::listen(TicketChanged::class, BroadcastTicketChange::class);
+
+        // وردُّ المحل يصل إلى هاتف العميل — مستمِعٌ آخر على الحدث نفسه، وهو الذي كان جرسُ
+        // الموظفين يتركه له («ردُّ المحل خبرٌ للعميل»). انظر NotifyCustomerWhenSupportReplies.
+        Event::listen(TicketChanged::class, NotifyCustomerWhenSupportReplies::class);
 
         // قنواتُ البثّ الحيّ ومن يدخلها. من هنا لا من `withRouting` — routes/channels.php يقول لماذا.
         require base_path('routes/channels.php');

@@ -8,13 +8,18 @@ use App\Domain\Notification\Actions\MarkAllAsRead;
 use App\Domain\Notification\Actions\MarkAsRead;
 use App\Domain\Notification\Actions\MarkSubjectAsRead;
 use App\Domain\Notification\Actions\PublishNotification;
+use App\Domain\Notification\Actions\RegisterCustomerDevice;
 use App\Domain\Notification\Actions\RegisterDeviceToken;
+use App\Domain\Notification\Actions\ReleaseCustomerDevice;
 use App\Domain\Notification\Actions\ReleaseDeviceToken;
 use App\Domain\Notification\Actions\SendAnnouncement;
+use App\Domain\Notification\Channels\CustomerPushChannel;
 use App\Domain\Notification\DTOs\AnnouncementData;
+use App\Domain\Notification\DTOs\CustomerPush;
 use App\Domain\Notification\DTOs\PendingNotification;
 use App\Domain\Notification\Enums\DevicePlatform;
 use App\Domain\Notification\Enums\NotificationType;
+use App\Domain\Notification\Models\CustomerDeviceToken;
 use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Notification\Models\NotificationRecipient;
@@ -45,6 +50,9 @@ final readonly class NotificationService
         private SendAnnouncement $announce,
         private NotificationListQuery $list,
         private UnreadBySubjectQuery $unreadBySubject,
+        private RegisterCustomerDevice $registerCustomerDevice,
+        private ReleaseCustomerDevice $releaseCustomerDevice,
+        private CustomerPushChannel $customerPush,
     ) {}
 
     /**
@@ -133,5 +141,25 @@ final readonly class NotificationService
     public function releaseDevice(int $userId, string $token): bool
     {
         return $this->releaseDevice->handle($userId, $token);
+    }
+
+    public function registerCustomerDevice(int $customerId, string $token, DevicePlatform $platform): CustomerDeviceToken
+    {
+        return $this->registerCustomerDevice->handle($customerId, $token, $platform);
+    }
+
+    public function releaseCustomerDevice(int $customerId, string $token): bool
+    {
+        return $this->releaseCustomerDevice->handle($customerId, $token);
+    }
+
+    /**
+     * دفعٌ إلى هواتف عميل — وهو كلُّ ما يأخذه العميلُ من الإشعارات: لا صندوقَ بريدٍ ولا جرس.
+     *
+     * يسكت بلا خطأ حين لا يكون Firebase مضبوطاً، أو يكون العميلُ غائباً أو محذوفاً أو معطَّلاً.
+     */
+    public function pushToCustomer(CustomerPush $push): void
+    {
+        $this->customerPush->deliver($push);
     }
 }

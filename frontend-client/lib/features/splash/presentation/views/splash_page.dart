@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/push/open_notification_route.dart';
+import 'package:dayaa_client/core/push/push_service.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
@@ -29,6 +33,14 @@ class SplashPage extends StatelessWidget {
   }
 }
 
+/// يقرأ الوجهةَ التي أُقلع منها التطبيق بضغطِ إشعار، بعد أن عُرفت الجلسة. صامتٌ في كلّ إقلاعٍ عاديّ.
+Future<void> _openInitialNotification() async {
+  final route = await sl<PushService>().initialRoute();
+  if (route == null) return;
+
+  openNotificationRoute(route, router: AppRouter.instance);
+}
+
 class _SplashView extends StatelessWidget {
   const _SplashView();
 
@@ -44,6 +56,11 @@ class _SplashView extends StatelessWidget {
             switch (state) {
               case SplashSignedIn():
                 context.go(Routes.home);
+                // **الإقلاعُ من إشعارٍ ضُغط، وهذا موضعُه الصحيح الوحيد.** `getInitialMessage()`
+                // يحمل الوجهة منذ الإقلاع، وقراءتُها قبل هذه اللحظة — في `main` أو عند الإشعار —
+                // تفتح شاشةً موثَّقة قبل أن تحسم هذه الشاشة أنّ هناك جلسة. ويُدفع فوق الرئيسية،
+                // فيعيد زرُّ الرجوع العميلَ إلى مكانٍ حقيقيّ.
+                unawaited(_openInitialNotification());
               case SplashSignedOut():
                 context.go(Routes.login);
               default:

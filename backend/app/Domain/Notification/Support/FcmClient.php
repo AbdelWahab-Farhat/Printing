@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Notification\Support;
 
 use App\Domain\Carrier\Support\NawrisClient;
+use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Enums\DevicePlatform;
 use App\Domain\Notification\Enums\FcmSendResult;
 use App\Domain\Notification\Exceptions\FcmIsNotConfigured;
@@ -45,8 +46,26 @@ final readonly class FcmClient
     ) {}
 
     /**
+     * هل هناك مشروعُ Firebase يُدفع إليه أصلاً — رقمُ المشروع وملفُّ حساب الخدمة كلاهما.
+     *
+     * **يسأله مَن يُدرج مهامَّ الدفع قبل أن يُدرجها**، لا المهمّةُ بعد أن تُدرَج — انظر
+     * {@see PushChannel::isConfigured()} لسبب ذلك. وهو هنا لأن هذا الصنف وحده يعرف شكلَ إعدادات
+     * FCM، فقناةُ الموظفين ودفعُ العملاء يسألان سؤالاً واحداً لا نسختين منه.
+     *
+     * @param  array<string, mixed>  $config  كتلة `services.fcm`
+     */
+    public static function isConfigured(array $config): bool
+    {
+        return (string) ($config['project_id'] ?? '') !== ''
+            && (string) ($config['credentials'] ?? '') !== '';
+    }
+
+    /**
      * Send one notification to one device.
      *
+     * @param  int|null  $notificationId  صفُّ الإشعار الذي يفتحه التطبيق ويعلّمه مقروءاً. **`null` لدفع
+     *                                    العملاء**، فلا صندوقَ بريدٍ لهم ولا صفّ — ويُحذف المفتاح من
+     *                                    `data` حينها بدل أن يُرسَل فارغاً.
      * @param  int|null  $badge  the recipient's unread count, painted on the iOS app icon. Passed
      *                           in rather than counted here, because this class knows about HTTP
      *                           and not about mailboxes.
@@ -57,7 +76,7 @@ final readonly class FcmClient
         string $title,
         string $body,
         ?string $route,
-        int $notificationId,
+        ?int $notificationId,
         ?int $badge = null,
     ): FcmSendResult {
         $projectId = (string) ($this->config['project_id'] ?? '');
@@ -124,18 +143,26 @@ final readonly class FcmClient
         string $title,
         string $body,
         ?string $route,
-        int $notificationId,
+        ?int $notificationId,
         ?int $badge,
     ): array {
         $message = [
             'token' => $deviceToken,
             'notification' => ['title' => $title, 'body' => $body],
-            // Data values must be strings — FCM rejects a message whose data map holds an int.
-            'data' => array_filter([
-                'notification_id' => (string) $notificationId,
-                'route' => $route,
-            ], fn ($value) => $value !== null),
         ];
+
+        // Data values must be strings — FCM rejects a message whose data map holds an int.
+        // **يُصفّى الغائب ثم يُحوَّل إلى نص، لا العكس**: `(string) null` هو `''`، فلو حُوِّل أولاً
+        // لمرّ رقمُ الإشعار الغائب من المصفاة مفتاحاً فارغاً بدل أن يسقط.
+        $data = array_map('strval', array_filter([
+            'notification_id' => $notificationId,
+            'route' => $route,
+        ], fn ($value) => $value !== null));
+
+        // ومصفوفةٌ فارغة تُكتب `[]` في JSON لا `{}`، وFCM يرفض `data` ليست خريطة — فلا تُرسل أصلاً.
+        if ($data !== []) {
+            $message['data'] = $data;
+        }
 
         if ($platform === DevicePlatform::Android) {
             $message['android'] = [

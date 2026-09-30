@@ -202,6 +202,18 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
             ->whereNumber('ticket')->middleware('throttle:30,1')->name('support.tickets.messages.store');
 
         /*
+         * ── الإشعارات: الدفع وحده ───────────────────────────────────────────────────────────
+         *
+         * هاتفُ العميل يُسجَّل ليُوقَظ، ويُنسى عند الخروج. **لا صندوقَ بريدٍ ولا جرس** للعميل —
+         * الدفعُ نداءٌ ليفتح التطبيق — فلا قائمةَ إشعاراتٍ هنا ولا عدّاد. والجسمُ لا المسار يحمل
+         * الرمز، كمسارَي الموظفين؛ وبلا تقييد معدّلٍ مثلهما: التسجيلُ استبدالٌ لا يكبر به شيء.
+         */
+        Route::post('notifications/devices', [Client\NotificationController::class, 'registerDevice'])
+            ->name('notifications.devices.store');
+        Route::delete('notifications/devices', [Client\NotificationController::class, 'releaseDevice'])
+            ->name('notifications.devices.destroy');
+
+        /*
          * ── البثّ الحيّ ───────────────────────────────────────────────────────────────────
          *
          * بابُ العملاء إلى قنواتهم الخاصة على Reverb — الباب نفسه الذي في routes/api.php،

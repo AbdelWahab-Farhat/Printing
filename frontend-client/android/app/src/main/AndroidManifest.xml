@@ -45,6 +45,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- القناةُ التي يسمّيها كلُّ إشعارٍ من خادمنا في android.notification.channel_id. تُنشئها
+             مكتبةُ FCM عند أوّل تشغيل؛ وبدونها يُسقط أندرويد 8+ الإشعارَ صامتاً - بلا خطأ ولا سجلّ.
+             يجب أن تطابق FCM_ANDROID_CHANNEL_ID في الخادم (config/services.php -> fcm.android_channel_id)،
+             وهي نفسُها في تطبيق الموظفين. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="dayaa_default" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -122,6 +122,13 @@ Future<Either<Failure, Uint8List>> safeDownload(
 /// الملف وحده.
 Future<Either<Failure, T>> safeTransfer<T>(Future<T> Function() run) => _guard(run);
 
+/// نداءٌ إلى إضافةٍ أصليّة قد ترمي من طبقةٍ لا نملكها — تهيئةُ Firebase على منصّةٍ بلا إعدادات،
+/// أو توكنُ FCM على iOS قبل أن يصل توكنُ APNs (`apns-token-not-set`).
+///
+/// **الحارسُ نفسه**، ليبقى `try`/`catch` في هذا الملف وحده (RULES §5). والمستدعي يقرأ `Left`
+/// على أنه «ليس الآن» لا عطلاً يُعرض: كلا الموضعين يعمل التطبيقُ بعده بلا إشعارات.
+Future<Either<Failure, T>> safePlatformCall<T>(Future<T> Function() run) => _guard(run);
+
 /// A call whose answer is the *message*, not a body — logout, delete.
 Future<Either<Failure, String>> safeCommand(Future<Response<dynamic>> Function() send) async {
   return _guard(() async {

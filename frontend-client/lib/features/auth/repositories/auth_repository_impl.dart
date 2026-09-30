@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/api_endpoints.dart';
 import 'package:dayaa_client/core/network/safe_request.dart';
+import 'package:dayaa_client/core/push/push_service.dart';
 import 'package:dayaa_client/core/storage/token_storage.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/repositories/auth_repository.dart';
@@ -12,22 +14,24 @@ import 'package:flutter/foundation.dart';
 
 /// Fulfils [AuthRepository] over HTTP, and owns where the token is kept.
 ///
-/// **Shorter than the staff app's by three dependencies, and each absence is a decision recorded
-/// in BACKLOG.md.** There is no `Session` to adopt the account into, because a customer holds no
-/// permissions for anything to read. There is no `PushService` to register or release, because
-/// what a customer should be notified about — and the Firebase project that would carry it — is
-/// still open. There is no `SettingsRepository` for the same reason. When push lands, the
-/// release call belongs in [logout] *before* the request, exactly as it does there: releasing a
-/// device is itself an authenticated call, and after the token is cleared it would 401.
+/// **أقصرُ من نظيره في تطبيق الموظفين باعتماديَّتين، وكلُّ غيابٍ قرارٌ مسجَّل في BACKLOG.md.** لا
+/// `Session` يُتبنّى فيها الحساب، لأنّ العميل لا يحمل صلاحياتٍ يقرؤها شيء. ولا `SettingsRepository`:
+/// ليس للعميل مفتاحُ «الإشعارات»، وإعدادُ الإشعارات في الهاتف نفسه هو المفتاح.
+///
+/// **و[PushService] هنا للسبب الذي جعل الرمزَ هنا**: لو كان على الشاشة أن تتذكّر تسجيلَ الجهاز أو
+/// تحريرَه، لتركت الشاشةُ التي تنسى هاتفاً تصله طلبياتُ العميل السابق. يُسأل النظامُ عند الدخول
+/// وإنشاء الحساب — اللحظةُ التي يستحقّ فيها الطلبُ جواباً — والفتحُ بجلسةٍ محفوظة يعيد التسجيل بلا
+/// سؤال. والتحريرُ في [logout] *قبل* الطلب، لأنّ التحرير نفسه طلبٌ موثَّق.
 ///
 /// Storing the token here rather than in the Cubit is deliberate: persistence is a data concern,
 /// and if the ViewModel had to remember to save it, the one screen that forgot would produce a
 /// session that works until the app restarts and then mysteriously does not.
 class AuthRepositoryImpl implements AuthRepository {
-  const AuthRepositoryImpl(this._dio, this._tokens);
+  const AuthRepositoryImpl(this._dio, this._tokens, this._push);
 
   final Dio _dio;
   final TokenStorage _tokens;
+  final PushService _push;
 
   @override
   Future<Either<Failure, AuthSession>> register({
@@ -96,12 +100,23 @@ class AuthRepositoryImpl implements AuthRepository {
 
         return Left(failure);
       },
-      (customer) async => Right(customer),
+      (customer) async {
+        // الفتحُ بجلسةٍ محفوظة: قد يكون التوكن دار والتطبيق مغلق، أو سمح العميلُ بالإشعارات من
+        // إعدادات الهاتف منذ آخر مرّة. **بلا سؤال** — طلبُ الإذن على شاشة البداية يكسب «لا»
+        // دائمة، وiOS لا يسأل مرّتين. ودون انتظار: شاشةُ البداية لا تنتظر FCM.
+        unawaited(_push.register(askPermission: false));
+
+        return Right(customer);
+      },
     );
   }
 
   @override
   Future<Either<Failure, Unit>> logout() async {
+    // **قبل الطلب وقبل مسح الرمز**: التحريرُ نفسه طلبٌ موثَّق، وبعد أيٍّ منهما يُرفض بـ401 فيبقى
+    // الجهاز مسجَّلاً للعميل الذي خرج.
+    await _push.release();
+
     final result = await safeCommand(() => _dio.post(AuthEndpoints.logout));
 
     // Cleared whatever the server said. If the request failed because the phone is offline, the
@@ -128,6 +143,11 @@ class AuthRepositoryImpl implements AuthRepository {
       (failure) async => Left(failure),
       (session) async {
         await _tokens.write(session.token);
+
+        // **الإذنُ يُطلب هنا، عند الدخول وإنشاء الحساب، ولا يُطلب على شاشة البداية.** بعد أن
+        // صار للعميل ما يُخطَر به؛ وقبلها يكسب الطلبُ «لا» دائمة. بعد كتابة الرمز لأنّ التسجيل
+        // طلبٌ موثَّق، ودون انتظار: رحلةٌ بطيئة إلى FCM لا تؤخّر ما خلف زرّ الدخول.
+        unawaited(_push.register());
 
         return Right(session);
       },

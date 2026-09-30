@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
+import 'package:dayaa_client/core/push/push_service.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/router/fade_through_branches.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
@@ -102,12 +103,20 @@ class _StubOrders implements OrderRepository {
       throw UnimplementedError();
 }
 
+/// إقلاعٌ عاديّ: لم يُضغط إشعار.
+class _NoPush extends Fake implements PushService {
+  @override
+  Future<String?> initialRoute() async => null;
+}
+
 void main() {
   setUp(() {
     final auth = _StubAuth();
     sl
       ..registerLazySingleton<HasStoredSession>(() => HasStoredSession(auth))
       ..registerLazySingleton<GetCurrentCustomer>(() => GetCurrentCustomer(auth))
+      // شاشةُ البداية تسأله عن إقلاعٍ من إشعار حين تجد جلسة؛ هنا لا إشعار.
+      ..registerLazySingleton<PushService>(_NoPush.new)
       ..registerFactory<SplashCubit>(
         () => SplashCubit(
           hasStoredSession: HasStoredSession(auth),

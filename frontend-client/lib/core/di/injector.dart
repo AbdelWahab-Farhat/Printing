@@ -5,6 +5,7 @@ import 'package:dayaa_client/core/files/attachment_store.dart';
 import 'package:dayaa_client/core/files/attachment_store_impl.dart';
 import 'package:dayaa_client/core/network/api_endpoints.dart';
 import 'package:dayaa_client/core/network/dio_client.dart';
+import 'package:dayaa_client/core/push/push_service.dart';
 import 'package:dayaa_client/core/realtime/channel_signer.dart';
 import 'package:dayaa_client/core/realtime/pusher_realtime_client.dart';
 import 'package:dayaa_client/core/realtime/realtime_client.dart';
@@ -47,6 +48,10 @@ import 'package:dayaa_client/features/designs/usecases/rename_design.dart';
 import 'package:dayaa_client/features/designs/usecases/save_design_to_device.dart';
 import 'package:dayaa_client/features/designs/usecases/upload_design.dart';
 import 'package:dayaa_client/features/home/presentation/viewmodel/active_orders_cubit.dart';
+import 'package:dayaa_client/features/notifications/repositories/notifications_repository.dart';
+import 'package:dayaa_client/features/notifications/repositories/notifications_repository_impl.dart';
+import 'package:dayaa_client/features/notifications/usecases/register_device_token.dart';
+import 'package:dayaa_client/features/notifications/usecases/release_device_token.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/orders_cubit.dart';
@@ -91,6 +96,8 @@ import 'package:dayaa_client/features/tools/usecases/load_design_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_bag_preview_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_qr_code_image.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -163,6 +170,7 @@ abstract final class Injector {
         ),
       );
 
+    _registerPush();
     _registerAuth();
     _registerDesigns();
     _registerCatalog();
@@ -178,6 +186,32 @@ abstract final class Injector {
     _isInitialized = true;
   }
 
+  /// الدفع (FCM): تسجيلُ هذا الهاتف لدى الخادم، والإشعارُ المضغوط.
+  ///
+  /// **[PushService] مفردةٌ واحدة للتطبيق**، لأنها تحمل اشتراكَي دورةِ التوكن والضغط، وتتذكّر
+  /// آخرَ توكنٍ سُجّل ليُحرَّر هو عند الخروج — نسختان كانتا ستسجّلان بواحدةٍ وتحرّران بأخرى.
+  ///
+  /// **وFirebase قد لا تكون قامت**: `main` يبتلع فشلَ التهيئة، و`FirebaseMessaging.instance` يرمي
+  /// حينها. فتُسأل `Firebase.apps` ساعةَ تُبنى الخدمة، وتُعطى null بدلها فتسكت كلُّ دوالّها.
+  static void _registerPush() {
+    sl
+      ..registerLazySingleton<NotificationsRepository>(
+        () => NotificationsRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton(() => RegisterDeviceToken(sl<NotificationsRepository>()))
+      ..registerLazySingleton(() => ReleaseDeviceToken(sl<NotificationsRepository>()))
+      ..registerLazySingleton<PushService>(() {
+        final firebaseIsUp = Firebase.apps.isNotEmpty;
+
+        return PushService(
+          registerToken: sl<RegisterDeviceToken>(),
+          releaseToken: sl<ReleaseDeviceToken>(),
+          messaging: firebaseIsUp ? FirebaseMessaging.instance : null,
+          openedApp: firebaseIsUp ? FirebaseMessaging.onMessageOpenedApp : null,
+        );
+      });
+  }
+
   /// Signing in, and the session.
   ///
   /// **The two Cubits are factories, the rest are lazy singletons**, and the split is the table
@@ -188,7 +222,7 @@ abstract final class Injector {
   static void _registerAuth() {
     sl
       ..registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>()),
+        () => AuthRepositoryImpl(sl<Dio>(), sl<TokenStorage>(), sl<PushService>()),
       )
       ..registerLazySingleton(() => Login(sl<AuthRepository>()))
       ..registerLazySingleton(() => Register(sl<AuthRepository>()))

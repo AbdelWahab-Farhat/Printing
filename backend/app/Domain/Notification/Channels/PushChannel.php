@@ -8,6 +8,7 @@ use App\Domain\Notification\Contracts\NotificationChannel;
 use App\Domain\Notification\Jobs\DeliverPushNotification;
 use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\Notification\Support\FcmClient;
 
 /**
  * Wakes the phones of everyone who has one registered.
@@ -69,7 +70,7 @@ final readonly class PushChannel implements NotificationChannel
      */
     private function isConfigured(): bool
     {
-        return (string) ($this->config['project_id'] ?? '') !== ''
-            && (string) ($this->config['credentials'] ?? '') !== '';
+        // والفحصُ نفسه في FcmClient، يسأله دفعُ العملاء أيضاً — سؤالٌ واحد لا نسختان.
+        return FcmClient::isConfigured($this->config);
     }
 }

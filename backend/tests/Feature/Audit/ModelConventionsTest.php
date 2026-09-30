@@ -9,6 +9,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Models\ActivityLog;
 use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Models\Role;
+use App\Domain\Notification\Models\CustomerDeviceToken;
 use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Notification\Models\NotificationRecipient;
@@ -64,6 +65,10 @@ class ModelConventionsTest extends TestCase
         // answers UNREGISTERED the address is dead and the row must genuinely go — a soft
         // deleted token is one the push channel would keep finding and keep failing on.
         DeviceToken::class,
+
+        // وأجهزةُ العملاء للسبب نفسه: عناوينُ دفعٍ لا سجلّات، والعنوانُ الميّت يُمحى فعلاً — ولا
+        // صفَّ إشعارٍ خلفها يُحفظ له أثر.
+        CustomerDeviceToken::class,
     ];
 
     public function test_every_domain_model_soft_deletes(): void

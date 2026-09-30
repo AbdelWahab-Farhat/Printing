@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- `development` كي تكلّم نسخُ التطوير خادمَ APNs التجريبيّ (sandbox)، ويستبدلها Xcode بـ
+	     `production` عند التوقيع للمتجر أو TestFlight. لذلك يُرفع مفتاحُ .p8 نفسُه في الخانتين
+	     كلتيهما في لوحة Firebase: مفتاحٌ واحد لبيئتين، ولكلّ تطبيقٍ من تطبيقات «flyerx» الأربعة. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

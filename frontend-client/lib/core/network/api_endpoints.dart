@@ -114,6 +114,15 @@ abstract final class SupportEndpoints {
   static const String changedEvent = 'support.ticket.changed';
 }
 
+/// الإشعارات — تسجيلُ هذا الهاتف لدى الخادم كي يصله الدفع (FCM).
+///
+/// **لا صندوقَ إشعاراتٍ للعميل ولا جرس**: الدفعُ وحده، وما يُخطَر به موجودٌ أصلاً في شاشته —
+/// مرحلةُ الطلبية في «طلباتي» والردُّ في محادثة الدعم. فلا قائمةَ هنا ولا «مقروء».
+abstract final class NotificationEndpoints {
+  /// `POST` يسجّل، و`DELETE` يحرّر — والتوكن في الجسم في الحالتين، لا في الرابط.
+  static const String devices = '/client/notifications/devices';
+}
+
 /// البثّ الحيّ.
 abstract final class RealtimeEndpoints {
   /// حيث تُوقَّع قنوات العميل الخاصة. **جوابُه خارج المغلّف** — `{"auth": "…"}` كما يقرؤه Pusher.
