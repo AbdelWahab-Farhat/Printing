@@ -114,6 +114,9 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             onOpenPayments: _openPayments,
             onArchive: _archive,
             onRestore: _restore,
+            // ما أجاب عنه الخادم، والأرشيف وحده شرطٌ يتركه للطلبية — كما في «تراجع عن الإلغاء».
+            onUnsettle: order.canUnsettle && !order.isArchived ? _unsettle : null,
+            onUndoDelivery: order.canUndoDelivery && !order.isArchived ? _undoDelivery : null,
           );
         },
       ),
@@ -204,12 +207,6 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // `deleted_at` rather than from a grant, so it stays one fact and not a rule.
               onReinstate: state.order!.canReinstate && !state.order!.isArchived
                   ? _reinstate
-                  : null,
-              // The same reading for the two other undos: the server already answered whether
-              // each is on offer, and the archive is the one condition it leaves to the order.
-              onUnsettle: state.order!.canUnsettle && !state.order!.isArchived ? _unsettle : null,
-              onUndoDelivery: state.order!.canUndoDelivery && !state.order!.isArchived
-                  ? _undoDelivery
                   : null,
               // **مرسومٌ للجميع، ومقفلٌ لمن لا يملك المنح** — قاعدة «مستعجلة» نفسها: «أُرسلت
               // الرسالة أمس» واقعةٌ تُقرأ، ومن يقرأ الطلبية يقرؤها. والقفل ثلاثة أسباب في سطر:
@@ -853,8 +850,6 @@ class _Body extends StatelessWidget {
     required this.onDeleteShipment,
     required this.onUnlinkShipment,
     required this.onReinstate,
-    required this.onUnsettle,
-    required this.onUndoDelivery,
     required this.onConfirmReadyMessage,
     required this.onConfirmDeposit,
     required this.depositClaimedByMe,
@@ -897,12 +892,6 @@ class _Body extends StatelessWidget {
 
   /// Null unless the server said this order's cancellation may be undone — see the call site.
   final Future<void> Function(BuildContext context)? onReinstate;
-
-  /// Null unless the server said this settlement may be undone.
-  final Future<void> Function(BuildContext context)? onUnsettle;
-
-  /// Null unless the server said this delivery may be undone.
-  final Future<void> Function(BuildContext context)? onUndoDelivery;
 
   /// Null for a reader without `orders.ready_message`, for an archived order, and while a write
   /// is already in flight — see the call site for why those three are one line.
@@ -1046,72 +1035,27 @@ class _Body extends StatelessWidget {
               // Who it is for, and the way to them. The header names them; this is where the
               // number is rung and the door into their file is.
               OrderCustomerCard(order: order, onTap: onOpenCustomer),
-              // Moving the order lives on the floating button. Silence is not an explanation, so
-              // an order that can go nowhere still says which of the two reasons applies: the
-              // dial is simply not rendered, and a finished order and a user without the grant
-              // look identical otherwise.
-              if (!order.hasActions) ...[
+              // **تحت بطاقة العميل لا ملاحظة.** كانت هنا جملةٌ تشرح لماذا لا تتحرك الطلبية
+              // («في الأرشيف»، «لا مزيد من الإجراءات»، «التسوية وحدها ما يمكن التراجع عنه»)،
+              // وأزالها المستخدم: شارة الأرشيف في الرأس تقول الأولى، والباقي يقوله الزر العائم
+              // بما عليه وبما ليس عليه.
+              //
+              // «تراجع عن الإلغاء» وحده باقٍ هنا: طلبيةٌ ملغاة لا نقلة لها على الزر العائم.
+              if (onReinstate case final reinstate?) ...[
                 SizedBox(height: 16.h),
-                _Note(
-                  // **الأرشيف is asked first, because it is the reason that outranks the other
-                  // three.** A trashed order arrives with no `available_transitions` at all —
-                  // §٦ — so `hasActions` is false whoever is reading, and the last branch used
-                  // to tell an administrator holding every grant that they lacked a permission.
-                  // The archive is where the order is, not something the reader is short of.
-                  //
-                  // **A cancellation that may be undone is not «لا مزيد من الإجراءات».** The
-                  // sentence under it is about to be followed by a button, and a note claiming
-                  // the road ends here would be arguing with it.
-                  text: order.isArchived
-                      ? 'الطلبية في الأرشيف — لا تُغيَّر حالتها قبل استعادتها'
-                      : order.canReinstate
-                      ? 'الطلبية ${order.statusLabel} — والإلغاء وحده ما يمكن التراجع عنه'
-                      : order.canUnsettle
-                      ? 'الطلبية ${order.statusLabel} — والتسوية وحدها ما يمكن التراجع عنه'
-                      : order.isFinal
-                      ? 'الطلبية ${order.statusLabel} — لا مزيد من الإجراءات'
-                      : 'لا تملك صلاحية تغيير حالة هذه الطلبية',
-                ),
-                // **The one action that is not on the dial, and it belongs here rather than
-                // there.** The dial draws `available_transitions`, and «إلغاء تام» has none —
-                // that is what the note above says. Undoing the cancellation is the answer to
-                // exactly the sentence somebody has just read, so it stands under it.
-                if (onReinstate case final reinstate?) ...[
-                  SizedBox(height: 12.h),
-                  AppButton.tonal(
-                    // Named with its destination, because the undo offers no choice of one: the
-                    // server puts the order back where it was cancelled from, and saying so on
-                    // the button beats saying so only after the tap.
-                    label: switch (order.reinstateToLabel) {
-                      final to? when to.isNotEmpty => 'تراجع عن الإلغاء — ترجع إلى «$to»',
-                      _ => 'تراجع عن الإلغاء',
-                    },
-                    icon: AppIcons.undo,
-                    onPressed: () => reinstate(context),
-                  ),
-                ],
-              ],
-              // **The two other undos**, outside the note above: a delivered order still has a
-              // move on the dial («تم التسوية»), so there is no note for them to stand under.
-              if (onUnsettle case final unsettle?) ...[
-                SizedBox(height: 12.h),
                 AppButton.tonal(
-                  label: 'تراجع عن التسوية — ترجع إلى «تم الاستلام»',
-                  icon: AppIcons.undo,
-                  onPressed: () => unsettle(context),
-                ),
-              ],
-              if (onUndoDelivery case final undoDelivery?) ...[
-                SizedBox(height: 12.h),
-                AppButton.tonal(
-                  label: switch (order.undoDeliveryToLabel) {
-                    final to? when to.isNotEmpty => 'تراجع عن التسليم — ترجع إلى «$to»',
-                    _ => 'تراجع عن التسليم',
+                  // Named with its destination, because the undo offers no choice of one: the
+                  // server puts the order back where it was cancelled from, and saying so on
+                  // the button beats saying so only after the tap.
+                  label: switch (order.reinstateToLabel) {
+                    final to? when to.isNotEmpty => 'تراجع عن الإلغاء — ترجع إلى «$to»',
+                    _ => 'تراجع عن الإلغاء',
                   },
                   icon: AppIcons.undo,
-                  onPressed: () => undoDelivery(context),
+                  onPressed: () => reinstate(context),
                 ),
               ],
+              // «تراجع عن التسليم» و«تراجع عن التسوية» على الزر العائم، لا هنا — انظر [_Actions].
               if (_hasDestinationDetails) ...[
                 SizedBox(height: 16.h),
                 _Destination(order: order),
@@ -1360,6 +1304,8 @@ class _Actions extends StatelessWidget {
     required this.onOpenPayments,
     required this.onArchive,
     required this.onRestore,
+    required this.onUnsettle,
+    required this.onUndoDelivery,
   });
 
   final Order order;
@@ -1372,6 +1318,12 @@ class _Actions extends StatelessWidget {
   /// or in the archive, and [Order.isArchived] is which.
   final Future<void> Function(BuildContext context) onArchive;
   final Future<void> Function(BuildContext context) onRestore;
+
+  /// Null unless the server said this settlement may be undone, or the order is archived.
+  final Future<void> Function(BuildContext context)? onUnsettle;
+
+  /// Null unless the server said this delivery may be undone, or the order is archived.
+  final Future<void> Function(BuildContext context)? onUndoDelivery;
 
   /// Whether «تعديل الطلبية» has anything at all to offer this person.
   ///
@@ -1457,6 +1409,14 @@ class _Actions extends StatelessWidget {
         // «سجل التعديلات» used to stand here. It reads and never writes, which is what the two
         // buttons in the header are for — see [OrderDetailHeader] — and an action on the dial
         // that only opens a page to look at was the odd one out among five that change things.
+
+        // **التراجع باسمه وحده.** إلى أين ترجع الطلبية وما الذي يُعكَس تقوله نافذة التأكيد قبل
+        // أن يُرسَل شيء، فالزرّ لا يكرّرها. ولا يجتمع الاثنان: الطلبية إمّا «تم الاستلام» وإمّا
+        // «تم التسوية». وقبل الحذف، فيبقى الحذف أبعد الأذرع عن الإبهام.
+        if (onUndoDelivery case final undoDelivery?)
+          AppAction(label: 'تراجع عن التسليم', icon: AppIcons.undo, onTap: undoDelivery),
+        if (onUnsettle case final unsettle?)
+          AppAction(label: 'تراجع عن التسوية', icon: AppIcons.undo, onTap: unsettle),
 
         // الأرشيف, from whichever side the order is standing on. **Last on the dial**, so the
         // reversed order [AppSpeedDial] draws puts it furthest from the thumb: it is the one
@@ -1684,32 +1644,6 @@ class _Row extends StatelessWidget {
           ),
           Expanded(child: Text(value, style: context.textTheme.bodyMedium)),
         ],
-      ),
-    );
-  }
-}
-
-class _Note extends StatelessWidget {
-  const _Note({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
       ),
     );
   }

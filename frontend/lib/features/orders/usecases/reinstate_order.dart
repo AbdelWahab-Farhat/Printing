@@ -9,7 +9,7 @@ import 'package:dayaa/features/orders/repositories/order_repository.dart';
 ///
 /// **It is not a status change, and it deliberately does not go through [ChangeOrderStatus].**
 /// «إلغاء تام» is the end of the road on the server's own map — nothing follows it, which is
-/// exactly why the order screen says «لا مزيد من الإجراءات» and why the move screen has no
+/// exactly why the order screen's floating button offers no move and the move screen has no
 /// button to offer. What this asks for is the undo of one recorded move: the server reads the
 /// order's timeline, finds the status it was cancelled from, and puts it back there.
 ///
