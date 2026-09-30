@@ -546,6 +546,30 @@ Four things make this different from every other notification, and all four are 
 Storm control (§4.4) does **not** apply — two identical announcements ten minutes apart are two
 deliberate acts, and silently swallowing the second would be a bug.
 
+### 8.1.1 طلبات التطبيق ورسائل الدعم (٢٠٢٦-٠٩-٢٥)
+
+طلب المستخدم أن يُخبَر الموظفون بطلبيةٍ وصلت من تطبيق العميل («الإشعار مطفأ لهذه الحالة عمداً… شغله»)
+وبتذاكر الدعم («واضف Fcmtokens بما يخص الإشعارات بتذاكر»). **الدفعُ إلى هواتف الموظفين قائمٌ أصلاً**
+(`device_tokens`)، فكانا نوعين جديدين في الكتالوج، بلا ترحيلٍ ولا نسخة تطبيق: التطبيق يرسم ما يصله.
+
+| `type` | Trigger | Audience | Route | Dedupe |
+|---|---|---|---|---|
+| `order.requested` | `RequestOrder` → حدث `OrderRequested` (جديد) | `orders.manage` | `/orders/{id}` | الطلبية |
+| `support.customer_message` | `TicketChanged(MessagePosted)` من العميل | صاحب المكتب، وإلا `support.manage` | `/support/tickets/{id}` | التذكرة + حدّ قراءة المكتب |
+
+- **الطلبيةُ تولد «بانتظار المراجعة» ولا تنتقل إليها**، فلا يسمعها `NotifyWhenOrderStatusChanges`؛ لها
+  حدثُ ولادةٍ خاص. والحركتان هناك — الرفض والتراجع عنه — بقيتا صامتتين: حركتا المراجِع على شاشته.
+- **جمهورُ الطلب `orders.manage` لا `orders.view`**: عملٌ وصل، ومَن لا يستطيع قبوله لا يُوقَظ لأجله.
+- **رسائلُ العميل المتتالية جرسٌ واحد حتى يقرأ المكتب**: المفتاح `support.customer_message:{ticket}:{staff_read_message_id}`.
+  قراءةُ المكتب — أو ردُّه — تقدّم الحدّ فتصير الرسالةُ التالية خبراً جديداً. بخلاف تعليقات التصميم
+  (رسالةٌ برسالة)، لأن هذا الجرس يصل إلى كلّ مَن يستطيع الردّ حين لا يكون على التذكرة أحد.
+- **فتحُ التذكرة في تطبيق الموظفين يطفئ جرسها لقارئها** (`SupportTicketController@show` →
+  `markSubjectAsRead`)، كما تفعل محادثة تذكرة التصميم.
+- الأيقونتان مفتاحان يعرفهما التطبيقُ أصلاً (`order`، `comment`)، ونصُّ رسالة العميل لا يدخل الحمولة (§6.4).
+- **العميلُ لا يستلم دفعاً بعد.** أُعدّ Firebase في تطبيق العميل في اليوم نفسه (جلسةٌ أخرى: أربعةُ تطبيقات
+  في `daya-bdf70`)، لكن الخادم كلَّه على `user_id`: لا `device_tokens` للعملاء ولا حدثَ يخاطب عميلاً.
+  أيُّ الأحداث، وهل تُعمَّم الجداول أم تُضاف جداولُ للعملاء، سؤالٌ طُرح على المستخدم في تلك الجلسة.
+
 ### 8.2 New domain events
 
 Three do not exist yet and are added in their **owning** context, following the shape of

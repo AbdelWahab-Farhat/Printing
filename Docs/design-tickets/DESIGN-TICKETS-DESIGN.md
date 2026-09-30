@@ -484,6 +484,19 @@ belongs in `core/widgets/`** — RULES §2. The move is mechanical, and with
 because the condition here is composed of the permission **and the status and this reader's role on
 this ticket**, and copying that into Dart is a second copy that drifts.
 
+### الباب: «التذاكر» بتبويبين (٢٠٢٦-٠٩-٢٥)
+
+كانت أيقونةُ الشريط (`DesignTicketsButton`) لتذاكر التصميم وحدها، وتذاكرُ الدعم صفّاً في الدرج. طلب
+المستخدم أن تنتقل تذاكر الدعم إلى هذه الخانة باسمٍ عامّ، وتبويبين «تصميم» و«العملاء» بلا كلمة «تذاكر»:
+
+- **`TicketsButton`** (`features/tickets/`) بتلميح «التذاكر» وأيقونة فقاعتَي الكلام، يظهر لـ`design_tickets.view`
+  **أو** `support.view`، ويدفع **`/tickets`** — ومسارُه يردّ مَن لا يملك أيّاً منهما إلى الرئيسية.
+- **`TicketsPage`**: شريطٌ واحد «التذاكر» وتحته التبويبان (بشكل شريط «الجهات»)، وكلُّ قائمةٍ فيه تُبنى
+  بـ`embedded: true` فتُسقط شريطها وتُبقي ما عداه (البحث والفلتر وزرّ «طلب تصميم»)، وتبقى حيّةً إذا تُرك
+  تبويبها. **مَن يملك إحداهما وحدها يجدها كما كانت**، بعنوانها وشريطها، بلا شريط تبويبٍ فوق تبويبٍ واحد.
+- المساران القديمان (`/design-tickets` و`/support/tickets`) باقيان: الإشعارات وصفحة العميل وتوجيهُ المصمّم
+  أدناه تصل إليهما. وقسمُ «الدعم» خرج من الدرج.
+
 ### Routing a designer
 
 On the investor precedent, verbatim: a redirect that is **a courtesy, never a boundary**, narrowed
