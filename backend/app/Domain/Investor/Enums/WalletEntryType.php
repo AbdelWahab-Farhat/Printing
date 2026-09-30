@@ -161,7 +161,7 @@ enum WalletEntryType: string
         return match ($this) {
             self::Deposit, self::Withdrawal => WalletEntryCategory::Capital,
             self::Allocation, self::Release => WalletEntryCategory::Investment,
-            self::Profit, self::ProfitRelease, self::ProfitWithdrawal,
+            self::Profit, self::ProfitRelease, self::ProfitWithheld, self::ProfitWithdrawal,
             self::ProfitCapitalisation => WalletEntryCategory::Profit,
             self::Loss, self::CapitalWritedown, self::LossAbsorbedByCompany,
             self::LossCarriedOut, self::LossCarriedIn => WalletEntryCategory::Loss,
