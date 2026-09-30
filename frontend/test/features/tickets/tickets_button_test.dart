@@ -4,18 +4,19 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
-import 'package:dayaa/features/design_tickets/presentation/widgets/design_tickets_button.dart';
+import 'package:dayaa/features/tickets/presentation/widgets/tickets_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// زرّ تذاكر التصميم في شريط التطبيق، بعد أن خرج الصفّ من الدرج إلى جانب الأدوات.
+/// زرّ «التذاكر» في شريط التطبيق: تذاكر التصميم وتذاكر العملاء خلف أيقونةٍ واحدة.
 ///
-/// ما ضاع بخروجه من الدرج شيئان، وهما ما يُختبر هنا: الصلاحية التي كانت تحجب الصفّ عمّن لا
-/// يقرأ التذاكر — وأيقونةٌ في الشريط بلا حاجزٍ تفتح على صفحةٍ تردّ صاحبها إلى الرئيسية —
-/// وإصغاؤه لتبدّل الجلسة، فالصلاحيات تتغيّر والشجرة قائمة.
+/// كان زرَّ تذاكر التصميم وحدها، وتذاكرُ الدعم صفّاً في الدرج. جُمعتا في خانةٍ واحدة باسمٍ عامّ
+/// (طلب المستخدم، 2026-09-25). فما يُختبر هنا: أن أيّاً من الصلاحيتين يُظهر الزرّ، وأن غيابهما
+/// معاً يُخفيه — أيقونةٌ بلا حاجزٍ تفتح على صفحةٍ تردّ صاحبها إلى الرئيسية — وأنه يصغي لتبدّل
+/// الجلسة، فالصلاحيات تتغيّر والشجرة قائمة.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -47,11 +48,10 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) =>
-              const Scaffold(body: SafeArea(child: DesignTicketsButton())),
+          builder: (context, state) => const Scaffold(body: SafeArea(child: TicketsButton())),
         ),
         GoRoute(
-          path: Routes.designTickets,
+          path: Routes.tickets,
           builder: (context, state) {
             pushed = state.uri.path;
 
@@ -76,42 +76,45 @@ void main() {
     );
   }
 
-  testWidgets('a reader of tickets gets the glyph', (tester) async {
-    // Arrange
-    await arrange([AppPermission.viewDesignTickets]);
+  for (final grant in [AppPermission.viewDesignTickets, AppPermission.viewSupportTickets]) {
+    testWidgets('«${grant.wire}» alone is enough to get «التذاكر»', (tester) async {
+      // Arrange
+      await arrange([grant]);
 
-    // Act
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byTooltip('التذاكر'), findsOneWidget);
+      expect(find.byIcon(AppIcons.comments), findsOneWidget);
+    });
+  }
+
+  testWidgets('it pushes the tickets screen', (tester) async {
+    // Arrange
+    await arrange([AppPermission.viewDesignTickets, AppPermission.viewSupportTickets]);
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.byIcon(AppIcons.designs), findsOneWidget);
-  });
-
-  testWidgets('it pushes the queue itself', (tester) async {
-    // Arrange
-    await arrange([AppPermission.viewDesignTickets]);
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
     // Act
-    await tester.tap(find.byType(DesignTicketsButton));
+    await tester.tap(find.byType(TicketsButton));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(pushed, Routes.designTickets);
+    expect(pushed, Routes.tickets);
   });
 
-  testWidgets('without the grant there is no button at all', (tester) async {
-    // Arrange — every ticket grant but the one that opens the list.
-    await arrange([AppPermission.manageDesignTickets]);
+  testWidgets('without either grant there is no button at all', (tester) async {
+    // Arrange — every other ticket grant, but neither of the two that open a list.
+    await arrange([AppPermission.manageDesignTickets, AppPermission.manageSupportTickets]);
 
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
     // Assert — hidden, not greyed: the route would send them back to الرئيسية.
-    expect(find.byIcon(AppIcons.designs), findsNothing);
+    expect(find.byTooltip('التذاكر'), findsNothing);
     expect(find.byType(IconButton), findsNothing);
   });
 
@@ -120,7 +123,7 @@ void main() {
     await arrange([]);
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    expect(find.byIcon(AppIcons.designs), findsNothing);
+    expect(find.byTooltip('التذاكر'), findsNothing);
 
     // Act
     session.adopt(
@@ -128,12 +131,12 @@ void main() {
         id: 1,
         name: 'عبدالوهاب',
         phone: '0911234567',
-        permissions: [AppPermission.viewDesignTickets.wire],
+        permissions: [AppPermission.viewSupportTickets.wire],
       ),
     );
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.byIcon(AppIcons.designs), findsOneWidget);
+    expect(find.byTooltip('التذاكر'), findsOneWidget);
   });
 }

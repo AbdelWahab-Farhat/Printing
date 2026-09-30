@@ -18,7 +18,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// One thread on screen.
+/// One thread on screen — **مرسومةً كمحادثة بريمولا وتيليغرام**: اسمُ العميل في وسط الشريط وتحته
+/// شرائحُ الحالة والمكتب والكود، وما يُفعل بالتذكرة في «⋮»؛ والفقاعاتُ بذيلٍ في سلاسل، والضغطةُ
+/// المطوّلة ترفع الرسالة فوق محادثةٍ مضبّبة.
 ///
 /// **Two properties carry this file.** The reply box is cleared only when the reply actually
 /// sent — a failed send that wiped the field would make somebody retype a paragraph they are
@@ -59,6 +61,7 @@ void main() {
     int? assignedTo,
     TicketAssignee? assignee,
     int? customerReadUpTo,
+    TicketOrderRef? order,
     List<TicketMessage> messages = const [fromCustomer, fromDesk],
   }) => SupportTicket(
     id: 12,
@@ -69,6 +72,7 @@ void main() {
     assignedTo: assignedTo,
     assignee: assignee,
     customerReadUpTo: customerReadUpTo,
+    order: order,
     messages: messages,
   );
 
@@ -124,33 +128,144 @@ void main() {
     ),
   );
 
-  /// The composer's own button.
-  ///
-  /// **Found by its icon, not by position.** `find.byType(IconButton).last` picked up the
-  /// AppBar's «إغلاق التذكرة» instead and opened a confirmation dialog, so the reply was never
-  /// sent and the test failed for a reason that had nothing to do with what it asserts.
-  final sendButton = find.widgetWithIcon(IconButton, AppIcons.send);
+  /// زرُّ الإرسال المستدير — بأيقونته، لا بمكانه.
+  final sendButton = find.byIcon(AppIcons.send);
+
+  /// يفتح «⋮» — ما يُفعل بالتذكرة كلّه هناك، كما في بريمولا.
+  Future<void> openMenu(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('إجراءات التذكرة'));
+    await tester.pumpAndSettle();
+  }
 
   tearDown(() async {
     await Injector.reset();
     await changes.close();
   });
 
-  testWidgets('it draws the conversation, and who is having it', (tester) async {
-    // Arrange
-    await arrange(ticketWith());
+  group('the bar', () {
+    testWidgets('names the customer, where the ticket stands and whose desk it is on', (
+      tester,
+    ) async {
+      // Arrange
+      await arrange(ticketWith());
 
-    // Act
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
 
-    // Assert — the phone is here for the same reason it is on the card: the next thing whoever
-    // answers this reaches for.
-    expect(find.text('أين طلبيتي؟'), findsOneWidget);
-    expect(find.text('سالم · A-1001'), findsOneWidget);
-    expect(find.text('0910000000'), findsOneWidget);
-    expect(find.text('مرّ أسبوع'), findsOneWidget);
-    expect(find.text('نعتذر، خرجت اليوم'), findsOneWidget);
+      // Assert — اسمُ العميل عنواناً وتحته شرائحُه، كشريط بريمولا؛ والموضوعُ مثبّتٌ تحته.
+      final bar = find.byType(AppBar);
+      expect(find.descendant(of: bar, matching: find.text('سالم')), findsOneWidget);
+      expect(find.descendant(of: bar, matching: find.text('مفتوحة')), findsOneWidget);
+      expect(find.descendant(of: bar, matching: find.text('غير مُسندة')), findsOneWidget);
+      expect(find.descendant(of: bar, matching: find.text('A-1001')), findsOneWidget);
+      expect(find.text('أين طلبيتي؟'), findsOneWidget);
+      expect(find.textContaining('مرّ أسبوع'), findsOneWidget);
+      expect(find.textContaining('نعتذر، خرجت اليوم'), findsOneWidget);
+    });
+
+    testWidgets('keeps the number to ring one tap away, in «⋮»', (tester) async {
+      // Arrange
+      await arrange(ticketWith());
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await openMenu(tester);
+
+      // Assert — الهاتفُ ما يمدّ إليه من يجيب يده بعد الخيط.
+      expect(find.text('اتصال بالعميل'), findsOneWidget);
+      expect(find.text('0910000000'), findsOneWidget);
+    });
+
+    testWidgets('pins the order the ticket is about', (tester) async {
+      // Arrange
+      await arrange(ticketWith(order: const TicketOrderRef(id: 77, code: '1077')));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('طلب 1077'), findsOneWidget);
+    });
+  });
+
+  group('the conversation', () {
+    testWidgets('the shop\'s replies sit at the end of the line, the customer\'s at its start', (
+      tester,
+    ) async {
+      // Arrange
+      await arrange(ticketWith());
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      final deskLeft = tester.getTopLeft(find.textContaining('نعتذر، خرجت اليوم')).dx;
+      final customerLeft = tester.getTopLeft(find.textContaining('مرّ أسبوع')).dx;
+
+      // Assert — عربيٌّ من اليمين إلى اليسار: نهايةُ السطر يسار، كشاشة الملاحظات وتطبيق العميل.
+      expect(deskLeft, lessThan(customerLeft));
+    });
+
+    testWidgets('a colleague\'s run carries their name once, above its first message', (
+      tester,
+    ) async {
+      // Arrange — ردّان متتابعان من محمد.
+      await arrange(
+        ticketWith(
+          messages: const [
+            fromCustomer,
+            fromDesk,
+            TicketMessage(id: 3, from: MessageAuthor.staff, authorName: 'محمد', body: 'وأخرى'),
+          ],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — «من ردّ عليه؟» سؤالٌ يحقّ للمحل أن يسأله نفسه، ويكفيه الاسمُ مرّةً للسلسلة.
+      expect(find.text('محمد'), findsOneWidget);
+    });
+
+    testWidgets('every sentence runs in its own direction', (tester) async {
+      // Arrange
+      await arrange(
+        ticketWith(
+          messages: const [
+            TicketMessage(id: 1, from: MessageAuthor.customer, body: 'OK, thanks'),
+            fromDesk,
+          ],
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      final latin = tester.widget<Text>(find.textContaining('OK, thanks'));
+      expect(latin.textDirection, TextDirection.ltr);
+    });
+
+    testWidgets('a long press lifts the message with what can be done to it', (tester) async {
+      // Arrange
+      await arrange(ticketWith());
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.longPress(find.textContaining('مرّ أسبوع'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('نسخ'), findsOneWidget);
+    });
   });
 
   group('the reply box', () {
@@ -201,13 +316,28 @@ void main() {
       // Assert — the sentence is still in the box, and the thread is still on screen behind
       // it. Both halves of the same promise.
       expect(find.text('سنتابع طلبك اليوم'), findsOneWidget);
-      expect(find.text('مرّ أسبوع'), findsOneWidget);
+      expect(find.textContaining('مرّ أسبوع'), findsOneWidget);
 
       // The failure is also reported in a SnackBar, whose dismissal timer outlives these
       // assertions and would fail the test for a pending timer. Letting it expire is part of
       // the scenario, not cleanup around it.
       await tester.pump(const Duration(seconds: 6));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('the send key sends nothing while the box is empty', (tester) async {
+      // Arrange
+      await arrange(ticketWith());
+
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(sendButton);
+      await tester.pumpAndSettle();
+
+      // Assert
+      verifyNever(() => repository.reply(any(), body: any(named: 'body')));
     });
   });
 
@@ -222,16 +352,15 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
 
-      // Assert — the server refuses a staff reply on a closed ticket. Saying so beats letting
-      // somebody type a paragraph into a box that will throw it away — and the one way back
-      // into it is right there.
+      // Assert — the server refuses a staff reply on a closed ticket. Saying so in the thread
+      // beats a box that throws the paragraph away — and the one way back in is right there.
       expect(find.byType(TextField), findsNothing);
-      expect(
-        find.text('التذكرة مغلقة. أعد فتحها لتكتب فيها، أو يعيدها ردُّ العميل.'),
-        findsOneWidget,
-      );
+      expect(find.text('أُغلقت التذكرة'), findsOneWidget);
       expect(find.text('إعادة فتح التذكرة'), findsOneWidget);
+
+      await openMenu(tester);
       expect(find.text('خذها'), findsNothing);
+      expect(find.text('إغلاق التذكرة'), findsNothing);
     });
 
     testWidgets('reopening it brings the reply box back', (tester) async {
@@ -255,7 +384,7 @@ void main() {
       expect(find.text('إعادة فتح التذكرة'), findsNothing);
     });
 
-    testWidgets('a reader who may not write is told only that the customer can reopen it', (
+    testWidgets('a reader who may not write sees it closed, and nothing to reopen it with', (
       tester,
     ) async {
       // Arrange
@@ -266,9 +395,32 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('التذكرة مغلقة. ردُّ العميل يعيد فتحها.'), findsOneWidget);
+      expect(find.text('أُغلقت التذكرة'), findsOneWidget);
       expect(find.text('إعادة فتح التذكرة'), findsNothing);
     });
+  });
+
+  testWidgets('closing it from «⋮» asks first, then closes', (tester) async {
+    // Arrange
+    await arrange(ticketWith());
+
+    when(() => repository.close(any())).thenAnswer(
+      (_) async => Right(ticketWith(status: TicketStatus.closed)),
+    );
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await openMenu(tester);
+    await tester.tap(find.text('إغلاق التذكرة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إغلاق'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.close(12)).called(1);
+    expect(find.text('أُغلقت التذكرة'), findsOneWidget);
   });
 
   group('live', () {
@@ -289,12 +441,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('هل من جديد؟'), findsOneWidget);
+      expect(find.textContaining('هل من جديد؟'), findsOneWidget);
     });
   });
 
   group('what a message carries', () {
-    testWidgets('a file is drawn by its name and size', (tester) async {
+    testWidgets('a file is drawn by its name, its kind and its size', (tester) async {
       // Arrange
       await arrange(
         ticketWith(
@@ -318,15 +470,17 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
 
-      // Assert — رسالةٌ بلا نصّ لا تُسقط الخيط؛ الملفُّ نفسه هو الرسالة.
+      // Assert — رسالةٌ بلا نصّ لا تُسقط الخيط؛ الملفُّ نفسه هو الرسالة. والحجمُ أوّلاً: سطرٌ عربيّ
+      // يبدأ بـ«PDF» يقلبه الاتجاه فيُقرأ «3.2 · PDF م.ب».
       expect(find.text('التصميم.pdf'), findsOneWidget);
-      expect(find.text('3.2 م.ب'), findsOneWidget);
+      expect(find.text('3.2 م.ب · PDF'), findsOneWidget);
     });
 
     testWidgets('a reply the customer has seen carries ✓✓, one they have not carries ✓', (
       tester,
     ) async {
       // Arrange — رأى العميل حتى الرسالة ٢، ولم يرَ الرسالة ٣.
+      final semantics = tester.ensureSemantics();
       await arrange(
         ticketWith(
           customerReadUpTo: 2,
@@ -342,9 +496,12 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
 
-      // Assert — ولا علامة على رسالة العميل نفسه.
-      expect(find.byIcon(AppIcons.readMark), findsOneWidget);
-      expect(find.byIcon(AppIcons.sentMark), findsOneWidget);
+      // Assert — ولا علامة على رسالة العميل نفسه. تُقرأ العلامةُ مع نصّ فقاعتها؛ ونسختُها الشفّافة
+      // التي تحجز مكان الوقت خارج شجرة المعاني، فتُعدّ مرّةً لكل ردّ.
+      expect(find.semantics.byLabel(RegExp('قرأها العميل')), findsOne);
+      expect(find.semantics.byLabel(RegExp('وصلت')), findsOne);
+
+      semantics.dispose();
     });
   });
 
@@ -355,6 +512,9 @@ void main() {
 
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
+
+      // Act
+      await openMenu(tester);
 
       // Assert
       expect(find.text('خذها'), findsOneWidget);
@@ -371,13 +531,17 @@ void main() {
         ticketWith(assignedTo: me, assignee: const TicketAssignee(id: me, name: 'عبدالوهاب')),
       );
 
-      // Act
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
 
-      // Assert — the two moves that need no user picker, which is why they are the only two.
+      // Act
+      await openMenu(tester);
+
+      // Assert — the two moves that need no user picker, which is why they are the only two;
+      // and the bar says «تذكرتك» rather than my own name back to me.
       expect(find.text('أعدها للطابور'), findsOneWidget);
       expect(find.text('خذها'), findsNothing);
+      expect(find.text('تذكرتك'), findsOneWidget);
     });
 
     testWidgets('sends my own id when I take it', (tester) async {
@@ -394,6 +558,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act
+      await openMenu(tester);
       await tester.tap(find.text('خذها'));
       await tester.pumpAndSettle();
 
@@ -408,18 +573,20 @@ void main() {
       // Arrange — `support.view` without `support.manage`.
       await arrange(ticketWith(), permissions: const ['support.view']);
 
-      // Act
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
+
+      // Act
+      await openMenu(tester);
 
       // Assert — the gate on screen is a courtesy; `can:` on the route is the real limit. What
       // this proves is that the courtesy is not missing, so nobody is offered a 403.
       expect(find.byType(TextField), findsNothing);
       expect(find.text('خذها'), findsNothing);
-      expect(find.byTooltip('إغلاق التذكرة'), findsNothing);
+      expect(find.text('إغلاق التذكرة'), findsNothing);
 
       // And the conversation is still fully readable, which is what `support.view` buys.
-      expect(find.text('مرّ أسبوع'), findsOneWidget);
+      expect(find.textContaining('مرّ أسبوع'), findsOneWidget);
     });
   });
 }

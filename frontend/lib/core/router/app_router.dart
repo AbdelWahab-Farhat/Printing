@@ -101,6 +101,7 @@ import 'package:dayaa/features/stock_items/presentation/views/stock_item_form_pa
 import 'package:dayaa/features/stock_items/presentation/views/stock_items_page.dart';
 import 'package:dayaa/features/support/presentation/views/support_tickets_page.dart';
 import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dart';
+import 'package:dayaa/features/tickets/presentation/views/tickets_page.dart';
 import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
 import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
@@ -293,6 +294,10 @@ abstract final class Routes {
   static const String designTicketDetailPath = '/design-tickets/:id';
 
   static String designTicket(int id) => '/design-tickets/$id';
+
+  /// «التذاكر»: تذاكر التصميم وتذاكر العملاء، تبويبين. بابُها الأيقونةُ في الشريط (`TicketsButton`)؛
+  /// والمساران القديمان باقيان لمن يصل إليهما من إشعارٍ أو من صفحة عميل.
+  static const String tickets = '/tickets';
 
   /// «الرد داخل التذكرة». A child of the ticket, because that is what it is: the conversation
   /// about *this* request. The title travels as `extra` so the bar can name the ticket without a
@@ -948,6 +953,19 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewDesignTickets) ? null : Routes.home,
         builder: (context, state) => const DesignTicketsPage(),
+      ),
+      // أيٌّ من الصفّين يفتحها — والشاشةُ نفسها تُظهر التبويبَ الذي يملكه القارئ وحده.
+      GoRoute(
+        path: Routes.tickets,
+        redirect: (context, state) {
+          final session = sl<Session>();
+
+          return session.can(AppPermission.viewDesignTickets) ||
+                  session.can(AppPermission.viewSupportTickets)
+              ? null
+              : Routes.home;
+        },
+        builder: (context, state) => const TicketsPage(),
       ),
       GoRoute(
         path: Routes.designTicketsFiltered,

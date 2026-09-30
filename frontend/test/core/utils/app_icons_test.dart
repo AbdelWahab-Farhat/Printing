@@ -101,4 +101,19 @@ void main() {
     // Assert — the two sets are genuinely different, not one family answering both.
     expect(android, isNot(ios));
   });
+
+  test('a ticket\'s three desks are three glyphs on either platform', () {
+    // Arrange — غير مُسندة، وعليّ أنا، وعلى زميل: ثلاثةُ أجوبةٍ لسؤالٍ واحد على البطاقة.
+    Set<IconData> desks() => {AppIcons.unassigned, AppIcons.assignedToMe, AppIcons.person};
+
+    // Act
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    final android = desks();
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    final ios = desks();
+
+    // Assert
+    expect(android, hasLength(3));
+    expect(ios, hasLength(3));
+  });
 }

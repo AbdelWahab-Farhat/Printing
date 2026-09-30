@@ -7,6 +7,7 @@ import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/support_tickets_cubit.dart';
 import 'package:dayaa/features/support/presentation/views/support_tickets_page.dart';
+import 'package:dayaa/features/support/presentation/widgets/support_ticket_card.dart';
 import 'package:dayaa/features/support/repositories/support_repository.dart';
 import 'package:dayaa/features/support/usecases/support_usecases.dart';
 import 'package:flutter/material.dart';
@@ -41,18 +42,24 @@ void main() {
     TicketAssignee? assignee,
     int unread = 0,
     TicketOrderRef? order,
+    TicketCustomer customer = const TicketCustomer(id: 4, name: 'سالم', phone: '0910000000'),
+    DateTime? lastMessageAt,
   }) => SupportTicket(
     id: id,
     subject: subject,
     status: status,
     statusLabel: status.label,
-    customer: const TicketCustomer(id: 4, name: 'سالم', phone: '0910000000'),
+    customer: customer,
     order: order,
     assignedTo: assignee?.id,
     assignee: assignee,
     unreadCount: unread,
-    lastMessageAt: DateTime(2026, 9, 16, 8, 30),
+    lastMessageAt: lastMessageAt ?? DateTime(2026, 9, 16, 8, 30),
   );
+
+  /// ما على بطاقة التذكرة وحدها — فشرائحُ التصفية فوقها تحمل الكلماتِ نفسها.
+  Finder onCard(String text) =>
+      find.descendant(of: find.byType(SupportTicketCard), matching: find.text(text));
 
   Future<void> arrange(
     List<SupportTicket> tickets, {
@@ -100,17 +107,17 @@ void main() {
       );
   }
 
-  Widget host() => ScreenUtilInit(
+  Widget host({bool embedded = false}) => ScreenUtilInit(
     designSize: const Size(430, 932),
-    builder: (context, _) => const MaterialApp(
-      locale: Locale('ar'),
-      supportedLocales: [Locale('ar')],
-      localizationsDelegates: [
+    builder: (context, _) => MaterialApp(
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: SupportTicketsPage(),
+      home: SupportTicketsPage(embedded: embedded),
     ),
   );
 
@@ -162,19 +169,38 @@ void main() {
     expect(find.text('تذكرة جديدة'), findsNothing);
   });
 
-  testWidgets('a ticket shows who is asking and the number to ring them on', (tester) async {
+  testWidgets('a ticket shows who is asking by code, and the number to ring them on', (
+    tester,
+  ) async {
     // Arrange
+    await arrange([
+      ticketWith(
+        customer: const TicketCustomer(id: 4, code: 'C12', name: 'سالم', phone: '0910000000'),
+      ),
+    ]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — الكودُ لا الاسم، كما في بريمولا وبطاقة تذكرة التصميم: هو ما يُقال في الهاتف ويُبحث
+    // به. والهاتفُ شريحةٌ وحده لأن من يجيب «أين طلبيتي؟» يمدّ يده إليه بعدها.
+    expect(find.text('أين طلبيتي؟'), findsOneWidget);
+    expect(onCard('C12'), findsOneWidget);
+    expect(onCard('0910000000'), findsOneWidget);
+    expect(find.text('سالم'), findsNothing);
+  });
+
+  testWidgets('a customer with no code is named instead', (tester) async {
+    // Arrange — حمولةٌ أقدم بلا كود: الاسمُ خيرٌ من شريحةٍ فارغة.
     await arrange([ticketWith()]);
 
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — the phone is on the card because whoever answers «أين طلبيتي؟» reaches for it
-    // next; making them leave the queue to find it is the difference between a ticket answered
-    // now and one answered later.
-    expect(find.text('أين طلبيتي؟'), findsOneWidget);
-    expect(find.text('سالم · 0910000000'), findsOneWidget);
+    // Assert
+    expect(onCard('سالم'), findsOneWidget);
   });
 
   testWidgets('an unassigned ticket says so, and an assigned one names the desk', (
@@ -194,6 +220,66 @@ void main() {
     // customer nobody has decided to answer.
     expect(find.text('غير مُسندة'), findsOneWidget);
     expect(find.text('محمد'), findsOneWidget);
+  });
+
+  testWidgets('a ticket on my own desk reads «تذكرتك» rather than my name', (tester) async {
+    // Arrange — الجلسةُ للمستخدم 1، والتذكرةُ مسندةٌ إليه.
+    await arrange([
+      ticketWith(assignee: const TicketAssignee(id: 1, name: 'عبدالوهاب')),
+    ]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — اسمي على بطاقتي لا يقول شيئاً؛ «تذكرتك» تقول إنها عليّ أنا.
+    expect(onCard('تذكرتك'), findsOneWidget);
+    expect(find.text('عبدالوهاب'), findsNothing);
+  });
+
+  testWidgets('the card wears its status as a chip beside the title', (tester) async {
+    // Arrange
+    await arrange([ticketWith(status: TicketStatus.inProgress)]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — كلمةُ الخادم نفسها (`status_label`)، على البطاقة لا على شريحة التصفية وحدها.
+    expect(onCard(TicketStatus.inProgress.label), findsOneWidget);
+  });
+
+  testWidgets('a status filter chip carries the colour dot its card chip wears', (tester) async {
+    // Arrange
+    await arrange([ticketWith()]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — مفتاحٌ واحد للألوان بين الشرائح والبطاقات؛ و«الكل» و«المسندة إليّ» بلا نقطة.
+    final chips = tester.widgetList<FilterOptionChip>(find.byType(FilterOptionChip)).toList();
+    final dotted = {for (final chip in chips) chip.label: chip.dot};
+
+    expect(dotted['الكل'], isNull);
+    expect(dotted['المسندة إليّ'], isNull);
+    for (final status in offerableTicketStatuses) {
+      expect(dotted[status.label], isNotNull);
+    }
+  });
+
+  testWidgets('the card says how long ago the thread last moved', (tester) async {
+    // Arrange
+    await arrange([
+      ticketWith(lastMessageAt: DateTime.now().subtract(const Duration(hours: 3))),
+    ]);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — «كم انتظر العميل؟» هو سؤالُ الطابور، لا «في أيّ يوم».
+    expect(onCard('منذ 3 ساعات'), findsOneWidget);
   });
 
   testWidgets('the unread badge is the count the server sent', (tester) async {
@@ -218,9 +304,9 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — «بخصوص الطلبية #77» saves whoever is answering a search they would otherwise
-    // run by hand in another screen.
-    expect(find.text('بخصوص الطلبية #77'), findsOneWidget);
+    // Assert — «طلب 77» saves whoever is answering a search they would otherwise run by hand in
+    // another screen.
+    expect(onCard('طلب 77'), findsOneWidget);
   });
 
   testWidgets('an empty queue says which emptiness it is', (tester) async {
@@ -278,5 +364,18 @@ void main() {
     verify(
       () => repository.tickets(page: 1, status: null, assignedTo: null),
     ).called(2);
+  });
+
+  testWidgets('inside the tickets tabs it draws no bar of its own', (tester) async {
+    // Arrange — صفحةُ «التذاكر» تحمل الشريطَ وتبويبيه، والطابورُ تحته بلا شريطٍ ثانٍ.
+    await arrange([ticketWith()]);
+
+    // Act
+    await tester.pumpWidget(host(embedded: true));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.textContaining('أين طلبيتي؟'), findsOneWidget);
   });
 }

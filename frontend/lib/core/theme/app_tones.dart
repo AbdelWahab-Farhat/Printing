@@ -81,3 +81,41 @@ extension StockTone on ColorScheme {
       ? const Color(0xffffdea8)
       : const Color(0xff4a3000);
 }
+
+/// ألوان محادثة الدعم: ردُّ المحل، وكلامُ العميل، وما خلفهما.
+///
+/// **أدوارٌ من الثيم لا هكس** — خلافاً لما فوقها في هذا الملف: كلّ ما تحتاجه المحادثة موجودٌ في
+/// اللوحة المولّدة، فيبقى معها إن أُعيد تصديرها. وهي هنا لأن الفقاعة والوقت عليها وشعرتها تُقرّر
+/// معاً في مكانٍ واحد، لا في كل ويدجت.
+///
+/// * **ردُّ المحل** `primaryContainer` بحبره — لونُ العلامة باهتاً والنصّ عليه بالحبر، كما في
+///   تيليغرام وكما كانت فقاعةُ المحل قبل هذا.
+/// * **كلامُ العميل** سطحٌ أفتح من خلفية المحادثة: أبيضُ على رماديٍّ مخضرّ نهاراً، وأعلى سطحٍ
+///   ليلاً على أعمقه. نهاراً بشعرةٍ كـ`AppCard`: الفقاعات تنفصل بالتعبئة والشعرة، بلا ظلّ.
+/// * **الوقت وعلامة القراءة بلونٍ واحد على كل فقاعة**: ✓ و✓✓ تُفرَّقان بعددهما لا بلونهما.
+///
+/// `chat_tone_test.dart` يثبّت التباين (النصّ ٧ إلى ١، الوقت ٤٫٥ إلى ١) لا الأدوار.
+extension ChatTone on ColorScheme {
+  bool get _chatNight => brightness == Brightness.dark;
+
+  /// ما خلف الفقاعات، بين شريط العنوان وصندوق الكتابة.
+  Color get chatBackdrop => _chatNight ? surfaceContainerLowest : surfaceContainer;
+
+  Color get outgoingBubble => primaryContainer;
+
+  Color get onOutgoingBubble => onPrimaryContainer;
+
+  /// الوقت وعلامة القراءة على ردّ المحل.
+  Color get outgoingMeta => onPrimaryContainer.withValues(alpha: 0.85);
+
+  Color get outgoingBubbleEdge => Colors.transparent;
+
+  Color get incomingBubble => _chatNight ? surfaceContainerHigh : surfaceContainerLowest;
+
+  Color get onIncomingBubble => onSurface;
+
+  /// الوقت على كلام العميل.
+  Color get incomingMeta => onSurfaceVariant;
+
+  Color get incomingBubbleEdge => _chatNight ? Colors.transparent : outlineVariant;
+}

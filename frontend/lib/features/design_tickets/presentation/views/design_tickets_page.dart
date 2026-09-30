@@ -37,25 +37,31 @@ import 'package:go_router/go_router.dart';
 /// the table, and a list that hid it would make the record of what was agreed reachable only by
 /// filtering — which is why «الكل» is what the picker opens on.
 class DesignTicketsPage extends StatelessWidget {
-  const DesignTicketsPage({this.filter, super.key});
+  const DesignTicketsPage({this.filter, this.embedded = false, super.key});
 
   /// A question settled before the screen opened — «تصاميم متجر إكس», reached from that customer.
   /// Null on the section's own door, where the list opens on everything the reader may see.
   final DesignTicketsFilter? filter;
 
+  /// داخل تبويب «تصميم» في «التذاكر» (2026-09-25): شريطُ تلك الشاشة وعنوانها فوقها، فلا يُرسم
+  /// هنا شريطٌ ثانٍ. وكلُّ ما عداه باقٍ كما هو، ومنه زرُّ «طلب تصميم».
+  final bool embedded;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DesignTicketsCubit>(
       create: (_) => sl<DesignTicketsCubit>()..start(filter),
-        child: _DesignTicketsView(title: filter?.title ?? 'تذاكر التصميم'),
+        child: _DesignTicketsView(title: filter?.title ?? 'تذاكر التصميم', embedded: embedded),
     );
   }
 }
 
 class _DesignTicketsView extends StatefulWidget {
-  const _DesignTicketsView({required this.title});
+  const _DesignTicketsView({required this.title, required this.embedded});
 
   final String title;
+
+  final bool embedded;
 
   @override
   State<_DesignTicketsView> createState() => _DesignTicketsViewState();
@@ -156,19 +162,21 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
         session.can(AppPermission.acceptDesignTickets) && !session.can(AppPermission.viewOrders);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          // Not drawn for staff: they arrived by pushing this route, so they have a back arrow
-          // and the drawer behind it, and a second way in would be clutter.
-          if (isTheirWholeApp)
-            IconButton(
-              icon: Icon(AppIcons.settings),
-              tooltip: 'الإعدادات',
-              onPressed: () => context.push(Routes.settings),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: Text(widget.title),
+              actions: [
+                // Not drawn for staff: they arrived by pushing this route, so they have a back
+                // arrow and the drawer behind it, and a second way in would be clutter.
+                if (isTheirWholeApp)
+                  IconButton(
+                    icon: Icon(AppIcons.settings),
+                    tooltip: 'الإعدادات',
+                    onPressed: () => context.push(Routes.settings),
+                  ),
+              ],
             ),
-        ],
-      ),
       floatingActionButton: mayManage
           ? FloatingActionButton.extended(
               heroTag: 'fab-design-tickets',

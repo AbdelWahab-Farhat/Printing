@@ -18,8 +18,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('the two groups', () {
     test('«الجارية» is every status that is not over, and nothing else', () {
-      // Arrange — the three the business calls finished. See CUSTOMER-ORDERS-SECTION.md §١.
-      const over = {OrderStatus.delivered, OrderStatus.settled, OrderStatus.cancelled};
+      // Arrange — the four the business calls finished. See CUSTOMER-ORDERS-SECTION.md §١. The
+      // refusal joined them on 2026-09-25: nobody is working on a request turned away at the door.
+      const over = {
+        OrderStatus.delivered,
+        OrderStatus.settled,
+        OrderStatus.cancelled,
+        OrderStatus.requestRejected,
+      };
 
       // Act
       final inProgress = OrderStatus.inProgress.toSet();
@@ -68,7 +74,20 @@ void main() {
       // box rather than to be dug out of «الكل». See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
       expect(OrderStatus.inProgress, isNot(contains(OrderStatus.cancelled)));
       expect(OrderStatus.received, isNot(contains(OrderStatus.cancelled)));
-      expect(cancellations, [OrderStatus.cancelled]);
+      expect(cancellations, contains(OrderStatus.cancelled));
+    });
+
+    /// كان «رُفض الطلب» يُحسب في «الطلبات الجارية» على شاشة العميل، وهو طلبٌ لا يعمل عليه أحد
+    /// (طلب المستخدم، 2026-09-25: «اصلحها»). مكانه «الملغاة»: لم يصل إلى أحد، ولا أحد يدين له
+    /// بقرار.
+    test('a refused request counts with the cancellations, not in progress', () {
+      // Act
+      final cancellations = OrderStatus.cancellations;
+
+      // Assert
+      expect(OrderStatus.inProgress, isNot(contains(OrderStatus.requestRejected)));
+      expect(OrderStatus.received, isNot(contains(OrderStatus.requestRejected)));
+      expect(cancellations, [OrderStatus.cancelled, OrderStatus.requestRejected]);
     });
 
     test('the three groups do not overlap, and together they are every status', () {

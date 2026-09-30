@@ -159,6 +159,34 @@ void main() {
     ),
   );
 
+  /// داخل تبويب «تصميم» في «التذاكر» (2026-09-25): شريطُ تلك الشاشة فوقها، فلا ترسم شريطاً ثانياً.
+  testWidgets('inside the tickets tabs it draws no bar of its own', (tester) async {
+    // Arrange
+    signInWith([AppPermission.viewDesignTickets]);
+
+    // Act
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(430, 932),
+        builder: (context, _) => const MaterialApp(
+          locale: Locale('ar'),
+          supportedLocales: [Locale('ar')],
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: DesignTicketsPage(embedded: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.text('تذاكر التصميم'), findsNothing);
+  });
+
   testWidgets('the designer queues are gone from the screen', (tester) async {
     // Arrange
     await tester.pumpWidget(host());

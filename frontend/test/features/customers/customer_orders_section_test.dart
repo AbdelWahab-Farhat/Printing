@@ -117,7 +117,9 @@ void main() {
     expect(opened.single.statuses, ['delivered', 'settled']);
   });
 
-  testWidgets('«الطلبات الملغاة» asks for the cancellations alone', (tester) async {
+  testWidgets('«الطلبات الملغاة» asks for the cancellations and the refused requests', (
+    tester,
+  ) async {
     // Arrange
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
@@ -126,9 +128,10 @@ void main() {
     await tester.tap(find.text('الطلبات الملغاة'));
     await tester.pumpAndSettle();
 
-    // Assert — its own box, not something to be dug out of «الكل» by filtering.
+    // Assert — its own box, not something to be dug out of «الكل» by filtering. والطلب المرفوض
+    // هنا لا في «الجارية» (طلب المستخدم، 2026-09-25): لم يصل إلى أحد، ولا يعمل عليه أحد.
     expect(opened.single.customerId, 7);
-    expect(opened.single.statuses, ['cancelled']);
+    expect(opened.single.statuses, ['cancelled', 'request_rejected']);
   });
 
   testWidgets('the screen each row opens says whose orders it is showing', (tester) async {

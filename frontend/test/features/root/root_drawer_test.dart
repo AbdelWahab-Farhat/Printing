@@ -256,9 +256,22 @@ void main() {
     await tester.tap(find.text('المنتجات والخدمات'));
     await tester.pumpAndSettle();
 
-    // Assert — the queue is an app bar button beside الأدوات now, see [DesignTicketsButton];
+    // Assert — the queue is an app bar button beside الأدوات now, see [TicketsButton];
     // that widget's own test pins down the grant it still carries.
     expect(find.text('تذاكر التصميم'), findsNothing);
+  });
+
+  testWidgets('«الدعم» is not in this panel any more: it is a tab in «التذاكر»', (tester) async {
+    // Arrange — `support.view` added to the grants, so an absence here is a section that moved
+    // and not one that was hidden (طلب المستخدم، 2026-09-25).
+    await arrange([...allGrants, 'support.view']);
+
+    // Act
+    await open(tester);
+
+    // Assert — the customers' tickets are «العملاء» beside «تصميم», behind [TicketsButton].
+    expect(find.text('الدعم'), findsNothing);
+    expect(find.text('تذاكر الدعم'), findsNothing);
   });
 
   testWidgets('the screen being read opens its heading and marks its row', (tester) async {

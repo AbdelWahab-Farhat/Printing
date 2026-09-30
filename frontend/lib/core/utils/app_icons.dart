@@ -514,6 +514,14 @@ abstract final class AppIcons {
 
   static IconData get phone => _pick(Icons.phone_outlined, CupertinoIcons.phone);
 
+  /// تذكرةٌ لم يأخذها أحد — شخصٌ بعلامة «+»، لأن السؤالَ «من يأخذها؟». وليست [addEmployee]:
+  /// تلك تسجيلُ زميل.
+  static IconData get unassigned =>
+      _pick(Icons.person_add_alt_1_rounded, CupertinoIcons.person_badge_plus);
+
+  /// تذكرةٌ على مكتبي أنا — [person] نفسه مملوءاً، فالفرقُ بين «لي» و«لزميل» يُرى بلا قراءة.
+  static IconData get assignedToMe => _pick(Icons.person_rounded, CupertinoIcons.person_fill);
+
   /// The other thing an account signs in with. Beside [phone] on the same form, so it has to
   /// read as an address rather than as a note about one.
   static IconData get email => _pick(Icons.mail_outline_rounded, CupertinoIcons.mail);

@@ -18,6 +18,8 @@
 /// order form. Nothing in this file is safe to put in a query string.
 library;
 
+import 'package:dayaa/core/utils/arabic_counts.dart';
+
 abstract final class AppDates {
   /// The names Libya uses. Not «كانون الثاني» and the Levantine set — the shop reads these.
   static const List<String> _months = [
@@ -112,12 +114,34 @@ abstract final class AppDates {
     };
   }
 
+  /// «الآن» · «منذ 5 دقائق» · «منذ 3 ساعات» · «منذ يومين» — ثم التاريخ بعد أسبوع.
+  ///
+  /// لطابورٍ يُقرأ ليُعرف كم انتظر صاحبُه. بعد الأسبوع يصير العدُّ حساباً على القارئ، فيأخذ
+  /// التاريخُ مكانه. وساعةُ خادمٍ تسبق الهاتفَ قليلاً تُقرأ «الآن» لا «منذ -2 دقيقة».
+  static String ago(DateTime at) {
+    final local = at.toLocal();
+    final elapsed = DateTime.now().difference(local);
+
+    if (elapsed.inMinutes < 1) return 'الآن';
+    if (elapsed.inHours < 1) {
+      return 'منذ ${arabicCount(elapsed.inMinutes, one: 'دقيقة', two: 'دقيقتين', few: 'دقائق', many: 'دقيقة')}';
+    }
+    if (elapsed.inDays < 1) {
+      return 'منذ ${arabicCount(elapsed.inHours, one: 'ساعة', two: 'ساعتين', few: 'ساعات', many: 'ساعة')}';
+    }
+    if (elapsed.inDays < 7) {
+      return 'منذ ${arabicCount(elapsed.inDays, one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوماً')}';
+    }
+
+    return shortDay(local);
+  }
+
   /// Whether the clock on this value says nothing — see [stamp].
   static bool _isDateOnly(DateTime local) =>
       local.hour == 0 && local.minute == 0 && local.second == 0;
 }
 
-/// The same four, where a date is already in hand.
+/// The same, where a date is already in hand.
 extension AppDateFormatting on DateTime {
   /// «14 أغسطس 2026».
   String get dayLabel => AppDates.day(this);
@@ -133,4 +157,7 @@ extension AppDateFormatting on DateTime {
 
   /// «اليوم», «أمس», or the date.
   String get relativeDayLabel => AppDates.relativeDay(this);
+
+  /// «منذ 3 ساعات», or the date after a week.
+  String get agoLabel => AppDates.ago(this);
 }

@@ -63,23 +63,20 @@ void main() {
     grossProfit: grossProfit,
   );
 
-  testWidgets('an order the press has not finished says so in words', (tester) async {
+  testWidgets('an order the press has not finished says so in two words, once', (tester) async {
     // Arrange — both figures null, which is every order before «جاهزة».
     await tester.pumpWidget(host(OrderTotals(order: orderWith(), showCosts: true)));
 
-    // Act - Assert — and it names the step it is waiting for. Stock leaves the shelf at «جاهزة»
-    // now, not on the way into «قيد الطباعة», so copy that still says the old one sends whoever
-    // reads it looking for a figure that will not be there yet.
-    expect(find.textContaining('لم تُحتسب التكلفة بعد'), findsOneWidget);
-    expect(find.textContaining('جاهزة'), findsOneWidget);
-
-    // …and the column itself stays drawn, signs and all: a subtraction one of whose sides is
-    // still unknown is a subtraction the reader can still see the shape of.
+    // Act - Assert — the cost line answers «لم يُحتسب بعد» and nothing more: the sentence that
+    // explained when it would be costed was three lines under a figure that is not there yet.
     expect(find.text('تكلفة الإنتاج'), findsOneWidget);
-    expect(find.text('مجمل الربح'), findsOneWidget);
-    expect(find.text('لم يُحتسب بعد'), findsNWidgets(2));
-    expect(find.text('−'), findsOneWidget);
-    expect(find.text('='), findsOneWidget);
+    expect(find.text('لم يُحتسب بعد'), findsOneWidget);
+    expect(find.textContaining('لم تُحتسب التكلفة'), findsNothing);
+
+    // …and the margin waits for it: a profit whose cost is unknown is the same «لم يُحتسب بعد»
+    // said a second time, so the `=` line is not drawn until there is something to subtract.
+    expect(find.text('مجمل الربح'), findsNothing);
+    expect(find.text('='), findsNothing);
   });
 
   testWidgets('a cost nobody has worked out is never drawn as zero', (tester) async {

@@ -130,4 +130,51 @@ void main() {
       expect(lastNight.relativeDayLabel, 'أمس');
     });
   });
+
+  group('the time ago', () {
+    test('says «الآن» under a minute, and for a clock a little ahead of the phone', () {
+      // Arrange
+      final now = DateTime.now();
+
+      // Act
+      final justNow = now.subtract(const Duration(seconds: 20)).agoLabel;
+      final ahead = now.add(const Duration(minutes: 2)).agoLabel;
+
+      // Assert
+      expect(justNow, 'الآن');
+      expect(ahead, 'الآن');
+    });
+
+    test('counts minutes and hours the way they are said, not «منذ 3 ساعة»', () {
+      // Arrange
+      final now = DateTime.now();
+
+      // Act
+      final labels = [
+        now.subtract(const Duration(minutes: 1)).agoLabel,
+        now.subtract(const Duration(minutes: 5)).agoLabel,
+        now.subtract(const Duration(minutes: 15)).agoLabel,
+        now.subtract(const Duration(hours: 2)).agoLabel,
+        now.subtract(const Duration(hours: 3)).agoLabel,
+        now.subtract(const Duration(hours: 11)).agoLabel,
+      ];
+
+      // Assert
+      expect(labels, ['منذ دقيقة', 'منذ 5 دقائق', 'منذ 15 دقيقة', 'منذ ساعتين', 'منذ 3 ساعات', 'منذ 11 ساعة']);
+    });
+
+    test('counts days for a week, then names the date', () {
+      // Arrange — بعد أسبوعٍ يصير العدُّ حساباً على القارئ، فالتاريخُ أوضح.
+      final now = DateTime.now();
+      final tenDaysAgo = now.subtract(const Duration(days: 10));
+
+      // Act
+      final threeDays = now.subtract(const Duration(days: 3)).agoLabel;
+      final older = tenDaysAgo.agoLabel;
+
+      // Assert
+      expect(threeDays, 'منذ 3 أيام');
+      expect(older, tenDaysAgo.shortDayLabel);
+    });
+  });
 }

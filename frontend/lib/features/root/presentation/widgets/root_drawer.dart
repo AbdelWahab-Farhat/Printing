@@ -95,26 +95,12 @@ class _RootDrawerState extends State<RootDrawer> {
         // **«تذاكر التصميم» ليست هنا** — قرار المستخدم، ٢٠٢٦-٠٩-١٩. كانت صفّاً تحت هذا العنوان
         // على أن التصميم خدمةٌ من خدمات الورشة، وهو تصنيفٌ صادق لكنه يقيس الشاشة بما هي لا بمن
         // يفتحها: المصمّم يفتح الصفّ كل صباح، فصار أيقونةً في الشريط بجانب الأدوات — انظر
-        // [DesignTicketsButton]. وبقيت صلاحيّته معه، فما تحجبه هذه الرفوف يحجبه ذاك الزرّ.
+        // [TicketsButton]. وبقيت صلاحيّته معه، فما تحجبه هذه الرفوف يحجبه ذاك الزرّ.
       ],
     ),
-    // **A section of one, and it earns it.** The rule a few lines up — «a heading exists to
-    // group rows, one row does not earn one» — is about a row that belongs beside its
-    // neighbours. This one belongs beside nothing here: every other section is the shop looking
-    // at its own paperwork, and this is the only place in the staff app where a customer is
-    // talking to us. Filing it under «المنتجات» or «المشتريات» would bury it.
-    _Section(
-      title: 'الدعم',
-      icon: _SectionIcon.support,
-      items: [
-        _Link(
-          icon: _LinkIcon.support,
-          label: 'تذاكر الدعم',
-          route: Routes.supportTickets,
-          permission: AppPermission.viewSupportTickets,
-        ),
-      ],
-    ),
+    // **ولا «الدعم» أيضاً** (طلب المستخدم، ٢٠٢٦-٠٩-٢٥). كان قسماً من صفٍّ واحد، «تذاكر الدعم»،
+    // وانتقل إلى خانة تذاكر التصميم في الشريط: «التذاكر» بتبويبين، «تصميم» و«العملاء». انظر
+    // [TicketsButton] و`TicketsPage`.
     _Section(
       title: 'المشتريات والتوصيل',
       icon: _SectionIcon.purchaseOrders,
@@ -454,8 +440,7 @@ enum _SectionIcon {
   investorDeals,
   report,
   employees,
-  archive,
-  support;
+  archive;
 
   IconData get data => switch (this) {
     _SectionIcon.products => AppIcons.products,
@@ -463,7 +448,6 @@ enum _SectionIcon {
     _SectionIcon.investorDeals => AppIcons.investorDeals,
     _SectionIcon.report => AppIcons.report,
     _SectionIcon.employees => AppIcons.employees,
-    _SectionIcon.support => AppIcons.comments,
     // The same glyph the row under it carries. A heading of one row is the one place in this
     // panel where two icons would say the same thing twice, and picking a *different* one to
     // avoid the repetition would be inventing a distinction that is not there.
@@ -488,8 +472,7 @@ enum _LinkIcon {
   salesStatistics,
   employees,
   roles,
-  orderArchive,
-  support;
+  orderArchive;
 
   IconData get data => switch (this) {
     _LinkIcon.products => AppIcons.products,
@@ -497,7 +480,6 @@ enum _LinkIcon {
     _LinkIcon.businessField => AppIcons.businessField,
     _LinkIcon.purchaseOrders => AppIcons.purchaseOrders,
     _LinkIcon.shortages => AppIcons.error,
-    _LinkIcon.support => AppIcons.comments,
     _LinkIcon.warehouse => AppIcons.warehouse,
     _LinkIcon.city => AppIcons.city,
     _LinkIcon.manufacturingCostRates => AppIcons.manufacturingCostRates,

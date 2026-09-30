@@ -138,8 +138,14 @@ enum OrderStatus {
   /// about money, not bags: the order is out of the workshop and out of everyone's queue, which
   /// is the question this getter answers. [unknown] answers `false` for the honest reason — a
   /// status this build has never heard of is not one it may declare over.
+  ///
+  /// **«رُفض الطلب» منتهٍ أيضاً** (طلب المستخدم، 2026-09-25): كان يُحسب في «الطلبات الجارية»
+  /// وهو طلبٌ رُفض عند الباب ولا يعمل عليه أحد. والخادم يقول الشيء نفسه في `isClosed()`.
   bool get isFinished => switch (this) {
-    OrderStatus.delivered || OrderStatus.settled || OrderStatus.cancelled => true,
+    OrderStatus.delivered ||
+    OrderStatus.settled ||
+    OrderStatus.cancelled ||
+    OrderStatus.requestRejected => true,
     _ => false,
   };
 
@@ -163,7 +169,7 @@ enum OrderStatus {
   /// list as orders were settled, which is the opposite of what the word says. «إلغاء تام» is
   /// out for the matching reason — it reached nobody.
   static List<OrderStatus> get received => filterable
-      .where((status) => status.isFinished && status != OrderStatus.cancelled)
+      .where((status) => status.isFinished && !status._isCancellation)
       .toList(growable: false);
 
   /// What was written off — «الطلبات الملغاة».
@@ -176,9 +182,15 @@ enum OrderStatus {
   /// Written as a filter over the cancellations rather than as `[cancelled]`, so a second kind
   /// of cancellation added later lands here instead of quietly falling out of all three groups.
   /// See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
-  static List<OrderStatus> get cancellations => filterable
-      .where((status) => status == OrderStatus.cancelled)
-      .toList(growable: false);
+  ///
+  /// **وهو ما حدث: «رُفض الطلب» هنا** (2026-09-25). طلبٌ لم يُقبل لم يصل إلى أحد كالملغاة، وليس
+  /// «إلغاءً تامّاً» في دفاتر المحل — لكن سؤال هذا الصندوق هو «ما الذي لن يصل؟»، وجوابه الاثنان.
+  static List<OrderStatus> get cancellations =>
+      filterable.where((status) => status._isCancellation).toList(growable: false);
+
+  /// ما انتهى دون أن يصل إلى العميل: الإلغاء التامّ، والطلب المرفوض عند الباب.
+  bool get _isCancellation =>
+      this == OrderStatus.cancelled || this == OrderStatus.requestRejected;
 
   /// Which family of colours the chip draws from.
   ///
