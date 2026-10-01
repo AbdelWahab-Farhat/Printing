@@ -27,8 +27,21 @@ class GetAccountMovements {
 
   final TreasuryRepository _repository;
 
-  Future<Either<Failure, Paginated<TreasuryMovement>>> call(int accountId, {required int page}) =>
-      _repository.movements(accountId, page: page);
+  Future<Either<Failure, Paginated<TreasuryMovement>>> call(
+    int accountId, {
+    required int page,
+    int? perPage,
+    String? kind,
+    DateTime? from,
+    DateTime? to,
+  }) => _repository.movements(
+    accountId,
+    page: page,
+    perPage: perPage,
+    kind: kind,
+    from: from,
+    to: to,
+  );
 }
 
 class SaveTreasuryAccount {
@@ -87,6 +100,7 @@ class RecordTreasuryOperation {
     int? employeeId,
     String? countedBalance,
     String? notes,
+    String? clientToken,
   }) => _repository.recordOperation(
     kind: kind,
     amount: amount,
@@ -96,6 +110,7 @@ class RecordTreasuryOperation {
     employeeId: employeeId,
     countedBalance: countedBalance,
     notes: notes,
+    clientToken: clientToken,
   );
 }
 
@@ -214,7 +229,7 @@ class PayVendor {
 
   final TreasuryRepository _repository;
 
-  Future<Either<Failure, Unit>> call({
+  Future<Either<Failure, VendorPayment>> call({
     required int vendorId,
     required String amount,
     required String method,
@@ -222,6 +237,7 @@ class PayVendor {
     int? accountId,
     String? reference,
     String? notes,
+    String? clientToken,
   }) => _repository.payVendor(
     vendorId: vendorId,
     amount: amount,
@@ -230,6 +246,7 @@ class PayVendor {
     accountId: accountId,
     reference: reference,
     notes: notes,
+    clientToken: clientToken,
   );
 }
 
@@ -238,7 +255,7 @@ class ReverseVendorPayment {
 
   final TreasuryRepository _repository;
 
-  Future<Either<Failure, Unit>> call({
+  Future<Either<Failure, VendorPayment>> call({
     required int vendorId,
     required int paymentId,
     required String reason,

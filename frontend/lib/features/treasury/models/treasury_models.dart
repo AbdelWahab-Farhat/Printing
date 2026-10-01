@@ -1,11 +1,11 @@
-/// الحسابات والخزائن — what the treasury endpoints send. TREASURY-DESIGN §٤, §٩.
+/// الحسابات والخزائن — ما ترسله نقاط الخزينة. TREASURY-DESIGN §٤، §٩.
 ///
-/// **Plain classes, not Freezed**, like `ShortageCounts`: every one is read-only, none is copied
-/// or compared, and a hand-written `fromJson` is shorter than the annotations — and adding the
-/// feature needs no code generation.
+/// **أصنافٌ عادية لا Freezed**، على نسق `ShortageCounts`: كلُّها للقراءة، و`fromJson` مكتوبٌ
+/// باليد أقصر من التعليقات التوضيحية — فلا يحتاج الجزء كلُّه إلى توليد. وما يُرقَّع منها بعد
+/// كتابةٍ نجحت له `copyWith` صغيرة بقدر الحاجة.
 ///
-/// Money stays a `String` from wire to screen, as everywhere in this app: «1250.00» is what the
-/// server said, and a `double` on the way would be a rounding nobody asked for.
+/// **المال نصٌّ من السلك إلى الشاشة**، كما في التطبيق كله: «1250.00» هو ما قاله الخادم، والمرور
+/// بـ`double` تقريبٌ لم يطلبه أحد.
 library;
 
 String _string(Object? value, [String fallback = '']) => value?.toString() ?? fallback;
@@ -22,8 +22,8 @@ Map<String, dynamic>? _mapOrNull(Object? value) => value is Map<String, dynamic>
 List<Map<String, dynamic>> _maps(Object? value) =>
     value is List ? value.whereType<Map<String, dynamic>>().toList(growable: false) : const [];
 
-/// What kind of place the money is in. [unknown] keeps a kind this build has never heard of
-/// readable rather than failing the whole list.
+/// نوعُ المكان الذي فيه المال. [unknown] يُبقي نوعاً لم يسمع به هذا الإصدار مقروءاً بدل أن
+/// يُسقط القائمة كلها.
 enum AccountKind {
   cash('cash'),
   bank('bank'),
@@ -39,7 +39,7 @@ enum AccountKind {
       values.firstWhere((kind) => kind.wire == value, orElse: () => AccountKind.unknown);
 }
 
-/// Someone an account is held by, or whom a movement names.
+/// من يحمل الحساب باسمه، أو من تسمّيه الحركة.
 class TreasuryPerson {
   const TreasuryPerson({required this.id, required this.name, this.employeeCode});
 
@@ -59,7 +59,7 @@ class TreasuryPerson {
   }
 }
 
-/// A place money is: الخزنة الرئيسية، المصرف، مصرف علي، ليبيانا، النورس.
+/// مكانٌ فيه المال: الخزنة الرئيسية، المصرف، مصرف علي، ليبيانا، النورس.
 class TreasuryAccount {
   const TreasuryAccount({
     required this.id,
@@ -84,38 +84,65 @@ class TreasuryAccount {
   final AccountKind kind;
   final String kindLabel;
 
-  /// Custody only: where its money goes at «تم التسوية» when nobody picks. Null: the built-in
-  /// rule — the bank for Nawris, the cash box for a driver.
+  /// للعهدة وحدها: أين يذهب مالها عند «تم التسوية» حين لا يختار أحد. فارغٌ = القاعدة المبنيّة:
+  /// المصرف للنورس، والخزنة للمندوب.
   final int? settlesIntoId;
   final String? settlesIntoName;
 
-  /// «يُجمَع عند التسوية» — false keeps its order money where it landed, even with its kind's
-  /// collection on. TREASURY-DESIGN §١٨.
+  /// «يُجمَع عند التسوية» — مطفأً يُبقي مالَ الطلبيات حيث نزل ولو كان تجميعُ نوعه مفعّلاً.
+  /// TREASURY-DESIGN §١٨.
   final bool isCollected;
 
-  /// Cash only: the «استلام مكتب» branch whose cash lands here. TREASURY-DESIGN §١٩.
+  /// للنقد وحده: مكتبُ «استلام مكتب» الذي ينزل كاشُه هنا. TREASURY-DESIGN §١٩.
   final int? pickupCityId;
 
-  /// The account a method falls back to when nobody chose one — one per kind.
+  /// الحساب الذي تنزل فيه الطريقة حين لا يُختار حساب — واحدٌ لكل نوع.
   final bool isDefault;
   final bool isActive;
 
-  /// The Nawris account: the webhook writes to it and it cannot be switched off.
+  /// حساب النورس: يكتب فيه الـ webhook، ولا يُعطَّل.
   final bool isSystem;
 
-  /// False for custody — it fills from customers and empties by settlement, so the hand
-  /// operations that would be refused on it are not offered.
+  /// كاذبٌ للعهدة — تمتلئ من الزبائن وتُفرَّغ بالتسوية، فلا تُعرض عليها العمليات اليدوية التي
+  /// ستُرفض.
   final bool isSpendable;
 
-  /// «مصرف علي» — whose name the account is in. Null for the company's own drawers.
+  /// «مصرف علي» — باسم من الحساب. فارغٌ لأدراج الشركة نفسها.
   final TreasuryPerson? holder;
 
-  /// What it holds — the sum of its movements, as the server added it. Null when not asked for.
+  /// ما فيه — مجموعُ حركاته كما جمعها الخادم. فارغٌ حين لم يُطلب.
   final String? balance;
   final String? notes;
 
-  /// Below zero: shown red, because it is meant to be seen (TREASURY-DESIGN §١٢).
+  /// تحت الصفر: يُرسم بالأحمر لأنه يجب أن يُرى (TREASURY-DESIGN §١٢).
   bool get isOverdrawn => (balance ?? '').startsWith('-');
+
+  /// نسخةٌ تختلف فيما سُمّي وحده — لترقيع صفٍّ بعد كتابةٍ يعرف التطبيقُ أثرها.
+  ///
+  /// [clearPickupCity] لأن `null` في [pickupCityId] يعني «اتركه كما هو».
+  TreasuryAccount copyWith({
+    bool? isDefault,
+    bool? isActive,
+    bool? isCollected,
+    int? pickupCityId,
+    bool clearPickupCity = false,
+  }) => TreasuryAccount(
+    id: id,
+    name: name,
+    kind: kind,
+    kindLabel: kindLabel,
+    isDefault: isDefault ?? this.isDefault,
+    isActive: isActive ?? this.isActive,
+    isSystem: isSystem,
+    isSpendable: isSpendable,
+    holder: holder,
+    balance: balance,
+    notes: notes,
+    settlesIntoId: settlesIntoId,
+    settlesIntoName: settlesIntoName,
+    isCollected: isCollected ?? this.isCollected,
+    pickupCityId: clearPickupCity ? null : (pickupCityId ?? this.pickupCityId),
+  );
 
   factory TreasuryAccount.fromJson(Map<String, dynamic> json) => TreasuryAccount(
     id: (json['id'] as num).toInt(),
@@ -136,8 +163,20 @@ class TreasuryAccount {
   );
 }
 
-/// A branch customers collect from, and the cash box its cash lands in — null for the usual
-/// rules. TREASURY-DESIGN §١٩.
+/// يضع [saved] مكان نسخته في [accounts] — وإن صار افتراضياً لنوعه نزع اللقبَ عن الباقين، لأن
+/// للنوع افتراضياً واحداً والخادمُ نزعه في المعاملة نفسها (`MakeSoleDefault`).
+List<TreasuryAccount> withSavedAccount(List<TreasuryAccount> accounts, TreasuryAccount saved) => [
+  for (final account in accounts)
+    if (account.id == saved.id)
+      saved
+    else if (saved.isDefault && account.kind == saved.kind && account.isDefault)
+      account.copyWith(isDefault: false)
+    else
+      account,
+];
+
+/// مكتبٌ يستلم منه الزبائن، والخزنة التي ينزل فيها كاشُه — فارغةٌ للقواعد العادية.
+/// TREASURY-DESIGN §١٩.
 class PickupOffice {
   const PickupOffice({required this.cityId, required this.name, this.accountId, this.accountName});
 
@@ -145,6 +184,10 @@ class PickupOffice {
   final String name;
   final int? accountId;
   final String? accountName;
+
+  /// المكتب نفسه بخزنةٍ أخرى — أو بلا خزنة حين يكون [account] فارغاً.
+  PickupOffice servedBy(TreasuryAccount? account) =>
+      PickupOffice(cityId: cityId, name: name, accountId: account?.id, accountName: account?.name);
 
   factory PickupOffice.fromJson(Map<String, dynamic> json) => PickupOffice(
     cityId: (json['city_id'] as num).toInt(),
@@ -154,8 +197,8 @@ class PickupOffice {
   );
 }
 
-/// «التجميع عند التسوية» for one kind: whether it is on, and the account it collects into —
-/// null for the kind's default. TREASURY-DESIGN §١٨.
+/// «التجميع عند التسوية» لنوعٍ واحد: مفعّلٌ أم لا، والحساب الذي يُجمع فيه — فارغٌ لافتراضي
+/// النوع. TREASURY-DESIGN §١٨.
 class CollectionSetting {
   const CollectionSetting({required this.on, this.intoId});
 
@@ -163,7 +206,7 @@ class CollectionSetting {
   final int? intoId;
 }
 
-/// «إعدادات المالية» — the owner's switches over the treasury's rules. TREASURY-DESIGN §١٦.
+/// «إعدادات المالية» — مفاتيح المالك على قواعد الخزينة. TREASURY-DESIGN §١٦.
 class TreasurySettings {
   const TreasurySettings({
     required this.ownAccountFirst,
@@ -175,27 +218,38 @@ class TreasurySettings {
     this.pickupOffices = const [],
   });
 
-  /// A payment lands in the recorder's own account before the method's default.
+  /// الدفعة تنزل في حساب من يسجّلها قبل افتراضي الطريقة.
   final bool ownAccountFirst;
 
-  /// Withdrawals, expenses, transfers and vendor payments are refused above the balance.
+  /// السحب والمصروف والتحويل ودفعة المورد تُرفض فوق الرصيد.
   final bool blockOverdraft;
   final bool withdrawalNeedsReason;
 
-  /// «احتفظ به الناقل» is asked on the settle screen.
+  /// خانة «احتفظ به الناقل» تُعرض على شاشة التسوية.
   final bool askCarrierFee;
 
-  /// `2026-09-30` — nothing by hand dated on or before it. Null: nothing is locked.
+  /// `2026-09-30` — لا شيء يدويّ بتاريخه أو قبله. فارغٌ: لا شيء مقفل.
   final String? lockedUntil;
 
-  /// «التجميع عند التسوية», for cash, bank and wallet. A kind missing from it is off.
+  /// «التجميع عند التسوية» للنقد والمصارف وليبيانا. النوع الغائب منها مطفأ.
   final Map<AccountKind, CollectionSetting> collections;
 
-  /// «خزنة كل مكتب استلام» — every pickup branch, with its box if one is linked.
+  /// «خزنة كل مكتب استلام» — كل مكتب، وخزنته إن رُبطت.
   final List<PickupOffice> pickupOffices;
 
   CollectionSetting collectionOf(AccountKind kind) =>
       collections[kind] ?? const CollectionSetting(on: false);
+
+  /// الإعدادات نفسها بمكاتب أخرى — حين يُعرف أثرُ ربط خزنةٍ دون إعادة القراءة.
+  TreasurySettings withPickupOffices(List<PickupOffice> offices) => TreasurySettings(
+    ownAccountFirst: ownAccountFirst,
+    blockOverdraft: blockOverdraft,
+    withdrawalNeedsReason: withdrawalNeedsReason,
+    askCarrierFee: askCarrierFee,
+    lockedUntil: lockedUntil,
+    collections: collections,
+    pickupOffices: offices,
+  );
 
   factory TreasurySettings.fromJson(Map<String, dynamic> json) => TreasurySettings(
     ownAccountFirst: json['own_account_first'] != false,
@@ -210,30 +264,35 @@ class TreasurySettings {
           intoId: _intOrNull(json['collect_${kind.wire}_into_id']),
         ),
     },
-    pickupOffices: _maps(json['pickup_offices']).map(PickupOffice.fromJson).toList(growable: false),
+    pickupOffices: [
+      for (final office in _maps(json['pickup_offices'])) PickupOffice.fromJson(office),
+    ],
   );
 }
 
-/// Every account the reader may see, and what they hold together.
+/// كل حسابٍ يقرؤه هذا الشخص، وما فيها مجتمعة.
 class TreasuryAccounts {
   const TreasuryAccounts({required this.accounts, required this.total, required this.canViewAll});
 
   final List<TreasuryAccount> accounts;
 
-  /// The server's own sum of the active accounts — for a holder, their own money only.
+  /// مجموع الخادم نفسه للحسابات المفعّلة — ولمن يحمل حساباً، ماله هو وحده.
   final String total;
 
-  /// False for somebody reading only the accounts in their name.
+  /// كاذبٌ لمن يقرأ الحسابات التي باسمه وحدها.
   final bool canViewAll;
 
+  TreasuryAccounts withAccounts(List<TreasuryAccount> accounts) =>
+      TreasuryAccounts(accounts: accounts, total: total, canViewAll: canViewAll);
+
   factory TreasuryAccounts.fromJson(Map<String, dynamic> json) => TreasuryAccounts(
-    accounts: _maps(json['accounts']).map(TreasuryAccount.fromJson).toList(growable: false),
+    accounts: [for (final account in _maps(json['accounts'])) TreasuryAccount.fromJson(account)],
     total: _string(json['total'], '0.00'),
     canViewAll: json['can_view_all'] == true,
   );
 }
 
-/// In and out of one kind of movement on one account — «الإيداعات ٥٠٠».
+/// الداخل والخارج من نوع حركةٍ واحد على حسابٍ واحد — «الإيداعات ٥٠٠».
 class KindTotal {
   const KindTotal({
     required this.kind,
@@ -258,7 +317,7 @@ class KindTotal {
   );
 }
 
-/// The top of an account's page: the account, and its figures by kind.
+/// رأس صفحة الحساب: الحساب، وأرقامه بالنوع.
 class TreasuryAccountDetail {
   const TreasuryAccountDetail({
     required this.account,
@@ -272,6 +331,14 @@ class TreasuryAccountDetail {
   final String totalOut;
   final List<KindTotal> byKind;
 
+  /// الأرقام نفسها بحسابٍ عُدّل — التعديل لا يحرّك مالاً، فالمجاميع باقية.
+  TreasuryAccountDetail withAccount(TreasuryAccount account) => TreasuryAccountDetail(
+    account: account,
+    totalIn: totalIn,
+    totalOut: totalOut,
+    byKind: byKind,
+  );
+
   factory TreasuryAccountDetail.fromJson(Map<String, dynamic> json) {
     final totals = _mapOrNull(json['totals']) ?? const <String, dynamic>{};
 
@@ -279,12 +346,12 @@ class TreasuryAccountDetail {
       account: TreasuryAccount.fromJson(json['account'] as Map<String, dynamic>),
       totalIn: _string(totals['total_in'], '0.00'),
       totalOut: _string(totals['total_out'], '0.00'),
-      byKind: _maps(totals['by_kind']).map(KindTotal.fromJson).toList(growable: false),
+      byKind: [for (final kind in _maps(totals['by_kind'])) KindTotal.fromJson(kind)],
     );
   }
 }
 
-/// One line of an account's history.
+/// سطرٌ واحد من سجلّ الحساب.
 class TreasuryMovement {
   const TreasuryMovement({
     required this.id,
@@ -293,6 +360,9 @@ class TreasuryMovement {
     required this.isIn,
     required this.signedAmount,
     required this.isReversal,
+    this.isReversible = false,
+    this.isReversed = false,
+    this.reversesMovementId,
     this.balanceAfter,
     this.occurredAt,
     this.orderId,
@@ -309,21 +379,20 @@ class TreasuryMovement {
   final String kindLabel;
   final bool isIn;
 
-  /// «+50.00» / «-300.00» — the sign is the point.
+  /// «+50.00» / «-300.00» — الإشارة هي المقصود.
   final String signedAmount;
 
-  /// What the account held after this line — added over the whole history on the server, so a
-  /// filtered page does not restart it at zero.
+  /// ما بقي في الحساب بعد هذا السطر — يجمعه الخادم على السجل كله، فلا تبدأ صفحةٌ مصفّاة من صفر.
   final String? balanceAfter;
   final DateTime? occurredAt;
 
-  /// «الطلب المرتبط» — opens the order when there is one.
+  /// «الطلب المرتبط» — يفتح الطلبية حين تكون.
   final int? orderId;
 
-  /// The hand operation that wrote it — a reversal is offered from it.
+  /// العملية اليدوية التي كتبته.
   final int? operationId;
 
-  /// The other side of a transfer or a settlement — «من النورس» / «إلى المصرف».
+  /// الطرف الآخر في التحويل والتسوية — «من النورس» / «إلى المصرف».
   final String? counterpartName;
   final String? categoryName;
   final String? employeeName;
@@ -331,7 +400,38 @@ class TreasuryMovement {
   /// «الموظف الذي نفّذها».
   final String? recorderName;
   final bool isReversal;
+
+  /// **الخادم وحده يقول إن كان يُعكس** (`is_reversible`). غائبٌ عند خادمٍ أقدم = لا عكس، فلا
+  /// يُعرض زرٌّ يرفضه الخادم.
+  final bool isReversible;
+
+  /// عُكس هذا السطر — يُرسم مشطوباً.
+  final bool isReversed;
+
+  /// السطر الذي يعكسه هذا، إن كان عكساً.
+  final int? reversesMovementId;
   final String? notes;
+
+  /// السطر نفسه بعد أن عُكس: مشطوب، ولا يُعكس مرةً ثانية.
+  TreasuryMovement markedReversed() => TreasuryMovement(
+    id: id,
+    kind: kind,
+    kindLabel: kindLabel,
+    isIn: isIn,
+    signedAmount: signedAmount,
+    isReversal: isReversal,
+    isReversed: true,
+    reversesMovementId: reversesMovementId,
+    balanceAfter: balanceAfter,
+    occurredAt: occurredAt,
+    orderId: orderId,
+    operationId: operationId,
+    counterpartName: counterpartName,
+    categoryName: categoryName,
+    employeeName: employeeName,
+    recorderName: recorderName,
+    notes: notes,
+  );
 
   factory TreasuryMovement.fromJson(Map<String, dynamic> json) => TreasuryMovement(
     id: (json['id'] as num).toInt(),
@@ -348,11 +448,14 @@ class TreasuryMovement {
     employeeName: _stringOrNull(_mapOrNull(json['employee'])?['name']),
     recorderName: _stringOrNull(_mapOrNull(json['recorder'])?['name']),
     isReversal: json['is_reversal'] == true,
+    isReversible: json['is_reversible'] == true,
+    isReversed: json['is_reversed'] == true,
+    reversesMovementId: _intOrNull(json['reverses_movement_id']),
     notes: _stringOrNull(json['notes']),
   );
 }
 
-/// A hand operation, as the server answers after writing or reversing one.
+/// عمليةٌ يدوية، كما يجيب الخادم بعد كتابتها أو عكسها.
 class TreasuryOperation {
   const TreasuryOperation({
     required this.id,
@@ -377,7 +480,7 @@ class TreasuryOperation {
   );
 }
 
-/// What an expense was for — rent, salaries, what Nawris kept.
+/// فيمَ صُرف المصروف — إيجار، رواتب، ما احتفظ به النورس.
 class ExpenseCategory {
   const ExpenseCategory({
     required this.id,
@@ -390,7 +493,7 @@ class ExpenseCategory {
   final int id;
   final String name;
 
-  /// «سلفة موظف» — meaningless without the employee it was handed to.
+  /// «سلفة موظف» — لا معنى لها بلا الموظف الذي سُلِّمت إليه.
   final bool requiresEmployee;
   final bool isActive;
   final bool isSystem;
@@ -404,7 +507,7 @@ class ExpenseCategory {
   );
 }
 
-/// One account a payment form may land money in.
+/// حسابٌ واحد قد ينزل فيه مال نموذج الدفع.
 class AccountOption {
   const AccountOption({
     required this.id,
@@ -426,20 +529,35 @@ class AccountOption {
   );
 }
 
-/// The accounts a method fits, and the one the treasury would pick for this person.
+/// الحسابات التي تقبلها الطريقة، والذي سيختاره الخادم لهذا الشخص حين يُترك «تلقائي».
 class AccountOptions {
-  const AccountOptions({required this.accounts, required this.suggestedId});
+  const AccountOptions({required this.accounts, required this.suggestedId, this.suggestedName});
 
   final List<AccountOption> accounts;
   final int? suggestedId;
 
-  factory AccountOptions.fromJson(Map<String, dynamic> json) => AccountOptions(
-    accounts: _maps(json['accounts']).map(AccountOption.fromJson).toList(growable: false),
-    suggestedId: _intOrNull(json['suggested_id']),
-  );
+  /// **اسمُ ما سيختاره الخادم كما سمّاه هو** (`suggested_name`) — وقد لا يكون بين [accounts]:
+  /// كاشٌ يُكتب باليد وطردُ الطلبية مع النورس في الطريق ينزل في حساب النورس، وليس خياراً.
+  final String? suggestedName;
+
+  factory AccountOptions.fromJson(Map<String, dynamic> json) {
+    final accounts = [
+      for (final account in _maps(json['accounts'])) AccountOption.fromJson(account),
+    ];
+    final suggestedId = _intOrNull(json['suggested_id']);
+
+    return AccountOptions(
+      accounts: accounts,
+      suggestedId: suggestedId,
+      // خادمٌ أقدم لا يرسل الاسم: يُسمّى من القائمة إن كان فيها.
+      suggestedName:
+          _stringOrNull(json['suggested_name']) ??
+          accounts.where((account) => account.id == suggestedId).firstOrNull?.name,
+    );
+  }
 }
 
-/// An investor whose money the company is keeping — capital in the wallet, profit not withdrawn.
+/// مستثمرٌ تحفظ الشركة ماله — رأس مالٍ في المحفظة، وربحٌ لم يُسحب.
 class InvestorHolding {
   const InvestorHolding({
     required this.id,
@@ -461,7 +579,7 @@ class InvestorHolding {
   );
 }
 
-/// «لمن المال» — what the drawers hold, less what is kept for others. TREASURY-DESIGN §٩.
+/// «لمن المال» — ما في الأدراج، ناقصاً ما يُحفظ لغيرنا. TREASURY-DESIGN §٩.
 class TreasuryOwnership {
   const TreasuryOwnership({
     required this.totalHeld,
@@ -479,14 +597,16 @@ class TreasuryOwnership {
 
   factory TreasuryOwnership.fromJson(Map<String, dynamic> json) => TreasuryOwnership(
     totalHeld: _string(json['total_held'], '0.00'),
-    investors: _maps(json['investors']).map(InvestorHolding.fromJson).toList(growable: false),
+    investors: [
+      for (final investor in _maps(json['investors'])) InvestorHolding.fromJson(investor),
+    ],
     investorsTotal: _string(json['investors_total'], '0.00'),
     fundCash: _string(json['fund_cash'], '0.00'),
     companyOwn: _string(json['company_own'], '0.00'),
   );
 }
 
-/// A line of the inventory card — a warehouse or a material, and what it is worth at cost.
+/// سطرٌ في بطاقة المخزون — مخزنٌ أو صنف، وقيمته بالتكلفة.
 class ValueLine {
   const ValueLine({required this.name, required this.value, this.quantity});
 
@@ -501,7 +621,7 @@ class ValueLine {
   );
 }
 
-/// What the shelves are worth at what they cost — the stock ledger's total, not an account.
+/// قيمةُ الرفوف بما كلّفته — مجموعُ دفتر المخزون، لا حساب.
 class InventoryValue {
   const InventoryValue({
     required this.total,
@@ -515,18 +635,20 @@ class InventoryValue {
   final String company;
   final String fund;
   final List<ValueLine> byWarehouse;
+
+  /// «أعلى الأصناف قيمة» — TREASURY-DESIGN §٩.
   final List<ValueLine> topItems;
 
   factory InventoryValue.fromJson(Map<String, dynamic> json) => InventoryValue(
     total: _string(json['total'], '0.00'),
     company: _string(json['company'], '0.00'),
     fund: _string(json['fund'], '0.00'),
-    byWarehouse: _maps(json['by_warehouse']).map(ValueLine.fromJson).toList(growable: false),
-    topItems: _maps(json['top_items']).map(ValueLine.fromJson).toList(growable: false),
+    byWarehouse: [for (final line in _maps(json['by_warehouse'])) ValueLine.fromJson(line)],
+    topItems: [for (final line in _maps(json['top_items'])) ValueLine.fromJson(line)],
   );
 }
 
-/// What a person does to the treasury by hand. [wire] is what the endpoint expects.
+/// ما يفعله الإنسان بالخزينة بيده. [wire] هو ما تنتظره نقطة الخادم.
 enum OperationKind {
   deposit('deposit', 'إيداع'),
   withdrawal('withdrawal', 'سحب'),
@@ -540,13 +662,13 @@ enum OperationKind {
   final String wire;
   final String label;
 
-  /// Money leaves the account the form opened from.
+  /// المال يخرج من الحساب الذي فُتح منه النموذج.
   bool get takesFrom => this == withdrawal || this == expense || this == transfer;
 
-  /// The reason is always mandatory on a count. On a withdrawal it follows «السبب إجباري عند
-  /// السحب» in «إعدادات المالية», which the server enforces — the form only asks for it.
+  /// السبب إجباريٌّ دائماً في الجرد. وفي السحب يتبع «السبب إجباري عند السحب» في «إعدادات
+  /// المالية»، والخادم يفرضه — والنموذج يسأل عنه فقط.
   bool get needsNotes => this == adjustment;
 
-  /// Whether the form calls its note «السبب» rather than an optional note.
+  /// هل يسمّي النموذج ملاحظته «السبب» بدل ملاحظةٍ اختيارية.
   bool get asksReason => this == withdrawal || this == adjustment;
 }

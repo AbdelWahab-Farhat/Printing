@@ -6,17 +6,25 @@ import 'package:dayaa/features/treasury/models/vendor_payment.dart';
 
 /// الحسابات والخزائن — TREASURY-DESIGN §١٠.
 abstract interface class TreasuryRepository {
-  /// The accounts this person may read — every one with `treasury.view`, their own otherwise.
+  /// الحسابات التي يقرؤها هذا الشخص — كلُّها لمن يحمل `treasury.view`، وما باسمه لغيره.
   Future<Either<Failure, TreasuryAccounts>> accounts({bool activeOnly = false});
 
   Future<Either<Failure, TreasuryAccountDetail>> account(int id);
 
-  /// An account's history, newest first, each line with the balance it left.
+  /// سجلّ الحساب، الأحدث أولاً، وكل سطرٍ بالرصيد الذي تركه.
+  ///
+  /// [kind] و[from] و[to] فلترُ الخادم نفسه (`AccountLedger`) — يُحسب الرصيد الجاري على السجل
+  /// كله ثم يُصفّى. و[perPage] لقراءة سطرٍ واحد: ما كتبه الخادم للتوّ.
   Future<Either<Failure, Paginated<TreasuryMovement>>> movements(
     int accountId, {
     required int page,
+    int? perPage,
+    String? kind,
+    DateTime? from,
+    DateTime? to,
   });
 
+  /// [notes] الفارغة (`''`) تمسح الملاحظات، والغائبة تتركها — `AccountData::hasNotes`.
   Future<Either<Failure, TreasuryAccount>> saveAccount({
     int? id,
     required String name,
@@ -30,19 +38,21 @@ abstract interface class TreasuryRepository {
     bool clearPickupCity = false,
   });
 
-  /// The accounts a payment method fits, and the one the treasury would pick. [incoming] false
-  /// for money leaving — a refund, a vendor payment — which never comes out of custody.
+  /// الحسابات التي تقبلها الطريقة، والذي سيختاره الخادم. [incoming] كاذبٌ للمال الخارج — ردٌّ
+  /// أو دفعةٌ لمورد — فلا يخرج من عهدة.
   ///
-  /// [orderId] names the order the money is for: while it waits at a pickup branch, «تلقائي» is
-  /// that branch's cash box (§١٩).
+  /// [orderId] الطلبية التي المالُ لها: ما دامت تنتظر في مكتب استلام، «تلقائي» خزنةُ ذلك المكتب
+  /// (§١٩).
   Future<Either<Failure, AccountOptions>> accountOptions({
     required String method,
     bool incoming = true,
     int? orderId,
   });
 
-  /// One hand operation. Which fields it needs depends on [kind] — see
-  /// `StoreTreasuryOperationRequest` on the backend.
+  /// عمليةٌ يدوية واحدة. ما تحتاجه من حقول يتبع [kind] — انظر `StoreTreasuryOperationRequest`.
+  ///
+  /// [clientToken] مفتاحٌ يولَّد مرةً لكل نموذج ويُعاد مع كل محاولة: إن وصل الطلب الأول وانقطع
+  /// الرد، أعاد الخادم العمليةَ نفسها بدل أن يكتبها مرتين.
   Future<Either<Failure, TreasuryOperation>> recordOperation({
     required OperationKind kind,
     String? amount,
@@ -52,6 +62,7 @@ abstract interface class TreasuryRepository {
     int? employeeId,
     String? countedBalance,
     String? notes,
+    String? clientToken,
   });
 
   Future<Either<Failure, TreasuryOperation>> reverseOperation(
@@ -59,7 +70,7 @@ abstract interface class TreasuryRepository {
     required String reason,
   });
 
-  /// The active categories for the expense form, or every one for the settings page.
+  /// التصنيفات المفعّلة لنموذج المصروف، أو كلها لصفحة الإعدادات.
   Future<Either<Failure, List<ExpenseCategory>>> expenseCategories({bool activeOnly = true});
 
   Future<Either<Failure, ExpenseCategory>> saveExpenseCategory({
@@ -71,10 +82,10 @@ abstract interface class TreasuryRepository {
 
   Future<Either<Failure, TreasurySettings>> settings();
 
-  /// Only the keys present change; [clearLock] sends `locked_until: null` to unlock.
+  /// المفاتيح الحاضرة وحدها تتغيّر؛ [clearLock] يُرسل `locked_until: null` ليفتح القفل.
   ///
-  /// [collectKind] names the kind [collectOn] and [collectIntoId] are for — «التجميع عند
-  /// التسوية»; [clearCollectInto] sends a null target, back to the kind's default.
+  /// [collectKind] النوعُ الذي يخصّه [collectOn] و[collectIntoId] — «التجميع عند التسوية»؛
+  /// و[clearCollectInto] يرسل هدفاً فارغاً فيعود إلى افتراضي النوع.
   Future<Either<Failure, TreasurySettings>> saveSettings({
     bool? ownAccountFirst,
     bool? blockOverdraft,
@@ -88,7 +99,7 @@ abstract interface class TreasuryRepository {
     bool clearCollectInto = false,
   });
 
-  /// Where a custody account settles into; null [targetId] goes back to the built-in rule.
+  /// أين تُسوّى العهدة؛ [targetId] فارغٌ يعيدها إلى القاعدة المبنيّة.
   Future<Either<Failure, TreasuryAccount>> setSettlesInto({
     required TreasuryAccount custody,
     int? targetId,
@@ -102,7 +113,8 @@ abstract interface class TreasuryRepository {
 
   Future<Either<Failure, PurchaseOrderPayments>> purchaseOrderPayments(int purchaseOrderId);
 
-  Future<Either<Failure, Unit>> payVendor({
+  /// تعود بالصف الذي كتبه الخادم، فيُرقَّع القسم به. [clientToken] كما في [recordOperation].
+  Future<Either<Failure, VendorPayment>> payVendor({
     required int vendorId,
     required String amount,
     required String method,
@@ -110,9 +122,11 @@ abstract interface class TreasuryRepository {
     int? accountId,
     String? reference,
     String? notes,
+    String? clientToken,
   });
 
-  Future<Either<Failure, Unit>> reverseVendorPayment({
+  /// تعود بصف العكس.
+  Future<Either<Failure, VendorPayment>> reverseVendorPayment({
     required int vendorId,
     required int paymentId,
     required String reason,
