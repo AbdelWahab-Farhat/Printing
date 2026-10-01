@@ -130,10 +130,15 @@ class OrderNote {
   /// When it was written. Null when the server did not say.
   final DateTime? at;
 
-  /// Everything written on one order: its own note first, then one per move that carried words.
+  /// Everything written on one order: one per move that carried words, then its own note last.
   ///
-  /// **Oldest first**, for the reason the timeline is: this reads as what happened to a job, and
-  /// a story told backwards has to be re-assembled by the reader.
+  /// **Newest first**, unlike the timeline: someone opening this page wants the latest word on
+  /// the job, not to scroll past its history to reach it. The order's own note is dated to when
+  /// the order was taken, so it is always the oldest and sits at the bottom.
+  ///
+  /// Reversed, not sorted by date: a move made with nobody signed in carries no time, and a sort
+  /// would have to guess where it goes. The server already sends the moves in the order they
+  /// happened.
   ///
   /// A note of nothing but spaces is not a note — the server keeps what was typed, and a card
   /// drawn around a blank is a row that says something was written when nothing was.
@@ -149,7 +154,7 @@ class OrderNote {
           author: record.user?.name,
           at: record.createdAt,
         ),
-  ];
+  ].reversed.toList();
 
   /// «2 أغسطس 2026 · 2:30 م · بواسطة أحمد» — the timeline's own line, word for word, so the
   /// same fact reads the same on both screens. Empty when there is nothing recorded to say.
