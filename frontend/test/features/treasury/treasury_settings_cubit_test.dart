@@ -25,18 +25,9 @@ void main() {
     askCarrierFee: true,
   );
 
-  const rent = ExpenseCategory(
-    id: 3,
-    name: 'إيجار',
-    requiresEmployee: false,
-    isActive: true,
-    isSystem: false,
-  );
-
   const loaded = TreasurySettingsLoaded(
     settings: settings,
     accounts: [cashBox, bank, nawris],
-    categories: [rent],
   );
 
   TreasurySettingsCubit build() => TreasurySettingsCubit(
@@ -45,16 +36,11 @@ void main() {
     getAccounts: GetTreasuryAccounts(repository),
     saveAccount: SaveTreasuryAccount(repository),
     setSettlesInto: SetSettlesInto(repository),
-    getCategories: GetExpenseCategories(repository),
-    saveCategory: SaveExpenseCategory(repository),
   );
 
   void answerReads({Either<Failure, TreasurySettings> read = const Right(settings)}) {
     when(() => repository.settings()).thenAnswer((_) async => read);
     when(() => repository.accounts()).thenAnswer((_) async => const Right(everyAccount));
-    when(
-      () => repository.expenseCategories(activeOnly: false),
-    ).thenAnswer((_) async => const Right([rent]));
   }
 
   setUp(() {
@@ -62,7 +48,7 @@ void main() {
   });
 
   blocTest<TreasurySettingsCubit, TreasurySettingsState>(
-    'يقرأ الإعدادات والحسابات والتصنيفات معاً',
+    'يقرأ الإعدادات والحسابات معاً — التصنيفات صارت شاشةً وحدها',
     // Arrange
     setUp: answerReads,
     build: build,
@@ -73,7 +59,6 @@ void main() {
       isA<TreasurySettingsLoaded>()
           .having((s) => s.settings, 'settings', settings)
           .having((s) => s.accounts, 'accounts', everyAccount.accounts)
-          .having((s) => s.categories, 'categories', [rent])
           .having((s) => s.refreshFailure, 'refreshFailure', isNull),
     ],
   );

@@ -104,6 +104,7 @@ import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dar
 import 'package:dayaa/features/tickets/presentation/views/tickets_page.dart';
 import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
 import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
+import 'package:dayaa/features/treasury/presentation/views/expense_categories_page.dart';
 import 'package:dayaa/features/treasury/presentation/views/treasury_account_page.dart';
 import 'package:dayaa/features/treasury/presentation/views/treasury_page.dart';
 import 'package:dayaa/features/treasury/presentation/views/treasury_settings_page.dart';
@@ -177,6 +178,9 @@ abstract final class Routes {
 
   /// «إعدادات المالية» — خلف `treasury.manage`.
   static const String treasurySettings = '/treasury/settings';
+
+  /// «تصنيفات المصروفات» — كانت قسماً في «إعدادات المالية».
+  static const String expenseCategories = '/treasury/expense-categories';
 
   static String investor(int id) => '/investors/$id';
 
@@ -695,6 +699,10 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.manageTreasury) ? null : Routes.treasury,
         builder: (context, state) => const TreasurySettingsPage(),
+      ),
+      GoRoute(
+        path: Routes.expenseCategories,
+        builder: (context, state) => const ExpenseCategoriesPage(),
       ),
       GoRoute(
         path: '/treasury/accounts/:id',

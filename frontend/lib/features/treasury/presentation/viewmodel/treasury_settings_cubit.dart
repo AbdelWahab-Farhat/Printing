@@ -7,7 +7,7 @@ import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// «إعدادات المالية» — the switches, the default account of each method, where each custody
-/// settles into, the accounts and the expense categories. TREASURY-DESIGN §١٦.
+/// settles into, and the accounts. TREASURY-DESIGN §١٦. التصنيفاتُ صارت شاشةً وحدها.
 ///
 /// **Every change is saved as it is made** and the page reloads from the server: there is no
 /// «حفظ» button to forget, and what is drawn is always what the server holds.
@@ -18,15 +18,11 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     required GetTreasuryAccounts getAccounts,
     required SaveTreasuryAccount saveAccount,
     required SetSettlesInto setSettlesInto,
-    required GetExpenseCategories getCategories,
-    required SaveExpenseCategory saveCategory,
   }) : _getSettings = getSettings,
        _saveSettings = saveSettings,
        _getAccounts = getAccounts,
        _saveAccount = saveAccount,
        _setSettlesInto = setSettlesInto,
-       _getCategories = getCategories,
-       _saveCategory = saveCategory,
        super(const TreasurySettingsLoading());
 
   final GetTreasurySettings _getSettings;
@@ -34,8 +30,6 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
   final GetTreasuryAccounts _getAccounts;
   final SaveTreasuryAccount _saveAccount;
   final SetSettlesInto _setSettlesInto;
-  final GetExpenseCategories _getCategories;
-  final SaveExpenseCategory _saveCategory;
 
   bool _changed = false;
 
@@ -49,18 +43,13 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
       _ => null,
     };
 
-    final (settings, accounts, categories) = await (
-      _getSettings(),
-      _getAccounts(),
-      _getCategories(activeOnly: false),
-    ).wait;
+    final (settings, accounts) = await (_getSettings(), _getAccounts()).wait;
 
     if (isClosed) return;
 
     final failure = [
       settings.fold((f) => f, (_) => null),
       accounts.fold((f) => f, (_) => null),
-      categories.fold((f) => f, (_) => null),
     ].nonNulls.firstOrNull;
 
     if (failure != null) {
@@ -70,7 +59,6 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
             : TreasurySettingsLoaded(
                 settings: previous.settings,
                 accounts: previous.accounts,
-                categories: previous.categories,
                 refreshFailure: failure,
               ),
       );
@@ -82,7 +70,6 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
       TreasurySettingsLoaded(
         settings: settings.getOrElse(() => throw StateError('checked above')),
         accounts: accounts.getOrElse(() => throw StateError('checked above')).accounts,
-        categories: categories.getOrElse(() => throw StateError('checked above')),
       ),
     );
   }
@@ -182,14 +169,6 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     ),
   );
 
-  Future<Failure?> saveCategory({
-    int? id,
-    required String name,
-    bool? requiresEmployee,
-    bool? isActive,
-  }) => _after(
-    () => _saveCategory(id: id, name: name, requiresEmployee: requiresEmployee, isActive: isActive),
-  );
 }
 
 sealed class TreasurySettingsState {
@@ -210,13 +189,11 @@ final class TreasurySettingsLoaded extends TreasurySettingsState {
   const TreasurySettingsLoaded({
     required this.settings,
     required this.accounts,
-    required this.categories,
     this.refreshFailure,
   });
 
   final TreasurySettings settings;
   final List<TreasuryAccount> accounts;
-  final List<ExpenseCategory> categories;
 
   /// قراءةٌ فشلت والصفحة باقية على ما قبلها: يقوله توست.
   final Failure? refreshFailure;

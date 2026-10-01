@@ -69,21 +69,13 @@ void main() {
         TreasuryAccounts(accounts: [cashBox, bank, nawris], total: '100.00', canViewAll: true),
       ),
     );
-    when(() => repository.expenseCategories(activeOnly: false)).thenAnswer(
-      (_) async => const Right([
-        ExpenseCategory(id: 1, name: 'رسوم شركة التوصيل', requiresEmployee: false, isActive: true, isSystem: true),
-        ExpenseCategory(id: 3, name: 'إيجار', requiresEmployee: false, isActive: true, isSystem: false),
-      ]),
-    );
 
     sl
       ..registerLazySingleton(() => GetTreasurySettings(repository))
       ..registerLazySingleton(() => SaveTreasurySettings(repository))
       ..registerLazySingleton(() => GetTreasuryAccounts(repository))
       ..registerLazySingleton(() => SaveTreasuryAccount(repository))
-      ..registerLazySingleton(() => SetSettlesInto(repository))
-      ..registerLazySingleton(() => GetExpenseCategories(repository))
-      ..registerLazySingleton(() => SaveExpenseCategory(repository));
+      ..registerLazySingleton(() => SetSettlesInto(repository));
   });
 
   Widget host() => ScreenUtilInit(
@@ -267,16 +259,15 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('a category the system relies on cannot be switched off', (tester) async {
+  testWidgets('the expense categories are not on this page — they have their own', (tester) async {
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('رسوم شركة التوصيل'), 200);
+    await tester.scrollUntilVisible(find.text('حساب جديد'), 200);
 
-    // Assert
-    final tile = tester.widget<SwitchListTile>(
-      find.ancestor(of: find.text('رسوم شركة التوصيل'), matching: find.byType(SwitchListTile)),
-    );
-    expect(tile.onChanged, isNull);
+    // Assert — «حساب جديد» آخرُ ما في الصفحة الآن.
+    expect(find.text('تصنيفات المصروفات'), findsNothing);
+    expect(find.text('تصنيف جديد'), findsNothing);
+    verifyNever(() => repository.expenseCategories(activeOnly: false));
   });
 }
