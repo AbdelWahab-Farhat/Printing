@@ -73,11 +73,12 @@ class StoreTreasuryOperationRequest extends FormRequest
                 'integer',
                 Rule::exists('treasury_expense_categories', 'id')->whereNull('deleted_at'),
             ],
+            // موظّفٌ حُذف لا تُكتب له سلفة — صفُّه باقٍ في الجدول، فالحذفُ الناعم يُستثنى صراحة.
             'employee_id' => [
                 'exclude_unless:type,expense',
                 'nullable',
                 'integer',
-                Rule::exists('users', 'id'),
+                Rule::exists('users', 'id')->whereNull('deleted_at'),
             ],
 
             // What was actually counted. Zero is a real answer — an empty drawer.

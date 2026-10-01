@@ -209,6 +209,29 @@ class TreasuryOperationsTest extends TestCase
         $this->assertSame('500.00', $this->balance($this->cashBox()));
     }
 
+    public function test_an_advance_cannot_name_an_employee_who_was_removed(): void
+    {
+        // Arrange — موظّفٌ حُذف حذفاً ناعماً ما زال صفُّه في الجدول، فـ`exists` وحدها كانت تقبله.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '1000');
+        $advance = ExpenseCategory::query()->where('code', ExpenseCategory::ADVANCE)->firstOrFail();
+        $gone = User::factory()->create();
+        $gone->delete();
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'expense',
+            'from_account_id' => $this->cashBox()->id,
+            'amount' => '100',
+            'category_id' => $advance->id,
+            'employee_id' => $gone->id,
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('employee_id');
+        $this->assertSame('1000.00', $this->balance($this->cashBox()));
+    }
+
     // ── transfer ────────────────────────────────────────────────────────────────────────
 
     public function test_a_transfer_is_one_operation_with_a_minus_and_a_plus(): void

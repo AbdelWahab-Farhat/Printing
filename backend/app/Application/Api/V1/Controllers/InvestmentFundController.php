@@ -29,6 +29,7 @@ use App\Domain\Settings\SettingsService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * الصندوق الاستثماري
@@ -176,7 +177,12 @@ class InvestmentFundController extends Controller
             'incurred_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // The drawer that paid; left out, the cash box — TREASURY-DESIGN §٧.
-            'treasury_account_id' => ['nullable', 'integer', 'exists:treasury_accounts,id'],
+            // والمحذوفُ لا يُقبل، كما في كل طلبٍ آخر يسمّي حساباً.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ]);
 
         $expense = ($this->expense)(

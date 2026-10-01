@@ -174,4 +174,28 @@ class OtherMoneyTreasuryTest extends TestCase
         $this->assertSame('-120.00', $this->balance($this->defaultOf(AccountKind::Cash)));
         $this->assertSame('-300.00', $this->balance($bank));
     }
+
+    public function test_a_fund_expense_cannot_name_a_deleted_account(): void
+    {
+        // Arrange — حسابٌ محذوفٌ حذفاً ناعماً لا يظهر في أيّ منتقٍ، ولا يُقبل باسمه مصروف.
+        [, $headers] = $this->user([
+            PermissionName::RecordDealExpenses,
+            PermissionName::ViewInvestors,
+        ]);
+        $closed = TreasuryAccount::factory()->kind(AccountKind::Bank)->create();
+        $closed->delete();
+
+        // Act
+        $response = $this->postJson('/api/v1/investment/expenses', [
+            'kind' => 'customs',
+            'name' => 'جمارك',
+            'amount' => '300',
+            'incurred_on' => now()->toDateString(),
+            'treasury_account_id' => $closed->id,
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('treasury_account_id');
+        $this->assertSame(0, TreasuryMovement::query()->count());
+    }
 }
