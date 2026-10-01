@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\PurchaseOrder\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
@@ -26,10 +27,13 @@ use Illuminate\Support\Facades\Storage;
  * **Lives beside the purchase order, not the vendor**, because it points at both and the
  * dependency runs PurchaseOrder → Vendor. Append-only like every ledger here: a mistake is a
  * `reversal` row naming the payment it undoes.
+ *
+ * وتاريخُها على بابها — `GET /vendors/{vendor}/payments/{payment}/logs`: من سجّلها ومتى.
+ * و`client_token` يختمه الفعلُ الذي يكتبها، ويُكتب في السجلّ ولا يُرسم.
  */
 #[UseFactory(VendorPaymentFactory::class)]
 #[Fillable(['amount', 'method', 'reference', 'paid_at', 'notes'])]
-class VendorPayment extends Model
+class VendorPayment extends Model implements HasAuditTrail
 {
     /** @use HasFactory<VendorPaymentFactory> */
     use Auditable, HasFactory, SoftDeletes;

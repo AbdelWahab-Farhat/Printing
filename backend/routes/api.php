@@ -1311,6 +1311,16 @@ Route::prefix('v1')->group(function (): void {
                 ->name('treasury.operations.logs');
             Route::get('treasury/settings/logs', [TreasurySettingsController::class, 'logs'])
                 ->name('treasury.settings.logs');
+            Route::get(
+                'treasury/expense-categories/{category}/logs',
+                [ExpenseCategoryController::class, 'logs'],
+            )->name('treasury.expense-categories.logs');
+
+            // دفعةُ موردٍ آخر 404 — يُسأل عنها في المتحكّم، فلا علاقةَ من المورد إلى دفعاته.
+            Route::get(
+                'vendors/{vendor}/payments/{payment}/logs',
+                [VendorPaymentController::class, 'logs'],
+            )->name('vendors.payments.logs');
 
             Route::get('manufacturing-cost-rates/{manufacturing_cost_rate}/logs', [ManufacturingCostRateController::class, 'logs'])
                 ->name('manufacturing-cost-rates.logs');
