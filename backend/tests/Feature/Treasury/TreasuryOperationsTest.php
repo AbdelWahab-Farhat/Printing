@@ -15,6 +15,7 @@ use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -504,6 +505,64 @@ class TreasuryOperationsTest extends TestCase
         $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
         $this->assertStringContainsString('جرد الحساب', (string) $response->json('message'));
         $this->assertSame('300.00', $this->balance($this->bank()));
+    }
+
+    public function test_a_count_dated_in_the_past_is_measured_against_that_day_s_balance(): void
+    {
+        // Arrange — ١٠٠٠ ثم ٢٠٠ حتى مساء ٣٠ سبتمبر، و٥٠٠ أُودعت صباح ١ أكتوبر قبل أن يُدخَل
+        // جردُ ٣٠ سبتمبر.
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        [, $headers] = $this->clerk();
+        $put = fn (string $amount, string $at) => $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit',
+            'to_account_id' => $this->cashBox()->id,
+            'amount' => $amount,
+            'occurred_at' => $at,
+        ], $headers)->assertCreated();
+        $put('1000', '2026-09-29T10:00:00');
+        $put('200', '2026-09-30T15:00:00');
+        $put('500', '2026-10-01T09:00:00');
+
+        // Act — عُدّت الخزنة مساء ٣٠ سبتمبر فوُجد فيها ١١٥٠.
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '1150',
+            'notes' => 'جرد آخر الشهر',
+            'occurred_at' => '2026-09-30',
+        ], $headers);
+
+        // Assert — رصيدُ النظام يومها ١٢٠٠ لا ١٧٠٠، والفرقُ ٥٠ خرج، وإيداعُ أكتوبر في مكانه.
+        $response->assertCreated()
+            ->assertJsonPath('data.system_balance', '1200.00')
+            ->assertJsonPath('data.counted_balance', '1150.00')
+            ->assertJsonPath('data.amount', '50.00')
+            ->assertJsonPath('data.from_account_id', $this->cashBox()->id);
+        $this->assertSame('1650.00', $this->balance($this->cashBox()));
+    }
+
+    public function test_a_count_made_today_without_a_date_still_reads_today_s_balance(): void
+    {
+        // Arrange
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '700');
+
+        // Act — بتاريخ اليوم بلا ساعة: العدُّ الآن، لا في آخر يومٍ لم ينته.
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '650',
+            'notes' => 'جرد',
+            'occurred_at' => '2026-10-01',
+        ], $headers);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.system_balance', '700.00')
+            ->assertJsonPath('data.amount', '50.00');
+        $count = TreasuryOperation::query()->findOrFail($response->json('data.id'));
+        $this->assertSame('2026-10-01 12:00:00', $count->occurred_at->format('Y-m-d H:i:s'));
     }
 
     // ── reversing ───────────────────────────────────────────────────────────────────────

@@ -33,11 +33,11 @@ final readonly class OperationData
      */
     public static function fromArray(array $validated): self
     {
-        $occurred = trim((string) ($validated['occurred_at'] ?? ''));
+        $type = OperationType::from((string) $validated['type']);
         $notes = trim((string) ($validated['notes'] ?? ''));
 
         return new self(
-            type: OperationType::from((string) $validated['type']),
+            type: $type,
             amount: isset($validated['amount']) ? Money::normalize($validated['amount']) : null,
             fromAccountId: self::id($validated['from_account_id'] ?? null),
             toAccountId: self::id($validated['to_account_id'] ?? null),
@@ -46,9 +46,32 @@ final readonly class OperationData
             countedBalance: isset($validated['counted_balance'])
                 ? Money::normalize($validated['counted_balance'])
                 : null,
-            occurredAt: $occurred !== '' ? Carbon::parse($occurred) : Carbon::now(),
+            occurredAt: self::moment(trim((string) ($validated['occurred_at'] ?? '')), $type),
             notes: $notes !== '' ? $notes : null,
         );
+    }
+
+    /**
+     * متى وقعت العملية — والآن إن لم تُذكر.
+     *
+     * **والعدُّ بيومٍ بلا ساعة يقع آخرَ ذلك اليوم.** الافتتاحُ والجرد يُعدّان عند الإقفال
+     * (TREASURY-DESIGN §١١)، فجردُ «٣٠ سبتمبر» يشهد بما كان في الدرج مساءه، بحركات يومه كلِّها،
+     * ويقع في السجلّ بعدها. وإن كان اليومُ هو اليوم فالآن: العدُّ لا يقع في ساعةٍ لم تأتِ.
+     */
+    private static function moment(string $raw, OperationType $type): Carbon
+    {
+        if ($raw === '') {
+            return Carbon::now();
+        }
+
+        $at = Carbon::parse($raw);
+        $isCount = $type === OperationType::Opening || $type === OperationType::Adjustment;
+
+        if (! $isCount || preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw) !== 1) {
+            return $at;
+        }
+
+        return $at->isToday() ? Carbon::now() : $at->endOfDay();
     }
 
     private static function id(mixed $value): ?int

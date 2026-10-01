@@ -215,11 +215,14 @@ final class RecordOperation
      * The account arrives as `to_account_id` and leaves on whichever side the difference falls:
      * a surplus goes in, a shortfall comes out. Both figures are kept on the operation.
      *
+     * **ورصيدُ النظام رصيدُ لحظة الجرد لا رصيدُ اليوم.** جردٌ بتاريخٍ مضى يُقاس بحركاتٍ مؤرَّخةٍ
+     * فيه أو قبله وحدها، وذلك الرقمُ هو `system_balance` المحفوظ.
+     *
      * @return array{0: string, 1: ?TreasuryAccount, 2: ?TreasuryAccount, 3: string}
      */
     private function adjustment(OperationData $data, TreasuryAccount $account): array
     {
-        $system = $this->balances->of((int) $account->getKey());
+        $system = $this->balances->asOf((int) $account->getKey(), $data->occurredAt);
         $difference = Money::round(bcsub((string) $data->countedBalance, $system, 8));
 
         if (bccomp($difference, '0', Money::SCALE) === 0) {
