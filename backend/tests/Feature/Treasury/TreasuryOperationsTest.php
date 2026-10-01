@@ -8,6 +8,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Exceptions\MovementIsImmutable;
+use App\Domain\Treasury\Exceptions\OperationIsImmutable;
 use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
@@ -456,6 +457,69 @@ class TreasuryOperationsTest extends TestCase
 
         // Act
         $movement->forceFill(['amount' => '1000'])->save();
+    }
+
+    public function test_a_movement_cannot_be_deleted_even_softly(): void
+    {
+        // Arrange — حذفٌ ناعم يُسقط الحركة من كل رصيد كما يُسقطها التعديل، بلا أثرٍ يقول لماذا.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $movement = TreasuryMovement::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(MovementIsImmutable::class);
+
+        // Act
+        $movement->delete();
+    }
+
+    public function test_an_operation_cannot_be_edited(): void
+    {
+        // Arrange
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(OperationIsImmutable::class);
+
+        // Act
+        $operation->forceFill(['amount' => '1000'])->save();
+    }
+
+    public function test_an_operation_cannot_be_deleted_even_softly(): void
+    {
+        // Arrange
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(OperationIsImmutable::class);
+
+        // Act
+        $operation->delete();
+    }
+
+    public function test_an_immutable_operation_is_still_undone_by_its_reversal(): void
+    {
+        // Arrange — العكسُ صفٌّ جديد يشير إلى أصله، فلا يمسّ الأصلَ بشيء.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Act
+        $response = $this->postJson(
+            "/api/v1/treasury/operations/{$operation->id}/reverse",
+            ['reason' => 'خطأ'],
+            $headers,
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertTrue($operation->refresh()->isReversed());
+        $this->assertSame('100.00', (string) $operation->amount);
+        $this->assertSame('0.00', $this->balance($this->cashBox()));
     }
 
     // ── who may ─────────────────────────────────────────────────────────────────────────

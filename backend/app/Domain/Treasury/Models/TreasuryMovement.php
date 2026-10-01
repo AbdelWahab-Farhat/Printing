@@ -38,6 +38,12 @@ class TreasuryMovement extends Model
         static::updating(function (): never {
             throw MovementIsImmutable::make();
         });
+
+        // والحذفُ — ولو ناعماً — يُسقط الحركة من كل رصيد كما يُسقطها التعديل، بلا سطرٍ يقول لماذا.
+        // وهو يمرّ بـ`deleting` في الحالين: الناعمُ والنهائيّ.
+        static::deleting(function (): never {
+            throw MovementIsImmutable::cannotBeDeleted();
+        });
     }
 
     /**
