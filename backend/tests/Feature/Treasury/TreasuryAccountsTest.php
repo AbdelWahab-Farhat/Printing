@@ -118,6 +118,45 @@ class TreasuryAccountsTest extends TestCase
         $withdrawalsOnly->assertJsonCount(1, 'data')->assertJsonPath('data.0.balance_after', '300.00');
     }
 
+    public function test_each_history_line_says_whether_this_viewer_may_reverse_it(): void
+    {
+        // Arrange — افتتاحٌ لا يُعكس، وإيداعٌ يُعكس، وسحبٌ عُكس فلا يُعكس هو ولا عكسُه.
+        [, $reverser] = $this->user([
+            PermissionName::ViewTreasury,
+            PermissionName::RecordTreasuryOperations,
+            PermissionName::ReverseTreasuryOperations,
+            PermissionName::ManageTreasury,
+        ]);
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $operate = fn (string $url, array $body) => $this->postJson($url, $body, $reverser)
+            ->assertCreated()->json('data.id');
+        $url = '/api/v1/treasury/operations';
+        $operate($url, ['type' => 'opening', 'to_account_id' => $cash->id, 'amount' => '100']);
+        $operate($url, ['type' => 'deposit', 'to_account_id' => $cash->id, 'amount' => '50']);
+        $withdrawal = $operate($url, [
+            'type' => 'withdrawal',
+            'from_account_id' => $cash->id,
+            'amount' => '20',
+            'notes' => 'سحب',
+        ]);
+        $operate("{$url}/{$withdrawal}/reverse", ['reason' => 'خطأ']);
+        [, $reader] = $this->user([PermissionName::ViewTreasury]);
+        $history = function (array $headers) use ($cash): array {
+            $this->app['auth']->forgetGuards();
+
+            return $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements", $headers)
+                ->assertOk()->json('data.*.is_reversible');
+        };
+
+        // Act
+        $asReverser = $history($reverser);
+        $asReader = $history($reader);
+
+        // Assert — الأحدث أولاً: عكسُ السحب، السحبُ المعكوس، الإيداع، الافتتاح.
+        $this->assertSame([false, false, true, false], $asReverser);
+        $this->assertSame([false, false, false, false], $asReader);
+    }
+
     public function test_the_account_page_totals_each_kind(): void
     {
         // Arrange
