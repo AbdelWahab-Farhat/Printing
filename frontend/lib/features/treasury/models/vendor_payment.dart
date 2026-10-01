@@ -1,9 +1,11 @@
-/// دفعات الموردين — what the company paid a vendor, and what it still owes. TREASURY-DESIGN §٨.
+/// دفعات الموردين — ما دفعته الشركة لمورد، وما بقي عليها. TREASURY-DESIGN §٨.
 ///
-/// Plain classes for the same reason as `treasury_models.dart`.
+/// أصنافٌ عادية للسبب نفسه الذي في `treasury_models.dart`.
 library;
 
-/// One row of a vendor's or a purchase order's payments.
+import 'package:dayaa/core/utils/fixed_point.dart';
+
+/// صفٌّ واحد من دفعات مورد أو أمر شراء.
 class VendorPayment {
   const VendorPayment({
     required this.id,
@@ -13,6 +15,7 @@ class VendorPayment {
     required this.isReversed,
     required this.isReversible,
     this.purchaseOrderId,
+    this.reversesPaymentId,
     this.methodLabel,
     this.accountName,
     this.paidAt,
@@ -22,20 +25,46 @@ class VendorPayment {
 
   final int id;
 
-  /// `payment`, `reversal` or `opening_debt`.
+  /// `payment` أو `reversal` أو `opening_debt`.
   final String type;
   final String typeLabel;
   final String amount;
   final int? purchaseOrderId;
+
+  /// الدفعة التي يعكسها هذا الصف، إن كان عكساً.
+  final int? reversesPaymentId;
   final String? methodLabel;
 
-  /// The drawer it left — none on an opening debt, which moved no money.
+  /// الدرج الذي خرج منه المال — لا درج لدَينٍ افتتاحي، لم يتحرك فيه مال.
   final String? accountName;
   final DateTime? paidAt;
   final String? notes;
   final String? recorderName;
   final bool isReversed;
   final bool isReversible;
+
+  /// مالٌ عاد إلى الدرج: عكسُ دفعةٍ سُجِّلت خطأً.
+  bool get isReversal => type == 'reversal';
+
+  /// دَينٌ يوم الافتتاح: لم يتحرك فيه مال، فلا إشارة له.
+  bool get isOpeningDebt => type == 'opening_debt';
+
+  /// الدفعة نفسها بعد أن عُكست: مشطوبة، ولا تُعكس مرةً ثانية.
+  VendorPayment markedReversed() => VendorPayment(
+    id: id,
+    type: type,
+    typeLabel: typeLabel,
+    amount: amount,
+    isReversed: true,
+    isReversible: false,
+    purchaseOrderId: purchaseOrderId,
+    reversesPaymentId: reversesPaymentId,
+    methodLabel: methodLabel,
+    accountName: accountName,
+    paidAt: paidAt,
+    notes: notes,
+    recorderName: recorderName,
+  );
 
   factory VendorPayment.fromJson(Map<String, dynamic> json) {
     final account = json['treasury_account'];
@@ -48,6 +77,7 @@ class VendorPayment {
       typeLabel: json['type_label']?.toString() ?? '',
       amount: json['amount']?.toString() ?? '0.00',
       purchaseOrderId: (json['purchase_order_id'] as num?)?.toInt(),
+      reversesPaymentId: (json['reverses_payment_id'] as num?)?.toInt(),
       methodLabel: json['method_label']?.toString(),
       accountName: account is Map<String, dynamic> ? account['name']?.toString() : null,
       paidAt: paidAt is String ? DateTime.tryParse(paidAt)?.toLocal() : null,
@@ -59,10 +89,10 @@ class VendorPayment {
   }
 }
 
-/// Paid and still owed on one purchase order.
+/// المدفوع والمتبقي على أمر شراءٍ واحد.
 ///
-/// [remaining] is null on an order from before the treasury: its payments were never recorded,
-/// so the owner chose to show nothing owed on it rather than its whole total.
+/// [remaining] فارغٌ على أمرٍ سابق للخزينة: دفعاته لم تُسجَّل قط، فاختار المالك ألّا يُظهر عليه
+/// متبقياً بدل أن يُظهر إجماليه كله.
 class PurchaseOrderPayments {
   const PurchaseOrderPayments({
     required this.paid,
@@ -78,6 +108,35 @@ class PurchaseOrderPayments {
   final bool predatesTreasury;
   final List<VendorPayment> payments;
 
+  /// بعد دفعةٍ سجّلها الخادم: الصفُّ أعلى القائمة، والمدفوعُ يزيد بمبلغه والمتبقي ينقص.
+  ///
+  /// **جمعٌ على تعريف الخادم نفسه** (`VendorPaymentSummary`: المدفوع = الدفعات − عكوسها،
+  /// والمتبقي = الإجمالي − المدفوع)، فلا يحتاج الصفُّ الجديد إعادةَ قراءة القسم كله.
+  PurchaseOrderPayments withPayment(VendorPayment payment) => PurchaseOrderPayments(
+    total: total,
+    paid: _money(addDecimals(paid, payment.amount)),
+    remaining: remaining == null ? null : _money(subtractDecimals(remaining!, payment.amount)),
+    predatesTreasury: predatesTreasury,
+    payments: [payment, ...payments],
+  );
+
+  /// بعد عكس [original]: صفُّ العكس أعلى القائمة، والأصل مشطوب، والمدفوع ينقص بمبلغه.
+  PurchaseOrderPayments withReversal(VendorPayment original, VendorPayment reversal) =>
+      PurchaseOrderPayments(
+        total: total,
+        paid: _money(subtractDecimals(paid, reversal.amount)),
+        remaining: remaining == null ? null : _money(addDecimals(remaining!, reversal.amount)),
+        predatesTreasury: predatesTreasury,
+        payments: [
+          reversal,
+          for (final payment in payments)
+            if (payment.id == original.id) payment.markedReversed() else payment,
+        ],
+      );
+
+  /// منزلتان كما يرسل الخادم المال، لا ثلاث كما يجمع `fixed_point`.
+  static String _money(String value) => fromThousandths(thousandths(value), scale: 2);
+
   factory PurchaseOrderPayments.fromJson(Map<String, dynamic> json) {
     final summary = json['summary'] is Map<String, dynamic>
         ? json['summary'] as Map<String, dynamic>
@@ -89,10 +148,9 @@ class PurchaseOrderPayments {
       paid: summary['paid']?.toString() ?? '0.00',
       remaining: summary['remaining']?.toString(),
       predatesTreasury: summary['predates_treasury'] == true,
-      payments: rows
-          .whereType<Map<String, dynamic>>()
-          .map(VendorPayment.fromJson)
-          .toList(growable: false),
+      payments: [
+        for (final row in rows.whereType<Map<String, dynamic>>()) VendorPayment.fromJson(row),
+      ],
     );
   }
 }

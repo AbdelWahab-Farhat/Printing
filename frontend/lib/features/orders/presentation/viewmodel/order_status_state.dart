@@ -55,6 +55,30 @@ sealed class OrderStatusState with _$OrderStatusState {
     _ => false,
   };
 
+  /// ما قاله الخادم تحت حقل [key] من حقول الحركة — يصل باسم `fields.<key>`.
+  String? fieldError(String key) => switch (this) {
+    OrderStatusFailure(:final failure) => failure.fieldError('fields.$key'),
+    _ => null,
+  };
+
+  /// هل في الرفض ما لا مربّع له على الشاشة؟ — فيُقال في التوست (RULES §٥).
+  ///
+  /// المربّعات هي حقولُ الحركة المختارة التي يرسم عنصرُها رسالةَ خطأ: النص، والرقم، والحساب.
+  bool get hasUnrenderedErrors => switch (this) {
+    OrderStatusFailure(:final failure) => failure.hasErrorsBeyond({
+      for (final field in selected?.fields ?? const <TransitionField>[])
+        if (_showsErrors(field.type)) 'fields.${field.key}',
+    }),
+    _ => false,
+  };
+
+  static bool _showsErrors(TransitionFieldType type) => switch (type) {
+    TransitionFieldType.text ||
+    TransitionFieldType.number ||
+    TransitionFieldType.treasuryAccount => true,
+    _ => false,
+  };
+
   /// Whether the move can be sent.
   ///
   /// **A courtesy, not the rule.** The server validates the same list and answers 422; this

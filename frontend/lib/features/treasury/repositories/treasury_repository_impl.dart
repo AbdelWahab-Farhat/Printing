@@ -13,6 +13,9 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
 
   final Dio _dio;
 
+  /// `2026-09-30` — اليوم كما يقرؤه `date` في Laravel، بلا ساعةٍ تنقله المنطقةُ الزمنية يوماً.
+  static String _day(DateTime at) => at.toIso8601String().substring(0, 10);
+
   @override
   Future<Either<Failure, TreasuryAccounts>> accounts({bool activeOnly = false}) {
     return safeRequest<TreasuryAccounts>(
@@ -34,10 +37,24 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
   Future<Either<Failure, Paginated<TreasuryMovement>>> movements(
     int accountId, {
     required int page,
+    int? perPage,
+    String? kind,
+    DateTime? from,
+    DateTime? to,
   }) {
     return safePaginatedRequest<TreasuryMovement>(
-      () => _dio.get(TreasuryEndpoints.movements(accountId), queryParameters: {'page': page}),
-      parseItem: TreasuryMovement.fromJson,
+      () => _dio.get(
+        TreasuryEndpoints.movements(accountId),
+        // المفاتيح الفارغة تُحذف ولا تُرسل — RULES §٦.
+        queryParameters: {
+          'page': page,
+          'per_page': ?perPage,
+          'kind': ?kind,
+          if (from != null) 'from': _day(from),
+          if (to != null) 'to': _day(to),
+        },
+      ),
+      parseItem: (json) => TreasuryMovement.fromJson(json),
     );
   }
 
@@ -54,17 +71,18 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     int? pickupCityId,
     bool clearPickupCity = false,
   }) {
-    // Absent keys are left alone on an edit; a `null` in the body would read as "clear it".
+    // في التعديل يُترك المفتاح الغائب كما هو، و`null` في الجسم تعني «امسحه».
     final body = <String, dynamic>{
       'name': name,
       'kind': ?kind,
       'is_default': ?isDefault,
       'is_active': ?isActive,
       'holder_user_id': ?holderUserId,
+      // فارغةً تمسح الملاحظات، وغائبةً تتركها (`AccountData::hasNotes`).
       'notes': ?notes,
       'is_collected': ?isCollected,
       'pickup_city_id': ?pickupCityId,
-      // The one key that means something as a null: this box no longer serves its branch.
+      // المفتاح الآخر الذي له معنى وهو فارغ: هذه الخزنة لم تعد تخدم مكتبها.
       if (clearPickupCity) 'pickup_city_id': null,
     };
 
@@ -105,6 +123,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     int? employeeId,
     String? countedBalance,
     String? notes,
+    String? clientToken,
   }) {
     return safeRequest<TreasuryOperation>(
       () => _dio.post(
@@ -118,6 +137,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           'employee_id': ?employeeId,
           'counted_balance': ?countedBalance,
           'notes': ?notes,
+          'client_token': ?clientToken,
         },
       ),
       parse: (data) => TreasuryOperation.fromJson(data as Map<String, dynamic>),
@@ -186,12 +206,12 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           'withdrawal_needs_reason': ?withdrawalNeedsReason,
           'ask_carrier_fee': ?askCarrierFee,
           'locked_until': ?lockedUntil,
-          // The one key that means something as a null: unlock.
+          // المفتاح الوحيد الذي له معنى وهو فارغ: افتح القفل.
           if (clearLock) 'locked_until': null,
           if (collectKind != null) ...{
             'collect_${collectKind.wire}': ?collectOn,
             'collect_${collectKind.wire}_into_id': ?collectIntoId,
-            // A null target: back to the kind's default.
+            // هدفٌ فارغ: عُد إلى افتراضي النوع.
             if (clearCollectInto) 'collect_${collectKind.wire}_into_id': null,
           },
         },
@@ -221,10 +241,10 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
         TreasuryEndpoints.expenseCategories,
         queryParameters: {if (activeOnly) 'active_only': 1},
       ),
-      parse: (data) => (data as List<dynamic>)
-          .whereType<Map<String, dynamic>>()
-          .map(ExpenseCategory.fromJson)
-          .toList(growable: false),
+      parse: (data) => [
+        for (final row in (data as List<dynamic>).whereType<Map<String, dynamic>>())
+          ExpenseCategory.fromJson(row),
+      ],
     );
   }
 
@@ -253,7 +273,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> payVendor({
+  Future<Either<Failure, VendorPayment>> payVendor({
     required int vendorId,
     required String amount,
     required String method,
@@ -261,8 +281,9 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     int? accountId,
     String? reference,
     String? notes,
+    String? clientToken,
   }) {
-    return safeRequest<Unit>(
+    return safeRequest<VendorPayment>(
       () => _dio.post(
         TreasuryEndpoints.vendorPayments(vendorId),
         data: {
@@ -272,24 +293,25 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           'treasury_account_id': ?accountId,
           'reference': ?reference,
           'notes': ?notes,
+          'client_token': ?clientToken,
         },
       ),
-      parse: (_) => unit,
+      parse: (data) => VendorPayment.fromJson(data as Map<String, dynamic>),
     );
   }
 
   @override
-  Future<Either<Failure, Unit>> reverseVendorPayment({
+  Future<Either<Failure, VendorPayment>> reverseVendorPayment({
     required int vendorId,
     required int paymentId,
     required String reason,
   }) {
-    return safeRequest<Unit>(
+    return safeRequest<VendorPayment>(
       () => _dio.post(
         TreasuryEndpoints.reverseVendorPayment(vendorId, paymentId),
         data: {'reason': reason},
       ),
-      parse: (_) => unit,
+      parse: (data) => VendorPayment.fromJson(data as Map<String, dynamic>),
     );
   }
 }

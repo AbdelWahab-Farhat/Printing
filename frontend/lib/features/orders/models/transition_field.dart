@@ -87,11 +87,11 @@ enum TransitionFieldType {
   @JsonValue('vendor')
   vendor,
 
-  /// Which treasury account the money lands in or reaches — TREASURY-DESIGN §٥/§٦.
+  /// الحساب الذي ينزل فيه المال أو يصل إليه — TREASURY-DESIGN §٥/§٦.
   ///
-  /// **The accounts arrive with it**, in [TransitionField.options], because which accounts a
-  /// person may pick is the treasury's rule. **Always optional**: empty means the server picks
-  /// the person's own account or the method's default, so «تلقائي» is a real answer here.
+  /// **الحسابات تصل معه** في [TransitionField.options]، لأن أيّ الحسابات يجوز اختيارُها قاعدةُ
+  /// الخزينة. **واختياريٌّ دائماً**: فارغاً يختار الخادم حساب صاحب الدفعة أو افتراضي الطريقة،
+  /// فـ«تلقائي» هنا جوابٌ حقيقي.
   @JsonValue('treasury_account')
   treasuryAccount,
 
@@ -176,6 +176,10 @@ abstract class TransitionField with _$TransitionField {
   }) = _TransitionField;
 
   const TransitionField._();
+
+  /// «الحساب» الذي يرافق دفعةً على النقل — يضيق بما تقبله الطريقة المختارة على النقل نفسه،
+  /// ويُمسح حين تتغيّر. أما «استُلم المال في» عند التسوية فبلا طريقة، ويبقى بقائمة الخادم.
+  static const paymentAccountKey = 'payment_account_id';
 
   factory TransitionField.fromJson(Map<String, dynamic> json) =>
       _$TransitionFieldFromJson(json);

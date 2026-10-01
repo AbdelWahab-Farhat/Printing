@@ -54,7 +54,7 @@ class PaymentDraft {
   /// The receipt file — a PDF or a photograph — when one was attached.
   final PickedFile? receipt;
 
-  /// The treasury account picked, or null to let the server decide (TREASURY-DESIGN §٥).
+  /// حساب الخزينة المختار، أو null ليقرّر الخادم (TREASURY-DESIGN §٥).
   final int? accountId;
 }
 
@@ -100,7 +100,7 @@ class _RecordPaymentSheet extends StatefulWidget {
   final String remainingAmount;
   final String paidAmount;
 
-  /// Lets «تلقائي» name the pickup branch's box while the order waits there (§١٩).
+  /// به يسمّي «تلقائي» خزنةَ مكتب الاستلام ما دامت الطلبية تنتظر فيه (§١٩).
   final int? orderId;
 
   @override
@@ -225,7 +225,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                     setState(() {
                       _method = method;
                       _receiptWasMissed = false;
-                      // An account picked for cash does not fit a transfer.
+                      // حسابٌ اختير للكاش لا يناسب الحوالة.
                       _accountId = null;
                     });
                   },

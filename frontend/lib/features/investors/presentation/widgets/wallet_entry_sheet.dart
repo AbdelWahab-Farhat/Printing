@@ -1,3 +1,4 @@
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
@@ -76,9 +77,14 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
   WalletAction _action = WalletAction.deposit;
   PaymentMethod _method = PaymentMethod.cash;
 
-  /// The treasury account the money lands in or leaves from; null lets the server decide.
+  /// حساب الخزينة الذي ينزل فيه المال أو يخرج منه؛ فارغاً يقرّر الخادم.
   int? _accountId;
   bool _saving = false;
+
+  /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها، وما سواها يقوله توست (RULES §٥).
+  Failure? _refusal;
+
+  static const _rendered = {'type', 'method', 'treasury_account_id', 'amount', 'notes'};
 
   @override
   void dispose() {
@@ -108,7 +114,10 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _refusal = null;
+    });
 
     final failure = await widget.cubit.record(
       investorId: widget.investor.id,
@@ -123,13 +132,18 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
 
     if (!mounted) return;
 
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _refusal = failure;
+    });
 
     if (failure != null) {
       // The server's own words. It refuses a withdrawal above the balance and a payout of profit
       // a running deal has not released, and its message says which — restating either rule here
       // would be a second copy to keep in step.
-      context.showError(failure.message);
+      //
+      // ما يخصّ حقلاً يُعلَّق تحته، والباقي يقوله التوست.
+      if (failure.hasErrorsBeyond(_rendered)) context.showFailure(failure);
 
       return;
     }
@@ -187,10 +201,16 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                 labelOf: (action) => action.label,
                 label: 'نوع الحركة',
                 prefixIcon: AppIcons.statusChange,
+                errorText: _refusal?.fieldError('type'),
                 onChanged: (action) {
                   if (action == null) return;
 
-                  setState(() => _action = action);
+                  setState(() {
+                    // الإيداع ينزل في حساب والسحب يخرج من حساب، وقائمتاهما مختلفتان: حسابٌ اختير
+                    // لهذه لا يسافر مع تلك.
+                    if (action != _action) _accountId = null;
+                    _action = action;
+                  });
                 },
               ),
               SizedBox(height: 16.h),
@@ -205,6 +225,7 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                   labelOf: (method) => method.label,
                   label: 'طريقة الدفع',
                   prefixIcon: AppIcons.payment,
+                  errorText: _refusal?.fieldError('method'),
                   onChanged: (method) {
                     if (method == null) return;
 
@@ -215,11 +236,12 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                   },
                 ),
                 SizedBox(height: 16.h),
-                // A deposit lands in an account; a withdrawal leaves one — never Nawris's custody.
+                // الإيداع ينزل في حساب، والسحب يخرج من حساب — لا من عهدة النورس أبداً.
                 TreasuryAccountPicker(
                   method: _method.wire,
                   incoming: _action == WalletAction.deposit,
                   value: _accountId,
+                  errorText: _refusal?.fieldError('treasury_account_id'),
                   onChanged: (id) => setState(() => _accountId = id),
                 ),
                 SizedBox(height: 16.h),
@@ -236,6 +258,7 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                 // Arabic-Indic digits *are* allowed, because that is what an Arabic keyboard
                 // produces, and they are converted on the way to the API.
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+                errorText: _refusal?.fieldError('amount'),
                 validator: _validateAmount,
               ),
               SizedBox(height: 16.h),
@@ -246,10 +269,11 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                 prefixIcon: AppIcons.notes,
                 textInputAction: TextInputAction.done,
                 maxLines: 2,
+                errorText: _refusal?.fieldError('notes'),
               ),
               SizedBox(height: 24.h),
 
-              AppButton(label: 'تسجيل', isLoading: _saving, onPressed: _saving ? null : _submit),
+              AppButton(label: 'تسجيل', isLoading: _saving, onPressed: _submit),
               SizedBox(height: 8.h),
             ],
           ),

@@ -697,7 +697,7 @@ abstract final class Injector {
       );
   }
 
-  /// الحسابات والخزائن — the accounts, their history, and the pickers every payment form asks.
+  /// الحسابات والخزائن — الحسابات وسجلّاتها، والمنتقيات التي يسألها كل نموذج دفع.
   static void _registerTreasury() {
     sl
       ..registerLazySingleton<TreasuryRepository>(() => TreasuryRepositoryImpl(sl<Dio>()))

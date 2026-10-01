@@ -6,8 +6,8 @@ import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «1,250 د.ل» / «−80 د.ل». The sign is split off before grouping so a minus never lands inside
-/// the digits, and the typographic minus is the one the ledgers in this app already print.
+/// «1,250 د.ل» / «−80 د.ل». الإشارة تُفصل قبل التجميع فلا يقع سالبٌ بين الأرقام، والسالبُ
+/// الطباعي هو الذي تطبعه دفاتر التطبيق.
 String treasuryMoney(String amount, {bool signed = false}) {
   final negative = amount.startsWith('-');
   final digits = (negative ? amount.substring(1) : amount).grouped;
@@ -24,7 +24,7 @@ IconData accountKindIcon(AccountKind kind) => switch (kind) {
   AccountKind.unknown => AppIcons.treasury,
 };
 
-/// The figure at the top of a treasury screen — everything held, or one account's balance.
+/// الرقم أعلى شاشة الخزينة — كل ما في الحسابات، أو رصيد حسابٍ واحد.
 class TreasuryTotalCard extends StatelessWidget {
   const TreasuryTotalCard({required this.label, required this.amount, this.footnote, super.key});
 
@@ -130,23 +130,32 @@ class TreasuryAccountTile extends StatelessWidget {
   }
 }
 
-/// One line of an account's history — what happened, by whom, and the balance it left.
+/// سطرٌ من سجلّ الحساب — ما حدث، ومن فعله، والرصيد الذي تركه.
 ///
-/// The shape of the fund's cash row, which is the shape of every ledger line in this app: the
-/// event and its story on the reading side, the signed amount and the balance after on the other.
+/// على شكل سطر نقد الصندوق، وهو شكل كل سطر دفترٍ في التطبيق: الحدث وقصّته على جهة القراءة،
+/// والمبلغ بإشارته والرصيد بعده على الجهة الأخرى. **المعكوس يبقى ظاهراً مشطوباً**، وسطرُ عكسه
+/// فوقه.
 class TreasuryMovementRow extends StatelessWidget {
-  const TreasuryMovementRow({required this.movement, this.onTap, super.key});
+  const TreasuryMovementRow({required this.movement, this.onTap, this.onOptions, super.key});
 
   final TreasuryMovement movement;
 
-  /// Opens the order the money belongs to, when there is one.
+  /// يفتح مصدر المال حين يكون له باب — الطلبية اليوم. فارغٌ: لا شيء يُفتح.
   final VoidCallback? onTap;
+
+  /// «...» — العكس. فارغٌ حين لا يُعكس السطر أو لا يملك القارئ ذلك، فلا يُرسم الزر.
+  final VoidCallback? onOptions;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final tone = movement.isIn ? scheme.primary : scheme.error;
+    final tone = movement.isReversed
+        ? scheme.onSurfaceVariant
+        : movement.isIn
+        ? scheme.primary
+        : scheme.error;
     final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
+    final struck = movement.isReversed ? TextDecoration.lineThrough : null;
 
     final story = [
       if (movement.counterpartName case final other?) movement.isIn ? 'من $other' : 'إلى $other',
@@ -167,7 +176,10 @@ class TreasuryMovementRow extends StatelessWidget {
               children: [
                 Text(
                   movement.isReversal ? 'إلغاء: ${movement.kindLabel}' : movement.kindLabel,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  style: context.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    decoration: struck,
+                  ),
                 ),
                 if (story.isNotEmpty) ...[
                   SizedBox(height: 4.h),
@@ -194,6 +206,7 @@ class TreasuryMovementRow extends StatelessWidget {
                 style: context.textTheme.titleLarge?.copyWith(
                   color: tone,
                   fontWeight: FontWeight.w800,
+                  decoration: struck,
                 ),
               ),
               if (movement.balanceAfter case final after?) ...[
@@ -202,6 +215,8 @@ class TreasuryMovementRow extends StatelessWidget {
               ],
             ],
           ),
+          if (onOptions case final options?)
+            TreasuryOptionsButton(tooltip: 'خيارات الحركة', onPressed: options),
         ],
       ),
     );
@@ -282,6 +297,117 @@ class TreasuryFiguresCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// زرُّ «...» على صفّ — بابُ التعديل والعكس، لا اللمسة التي تفتح الصف.
+class TreasuryOptionsButton extends StatelessWidget {
+  const TreasuryOptionsButton({required this.tooltip, required this.onPressed, super.key});
+
+  /// اسمٌ يقرؤه قارئ الشاشة ويجده الاختبار.
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(AppIcons.more, color: context.colorScheme.onSurfaceVariant),
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// صفٌّ واحد في ورقة «...».
+class TreasuryOption {
+  const TreasuryOption({
+    required this.icon,
+    required this.label,
+    required this.onSelected,
+    this.isDestructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onSelected;
+
+  /// يكتب ما لا يُمحى — عكسٌ: بلون الخطأ.
+  final bool isDestructive;
+}
+
+/// ورقة «...» لصفّ: عنوانه، ثم ما يُفعل به.
+///
+/// **على شكل ورقة خيارات التصميم** (`customer_designs_page.dart`): رأسٌ يسمّي الصف، ثم صفوفٌ
+/// بأيقوناتها، والهدّامُ بلون الخطأ — **داخل `SingleChildScrollView`** لأن الورقة لا تتجاوز
+/// نصف الشاشة، وعلى هاتفٍ قصير وقع صفٌّ خارج ما يُرسم.
+///
+/// الصفّ المختار يُنفَّذ بعد أن تُغلق الورقة، بسياق الصفحة لا بسياقها.
+Future<void> showTreasuryOptions(
+  BuildContext context, {
+  required String title,
+  String? subtitle,
+  required List<TreasuryOption> options,
+}) async {
+  final chosen = await showModalBottomSheet<TreasuryOption>(
+    context: context,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24.r))),
+    builder: (sheetContext) => SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 8.h),
+            ListTile(
+              title: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: sheetContext.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              subtitle: subtitle == null ? null : Text(subtitle),
+            ),
+            const Divider(height: 1),
+            for (final option in options)
+              ListTile(
+                leading: Icon(
+                  option.icon,
+                  color: option.isDestructive ? sheetContext.colorScheme.error : null,
+                ),
+                title: Text(
+                  option.label,
+                  style: option.isDestructive
+                      ? TextStyle(color: sheetContext.colorScheme.error)
+                      : null,
+                ),
+                onTap: () => Navigator.of(sheetContext).pop(option),
+              ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  chosen?.onSelected();
+}
+
+/// رفضُ الخادم تحت عنصرٍ لا مربّع خطأ له — مفتاحٌ أو زرّ — بلون الخطأ وحجم رسالة الحقل.
+class TreasuryFieldError extends StatelessWidget {
+  const TreasuryFieldError(this.message, {super.key});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: 12.w, top: 4.h),
+      child: Text(
+        message,
+        style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.error),
       ),
     );
   }

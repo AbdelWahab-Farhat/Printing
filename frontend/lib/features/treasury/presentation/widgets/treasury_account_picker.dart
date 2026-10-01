@@ -1,170 +1,171 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
-import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/presentation/viewmodel/account_picker_cubit.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «الحساب» on a payment form — which account the money lands in, or leaves from.
+/// «الحساب» على نموذج دفع — أين نزل المال، أو من أين خرج.
 ///
-/// **«تلقائي» is the first chip and the usual answer**: left there, the server puts the money in
-/// the person's own account or the method's default, and names which one beside the chip. The
-/// list is asked of the server for the method chosen, so a bank transfer is never offered the
-/// cash box, and money leaving is never offered Nawris's custody (TREASURY-DESIGN §٥).
+/// **`AppDropdown` وأولُ صفوفه «تلقائي»** (RULES §٧: `placeholder` حين يكون «غير محدد» جواباً
+/// حقيقياً): متروكاً، يضع الخادم المال في حساب صاحبه أو افتراضي الطريقة، و«تلقائي» يسمّي ذلك
+/// الحساب كما سمّاه الخادم. القائمة تُسأل من الخادم بحسب الطريقة، فلا تُعرض الخزنة لحوالة، ولا
+/// تُعرض عهدة النورس لمالٍ خارج (TREASURY-DESIGN §٥).
 ///
-/// **It asks and then steps aside.** A form works without it — every payment endpoint picks an
-/// account on its own — so a list that fails to load, or a build where the treasury is not
-/// registered, simply draws nothing.
-class TreasuryAccountPicker extends StatefulWidget {
+/// **والسؤال في Cubit** ([AccountPickerCubit]) لا هنا: يُعاد مع تغيّر الطريقة، ويُسقط جواباً
+/// وصل بعد أن تغيّرت، وفشلُه يُرسم خطأً بزرّ «إعادة المحاولة» — والنموذج يبقى يُرسل بـ«تلقائي».
+///
+/// **ويتنحّى حين لا خزينة مسجّلة** — نسخةٌ لا تعرفها، أو اختبارُ نموذجٍ لا يخصّه الحساب.
+class TreasuryAccountPicker extends StatelessWidget {
   const TreasuryAccountPicker({
     required this.method,
     required this.value,
     required this.onChanged,
     this.incoming = true,
-    this.label = 'الحساب',
+    this.label,
     this.orderId,
+    this.errorText,
     super.key,
   });
 
-  /// The order the money is for — while it waits at a pickup branch, «تلقائي» is that branch's
-  /// cash box (TREASURY-DESIGN §١٩).
-  final int? orderId;
-
-  /// The payment method's wire value — `cash`, `bank_transfer`, `bank_card`, `libyana`.
+  /// قيمة الطريقة على السلك — `cash`، `bank_transfer`، `bank_card`، `libyana`.
   ///
-  /// **Null for a form that asks which drawer paid rather than how** — a fund expense. It then
-  /// offers every active account money can be paid out of, and «تلقائي» is the cash box.
+  /// **فارغةٌ لنموذجٍ يسأل أيّ درجٍ دفع لا كيف** — مصروف الصندوق: يُعرض كل حسابٍ يُصرف منه.
   final String? method;
   final bool incoming;
-  final String label;
 
-  /// The account picked, or null for «تلقائي».
+  /// الطلبية التي المال لها — ما دامت تنتظر في مكتب استلام، «تلقائي» خزنةُ ذلك المكتب (§١٩).
+  final int? orderId;
+
+  /// الاسم يحمل المعنى بلا سطرٍ تحته: «استُلم في» للمال الداخل، و«دُفع من» للخارج.
+  final String? label;
+
+  /// الحساب المختار، أو null لـ«تلقائي».
   final int? value;
   final ValueChanged<int?> onChanged;
 
+  /// رفضُ الخادم لهذا الحقل (`treasury_account_id` وأخواته).
+  final String? errorText;
+
   @override
-  State<TreasuryAccountPicker> createState() => _TreasuryAccountPickerState();
+  Widget build(BuildContext context) {
+    if (!sl.isRegistered<GetAccountOptions>() || !sl.isRegistered<GetTreasuryAccounts>()) {
+      return const SizedBox.shrink();
+    }
+
+    return BlocProvider(
+      create: (_) => AccountPickerCubit(getOptions: sl(), getAccounts: sl())
+        ..load(method: method, incoming: incoming, orderId: orderId),
+      child: _Picker(
+        method: method,
+        incoming: incoming,
+        orderId: orderId,
+        label: label ?? (incoming ? 'استُلم في' : 'دُفع من'),
+        value: value,
+        onChanged: onChanged,
+        errorText: errorText,
+      ),
+    );
+  }
 }
 
-class _TreasuryAccountPickerState extends State<TreasuryAccountPicker> {
-  AccountOptions? _options;
+/// «تلقائي — مصرف علي»: ما سيختاره الخادم، باسمه حين يعرفه.
+String automaticLabel(String? suggestedName) =>
+    suggestedName == null ? 'تلقائي' : 'تلقائي — $suggestedName';
+
+/// يرسم حالة السؤال، ويعيده حين يتغيّر — طريقةٌ أخرى، أو اتجاهٌ آخر، أو طلبيةٌ أخرى.
+class _Picker extends StatefulWidget {
+  const _Picker({
+    required this.method,
+    required this.incoming,
+    required this.orderId,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.errorText,
+  });
+
+  final String? method;
+  final bool incoming;
+  final int? orderId;
+  final String label;
+  final int? value;
+  final ValueChanged<int?> onChanged;
+  final String? errorText;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  State<_Picker> createState() => _PickerState();
+}
 
+class _PickerState extends State<_Picker> {
   @override
-  void didUpdateWidget(TreasuryAccountPicker old) {
+  void didUpdateWidget(_Picker old) {
     super.didUpdateWidget(old);
 
     if (old.method != widget.method ||
         old.incoming != widget.incoming ||
         old.orderId != widget.orderId) {
-      setState(() => _options = null);
-      _load();
-    }
-  }
-
-  Future<void> _load() async {
-    final method = widget.method;
-
-    if (method == null) return _loadSpendable();
-
-    if (!sl.isRegistered<GetAccountOptions>()) return;
-
-    final result = await sl<GetAccountOptions>()(
-      method: method,
-      incoming: widget.incoming,
-      orderId: widget.orderId,
-    );
-
-    // The method changed while this was in flight — the answer belongs to another question.
-    if (!mounted || method != widget.method) return;
-
-    result.fold((_) {}, (options) => setState(() => _options = options));
-  }
-
-  /// Every account a drawer-only form may pay from: active, and never custody. The cash box is
-  /// what the server falls back to, so it is the one «تلقائي» names.
-  Future<void> _loadSpendable() async {
-    if (!sl.isRegistered<GetTreasuryAccounts>()) return;
-
-    final result = await sl<GetTreasuryAccounts>()(activeOnly: true);
-
-    if (!mounted || widget.method != null) return;
-
-    result.fold((_) {}, (list) {
-      final spendable = [
-        for (final account in list.accounts)
-          if (account.isSpendable && account.isActive) account,
-      ];
-      final cashBox = [
-        for (final account in spendable)
-          if (account.kind == AccountKind.cash && account.isDefault) account.id,
-      ].firstOrNull;
-
-      setState(
-        () => _options = AccountOptions(
-          accounts: [
-            for (final account in spendable)
-              AccountOption(
-                id: account.id,
-                name: account.name,
-                kindLabel: account.kindLabel,
-                isDefault: account.isDefault,
-              ),
-          ],
-          suggestedId: cashBox,
+      unawaited(
+        context.read<AccountPickerCubit>().load(
+          method: widget.method,
+          incoming: widget.incoming,
+          orderId: widget.orderId,
         ),
       );
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final options = _options;
-
-    if (options == null || options.accounts.isEmpty) return const SizedBox.shrink();
-
-    final scheme = context.colorScheme;
-    final suggested = [
-      for (final account in options.accounts)
-        if (account.id == options.suggestedId) account.name,
-    ].firstOrNull;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+    return BlocBuilder<AccountPickerCubit, AccountPickerState>(
+      builder: (context, state) => switch (state) {
+        // ما دام السؤال في الطريق: «تلقائي» وحده، معطّلاً — الحقل في مكانه، لا يقفز حين يصل.
+        AccountPickerLoading() => _dropdown(const [], automatic: 'تلقائي', enabled: false),
+        AccountPickerLoaded(:final options) => _dropdown(
+          options.accounts,
+          automatic: automaticLabel(options.suggestedName),
         ),
-        SizedBox(height: 8.h),
-        Wrap(
-          spacing: 8.w,
-          runSpacing: 8.h,
+        AccountPickerFailed(:final failure) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ChoiceChip(
-              label: Text(suggested == null ? 'تلقائي' : 'تلقائي — $suggested'),
-              selected: widget.value == null,
-              onSelected: (_) => widget.onChanged(null),
+            _dropdown(const [], automatic: 'تلقائي', enabled: false, error: failure.message),
+            SizedBox(height: 8.h),
+            AppButton.tonal(
+              label: 'إعادة المحاولة',
+              icon: AppIcons.refresh,
+              onPressed: context.read<AccountPickerCubit>().retry,
             ),
-            for (final account in options.accounts)
-              ChoiceChip(
-                label: Text(account.name),
-                selected: widget.value == account.id,
-                onSelected: (_) => widget.onChanged(account.id),
-              ),
           ],
         ),
-        SizedBox(height: 4.h),
-        Text(
-          widget.incoming ? 'أين نزل المال' : 'من أين خرج المال',
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-      ],
+      },
+    );
+  }
+
+  Widget _dropdown(
+    List<AccountOption> accounts, {
+    required String automatic,
+    bool enabled = true,
+    String? error,
+  }) {
+    final chosen = accounts.where((account) => account.id == widget.value).firstOrNull;
+
+    return AppDropdown<AccountOption>(
+      value: chosen,
+      items: accounts,
+      keyOf: (account) => account.id,
+      labelOf: (account) => account.name,
+      label: widget.label,
+      prefixIcon: AppIcons.treasury,
+      placeholder: automatic,
+      enabled: enabled,
+      errorText: error ?? widget.errorText,
+      onChanged: (account) => widget.onChanged(account?.id),
     );
   }
 }

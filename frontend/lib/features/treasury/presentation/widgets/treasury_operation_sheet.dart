@@ -2,20 +2,22 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/uuid.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/presentation/viewmodel/expense_categories_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/employee_picker_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
-import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// What records the operation — the dashboard's cubit or the account page's. Null on success.
+/// ما يسجّل العملية — Cubit اللوحة أو Cubit صفحة الحساب. null عند النجاح.
 typedef RecordOperationCallback =
     Future<Failure?> Function({
       required OperationKind kind,
@@ -26,13 +28,14 @@ typedef RecordOperationCallback =
       int? employeeId,
       String? countedBalance,
       String? notes,
+      String? clientToken,
     });
 
-/// One hand operation — إيداع، سحب، مصروف، تحويل، جرد، رصيد افتتاحي. TREASURY-DESIGN §٤.
+/// عمليةٌ يدوية — إيداع، سحب، مصروف، تحويل، جرد، رصيد افتتاحي. TREASURY-DESIGN §٤.
 ///
-/// **One sheet for all six**, because they differ by which boxes they show and nothing else:
-/// money leaving names the account it leaves, a transfer names both, a count asks what was found
-/// instead of an amount. [account] opens it on the account the person came from.
+/// **نموذجٌ واحد للستّ**، لأنها لا تختلف إلا في الحقول التي تُظهرها: المال الخارج يسمّي الحساب
+/// الذي يخرج منه، والتحويل يسمّي الاثنين، والجرد يسأل عمّا وُجد بدل المبلغ. [account] يفتحه على
+/// الحساب الذي جاء منه صاحبه.
 Future<void> showTreasuryOperationSheet({
   required BuildContext context,
   required OperationKind kind,
@@ -44,8 +47,22 @@ Future<void> showTreasuryOperationSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) =>
-        _OperationForm(kind: kind, accounts: accounts, account: account, onSubmit: onSubmit),
+    builder: (_) {
+      final form = _OperationForm(
+        kind: kind,
+        accounts: accounts,
+        account: account,
+        onSubmit: onSubmit,
+      );
+
+      // تصنيفات المصروف من Cubit — والنماذج الأخرى لا تسأل عنها شيئاً.
+      if (kind != OperationKind.expense) return form;
+
+      return BlocProvider(
+        create: (_) => ExpenseCategoriesCubit(getCategories: sl())..load(),
+        child: form,
+      );
+    },
   );
 }
 
@@ -71,17 +88,36 @@ class _OperationFormState extends State<_OperationForm> {
   final _amount = TextEditingController();
   final _notes = TextEditingController();
 
+  /// مفتاح هذا النموذج: يولَّد مرةً ويُعاد مع كل محاولة، فإن وصلت الأولى وانقطع ردّها لم تُكتب
+  /// العملية مرتين (`client_token`).
+  final _clientToken = uuidV4();
+
   TreasuryAccount? _from;
   TreasuryAccount? _to;
   ExpenseCategory? _category;
   AuthUser? _employee;
-  List<ExpenseCategory> _categories = const [];
   bool _saving = false;
+
+  /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها.
+  Failure? _refusal;
 
   OperationKind get _kind => widget.kind;
 
-  /// Opening and count may touch custody — Nawris's opening, a count of what it holds. Every
-  /// other operation leaves it alone, and the server says so too.
+  bool get _isCount => _kind == OperationKind.adjustment;
+
+  /// المفاتيح التي يعرضها هذا النموذج تحت حقوله؛ وما سواها يقوله توست.
+  Set<String> get _rendered => {
+    'amount',
+    'counted_balance',
+    'from_account_id',
+    'to_account_id',
+    'category_id',
+    'employee_id',
+    'notes',
+  };
+
+  /// الافتتاح والجرد قد يمسّان العهدة — افتتاح النورس، وجرد ما فيه. وما سواهما يتركها، والخادم
+  /// يقول ذلك أيضاً.
   List<TreasuryAccount> get _choices => [
     for (final account in widget.accounts)
       if (account.isActive &&
@@ -95,8 +131,7 @@ class _OperationFormState extends State<_OperationForm> {
   void initState() {
     super.initState();
 
-    // The instance from the list, not the one handed in: the dropdown matches by identity, and
-    // an account page holds its own copy of the same account.
+    // نسخةُ القائمة لا النسخة الممرَّرة: صفحة الحساب تحمل نسختها من الحساب نفسه.
     final start = [
       for (final account in _choices)
         if (account.id == widget.account?.id) account,
@@ -109,19 +144,6 @@ class _OperationFormState extends State<_OperationForm> {
         _to = start;
       }
     }
-
-    if (_kind == OperationKind.expense) _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    final result = await sl<GetExpenseCategories>()();
-
-    if (!mounted) return;
-
-    result.fold(
-      (failure) => context.showError(failure.message),
-      (categories) => setState(() => _categories = categories),
-    );
   }
 
   @override
@@ -160,29 +182,35 @@ class _OperationFormState extends State<_OperationForm> {
       return;
     }
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _refusal = null;
+    });
 
     final figure = Validators.toWesternDigits(_amount.text.trim());
     final notes = _notes.text.trim();
-    final isCount = _kind == OperationKind.adjustment;
 
     final failure = await widget.onSubmit(
       kind: _kind,
-      amount: isCount ? null : figure,
-      countedBalance: isCount ? figure : null,
+      amount: _isCount ? null : figure,
+      countedBalance: _isCount ? figure : null,
       fromAccountId: _from?.id,
       toAccountId: _to?.id,
       categoryId: _category?.id,
       employeeId: _employee?.id,
       notes: notes.isEmpty ? null : notes,
+      clientToken: _clientToken,
     );
 
     if (!mounted) return;
 
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _refusal = failure;
+    });
 
     if (failure != null) {
-      context.showError(failure.message, details: failure.details);
+      if (failure.hasErrorsBeyond(_rendered)) context.showFailure(failure);
 
       return;
     }
@@ -194,6 +222,7 @@ class _OperationFormState extends State<_OperationForm> {
   Widget _accountPicker({
     required String label,
     required TreasuryAccount? value,
+    required String errorKey,
     required ValueChanged<TreasuryAccount?> onChanged,
   }) {
     return AppDropdown<TreasuryAccount>(
@@ -203,6 +232,7 @@ class _OperationFormState extends State<_OperationForm> {
       labelOf: (account) => '${account.name} — ${treasuryMoney(account.balance ?? '0')}',
       label: label,
       prefixIcon: AppIcons.treasury,
+      errorText: _refusal?.fieldError(errorKey),
       onChanged: onChanged,
       validator: (account) => account == null ? '$label مطلوب' : null,
     );
@@ -211,7 +241,6 @@ class _OperationFormState extends State<_OperationForm> {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isCount = _kind == OperationKind.adjustment;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -248,6 +277,7 @@ class _OperationFormState extends State<_OperationForm> {
                 _accountPicker(
                   label: 'من حساب',
                   value: _from,
+                  errorKey: 'from_account_id',
                   onChanged: (account) => setState(() => _from = account),
                 ),
                 SizedBox(height: 16.h),
@@ -256,21 +286,17 @@ class _OperationFormState extends State<_OperationForm> {
                 _accountPicker(
                   label: _kind == OperationKind.transfer ? 'إلى حساب' : 'الحساب',
                   value: _to,
+                  errorKey: 'to_account_id',
                   onChanged: (account) => setState(() => _to = account),
                 ),
                 SizedBox(height: 16.h),
               ],
 
               if (_kind == OperationKind.expense) ...[
-                AppDropdown<ExpenseCategory>(
+                _Categories(
                   value: _category,
-                  items: _categories,
-                  keyOf: (category) => category.id,
-                  labelOf: (category) => category.name,
-                  label: 'التصنيف',
-                  prefixIcon: AppIcons.expense,
+                  errorText: _refusal?.fieldError('category_id'),
                   onChanged: (category) => setState(() => _category = category),
-                  validator: (category) => category == null ? 'التصنيف مطلوب' : null,
                 ),
                 SizedBox(height: 16.h),
                 if (_category?.requiresEmployee ?? false) ...[
@@ -279,25 +305,21 @@ class _OperationFormState extends State<_OperationForm> {
                     icon: AppIcons.employees,
                     onPressed: _pickEmployee,
                   ),
+                  if (_refusal?.fieldError('employee_id') case final error?)
+                    TreasuryFieldError(error),
                   SizedBox(height: 16.h),
                 ],
               ],
 
               AppTextField(
                 controller: _amount,
-                label: isCount ? 'الرصيد المعدود فعلاً' : 'المبلغ',
-                prefixIcon: isCount ? AppIcons.countBalance : AppIcons.payment,
+                label: _isCount ? 'الرصيد المعدود فعلاً' : 'المبلغ',
+                prefixIcon: _isCount ? AppIcons.countBalance : AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
-                validator: (value) => _validateAmount(value, allowZero: isCount),
+                errorText: _refusal?.fieldError(_isCount ? 'counted_balance' : 'amount'),
+                validator: (value) => _validateAmount(value, allowZero: _isCount),
               ),
-              if (isCount && _to?.balance != null) ...[
-                SizedBox(height: 6.h),
-                Text(
-                  'رصيد النظام الآن ${treasuryMoney(_to!.balance!)} — يُسجَّل الفرق وحده',
-                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                ),
-              ],
               SizedBox(height: 16.h),
 
               AppTextField(
@@ -306,22 +328,69 @@ class _OperationFormState extends State<_OperationForm> {
                 prefixIcon: AppIcons.notes,
                 maxLines: 2,
                 textInputAction: TextInputAction.done,
+                errorText: _refusal?.fieldError('notes'),
                 validator: _kind.needsNotes
                     ? (value) => (value ?? '').trim().isEmpty ? 'السبب مطلوب' : null
                     : null,
               ),
               SizedBox(height: 24.h),
 
-              AppButton(
-                label: 'تسجيل ${_kind.label}',
-                isLoading: _saving,
-                onPressed: _saving ? null : _submit,
-              ),
+              AppButton(label: 'تسجيل ${_kind.label}', isLoading: _saving, onPressed: _submit),
               SizedBox(height: 8.h),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// «التصنيف» — من [ExpenseCategoriesCubit]، وفشلُه يُقال تحت الحقل بزرّ «إعادة المحاولة».
+class _Categories extends StatelessWidget {
+  const _Categories({required this.value, required this.errorText, required this.onChanged});
+
+  final ExpenseCategory? value;
+  final String? errorText;
+  final ValueChanged<ExpenseCategory?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ExpenseCategoriesCubit, ExpenseCategoriesState>(
+      builder: (context, state) {
+        final dropdown = AppDropdown<ExpenseCategory>(
+          value: value,
+          items: switch (state) {
+            ExpenseCategoriesLoaded(:final categories) => categories,
+            _ => const [],
+          },
+          keyOf: (category) => category.id,
+          labelOf: (category) => category.name,
+          label: 'التصنيف',
+          prefixIcon: AppIcons.expense,
+          enabled: state is ExpenseCategoriesLoaded,
+          errorText: switch (state) {
+            ExpenseCategoriesFailed(:final failure) => failure.message,
+            _ => errorText,
+          },
+          onChanged: onChanged,
+          validator: (category) => category == null ? 'التصنيف مطلوب' : null,
+        );
+
+        if (state is! ExpenseCategoriesFailed) return dropdown;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            dropdown,
+            SizedBox(height: 8.h),
+            AppButton.tonal(
+              label: 'إعادة المحاولة',
+              icon: AppIcons.refresh,
+              onPressed: context.read<ExpenseCategoriesCubit>().load,
+            ),
+          ],
+        );
+      },
     );
   }
 }

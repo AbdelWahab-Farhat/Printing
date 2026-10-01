@@ -5,6 +5,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
@@ -37,20 +38,20 @@ class TransitionFieldInput extends StatelessWidget {
     required this.onChanged,
     this.paymentMethod,
     this.orderId,
+    this.errorText,
     super.key,
   });
 
-  /// The order being moved — lets «تلقائي» name the pickup branch's box (§١٩).
+  /// الطلبية التي تُنقل — بها يسمّي «تلقائي» خزنةَ مكتب الاستلام (§١٩).
   final int? orderId;
-
-  /// «الحساب» that goes with a payment on the move — narrowed to the accounts [paymentMethod]
-  /// fits. The settle screen's «استُلم المال في» has no method and keeps the server's list.
-  static const paymentAccountKey = 'payment_account_id';
 
   final TransitionField field;
 
-  /// The method picked on the same move, for [paymentAccountKey]. Null until one is picked.
+  /// الطريقة المختارة على النقل نفسه، لـ[TransitionField.paymentAccountKey]. فارغةٌ حتى تُختار.
   final String? paymentMethod;
+
+  /// رفضُ الخادم لهذا الحقل (`fields.<key>`)، يُرسم تحت مربّعه حين يكون له مربّع.
+  final String? errorText;
 
   /// Whatever this kind of field holds — a `String`, a `List<CustomerDesign>`, or null.
   final Object? value;
@@ -66,12 +67,14 @@ class TransitionFieldInput extends StatelessWidget {
       TransitionFieldType.text => _Text(
         field: field,
         value: value is String ? value! as String : '',
+        errorText: errorText,
         onChanged: onChanged,
       ),
       TransitionFieldType.notice => _Notice(field: field),
       TransitionFieldType.number => _Number(
         field: field,
         value: value is String ? value! as String : '',
+        errorText: errorText,
         onChanged: onChanged,
       ),
       TransitionFieldType.customerDesigns => _Designs(
@@ -105,16 +108,19 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is Warehouse ? value! as Warehouse : null,
         onChanged: onChanged,
       ),
-      TransitionFieldType.treasuryAccount when field.key == paymentAccountKey => _PaymentAccount(
-        field: field,
-        method: paymentMethod,
-        orderId: orderId,
-        chosen: value is String ? value! as String : null,
-        onChanged: onChanged,
-      ),
+      TransitionFieldType.treasuryAccount when field.key == TransitionField.paymentAccountKey =>
+        _PaymentAccount(
+          field: field,
+          method: paymentMethod,
+          orderId: orderId,
+          chosen: value is String ? value! as String : null,
+          errorText: errorText,
+          onChanged: onChanged,
+        ),
       TransitionFieldType.treasuryAccount => _Account(
         field: field,
         chosen: value is String ? value! as String : null,
+        errorText: errorText,
         onChanged: onChanged,
       ),
       TransitionFieldType.unknown => _Unsupported(field: field),
@@ -122,72 +128,52 @@ class TransitionFieldInput extends StatelessWidget {
   }
 }
 
-/// Which account the money lands in — «الحساب» with a payment, «استُلم المال في» at settlement.
+/// أين ينزل المال — «استُلم المال في» عند التسوية، والحسابات تصل مع الحقل من الخادم.
 ///
-/// **«تلقائي» is the first chip and a real answer**, not a gap: left there, the server puts the
-/// money in the person's own account or the method's default (TREASURY-DESIGN §٥). The accounts
-/// come with the field, so this build lists whatever the treasury allows today; whether one fits
-/// the chosen method is the server's rule, and a mismatch comes back under this field.
+/// **`AppDropdown` وأولُ صفوفه «تلقائي»**، وهو جوابٌ حقيقي لا فراغ: متروكاً يضع الخادم المال في
+/// حساب صاحبه أو افتراضي الطريقة (TREASURY-DESIGN §٥). وما يصل مع الحقل من بيان — «في العهدة:
+/// 100 (النورس)» — يُرسم تحته كما أرسله الخادم، ورفضُه تحته أيضاً.
 class _Account extends StatelessWidget {
-  const _Account({required this.field, required this.chosen, required this.onChanged});
+  const _Account({
+    required this.field,
+    required this.chosen,
+    required this.errorText,
+    required this.onChanged,
+  });
 
   final TransitionField field;
   final String? chosen;
+  final String? errorText;
   final ValueChanged<Object?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${field.label} (اختياري)',
-          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        if (field.hint case final hint?) ...[
-          SizedBox(height: 4.h),
-          Text(
-            hint,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ],
-        SizedBox(height: 10.h),
-        Wrap(
-          spacing: 8.w,
-          runSpacing: 8.h,
-          children: [
-            ChoiceChip(
-              label: const Text('تلقائي'),
-              selected: chosen == null,
-              onSelected: (_) => onChanged(null),
-            ),
-            for (final option in field.options)
-              ChoiceChip(
-                label: Text(option.label),
-                selected: option.value == chosen,
-                onSelected: (_) => onChanged(option.value),
-              ),
-          ],
-        ),
-      ],
+    return AppDropdown<TransitionFieldOption>(
+      value: field.options.where((option) => option.value == chosen).firstOrNull,
+      items: field.options,
+      labelOf: (option) => option.label,
+      label: '${field.label} (اختياري)',
+      prefixIcon: AppIcons.treasury,
+      placeholder: 'تلقائي',
+      helperText: field.hint,
+      errorText: errorText,
+      onChanged: (option) => onChanged(option?.value),
     );
   }
 }
 
-/// «الحساب» beside a payment on the move — only the accounts the chosen method fits, asked of
-/// the server like the payments sheet does, with «تلقائي» naming where the money will land.
+/// «الحساب» بجانب دفعةٍ على النقل — الحسابات التي تقبلها الطريقة المختارة وحدها، تُسأل من
+/// الخادم كما في شاشة المدفوعات، و«تلقائي» يسمّي أين سينزل المال.
 ///
-/// **Before a method is picked there is nothing to narrow by**, so only «تلقائي» is offered —
-/// never a bank account next to a cash payment. The status page clears the pick when the method
-/// changes, so a stale account never travels with a new method.
+/// **قبل اختيار الطريقة لا شيء يُضيَّق به**، فلا يُعرض إلا «تلقائي» — معطّلاً، بلا سطرٍ يشرح.
+/// والـ Cubit يمسح الاختيار حين تتغيّر الطريقة، فلا يسافر حسابٌ قديم مع طريقةٍ جديدة.
 class _PaymentAccount extends StatelessWidget {
   const _PaymentAccount({
     required this.field,
     required this.method,
     required this.orderId,
     required this.chosen,
+    required this.errorText,
     required this.onChanged,
   });
 
@@ -195,25 +181,33 @@ class _PaymentAccount extends StatelessWidget {
   final String? method;
   final int? orderId;
   final String? chosen;
+  final String? errorText;
   final ValueChanged<Object?> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final method = this.method;
+    final label = '${field.label} (اختياري)';
 
     if (method == null) {
-      return _Account(
-        field: field.copyWith(options: const [], hint: 'اختر طريقة الدفع لتظهر حساباتها'),
-        chosen: null,
-        onChanged: onChanged,
+      return AppDropdown<TransitionFieldOption>(
+        items: const [],
+        labelOf: (option) => option.label,
+        label: label,
+        prefixIcon: AppIcons.treasury,
+        placeholder: 'تلقائي',
+        enabled: false,
+        errorText: errorText,
+        onChanged: (_) {},
       );
     }
 
     return TreasuryAccountPicker(
       method: method,
       orderId: orderId,
-      label: '${field.label} (اختياري)',
+      label: label,
       value: int.tryParse(chosen ?? ''),
+      errorText: errorText,
       onChanged: (id) => onChanged(id?.toString()),
     );
   }
@@ -525,10 +519,16 @@ class _Vendor extends StatelessWidget {
 }
 
 class _Text extends StatefulWidget {
-  const _Text({required this.field, required this.value, required this.onChanged});
+  const _Text({
+    required this.field,
+    required this.value,
+    required this.errorText,
+    required this.onChanged,
+  });
 
   final TransitionField field;
   final String value;
+  final String? errorText;
   final ValueChanged<Object?> onChanged;
 
   @override
@@ -553,6 +553,7 @@ class _TextState extends State<_Text> {
       controller: _controller,
       label: widget.field.isRequired ? widget.field.label : '${widget.field.label} (اختياري)',
       helperText: widget.field.hint,
+      errorText: widget.errorText,
       maxLines: widget.field.multiline ? 3 : 1,
       textInputAction: widget.field.multiline
           ? TextInputAction.newline
@@ -567,10 +568,16 @@ class _TextState extends State<_Text> {
 /// Sent as the string that was typed, like every other field — the server parses it, and a
 /// half-typed «12.» is not a number this app should be deciding about mid-keystroke.
 class _Number extends StatefulWidget {
-  const _Number({required this.field, required this.value, required this.onChanged});
+  const _Number({
+    required this.field,
+    required this.value,
+    required this.errorText,
+    required this.onChanged,
+  });
 
   final TransitionField field;
   final String value;
+  final String? errorText;
   final ValueChanged<Object?> onChanged;
 
   @override
@@ -599,6 +606,7 @@ class _NumberState extends State<_Number> {
           ? widget.field.label
           : '${widget.field.label} (اختياري)',
       helperText: widget.field.hint,
+      errorText: widget.errorText,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       // Arabic-Indic digits are what the keyboard produces, so they are allowed through and
       // normalised on the way out — the same rule the invoice editor follows.

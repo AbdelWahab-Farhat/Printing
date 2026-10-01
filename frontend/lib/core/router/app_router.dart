@@ -170,12 +170,12 @@ abstract final class Routes {
   /// قواعدُ الصندوق الأربع — خلف `settings.view`.
   static const String investmentSettings = '/investment-settings';
 
-  /// الحسابات والخزائن — the dashboard, and one account's page.
+  /// الحسابات والخزائن — اللوحة، وصفحة الحساب الواحد.
   static const String treasury = '/treasury';
 
   static String treasuryAccount(int id) => '/treasury/accounts/$id';
 
-  /// «إعدادات المالية».
+  /// «إعدادات المالية» — خلف `treasury.manage`.
   static const String treasurySettings = '/treasury/settings';
 
   static String investor(int id) => '/investors/$id';
@@ -691,6 +691,9 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: Routes.treasurySettings,
+        // لمن يدير الخزينة وحده، كبقية المسارات المحروسة: رابطٌ عميق لا يفتحها لغيره.
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageTreasury) ? null : Routes.treasury,
         builder: (context, state) => const TreasurySettingsPage(),
       ),
       GoRoute(

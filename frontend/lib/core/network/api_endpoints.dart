@@ -50,21 +50,13 @@ abstract final class InvestorEndpoints {
       '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
-/// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.
-///
-/// نقطةٌ واحدة لا اثنتان: الإعداداتُ صفٌّ واحد على الخادم، وتقسيمُها إلى «عامة» و«استثمار» في
-/// المسار كان سيعد بفصلٍ لا يوجد خلفه.
-/// الصندوق الاستثماري وفتراته.
-///
-/// `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار هو
-/// الصندوقُ وفتراتُه.
 /// الحسابات والخزائن — TREASURY-DESIGN §١٠.
 abstract final class TreasuryEndpoints {
   static const String accounts = '/treasury/accounts';
   static String account(int id) => '/treasury/accounts/$id';
   static String movements(int id) => '/treasury/accounts/$id/movements';
 
-  /// The accounts a payment method fits, and the one the treasury would pick for this person.
+  /// الحسابات التي تقبلها طريقة الدفع، والذي ستختاره الخزينة لهذا الشخص.
   static const String accountOptions = '/treasury/account-options';
 
   static const String operations = '/treasury/operations';
@@ -78,7 +70,7 @@ abstract final class TreasuryEndpoints {
   static const String ownership = '/treasury/ownership';
   static const String inventoryValue = '/treasury/inventory-value';
 
-  /// دفعات الموردين — money out to a vendor, optionally for one purchase order.
+  /// دفعات الموردين — مالٌ خرج لمورد، على أمر شراءٍ أو بدونه.
   static String vendorPayments(int vendorId) => '/vendors/$vendorId/payments';
   static String reverseVendorPayment(int vendorId, int paymentId) =>
       '/vendors/$vendorId/payments/$paymentId/reverse';
@@ -86,6 +78,14 @@ abstract final class TreasuryEndpoints {
       '/purchase-orders/$purchaseOrderId/payments';
 }
 
+/// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.
+///
+/// نقطةٌ واحدة لا اثنتان: الإعداداتُ صفٌّ واحد على الخادم، وتقسيمُها إلى «عامة» و«استثمار» في
+/// المسار كان سيعد بفصلٍ لا يوجد خلفه.
+/// الصندوق الاستثماري وفتراته.
+///
+/// `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار هو
+/// الصندوقُ وفتراتُه.
 abstract final class InvestmentEndpoints {
   static const String fund = '/investment/fund';
 

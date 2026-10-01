@@ -4,12 +4,15 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
@@ -17,7 +20,6 @@ import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.da
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 /// الحسابات والخزائن — every account and what it holds, whose the money is, and what the
 /// shelves are worth. TREASURY-DESIGN §٩.
@@ -48,7 +50,11 @@ class _TreasuryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TreasuryCubit, TreasuryState>(
+    return BlocConsumer<TreasuryCubit, TreasuryState>(
+      // إعادة تحميلٍ فشلت والشاشة باقية على ما قبلها: يُقال الفشل ولا يُمحى ما عليها.
+      listener: (context, state) {
+        if (state case TreasuryLoaded(:final refreshFailure?)) context.showFailure(refreshFailure);
+      },
       builder: (context, state) {
         final cubit = context.read<TreasuryCubit>();
 
@@ -61,9 +67,10 @@ class _TreasuryView extends StatelessWidget {
                   tooltip: 'إعدادات المالية',
                   icon: Icon(AppIcons.settings),
                   onPressed: () async {
-                    await context.push(Routes.treasurySettings);
+                    // الإعدادات تقول إن حُفظ فيها شيء — فتُقرأ الحسابات مرةً، لا بعد كل زيارة.
+                    final changed = await context.pushForResult<bool>(Routes.treasurySettings);
 
-                    if (context.mounted) unawaited(cubit.load());
+                    if ((changed ?? false) && context.mounted) unawaited(cubit.load());
                   },
                 ),
             ],
@@ -118,10 +125,13 @@ class _Loaded extends StatelessWidget {
           TreasuryAccountTile(
             key: ValueKey(account.id),
             account: account,
+            // صفحة الحساب تعيد ما تغيّر: تعديلٌ يُرقَّع صفُّه، ومالٌ تحرّك يُقرأ له المجموع.
             onTap: () async {
-              await context.push(Routes.treasuryAccount(account.id));
+              final change = await context.pushForResult<AccountChange>(
+                Routes.treasuryAccount(account.id),
+              );
 
-              unawaited(cubit.load());
+              if (change != null) await cubit.applyAccountChange(change);
             },
           ),
 
@@ -133,7 +143,7 @@ class _Loaded extends StatelessWidget {
             lines: [
               ('كل ما في الحسابات', ownership.totalHeld),
               for (final investor in ownership.investors)
-                (investor.name, _sum(investor.capital, investor.profit)),
+                (investor.name, addDecimals(investor.capital, investor.profit)),
               ('نقد الصندوق الاستثماري', ownership.fundCash),
             ],
             emphasis: ('مال الشركة نفسها', ownership.companyOwn),
@@ -156,27 +166,6 @@ class _Loaded extends StatelessWidget {
         ],
       ],
     );
-  }
-
-  /// Capital and profit are both kept for the investor, so the card shows them as one figure.
-  /// Decimal strings added as integers of millimes — never through a float.
-  static String _sum(String a, String b) {
-    int millimes(String value) {
-      final negative = value.startsWith('-');
-      final parts = (negative ? value.substring(1) : value).split('.');
-      final whole = int.tryParse(parts.first) ?? 0;
-      final fraction =
-          int.tryParse((parts.length > 1 ? parts[1] : '0').padRight(2, '0').substring(0, 2)) ?? 0;
-      final total = whole * 100 + fraction;
-
-      return negative ? -total : total;
-    }
-
-    final total = millimes(a) + millimes(b);
-    final sign = total < 0 ? '-' : '';
-    final absolute = total.abs();
-
-    return '$sign${absolute ~/ 100}.${(absolute % 100).toString().padLeft(2, '0')}';
   }
 }
 

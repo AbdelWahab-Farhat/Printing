@@ -5,26 +5,32 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_account_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_dialogs.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
-import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// One account: its balance, what came in and went out by kind, and every movement — the date,
-/// the amount, the kind, who did it, the order it belongs to, the note. TREASURY-DESIGN §٩.
+/// حسابٌ واحد: رصيده، وما دخله وخرج منه بالنوع، وكل حركة — التاريخ، والمبلغ، والنوع، ومن
+/// فعلها، والطلبية التي تخصّها، والملاحظة. مُصفّى بالنوع والتاريخ. TREASURY-DESIGN §٩.
+///
+/// **يُعيد لمن فتحه ما تغيّر** ([TreasuryAccountCubit.change]) — فلا تعيد اللوحة قراءة نفسها
+/// بعد كل زيارة.
 class TreasuryAccountPage extends StatelessWidget {
   const TreasuryAccountPage({required this.accountId, super.key});
 
@@ -38,13 +44,17 @@ class TreasuryAccountPage extends StatelessWidget {
           create: (_) => TreasuryAccountCubit(
             accountId: accountId,
             getAccount: sl(),
+            getAccounts: sl(),
             recordOperation: sl(),
-            reverseOperation: sl(),
             saveAccount: sl(),
           )..load(),
         ),
         BlocProvider(
-          create: (_) => AccountMovementsCubit(accountId: accountId, getMovements: sl())..load(),
+          create: (_) => AccountMovementsCubit(
+            accountId: accountId,
+            getMovements: sl(),
+            reverseOperation: sl(),
+          )..load(),
         ),
       ],
       child: const _AccountView(),
@@ -55,15 +65,19 @@ class TreasuryAccountPage extends StatelessWidget {
 class _AccountView extends StatelessWidget {
   const _AccountView();
 
-  /// After anything that moved money here: the header and the history both change.
-  static void _refreshAll(BuildContext context) {
-    unawaited(context.read<TreasuryAccountCubit>().load());
-    unawaited(context.read<AccountMovementsCubit>().refresh());
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TreasuryAccountCubit, TreasuryAccountState>(
+    final movements = context.read<AccountMovementsCubit>();
+
+    return BlocConsumer<TreasuryAccountCubit, TreasuryAccountState>(
+      listener: (context, state) {
+        // كل قراءةٍ تمرّ هنا: ما تغيّر يُسلَّم لمن فتح الصفحة، كيفما أُغلقت.
+        context.handBack(context.read<TreasuryAccountCubit>().change);
+
+        if (state case TreasuryAccountLoaded(:final refreshFailure?)) {
+          context.showFailure(refreshFailure);
+        }
+      },
       builder: (context, state) {
         final detail = state is TreasuryAccountLoaded ? state.detail : null;
 
@@ -71,6 +85,11 @@ class _AccountView extends StatelessWidget {
           appBar: AppBar(
             title: Text(detail?.account.name ?? 'الحساب'),
             actions: [
+              IconButton(
+                tooltip: 'حسب التاريخ',
+                icon: Icon(AppIcons.month),
+                onPressed: () => _pickRange(context, movements),
+              ),
               if (detail != null && sl<Session>().can(AppPermission.manageTreasury))
                 IconButton(
                   tooltip: 'تعديل الحساب',
@@ -93,13 +112,10 @@ class _AccountView extends StatelessWidget {
                   child: TreasuryTotalCard(
                     label: 'الرصيد الحالي',
                     amount: detail.account.balance ?? '0',
-                    footnote: [
-                      detail.account.kindLabel,
-                      if (detail.account.holder case final holder?) 'باسم ${holder.name}',
-                    ].join(' · '),
                   ),
                 ),
                 _Totals(detail: detail),
+                _Filters(detail: detail),
                 const Expanded(child: _History()),
               ],
             ),
@@ -112,12 +128,38 @@ class _AccountView extends StatelessWidget {
   Future<void> _edit(BuildContext context, TreasuryAccount account) async {
     final cubit = context.read<TreasuryAccountCubit>();
 
-    await showTreasuryAccountSheet(context: context, account: account, onSubmit: cubit.save);
+    await showTreasuryAccountSheet(
+      context: context,
+      account: account,
+      onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) => cubit.save(
+        name: name,
+        isDefault: isDefault,
+        isActive: isActive,
+        holderUserId: holderUserId,
+        notes: notes,
+      ),
+    );
+  }
+
+  Future<void> _pickRange(BuildContext context, AccountMovementsCubit movements) async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: now,
+      initialDateRange: movements.from != null && movements.to != null
+          ? DateTimeRange(start: movements.from!, end: movements.to!)
+          : null,
+    );
+
+    if (picked == null) return;
+
+    await movements.between(picked.start, picked.end);
   }
 }
 
-/// «الإيداعات · المسحوبات · التحويلات الداخلة والخارجة · التسويات» — each kind this account has
-/// seen, net of reversals, in the enum's order the server keeps.
+/// «الإيداعات · المسحوبات · التحويلات الداخلة والخارجة · التسويات» — كل نوعٍ رآه الحساب، صافياً
+/// من العكوس، بترتيب الخادم.
 class _Totals extends StatelessWidget {
   const _Totals({required this.detail});
 
@@ -156,24 +198,65 @@ class _Totals extends StatelessWidget {
   }
 }
 
+/// «الكل» ثم كل نوعٍ رآه الحساب، ومدى الأيام إن اختير — الفلتر كله على الخادم.
+class _Filters extends StatelessWidget {
+  const _Filters({required this.detail});
+
+  final TreasuryAccountDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final movements = context.watch<AccountMovementsCubit>();
+    final kinds = <(String?, String)>[
+      (null, 'الكل'),
+      for (final kind in detail.byKind) (kind.kind, kind.label),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 4.h),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: [
+            for (final (kind, label) in kinds)
+              FilterOptionChip(
+                label: label,
+                isSelected: movements.kind == kind,
+                onTap: () => unawaited(movements.filterBy(kind)),
+              ),
+            if (movements.from case final from?)
+              if (movements.to case final to?)
+                InputChip(
+                  label: Text(AppDates.span(from, to)),
+                  onDeleted: () => unawaited(movements.between(null, null)),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _History extends StatelessWidget {
   const _History();
-
-  static const _reversible = {'deposit', 'withdrawal', 'expense', 'transfer', 'adjustment'};
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<AccountMovementsCubit>();
+    final canReverse = sl<Session>().can(AppPermission.reverseTreasuryOperations);
 
     return BlocBuilder<AccountMovementsCubit, AccountMovementsState>(
       builder: (context, state) {
         final items = state is PagedLoaded<TreasuryMovement>
             ? state.page.items
             : const <TreasuryMovement>[];
+        final filtered = cubit.kind != null || cubit.from != null;
 
         return PagedListView<TreasuryMovement>(
           state: state,
-          emptyMessage: 'لم يتحرّك هذا الحساب بعد',
+          emptyMessage: filtered ? 'لا حركات تطابق هذا الفلتر' : 'لم يتحرّك هذا الحساب بعد',
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
           skeletonHeight: 84.h,
@@ -184,7 +267,15 @@ class _History extends StatelessWidget {
             final row = TreasuryMovementRow(
               key: ValueKey(movement.id),
               movement: movement,
-              onTap: _tapOf(context, movement),
+              // اللمسة تفتح مصدر المال حين يكون له باب — الطلبية — ولا شيء غير ذلك.
+              onTap: switch (movement.orderId) {
+                final orderId? => () => context.push(Routes.order(orderId)),
+                null => null,
+              },
+              // العكس في «...» وحده، وحين يقول الخادم إن السطر يُعكس.
+              onOptions: canReverse && movement.isReversible && movement.operationId != null
+                  ? () => _options(context, movement)
+                  : null,
             );
 
             if (movement.occurredAt case final at? when startsNewDay(previous?.occurredAt, at)) {
@@ -204,95 +295,50 @@ class _History extends StatelessWidget {
     );
   }
 
-  /// A hand operation is undone from its line; money that belongs to an order opens the order.
-  VoidCallback? _tapOf(BuildContext context, TreasuryMovement movement) {
-    final operationId = movement.operationId;
-    final canReverse = sl<Session>().can(AppPermission.reverseTreasuryOperations);
-
-    if (operationId != null &&
-        !movement.isReversal &&
-        canReverse &&
-        _reversible.contains(movement.kind)) {
-      return () => _reverse(context, operationId, movement);
-    }
-
-    if (movement.orderId case final orderId?) {
-      return () => context.push(Routes.order(orderId));
-    }
-
-    return null;
+  Future<void> _options(BuildContext context, TreasuryMovement movement) {
+    return showTreasuryOptions(
+      context,
+      title: movement.kindLabel,
+      subtitle: [
+        treasuryMoney(movement.signedAmount, signed: true),
+        if (movement.occurredAt case final at?) at.timeLabel,
+      ].join(' · '),
+      options: [
+        TreasuryOption(
+          icon: AppIcons.undo,
+          label: 'عكس العملية',
+          isDestructive: true,
+          onSelected: () => unawaited(_reverse(context, movement)),
+        ),
+      ],
+    );
   }
 
-  Future<void> _reverse(BuildContext context, int operationId, TreasuryMovement movement) async {
-    final cubit = context.read<TreasuryAccountCubit>();
+  /// يعكس العملية بسببٍ إجباري. السجلُّ يُرقَّع (الأصل مشطوب وسطرُ العكس فوقه)، والرأسُ يُقرأ.
+  Future<void> _reverse(BuildContext context, TreasuryMovement movement) async {
+    final header = context.read<TreasuryAccountCubit>();
     final movements = context.read<AccountMovementsCubit>();
 
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (_) => _ReasonDialog(title: 'عكس «${movement.kindLabel}»'),
+    final reason = await askForReason(
+      context,
+      title: 'عكس «${movement.kindLabel}»',
+      confirmLabel: 'عكس العملية',
     );
 
     if (reason == null || !context.mounted) return;
 
-    final failure = await cubit.reverse(operationId, reason: reason);
+    final failure = await movements.reverse(movement, reason: reason);
 
     if (!context.mounted) return;
 
     if (failure != null) {
-      context.showError(failure.message, details: failure.details);
+      context.showFailure(failure);
 
       return;
     }
 
-    unawaited(movements.refresh());
+    unawaited(header.moneyMoved());
     context.showSuccess('تم عكس العملية');
-  }
-}
-
-/// Why an operation is undone — the reason is mandatory, and it travels onto the reversal.
-///
-/// The controller lives and dies with the dialog, not with whoever opened it: the exit animation
-/// is still reading it after `showDialog` returns.
-class _ReasonDialog extends StatefulWidget {
-  const _ReasonDialog({required this.title});
-
-  final String title;
-
-  @override
-  State<_ReasonDialog> createState() => _ReasonDialogState();
-}
-
-class _ReasonDialogState extends State<_ReasonDialog> {
-  final _reason = TextEditingController();
-
-  @override
-  void dispose() {
-    _reason.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _reason,
-        autofocus: true,
-        maxLines: 2,
-        decoration: const InputDecoration(labelText: 'السبب'),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('إلغاء')),
-        FilledButton(
-          onPressed: () {
-            final text = _reason.text.trim();
-
-            if (text.isNotEmpty) Navigator.of(context).pop(text);
-          },
-          child: const Text('عكس'),
-        ),
-      ],
-    );
   }
 }
 
@@ -303,15 +349,29 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<TreasuryAccountCubit>();
+    final header = context.read<TreasuryAccountCubit>();
+    final movements = context.read<AccountMovementsCubit>();
 
     Future<void> open(BuildContext context, OperationKind kind) async {
-      // The other side of a transfer needs every account, not just this one.
-      final all = await sl<GetTreasuryAccounts>()(activeOnly: true);
+      var accounts = [account];
 
-      if (!context.mounted) return;
+      // الطرف الآخر في التحويل يحتاج كل الحسابات — وفشلُ قراءتها يُقال، فلا يُفتح التحويل على
+      // هذا الحساب وحده.
+      if (kind == OperationKind.transfer) {
+        final targets = await header.transferTargets();
 
-      final accounts = all.fold((_) => [account], (list) => list.accounts);
+        if (!context.mounted) return;
+
+        final list = targets.fold<List<TreasuryAccount>?>((failure) {
+          context.showFailure(failure);
+
+          return null;
+        }, (list) => list);
+
+        if (list == null) return;
+
+        accounts = list;
+      }
 
       await showTreasuryOperationSheet(
         context: context,
@@ -328,8 +388,9 @@ class _Actions extends StatelessWidget {
               employeeId,
               countedBalance,
               notes,
+              clientToken,
             }) async {
-              final failure = await cubit.record(
+              final result = await header.record(
                 kind: kind,
                 amount: amount,
                 fromAccountId: fromAccountId,
@@ -338,11 +399,15 @@ class _Actions extends StatelessWidget {
                 employeeId: employeeId,
                 countedBalance: countedBalance,
                 notes: notes,
+                clientToken: clientToken,
               );
 
-              if (failure == null && context.mounted) _AccountView._refreshAll(context);
+              return result.fold((failure) => failure, (operation) {
+                // السطر الذي كتبته العملية يُضاف أعلى السجل — لا يُعاد السجل كله.
+                unawaited(movements.addWrittenBy(operation));
 
-              return failure;
+                return null;
+              });
             },
       );
     }
