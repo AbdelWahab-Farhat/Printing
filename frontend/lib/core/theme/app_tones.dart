@@ -108,6 +108,9 @@ extension ChatTone on ColorScheme {
   /// الوقت وعلامة القراءة على ردّ المحل.
   Color get outgoingMeta => onPrimaryContainer.withValues(alpha: 0.85);
 
+  /// اسمُ الزميل فوق ردّه — بلون `tertiary` لا بحبر النصّ، وإلا ذاب في الكلام تحته.
+  Color get outgoingAuthor => tertiary;
+
   Color get outgoingBubbleEdge => Colors.transparent;
 
   Color get incomingBubble => _chatNight ? surfaceContainerHigh : surfaceContainerLowest;

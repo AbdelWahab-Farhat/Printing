@@ -59,6 +59,20 @@ void main() {
     }
   });
 
+  test('اسمُ الزميل بلونٍ غير لون الكلام تحته، ويُقرأ على فقاعة المحل', () {
+    // Arrange
+    final pairs = [for (final s in schemes) (name: s.outgoingAuthor, text: s.onOutgoingBubble, on: s.outgoingBubble)];
+
+    // Act
+    final ratios = [for (final pair in pairs) contrast(pair.name, pair.on)];
+
+    // Assert — اسمٌ بلون النص يذوب فيه.
+    for (final (index, pair) in pairs.indexed) {
+      expect(pair.name, isNot(pair.text));
+      expect(ratios[index], greaterThanOrEqualTo(4.5));
+    }
+  });
+
   test('فقاعةُ العميل ليست لونَ الخلفية التي تحتها', () {
     // Arrange - Act
     final pairs = [for (final s in schemes) (s.incomingBubble, s.chatBackdrop)];

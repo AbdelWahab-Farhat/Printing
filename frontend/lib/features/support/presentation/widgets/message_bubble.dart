@@ -132,7 +132,7 @@ class MessageBubble extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.textTheme.labelLarge?.copyWith(
-                    color: metaInk,
+                    color: scheme.outgoingAuthor,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
