@@ -26,6 +26,8 @@ final readonly class OperationData
         public ?string $countedBalance,
         public Carbon $occurredAt,
         public ?string $notes,
+        // رمزُ الإرسال من التطبيق — الرمزُ نفسه مرّةً ثانية يُرجع العمليةَ الأولى.
+        public ?string $clientToken = null,
     ) {}
 
     /**
@@ -48,6 +50,9 @@ final readonly class OperationData
                 : null,
             occurredAt: self::moment(trim((string) ($validated['occurred_at'] ?? '')), $type),
             notes: $notes !== '' ? $notes : null,
+            clientToken: isset($validated['client_token']) && $validated['client_token'] !== ''
+                ? (string) $validated['client_token']
+                : null,
         );
     }
 

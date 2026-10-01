@@ -34,11 +34,21 @@ final class RecordVendorPayment
 
     public function __invoke(Vendor $vendor, VendorPaymentData $data, ?User $actor): VendorPayment
     {
+        // الضغطةُ الثانية تُجاب قبل أيّ حارس: هي الدفعةُ الأولى نفسها.
+        if (($sent = $this->alreadySent($vendor, $data->clientToken)) !== null) {
+            return $sent;
+        }
+
         // A counted month stays counted — «مقفل حتى تاريخ» in «إعدادات المالية».
         $this->treasury->guardNotLocked($data->paidAt);
 
         return DB::transaction(function () use ($vendor, $data, $actor): VendorPayment {
             $locked = Vendor::query()->whereKey($vendor->getKey())->lockForUpdate()->firstOrFail();
+
+            // تحت قفل المورد: ضغطتان متزامنتان تمرّان هنا واحدةً بعد واحدة، ولا يُحفظ واصلٌ مرّتين.
+            if (($sent = $this->alreadySent($locked, $data->clientToken)) !== null) {
+                return $sent;
+            }
 
             $order = $data->purchaseOrderId === null
                 ? null
@@ -62,6 +72,7 @@ final class RecordVendorPayment
             $payment->purchase_order_id = $order?->getKey();
             $payment->type = $data->type;
             $payment->recorded_by = $actorId;
+            $payment->client_token = $data->clientToken;
 
             $account = null;
 
@@ -102,5 +113,13 @@ final class RecordVendorPayment
 
             return $payment;
         });
+    }
+
+    private function alreadySent(Vendor $vendor, ?string $clientToken): ?VendorPayment
+    {
+        return $clientToken === null ? null : VendorPayment::query()
+            ->where('vendor_id', $vendor->getKey())
+            ->where('client_token', $clientToken)
+            ->first();
     }
 }

@@ -50,6 +50,11 @@ final class RecordOperation
             throw new InvalidArgumentException('A settlement is written by «تم التسوية», not by hand.');
         }
 
+        // الضغطةُ الثانية تُجاب قبل أيّ حارس: هي العمليةُ الأولى نفسها، ولو أُقفل الشهرُ بينهما.
+        if (($sent = $this->alreadySent($data->clientToken)) !== null) {
+            return $sent;
+        }
+
         $settings = TreasurySetting::current();
 
         if ($settings->locks($data->occurredAt)) {
@@ -70,6 +75,12 @@ final class RecordOperation
 
         return DB::transaction(function () use ($data, $actorId, $settings): TreasuryOperation {
             $accounts = $this->lock($data);
+
+            // تحت قفل الحسابات: ضغطتان متزامنتان على الحساب نفسه تمرّان هنا واحدةً بعد واحدة،
+            // فتجد الثانيةُ ما كتبته الأولى. والفهرسُ الفريد حارسٌ أخير لا طريقٌ عادي.
+            if (($sent = $this->alreadySent($data->clientToken)) !== null) {
+                return $sent;
+            }
 
             $from = $data->fromAccountId === null ? null : $accounts->get($data->fromAccountId);
             $to = $data->toAccountId === null ? null : $accounts->get($data->toAccountId);
@@ -102,12 +113,20 @@ final class RecordOperation
                 'occurred_at' => $data->occurredAt,
                 'notes' => $data->notes,
                 'recorded_by' => $actorId,
+                'client_token' => $data->clientToken,
             ])->save();
 
             $this->writeMovements($operation, $from, $to, $actorId);
 
             return $operation;
         });
+    }
+
+    private function alreadySent(?string $clientToken): ?TreasuryOperation
+    {
+        return $clientToken === null
+            ? null
+            : TreasuryOperation::query()->where('client_token', $clientToken)->first();
     }
 
     /**

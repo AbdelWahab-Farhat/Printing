@@ -58,6 +58,10 @@ class VendorPaymentController extends Controller
         ]);
     }
 
+    /**
+     * `client_token` يجعل الإعادةَ آمنة: الرمزُ نفسه مرّةً ثانية يُرجع الدفعةَ الأولى بحالة 200
+     * ولا يدفع شيئاً.
+     */
     public function store(StoreVendorPaymentRequest $request, Vendor $vendor): JsonResponse
     {
         $payment = $this->orders->recordVendorPayment(
@@ -65,8 +69,13 @@ class VendorPaymentController extends Controller
             VendorPaymentData::fromArray($request->validated()),
             $request->user(),
         );
+        $resource = new VendorPaymentResource($payment->load(self::RELATIONS));
 
-        return $this->created(new VendorPaymentResource($payment->load(self::RELATIONS)), 'تم تسجيل الدفعة');
+        if (! $payment->wasRecentlyCreated) {
+            return $this->success($resource, 'هذه الدفعة مسجَّلة من قبل');
+        }
+
+        return $this->created($resource, 'تم تسجيل الدفعة');
     }
 
     public function reverse(ReverseTreasuryOperationRequest $request, Vendor $vendor, VendorPayment $payment): JsonResponse

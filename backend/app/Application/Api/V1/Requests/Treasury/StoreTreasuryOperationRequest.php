@@ -103,6 +103,9 @@ class StoreTreasuryOperationRequest extends FormRequest
             // A count always says why. A withdrawal does too unless the owner switched that off in
             // «إعدادات المالية» — so that half is the Action's, which reads the setting.
             'notes' => ['required_if:type,adjustment', 'nullable', 'string', 'max:1000'],
+
+            // يولّده التطبيق قبل الإرسال: الضغطةُ الثانية بالرمز نفسه تُرجع العمليةَ الأولى.
+            'client_token' => ['nullable', 'uuid'],
         ];
     }
 
@@ -129,6 +132,7 @@ class StoreTreasuryOperationRequest extends FormRequest
             'occurred_at.date' => 'التاريخ غير صحيح',
             'occurred_at.before_or_equal' => 'التاريخ لا يكون في المستقبل',
             'notes.required_if' => 'السبب مطلوب لهذه العملية',
+            'client_token.uuid' => 'رمز الإرسال غير صالح',
         ];
     }
 
@@ -144,6 +148,7 @@ class StoreTreasuryOperationRequest extends FormRequest
             'counted_balance' => 'الرصيد المعدود',
             'occurred_at' => 'التاريخ',
             'notes' => 'الملاحظات',
+            'client_token' => 'رمز الإرسال',
         ];
     }
 }

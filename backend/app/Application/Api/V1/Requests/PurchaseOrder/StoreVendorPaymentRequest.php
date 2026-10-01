@@ -36,6 +36,8 @@ class StoreVendorPaymentRequest extends FormRequest
             'reference' => ['nullable', 'string', 'max:100'],
             'paid_at' => ['nullable', 'date', 'before_or_equal:now'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            // يولّده التطبيق قبل الإرسال: الضغطةُ الثانية بالرمز نفسه تُرجع الدفعةَ الأولى.
+            'client_token' => ['nullable', 'uuid'],
             'receipt' => [
                 'nullable',
                 'file',
@@ -56,6 +58,7 @@ class StoreVendorPaymentRequest extends FormRequest
             'method.enum' => 'طريقة الدفع غير معروفة',
             'purchase_order_id.exists' => 'أمر الشراء غير موجود',
             'paid_at.before_or_equal' => 'تاريخ الدفع لا يكون في المستقبل',
+            'client_token.uuid' => 'رمز الإرسال غير صالح',
         ];
     }
 
@@ -71,6 +74,7 @@ class StoreVendorPaymentRequest extends FormRequest
             'paid_at' => 'تاريخ الدفع',
             'notes' => 'الملاحظات',
             'receipt' => 'الواصل',
+            'client_token' => 'رمز الإرسال',
         ];
     }
 }
