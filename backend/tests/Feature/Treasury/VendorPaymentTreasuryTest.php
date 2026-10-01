@@ -120,6 +120,24 @@ class VendorPaymentTreasuryTest extends TestCase
         $this->assertSame('100.00', $this->balance($this->bank()));
     }
 
+    public function test_a_refused_payment_does_not_tell_a_buyer_what_the_bank_holds(): void
+    {
+        // Arrange — المشتري يدفع ولا يرى الحسابات؛ رسالةُ الرفض لا تكشف له رصيد المصرف.
+        $headers = $this->buyer();
+        $vendor = Vendor::factory()->create();
+        $this->fundTheBank($headers, '100');
+
+        // Act
+        $response = $this->postJson("/api/v1/vendors/{$vendor->id}/payments", [
+            'amount' => '150', 'method' => 'bank_transfer',
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $this->assertStringNotContainsString('100.00', (string) $response->json('message'));
+        $this->assertStringContainsString('150', (string) $response->json('message'));
+    }
+
     public function test_an_amount_finer_than_a_dirham_is_refused_before_the_ledger(): void
     {
         // Arrange — 0.001 كان يمرّ من `gt:0` ثم يُقرَّب إلى صفر فيصطدم بقيد `amount > 0`: 500.

@@ -17,6 +17,7 @@ use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\Queries\AccountBalances;
+use App\Domain\Treasury\Support\BalanceVisibility;
 use App\Domain\Treasury\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ final class RecordOperation
     public function __construct(
         private readonly PostMovement $post,
         private readonly AccountBalances $balances,
+        private readonly BalanceVisibility $visibility,
     ) {}
 
     public function __invoke(OperationData $data, ?int $actorId): TreasuryOperation
@@ -81,7 +83,7 @@ final class RecordOperation
 
             // «منع الرصيد السالب في العمليات اليدوية» — on unless the owner switched it off.
             if ($from !== null && $data->type !== OperationType::Adjustment && $settings->block_overdraft) {
-                $this->guardBalance($from, $amount);
+                $this->guardBalance($from, $amount, $actorId);
             }
 
             $operation = new TreasuryOperation;
@@ -218,12 +220,17 @@ final class RecordOperation
             : [bcmul($difference, '-1', Money::SCALE), $account, null, $system];
     }
 
-    private function guardBalance(TreasuryAccount $from, string $amount): void
+    private function guardBalance(TreasuryAccount $from, string $amount, ?int $actorId): void
     {
         $balance = $this->balances->of((int) $from->getKey());
 
         if (bccomp($amount, $balance, Money::SCALE) > 0) {
-            throw InsufficientBalance::make((string) $from->name, $balance, $amount);
+            // الرقمُ لمن يراه وحده — {@see BalanceVisibility}.
+            throw InsufficientBalance::make(
+                (string) $from->name,
+                $this->visibility->allows($from, $actorId) ? $balance : null,
+                $amount,
+            );
         }
     }
 

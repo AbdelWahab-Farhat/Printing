@@ -34,6 +34,7 @@ use App\Domain\Treasury\Queries\AccountLedger;
 use App\Domain\Treasury\Queries\AccountTotals;
 use App\Domain\Treasury\Queries\CustodyForOrder;
 use App\Domain\Treasury\Support\AccountResolver;
+use App\Domain\Treasury\Support\BalanceVisibility;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -226,8 +227,16 @@ final class TreasuryService
         }
     }
 
-    public function guardCanSpend(TreasuryAccount $account, string $amount, string $field = 'amount'): void
-    {
+    /**
+     * @param  ?int  $actorId  من يسجّل — رسالةُ الرفض تذكر الرصيد لمن يراه وحده
+     *                         ({@see BalanceVisibility})، ولا تذكره حين لا يُعرف من يسأل
+     */
+    public function guardCanSpend(
+        TreasuryAccount $account,
+        string $amount,
+        string $field = 'amount',
+        ?int $actorId = null,
+    ): void {
         if (! TreasurySetting::current()->block_overdraft) {
             return;
         }
@@ -237,7 +246,12 @@ final class TreasuryService
         $balance = $this->balances->of((int) $account->getKey());
 
         if (bccomp($amount, $balance, 2) > 0) {
-            throw InsufficientBalance::make((string) $account->name, $balance, $amount, $field);
+            throw InsufficientBalance::make(
+                (string) $account->name,
+                (new BalanceVisibility)->allows($account, $actorId) ? $balance : null,
+                $amount,
+                $field,
+            );
         }
     }
 

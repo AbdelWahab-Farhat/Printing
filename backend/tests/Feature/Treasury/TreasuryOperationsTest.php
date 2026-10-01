@@ -170,6 +170,41 @@ class TreasuryOperationsTest extends TestCase
         $this->assertSame('100.00', $this->balance($this->cashBox()));
     }
 
+    public function test_a_refused_withdrawal_names_the_balance_only_to_whoever_may_read_it(): void
+    {
+        // Arrange — من يسجّل ولا يرى الحسابات لا يعرف رصيد الخزنة من رسالة رفض. ومن الحسابُ باسمه
+        // يرى رصيده في كل حال، فيُذكر له.
+        [, $ownerHeaders] = $this->clerk();
+        [$ali, $aliHeaders] = $this->clerk([PermissionName::RecordTreasuryOperations]);
+        $alisBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->heldBy($ali)->create();
+        $this->deposit($ownerHeaders, $this->cashBox(), '100');
+        $this->deposit($ownerHeaders, $alisBox, '40');
+        $withdraw = function (array $headers, TreasuryAccount $from) {
+            // الحارسُ يحفظ أوّلَ مستخدمٍ يحلّه في الاختبار؛ والثاني يُقرأ من رأسه هو.
+            $this->app['auth']->forgetGuards();
+
+            return $this->postJson('/api/v1/treasury/operations', [
+                'type' => 'withdrawal',
+                'from_account_id' => $from->id,
+                'amount' => '150',
+                'notes' => 'سحب',
+            ], $headers);
+        };
+
+        // Act
+        $blind = $withdraw($aliHeaders, $this->cashBox());
+        $ownBox = $withdraw($aliHeaders, $alisBox);
+        $seeing = $withdraw($ownerHeaders, $this->cashBox());
+
+        // Assert
+        $blind->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $this->assertStringNotContainsString('100.00', (string) $blind->json('message'));
+        $ownBox->assertUnprocessable();
+        $this->assertStringContainsString('40.00', (string) $ownBox->json('message'));
+        $seeing->assertUnprocessable();
+        $this->assertStringContainsString('100.00', (string) $seeing->json('message'));
+    }
+
     public function test_an_expense_carries_its_category_and_an_advance_names_the_employee(): void
     {
         // Arrange

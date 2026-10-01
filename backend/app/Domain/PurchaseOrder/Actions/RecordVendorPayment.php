@@ -73,7 +73,7 @@ final class RecordVendorPayment
                     incoming: false,
                 );
 
-                $this->treasury->guardCanSpend($account, $data->amount);
+                $this->treasury->guardCanSpend($account, $data->amount, actorId: $actorId);
 
                 $payment->treasury_account_id = $account->getKey();
             }
