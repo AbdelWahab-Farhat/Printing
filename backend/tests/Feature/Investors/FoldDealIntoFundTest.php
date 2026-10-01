@@ -417,9 +417,11 @@ class FoldDealIntoFundTest extends TestCase
         $this->fold($deal);
 
         // Assert — والصندوقُ يساوي وحداتِه بالضبط: 8,750 بضاعةً + 1,150 نقداً.
+        // كلُّ تخصيصٍ لا أوّلُ صفٍّ تعيده القاعدة: `value('id')` بلا ترتيب كان يلتقط تخصيصاً آخر
+        // أحياناً داخل تشغيلٍ كامل، فيسقط الاختبار ويمرّ وحده.
         $capitalCash = InvestmentCashEntry::query()
             ->where('type', CashEntryType::LegacyTransfer->value)
-            ->where('source_id', InvestorWalletEntry::query()->where('type', WalletEntryType::Allocation->value)->value('id'))
+            ->whereIn('source_id', InvestorWalletEntry::query()->where('type', WalletEntryType::Allocation->value)->select('id'))
             ->sum('amount');
         $this->assertSame('1150.00', number_format((float) $capitalCash, 2, '.', ''));
 
