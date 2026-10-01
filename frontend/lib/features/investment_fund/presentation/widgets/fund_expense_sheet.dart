@@ -1,3 +1,4 @@
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
@@ -6,6 +7,7 @@ import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -55,8 +57,20 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
   DateTime _incurredOn = DateTime.now();
   bool _saving = false;
 
-  /// The drawer that paid; null lets the server take it from the cash box.
+  /// الدرج الذي دفع؛ فارغاً يختاره الخادم — نقدُ المسجِّل، وإلا الخزنة.
   int? _accountId;
+
+  /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها، وما سواها يقوله توست (RULES §٥).
+  Failure? _refusal;
+
+  static const _rendered = {
+    'kind',
+    'name',
+    'amount',
+    'incurred_on',
+    'treasury_account_id',
+    'notes',
+  };
 
   @override
   void dispose() {
@@ -96,7 +110,10 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _refusal = null;
+    });
 
     final notes = _notes.text.trim();
 
@@ -111,10 +128,13 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
 
     if (!mounted) return;
 
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _refusal = failure;
+    });
 
     if (failure != null) {
-      context.showError(failure.message);
+      if (failure.hasErrorsBeyond(_rendered)) context.showFailure(failure);
 
       return;
     }
@@ -164,6 +184,7 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                 labelOf: (kind) => kind.label,
                 label: 'النوع',
                 prefixIcon: AppIcons.statusChange,
+                errorText: _refusal?.fieldError('kind'),
                 onChanged: (kind) {
                   if (kind == null) return;
 
@@ -176,6 +197,7 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                 controller: _name,
                 label: 'البيان',
                 prefixIcon: AppIcons.notes,
+                errorText: _refusal?.fieldError('name'),
                 validator: (value) =>
                     (value ?? '').trim().isEmpty ? 'البيان مطلوب' : null,
               ),
@@ -187,6 +209,7 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                 prefixIcon: AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+                errorText: _refusal?.fieldError('amount'),
                 validator: _validateAmount,
               ),
               SizedBox(height: 16.h),
@@ -221,15 +244,17 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                   ),
                 ),
               ),
+              if (_refusal?.fieldError('incurred_on') case final error?) TreasuryFieldError(error),
               SizedBox(height: 16.h),
 
-              // Which drawer paid. The form asks no method, so every account money can leave is
-              // offered, and «تلقائي» is the cash box (TREASURY-DESIGN §٧).
+              // أيُّ درجٍ دفع. النموذج لا يسأل عن طريقة، فيُعرض كل حسابٍ يُصرف منه، و«تلقائي»
+              // يسمّي ما يختاره الخادم لكاشٍ خارج (TREASURY-DESIGN §٧).
               TreasuryAccountPicker(
                 method: null,
                 incoming: false,
                 label: 'دُفع من',
                 value: _accountId,
+                errorText: _refusal?.fieldError('treasury_account_id'),
                 onChanged: (id) => setState(() => _accountId = id),
               ),
               SizedBox(height: 16.h),
@@ -240,14 +265,11 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                 prefixIcon: AppIcons.notes,
                 textInputAction: TextInputAction.done,
                 maxLines: 2,
+                errorText: _refusal?.fieldError('notes'),
               ),
               SizedBox(height: 24.h),
 
-              AppButton(
-                label: 'تسجيل المصروف',
-                isLoading: _saving,
-                onPressed: _saving ? null : _submit,
-              ),
+              AppButton(label: 'تسجيل المصروف', isLoading: _saving, onPressed: _submit),
               SizedBox(height: 8.h),
             ],
           ),
