@@ -44,6 +44,8 @@ final class AccountLedger
                 'operation.employee',
                 // لـ`is_reversible`: أعُكست عمليةُ السطر؟ — دفعةً واحدة للصفحة لا سؤالاً لكل سطر.
                 'operation.reversedBy',
+                // ولـ`is_reversed`: أعُكس السطرُ نفسه؟ — السؤالُ نفسه بالطريقة نفسها.
+                'reversedBy',
             ])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')

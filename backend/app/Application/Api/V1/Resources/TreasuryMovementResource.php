@@ -60,6 +60,11 @@ class TreasuryMovementResource extends JsonResource
             'is_reversal' => $this->isReversal(),
             'reverses_movement_id' => $this->reverses_movement_id,
             'is_reversible' => $this->reversibleBy($request, $operation),
+            // **أعُكس هذا السطر** — فيرسمه التطبيق مشطوباً بعد كل تحديث، لا في لحظة عكسه وحدها.
+            // من علاقةٍ حمّلها السجلُّ للصفحة كلِّها؛ وسطرٌ يُقرأ وحده يسأل سؤالاً واحداً.
+            'is_reversed' => $this->relationLoaded('reversedBy')
+                ? $this->reversedBy !== null
+                : $this->reversedBy()->exists(),
 
             'notes' => $this->notes,
 
