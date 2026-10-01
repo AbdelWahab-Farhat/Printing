@@ -8,6 +8,7 @@ use App\Domain\Carrier\Exceptions\CityHasNoNawrisMapping;
 use App\Domain\Carrier\Exceptions\NawrisRejectedRequest;
 use App\Domain\Carrier\Exceptions\OrderAlreadyHasAnOpenParcel;
 use App\Domain\Carrier\Exceptions\OrderCannotBeDispatchedToNawris;
+use App\Domain\Carrier\Exceptions\OrdersCannotShareAParcel;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
@@ -19,7 +20,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Hands one order to Nawris and records the parcel that came back.
+ * Hands one order to Nawris — or several sharing one parcel — and records the parcel that came
+ * back.
  *
  * **Called from the Application layer after the status change has already committed**, never from
  * inside `ChangeOrderStatus`. Two reasons, and both matter: `Order` must not import `Carrier`
@@ -55,12 +57,59 @@ final class DispatchToNawris
      */
     public function __invoke(Order $order): NawrisParcel
     {
-        $this->guardDeliverable($order);
-        $this->guardNotAlreadyOut($order);
+        return $this->send([$order]);
+    }
 
-        $destination = ($this->destination)($order);
+    /**
+     * Hands several orders to Nawris as one parcel.
+     *
+     * **Every order is checked before anything is sent, and one refusal refuses them all.** The
+     * group was chosen as a group; lodging the orders that happen to pass and dropping the rest
+     * would ship a parcel nobody asked for.
+     *
+     * **No status moves, here or anywhere in this class.** Lodging a parcel is not the goods
+     * leaving — the order stays at «جاهزة» until Nawris reports a courier holding it, and their
+     * webhook then moves every order in the parcel together. So a carrier that is down leaves
+     * nothing to undo: the orders are exactly where they were, and pressing again is the retry.
+     *
+     * @param  list<Order>  $orders
+     *
+     * @throws OrdersCannotShareAParcel
+     * @throws OrderCannotBeDispatchedToNawris
+     * @throws CityHasNoNawrisMapping
+     * @throws OrderAlreadyHasAnOpenParcel
+     * @throws NawrisRejectedRequest
+     */
+    public function group(array $orders): NawrisParcel
+    {
+        if (count($orders) < 2) {
+            throw OrdersCannotShareAParcel::tooFew();
+        }
 
-        $body = $this->payload->forOrder($order, $destination->government, $destination->area);
+        return $this->send($orders);
+    }
+
+    /**
+     * @param  list<Order>  $orders
+     */
+    private function send(array $orders): NawrisParcel
+    {
+        // By id, so the label reads the same on create, on every edit and on a resend — each of
+        // them rebuilds `receiver` from the parcel's orders in this same order.
+        usort($orders, fn (Order $a, Order $b): int => $a->getKey() <=> $b->getKey());
+
+        foreach ($orders as $order) {
+            $this->guardDeliverable($order);
+            $this->guardNotAlreadyOut($order);
+        }
+
+        $this->guardOneDoor($orders);
+
+        // The first order speaks for the group: every one of them resolves to the same city and
+        // region, which `guardOneDoor` has just made sure of.
+        $destination = ($this->destination)($orders[0]);
+
+        $body = $this->payload->forOrders($orders, $destination->government, $destination->area);
 
         $response = $this->client->addOrder($body);
 
@@ -74,22 +123,23 @@ final class DispatchToNawris
             throw NawrisRejectedRequest::make('إنشاء الشحنة', 'لم يصل رقم الطرد في الرد');
         }
 
-        return $this->record($order, $code, $response->barCode(), $destination, $body);
+        return $this->record($orders, $code, $response->barCode(), $destination, $body);
     }
 
     /**
+     * @param  list<Order>  $orders
      * @param  array<string, mixed>  $body
      */
     private function record(
-        Order $order,
+        array $orders,
         string $code,
         ?string $barCode,
         NawrisDestination $destination,
         array $body,
     ): NawrisParcel {
-        $amount = $this->payload->amountToCollect($order);
+        $amount = $this->payload->amountToCollectFor($orders);
 
-        return DB::transaction(function () use ($order, $code, $barCode, $destination, $body, $amount): NawrisParcel {
+        return DB::transaction(function () use ($orders, $code, $barCode, $destination, $body, $amount): NawrisParcel {
             $parcel = new NawrisParcel;
 
             // Assigned, never mass-assigned: none of this comes from a request, and a fillable
@@ -111,18 +161,61 @@ final class DispatchToNawris
                 'dispatched_at' => now(),
             ])->save();
 
-            $link = new NawrisParcelOrder;
-            $link->forceFill([
-                'nawris_parcel_id' => $parcel->getKey(),
-                'order_id' => $order->getKey(),
-                // This order's share. Equal to the parcel's own figure while one order is one
-                // parcel; recorded anyway, because splitting a consolidated collection back
-                // across orders is unrecoverable if it was never written down.
-                'amount_to_collect' => $amount,
-            ])->save();
+            foreach ($orders as $order) {
+                $link = new NawrisParcelOrder;
+                $link->forceFill([
+                    'nawris_parcel_id' => $parcel->getKey(),
+                    'order_id' => $order->getKey(),
+                    // **This order's share, not the parcel's figure.** It is what the delivery
+                    // webhook pays this order with, so a shared collection lands on each order
+                    // as exactly what that order owed — see `ApplyNawrisStatus::settleMoney()`.
+                    'amount_to_collect' => $this->payload->amountToCollect($order),
+                ])->save();
+            }
 
             return $parcel;
         }, attempts: 3);
+    }
+
+    /**
+     * One customer, one door, one phone.
+     *
+     * The parcel is delivered or returned as a whole — Nawris has no partial delivery — so orders
+     * that differ on any of these would put one customer's goods at the mercy of another's
+     * refusal. The phone is compared as it would be *sent*, so «0912…» and «+218912…» are the same
+     * recipient.
+     *
+     * @param  list<Order>  $orders
+     *
+     * @throws OrdersCannotShareAParcel
+     */
+    private function guardOneDoor(array $orders): void
+    {
+        $first = $orders[0];
+        $phone = $this->payload->phone($first);
+        $seen = [];
+
+        foreach ($orders as $order) {
+            $code = (string) $order->code;
+
+            if (isset($seen[$order->getKey()])) {
+                throw OrdersCannotShareAParcel::repeated($code);
+            }
+
+            $seen[$order->getKey()] = true;
+
+            if ($order->customer_id !== $first->customer_id) {
+                throw OrdersCannotShareAParcel::differentCustomer($code);
+            }
+
+            if ($order->city_id !== $first->city_id || $order->region_id !== $first->region_id) {
+                throw OrdersCannotShareAParcel::differentDestination($code);
+            }
+
+            if ($this->payload->phone($order) !== $phone) {
+                throw OrdersCannotShareAParcel::differentPhone($code);
+            }
+        }
     }
 
     /**

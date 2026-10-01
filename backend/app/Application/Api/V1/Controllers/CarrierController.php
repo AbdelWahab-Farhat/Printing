@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Carrier\StoreSharedParcelRequest;
 use App\Application\Api\V1\Resources\NawrisParcelResource;
 use App\Application\Api\V1\Resources\NawrisWebhookEventResource;
 use App\Application\Api\V1\Resources\OrderResource;
@@ -105,6 +106,32 @@ class CarrierController extends Controller
         $parcel = $this->carrier->dispatchOrder($order);
 
         return $this->created(new NawrisParcelResource($parcel), 'تم تسليم الشحنة لنورس');
+    }
+
+    /**
+     * Send several orders as one parcel
+     *
+     * One customer, one destination, one recipient phone — refused as a whole with 422 naming the
+     * order that does not fit, before anything reaches the carrier. **No order changes status**:
+     * they stay at «جاهزة» until Nawris reports the courier holding the parcel, and their webhook
+     * then moves every order in it together. A carrier that is down therefore leaves nothing to
+     * undo, and sending again is the retry.
+     *
+     * The parcel answers with its orders. Cancelling, deleting, unlinking or re-sending it later —
+     * from any one of them — acts on all of them.
+     */
+    public function storeShared(StoreSharedParcelRequest $request): JsonResponse
+    {
+        $ids = $request->orderIds();
+
+        $orders = Order::query()->whereKey($ids)->get();
+
+        $parcel = $this->carrier->dispatchGroup($orders->all());
+
+        return $this->created(
+            new NawrisParcelResource($parcel->load('orders')),
+            'أُرسلت '.count($ids).' طلبيات للنورس في طرد واحد',
+        );
     }
 
     /**

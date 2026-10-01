@@ -625,6 +625,12 @@ abstract final class CarrierEndpoints {
   /// reports a courier is holding it, through the webhook.
   static String lodge(int orderId) => '/carrier/orders/$orderId/lodge';
 
+  /// Hands several orders to Nawris as **one** parcel — `{"order_ids": [..]}`.
+  ///
+  /// Moves no order, exactly like [lodge]. One customer, one destination, one recipient phone,
+  /// or the server refuses the whole group naming the order that does not fit.
+  static const String sharedParcel = '/carrier/parcels';
+
   /// Sends a returned parcel out again — closes the old one, opens a new one.
   static String resend(int orderId) => '/carrier/orders/$orderId/resend';
 

@@ -664,4 +664,19 @@ abstract final class AppIcons {
 
   static IconData get hideGuides =>
       _pick(Icons.visibility_off_rounded, CupertinoIcons.eye_slash_fill);
+
+  // ── الطرد المشترك ──────────────────────────────────────────────────────────
+
+  /// «طرد مشترك» — several orders in one box. A box rather than [outForDelivery]'s van: this is
+  /// about what went in the parcel, not about where the parcel is.
+  static IconData get sharedParcel =>
+      _pick(Icons.inventory_2_rounded, CupertinoIcons.cube_box_fill);
+
+  /// A card picked while choosing orders to send together.
+  static IconData get picked =>
+      _pick(Icons.check_circle_rounded, CupertinoIcons.checkmark_circle_fill);
+
+  /// A card that could be picked and is not.
+  static IconData get unpicked =>
+      _pick(Icons.radio_button_unchecked_rounded, CupertinoIcons.circle);
 }

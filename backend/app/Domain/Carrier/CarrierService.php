@@ -54,6 +54,20 @@ final class CarrierService
     }
 
     /**
+     * Hand several orders to Nawris as one parcel.
+     *
+     * One customer, one destination, one recipient phone — refused as a whole otherwise, before
+     * any call. Moves no status: the orders stay at «جاهزة» until the courier's pick-up arrives by
+     * webhook and moves them all together. See {@see DispatchToNawris::group()}.
+     *
+     * @param  list<Order>  $orders
+     */
+    public function dispatchGroup(array $orders): NawrisParcel
+    {
+        return $this->dispatch->group($orders);
+    }
+
+    /**
      * Whether this order is one Nawris should be told about at all.
      *
      * **Not every delivery goes through them.** A city with no mapping is somewhere the business
@@ -109,12 +123,14 @@ final class CarrierService
 
     /**
      * Let go of the parcel without telling the carrier, for one they already deleted themselves.
+     *
+     * Releases every order in it, not only this one — see {@see DetachNawrisParcel}.
      */
     public function detachParcelFrom(Order $order): ?NawrisParcel
     {
         $parcel = $this->openParcelFor($order);
 
-        return $parcel !== null ? ($this->detach)($parcel, $order) : null;
+        return $parcel !== null ? ($this->detach)($parcel) : null;
     }
 
     /**
@@ -194,8 +210,13 @@ final class CarrierService
      * instant exists only between building the row and the carrier's response, and «كود النورس:
      * لا شيء» is a worse answer than no line at all.
      *
+     * **`shared_with` names the other orders in the same parcel**, empty for a parcel of one. It is
+     * what lets the order screen say «ضمن طرد مشترك مع …», and lets every button that acts on the
+     * parcel say which other orders it will take with it. One more query for the whole page, not
+     * one per order.
+     *
      * @param  list<int>  $orderIds
-     * @return array<int, array{code: string, bar_code: ?string, is_open: bool}>
+     * @return array<int, array{code: string, bar_code: ?string, is_open: bool, shared_with: list<array{id: int, code: string}>}>
      */
     public function parcelCodesFor(array $orderIds): array
     {
@@ -210,26 +231,63 @@ final class CarrierService
             ->whereNull('p.deleted_at')
             ->whereNotNull('p.code')
             ->orderByDesc('l.id')
-            ->get(['l.order_id', 'p.code', 'p.bar_code', 'p.closed_at']);
+            ->get(['l.order_id', 'l.nawris_parcel_id', 'p.code', 'p.bar_code', 'p.closed_at']);
+
+        $latest = [];
+
+        foreach ($rows as $row) {
+            // Newest first, so the first one seen for an order is the one to keep.
+            $latest[(int) $row->order_id] ??= $row;
+        }
+
+        $members = $this->ordersInParcels(
+            array_values(array_unique(array_map(fn ($row): int => (int) $row->nawris_parcel_id, $latest))),
+        );
 
         $codes = [];
 
-        foreach ($rows as $row) {
-            $orderId = (int) $row->order_id;
-
-            // Newest first, so the first one seen for an order is the one to keep.
-            if (isset($codes[$orderId])) {
-                continue;
-            }
-
+        foreach ($latest as $orderId => $row) {
             $codes[$orderId] = [
                 'code' => (string) $row->code,
                 'bar_code' => $row->bar_code === null ? null : (string) $row->bar_code,
                 'is_open' => $row->closed_at === null,
+                'shared_with' => array_values(array_filter(
+                    $members[(int) $row->nawris_parcel_id] ?? [],
+                    fn (array $member): bool => $member['id'] !== $orderId,
+                )),
             ];
         }
 
         return $codes;
+    }
+
+    /**
+     * Every live order in each of these parcels, by parcel id, in id order.
+     *
+     * @param  list<int>  $parcelIds
+     * @return array<int, list<array{id: int, code: string}>>
+     */
+    private function ordersInParcels(array $parcelIds): array
+    {
+        if ($parcelIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('nawris_parcel_orders as l')
+            ->join('orders as o', 'o.id', '=', 'l.order_id')
+            ->whereIn('l.nawris_parcel_id', $parcelIds)
+            ->whereNull('l.deleted_at')
+            ->whereNull('o.deleted_at')
+            ->orderBy('o.id')
+            ->get(['l.nawris_parcel_id', 'o.id', 'o.code']);
+
+        $members = [];
+
+        foreach ($rows as $row) {
+            $members[(int) $row->nawris_parcel_id][] = ['id' => (int) $row->id, 'code' => (string) $row->code];
+        }
+
+        return $members;
     }
 
     /**

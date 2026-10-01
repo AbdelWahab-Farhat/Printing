@@ -348,11 +348,19 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     final order = cubit.state.order;
     if (order == null) return;
 
+    // **Said before the tap, because it cannot be taken back after.** Nawris delivers, returns
+    // and deletes a parcel as a whole, so every one of these acts on the other orders in it too —
+    // and a person pressing it on one order has no other way to learn that.
+    final siblings = order.nawrisParcel?.sharedWith ?? const <SharedParcelOrder>[];
+    final shared = siblings.isEmpty
+        ? ''
+        : '\n\nالشحنة مشتركة، فيشمل هذا أيضاً: ${siblings.map((o) => o.code).join('، ')}.';
+
     final ask = destructive ? showDestructiveDialog : showCustomDialog;
     final confirmed = await ask(
       context: context,
       title: title,
-      description: description,
+      description: '$description$shared',
       confirmLabel: confirmLabel,
     );
 
@@ -1504,8 +1512,10 @@ class _Destination extends StatelessWidget {
             _Row(icon: AppIcons.tag, label: 'رقم التتبع', value: tracking),
           // Beside «رقم التتبع» and never merged with it: that one is typed by a person, this
           // one is what the carrier called the parcel. An order can carry both, and they differ.
-          if (order.nawrisParcel case final parcel?)
+          if (order.nawrisParcel case final parcel?) ...[
             _Row(icon: AppIcons.tag, label: 'كود النورس', value: parcel.code),
+            if (parcel.sharedWith.isNotEmpty) _SharedParcel(orders: parcel.sharedWith),
+          ],
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
         ],
@@ -1666,6 +1676,57 @@ class _Row extends StatelessWidget {
             style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
           Expanded(child: Text(value, style: context.textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+/// «طرد مشترك مع» — the other orders in this order's Nawris parcel, each one a way to it.
+///
+/// **Links, not a line of text.** The question it answers is «what else went in the box?», and
+/// the next one is always «show me» — a courier ringing about one of them is ringing about all of
+/// them. Laid out like [_Row] so it reads as one more fact in the same list.
+class _SharedParcel extends StatelessWidget {
+  const _SharedParcel({required this.orders});
+
+  final List<SharedParcelOrder> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(AppIcons.sharedParcel, size: 17.sp, color: scheme.onSurfaceVariant),
+          SizedBox(width: 10.w),
+          Text(
+            'طرد مشترك مع: ',
+            style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 12.w,
+              runSpacing: 4.h,
+              children: [
+                for (final order in orders)
+                  InkWell(
+                    onTap: () => context.push(Routes.order(order.id)).ignore(),
+                    child: Text(
+                      order.code,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: scheme.primary,
+                        decoration: TextDecoration.underline,
+                        decorationColor: scheme.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );

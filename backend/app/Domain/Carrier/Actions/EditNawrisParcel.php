@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Carrier\Actions;
 
 use App\Domain\Carrier\Models\NawrisParcel;
+use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
+use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,9 +25,10 @@ use Illuminate\Support\Facades\DB;
  * **The payload is rebuilt whole.** A field left out is left *untouched* at their end rather than
  * cleared, so a partial edit is a silent no-op dressed as an instruction.
  *
- * **Rebuilt from the parcel, not from the order that triggered it.** With one order per parcel the
- * two agree; the day consolidation arrives they stop agreeing, and an edit built from the
- * triggering order would rewrite the parcel as if its siblings did not exist.
+ * **Rebuilt from the parcel, not from the order that triggered it.** A payment on one order of a
+ * shared parcel changes that order's share and nothing else, but the edit still sends every
+ * order: an edit built from the triggering order alone would rewrite the parcel as if its
+ * siblings did not exist, and Nawris would collect one order's money for three orders' goods.
  */
 final class EditNawrisParcel
 {
@@ -36,16 +39,19 @@ final class EditNawrisParcel
 
     public function __invoke(NawrisParcel $parcel): NawrisParcel
     {
-        $parcel->loadMissing('orders');
+        // Fresh rather than `loadMissing`: the caller's parcel may have been loaded before the
+        // payment that triggered this, and the whole point is the figures as they stand now.
+        $parcel->load('orders');
 
-        $order = $parcel->orders->first();
+        // By id — the order dispatch sent them in, so `receiver` replays unchanged.
+        $orders = $parcel->orders->sortBy(fn (Order $order): int => (int) $order->getKey())->values()->all();
 
-        if ($order === null || $parcel->code === null) {
+        if ($orders === [] || $parcel->code === null) {
             return $parcel;
         }
 
-        $body = $this->payload->forOrder(
-            $order,
+        $body = $this->payload->forOrders(
+            $orders,
             $parcel->government,
             $parcel->area,
             $parcel->code,
@@ -56,14 +62,23 @@ final class EditNawrisParcel
 
         $this->client->editOrder($body);
 
-        $amount = $this->payload->amountToCollect($order);
+        $amount = $this->payload->amountToCollectFor($orders);
 
-        return DB::transaction(function () use ($parcel, $amount): NawrisParcel {
+        return DB::transaction(function () use ($parcel, $orders, $amount): NawrisParcel {
             // Rewritten on every successful edit, so what we believe they are collecting stays
             // what we actually asked for.
             $parcel->forceFill(['amount_to_collect' => $amount])->save();
 
-            $parcel->links()->update(['amount_to_collect' => $amount]);
+            // Each order's own share, one row at a time: a mass update fires no model events, and
+            // every row here is audited.
+            foreach ($orders as $order) {
+                $parcel->links()
+                    ->where('order_id', $order->getKey())
+                    ->get()
+                    ->each(fn (NawrisParcelOrder $link) => $link->forceFill([
+                        'amount_to_collect' => $this->payload->amountToCollect($order),
+                    ])->save());
+            }
 
             return $parcel;
         }, attempts: 3);

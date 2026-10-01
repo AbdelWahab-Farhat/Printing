@@ -48,6 +48,22 @@ a bug. It is money the customer paid **to the courier** for delivery, not to us.
 
 Suggested label: «سُدِّدت لدى الناقل».
 
+### `nawris_parcel.shared_with` — the other orders in the same parcel
+
+```jsonc
+"nawris_parcel": {
+  "code": "3702994",
+  "bar_code": "B-1",
+  "is_open": true,
+  "shared_with": [{ "id": 8, "code": "1221" }]   // ← empty for a parcel of one
+}
+```
+
+Nawris delivers, returns and deletes a parcel as a whole, so every carrier button on one order of a
+shared parcel acts on all of them. The order screen draws «طرد مشترك مع …» from this and names these
+orders in the delete, unlink and re-send dialogs. Sending several orders together is picked from
+the orders list on «جاهزة» / «إعادة إرسال» — see NAWRIS-INTEGRATION.md §12.
+
 ### `CityResource` / `RegionResource` — one new field each
 
 ```jsonc
@@ -89,6 +105,7 @@ abstract final class CarrierEndpoints {
 | `GET` | `parcels` | `carrier.view` | list; `?open=1`, `?conflict=1` |
 | `GET` | `notLodged` | `carrier.view` | list of orders |
 | `POST` | `lodge(id)` | `carrier.manage` | retry — returns a parcel |
+| `POST` | `sharedParcel` (`/carrier/parcels`, `{order_ids}`) | `carrier.manage` | several orders of one customer to one door as **one** parcel; moves no status; returns the parcel with its `orders` |
 | `POST` | `cancelShipment(id)` | `carrier.manage` | **does not cancel the order** — see §5 |
 | `POST` | `resolveConflict(id)` | `carrier.manage` | returns the parcel |
 

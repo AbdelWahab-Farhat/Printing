@@ -60,10 +60,11 @@ build five things twice.
 
 **And two things we do not have, which change the shape of the work:**
 
-- **No consolidated parcels.** Primula lets many orders share one Nawris code, and *most* of the
-  contract's awkwardness follows from that: `receiver` is a `+`-joined list of order ids, the COD
-  is a sum, and an edit must rebuild the whole parcel or it silently overwrites its siblings. We
-  ship one order per parcel. → [§6](#6-schema)
+- **Consolidated parcels arrived later, deliberately narrow.** Primula lets many orders share one
+  Nawris code, and *most* of the contract's awkwardness follows from that: `receiver` is a
+  `+`-joined list of order ids, the COD is a sum, and an edit must rebuild the whole parcel or it
+  silently overwrites its siblings. We shipped one order per parcel first, and added shared parcels
+  on top of the link table — one customer, one door, one phone only. → [§12](#12-shared-parcels)
 - **No jobs, no notifications, and no `try`/`catch` anywhere in `app/`** —
   `ErrorHandlingTest` walks the tree and fails the build on either keyword. This integration
   introduces the first queued job in the codebase, and has to translate HTTP failures into typed
@@ -416,7 +417,9 @@ dispatch history goes with it. "At most one *open* parcel per order" is enforced
 ### `nawris_parcel_orders`
 
 `parcel_id` (fk, indexed) · `order_id` (fk) · `amount_to_collect` decimal(12,2) — this order's share,
-as sent. Unique on `(parcel_id, order_id)`.
+as sent. Unique on `(parcel_id, order_id)`. In a shared parcel each row holds its own order's share
+and the parcel's figure is their sum; the delivery webhook pays each order from its row, never
+from the parcel — see [§12](#12-shared-parcels).
 
 ### `nawris_webhook_events`
 
@@ -479,7 +482,7 @@ than clearing it.**
 
 | Field | What we send |
 |---|---|
-| `receiver` | The order code. Not a person's name — it is what is read off the label at handover |
+| `receiver` | The order code. Not a person's name — it is what is read off the label at handover. A shared parcel sends every code joined with `+`, by order id |
 | `phone1` | `recipient_phone`, else the customer's, normalised to `+218…`, falling back to `+218910000000` when blank so validation never fails |
 | `government` · `area` | From the city/region mapping, frozen at creation |
 | `amount_to_be_collected` | `max(0, grand_total − paid_amount − written_off_amount − delivery_price)`. **Deposits, installments and the fee all come off here** — [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive). One function, called by dispatch and by every edit |
@@ -487,7 +490,7 @@ than clearing it.**
 | `order_summary` | A fixed description string; not itemised |
 | `can_open` · `is_measurable` | **Business question** — Primula sets these for locally sourced goods. Default `0` until answered |
 | `shipment_on_sender` | `0` — their default; the courier collects our COD **plus their own fee** at the door. Flips to `1` when `remaining ≤ delivery_price`, or a prepaid customer pays for delivery twice — [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive) |
-| `return_amount` `is_order` `pieces_count` `extra_cost_payer` `is_office_given` `is_fragile` `accept_20_plus_5_dinar` | Constants: `0.0`, `0`, `1`, `1`, `0`, `0`, `0` |
+| `return_amount` `is_order` `pieces_count` `extra_cost_payer` `is_office_given` `is_fragile` `accept_20_plus_5_dinar` | Constants: `0.0`, `0`, `1`, `1`, `0`, `0`, `0` — except `pieces_count`, which is the number of orders in a shared parcel |
 | everything else | Never sent — null or empty, therefore stripped |
 
 ### 7.3 The `try`/`catch` ban
@@ -784,12 +787,58 @@ or a carrier call with no local event behind it. `canceled` covers the real need
 `OrderStatus` already gives: an order is not written off while it is physically outside the
 building. It comes home first.
 
-Also: consolidated parcels (until the business asks for them — the link table is what keeps that
-additive); an invoice-number column; courier name as anything but an event field; a reconciliation
-or polling job — *everything after dispatch arrives by webhook*, which is exactly why the webhook
-handler is where all the risk lives; parcel dimensions, weight, piece count, fragile and can-open
-flags, all currently constants; and any second copy of the order's own status — the order owns that,
-and a copy will drift.
+**Taking one order out of a live shared parcel.** It needs an edit that changes both `receiver` and
+the COD while the parcel may already be on a van. Delete the shipment and send again instead — see
+[§12](#12-shared-parcels).
+
+Also: an invoice-number column; courier name as anything but an event field; a reconciliation or
+polling job — *everything after dispatch arrives by webhook*, which is exactly why the webhook
+handler is where all the risk lives; parcel dimensions, weight, fragile and can-open flags, all
+currently constants; and any second copy of the order's own status — the order owns that, and a
+copy will drift.
+
+---
+
+## 12. Shared parcels
+
+Several orders in one Nawris parcel. Built on the link table §6 kept for exactly this; **no
+migration**.
+
+**Who may share.** One customer, one city and region, one recipient phone (compared as it would be
+*sent*, so `0912…` and `+218912…` agree), each order a delivery at «جاهزة» or «إعادة إرسال» with no
+open parcel. Nawris has no partial delivery — a parcel is delivered, returned or cancelled as a
+whole — so a group that broke any of these would put one customer's goods at the mercy of another's
+refusal. One order that does not fit refuses the whole group, before any HTTP call, naming it
+(`OrdersCannotShareAParcel`).
+
+**Sending.** `POST /carrier/parcels {order_ids: [..]}`, `carrier.manage` — the same grant as lodging
+one order. **No status moves**, exactly as with a single lodge: the orders stay at «جاهزة» until
+code 4 arrives, and `ApplyNawrisStatus` already walks every order in the parcel. A carrier that is
+down therefore leaves nothing to undo; sending again is the retry.
+
+**The payload** is `BuildNawrisPayload::forOrders()`: `receiver` = every order code joined with
+`+`, by order id (create, edit and resend all sort the same way, so an edit never reshuffles the
+label); COD = the sum of each order's own `amountToCollect()`, clamped per order *before* summing so
+an overpaid order adds zero rather than discounting its sibling; `pieces_count` = the number of
+orders; `order_summary` = «N طلبيات أكياس». The phone is the first order's — they are all the same.
+
+**The money, and the three places that used to assume one order:**
+
+| Where | What it does with a shared parcel |
+|---|---|
+| `EditNawrisParcel` | Rebuilds from **every** order and rewrites each link's own share. Built from the paying order alone, it would tell Nawris to collect one order's money for all the goods |
+| `ResendNawrisParcel` | The new parcel takes every order still linked, each share re-read |
+| `ApplyNawrisStatus::settleMoney()` | Pays each order **its link's share**, never the parcel's figure. A short collection is flagged on the parcel exactly as before — there is no telling which order it was short on |
+| `DetachNawrisParcel` | Releases every order in the parcel, not only the one the button was pressed on |
+
+Cancel and delete already acted on the whole parcel. The old delivery-fee deduction is read only for
+a parcel of one order; every shared parcel post-dates it and carries zero.
+
+**What the order screen reads.** `nawris_parcel.shared_with` on `OrderResource` — the other orders
+in the same parcel, `[{id, code}]`, empty for a parcel of one. It is what draws «طرد مشترك مع …» and
+what lets the delete, unlink and re-send dialogs name the orders they will take with them.
+
+**Not built:** taking one order out of a live shared parcel — see §11.
 
 ---
 

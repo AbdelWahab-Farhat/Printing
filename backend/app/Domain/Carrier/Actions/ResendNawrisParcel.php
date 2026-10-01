@@ -8,6 +8,7 @@ use App\Domain\Carrier\Exceptions\NawrisRejectedRequest;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
+use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,9 +36,11 @@ final class ResendNawrisParcel
     {
         $parcel->loadMissing('orders');
 
-        $order = $parcel->orders->first();
+        // **Every order that went out in it goes out again**, by id as dispatch sent them. A
+        // shared parcel came back as a whole, so it goes out as a whole.
+        $orders = $parcel->orders->sortBy(fn (Order $order): int => (int) $order->getKey())->values()->all();
 
-        if ($order === null || $parcel->code === null) {
+        if ($orders === [] || $parcel->code === null) {
             return $parcel;
         }
 
@@ -51,10 +54,10 @@ final class ResendNawrisParcel
             throw NawrisRejectedRequest::make('إعادة إرسال الشحنة', 'لم يصل رقم الطرد الجديد في الرد');
         }
 
-        $amount = $this->payload->amountToCollect($order);
-        $reference = $this->payload->reference($order);
+        $amount = $this->payload->amountToCollectFor($orders);
+        $reference = $this->payload->reference($orders[0]);
 
-        return DB::transaction(function () use ($parcel, $order, $code, $response, $amount, $reference): NawrisParcel {
+        return DB::transaction(function () use ($parcel, $orders, $code, $response, $amount, $reference): NawrisParcel {
             // The first journey is over, whatever happens next.
             $parcel->forceFill(['closed_at' => now()])->save();
 
@@ -76,12 +79,16 @@ final class ResendNawrisParcel
                 'dispatched_at' => now(),
             ])->save();
 
-            $link = new NawrisParcelOrder;
-            $link->forceFill([
-                'nawris_parcel_id' => $fresh->getKey(),
-                'order_id' => $order->getKey(),
-                'amount_to_collect' => $amount,
-            ])->save();
+            foreach ($orders as $order) {
+                $link = new NawrisParcelOrder;
+                $link->forceFill([
+                    'nawris_parcel_id' => $fresh->getKey(),
+                    'order_id' => $order->getKey(),
+                    // Each order's own share, re-read now: a payment may have been taken on any
+                    // of them while the goods were back on the shelf.
+                    'amount_to_collect' => $this->payload->amountToCollect($order),
+                ])->save();
+            }
 
             return $fresh;
         }, attempts: 3);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Carrier\Models\NawrisParcel;
+use App\Domain\Order\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -46,6 +47,19 @@ class NawrisParcelResource extends JsonResource
 
             'dispatched_at' => $this->dispatched_at?->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),
+
+            // **The orders in it, each with its own share of the COD** — only where they were
+            // loaded, which is the shared-parcel endpoint. Absent elsewhere rather than empty: a
+            // parcel always holds at least one order, and `[]` would say it held none.
+            'orders' => $this->whenLoaded('orders', fn () => $this->orders
+                ->sortBy(fn (Order $order): int => (int) $order->getKey())
+                ->values()
+                ->map(fn (Order $order): array => [
+                    'id' => $order->id,
+                    'code' => $order->code,
+                    'amount_to_collect' => (string) $order->pivot?->getAttribute('amount_to_collect'),
+                ])
+                ->all()),
         ];
     }
 }

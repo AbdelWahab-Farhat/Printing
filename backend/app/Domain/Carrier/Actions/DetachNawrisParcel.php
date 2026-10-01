@@ -6,7 +6,6 @@ namespace App\Domain\Carrier\Actions;
 
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
-use App\Domain\Order\Models\Order;
 
 /**
  * Lets go of a parcel without telling the carrier anything.
@@ -25,14 +24,18 @@ use App\Domain\Order\Models\Order;
  *
  * The parcel is closed too, so it stops appearing in "still out there" queues that read
  * `closed_at` rather than the links.
+ *
+ * **Every order in it is let go, not only the one the button was pressed on.** The parcel is gone
+ * at their end for all of them alike; releasing one and closing the parcel under the rest would
+ * leave its siblings linked to a closed parcel — free to be sent again, yet still reading as if
+ * they were in it.
  */
 final class DetachNawrisParcel
 {
-    public function __invoke(NawrisParcel $parcel, Order $order): NawrisParcel
+    public function __invoke(NawrisParcel $parcel): NawrisParcel
     {
         NawrisParcelOrder::query()
             ->where('nawris_parcel_id', $parcel->getKey())
-            ->where('order_id', $order->getKey())
             ->get()
             // One at a time rather than a mass `delete()`: each row is audited, and a mass update
             // fires no model events — see the audit convention every model here is held to.

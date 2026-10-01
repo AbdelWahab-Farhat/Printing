@@ -19,3 +19,18 @@ class LodgeOrder {
   Future<Either<Failure, NawrisParcel>> call(int orderId) =>
       _repository.lodge(orderId);
 }
+
+/// «إرسال معاً للنورس» — several orders in one parcel.
+///
+/// **The rules are the server's here too**: one customer, one destination, one recipient phone,
+/// each order ready and not already out. The list screen only decides which cards may be *picked*
+/// — a delivery with no open parcel — and the server refuses the whole group by name when the
+/// picks do not share a door.
+class LodgeOrdersTogether {
+  const LodgeOrdersTogether(this._repository);
+
+  final CarrierRepository _repository;
+
+  Future<Either<Failure, NawrisParcel>> call(List<int> orderIds) =>
+      _repository.lodgeTogether(orderIds);
+}
