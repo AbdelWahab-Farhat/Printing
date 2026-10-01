@@ -24,11 +24,15 @@ List<Map<String, dynamic>> _maps(Object? value) =>
 
 /// نوعُ المكان الذي فيه المال. [unknown] يُبقي نوعاً لم يسمع به هذا الإصدار مقروءاً بدل أن
 /// يُسقط القائمة كلها.
+///
+/// و[payable] ليس مكاناً فيه مال: هو ما على الشركة — لموردٍ أو قرضٍ أو إيجار. رصيدُه تحت
+/// الصفر، و−500 تعني 500 علينا. TREASURY-DESIGN §٢٠.
 enum AccountKind {
   cash('cash'),
   bank('bank'),
   wallet('wallet'),
   custody('custody'),
+  payable('payable'),
   unknown('unknown');
 
   const AccountKind(this.wire);
@@ -77,12 +81,26 @@ class TreasuryAccount {
     this.settlesIntoName,
     this.isCollected = true,
     this.pickupCityId,
+    this.isPayable = false,
+    this.vendorId,
   });
 
   final int id;
   final String name;
   final AccountKind kind;
   final String kindLabel;
+
+  /// «علينا» — الرصيدُ دَينٌ تحت الصفر. TREASURY-DESIGN §٢٠.
+  final bool isPayable;
+
+  /// «علينا» لمورد: أوامرُ شرائه ودفعاتُه تحرّكه، ولا شيء باليد.
+  final int? vendorId;
+
+  bool get isVendorPayable => vendorId != null;
+
+  /// ما يقول الحسابُ إنه علينا كما يقوله الناس — «1000.00» لرصيد −1000.00. وتحت الصفر حين
+  /// يكون عند الدائن مالٌ للشركة.
+  String get owed => negateAmount(balance ?? '0.00');
 
   /// للعهدة وحدها: أين يذهب مالها عند «تم التسوية» حين لا يختار أحد. فارغٌ = القاعدة المبنيّة:
   /// المصرف للنورس، والخزنة للمندوب.
@@ -114,8 +132,9 @@ class TreasuryAccount {
   final String? balance;
   final String? notes;
 
-  /// تحت الصفر: يُرسم بالأحمر لأنه يجب أن يُرى (TREASURY-DESIGN §١٢).
-  bool get isOverdrawn => (balance ?? '').startsWith('-');
+  /// تحت الصفر: يُرسم بالأحمر لأنه يجب أن يُرى (TREASURY-DESIGN §١٢). و«علينا» تحت الصفر
+  /// بطبيعته؛ الغريبُ فيه أن يصعد فوقه.
+  bool get isOverdrawn => isPayable ? owed.startsWith('-') : (balance ?? '').startsWith('-');
 
   /// نسخةٌ تختلف فيما سُمّي وحده — لترقيع صفٍّ بعد كتابةٍ يعرف التطبيقُ أثرها.
   ///
@@ -142,6 +161,8 @@ class TreasuryAccount {
     settlesIntoName: settlesIntoName,
     isCollected: isCollected ?? this.isCollected,
     pickupCityId: clearPickupCity ? null : (pickupCityId ?? this.pickupCityId),
+    isPayable: isPayable,
+    vendorId: vendorId,
   );
 
   factory TreasuryAccount.fromJson(Map<String, dynamic> json) => TreasuryAccount(
@@ -160,6 +181,8 @@ class TreasuryAccount {
     settlesIntoName: _stringOrNull(_mapOrNull(json['settles_into'])?['name']),
     isCollected: json['is_collected'] != false,
     pickupCityId: _intOrNull(json['pickup_city_id']),
+    isPayable: json['is_payable'] == true,
+    vendorId: _intOrNull(json['vendor_id']),
   );
 }
 
@@ -174,6 +197,13 @@ List<TreasuryAccount> withSavedAccount(List<TreasuryAccount> accounts, TreasuryA
     else
       account,
 ];
+
+/// «-1000.00» ⇄ «1000.00» على النصّ نفسه — المالُ لا يمرّ هنا بـ double.
+String negateAmount(String amount) {
+  if (amount.startsWith('-')) return amount.substring(1);
+  if (RegExp(r'^0*(\.0*)?$').hasMatch(amount)) return amount;
+  return '-$amount';
+}
 
 /// مكتبٌ يستلم منه الزبائن، والخزنة التي ينزل فيها كاشُه — فارغةٌ للقواعد العادية.
 /// TREASURY-DESIGN §١٩.
@@ -272,22 +302,36 @@ class TreasurySettings {
 
 /// كل حسابٍ يقرؤه هذا الشخص، وما فيها مجتمعة.
 class TreasuryAccounts {
-  const TreasuryAccounts({required this.accounts, required this.total, required this.canViewAll});
+  const TreasuryAccounts({
+    required this.accounts,
+    required this.total,
+    required this.canViewAll,
+    this.payablesTotal = '0.00',
+  });
 
   final List<TreasuryAccount> accounts;
 
-  /// مجموع الخادم نفسه للحسابات المفعّلة — ولمن يحمل حساباً، ماله هو وحده.
+  /// مجموع الخادم نفسه للحسابات المفعّلة — ولمن يحمل حساباً، ماله هو وحده. مالٌ فقط: ما علينا
+  /// في [payablesTotal].
   final String total;
+
+  /// «علينا» — ما على الحسابات المفعّلة من دَينٍ معاً، رقماً موجباً.
+  final String payablesTotal;
 
   /// كاذبٌ لمن يقرأ الحسابات التي باسمه وحدها.
   final bool canViewAll;
 
-  TreasuryAccounts withAccounts(List<TreasuryAccount> accounts) =>
-      TreasuryAccounts(accounts: accounts, total: total, canViewAll: canViewAll);
+  TreasuryAccounts withAccounts(List<TreasuryAccount> accounts) => TreasuryAccounts(
+    accounts: accounts,
+    total: total,
+    payablesTotal: payablesTotal,
+    canViewAll: canViewAll,
+  );
 
   factory TreasuryAccounts.fromJson(Map<String, dynamic> json) => TreasuryAccounts(
     accounts: [for (final account in _maps(json['accounts'])) TreasuryAccount.fromJson(account)],
     total: _string(json['total'], '0.00'),
+    payablesTotal: _string(json['payables_total'], '0.00'),
     canViewAll: json['can_view_all'] == true,
   );
 }
@@ -587,12 +631,16 @@ class TreasuryOwnership {
     required this.investorsTotal,
     required this.fundCash,
     required this.companyOwn,
+    this.payablesTotal = '0.00',
   });
 
   final String totalHeld;
   final List<InvestorHolding> investors;
   final String investorsTotal;
   final String fundCash;
+
+  /// «علينا» — what the company owes, taken off its own money. TREASURY-DESIGN §٢٠.
+  final String payablesTotal;
   final String companyOwn;
 
   factory TreasuryOwnership.fromJson(Map<String, dynamic> json) => TreasuryOwnership(
@@ -602,6 +650,7 @@ class TreasuryOwnership {
     ],
     investorsTotal: _string(json['investors_total'], '0.00'),
     fundCash: _string(json['fund_cash'], '0.00'),
+    payablesTotal: _string(json['payables_total'], '0.00'),
     companyOwn: _string(json['company_own'], '0.00'),
   );
 }

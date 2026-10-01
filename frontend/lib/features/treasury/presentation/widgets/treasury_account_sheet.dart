@@ -82,6 +82,7 @@ class _AccountFormState extends State<_AccountForm> {
     AccountKind.bank,
     AccountKind.wallet,
     AccountKind.custody,
+    AccountKind.payable,
   ];
 
   static String _kindLabel(AccountKind kind) => switch (kind) {
@@ -89,6 +90,7 @@ class _AccountFormState extends State<_AccountForm> {
     AccountKind.bank => 'مصرف',
     AccountKind.wallet => 'محفظة ليبيانا',
     AccountKind.custody => 'عهدة (مال في يد مندوب أو شركة توصيل)',
+    AccountKind.payable => 'التزام — علينا (قرض، إيجار مستحق…)',
     AccountKind.unknown => '—',
   };
 
@@ -152,7 +154,12 @@ class _AccountFormState extends State<_AccountForm> {
     final scheme = context.colorScheme;
     final account = widget.account;
     final holderName = _holder?.name ?? account?.holder?.name;
-    final canBeDefault = _kind != AccountKind.custody && !(account?.isDefault ?? false);
+    // Nothing falls back into custody or into a debt.
+    final canBeDefault = _kind != AccountKind.custody &&
+        _kind != AccountKind.payable &&
+        !(account?.isDefault ?? false);
+    // A vendor's «علينا» carries the vendor's name and stays open while the vendor does (§٢٠).
+    final ofVendor = account?.isVendorPayable ?? false;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -187,9 +194,10 @@ class _AccountFormState extends State<_AccountForm> {
 
               AppTextField(
                 controller: _name,
-                label: 'اسم الحساب',
+                label: ofVendor ? 'اسم الحساب (اسم المورد)' : 'اسم الحساب',
                 prefixIcon: AppIcons.treasury,
                 errorText: _refusal?.fieldError('name'),
+                readOnly: ofVendor,
                 validator: (value) => (value ?? '').trim().isEmpty ? 'اسم الحساب مطلوب' : null,
               ),
               SizedBox(height: 16.h),
@@ -208,7 +216,9 @@ class _AccountFormState extends State<_AccountForm> {
 
                     setState(() {
                       _kind = kind;
-                      if (kind == AccountKind.custody) _isDefault = false;
+                      if (kind == AccountKind.custody || kind == AccountKind.payable) {
+                        _isDefault = false;
+                      }
                     });
                   },
                 )
@@ -224,14 +234,16 @@ class _AccountFormState extends State<_AccountForm> {
                 ),
               SizedBox(height: 16.h),
 
-              AppButton.tonal(
-                label: holderName == null ? 'صاحب الحساب (اختياري)' : 'باسم $holderName',
-                icon: AppIcons.employees,
-                onPressed: _pickHolder,
-              ),
-              if (_refusal?.fieldError('holder_user_id') case final error?)
-                TreasuryFieldError(error),
-              SizedBox(height: 8.h),
+              if (!ofVendor) ...[
+                AppButton.tonal(
+                  label: holderName == null ? 'صاحب الحساب (اختياري)' : 'باسم $holderName',
+                  icon: AppIcons.employees,
+                  onPressed: _pickHolder,
+                ),
+                if (_refusal?.fieldError('holder_user_id') case final error?)
+                  TreasuryFieldError(error),
+                SizedBox(height: 8.h),
+              ],
 
               if (canBeDefault) ...[
                 SwitchListTile(
@@ -243,7 +255,7 @@ class _AccountFormState extends State<_AccountForm> {
                 if (_refusal?.fieldError('is_default') case final error?)
                   TreasuryFieldError(error),
               ],
-              if (!_isNew && !account!.isDefault && !account.isSystem) ...[
+              if (!_isNew && !account!.isDefault && !account.isSystem && !ofVendor) ...[
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _isActive,

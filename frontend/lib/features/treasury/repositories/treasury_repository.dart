@@ -131,4 +131,21 @@ abstract interface class TreasuryRepository {
     required int paymentId,
     required String reason,
   });
+
+  /// «الحساب مع المورد» — what is owed to one vendor, and every payment. TREASURY-DESIGN §٢٠.
+  Future<Either<Failure, VendorAccount>> vendorAccount(int vendorId);
+
+  /// «يُحسب عليه دين للمورد» — an order from before the treasury that is still owed: its total
+  /// goes onto the vendor's «علينا», with what was paid on it since. One way.
+  Future<Either<Failure, Unit>> countOldOrderAsDebt(int purchaseOrderId);
+
+  /// «خصم من المورد» — نقصٌ أنقصه المورد مما علينا، بلا حركة مال. يُعيد الصفَّ كما حفظه الخادم،
+  /// و[clientToken] يجعل الإعادةَ آمنة كما في الدفعة.
+  Future<Either<Failure, VendorPayment>> creditVendor({
+    required int vendorId,
+    required String amount,
+    int? purchaseOrderId,
+    String? notes,
+    String? clientToken,
+  });
 }

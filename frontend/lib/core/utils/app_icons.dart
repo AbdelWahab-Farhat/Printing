@@ -238,6 +238,10 @@ abstract final class AppIcons {
   /// عهدة — مالٌ في يد غيرنا لحسابنا: النورس، أو مندوب.
   static IconData get custody => _pick(Icons.local_shipping_outlined, CupertinoIcons.cube_box);
 
+  /// «علينا» — ما على الشركة: موردٌ أو قرضٌ أو إيجار. فاتورةٌ تنتظر الدفع.
+  static IconData get payable =>
+      _pick(Icons.request_quote_outlined, CupertinoIcons.doc_plaintext);
+
   /// مالٌ انتقل بين حسابين.
   static IconData get transfer => _pick(Icons.swap_horiz_rounded, CupertinoIcons.arrow_right_arrow_left);
 

@@ -781,6 +781,7 @@ final class AuditAttributeLabels
             'operation_id' => 'العملية',
             'counterpart_account_id' => 'الحساب المقابل',
             'reverses_movement_id' => 'تعكس حركة',
+            'revision' => 'رقم إعادة الترحيل',
         ],
         'vendor_payment' => [
             'purchase_order_id' => 'أمر الشراء',

@@ -314,4 +314,43 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
       parse: (data) => VendorPayment.fromJson(data as Map<String, dynamic>),
     );
   }
+
+  @override
+  Future<Either<Failure, VendorAccount>> vendorAccount(int vendorId) {
+    return safeRequest<VendorAccount>(
+      () => _dio.get(TreasuryEndpoints.vendorPayments(vendorId)),
+      parse: (data) => VendorAccount.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Unit>> countOldOrderAsDebt(int purchaseOrderId) {
+    return safeRequest<Unit>(
+      () => _dio.post(TreasuryEndpoints.countOldOrderAsDebt(purchaseOrderId)),
+      parse: (_) => unit,
+    );
+  }
+
+  @override
+  Future<Either<Failure, VendorPayment>> creditVendor({
+    required int vendorId,
+    required String amount,
+    int? purchaseOrderId,
+    String? notes,
+    String? clientToken,
+  }) {
+    return safeRequest<VendorPayment>(
+      () => _dio.post(
+        TreasuryEndpoints.vendorPayments(vendorId),
+        data: {
+          'type': 'credit',
+          'amount': amount,
+          'purchase_order_id': ?purchaseOrderId,
+          'notes': ?notes,
+          'client_token': ?clientToken,
+        },
+      ),
+      parse: (data) => VendorPayment.fromJson(data as Map<String, dynamic>),
+    );
+  }
 }

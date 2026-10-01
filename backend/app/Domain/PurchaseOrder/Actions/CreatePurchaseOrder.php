@@ -33,6 +33,7 @@ final class CreatePurchaseOrder
     public function __construct(
         private readonly AllocatePurchaseOrderAdditionalCosts $allocateAdditionalCosts,
         private readonly RecalculatePurchaseOrderTotal $recalculateTotal,
+        private readonly SyncPurchaseOrderDebt $syncDebt,
     ) {}
 
     public function __invoke(PurchaseOrderData $data): PurchaseOrder
@@ -83,6 +84,9 @@ final class CreatePurchaseOrder
 
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
+
+            // Owed to the vendor from this moment, at the full total — TREASURY-DESIGN §٢٠.
+            ($this->syncDebt)($order, null);
 
             return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
         });

@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditHiddenAttributes;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
@@ -125,6 +126,8 @@ class OperationIdempotencyTest extends TestCase
             'type' => 'deposit', 'to_account_id' => $bank->id, 'amount' => '1000',
         ], $headers)->assertCreated();
         $vendor = Vendor::factory()->create();
+        // مستحقٌّ له ما يكفي (لا دفع مقدّم، §٢٠) — فلا يقف في طريق الدفعة إلا ما يختبره هذا الاختبار.
+        PurchaseOrder::factory()->create(['vendor_id' => $vendor->id, 'total_amount' => '1000.00']);
         $payment = [
             'amount' => '400',
             'method' => 'bank_transfer',

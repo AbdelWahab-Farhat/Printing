@@ -723,7 +723,10 @@ abstract final class Injector {
         () => GetPurchaseOrderPayments(sl<TreasuryRepository>()),
       )
       ..registerLazySingleton<PayVendor>(() => PayVendor(sl<TreasuryRepository>()))
-      ..registerLazySingleton<ReverseVendorPayment>(() => ReverseVendorPayment(sl<TreasuryRepository>()));
+      ..registerLazySingleton<ReverseVendorPayment>(() => ReverseVendorPayment(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetVendorAccount>(() => GetVendorAccount(sl<TreasuryRepository>()))
+      ..registerLazySingleton<CreditVendor>(() => CreditVendor(sl<TreasuryRepository>()))
+      ..registerLazySingleton<CountOldOrderAsDebt>(() => CountOldOrderAsDebt(sl<TreasuryRepository>()));
   }
 
   /// The staff side: the people whose money finances stock, and the deals it finances.

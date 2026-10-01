@@ -696,6 +696,10 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:vendors.payments.reverse')->name('vendors.payments.reverse');
         Route::get('purchase-orders/{purchaseOrder}/payments', [VendorPaymentController::class, 'forPurchaseOrder'])
             ->middleware('can:vendors.payments.view')->name('purchase-orders.payments');
+        // «يُحسب عليه دين للمورد» — an order from before the treasury, still owed (§٢٠). It changes
+        // what the vendor is owed, so it takes the grant that records what is paid them.
+        Route::post('purchase-orders/{purchaseOrder}/count-as-debt', [VendorPaymentController::class, 'countAsDebt'])
+            ->middleware('can:vendors.payments.record')->name('purchase-orders.count-as-debt');
 
         // ── inventory ───────────────────────────────────────────────────────────────────
         // One pair of permissions covers warehouses, balances and the ledger. Splitting them

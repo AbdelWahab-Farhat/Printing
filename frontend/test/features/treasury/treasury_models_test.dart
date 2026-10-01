@@ -48,6 +48,45 @@ void main() {
       expect(made.name, 'مصرف علي');
       expect(made.balance, '300.00');
     });
+
+    test('«علينا» يبقى «علينا» بعد نسخةٍ معدَّلة — لا يصير حساباً عادياً بعد الحفظ', () {
+      // Arrange
+      final account = TreasuryAccount.fromJson({
+        'id': 21,
+        'name': 'المورد الذهبي',
+        'kind': 'payable',
+        'kind_label': 'علينا',
+        'is_payable': true,
+        'vendor_id': 7,
+        'balance': '-1000.00',
+      });
+
+      // Act
+      final made = account.copyWith(isActive: false);
+
+      // Assert
+      expect(made.isPayable, isTrue);
+      expect(made.vendorId, 7);
+      expect(made.isVendorPayable, isTrue);
+      expect(made.owed, '1000.00');
+    });
+
+    test('ترقيعُ القائمة بعد حفظٍ يُبقي مجموعَ «علينا» كما قاله الخادم', () {
+      // Arrange
+      final list = TreasuryAccounts.fromJson({
+        'accounts': const <Map<String, dynamic>>[],
+        'total': '500.00',
+        'payables_total': '1200.00',
+        'can_view_all': true,
+      });
+
+      // Act
+      final patched = list.withAccounts(const []);
+
+      // Assert
+      expect(patched.payablesTotal, '1200.00');
+      expect(patched.total, '500.00');
+    });
   });
 
   group('سطر السجل', () {
@@ -178,6 +217,99 @@ void main() {
       expect(reversal.reversesPaymentId, 5);
       expect(marked.isReversed, isTrue);
       expect(marked.isReversible, isFalse);
+    });
+
+    VendorPayment row(int id, String type, String amount, {int? reverses}) => VendorPayment(
+      id: id,
+      type: type,
+      typeLabel: type,
+      amount: amount,
+      isReversed: false,
+      isReversible: true,
+      reversesPaymentId: reverses,
+    );
+
+    const summary = PurchaseOrderPayments(
+      total: '1000.00',
+      paid: '400.00',
+      credited: '50.00',
+      remaining: '550.00',
+      payableUpTo: '550.00',
+      predatesTreasury: false,
+      payments: [],
+    );
+
+    test('الخصمُ يُنقص المتبقي وما يُدفع، ولا يزيد المدفوع — كما يجمع الخادم', () {
+      // Arrange
+      final credit = row(8, 'credit', '100.00');
+
+      // Act
+      final patched = summary.withPayment(credit);
+
+      // Assert
+      expect(credit.isCredit, isTrue);
+      expect(patched.paid, '400.00');
+      expect(patched.credited, '150.00');
+      expect(patched.remaining, '450.00');
+      expect(patched.payableUpTo, '450.00');
+      expect(patched.payments.first.id, 8);
+    });
+
+    test('الدفعةُ تزيد المدفوع وتُنقص ما يُدفع، وتُبقي الخصم كما هو', () {
+      // Arrange
+      final payment = row(9, 'payment', '200.00');
+
+      // Act
+      final patched = summary.withPayment(payment);
+
+      // Assert
+      expect(patched.paid, '600.00');
+      expect(patched.credited, '50.00');
+      expect(patched.remaining, '350.00');
+      expect(patched.payableUpTo, '350.00');
+    });
+
+    test('عكسُ خصمٍ يُعيده إلى المتبقي ولا يمسّ المدفوع', () {
+      // Arrange
+      final credit = row(8, 'credit', '50.00');
+      final reversal = row(10, 'reversal', '50.00', reverses: 8);
+      final before = PurchaseOrderPayments(
+        total: summary.total,
+        paid: summary.paid,
+        credited: summary.credited,
+        remaining: summary.remaining,
+        payableUpTo: summary.payableUpTo,
+        predatesTreasury: false,
+        payments: [credit],
+      );
+
+      // Act
+      final patched = before.withReversal(credit, reversal);
+
+      // Assert
+      expect(patched.paid, '400.00');
+      expect(patched.credited, '0.00');
+      expect(patched.remaining, '600.00');
+      expect(patched.payableUpTo, '600.00');
+    });
+
+    test('دفعةٌ على أمرٍ قبل الخزينة تُنقص ما بقي يُدفع عليه، ولا متبقّي يُخترع', () {
+      // Arrange
+      const old = PurchaseOrderPayments(
+        total: '1000.00',
+        paid: '400.00',
+        payableUpTo: '600.00',
+        predatesTreasury: true,
+        payments: [],
+      );
+
+      // Act
+      final patched = old.withPayment(row(11, 'payment', '100.00'));
+
+      // Assert
+      expect(patched.remaining, isNull);
+      expect(patched.payableUpTo, '500.00');
+      expect(patched.predatesTreasury, isTrue);
     });
   });
 }

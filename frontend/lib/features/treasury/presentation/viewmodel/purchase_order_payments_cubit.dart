@@ -5,8 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// «المدفوع للمورد» على أمر شراء — الإجمالي والمدفوع والمتبقي، والدفعات. TREASURY-DESIGN §٨.
 ///
-/// **يُرقَّع ولا يُعاد.** الدفعة والعكس يعودان من الخادم بصفّهما، فيوضع الصف أعلى القائمة
-/// ويتحرّك المدفوع بمبلغه — بالتعريف نفسه الذي يجمع به الخادم (`PurchaseOrderPayments`).
+/// **يُرقَّع ولا يُعاد.** الدفعة والخصم والعكس تعود من الخادم بصفّها، فيوضع الصف أعلى القائمة
+/// وتتحرّك الأرقام بمبلغه — بالتعريف نفسه الذي يجمع به الخادم (`PurchaseOrderPayments`). وحده
+/// «يُحسب عليه دين للمورد» يُعيد القراءة: ما صار عليه الأمرُ بعده يعرفه الخادم وحده.
 class PurchaseOrderPaymentsCubit extends Cubit<PurchaseOrderPaymentsState> {
   PurchaseOrderPaymentsCubit({
     required this.purchaseOrderId,
@@ -14,9 +15,13 @@ class PurchaseOrderPaymentsCubit extends Cubit<PurchaseOrderPaymentsState> {
     required GetPurchaseOrderPayments getPayments,
     required PayVendor payVendor,
     required ReverseVendorPayment reversePayment,
+    required CreditVendor creditVendor,
+    required CountOldOrderAsDebt countAsDebt,
   }) : _getPayments = getPayments,
        _payVendor = payVendor,
        _reversePayment = reversePayment,
+       _creditVendor = creditVendor,
+       _countAsDebt = countAsDebt,
        super(const PurchaseOrderPaymentsLoading());
 
   final int purchaseOrderId;
@@ -24,6 +29,8 @@ class PurchaseOrderPaymentsCubit extends Cubit<PurchaseOrderPaymentsState> {
   final GetPurchaseOrderPayments _getPayments;
   final PayVendor _payVendor;
   final ReverseVendorPayment _reversePayment;
+  final CreditVendor _creditVendor;
+  final CountOldOrderAsDebt _countAsDebt;
 
   Future<void> load() async {
     final previous = switch (state) {
@@ -74,6 +81,35 @@ class PurchaseOrderPaymentsCubit extends Cubit<PurchaseOrderPaymentsState> {
 
       return null;
     });
+  }
+
+  /// «خصم من المورد» على هذا الأمر — لا يتحرّك فيه مال. null عند النجاح.
+  Future<Failure?> credit({required String amount, String? notes, String? clientToken}) async {
+    final result = await _creditVendor(
+      vendorId: vendorId,
+      purchaseOrderId: purchaseOrderId,
+      amount: amount,
+      notes: notes,
+      clientToken: clientToken,
+    );
+
+    return result.fold((failure) => failure, (credit) {
+      if (state case final PurchaseOrderPaymentsLoaded loaded when !isClosed) {
+        emit(PurchaseOrderPaymentsLoaded(loaded.payments.withPayment(credit)));
+      }
+
+      return null;
+    });
+  }
+
+  /// «يُحسب عليه دين للمورد» — أمرٌ من قبل الخزينة ما زال مستحقاً يدخل «علينا». null عند النجاح.
+  Future<Failure?> countAsDebt() async {
+    final result = await _countAsDebt(purchaseOrderId);
+    final failure = result.fold<Failure?>((failure) => failure, (_) => null);
+
+    if (failure == null && !isClosed) await load();
+
+    return failure;
   }
 
   /// يعكس [payment] بسبب. null عند النجاح.

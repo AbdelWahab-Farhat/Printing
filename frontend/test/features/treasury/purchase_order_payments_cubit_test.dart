@@ -46,6 +46,8 @@ void main() {
       getPayments: GetPurchaseOrderPayments(repository),
       payVendor: PayVendor(repository),
       reversePayment: ReverseVendorPayment(repository),
+      creditVendor: CreditVendor(repository),
+      countAsDebt: CountOldOrderAsDebt(repository),
     );
 
     blocTest<PurchaseOrderPaymentsCubit, PurchaseOrderPaymentsState>(

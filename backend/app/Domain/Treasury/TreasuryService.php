@@ -14,12 +14,14 @@ use App\Domain\Treasury\Actions\ReverseMovement;
 use App\Domain\Treasury\Actions\ReverseOperation;
 use App\Domain\Treasury\Actions\SaveExpenseCategory;
 use App\Domain\Treasury\Actions\SettleCustody;
+use App\Domain\Treasury\Actions\SyncDebt;
 use App\Domain\Treasury\Actions\UpdateTreasuryAccount;
 use App\Domain\Treasury\DTOs\AccountData;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\DTOs\OperationData;
 use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Enums\OperationType;
 use App\Domain\Treasury\Exceptions\AccountDoesNotFitMethod;
 use App\Domain\Treasury\Exceptions\InsufficientBalance;
@@ -69,6 +71,7 @@ final class TreasuryService
         private readonly SettleCustody $settleCustody,
         private readonly CollectOrderMoney $collectOrderMoney,
         private readonly CustodyForOrder $custody,
+        private readonly SyncDebt $syncDebt,
     ) {}
 
     // ── accounts ────────────────────────────────────────────────────────────────────────
@@ -86,7 +89,7 @@ final class TreasuryService
             ->when(! $this->canViewAll($viewer), fn ($q) => $q->where('holder_user_id', $viewer->getKey()))
             ->when($activeOnly, fn ($q) => $q->active())
             ->with(['holder', 'settlesInto'])
-            ->orderByRaw("CASE kind WHEN 'cash' THEN 1 WHEN 'bank' THEN 2 WHEN 'wallet' THEN 3 ELSE 4 END")
+            ->orderByRaw("CASE kind WHEN 'cash' THEN 1 WHEN 'bank' THEN 2 WHEN 'wallet' THEN 3 WHEN 'custody' THEN 4 ELSE 5 END")
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get();
@@ -208,7 +211,9 @@ final class TreasuryService
         }
 
         if (! $account->kind->spendable()) {
-            throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
+            throw $account->kind === AccountKind::Payable
+                ? AccountDoesNotFitMethod::payable((string) $account->name, $field)
+                : AccountDoesNotFitMethod::custody((string) $account->name, $field);
         }
 
         return $account;
@@ -329,6 +334,15 @@ final class TreasuryService
     }
 
     /**
+     * Undoes one movement — for a correction that must leave the source's other movements
+     * standing. Null when it is already undone.
+     */
+    public function reverseMovement(TreasuryMovement $movement, ?string $notes, ?int $actorId): ?TreasuryMovement
+    {
+        return ($this->reverseMovement)($movement, $notes, $actorId);
+    }
+
+    /**
      * The movements a source posted that nothing has undone yet.
      *
      * @return Collection<int, TreasuryMovement>
@@ -342,6 +356,78 @@ final class TreasuryService
             ->whereDoesntHave('reversedBy')
             ->orderBy('id')
             ->get();
+    }
+
+    // ── «علينا» — what is owed (§٢٠) ─────────────────────────────────────────────────────
+
+    /**
+     * The vendor's payable, opened the first time anything is owed to them or paid to them.
+     *
+     * `createOrFirst`, not `firstOrCreate`: two purchase orders raised for a new vendor at once
+     * would both miss the lookup, and the second insert meets `treasury_accounts_one_per_vendor`
+     * inside a savepoint and reads the first one's row instead of failing.
+     */
+    public function payableForVendor(int $vendorId, string $vendorName): TreasuryAccount
+    {
+        $existing = TreasuryAccount::query()->where('vendor_id', $vendorId)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return TreasuryAccount::unguarded(fn () => TreasuryAccount::query()->createOrFirst(
+            ['vendor_id' => $vendorId],
+            [
+                'name' => mb_substr($vendorName, 0, 100),
+                'kind' => AccountKind::Payable,
+                'is_default' => false,
+                'is_active' => true,
+                'currency' => 'LYD',
+            ],
+        ));
+    }
+
+    /** The vendor's payable, if anything was ever owed to them. */
+    public function payableIdOfVendor(int $vendorId): ?int
+    {
+        $id = TreasuryAccount::query()->where('vendor_id', $vendorId)->value('id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    /** A renamed vendor's account follows — it is found by the name on the dashboard. */
+    public function renameVendorPayable(int $vendorId, string $vendorName): void
+    {
+        TreasuryAccount::query()->where('vendor_id', $vendorId)->get()
+            ->each(fn (TreasuryAccount $account) => $account->forceFill(['name' => mb_substr($vendorName, 0, 100)])->save());
+    }
+
+    /**
+     * Makes the debt a source stands for equal `$amount` on `$accountId` — a purchase order's
+     * total on its vendor's payable. Null account or zero: nothing owed any more. Call inside the
+     * transaction that changed the source. See {@see SyncDebt}.
+     */
+    public function syncDebt(
+        string $sourceType,
+        int $sourceId,
+        ?int $accountId,
+        string $amount,
+        DateTimeInterface $firstPostedAt,
+        string $notes,
+        string $reason,
+        ?int $actorId,
+    ): void {
+        ($this->syncDebt)(
+            $sourceType,
+            $sourceId,
+            MovementKind::Purchase,
+            $accountId,
+            $amount,
+            $firstPostedAt,
+            $notes,
+            $reason,
+            $actorId,
+        );
     }
 
     // ── settlement ──────────────────────────────────────────────────────────────────────
@@ -468,8 +554,9 @@ final class TreasuryService
 
     /**
      * Every account a person may pick for money, with the methods each one takes — the list a
-     * form filters as the method changes. Nawris is left out: only its webhook writes to it. **ولا
-     * عهدةَ إلا عهدةُ من يختار** — القاعدةُ التي يرفض بها الخادمُ اختيارَ غيرها.
+     * form filters as the method changes. Nawris is left out: only its webhook writes to it. So
+     * is every payable: no payment lands in a debt. **ولا عهدةَ إلا عهدةُ من يختار** — القاعدةُ
+     * التي يرفض بها الخادمُ اختيارَ غيرها.
      *
      * **مرّةً واحدة لكل طلب**: قائمةُ الطلبيات تبني حقولَ كل حركةٍ لكل طلبية، وكانت تسأل
      * القاعدةَ السؤالَ نفسَه مرّتين لكل صف. انظر {@see RequestMemo}.
@@ -492,6 +579,7 @@ final class TreasuryService
         return TreasuryAccount::query()
             ->active()
             ->whereNull('system_code')
+            ->where('kind', '<>', AccountKind::Payable->value)
             ->where(fn ($q) => $q->where('kind', '<>', AccountKind::Custody->value)
                 ->when($actorId !== null, fn ($q) => $q->orWhere('holder_user_id', $actorId)))
             ->orderByDesc('is_default')

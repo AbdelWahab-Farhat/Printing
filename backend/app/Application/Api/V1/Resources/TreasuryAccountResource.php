@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -38,6 +39,10 @@ class TreasuryAccountResource extends JsonResource
             // Custody fills from customers and empties by settlement — the app hides the hand
             // operations that would be refused on it.
             'is_spendable' => $this->kind->spendable(),
+            // «علينا»: the balance is a debt below zero (§٢٠). A vendor's is moved by its purchase
+            // orders and payments alone, so the app offers no hand operation on it.
+            'is_payable' => $this->kind === AccountKind::Payable,
+            'vendor_id' => $this->vendor_id,
 
             // Custody only: where its money goes at settlement when nobody picks.
             'settles_into_account_id' => $this->settles_into_account_id,

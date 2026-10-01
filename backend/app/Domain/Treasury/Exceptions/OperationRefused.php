@@ -90,6 +90,16 @@ final class OperationRefused extends DomainException
         return new self('لا يُحوَّل من حساب إلى نفسه', 'to_account_id');
     }
 
+    public static function notOnPayable(string $type, string $account, string $field): self
+    {
+        return new self("لا «{$type}» على «{$account}» — حساب التزام: يُسجَّل عليه مصروف بالآجل أو تحويل أو جرد", $field);
+    }
+
+    public static function exceedsDebt(string $account, string $owed): self
+    {
+        return new self("المستحق لـ«{$account}» {$owed} فقط — لا يُسدَّد أكثر منه", 'amount');
+    }
+
     public static function reasonRequired(): self
     {
         return new self('السبب مطلوب عند السحب', 'notes');

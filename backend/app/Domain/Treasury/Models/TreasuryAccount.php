@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * never fillable: a payload that could set `system_code` could redirect the Nawris webhook.
  *
  * @property ?int $pickup_city_id the «استلام مكتب» branch whose cash lands here — §١٩
+ * @property ?int $vendor_id the vendor a payable is the debt to — §٢٠. Never fillable: only the
+ *                           purchase-order context opens one, through `TreasuryService`
  */
 #[UseFactory(TreasuryAccountFactory::class)]
 #[Fillable(['name', 'holder_user_id', 'is_default', 'is_active', 'is_collected', 'notes'])]
@@ -62,6 +64,15 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public function isSystem(): bool
     {
         return $this->system_code !== null;
+    }
+
+    /**
+     * A vendor's payable: purchase orders and vendor payments move it, and nothing by hand —
+     * the vendor's own screens hold the reasons, and a hand transfer would leave them behind.
+     */
+    public function isVendorPayable(): bool
+    {
+        return $this->vendor_id !== null;
     }
 
     /** Whether this person may read the account without `treasury.view` — it is in their name. */

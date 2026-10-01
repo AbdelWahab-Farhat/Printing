@@ -34,14 +34,19 @@ typedef RecordOperationCallback =
 /// عمليةٌ يدوية — إيداع، سحب، مصروف، تحويل، جرد، رصيد افتتاحي. TREASURY-DESIGN §٤.
 ///
 /// **نموذجٌ واحد للستّ**، لأنها لا تختلف إلا في الحقول التي تُظهرها: المال الخارج يسمّي الحساب
-/// الذي يخرج منه، والتحويل يسمّي الاثنين، والجرد يسأل عمّا وُجد بدل المبلغ. [account] يفتحه على
-/// الحساب الذي جاء منه صاحبه.
+/// الذي يخرج منه، والتحويل يسمّي الاثنين، والجرد يسأل عمّا وُجد بدل المبلغ.
+///
+/// [account] الحسابُ الذي جاء منه صاحبه، **وهو مقفل**: مفتوحاً من «المصرف» يخرج التحويل من
+/// المصرف ولا يُسأل إلا عن وجهته. و[into] يضعه في الجهة المستقبِلة — سدادُ قرضٍ *إليه*. ومن
+/// اللوحة، بلا [account]، تُختار الجهتان.
 Future<void> showTreasuryOperationSheet({
   required BuildContext context,
   required OperationKind kind,
   required List<TreasuryAccount> accounts,
   required RecordOperationCallback onSubmit,
   TreasuryAccount? account,
+  bool into = false,
+  String? title,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -52,6 +57,8 @@ Future<void> showTreasuryOperationSheet({
         kind: kind,
         accounts: accounts,
         account: account,
+        into: into,
+        title: title,
         onSubmit: onSubmit,
       );
 
@@ -72,11 +79,15 @@ class _OperationForm extends StatefulWidget {
     required this.accounts,
     required this.onSubmit,
     this.account,
+    this.into = false,
+    this.title,
   });
 
   final OperationKind kind;
   final List<TreasuryAccount> accounts;
   final TreasuryAccount? account;
+  final bool into;
+  final String? title;
   final RecordOperationCallback onSubmit;
 
   @override
@@ -94,6 +105,9 @@ class _OperationFormState extends State<_OperationForm> {
 
   TreasuryAccount? _from;
   TreasuryAccount? _to;
+
+  /// The account the sheet was opened from — fixed, not one choice among the rest.
+  TreasuryAccount? _locked;
   ExpenseCategory? _category;
   AuthUser? _employee;
   bool _saving = false;
@@ -118,14 +132,24 @@ class _OperationFormState extends State<_OperationForm> {
 
   /// الافتتاح والجرد قد يمسّان العهدة — افتتاح النورس، وجرد ما فيه. وما سواهما يتركها، والخادم
   /// يقول ذلك أيضاً.
+  ///
+  /// و«علينا» المفتوح باليد يأخذ أيضاً مصروفاً بالآجل وتحويلاً — اقتراضاً منه وسداداً إليه. أما
+  /// «علينا» المورد فلا يأخذ شيئاً هنا: أوامرُه ودفعاتُه تحرّكه.
   List<TreasuryAccount> get _choices => [
     for (final account in widget.accounts)
       if (account.isActive &&
+          !account.isVendorPayable &&
           (account.isSpendable ||
               _kind == OperationKind.opening ||
-              _kind == OperationKind.adjustment))
+              _kind == OperationKind.adjustment ||
+              (account.isPayable &&
+                  (_kind == OperationKind.expense || _kind == OperationKind.transfer))))
         account,
   ];
+
+  /// The account the figure is about is a debt — its opening and its count are said as what is
+  /// owed, and the server turns the sign (§٢٠).
+  bool get _aboutDebt => (_to ?? _from)?.isPayable ?? false;
 
   @override
   void initState() {
@@ -138,7 +162,9 @@ class _OperationFormState extends State<_OperationForm> {
     ].firstOrNull;
 
     if (start != null) {
-      if (_kind.takesFrom) {
+      _locked = start;
+
+      if (_kind.takesFrom && !widget.into) {
         _from = start;
       } else {
         _to = start;
@@ -225,11 +251,30 @@ class _OperationFormState extends State<_OperationForm> {
     required String errorKey,
     required ValueChanged<TreasuryAccount?> onChanged,
   }) {
+    final locked = _locked;
+
+    // The account the sheet came from is said, not offered.
+    if (locked != null && value?.id == locked.id) {
+      return InputDecorator(
+        key: const ValueKey('locked-account'),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(accountKindIcon(locked.kind)),
+          border: const OutlineInputBorder(),
+        ),
+        child: Text('${locked.name} — ${treasuryBalanceLabel(locked)}'),
+      );
+    }
+
     return AppDropdown<TreasuryAccount>(
       value: value,
-      items: _choices,
+      // The other side of a transfer is never the locked account itself.
+      items: [
+        for (final account in _choices)
+          if (account.id != locked?.id) account,
+      ],
       keyOf: (account) => account.id,
-      labelOf: (account) => '${account.name} — ${treasuryMoney(account.balance ?? '0')}',
+      labelOf: (account) => '${account.name} — ${treasuryBalanceLabel(account)}',
       label: label,
       prefixIcon: AppIcons.treasury,
       errorText: _refusal?.fieldError(errorKey),
@@ -268,7 +313,7 @@ class _OperationFormState extends State<_OperationForm> {
               ),
               SizedBox(height: 16.h),
               Text(
-                _kind.label,
+                widget.title ?? _kind.label,
                 style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               SizedBox(height: 20.h),
@@ -313,7 +358,12 @@ class _OperationFormState extends State<_OperationForm> {
 
               AppTextField(
                 controller: _amount,
-                label: _isCount ? 'الرصيد المعدود فعلاً' : 'المبلغ',
+                label: switch ((_isCount, _aboutDebt, _kind)) {
+                  (true, true, _) => 'المستحق عليه فعلاً',
+                  (true, false, _) => 'الرصيد المعدود فعلاً',
+                  (false, true, OperationKind.opening) => 'الدَّين يوم الافتتاح',
+                  _ => 'المبلغ',
+                },
                 prefixIcon: _isCount ? AppIcons.countBalance : AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],

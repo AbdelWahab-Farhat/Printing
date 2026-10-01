@@ -76,6 +76,10 @@ abstract final class TreasuryEndpoints {
       '/vendors/$vendorId/payments/$paymentId/reverse';
   static String purchaseOrderPayments(int purchaseOrderId) =>
       '/purchase-orders/$purchaseOrderId/payments';
+
+  /// «يُحسب عليه دين للمورد» — an order from before the treasury, still owed. §٢٠.
+  static String countOldOrderAsDebt(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/count-as-debt';
 }
 
 /// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.

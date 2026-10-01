@@ -61,6 +61,34 @@ void main() {
     isReversible: true,
   );
 
+  // أمرٌ من بعد الخزينة: له متبقٍّ، والخصمُ يُنقصه.
+  const current = PurchaseOrderPayments(
+    total: '1000.00',
+    paid: '400.00',
+    remaining: '600.00',
+    payableUpTo: '600.00',
+    predatesTreasury: false,
+    payments: [paid],
+  );
+
+  // أمرٌ من قبل الخزينة: لا متبقّي عليه، ويُدفع عليه حتى إجماليه ناقصاً ما دُفع منذ النظام.
+  const old = PurchaseOrderPayments(
+    total: '1000.00',
+    paid: '400.00',
+    payableUpTo: '600.00',
+    predatesTreasury: true,
+    payments: [paid],
+  );
+
+  const credit = VendorPayment(
+    id: 8,
+    type: 'credit',
+    typeLabel: 'خصم من المورد',
+    amount: '100.00',
+    isReversed: false,
+    isReversible: true,
+  );
+
   setUp(() async {
     await sl.reset();
     repository = MockTreasuryRepository();
@@ -91,6 +119,8 @@ void main() {
       ..registerLazySingleton(() => GetPurchaseOrderPayments(repository))
       ..registerLazySingleton(() => PayVendor(repository))
       ..registerLazySingleton(() => ReverseVendorPayment(repository))
+      ..registerLazySingleton(() => CreditVendor(repository))
+      ..registerLazySingleton(() => CountOldOrderAsDebt(repository))
       ..registerLazySingleton(() => GetAccountOptions(repository))
       ..registerLazySingleton(() => GetTreasuryAccounts(repository));
   });
@@ -267,5 +297,94 @@ void main() {
 
     // Assert
     expect(find.textContaining('سابق لنظام الحسابات'), findsNothing);
+  });
+
+  testWidgets('a credit lands on top, lowers what is left, and carries a client token', (
+    tester,
+  ) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(current));
+    when(
+      () => repository.creditVendor(
+        vendorId: 9,
+        purchaseOrderId: 4,
+        amount: '100',
+        notes: any(named: 'notes'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer((_) async => const Right(credit));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('خصم من المورد'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(AppTextField).first, '100');
+    await tester.pump();
+
+    // Act
+    await tester.tap(find.text('تسجيل الخصم'));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert — الصفُّ بلا إشارة لأنه لم يحرّك مالاً، والمتبقي 500، بلا قراءةٍ ثانية.
+    final token = verify(
+      () => repository.creditVendor(
+        vendorId: 9,
+        purchaseOrderId: 4,
+        amount: '100',
+        notes: any(named: 'notes'),
+        clientToken: captureAny(named: 'clientToken'),
+      ),
+    ).captured.single;
+    expect(token, isNotEmpty);
+    expect(find.text('100 د.ل'), findsWidgets);
+    expect(find.text('−100 د.ل'), findsNothing);
+    expect(find.text('500 د.ل'), findsOneWidget);
+    verify(() => repository.purchaseOrderPayments(4)).called(1);
+  });
+
+  testWidgets('no credit is offered on an order from before the treasury', (tester) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(old));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('خصم من المورد'), findsNothing);
+    expect(find.text('يُحسب عليه دين للمورد'), findsOneWidget);
+  });
+
+  testWidgets('an old order opens the payment on what it can still take', (tester) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(old));
+
+    // Act
+    await openPayForm(tester);
+
+    // Assert
+    expect(find.widgetWithText(AppTextField, '600.00'), findsOneWidget);
+  });
+
+  testWidgets('an old order is counted as owed only after a confirmation, then re-read', (
+    tester,
+  ) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(old));
+    when(() => repository.countOldOrderAsDebt(4)).thenAnswer((_) async => const Right(unit));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('يُحسب عليه دين للمورد'));
+    await tester.pumpAndSettle();
+    verifyNever(() => repository.countOldOrderAsDebt(any()));
+
+    // Act
+    await tester.tap(find.text('احسبه ديناً'));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert — الخادم وحده يعرف ما صار عليه الأمر، فيُقرأ مرةً ثانية.
+    verify(() => repository.countOldOrderAsDebt(4)).called(1);
+    verify(() => repository.purchaseOrderPayments(4)).called(2);
   });
 }

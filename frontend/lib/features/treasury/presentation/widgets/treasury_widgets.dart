@@ -21,8 +21,23 @@ IconData accountKindIcon(AccountKind kind) => switch (kind) {
   AccountKind.bank => AppIcons.bank,
   AccountKind.wallet => AppIcons.mobileWallet,
   AccountKind.custody => AppIcons.custody,
+  AccountKind.payable => AppIcons.payable,
   AccountKind.unknown => AppIcons.treasury,
 };
+
+/// ما في الحساب كما يقوله الناس: «1,250 د.ل» للمال، و«علينا 1,000 د.ل» للدَّين — لا «−1,000»
+/// أبداً، فهي تُقرأ خطأً. و«لنا عنده» حين يكون عند الدائن مالٌ للشركة. TREASURY-DESIGN §٢٠.
+String treasuryBalanceLabel(TreasuryAccount account) {
+  if (!account.isPayable) return treasuryMoney(account.balance ?? '0');
+
+  return owedLabel(account.owed, holder: 'عنده');
+}
+
+/// ما علينا كما يقوله الناس: «علينا 1,000 د.ل»، أو — حين يكون عند الدائن مالٌ للشركة — «لنا
+/// عنده 50 د.ل». [holder] «عنده» لدائنٍ واحد و«عندهم» لأكثر. لا سالبَ عارياً أبداً.
+String owedLabel(String owed, {String holder = 'عندهم'}) => owed.startsWith('-')
+    ? 'لنا $holder ${treasuryMoney(owed.substring(1))}'
+    : 'علينا ${treasuryMoney(owed)}';
 
 /// الرقم أعلى شاشة الخزينة — كل ما في الحسابات، أو رصيد حسابٍ واحد.
 class TreasuryTotalCard extends StatelessWidget {
@@ -115,8 +130,9 @@ class TreasuryAccountTile extends StatelessWidget {
                 ),
               ),
               Text(
-                treasuryMoney(account.balance ?? '0'),
-                textDirection: TextDirection.ltr,
+                treasuryBalanceLabel(account),
+                // A bare figure reads left to right; «علينا …» is a sentence and reads as Arabic.
+                textDirection: account.isPayable ? null : TextDirection.ltr,
                 style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: account.isOverdrawn ? scheme.error : null,

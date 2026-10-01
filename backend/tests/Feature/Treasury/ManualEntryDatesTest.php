@@ -15,6 +15,7 @@ use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\TreasuryService;
+use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -360,6 +361,8 @@ class ManualEntryDatesTest extends TestCase
         $bank = $this->defaultOf(AccountKind::Bank);
         $this->countDrawer($headers, $bank, '5000', '2026-10-12');
         $vendor = Vendor::factory()->create();
+        // مستحقٌّ له ما يكفي (لا دفع مقدّم، §٢٠) — فلا يقف في طريق الدفعة إلا ما يختبره هذا الاختبار.
+        PurchaseOrder::factory()->create(['vendor_id' => $vendor->id, 'total_amount' => '1000.00']);
         $pay = fn (string $at) => $this->postJson("/api/v1/vendors/{$vendor->id}/payments", [
             'amount' => '100', 'method' => 'bank_transfer', 'paid_at' => $at,
         ], $headers);

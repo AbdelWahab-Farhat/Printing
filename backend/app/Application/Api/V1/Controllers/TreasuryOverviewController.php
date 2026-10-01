@@ -32,7 +32,7 @@ class TreasuryOverviewController extends Controller
 
     /**
      * «لمن المال» — TREASURY-DESIGN §٩. What the drawers hold, less what is being kept for the
-     * investors and the fund, is what is the company's own.
+     * investors and the fund, less what the company owes (§٢٠), is what is the company's own.
      */
     public function ownership(Request $request): JsonResponse
     {
@@ -40,10 +40,16 @@ class TreasuryOverviewController extends Controller
         $user = $request->user();
 
         $total = '0';
+        // A payable's balance is the debt below zero, so adding it subtracts what is owed.
+        $payables = '0';
 
         foreach ($this->treasury->accountsFor($user, activeOnly: true) as $account) {
             /** @var TreasuryAccount $account */
-            $total = bcadd($total, (string) $account->getAttribute('balance'), 2);
+            if ($account->kind->holdsMoney()) {
+                $total = bcadd($total, (string) $account->getAttribute('balance'), 2);
+            } else {
+                $payables = bcadd($payables, (string) $account->getAttribute('balance'), 2);
+            }
         }
 
         $held = $this->investors->moneyHeldForInvestors();
@@ -59,7 +65,8 @@ class TreasuryOverviewController extends Controller
             'investors' => $held['investors'],
             'investors_total' => $forInvestors,
             'fund_cash' => $held['fund_cash'],
-            'company_own' => bcsub(bcsub($total, $forInvestors, 2), $held['fund_cash'], 2),
+            'payables_total' => bcmul($payables, '-1', 2),
+            'company_own' => bcadd(bcsub(bcsub($total, $forInvestors, 2), $held['fund_cash'], 2), $payables, 2),
         ]);
     }
 

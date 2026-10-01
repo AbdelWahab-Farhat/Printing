@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/vendor_account_section.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_detail_cubit.dart';
 import 'package:dayaa/features/vendors/presentation/viewmodel/vendor_purchase_order_counts_cubit.dart';
@@ -327,6 +328,9 @@ class _Body extends StatelessWidget {
           ),
           SizedBox(height: 14.h),
         ],
+        // What is owed to them — TREASURY-DESIGN §٢٠. Draws nothing without
+        // `vendors.payments.view`, and loads on its own so the screen never waits for it.
+        VendorAccountSection(vendorId: vendor.id),
         _Section(
           title: 'معلومات الاتصال',
           child: Column(

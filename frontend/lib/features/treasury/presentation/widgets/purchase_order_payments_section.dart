@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/uuid.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
@@ -25,8 +26,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «المدفوع للمورد» على أمر الشراء — الإجمالي، وما دُفع عليه، وما بقي للمورد، وتحتها الدفعات،
-/// و«دفعة للمورد». TREASURY-DESIGN §٨.
+/// «المدفوع للمورد» على أمر الشراء — الإجمالي، وما دُفع عليه، وما خصمه المورد، وما بقي له،
+/// وتحتها الدفعات، و«دفعة للمورد» و«خصم من المورد» — و«يُحسب عليه دين للمورد» لأمرٍ من قبل
+/// الخزينة. TREASURY-DESIGN §٨، §٢٠.
 ///
 /// **طلبُه وحده وصلاحيتُه وحدها.** شاشة الأمر تُرسم بدونه لمن لا يحمل `vendors.payments.view`،
 /// والقراءة في [PurchaseOrderPaymentsCubit] — وفشلُها يُقال بزرّ «إعادة المحاولة» ولا يُسقط بقية
@@ -57,6 +59,8 @@ class PurchaseOrderPaymentsSection extends StatelessWidget {
         getPayments: sl(),
         payVendor: sl(),
         reversePayment: sl(),
+        creditVendor: sl(),
+        countAsDebt: sl(),
       )..load(),
       child: const _Section(),
     );
@@ -105,6 +109,10 @@ class _Loaded extends StatelessWidget {
             lines: [
               if (payments.total case final total?) ('إجمالي الأمر', total),
               ('المدفوع', payments.paid),
+              if (payments.credited != '0.00') ('خصم من المورد', payments.credited),
+              // أمرٌ من قبل الخزينة لا متبقّي عليه، لكن يُدفع عليه حتى إجماليه ناقصاً ما دُفع منذ النظام.
+              if (payments.predatesTreasury && payments.payableUpTo != null)
+                ('يُدفع عليه حتى', payments.payableUpTo!),
             ],
             emphasis: payments.remaining == null ? null : ('المتبقي للمورد', payments.remaining!),
           ),
@@ -120,6 +128,7 @@ class _Loaded extends StatelessWidget {
                   _PaymentRow(
                     key: ValueKey(payment.id),
                     payment: payment,
+                    movedMoney: _movedMoney(payment),
                     canReverse: session.can(AppPermission.reverseVendorPayments),
                   ),
                 ],
@@ -128,8 +137,26 @@ class _Loaded extends StatelessWidget {
                   AppButton.tonal(
                     label: 'دفعة للمورد',
                     icon: AppIcons.payment,
-                    onPressed: () => _pay(context, payments.remaining),
+                    onPressed: () => _pay(context, payments.payableUpTo ?? payments.remaining),
                   ),
+                  // لا يُخصم مقدّماً (§٢٠): أمرٌ لم يبقَ عليه شيء لا يُعرض عليه خصم — والخادم يرفضه.
+                  if (payments.remaining case final left? when left != '0.00') ...[
+                    SizedBox(height: 8.h),
+                    AppButton.tonal(
+                      label: 'خصم من المورد',
+                      icon: AppIcons.expense,
+                      onPressed: () => _credit(context),
+                    ),
+                  ],
+                  // أمرٌ قديم ما زال مستحقاً يدخل «علينا» باليد — النظام لا يعرف ما دُفع قبله (§٢٠).
+                  if (payments.predatesTreasury && payments.total != null) ...[
+                    SizedBox(height: 8.h),
+                    AppButton.tonal(
+                      label: 'يُحسب عليه دين للمورد',
+                      icon: AppIcons.payable,
+                      onPressed: () => _countAsDebt(context),
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -149,15 +176,72 @@ class _Loaded extends StatelessWidget {
       builder: (_) => _PayVendorForm(cubit: cubit, suggested: remaining),
     );
   }
+
+  Future<void> _credit(BuildContext context) {
+    final cubit = context.read<PurchaseOrderPaymentsCubit>();
+
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _CreditVendorForm(cubit: cubit),
+    );
+  }
+
+  /// باتّجاهٍ واحد لا يُتراجع عنه، فيُسأل قبله.
+  Future<void> _countAsDebt(BuildContext context) async {
+    final cubit = context.read<PurchaseOrderPaymentsCubit>();
+
+    final confirmed = await showCustomDialog(
+      context: context,
+      title: 'يُحسب عليه دين للمورد',
+      description:
+          'يُضاف إجمالي الأمر (${treasuryMoney(payments.total ?? '0')}) إلى «علينا» للمورد، '
+          'ويُخصم منه ما دُفع عليه منذ النظام (${treasuryMoney(payments.paid)}). '
+          'استعمله لأمرٍ ما زال مستحقاً فقط — لا يُتراجع عنه.',
+      confirmLabel: 'احسبه ديناً',
+      severity: DialogSeverity.warning,
+      barrierDismissible: false,
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
+
+    final failure = await cubit.countAsDebt();
+
+    if (!context.mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.showSuccess('حُسب دين الأمر على المورد');
+  }
+
+  /// هل حرّك هذا الصفُّ مالاً؟ الدَّينُ الافتتاحي والخصمُ لا يحرّكانه، ولا عكسُهما.
+  bool _movedMoney(VendorPayment payment) {
+    final row = payment.isReversal
+        ? payments.payments.where((p) => p.id == payment.reversesPaymentId).firstOrNull ?? payment
+        : payment;
+
+    return !row.isOpeningDebt && !row.isCredit;
+  }
 }
 
 /// دفعةٌ واحدة — على شكل سطر الدفتر: نوعها وقصّتها على جهة القراءة، ومبلغُها بإشارته أكبرُ ما
 /// في الصف. **الإشارة من جهة الشركة**: الدفعة مالٌ خرج (−)، وعكسُها مالٌ عاد (+)، والدَّين
-/// الافتتاحي بلا إشارة لأنه لم يحرّك مالاً.
+/// الافتتاحي والخصمُ — وعكسُهما — بلا إشارة لأنها لم تحرّك مالاً.
 class _PaymentRow extends StatelessWidget {
-  const _PaymentRow({required this.payment, required this.canReverse, super.key});
+  const _PaymentRow({
+    required this.payment,
+    required this.movedMoney,
+    required this.canReverse,
+    super.key,
+  });
 
   final VendorPayment payment;
+  final bool movedMoney;
   final bool canReverse;
 
   @override
@@ -165,12 +249,12 @@ class _PaymentRow extends StatelessWidget {
     final scheme = context.colorScheme;
     final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
     final struck = payment.isReversed ? TextDecoration.lineThrough : null;
-    final tone = payment.isReversed || payment.isOpeningDebt
+    final tone = payment.isReversed || !movedMoney
         ? scheme.onSurfaceVariant
         : payment.isReversal
         ? scheme.primary
         : scheme.error;
-    final figure = payment.isOpeningDebt
+    final figure = !movedMoney
         ? treasuryMoney(payment.amount)
         : treasuryMoney(
             payment.isReversal ? payment.amount : '-${payment.amount}',
@@ -294,6 +378,122 @@ class _Failed extends StatelessWidget {
             onPressed: context.read<PurchaseOrderPaymentsCubit>().load,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «خصم من المورد» — نقصٌ في الشحنة أو تخفيض: يُنقص المستحق على الأمر ولا يحرّك مالاً، والخادم
+/// يرفض أكثر مما بقي عليه ويقول ذلك تحت المبلغ.
+class _CreditVendorForm extends StatefulWidget {
+  const _CreditVendorForm({required this.cubit});
+
+  final PurchaseOrderPaymentsCubit cubit;
+
+  @override
+  State<_CreditVendorForm> createState() => _CreditVendorFormState();
+}
+
+class _CreditVendorFormState extends State<_CreditVendorForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _amount = TextEditingController();
+  final _notes = TextEditingController();
+
+  /// مفتاح هذا النموذج: يولَّد مرةً ويُعاد مع كل محاولة، فلا يُسجَّل الخصم مرتين.
+  final _clientToken = uuidV4();
+
+  bool _saving = false;
+  Failure? _refusal;
+
+  static const _rendered = {'amount', 'notes'};
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _saving = true;
+      _refusal = null;
+    });
+
+    final notes = _notes.text.trim();
+
+    final failure = await widget.cubit.credit(
+      amount: Validators.toWesternDigits(_amount.text.trim()),
+      notes: notes.isEmpty ? null : notes,
+      clientToken: _clientToken,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _saving = false;
+      _refusal = failure;
+    });
+
+    if (failure != null) {
+      if (failure.hasErrorsBeyond(_rendered)) context.showFailure(failure);
+
+      return;
+    }
+
+    Navigator.of(context).pop();
+    context.showSuccess('تم تسجيل الخصم');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16.w,
+        right: 16.w,
+        top: 16.h,
+        bottom: context.keyboardInset + 16.h,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'خصم من المورد',
+                style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 20.h),
+              AppTextField(
+                controller: _amount,
+                label: 'المبلغ',
+                prefixIcon: AppIcons.payment,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+                errorText: _refusal?.fieldError('amount'),
+                validator: (value) {
+                  final amount = double.tryParse(Validators.toWesternDigits((value ?? '').trim()));
+
+                  return amount == null || amount <= 0 ? 'المبلغ يجب أن يكون أكبر من صفر' : null;
+                },
+              ),
+              SizedBox(height: 16.h),
+              AppTextField(
+                controller: _notes,
+                label: 'السبب (اختياري)',
+                prefixIcon: AppIcons.notes,
+                maxLines: 2,
+                errorText: _refusal?.fieldError('notes'),
+              ),
+              SizedBox(height: 24.h),
+              AppButton(label: 'تسجيل الخصم', isLoading: _saving, onPressed: _submit),
+            ],
+          ),
+        ),
       ),
     );
   }
