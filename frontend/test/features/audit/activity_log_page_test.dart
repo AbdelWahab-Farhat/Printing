@@ -606,6 +606,101 @@ void main() {
       expect(find.textContaining('تخص «رقم الهاتف»'), findsOneWidget);
     });
 
+    /// تعديلٌ على [subjectType] غيّر الهاتف والاسم معاً.
+    ActivityLogEntry phoneAndName({required int id, required String subjectType}) =>
+        ActivityLogEntry(
+          id: id,
+          event: 'updated',
+          eventLabel: 'تعديل',
+          description: 'تعديل $subjectType',
+          subjectType: subjectType,
+          changes: const AuditChanges(
+            old: {'phone': '0917775555', 'name': 'سالم'},
+            attributes: {'phone': '0913334444', 'name': 'سالم علي'},
+          ),
+          attributeLabels: const {'phone': 'رقم الهاتف', 'name': 'الاسم'},
+          createdAt: DateTime(2026, 1, 15, 10, 5),
+        );
+
+    Finder highlighted(String label) => find.descendant(
+      of: find.byKey(const ValueKey('highlighted-field')),
+      matching: find.text(label),
+    );
+
+    Future<void> pickPhone(WidgetTester tester) async {
+      await tester.enterText(box(), 'هاتف');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('رقم الهاتف'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the picked field is highlighted on the card, and only it', (tester) async {
+      // Arrange — the card changed two things; the search was for one of them.
+      whenAskingField(null, withFields([creation()]));
+      whenAskingField('customer:phone', page([phoneAndName(id: 50, subjectType: 'customer')]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await pickPhone(tester);
+
+      // Assert
+      expect(highlighted('رقم الهاتف'), findsOneWidget);
+      expect(highlighted('الاسم'), findsNothing);
+    });
+
+    testWidgets('the same column on another kind of record is not highlighted', (tester) async {
+      // Arrange — «رقم الهاتف» on a shop is not the customer's phone the search named.
+      whenAskingField(null, withFields([creation()]));
+      whenAskingField(
+        'customer:phone',
+        page([
+          phoneAndName(id: 51, subjectType: 'customer'),
+          phoneAndName(id: 52, subjectType: 'customer_shop'),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await pickPhone(tester);
+
+      // Assert — two cards carry the label, one line is lit.
+      expect(find.text('رقم الهاتف'), findsNWidgets(2));
+      expect(find.byKey(const ValueKey('highlighted-field')), findsOneWidget);
+    });
+
+    testWidgets('a closed deletion still shows the picked field', (tester) async {
+      // Arrange — a deletion hides its values behind a button; the one searched for is the
+      // reason the card is on screen at all, so it cannot be one of the hidden ones.
+      whenAskingField(null, withFields([creation()]));
+      whenAskingField(
+        'customer:phone',
+        page([
+          ActivityLogEntry(
+            id: 53,
+            event: 'deleted',
+            eventLabel: 'حذف',
+            description: 'تم حذف عميل',
+            subjectType: 'customer',
+            changes: const AuditChanges(old: {'name': 'سالم', 'phone': '0917775555'}),
+            attributeLabels: const {'phone': 'رقم الهاتف', 'name': 'الاسم'},
+            createdAt: DateTime(2026, 1, 15, 9),
+          ),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await pickPhone(tester);
+
+      // Assert — the phone shows and is lit; the name waits behind the button as before.
+      expect(highlighted('رقم الهاتف'), findsOneWidget);
+      expect(find.text('الاسم'), findsNothing);
+      expect(find.text('عرض الحقول (2)'), findsOneWidget);
+    });
+
     testWidgets('a history with nothing to search by has no box', (tester) async {
       // Arrange — an older server, or a trail with no fields at all.
       whenAskingField(null, page([creation()]));

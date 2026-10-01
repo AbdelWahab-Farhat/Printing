@@ -112,6 +112,7 @@ class _ActivityLogView extends StatelessWidget {
                   // its own: the list is flat and paginated, and a separate header row would
                   // have to be spliced in at every page boundary.
                   day: _dayHeadingFor(state, index),
+                  highlight: _columnPickedOn(entry, cubit.field),
                 ),
               ),
             ),
@@ -130,6 +131,20 @@ class _ActivityLogView extends StatelessWidget {
         (final event?, final field?) =>
           'لا توجد أحداث من نوع «${event.label}» تخص «${field.label}»',
       };
+
+  /// العمودُ الذي يُضاء في هذه البطاقة، أو null حين لا بحثَ بالحقل أو لا يخصّها.
+  ///
+  /// **صاحبُ الحقل جزءٌ من مفتاحه** (`order_item:unit_price`)، فيُطابَق نوعُ السجلّ قبل العمود:
+  /// سجلُّ الطلبية يجمع الطلبيةَ وبنودَها ودفعاتها، و«رقم الهاتف» على محلٍّ ليس هاتفَ العميل الذي
+  /// بُحث عنه.
+  static String? _columnPickedOn(ActivityLogEntry entry, AuditFieldOption? field) {
+    if (field == null) return null;
+
+    final separator = field.key.indexOf(':');
+    if (separator < 0 || field.key.substring(0, separator) != entry.subjectType) return null;
+
+    return field.key.substring(separator + 1);
+  }
 
   /// The date rule to draw above this entry, or null when it is not the first of its day.
   ///
@@ -373,12 +388,15 @@ class _Day {
 
 /// One change: who, when, and what moved.
 class _Entry extends StatelessWidget {
-  const _Entry({required this.entry, this.day, super.key});
+  const _Entry({required this.entry, this.day, this.highlight, super.key});
 
   final ActivityLogEntry entry;
 
   /// Drawn above the card when this is the first entry of its day.
   final _Day? day;
+
+  /// العمودُ المختار في «ابحث بالحقل»، يُضاء سطرُه في البطاقة.
+  final String? highlight;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +434,7 @@ class _Entry extends StatelessWidget {
             children: [
               _Rail(tone: tone),
               SizedBox(width: 10.w),
-              Expanded(child: _Card(entry: entry)),
+              Expanded(child: _Card(entry: entry, highlight: highlight)),
             ],
           ),
         ),
@@ -453,9 +471,10 @@ class _Rail extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.entry});
+  const _Card({required this.entry, this.highlight});
 
   final ActivityLogEntry entry;
+  final String? highlight;
 
   @override
   Widget build(BuildContext context) {
@@ -538,9 +557,10 @@ class _Card extends StatelessWidget {
                             after: after,
                             beforeLabel: entry.valueLabelFor(field, old: true),
                             afterLabel: entry.valueLabelFor(field, old: false),
+                            isHighlighted: field == highlight,
                           ),
                       ]
-                    : [_StatedList(entry: entry, changes: changes)],
+                    : [_StatedList(entry: entry, changes: changes, highlight: highlight)],
               ),
             ),
           ],
@@ -569,10 +589,13 @@ class _Card extends StatelessWidget {
 ///     back exactly what the deletion recorded, so listing the whole order again under it says
 ///     nothing new. Nothing is dropped: the full last state is one tap away.
 class _StatedList extends StatefulWidget {
-  const _StatedList({required this.entry, required this.changes});
+  const _StatedList({required this.entry, required this.changes, this.highlight});
 
   final ActivityLogEntry entry;
   final AuditChanges changes;
+
+  /// العمودُ المختار في «ابحث بالحقل». يُعرض أوّلاً ولا يختبئ خلف الزر.
+  final String? highlight;
 
   /// How many lines a collapsed creation shows.
   static const _shownOnCreation = 5;
@@ -601,7 +624,15 @@ class _StatedListState extends State<_StatedList> {
                 // Only a creation's zeros are defaults; a deleted or restored record's zeros
                 // are the state it was in.
                 (!isCreation || !_isDefault(value, valueLabel)))
-          _Stated(label: entry.labelFor(field), value: value, valueLabel: valueLabel),
+          (
+            field: field,
+            row: _Stated(
+              label: entry.labelFor(field),
+              value: value,
+              valueLabel: valueLabel,
+              isHighlighted: field == widget.highlight,
+            ),
+          ),
     ];
 
     // On a creation, one line more than the limit is shown rather than hidden: a button that
@@ -610,7 +641,15 @@ class _StatedListState extends State<_StatedList> {
         ? rows.length > _StatedList._shownOnCreation + 1
         : rows.isNotEmpty;
     final shown = isCreation ? _StatedList._shownOnCreation : 0;
-    final visible = collapses && !_expanded ? rows.take(shown) : rows;
+
+    // **الحقلُ المبحوثُ عنه أوّلاً، ولا يختبئ خلف الزر أبداً**: هو سببُ ظهور البطاقة في النتائج،
+    // وحذفٌ مطويٌّ يخفي قيمَه كلَّها كان سيُظهر بطاقةً لا يُرى فيها ما بُحث عنه.
+    final picked = [for (final r in rows) if (r.field == widget.highlight) r.row];
+    final others = [for (final r in rows) if (r.field != widget.highlight) r.row];
+    final visible = [
+      ...picked,
+      ...(collapses && !_expanded ? others.take(shown) : others),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +701,12 @@ bool _isDefault(Object? value, String? label) {
 /// A value an entry simply states — a creation's starting values, or the last ones a deleted
 /// record had.
 class _Stated extends StatelessWidget {
-  const _Stated({required this.label, required this.value, this.valueLabel});
+  const _Stated({
+    required this.label,
+    required this.value,
+    this.valueLabel,
+    this.isHighlighted = false,
+  });
 
   final String label;
   final Object? value;
@@ -671,31 +715,65 @@ class _Stated extends StatelessWidget {
   /// Arabic and a total is a number.
   final String? valueLabel;
 
+  /// سطرُ الحقل المختار في «ابحث بالحقل» — انظر [_Lit].
+  final bool isHighlighted;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 3.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Text(
-              _show(value, valueLabel),
-              textAlign: TextAlign.end,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+    return _Lit(
+      isOn: isHighlighted,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 3.h),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
-          ),
-        ],
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                _show(value, valueLabel),
+                textAlign: TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// سطرُ الحقل المختار في «ابحث بالحقل»، بخلفيةٍ خفيفة تميّزه عن جيرانه في البطاقة.
+///
+/// **بطاقةٌ في نتائج البحث قد تحمل حقولاً كثيرة** — تعديلٌ واحد غيّر السعرَ والكميةَ والملاحظة —
+/// فالبحثُ يقول لماذا ظهرت، والإضاءةُ تقول أين في البطاقة. لونُ القالب لا لونٌ مكتوب، فيتبعه
+/// الوضعُ الداكن.
+class _Lit extends StatelessWidget {
+  const _Lit({required this.isOn, required this.child});
+
+  final bool isOn;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isOn) return child;
+
+    return Container(
+      key: const ValueKey('highlighted-field'),
+      margin: EdgeInsets.symmetric(vertical: 2.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      decoration: BoxDecoration(
+        color: context.colorScheme.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: child,
     );
   }
 }
@@ -708,6 +786,7 @@ class _Movement extends StatelessWidget {
     required this.after,
     this.beforeLabel,
     this.afterLabel,
+    this.isHighlighted = false,
   });
 
   final String label;
@@ -719,51 +798,57 @@ class _Movement extends StatelessWidget {
   final String? beforeLabel;
   final String? afterLabel;
 
+  /// سطرُ الحقل المختار في «ابحث بالحقل» — انظر [_Lit].
+  final bool isHighlighted;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          SizedBox(height: 2.h),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: _show(before, beforeLabel),
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.error,
-                    // Struck through rather than merely faded: on a crowded row, "before" and
-                    // "after" have to be told apart at a glance and colour alone does not do
-                    // it for everybody.
-                    decoration: TextDecoration.lineThrough,
-                    decorationColor: scheme.error,
-                  ),
-                ),
-                TextSpan(
-                  text: '  ←  ',
-                  style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
-                ),
-                TextSpan(
-                  text: _show(after, afterLabel),
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: scheme.primary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+    return _Lit(
+      isOn: isHighlighted,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            SizedBox(height: 2.h),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: _show(before, beforeLabel),
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.error,
+                      // Struck through rather than merely faded: on a crowded row, "before" and
+                      // "after" have to be told apart at a glance and colour alone does not do
+                      // it for everybody.
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: scheme.error,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '  ←  ',
+                    style: context.textTheme.bodySmall?.copyWith(color: scheme.outline),
+                  ),
+                  TextSpan(
+                    text: _show(after, afterLabel),
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
