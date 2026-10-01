@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Who a salary advance was handed to — the staff list the shortage assignment sheet already
-/// searches, answering the person picked or null for a dismissal.
+/// لمن سُلِّمت السلفة، أو باسم من الحساب — قائمةُ الموظفين التي يبحث فيها إسنادُ النواقص، تعود
+/// بمن اختير أو null لمن أغلقها.
 Future<AuthUser?> showEmployeePicker({
   required BuildContext context,
   String title = 'اختيار الموظف',

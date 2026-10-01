@@ -187,10 +187,9 @@ class _RootDrawerState extends State<RootDrawer> {
         ),
       ],
     ),
-    // المالية — TREASURY-DESIGN §٢, decision ٨. **Not gated**, and deliberately: somebody holding
-    // an account in their own name — a driver's custody, «مصرف علي» — reads it without
-    // `treasury.view`, and this row is the only way to it. The screen shows each person what the
-    // server lets them see, and says so when that is nothing.
+    // المالية — TREASURY-DESIGN §٢، القرار ٨. **بلا صلاحية، وعن قصد**: من يحمل حساباً باسمه —
+    // عهدةُ مندوب، «مصرف علي» — يقرؤه بلا `treasury.view`، وهذا الصف طريقه الوحيد إليه. الشاشة
+    // تُري كلَّ شخصٍ ما يسمح له الخادم برؤيته، وتقول ذلك حين لا يكون شيئاً.
     _Section(
       title: 'المالية',
       icon: _SectionIcon.treasury,
@@ -200,7 +199,7 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'الحسابات والخزائن',
           route: Routes.treasury,
         ),
-        // Defaults, rules, the lock date, where custody settles, categories — the owner's.
+        // الافتراضيات والقواعد وتاريخ القفل ووجهة العهدة والتصنيفات — للمالك.
         _Link(
           icon: _LinkIcon.settings,
           label: 'إعدادات المالية',

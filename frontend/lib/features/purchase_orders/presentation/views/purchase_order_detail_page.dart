@@ -437,8 +437,8 @@ class _Body extends StatelessWidget {
             ],
           ),
         ),
-        // Paid and still owed to the vendor — TREASURY-DESIGN §٨. Draws nothing for somebody
-        // without `vendors.payments.view`, and loads on its own so the order never waits for it.
+        // المدفوع والمتبقي للمورد — TREASURY-DESIGN §٨. لا يُرسم لمن لا يحمل
+        // `vendors.payments.view`، ويُحمَّل وحده فلا ينتظره الأمر.
         PurchaseOrderPaymentsSection(purchaseOrderId: order.id, vendorId: order.vendorId),
         // Itemised, and only when there is something to itemise. This is what answers «why is
         // this line dearer than the invoice said» — without it the allocated shares on the lines

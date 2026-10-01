@@ -44,7 +44,7 @@ class SupplyEntry {
 
   /// True once the employee confirmed that what is beyond the remainder goes to the shelf.
   final bool acceptSurplus;
-  /// The drawer it was paid from, or null to let the treasury decide (TREASURY-DESIGN §٥).
+  /// الدرج الذي دُفع منه، أو null لتقرّر الخزينة (TREASURY-DESIGN §٥).
   final int? treasuryAccountId;
 }
 
@@ -304,7 +304,7 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
                 label: 'طريقة الدفع',
                 onChanged: (method) => setState(() {
                   _method = method ?? _method;
-                  // An account picked for cash does not fit a transfer.
+                  // حسابٌ اختير للكاش لا يناسب الحوالة.
                   _accountId = null;
                 }),
               ),

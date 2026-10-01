@@ -130,7 +130,7 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
           'amount': amount,
           'incurred_on': incurredOn,
           'notes': ?notes,
-          // The drawer that paid; absent, the cash box (TREASURY-DESIGN §٧).
+          // الدرج الذي دفع؛ غائباً يختاره الخادم (TREASURY-DESIGN §٧).
           'treasury_account_id': ?treasuryAccountId,
         },
       ),
