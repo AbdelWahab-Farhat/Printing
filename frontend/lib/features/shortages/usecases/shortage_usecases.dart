@@ -178,6 +178,7 @@ class RecordShortageSupply {
     String? notes,
     PickedFile? receipt,
     bool acceptSurplus = false,
+    int? treasuryAccountId,
   }) {
     return _repository.recordSupply(
       shortageId,
@@ -189,6 +190,7 @@ class RecordShortageSupply {
       notes: notes,
       receipt: receipt,
       acceptSurplus: acceptSurplus,
+      treasuryAccountId: treasuryAccountId,
     );
   }
 }

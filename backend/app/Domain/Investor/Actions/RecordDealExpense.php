@@ -9,6 +9,11 @@ use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Queries\ProfitShareForEntry;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,6 +35,7 @@ final class RecordDealExpense
     public function __construct(
         private readonly PostDealShare $postShare,
         private readonly ProfitShareForEntry $profitShare,
+        private readonly TreasuryService $treasury,
     ) {}
 
     public function __invoke(InvestorDeal $deal, DealExpenseData $data, ?int $actorId): InvestorDealExpense
@@ -48,7 +54,28 @@ final class RecordDealExpense
             $expense->investor_deal_id = $locked->getKey();
             $expense->is_landed = false;
             $expense->recorded_by = $actorId;
+
+            // **Real money out** — shipping, customs, storage — from the drawer that paid. The
+            // form carries no payment method, so an unnamed drawer is the cash box, or the
+            // recorder's own cash account (TREASURY-DESIGN §٧).
+            $account = $data->treasuryAccountId !== null
+                ? $this->treasury->spendableAccount($data->treasuryAccountId)
+                : $this->treasury->accountFor('cash', $actorId, incoming: false);
+
+            $expense->treasury_account_id = $account->getKey();
             $expense->save();
+
+            $this->treasury->post(new MovementData(
+                accountId: (int) $account->getKey(),
+                direction: MovementDirection::Out,
+                kind: MovementKind::Expense,
+                amount: (string) $expense->amount,
+                occurredAt: Carbon::parse($data->incurredOn),
+                sourceType: $expense->getMorphClass(),
+                sourceId: (int) $expense->getKey(),
+                notes: "مصروف {$locked->code}: {$expense->name}",
+                recordedBy: $actorId,
+            ));
 
             $this->chargeInvestors($locked, $expense);
 

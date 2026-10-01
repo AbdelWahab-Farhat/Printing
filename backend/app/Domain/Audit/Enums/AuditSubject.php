@@ -54,11 +54,17 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\Settings\Models\CompanySetting;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Shortage\Models\ShortageSupply;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\Models\TicketMessage;
+use App\Domain\Treasury\Models\ExpenseCategory;
+use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryMovement;
+use App\Domain\Treasury\Models\TreasuryOperation;
+use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
@@ -185,6 +191,15 @@ enum AuditSubject: string
     // same bargain every other case here makes.
     case Notification = 'notification';
 
+    // الحسابات والخزائن. The movement is the one `source_type` names back — a treasury operation
+    // is itself the source of the movements it writes, under this same alias.
+    case TreasuryAccount = 'treasury_account';
+    case TreasuryOperation = 'treasury_operation';
+    case TreasuryMovement = 'treasury_movement';
+    case ExpenseCategory = 'treasury_expense_category';
+    case VendorPayment = 'vendor_payment';
+    case TreasurySetting = 'treasury_setting';
+
     /**
      * @return class-string<Model>
      */
@@ -249,6 +264,12 @@ enum AuditSubject: string
             self::TicketMessage => TicketMessage::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
+            self::TreasuryAccount => TreasuryAccount::class,
+            self::TreasuryOperation => TreasuryOperation::class,
+            self::TreasuryMovement => TreasuryMovement::class,
+            self::ExpenseCategory => ExpenseCategory::class,
+            self::VendorPayment => VendorPayment::class,
+            self::TreasurySetting => TreasurySetting::class,
         };
     }
 
@@ -316,6 +337,12 @@ enum AuditSubject: string
             self::TicketMessage => 'رسالة تذكرة',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',
+            self::TreasuryAccount => 'حساب',
+            self::TreasuryOperation => 'عملية على الحسابات',
+            self::TreasuryMovement => 'حركة حساب',
+            self::ExpenseCategory => 'تصنيف مصروف',
+            self::VendorPayment => 'دفعة مورد',
+            self::TreasurySetting => 'إعدادات المالية',
         };
     }
 

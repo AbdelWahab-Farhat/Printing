@@ -209,6 +209,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
     String? notes,
     PickedFile? receipt,
     bool acceptSurplus = false,
+    int? treasuryAccountId,
   }) async {
     final body = <String, dynamic>{
       'quantity': quantity,
@@ -224,6 +225,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
       // «الزائد يذهب للمخزن» — sent only once the employee has confirmed it. Without it, a
       // quantity bigger than what is left is refused, which is the typo guard the server keeps.
       if (acceptSurplus) 'accept_surplus': true,
+      'treasury_account_id': ?treasuryAccountId,
     };
 
     // **JSON when there is no paper, multipart when there is** — the arrangement the order's

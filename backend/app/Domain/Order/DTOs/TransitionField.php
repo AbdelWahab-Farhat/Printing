@@ -316,6 +316,31 @@ final class TransitionField
      *
      * @return array<string, mixed>
      */
+    /**
+     * Which account the money goes into — never required; empty lets the treasury decide.
+     *
+     * @param  list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>  $accounts
+     */
+    public static function treasuryAccount(
+        string $key,
+        string $label,
+        array $accounts,
+        ?string $hint = null,
+        ?string $value = null,
+        ?string $valueLabel = null,
+    ): self {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::TreasuryAccount,
+            label: $label,
+            required: false,
+            hint: $hint,
+            value: $value,
+            valueLabel: $valueLabel,
+            options: $accounts,
+        );
+    }
+
     public function toArray(): array
     {
         return [
@@ -450,6 +475,16 @@ final class TransitionField
                     Rule::exists('warehouses', 'id')->whereNull('deleted_at'),
                 ],
             ],
+
+            // Whether the account fits the method is the treasury's rule, and it answers in its
+            // own words under this same field; here only that it exists.
+            TransitionFieldType::TreasuryAccount => [
+                "fields.{$this->key}" => [
+                    $presence,
+                    'integer',
+                    Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+                ],
+            ],
         };
     }
 
@@ -500,6 +535,9 @@ final class TransitionField
             TransitionFieldType::Warehouse => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",
                 "fields.{$this->key}.exists" => 'المخزن المختار غير موجود',
+            ],
+            TransitionFieldType::TreasuryAccount => [
+                "fields.{$this->key}.exists" => 'الحساب المختار غير موجود',
             ],
         };
     }

@@ -5,6 +5,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -54,6 +55,9 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
   DateTime _incurredOn = DateTime.now();
   bool _saving = false;
 
+  /// The drawer that paid; null lets the server take it from the cash box.
+  int? _accountId;
+
   @override
   void dispose() {
     _name.dispose();
@@ -102,6 +106,7 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
       amount: Validators.toWesternDigits(_amount.text.trim()),
       incurredOn: _incurredOn.toIso8601String().substring(0, 10),
       notes: notes.isEmpty ? null : notes,
+      treasuryAccountId: _accountId,
     );
 
     if (!mounted) return;
@@ -215,6 +220,17 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                     ],
                   ),
                 ),
+              ),
+              SizedBox(height: 16.h),
+
+              // Which drawer paid. The form asks no method, so every account money can leave is
+              // offered, and «تلقائي» is the cash box (TREASURY-DESIGN §٧).
+              TreasuryAccountPicker(
+                method: null,
+                incoming: false,
+                label: 'دُفع من',
+                value: _accountId,
+                onChanged: (id) => setState(() => _accountId = id),
               ),
               SizedBox(height: 16.h),
 

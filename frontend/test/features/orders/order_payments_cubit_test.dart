@@ -121,6 +121,7 @@ void main() {
         notes: any(named: 'notes'),
         receiptPath: any(named: 'receiptPath'),
         receiptFilename: any(named: 'receiptFilename'),
+        treasuryAccountId: any(named: 'treasuryAccountId'),
       ),
     ).thenAnswer((_) async => Right(PaymentResult(payment: paymentWith(), summary: summaryWith())));
 
@@ -146,6 +147,7 @@ void main() {
         notes: any(named: 'notes'),
         receiptPath: any(named: 'receiptPath'),
         receiptFilename: any(named: 'receiptFilename'),
+        treasuryAccountId: any(named: 'treasuryAccountId'),
       ),
     ).thenAnswer((_) async => Right(PaymentResult(payment: paymentWith(), summary: summaryWith())));
 
@@ -163,6 +165,7 @@ void main() {
         notes: null,
         receiptPath: null,
         receiptFilename: null,
+        treasuryAccountId: null,
       ),
     ).called(1);
   });
@@ -181,6 +184,7 @@ void main() {
         notes: any(named: 'notes'),
         receiptPath: any(named: 'receiptPath'),
         receiptFilename: any(named: 'receiptFilename'),
+        treasuryAccountId: any(named: 'treasuryAccountId'),
       ),
     ).thenAnswer(
       (_) async => const Left(Failure.server(message: 'المبلغ أكبر من المتبقي على الطلبية')),

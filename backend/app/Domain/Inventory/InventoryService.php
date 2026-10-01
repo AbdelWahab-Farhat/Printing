@@ -38,6 +38,7 @@ use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Inventory\Queries\ConsumptionBreakdownQuery;
 use App\Domain\Inventory\Queries\FindStockItem;
 use App\Domain\Inventory\Queries\FindStockItemGroup;
+use App\Domain\Inventory\Queries\InventoryValueQuery;
 use App\Domain\Inventory\Queries\MovementFilters;
 use App\Domain\Inventory\Queries\MovementListQuery;
 use App\Domain\Inventory\Queries\OnHandBalancesQuery;
@@ -132,6 +133,16 @@ class InventoryService
     public function deleteWarehouse(Warehouse $warehouse): void
     {
         ($this->deleteWarehouse)($warehouse);
+    }
+
+    /**
+     * What the shelves are worth at cost — the treasury dashboard's inventory card.
+     *
+     * @return array<string, mixed>
+     */
+    public function inventoryValue(): array
+    {
+        return app(InventoryValueQuery::class)();
     }
 
     // ── stock item groups ───────────────────────────────────────────────────────────────

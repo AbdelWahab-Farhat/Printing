@@ -18,6 +18,7 @@ use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\Treasury\TreasuryService;
 use App\Support\DecimalText;
 
 /**
@@ -40,6 +41,12 @@ final class TransitionFields
     public const PAYMENT_METHOD = 'payment_method';
 
     public const PAYMENT_RECEIPT = 'payment_receipt';
+
+    public const PAYMENT_ACCOUNT = 'payment_account_id';
+
+    public const SETTLEMENT_ACCOUNT = 'settlement_account_id';
+
+    public const SETTLEMENT_FEE = 'settlement_fee';
 
     /**
      * What «انتظار العربون» asks for: the figure, and the way it is expected to arrive.
@@ -434,6 +441,8 @@ final class TransitionFields
 
         array_push($fields, ...self::money($order, $target, $actor));
 
+        array_push($fields, ...self::settlement($order, $target));
+
         // **A note travels with every move, and only a cancellation is made to justify itself.**
         // One field either way: the same input, renamed and made required where an explanation
         // is owed. The app has one way to draw it, and the timeline has one place to read it —
@@ -609,6 +618,62 @@ final class TransitionFields
     }
 
     /**
+     * «تم التسوية» for the money Nawris or a driver is still holding — TREASURY-DESIGN §٦.
+     *
+     * **Only when something is held.** A customer who paid into the bank or at the counter left
+     * nothing in custody, and asking where it arrived would be a question with no answer. When
+     * something is, the move carries it to the account chosen here — the settler's own, or the
+     * bank for Nawris, or the cash box for a driver, if left empty.
+     *
+     * The second box is what the carrier kept back, if anything. It leaves custody as an expense
+     * and never reaches the account; the move is not refused over it, because the customer paid
+     * in full and the order is settled either way.
+     *
+     * @return list<TransitionField>
+     */
+    private static function settlement(Order $order, OrderStatus $target): array
+    {
+        if ($target !== OrderStatus::Settled) {
+            return [];
+        }
+
+        $treasury = app(TreasuryService::class);
+        $held = $treasury->custodyOf((int) $order->getKey());
+
+        if ($held === []) {
+            return [];
+        }
+
+        $total = Money::sum('0', ...array_column($held, 'amount'));
+        $where = implode('، ', array_map(
+            fn (array $row) => DecimalText::trim($row['amount'])." ({$row['name']})",
+            $held,
+        ));
+
+        return [
+            TransitionField::treasuryAccount(
+                key: self::SETTLEMENT_ACCOUNT,
+                label: 'استُلم المال في',
+                accounts: array_values(array_filter(
+                    $treasury->pickableAccounts(),
+                    fn (array $account) => $account['kind'] !== 'custody',
+                )),
+                hint: "في العهدة: {$where}",
+            ),
+            // Offered unless the owner switched it off in «إعدادات المالية».
+            ...($treasury->settings()->ask_carrier_fee ? [
+                TransitionField::number(
+                    key: self::SETTLEMENT_FEE,
+                    label: 'احتفظ به الناقل',
+                    required: false,
+                    max: (float) $total,
+                    hint: 'يُسجَّل مصروف «رسوم شركة التوصيل» ولا يصل إلى الحساب',
+                ),
+            ] : []),
+        ];
+    }
+
+    /**
      * The pair of fields that turn a status change into a ledger entry, or nothing at all.
      *
      * **Four conditions, and each of them removes a box that could only fail.**
@@ -709,6 +774,16 @@ final class TransitionFields
                 value: ($order->deposit_expected_method !== null && $target === OrderStatus::DepositPaid
                     ? $order->deposit_expected_method
                     : PaymentMethod::Cash)->value,
+            ),
+            // **Where the money lands**, narrowed by the app to the accounts the chosen method
+            // fits. Left empty, the treasury decides — the person's own account, else the
+            // method's default (TREASURY-DESIGN §٥) — which is also what an app that does not
+            // know this field gets.
+            TransitionField::treasuryAccount(
+                key: self::PAYMENT_ACCOUNT,
+                label: 'الحساب',
+                accounts: app(TreasuryService::class)->pickableAccounts(),
+                hint: 'اتركه فارغاً ليُسجَّل في حسابك أو الحساب الافتراضي',
             ),
             // **One field, two jobs.** Obligatory for «حوالة», whose only proof is a document
             // the customer sends — see {@see PaymentMethod::requiresReceipt()} — and offered for

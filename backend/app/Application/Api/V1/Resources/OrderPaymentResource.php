@@ -35,6 +35,15 @@ class OrderPaymentResource extends JsonResource
 
             'reference' => $this->reference,
 
+            // Where the money landed. Null on entries that moved none, and on every entry from
+            // before the treasury — see `OrderPayment::treasuryAccount()`.
+            'treasury_account_id' => $this->treasury_account_id,
+            'treasury_account' => $this->whenLoaded('treasuryAccount', fn (): ?array => $this->treasuryAccount === null ? null : [
+                'id' => $this->treasuryAccount->id,
+                'name' => $this->treasuryAccount->name,
+                'kind' => $this->treasuryAccount->kind->value,
+            ]),
+
             // The receipt (الواصل) — always present on a transfer, because nothing else proves
             // one happened. The URL is built per request rather than stored: the disk is private,
             // so in production this is a signed link that expires, and a permanent one sitting in

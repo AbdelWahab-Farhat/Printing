@@ -75,6 +75,7 @@ class InvestorRepositoryImpl implements InvestorRepository {
     String? method,
     String? reference,
     String? notes,
+    int? treasuryAccountId,
   }) {
     return safeRequest<Unit>(
       () => _dio.post(
@@ -89,6 +90,8 @@ class InvestorRepositoryImpl implements InvestorRepository {
           if (method != null && method.isNotEmpty) 'method': method,
           if (reference != null && reference.isNotEmpty) 'reference': reference,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
+          // Where the money landed or left from; absent, the treasury decides (TREASURY-DESIGN §٥).
+          'treasury_account_id': ?treasuryAccountId,
         },
       ),
       parse: (_) => unit,

@@ -187,6 +187,28 @@ class _RootDrawerState extends State<RootDrawer> {
         ),
       ],
     ),
+    // المالية — TREASURY-DESIGN §٢, decision ٨. **Not gated**, and deliberately: somebody holding
+    // an account in their own name — a driver's custody, «مصرف علي» — reads it without
+    // `treasury.view`, and this row is the only way to it. The screen shows each person what the
+    // server lets them see, and says so when that is nothing.
+    _Section(
+      title: 'المالية',
+      icon: _SectionIcon.treasury,
+      items: [
+        _Link(
+          icon: _LinkIcon.treasury,
+          label: 'الحسابات والخزائن',
+          route: Routes.treasury,
+        ),
+        // Defaults, rules, the lock date, where custody settles, categories — the owner's.
+        _Link(
+          icon: _LinkIcon.settings,
+          label: 'إعدادات المالية',
+          route: Routes.treasurySettings,
+          permission: AppPermission.manageTreasury,
+        ),
+      ],
+    ),
     _Section(
       title: 'التقارير المالية',
       icon: _SectionIcon.report,
@@ -440,9 +462,11 @@ enum _SectionIcon {
   investorDeals,
   report,
   employees,
-  archive;
+  archive,
+  treasury;
 
   IconData get data => switch (this) {
+    _SectionIcon.treasury => AppIcons.treasury,
     _SectionIcon.products => AppIcons.products,
     _SectionIcon.purchaseOrders => AppIcons.purchaseOrders,
     _SectionIcon.investorDeals => AppIcons.investorDeals,
@@ -472,9 +496,11 @@ enum _LinkIcon {
   salesStatistics,
   employees,
   roles,
-  orderArchive;
+  orderArchive,
+  treasury;
 
   IconData get data => switch (this) {
+    _LinkIcon.treasury => AppIcons.treasury,
     _LinkIcon.products => AppIcons.products,
     _LinkIcon.productCategory => AppIcons.productCategory,
     _LinkIcon.businessField => AppIcons.businessField,

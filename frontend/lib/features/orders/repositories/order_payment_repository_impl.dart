@@ -36,6 +36,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _write(
       OrderEndpoints.payments(orderId),
@@ -46,6 +47,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
       notes: notes,
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
+      treasuryAccountId: treasuryAccountId,
     );
   }
 
@@ -59,6 +61,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return _write(
       OrderEndpoints.refundPayment(orderId),
@@ -69,6 +72,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
       notes: notes,
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
+      treasuryAccountId: treasuryAccountId,
     );
   }
 
@@ -119,6 +123,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   }) {
     return safeRequest<PaymentResult>(
       () async => _dio.post(
@@ -134,6 +139,9 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           // would otherwise have every «الآن» rejected as a payment that has not happened yet,
           // which is why this is only sent when a date was deliberately chosen.
           if (paidAt != null) 'paid_at': paidAt.toUtc().toIso8601String(),
+          // Only when somebody picked one: left out, the treasury decides — their own account,
+          // else the method's default (TREASURY-DESIGN §٥).
+          'treasury_account_id': ?treasuryAccountId,
           // `fromFile` streams from disk rather than holding the file in memory. The fallback
           // name claims no extension on purpose: the server sniffs the bytes and would record
           // a made-up `.pdf` as the original name of what might be a photograph.

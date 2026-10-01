@@ -55,6 +55,8 @@ final readonly class ShortageSupplyData
          * three is still a slipped keystroke at the counter — see `SupplyExceedsRemaining`.
          */
         public bool $acceptSurplus = false,
+        // Which drawer paid for it — null lets the treasury decide (TREASURY-DESIGN §٥).
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -84,6 +86,9 @@ final readonly class ShortageSupplyData
                 ? $validated['receipt']
                 : null,
             acceptSurplus: filter_var($validated['accept_surplus'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
+                ? (int) $validated['treasury_account_id']
+                : null,
         );
     }
 }

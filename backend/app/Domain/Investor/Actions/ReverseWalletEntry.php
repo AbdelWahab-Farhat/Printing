@@ -12,6 +12,10 @@ use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestmentUnit;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\PeriodForEntry;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,6 +55,7 @@ final class ReverseWalletEntry
     public function __construct(
         private readonly PeriodForEntry $periodFor,
         private readonly RecordCashEntry $cash,
+        private readonly TreasuryService $treasury,
     ) {}
 
     /**
@@ -93,9 +98,47 @@ final class ReverseWalletEntry
 
             $this->undoCash($locked, $actorId, $notes);
             $this->undoUnits($locked, $actorId);
+            $this->undoTreasury($locked, $reversal, $actorId, $notes);
 
             return $reversal;
         });
+    }
+
+    /**
+     * Mirrors the real money the entry moved, on the account it moved through.
+     *
+     * An entry from before the treasury moved money nobody put in an account; it was counted into
+     * the opening, so its mirror goes to the cash default — TREASURY-DESIGN §١١.
+     */
+    private function undoTreasury(
+        InvestorWalletEntry $entry,
+        InvestorWalletEntry $reversal,
+        ?int $actorId,
+        ?string $notes,
+    ): void {
+        if (! $entry->type->movedCash()) {
+            return;
+        }
+
+        $mirrored = $this->treasury->reverseSource($entry->getMorphClass(), (int) $entry->getKey(), $notes, $actorId);
+
+        if ($mirrored !== [] || $entry->treasury_account_id !== null) {
+            return;
+        }
+
+        $deposit = $entry->type === WalletEntryType::Deposit;
+
+        $this->treasury->post(new MovementData(
+            accountId: (int) $this->treasury->accountFor('cash', null, incoming: false)->getKey(),
+            direction: $deposit ? MovementDirection::Out : MovementDirection::In,
+            kind: $deposit ? MovementKind::InvestorDeposit : MovementKind::InvestorWithdrawal,
+            amount: (string) $entry->amount,
+            occurredAt: now(),
+            sourceType: $reversal->getMorphClass(),
+            sourceId: (int) $reversal->getKey(),
+            notes: $notes,
+            recordedBy: $actorId,
+        ));
     }
 
     /** الصفُّ الذي دخل الخزينة بسبب هذا الصفّ — إن دخل. */

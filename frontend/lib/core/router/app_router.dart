@@ -104,6 +104,9 @@ import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dar
 import 'package:dayaa/features/tickets/presentation/views/tickets_page.dart';
 import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
 import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
+import 'package:dayaa/features/treasury/presentation/views/treasury_account_page.dart';
+import 'package:dayaa/features/treasury/presentation/views/treasury_page.dart';
+import 'package:dayaa/features/treasury/presentation/views/treasury_settings_page.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_detail_page.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_form_page.dart';
@@ -166,6 +169,14 @@ abstract final class Routes {
 
   /// قواعدُ الصندوق الأربع — خلف `settings.view`.
   static const String investmentSettings = '/investment-settings';
+
+  /// الحسابات والخزائن — the dashboard, and one account's page.
+  static const String treasury = '/treasury';
+
+  static String treasuryAccount(int id) => '/treasury/accounts/$id';
+
+  /// «إعدادات المالية».
+  static const String treasurySettings = '/treasury/settings';
 
   static String investor(int id) => '/investors/$id';
 
@@ -673,6 +684,20 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentSettings,
         builder: (context, state) => const InvestmentSettingsPage(),
+      ),
+      GoRoute(
+        path: Routes.treasury,
+        builder: (context, state) => const TreasuryPage(),
+      ),
+      GoRoute(
+        path: Routes.treasurySettings,
+        builder: (context, state) => const TreasurySettingsPage(),
+      ),
+      GoRoute(
+        path: '/treasury/accounts/:id',
+        builder: (context, state) => TreasuryAccountPage(
+          accountId: int.parse(state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/investor-deals/:id/orders',

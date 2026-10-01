@@ -416,6 +416,19 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * The branch this order is waiting at, while it waits there — its city, which for
+     * «استلام مكتب» *is* the branch. Cash taken now lands in that branch's box
+     * (TREASURY-DESIGN §١٩). Null before it reaches the counter and after it leaves: a deposit
+     * paid at head office is head office's cash.
+     */
+    public function pickupOfficeId(): ?int
+    {
+        return $this->status === OrderStatus::OfficePickup && $this->city_id !== null
+            ? (int) $this->city_id
+            : null;
+    }
+
+    /**
      * What is still owed on this order.
      *
      * **Three things close a debt: money collected, money the business decided not to collect,

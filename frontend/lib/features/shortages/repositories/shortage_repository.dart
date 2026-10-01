@@ -122,6 +122,7 @@ abstract class ShortageRepository {
     String? notes,
     PickedFile? receipt,
     bool acceptSurplus = false,
+    int? treasuryAccountId,
   });
 
   /// Saying how much the warehouse is short, in the unit it will be bought in.

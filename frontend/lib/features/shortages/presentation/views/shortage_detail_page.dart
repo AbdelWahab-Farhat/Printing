@@ -123,6 +123,7 @@ class _ShortageDetailViewState extends State<_ShortageDetailView> {
         notes: entry.notes,
         receipt: entry.receipt,
         acceptSurplus: entry.acceptSurplus,
+        treasuryAccountId: entry.treasuryAccountId,
       ),
     );
   }

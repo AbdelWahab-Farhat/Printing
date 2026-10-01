@@ -48,6 +48,9 @@ class PurchaseOrder extends Model implements HasAuditTrail
             // Not fillable — see RecalculatePurchaseOrderTotal, the only writer for both.
             'total_amount' => 'decimal:2',
             'total_additional_cost' => 'decimal:2',
+            // Stamped by the treasury migration on every order that existed before it: its
+            // payments were never recorded, so it shows nothing owed (TREASURY-DESIGN §٨).
+            'predates_treasury' => 'boolean',
         ];
     }
 

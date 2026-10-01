@@ -87,6 +87,14 @@ enum TransitionFieldType {
   @JsonValue('vendor')
   vendor,
 
+  /// Which treasury account the money lands in or reaches — TREASURY-DESIGN §٥/§٦.
+  ///
+  /// **The accounts arrive with it**, in [TransitionField.options], because which accounts a
+  /// person may pick is the treasury's rule. **Always optional**: empty means the server picks
+  /// the person's own account or the method's default, so «تلقائي» is a real answer here.
+  @JsonValue('treasury_account')
+  treasuryAccount,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.

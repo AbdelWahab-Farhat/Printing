@@ -11,6 +11,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/shortages/models/shortage.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class SupplyEntry {
     this.notes,
     this.receipt,
     this.acceptSurplus = false,
+    this.treasuryAccountId,
   });
 
   final String quantity;
@@ -42,6 +44,8 @@ class SupplyEntry {
 
   /// True once the employee confirmed that what is beyond the remainder goes to the shelf.
   final bool acceptSurplus;
+  /// The drawer it was paid from, or null to let the treasury decide (TREASURY-DESIGN §٥).
+  final int? treasuryAccountId;
 }
 
 /// «تسجيل توفير» — what was bought, what it cost, where it landed, and the paper it came with.
@@ -101,6 +105,7 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
   PaymentMethod _method = PaymentMethod.cash;
   Warehouse? _warehouse;
   PickedFile? _receipt;
+  int? _accountId;
 
   @override
   void dispose() {
@@ -197,6 +202,7 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
         receipt: _receipt,
         acceptSurplus: surplus != null,
+        treasuryAccountId: _accountId,
       ),
     );
   }
@@ -296,7 +302,18 @@ class _RecordSupplyPageState extends State<RecordSupplyPage> {
                 items: PaymentMethod.selectable,
                 labelOf: (method) => method.label,
                 label: 'طريقة الدفع',
-                onChanged: (method) => setState(() => _method = method ?? _method),
+                onChanged: (method) => setState(() {
+                  _method = method ?? _method;
+                  // An account picked for cash does not fit a transfer.
+                  _accountId = null;
+                }),
+              ),
+              SizedBox(height: 16.h),
+              TreasuryAccountPicker(
+                method: _method.wire,
+                incoming: false,
+                value: _accountId,
+                onChanged: (id) => setState(() => _accountId = id),
               ),
               SizedBox(height: 16.h),
               _Receipt(

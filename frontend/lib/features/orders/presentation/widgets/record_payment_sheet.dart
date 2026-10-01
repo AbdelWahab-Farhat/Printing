@@ -10,6 +10,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/receipt_rules.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -37,6 +38,7 @@ class PaymentDraft {
     this.reference,
     this.notes,
     this.receipt,
+    this.accountId,
   });
 
   final PaymentDirection direction;
@@ -51,6 +53,9 @@ class PaymentDraft {
 
   /// The receipt file — a PDF or a photograph — when one was attached.
   final PickedFile? receipt;
+
+  /// The treasury account picked, or null to let the server decide (TREASURY-DESIGN §٥).
+  final int? accountId;
 }
 
 /// Taking money, or giving it back.
@@ -68,6 +73,7 @@ Future<PaymentDraft?> showRecordPaymentSheet({
   required PaymentDirection direction,
   required String remainingAmount,
   required String paidAmount,
+  int? orderId,
 }) {
   return showModalBottomSheet<PaymentDraft>(
     context: context,
@@ -77,6 +83,7 @@ Future<PaymentDraft?> showRecordPaymentSheet({
       direction: direction,
       remainingAmount: remainingAmount,
       paidAmount: paidAmount,
+      orderId: orderId,
     ),
   );
 }
@@ -86,11 +93,15 @@ class _RecordPaymentSheet extends StatefulWidget {
     required this.direction,
     required this.remainingAmount,
     required this.paidAmount,
+    this.orderId,
   });
 
   final PaymentDirection direction;
   final String remainingAmount;
   final String paidAmount;
+
+  /// Lets «تلقائي» name the pickup branch's box while the order waits there (§١٩).
+  final int? orderId;
 
   @override
   State<_RecordPaymentSheet> createState() => _RecordPaymentSheetState();
@@ -104,6 +115,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
 
   PaymentMethod _method = PaymentMethod.cash;
   PickedFile? _receipt;
+  int? _accountId;
 
   /// Set only after a save was attempted, so the missing-receipt message appears when somebody
   /// tries to submit rather than the instant they pick «حوالة».
@@ -213,8 +225,19 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                     setState(() {
                       _method = method;
                       _receiptWasMissed = false;
+                      // An account picked for cash does not fit a transfer.
+                      _accountId = null;
                     });
                   },
+                ),
+
+                SizedBox(height: 16.h),
+                TreasuryAccountPicker(
+                  method: _method.wire,
+                  incoming: _isIncoming,
+                  orderId: widget.orderId,
+                  value: _accountId,
+                  onChanged: (id) => setState(() => _accountId = id),
                 ),
 
                 // Only for the method that demands it. The server refuses a transfer without a
@@ -352,6 +375,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
         reference: _reference.text,
         notes: _notes.text,
         receipt: _receipt,
+        accountId: _accountId,
       ),
     );
   }

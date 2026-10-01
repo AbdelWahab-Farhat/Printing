@@ -106,6 +106,13 @@ class RecordShortageSupplyRequest extends FormRequest
             // «الزائد يذهب للمخزن». Only read when the quantity is bigger than what is missing,
             // and that comparison is the domain's, under its lock — see `RecordShortageSupply`.
             'accept_surplus' => ['sometimes', 'boolean'],
+            // Which drawer paid. Optional: left out, the buyer's own account or the method's
+            // default — TREASURY-DESIGN §٥.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 

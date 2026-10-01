@@ -16,6 +16,8 @@ final readonly class DealExpenseData
         public string $amount,
         public string $incurredOn,
         public ?string $notes = null,
+        // The drawer it was paid from; null lets the treasury take it from the cash box.
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -30,6 +32,9 @@ final readonly class DealExpenseData
             incurredOn: (string) $validated['incurred_on'],
             notes: isset($validated['notes']) && trim((string) $validated['notes']) !== ''
                 ? trim((string) $validated['notes'])
+                : null,
+            treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
+                ? (int) $validated['treasury_account_id']
                 : null,
         );
     }

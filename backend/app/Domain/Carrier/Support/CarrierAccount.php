@@ -46,6 +46,17 @@ final class CarrierAccount
         return $this->cached = $user;
     }
 
+    /**
+     * The account's id if it exists, without creating it — for a reader, such as the import of
+     * old payments into the treasury, that must write nothing when it is only looking.
+     */
+    public function existingId(): ?int
+    {
+        $id = User::withTrashed()->where('email', self::EMAIL)->value('id');
+
+        return $id === null ? null : (int) $id;
+    }
+
     private function create(): User
     {
         Log::channel('nawris')->info('nawris.account.created', [

@@ -33,6 +33,7 @@ abstract interface class OrderPaymentRepository {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   });
 
   /// Money genuinely handed back.
@@ -48,6 +49,7 @@ abstract interface class OrderPaymentRepository {
     String? notes,
     String? receiptPath,
     String? receiptFilename,
+    int? treasuryAccountId,
   });
 
   /// Cancels an entry that should never have been written.

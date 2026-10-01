@@ -89,6 +89,7 @@ class _FakeRepository implements InvestmentFundRepository {
     required String amount,
     required String incurredOn,
     String? notes,
+    int? treasuryAccountId,
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 }
 

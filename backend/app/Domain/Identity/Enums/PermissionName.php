@@ -340,6 +340,23 @@ enum PermissionName: string
     case SubmitDesignTickets = 'design_tickets.submit';
     case ReviewDesignTickets = 'design_tickets.review';
 
+    // الحسابات والخزائن — TREASURY-DESIGN §١٠. Split where the trust differs: seeing the money,
+    // moving it by hand, correcting a count, undoing an operation, and shaping the accounts
+    // themselves. Recording a customer's payment stays under `orders.payments.record`; the
+    // movement it writes needs no second grant. Somebody holding an account reads it without
+    // any of these — it is in their name.
+    case ViewTreasury = 'treasury.view';
+    case RecordTreasuryOperations = 'treasury.record';
+    case AdjustTreasuryBalances = 'treasury.adjust';
+    case ReverseTreasuryOperations = 'treasury.reverse';
+    case ManageTreasury = 'treasury.manage';
+
+    // Paying vendors — the `orders.payments.*` split, pointed the other way: money going out to
+    // a vendor is a decision apart from seeing what was paid.
+    case ViewVendorPayments = 'vendors.payments.view';
+    case RecordVendorPayments = 'vendors.payments.record';
+    case ReverseVendorPayments = 'vendors.payments.reverse';
+
     // The company's editable defaults. Its own pair rather than riding on an existing one:
     // everybody's screens read them and almost nobody should change them.
     case ViewCompanySettings = 'settings.view';
@@ -468,6 +485,14 @@ enum PermissionName: string
             self::SubmitDesignTickets => 'رفع تصميم داخل التذكرة',
             self::ReviewDesignTickets => 'الموافقة على التصميم أو طلب تعديل',
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
+            self::ViewTreasury => 'عرض الحسابات والخزائن',
+            self::RecordTreasuryOperations => 'إيداع وسحب ومصروف وتحويل',
+            self::AdjustTreasuryBalances => 'جرد الحسابات',
+            self::ReverseTreasuryOperations => 'عكس عملية على الحسابات',
+            self::ManageTreasury => 'إدارة الحسابات والتصنيفات',
+            self::ViewVendorPayments => 'عرض دفعات الموردين',
+            self::RecordVendorPayments => 'تسجيل دفعة لمورد',
+            self::ReverseVendorPayments => 'عكس دفعة مورد',
             self::ManageCompanySettings => 'تعديل إعدادات الشركة',
             self::ViewActivityLogs => 'عرض سجل النشاطات',
             // Deliberately explicit about the blast radius: whoever ticks this on the roles
@@ -541,6 +566,14 @@ enum PermissionName: string
             self::ViewDesignTickets, self::ViewAllDesignTickets, self::ManageDesignTickets,
             self::AssignDesignTickets, self::AcceptDesignTickets, self::SubmitDesignTickets,
             self::ReviewDesignTickets => 'تذاكر التصميم',
+            self::ViewTreasury,
+            self::RecordTreasuryOperations,
+            self::AdjustTreasuryBalances,
+            self::ReverseTreasuryOperations,
+            self::ManageTreasury => 'الحسابات والخزائن',
+            self::ViewVendorPayments,
+            self::RecordVendorPayments,
+            self::ReverseVendorPayments => 'دفعات الموردين',
             self::ViewCompanySettings, self::ManageCompanySettings => 'إعدادات الشركة',
             self::ViewActivityLogs => 'سجل النشاطات',
             self::ViewProfitAndLossReport,

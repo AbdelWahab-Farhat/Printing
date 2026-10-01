@@ -58,6 +58,34 @@ abstract final class InvestorEndpoints {
 ///
 /// `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار هو
 /// الصندوقُ وفتراتُه.
+/// الحسابات والخزائن — TREASURY-DESIGN §١٠.
+abstract final class TreasuryEndpoints {
+  static const String accounts = '/treasury/accounts';
+  static String account(int id) => '/treasury/accounts/$id';
+  static String movements(int id) => '/treasury/accounts/$id/movements';
+
+  /// The accounts a payment method fits, and the one the treasury would pick for this person.
+  static const String accountOptions = '/treasury/account-options';
+
+  static const String operations = '/treasury/operations';
+  static String reverseOperation(int id) => '/treasury/operations/$id/reverse';
+
+  static const String expenseCategories = '/treasury/expense-categories';
+  static String expenseCategory(int id) => '/treasury/expense-categories/$id';
+
+  /// «إعدادات المالية».
+  static const String settings = '/treasury/settings';
+  static const String ownership = '/treasury/ownership';
+  static const String inventoryValue = '/treasury/inventory-value';
+
+  /// دفعات الموردين — money out to a vendor, optionally for one purchase order.
+  static String vendorPayments(int vendorId) => '/vendors/$vendorId/payments';
+  static String reverseVendorPayment(int vendorId, int paymentId) =>
+      '/vendors/$vendorId/payments/$paymentId/reverse';
+  static String purchaseOrderPayments(int purchaseOrderId) =>
+      '/purchase-orders/$purchaseOrderId/payments';
+}
+
 abstract final class InvestmentEndpoints {
   static const String fund = '/investment/fund';
 

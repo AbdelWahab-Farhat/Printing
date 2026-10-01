@@ -29,6 +29,7 @@ use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\DealListQuery;
 use App\Domain\Investor\Queries\DealOrdersQuery;
 use App\Domain\Investor\Queries\DealStockPosition;
+use App\Domain\Investor\Queries\FundCash;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\InvestorListQuery;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
@@ -172,6 +173,46 @@ final class InvestorService
     public function balancesForMany(array $investorIds): array
     {
         return $this->balances->forInvestors($investorIds);
+    }
+
+    /**
+     * «لمن المال» — every investor whose wallet still holds money the company is keeping for
+     * them, and the fund's own cash. The treasury dashboard subtracts both from what the drawers
+     * hold to show what is the company's (TREASURY-DESIGN §٩).
+     *
+     * @return array{investors: list<array{id: int, code: string, name: string, capital: string, profit: string}>, fund_cash: string}
+     */
+    public function moneyHeldForInvestors(): array
+    {
+        $investors = Investor::query()->orderBy('name')->get(['id', 'code', 'name']);
+        $balances = $this->balances->forInvestors($investors->map(fn (Investor $i) => (int) $i->getKey())->all());
+
+        $rows = [];
+
+        foreach ($investors as $investor) {
+            $balance = $balances[(int) $investor->getKey()] ?? null;
+
+            if ($balance === null) {
+                continue;
+            }
+
+            $capital = $balance['wallet_capital'];
+            $profit = $balance['wallet_profit'];
+
+            if (bccomp($capital, '0', 2) === 0 && bccomp($profit, '0', 2) === 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'id' => (int) $investor->getKey(),
+                'code' => (string) $investor->code,
+                'name' => (string) $investor->name,
+                'capital' => $capital,
+                'profit' => $profit,
+            ];
+        }
+
+        return ['investors' => $rows, 'fund_cash' => app(FundCash::class)()];
     }
 
     /**

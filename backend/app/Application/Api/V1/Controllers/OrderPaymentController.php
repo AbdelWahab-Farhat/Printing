@@ -220,7 +220,7 @@ class OrderPaymentController extends Controller
     private function entry(OrderPayment $payment, Order $order): array
     {
         return [
-            'payment' => new OrderPaymentResource($payment->load(['recorder', 'reversal'])),
+            'payment' => new OrderPaymentResource($payment->load(['recorder', 'reversal', 'treasuryAccount'])),
             'summary' => $this->summary($order->refresh()),
         ];
     }

@@ -69,6 +69,15 @@ class StoreOrderPaymentRequest extends FormRequest
                 'mimes:'.implode(',', (array) config('media.payment_receipts.mimes')),
                 'max:'.config('media.payment_receipts.max_kilobytes'),
             ],
+
+            // Where the money landed. Optional: left out, the treasury picks the person's own
+            // account or the method's default. Whether the account *fits* the method is the
+            // treasury's rule, answered under this field (TREASURY-DESIGN §٥).
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 

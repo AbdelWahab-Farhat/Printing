@@ -18,6 +18,12 @@ use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\PeriodForEntry;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,7 +43,27 @@ final class RecordWalletEntry
         private readonly InvestorBalances $balances,
         private readonly PeriodForEntry $periodFor,
         private readonly RecordCashEntry $cash,
+        private readonly TreasuryService $treasury,
     ) {}
+
+    /**
+     * The account the investor's money came into or went out of.
+     *
+     * The wallet's `method` is a free string of up to twenty characters rather than the payment
+     * enum, so one the treasury does not recognise is read as cash rather than refused — this
+     * form accepted it yesterday and must still accept it today (TREASURY-DESIGN §٢).
+     */
+    private function accountFor(WalletEntryData $data, ?int $actorId): TreasuryAccount
+    {
+        $method = $data->method !== null && AccountKind::forMethod($data->method) !== [] ? $data->method : 'cash';
+
+        return $this->treasury->accountFor(
+            $method,
+            $actorId,
+            $data->treasuryAccountId,
+            incoming: $data->type === WalletEntryType::Deposit,
+        );
+    }
 
     /**
      * @throws WithdrawalExceedsBalance
@@ -79,7 +105,29 @@ final class RecordWalletEntry
             $entry->investment_period_id = $this->periodFor->byDate($occurredAt);
             $entry->type = $data->type;
             $entry->recorded_by = $actorId;
+
+            // **Only three entries are real money** — a deposit, a capital withdrawal and a profit
+            // withdrawal. Everything else moves figures inside the company's own cash.
+            $account = $data->type->movedCash() ? $this->accountFor($data, $actorId) : null;
+            $entry->treasury_account_id = $account?->getKey();
+
             $entry->save();
+
+            if ($account !== null) {
+                $deposit = $data->type === WalletEntryType::Deposit;
+
+                $this->treasury->post(new MovementData(
+                    accountId: (int) $account->getKey(),
+                    direction: $deposit ? MovementDirection::In : MovementDirection::Out,
+                    kind: $deposit ? MovementKind::InvestorDeposit : MovementKind::InvestorWithdrawal,
+                    amount: (string) $entry->amount,
+                    occurredAt: $entry->occurred_at,
+                    sourceType: $entry->getMorphClass(),
+                    sourceId: (int) $entry->getKey(),
+                    notes: "{$data->type->label()} — {$investor->name}",
+                    recordedBy: $actorId,
+                ));
+            }
 
             // **صرفُ الأرباح نقدٌ يخرج من الخزينة.** رأسُ المال يخرج من {@see WithdrawFromFund}
             // لأنه يُلغي وحداتٍ معه؛ والأرباحُ لا وحداتِ لها — أُفرِج عنها بالفعل ولا تغيّر

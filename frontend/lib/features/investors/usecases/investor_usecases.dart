@@ -65,6 +65,7 @@ class RecordWalletEntry {
     String? method,
     String? reference,
     String? notes,
+    int? treasuryAccountId,
   }) => _repository.recordWalletEntry(
     investorId: investorId,
     type: type,
@@ -77,6 +78,7 @@ class RecordWalletEntry {
     method: method,
     reference: reference,
     notes: notes,
+    treasuryAccountId: treasuryAccountId,
   );
 }
 

@@ -4,21 +4,28 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\PurchaseOrder\Actions\CancelPurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\CreatePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
+use App\Domain\PurchaseOrder\Actions\RecordVendorPayment;
 use App\Domain\PurchaseOrder\Actions\ReversePurchaseOrderReceipt;
+use App\Domain\PurchaseOrder\Actions\ReverseVendorPayment;
 use App\Domain\PurchaseOrder\Actions\SendPurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReversePurchaseOrderReceiptData;
+use App\Domain\PurchaseOrder\DTOs\VendorPaymentData;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderFilters;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderListQuery;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderStatusCountsQuery;
+use App\Domain\PurchaseOrder\Queries\VendorPaymentSummary;
 use App\Domain\Vendor\Models\StockArrival;
+use App\Domain\Vendor\Models\Vendor;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -42,6 +49,9 @@ class PurchaseOrderService
         private readonly ReversePurchaseOrderReceipt $reverseReceipt,
         private readonly PurchaseOrderListQuery $purchaseOrderListQuery,
         private readonly PurchaseOrderStatusCountsQuery $statusCountsQuery,
+        private readonly RecordVendorPayment $recordVendorPayment,
+        private readonly ReverseVendorPayment $reverseVendorPayment,
+        private readonly VendorPaymentSummary $vendorPaymentSummary,
     ) {}
 
     /**
@@ -110,5 +120,33 @@ class PurchaseOrderService
     public function reverseReceipt(PurchaseOrder $order, ReversePurchaseOrderReceiptData $data): PurchaseOrder
     {
         return ($this->reverseReceipt)($order, $data);
+    }
+
+    // ── دفعات الموردين — TREASURY-DESIGN §٨ ──────────────────────────────────────────────
+
+    public function recordVendorPayment(Vendor $vendor, VendorPaymentData $data, ?User $actor): VendorPayment
+    {
+        return ($this->recordVendorPayment)($vendor, $data, $actor);
+    }
+
+    public function reverseVendorPayment(VendorPayment $payment, string $reason, ?User $actor): VendorPayment
+    {
+        return ($this->reverseVendorPayment)($payment, $reason, $actor);
+    }
+
+    /**
+     * @return array{ordered: string, opening_debt: string, paid: string, owed: string}
+     */
+    public function vendorPaymentSummary(int $vendorId): array
+    {
+        return $this->vendorPaymentSummary->forVendor($vendorId);
+    }
+
+    /**
+     * @return array{total: ?string, paid: string, remaining: ?string, predates_treasury: bool}
+     */
+    public function purchaseOrderPaymentSummary(PurchaseOrder $order): array
+    {
+        return $this->vendorPaymentSummary->forPurchaseOrder($order);
     }
 }

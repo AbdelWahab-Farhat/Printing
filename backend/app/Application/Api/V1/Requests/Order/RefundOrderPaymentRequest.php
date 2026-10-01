@@ -70,6 +70,13 @@ class RefundOrderPaymentRequest extends FormRequest
                 'mimes:'.implode(',', (array) config('media.payment_receipts.mimes')),
                 'max:'.config('media.payment_receipts.max_kilobytes'),
             ],
+
+            // Which drawer the money went back out of. Optional, and never Nawris's custody.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 

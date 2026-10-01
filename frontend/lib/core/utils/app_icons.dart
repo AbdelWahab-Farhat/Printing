@@ -219,6 +219,31 @@ abstract final class AppIcons {
   /// وما انقضت مدّتُه: يُستردّ متى شاء.
   static IconData get unlocked => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
 
+  // ── الحسابات والخزائن ──────────────────────────────────────────────────────
+
+  /// The treasury as a whole — the section and its dashboard.
+  static IconData get treasury =>
+      _pick(Icons.account_balance_wallet_outlined, CupertinoIcons.creditcard);
+
+  /// A cash box — «الخزنة».
+  static IconData get cashBox => _pick(Icons.payments_outlined, CupertinoIcons.money_dollar);
+
+  /// A bank account — «المصرف»، «مصرف علي».
+  static IconData get bank => _pick(Icons.account_balance_outlined, CupertinoIcons.building_2_fill);
+
+  /// The Libyana wallet.
+  static IconData get mobileWallet =>
+      _pick(Icons.phone_android_rounded, CupertinoIcons.device_phone_portrait);
+
+  /// Custody — money somebody else is holding for us: Nawris, a driver.
+  static IconData get custody => _pick(Icons.local_shipping_outlined, CupertinoIcons.cube_box);
+
+  /// Money moved between two accounts.
+  static IconData get transfer => _pick(Icons.swap_horiz_rounded, CupertinoIcons.arrow_right_arrow_left);
+
+  /// «جرد الحساب» — counting what is really there.
+  static IconData get countBalance => _pick(Icons.fact_check_outlined, CupertinoIcons.checkmark_seal);
+
   /// A cost the fund carries — «تسجيل مصروف». A receipt, because what is recorded is a bill.
   static IconData get expense =>
       _pick(Icons.receipt_long_outlined, CupertinoIcons.doc_text);
