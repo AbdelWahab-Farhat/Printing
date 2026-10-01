@@ -125,6 +125,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
     int? stockItemId,
+    int? orderId,
     int page = 1,
     int perPage = 20,
   }) {
@@ -136,6 +137,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           'per_page': perPage,
           'warehouse_id': ?warehouseId,
           'stock_item_id': ?stockItemId,
+          'order_id': ?orderId,
         },
       ),
       parseItem: StockMovement.fromJson,

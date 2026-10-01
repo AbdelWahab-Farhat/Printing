@@ -83,9 +83,13 @@ abstract interface class WarehouseRepository {
   ///
   /// **One shelf, not one product's size.** Two catalogue rows can draw on the same pile, so
   /// this feed answers for the pile — which is the only reading that explains the number on it.
+  ///
+  /// [orderId] narrows it to what one order moved: its draws, what was put back, what was
+  /// scrapped. The server decides which rows those are — not every row carrying the number.
   Future<Either<Failure, Paginated<StockMovement>>> movements({
     int? warehouseId,
     int? stockItemId,
+    int? orderId,
     int page = 1,
     int perPage = 20,
   });

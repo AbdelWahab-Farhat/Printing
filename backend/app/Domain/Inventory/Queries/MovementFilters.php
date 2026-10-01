@@ -29,7 +29,42 @@ final readonly class MovementFilters
         /** Inclusive: the whole of this day counts. */
         public ?CarbonImmutable $from = null,
         public ?CarbonImmutable $to = null,
+        /**
+         * «ماذا أخذت هذه الطلبية من المخزن؟» — every row the order moved, and nothing that merely
+         * carries its number. Not `referenceId`: that column means an arrival on one row and
+         * whatever somebody typed on another, see {@see MovementListQuery}.
+         */
+        public ?int $orderId = null,
+        /**
+         * The draws the order's lines point at today. Only Orders can name them, so the caller
+         * asks it and hands them in through {@see withOrderDraws()}; the query never reads
+         * `order_items` itself.
+         *
+         * @var list<int>
+         */
+        public array $orderDrawIds = [],
     ) {}
+
+    /**
+     * The same question, with the order's current draws filled in by whoever may read them.
+     *
+     * @param  list<int>  $movementIds
+     */
+    public function withOrderDraws(array $movementIds): self
+    {
+        return new self(
+            warehouseId: $this->warehouseId,
+            stockItemId: $this->stockItemId,
+            movementType: $this->movementType,
+            adjustmentReason: $this->adjustmentReason,
+            employeeId: $this->employeeId,
+            referenceId: $this->referenceId,
+            from: $this->from,
+            to: $this->to,
+            orderId: $this->orderId,
+            orderDrawIds: $movementIds,
+        );
+    }
 
     /**
      * @param  array<string, mixed>  $query
@@ -54,6 +89,7 @@ final readonly class MovementFilters
             // plainly means "including today", and a bare date parsed as 00:00 would exclude
             // every movement the day actually contains.
             to: self::date($query['to'] ?? null)?->endOfDay(),
+            orderId: self::intOrNull($query['order_id'] ?? null),
         );
     }
 

@@ -227,6 +227,36 @@ void main() {
       ).called(1);
     });
 
+    test('one order asks by order, and by nothing else', () async {
+      // Arrange — «ماذا أخذت هذه الطلبية من المخزن»: every shelf it touched, so no warehouse and
+      // no item narrow it; which rows are the order's is the server's call, not a reference match.
+      when(
+        () => repository.movements(
+          warehouseId: any(named: 'warehouseId'),
+          stockItemId: any(named: 'stockItemId'),
+          orderId: any(named: 'orderId'),
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(emptyLedger()));
+      final ledger = StockMovementsCubit(getMovements: GetStockMovements(repository), orderId: 1250);
+
+      // Act
+      await ledger.load();
+      await ledger.close();
+
+      // Assert
+      verify(
+        () => repository.movements(
+          warehouseId: null,
+          stockItemId: null,
+          orderId: 1250,
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+    });
+
     test('the filters ride along on the next page too', () async {
       // Arrange
       when(
