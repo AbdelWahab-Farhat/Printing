@@ -78,28 +78,26 @@ class OrderTotals extends StatelessWidget {
             // **«لم يُحتسب بعد» وليس «٠».** لا تُكلَّف طلبيةٌ قبل «جاهزة» وخروج البضاعة من رفّ،
             // والصفر في تلك الفجوة يقول «هذه الطلبية لم تكلّفنا شيئاً» — وهي جملةٌ أخرى، وكاذبة.
             value: order.totalCogs?.grouped,
-            // ومتى يظهر الرقم، مرّةً واحدة تحت أوّل سطرٍ ينقصه — لا تحت السطرين. كانت البطاقة
-            // القديمة تستبدل عمودها كلّه بهذه الجملة؛ والعمود هنا يبقى مرسوماً بعلامتيه، فتبقى
-            // الطرحة مقروءةً وإن كان أحد طرفيها لم يُحسب بعد.
-            note: order.totalCogs == null
-                ? 'لم تُحتسب التكلفة بعد — تُحتسب عند وصول الطلبية إلى «جاهزة»'
-                : null,
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.h),
-            // أعرض من الخطّ فوق «الإجمالي»: حسبتان في عمودٍ واحد، والثانية هي التي تنتهي هنا.
-            child: Divider(height: 1, thickness: 1.6, color: scheme.outlineVariant),
-          ),
-          _Line(
-            sign: '=',
-            label: 'مجمل الربح',
-            value: order.grossProfit?.grouped,
-            // الشيء الوحيد الذي يُقرأ من هذا السطر بلمحة: هل كسبت الطلبية أم خسرت. ملوَّنٌ حين
-            // يكون الجواب «لا» وحدها — كلُّ طلبيةٍ رابحةٍ بالأخضر تجعل اللون بلا معنى عند
-            // الثالثة.
-            tone: _isLoss(order.grossProfit) ? scheme.error : null,
-            isTotal: true,
-          ),
+          // **والربح ينتظر التكلفة.** قبل «جاهزة» يكون «لم يُحتسب بعد» مرّتين، والثانية لا تقول
+          // شيئاً لم تقله الأولى — فسطر `=` وخطّه لا يُرسمان حتى يوجد ما يُطرح.
+          if (order.totalCogs != null) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              // أعرض من الخطّ فوق «الإجمالي»: حسبتان في عمودٍ واحد، والثانية هي التي تنتهي هنا.
+              child: Divider(height: 1, thickness: 1.6, color: scheme.outlineVariant),
+            ),
+            _Line(
+              sign: '=',
+              label: 'مجمل الربح',
+              value: order.grossProfit?.grouped,
+              // الشيء الوحيد الذي يُقرأ من هذا السطر بلمحة: هل كسبت الطلبية أم خسرت. ملوَّنٌ حين
+              // يكون الجواب «لا» وحدها — كلُّ طلبيةٍ رابحةٍ بالأخضر تجعل اللون بلا معنى عند
+              // الثالثة.
+              tone: _isLoss(order.grossProfit) ? scheme.error : null,
+              isTotal: true,
+            ),
+          ],
         ],
         Padding(
           padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
