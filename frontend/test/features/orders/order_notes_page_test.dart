@@ -111,19 +111,20 @@ void main() {
   tearDown(Injector.reset);
 
   group('what counts as a note', () {
-    test('the order’s own note comes first, and wears no status', () {
+    test('the order’s own note comes last, and wears no status', () {
       // Arrange
       final subject = order(notes: 'يُسلَّم قبل الظهر', transitions: [opening, shortage]);
 
       // Act
       final notes = OrderNote.on(subject);
 
-      // Assert — it is edited from «تعديل الطلبية» at any point, so no status owns it.
-      expect(notes.first.text, 'يُسلَّم قبل الظهر');
-      expect(notes.first.status, isNull);
+      // Assert — dated to when the order was taken, it is the oldest; and it is edited from
+      // «تعديل الطلبية» at any point, so no status owns it.
+      expect(notes.last.text, 'يُسلَّم قبل الظهر');
+      expect(notes.last.status, isNull);
     });
 
-    test('every move that carried words is a note, in the order they happened', () {
+    test('every move that carried words is a note, newest first', () {
       // Arrange
       final subject = order(notes: 'ملاحظة الطلبية', transitions: [opening, shortage]);
 
@@ -132,9 +133,26 @@ void main() {
 
       // Assert — the opening row carried no reason, so it is not a note.
       expect(notes.length, 2);
-      expect(notes.last.text, 'ناقص ٤٠ كيس');
-      expect(notes.last.status, OrderStatus.shortage);
-      expect(notes.last.statusLabel, 'نواقص');
+      expect(notes.first.text, 'ناقص ٤٠ كيس');
+      expect(notes.first.status, OrderStatus.shortage);
+      expect(notes.first.statusLabel, 'نواقص');
+    });
+
+    test('the latest move’s words sit above the earlier ones', () {
+      // Arrange
+      const cancelled = OrderTransitionRecord(
+        id: 3,
+        toStatus: OrderStatus.cancelled,
+        toStatusLabel: 'إلغاء تام',
+        reason: 'العميل غيّر رأيه',
+      );
+      final subject = order(notes: 'ملاحظة الطلبية', transitions: [opening, shortage, cancelled]);
+
+      // Act
+      final notes = OrderNote.on(subject).map((note) => note.text);
+
+      // Assert
+      expect(notes, ['العميل غيّر رأيه', 'ناقص ٤٠ كيس', 'ملاحظة الطلبية']);
     });
 
     test('a status note carries who moved the order and when', () {
