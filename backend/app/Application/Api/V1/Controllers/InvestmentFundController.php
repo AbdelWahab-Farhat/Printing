@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Investor\ReverseDealExpenseRequest;
+use App\Application\Api\V1\Resources\InvestorDealExpenseResource;
 use App\Application\Controller;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\Actions\PurchaseFromFund;
 use App\Domain\Investor\Actions\RecordFundExpense;
+use App\Domain\Investor\Actions\ReverseDealExpense;
 use App\Domain\Investor\Actions\WithdrawFromFund;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Enums\DealExpenseKind;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
+use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
@@ -29,6 +33,7 @@ use App\Domain\Settings\SettingsService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * الصندوق الاستثماري
@@ -55,6 +60,7 @@ class InvestmentFundController extends Controller
         private readonly DepositToFund $deposit,
         private readonly WithdrawFromFund $withdraw,
         private readonly RecordFundExpense $expense,
+        private readonly ReverseDealExpense $reverseExpense,
         private readonly PurchaseFromFund $purchase,
         private readonly PeriodOrdersQuery $periodOrders,
         private readonly FundDeal $fund,
@@ -176,7 +182,12 @@ class InvestmentFundController extends Controller
             'incurred_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // The drawer that paid; left out, the cash box — TREASURY-DESIGN §٧.
-            'treasury_account_id' => ['nullable', 'integer', 'exists:treasury_accounts,id'],
+            // والمحذوفُ لا يُقبل، كما في كل طلبٍ آخر يسمّي حساباً.
+            'treasury_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ]);
 
         $expense = ($this->expense)(
@@ -191,9 +202,35 @@ class InvestmentFundController extends Controller
             $request->user()?->id,
         );
 
+        // الموردُ كاملاً لا `id` و`amount` وحدهما — والاثنان فيه بالقيمة نفسها.
         return $this->success(
-            ['id' => $expense->id, 'amount' => (string) $expense->amount],
+            new InvestorDealExpenseResource($expense->load('treasuryAccount')),
             'سُجِّل المصروف وخرج من الخزينة',
+        );
+    }
+
+    /**
+     * Reverse an expense recorded against the fund
+     *
+     * يعود المالُ إلى الحساب الذي دفع وإلى نقد الصندوق، ويرجع ما حُمِّل للشركاء — في فترة المصروف
+     * ما دامت تقبل القيد، وإلا في المفتوحة اليوم. مصروفُ صفقةٍ أخرى 404.
+     */
+    public function reverseExpense(ReverseDealExpenseRequest $request, int $expense): JsonResponse
+    {
+        $original = InvestorDealExpense::query()
+            ->where('investor_deal_id', $this->fund->idOrNull())
+            ->whereKey($expense)
+            ->firstOrFail();
+
+        $reversal = ($this->reverseExpense)(
+            $original,
+            (string) $request->validated('reason'),
+            $request->user()?->id,
+        );
+
+        return $this->created(
+            new InvestorDealExpenseResource($reversal->load('treasuryAccount')),
+            'عُكس المصروف — عاد المالُ إلى الخزينة ونقدِ الصندوق',
         );
     }
 

@@ -19,9 +19,18 @@ final class InsufficientBalance extends DomainException
         parent::__construct($message);
     }
 
-    public static function make(string $account, string $balance, string $amount, string $field = 'amount'): self
-    {
-        return new self("رصيد «{$account}» ({$balance}) لا يكفي لـ {$amount}", $field);
+    /**
+     * @param  ?string  $balance  الرصيدُ لمن يراه، و`null` لمن لا يراه — فلا يُذكر الرقم
+     */
+    public static function make(
+        string $account,
+        ?string $balance,
+        string $amount,
+        string $field = 'amount',
+    ): self {
+        $held = $balance === null ? '' : " ({$balance})";
+
+        return new self("رصيد «{$account}»{$held} لا يكفي لـ {$amount}", $field);
     }
 
     public function fieldErrors(): array

@@ -9,6 +9,7 @@ use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Actions\RecordOperation;
 use App\Domain\Treasury\Enums\OperationType;
+use App\Domain\Treasury\Exceptions\OperationIsImmutable;
 use Database\Factories\TreasuryOperationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,22 @@ class TreasuryOperation extends Model implements HasAuditTrail
 {
     /** @use HasFactory<TreasuryOperationFactory> */
     use Auditable, HasFactory, SoftDeletes;
+
+    /**
+     * **لا عمودَ يُكتب بعد الإنشاء.** العكسُ صفٌّ جديد يشير إلى أصله بـ`reverses_operation_id`،
+     * و«معكوسة» تُقرأ من وجوده لا من رايةٍ على الأصل — فلا استثناءَ هنا لأحد. تعديلُ عمليةٍ
+     * أو حذفُها يغيّر معنى حركاتٍ قائمة بلا سطرٍ يقول لماذا.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (): never {
+            throw OperationIsImmutable::make();
+        });
+
+        static::deleting(function (): never {
+            throw OperationIsImmutable::cannotBeDeleted();
+        });
+    }
 
     /**
      * @return array<string, string>

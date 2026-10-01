@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Treasury\Models\TreasuryMovement;
+use App\Domain\Treasury\Models\TreasuryOperation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -57,6 +59,7 @@ class TreasuryMovementResource extends JsonResource
 
             'is_reversal' => $this->isReversal(),
             'reverses_movement_id' => $this->reverses_movement_id,
+            'is_reversible' => $this->reversibleBy($request, $operation),
 
             'notes' => $this->notes,
 
@@ -68,5 +71,30 @@ class TreasuryMovementResource extends JsonResource
 
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * أيعكس هذا القارئُ السطرَ من هنا؟ — بدل أن يخمّنه التطبيق.
+     *
+     * نعم حين يكون السطرُ من عمليةٍ يدوية يعكسها إنسان (لا افتتاح ولا تسوية)، ليست هي عكساً ولم
+     * تُعكس، ومعه `treasury.reverse`. وكلُّ ما سواها — دفعةٌ، شراءٌ، حركةُ محفظة — يُعكس من شاشته.
+     */
+    private function reversibleBy(Request $request, ?TreasuryOperation $operation): bool
+    {
+        $operation ??= $this->operation_id === null ? null : $this->operation;
+
+        if ($operation === null || ! $operation->type->isReversibleByHand()) {
+            return false;
+        }
+
+        $reversed = $operation->relationLoaded('reversedBy')
+            ? $operation->reversedBy !== null
+            : $operation->isReversed();
+
+        if ($operation->isReversal() || $reversed) {
+            return false;
+        }
+
+        return (bool) $request->user()?->can(PermissionName::ReverseTreasuryOperations->value);
     }
 }

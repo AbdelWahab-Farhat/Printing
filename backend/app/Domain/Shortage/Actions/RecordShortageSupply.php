@@ -177,6 +177,15 @@ final class RecordShortageSupply
                 incoming: false,
             );
 
+            // يومُ الشراء لا يقع في شهرٍ أُقفل ولا قبل آخر جردٍ للدرج — كالعمليات اليدوية نفسها.
+            // ولا يُمنع لرصيدٍ لا يكفي: شراءٌ وقع فعلاً يُسجَّل ولو صار الدرج سالباً.
+            $this->treasury->guardManualEntry(
+                $account,
+                Carbon::parse($data->occurredOn),
+                'occurred_on',
+                wholeDay: true,
+            );
+
             $supply->forceFill(['treasury_account_id' => $account->getKey()]);
 
             if ($data->receipt !== null) {

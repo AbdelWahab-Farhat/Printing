@@ -125,13 +125,14 @@ class OtherMoneyTreasuryTest extends TestCase
             'type' => 'deposit', 'amount' => '10000', 'method' => 'bank_transfer',
         ], $headers)->assertCreated();
 
+        // من المصرف الذي فيه المال: السحبُ باليد لا يأخذ ما ليس في الدرج، والخزنةُ هنا فارغة.
         $this->postJson("/api/v1/investors/{$investor->id}/wallet", [
-            'type' => 'withdrawal', 'amount' => '1500', 'method' => 'cash',
+            'type' => 'withdrawal', 'amount' => '1500', 'method' => 'bank_transfer',
         ], $headers)->assertCreated();
 
         // Assert
-        $this->assertSame('10000.00', $this->balance($bank));
-        $this->assertSame('-1500.00', $this->balance($this->defaultOf(AccountKind::Cash)));
+        $this->assertSame('8500.00', $this->balance($bank));
+        $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Cash)));
         $this->assertSame(2, TreasuryMovement::query()->count());
     }
 
@@ -173,5 +174,29 @@ class OtherMoneyTreasuryTest extends TestCase
         $fromBank->assertOk();
         $this->assertSame('-120.00', $this->balance($this->defaultOf(AccountKind::Cash)));
         $this->assertSame('-300.00', $this->balance($bank));
+    }
+
+    public function test_a_fund_expense_cannot_name_a_deleted_account(): void
+    {
+        // Arrange — حسابٌ محذوفٌ حذفاً ناعماً لا يظهر في أيّ منتقٍ، ولا يُقبل باسمه مصروف.
+        [, $headers] = $this->user([
+            PermissionName::RecordDealExpenses,
+            PermissionName::ViewInvestors,
+        ]);
+        $closed = TreasuryAccount::factory()->kind(AccountKind::Bank)->create();
+        $closed->delete();
+
+        // Act
+        $response = $this->postJson('/api/v1/investment/expenses', [
+            'kind' => 'customs',
+            'name' => 'جمارك',
+            'amount' => '300',
+            'incurred_on' => now()->toDateString(),
+            'treasury_account_id' => $closed->id,
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('treasury_account_id');
+        $this->assertSame(0, TreasuryMovement::query()->count());
     }
 }

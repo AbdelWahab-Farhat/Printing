@@ -26,6 +26,37 @@ class SaveExpenseCategoryRequest extends FormRequest
         ];
     }
 
+    /**
+     * المدخلاتُ بأنواعها: قاعدةُ `boolean` تقبل `0` و`"0"` و`false` معاً وتُبقي كلّاً كما جاء،
+     * فيُصبّ هنا مرّةً على الحدّ — ولا يقارن الفعلُ بعدها قيمةً بغير نوعها.
+     *
+     * @return array{name?: string, requires_employee?: bool, is_active?: bool, sort_order?: int}
+     */
+    public function values(): array
+    {
+        $values = $this->validated();
+
+        foreach (['requires_employee', 'is_active'] as $flag) {
+            if (array_key_exists($flag, $values)) {
+                $values[$flag] = (bool) $values[$flag];
+            }
+        }
+
+        if (array_key_exists('sort_order', $values)) {
+            $values['sort_order'] = (int) $values['sort_order'];
+        }
+
+        /**
+         * @var array{
+         *     name?: string,
+         *     requires_employee?: bool,
+         *     is_active?: bool,
+         *     sort_order?: int
+         * } $values
+         */
+        return $values;
+    }
+
     public function messages(): array
     {
         return [

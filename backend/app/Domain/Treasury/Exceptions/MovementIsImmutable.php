@@ -12,4 +12,9 @@ final class MovementIsImmutable extends DomainException
     {
         return new self('حركات الحسابات لا تُعدَّل — التصحيح يكون بعكس الحركة');
     }
+
+    public static function cannotBeDeleted(): self
+    {
+        return new self('حركات الحسابات لا تُحذف — التصحيح يكون بعكس الحركة');
+    }
 }

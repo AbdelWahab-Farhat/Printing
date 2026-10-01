@@ -769,6 +769,7 @@ final class AuditAttributeLabels
             'counted_balance' => 'الرصيد المعدود',
             'occurred_at' => 'تاريخ العملية',
             'reverses_operation_id' => 'تعكس عملية',
+            'client_token' => 'رمز الإرسال',
         ],
         'treasury_movement' => [
             'account_id' => 'الحساب',
@@ -794,6 +795,7 @@ final class AuditAttributeLabels
             'receipt_checksum' => 'بصمة الإيصال',
             'paid_at' => 'تاريخ الدفع',
             'reverses_payment_id' => 'تعكس دفعة',
+            'client_token' => 'رمز الإرسال',
         ],
         'treasury_expense_category' => [
             'name' => 'اسم التصنيف',

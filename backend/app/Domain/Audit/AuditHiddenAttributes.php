@@ -94,6 +94,8 @@ final class AuditHiddenAttributes
             'last_message_at',
         ],
         'ticket_message' => ['client_token'],
+        'treasury_operation' => ['client_token'],
+        'vendor_payment' => ['client_token'],
         'notification' => ['dedupe_key'],
     ];
 

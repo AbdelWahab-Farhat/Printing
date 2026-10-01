@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
+use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Treasury\SaveExpenseCategoryRequest;
 use App\Application\Api\V1\Resources\ExpenseCategoryResource;
 use App\Application\Controller;
+use App\Domain\Audit\AuditService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\TreasuryService;
@@ -17,7 +20,7 @@ use Illuminate\Http\Request;
 
 class ExpenseCategoryController extends Controller
 {
-    use ResponseTrait;
+    use ReadsAuditTrail, ResponseTrait;
 
     public function __construct(private readonly TreasuryService $treasury) {}
 
@@ -37,23 +40,28 @@ class ExpenseCategoryController extends Controller
 
     public function store(SaveExpenseCategoryRequest $request): JsonResponse
     {
-        /** @var array{name?: string, requires_employee?: bool, is_active?: bool, sort_order?: int} $values */
-        $values = $request->validated();
-
         return $this->created(
-            new ExpenseCategoryResource($this->treasury->saveCategory(null, $values)),
+            new ExpenseCategoryResource($this->treasury->saveCategory(null, $request->values())),
             'تمت إضافة التصنيف',
         );
     }
 
     public function update(SaveExpenseCategoryRequest $request, ExpenseCategory $category): JsonResponse
     {
-        /** @var array{name?: string, requires_employee?: bool, is_active?: bool, sort_order?: int} $values */
-        $values = $request->validated();
+        $saved = $this->treasury->saveCategory($category, $request->values());
 
         return $this->success(
-            new ExpenseCategoryResource($this->treasury->saveCategory($category, $values)),
+            new ExpenseCategoryResource($saved),
             'تم حفظ التصنيف',
         );
+    }
+
+    /** تاريخُ التصنيف — خلف `logs.view` كبقيّة السجلّات. */
+    public function logs(
+        ActivityLogFilterRequest $request,
+        ExpenseCategory $category,
+        AuditService $audit,
+    ): JsonResponse {
+        return $this->auditTrailResponse($request, $category, $audit);
     }
 }

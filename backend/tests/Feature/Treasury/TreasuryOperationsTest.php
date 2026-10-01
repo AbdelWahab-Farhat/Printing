@@ -8,12 +8,14 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Exceptions\MovementIsImmutable;
+use App\Domain\Treasury\Exceptions\OperationIsImmutable;
 use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -169,6 +171,41 @@ class TreasuryOperationsTest extends TestCase
         $this->assertSame('100.00', $this->balance($this->cashBox()));
     }
 
+    public function test_a_refused_withdrawal_names_the_balance_only_to_whoever_may_read_it(): void
+    {
+        // Arrange — من يسجّل ولا يرى الحسابات لا يعرف رصيد الخزنة من رسالة رفض. ومن الحسابُ باسمه
+        // يرى رصيده في كل حال، فيُذكر له.
+        [, $ownerHeaders] = $this->clerk();
+        [$ali, $aliHeaders] = $this->clerk([PermissionName::RecordTreasuryOperations]);
+        $alisBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->heldBy($ali)->create();
+        $this->deposit($ownerHeaders, $this->cashBox(), '100');
+        $this->deposit($ownerHeaders, $alisBox, '40');
+        $withdraw = function (array $headers, TreasuryAccount $from) {
+            // الحارسُ يحفظ أوّلَ مستخدمٍ يحلّه في الاختبار؛ والثاني يُقرأ من رأسه هو.
+            $this->app['auth']->forgetGuards();
+
+            return $this->postJson('/api/v1/treasury/operations', [
+                'type' => 'withdrawal',
+                'from_account_id' => $from->id,
+                'amount' => '150',
+                'notes' => 'سحب',
+            ], $headers);
+        };
+
+        // Act
+        $blind = $withdraw($aliHeaders, $this->cashBox());
+        $ownBox = $withdraw($aliHeaders, $alisBox);
+        $seeing = $withdraw($ownerHeaders, $this->cashBox());
+
+        // Assert
+        $blind->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $this->assertStringNotContainsString('100.00', (string) $blind->json('message'));
+        $ownBox->assertUnprocessable();
+        $this->assertStringContainsString('40.00', (string) $ownBox->json('message'));
+        $seeing->assertUnprocessable();
+        $this->assertStringContainsString('100.00', (string) $seeing->json('message'));
+    }
+
     public function test_an_expense_carries_its_category_and_an_advance_names_the_employee(): void
     {
         // Arrange
@@ -206,6 +243,29 @@ class TreasuryOperationsTest extends TestCase
         $advanceWithoutEmployee->assertUnprocessable()->assertJsonValidationErrors('employee_id');
         $advanceWithEmployee->assertCreated()->assertJsonPath('data.employee.id', $employee->id);
         $this->assertSame('500.00', $this->balance($this->cashBox()));
+    }
+
+    public function test_an_advance_cannot_name_an_employee_who_was_removed(): void
+    {
+        // Arrange — موظّفٌ حُذف حذفاً ناعماً ما زال صفُّه في الجدول، فـ`exists` وحدها كانت تقبله.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '1000');
+        $advance = ExpenseCategory::query()->where('code', ExpenseCategory::ADVANCE)->firstOrFail();
+        $gone = User::factory()->create();
+        $gone->delete();
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'expense',
+            'from_account_id' => $this->cashBox()->id,
+            'amount' => '100',
+            'category_id' => $advance->id,
+            'employee_id' => $gone->id,
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('employee_id');
+        $this->assertSame('1000.00', $this->balance($this->cashBox()));
     }
 
     // ── transfer ────────────────────────────────────────────────────────────────────────
@@ -252,6 +312,55 @@ class TreasuryOperationsTest extends TestCase
 
         // Assert
         $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
+    }
+
+    public function test_a_transfer_to_the_same_account_sent_as_text_is_refused_too(): void
+    {
+        // Arrange — `different:` يقارن بالهوية: الرقم 5 والنصّ "5" مختلفان عنده، فيمرّ الطلب ثم
+        // يصطدم بقيد القاعدة 500. والفعلُ يقارن بعد الصبّ إلى عدد.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'transfer',
+            'from_account_id' => $this->cashBox()->id,
+            'to_account_id' => (string) $this->cashBox()->id,
+            'amount' => '10',
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
+        $this->assertSame(1, TreasuryOperation::query()->count());
+    }
+
+    public function test_an_amount_finer_than_a_dirham_is_refused_before_the_ledger(): void
+    {
+        // Arrange — 0.001 كان يمرّ من `gt:0` ثم يُقرَّب إلى صفر فيصطدم بقيد `amount > 0`: 500.
+        [, $headers] = $this->clerk();
+        $deposit = fn (string $amount) => $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit', 'to_account_id' => $this->cashBox()->id, 'amount' => $amount,
+        ], $headers);
+
+        // Act
+        $tooSmall = $deposit('0.001');
+        $tooFine = $deposit('10.555');
+        $zero = $deposit('0');
+        $oneDirham = $deposit('0.01');
+        $count = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '10.555',
+            'notes' => 'جرد',
+        ], $headers);
+
+        // Assert
+        $tooSmall->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $tooFine->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $zero->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $oneDirham->assertCreated();
+        $count->assertUnprocessable()->assertJsonValidationErrors('counted_balance');
+        $this->assertSame('0.01', $this->balance($this->cashBox()));
     }
 
     public function test_custody_takes_nothing_by_hand_but_its_opening_and_a_count(): void
@@ -378,6 +487,84 @@ class TreasuryOperationsTest extends TestCase
         $noReason->assertUnprocessable()->assertJsonValidationErrors('notes');
     }
 
+    public function test_an_opening_is_refused_once_the_account_has_any_movement(): void
+    {
+        // Arrange — المصرف استقبل مالاً قبل أن يُسجَّل له افتتاح، كما بعد استيراد المدفوعات
+        // القديمة. افتتاحٌ فوقه يعدّ ذلك المال مرّتين.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->bank(), '300');
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'opening',
+            'to_account_id' => $this->bank()->id,
+            'amount' => '1000',
+        ], $headers);
+
+        // Assert — والرسالةُ تدلّه على الطريق: «جرد الحساب».
+        $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
+        $this->assertStringContainsString('جرد الحساب', (string) $response->json('message'));
+        $this->assertSame('300.00', $this->balance($this->bank()));
+    }
+
+    public function test_a_count_dated_in_the_past_is_measured_against_that_day_s_balance(): void
+    {
+        // Arrange — ١٠٠٠ ثم ٢٠٠ حتى مساء ٣٠ سبتمبر، و٥٠٠ أُودعت صباح ١ أكتوبر قبل أن يُدخَل
+        // جردُ ٣٠ سبتمبر.
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        [, $headers] = $this->clerk();
+        $put = fn (string $amount, string $at) => $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit',
+            'to_account_id' => $this->cashBox()->id,
+            'amount' => $amount,
+            'occurred_at' => $at,
+        ], $headers)->assertCreated();
+        $put('1000', '2026-09-29T10:00:00');
+        $put('200', '2026-09-30T15:00:00');
+        $put('500', '2026-10-01T09:00:00');
+
+        // Act — عُدّت الخزنة مساء ٣٠ سبتمبر فوُجد فيها ١١٥٠.
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '1150',
+            'notes' => 'جرد آخر الشهر',
+            'occurred_at' => '2026-09-30',
+        ], $headers);
+
+        // Assert — رصيدُ النظام يومها ١٢٠٠ لا ١٧٠٠، والفرقُ ٥٠ خرج، وإيداعُ أكتوبر في مكانه.
+        $response->assertCreated()
+            ->assertJsonPath('data.system_balance', '1200.00')
+            ->assertJsonPath('data.counted_balance', '1150.00')
+            ->assertJsonPath('data.amount', '50.00')
+            ->assertJsonPath('data.from_account_id', $this->cashBox()->id);
+        $this->assertSame('1650.00', $this->balance($this->cashBox()));
+    }
+
+    public function test_a_count_made_today_without_a_date_still_reads_today_s_balance(): void
+    {
+        // Arrange
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '700');
+
+        // Act — بتاريخ اليوم بلا ساعة: العدُّ الآن، لا في آخر يومٍ لم ينته.
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '650',
+            'notes' => 'جرد',
+            'occurred_at' => '2026-10-01',
+        ], $headers);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.system_balance', '700.00')
+            ->assertJsonPath('data.amount', '50.00');
+        $count = TreasuryOperation::query()->findOrFail($response->json('data.id'));
+        $this->assertSame('2026-10-01 12:00:00', $count->occurred_at->format('Y-m-d H:i:s'));
+    }
+
     // ── reversing ───────────────────────────────────────────────────────────────────────
 
     public function test_reversing_an_operation_mirrors_every_movement_once(): void
@@ -456,6 +643,69 @@ class TreasuryOperationsTest extends TestCase
 
         // Act
         $movement->forceFill(['amount' => '1000'])->save();
+    }
+
+    public function test_a_movement_cannot_be_deleted_even_softly(): void
+    {
+        // Arrange — حذفٌ ناعم يُسقط الحركة من كل رصيد كما يُسقطها التعديل، بلا أثرٍ يقول لماذا.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $movement = TreasuryMovement::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(MovementIsImmutable::class);
+
+        // Act
+        $movement->delete();
+    }
+
+    public function test_an_operation_cannot_be_edited(): void
+    {
+        // Arrange
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(OperationIsImmutable::class);
+
+        // Act
+        $operation->forceFill(['amount' => '1000'])->save();
+    }
+
+    public function test_an_operation_cannot_be_deleted_even_softly(): void
+    {
+        // Arrange
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Assert
+        $this->expectException(OperationIsImmutable::class);
+
+        // Act
+        $operation->delete();
+    }
+
+    public function test_an_immutable_operation_is_still_undone_by_its_reversal(): void
+    {
+        // Arrange — العكسُ صفٌّ جديد يشير إلى أصله، فلا يمسّ الأصلَ بشيء.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+        $operation = TreasuryOperation::query()->firstOrFail();
+
+        // Act
+        $response = $this->postJson(
+            "/api/v1/treasury/operations/{$operation->id}/reverse",
+            ['reason' => 'خطأ'],
+            $headers,
+        );
+
+        // Assert
+        $response->assertCreated();
+        $this->assertTrue($operation->refresh()->isReversed());
+        $this->assertSame('100.00', (string) $operation->amount);
+        $this->assertSame('0.00', $this->balance($this->cashBox()));
     }
 
     // ── who may ─────────────────────────────────────────────────────────────────────────

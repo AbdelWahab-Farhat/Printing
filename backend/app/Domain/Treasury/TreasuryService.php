@@ -34,6 +34,8 @@ use App\Domain\Treasury\Queries\AccountLedger;
 use App\Domain\Treasury\Queries\AccountTotals;
 use App\Domain\Treasury\Queries\CustodyForOrder;
 use App\Domain\Treasury\Support\AccountResolver;
+use App\Domain\Treasury\Support\BalanceVisibility;
+use App\Domain\Treasury\Support\CheckpointFloor;
 use App\Support\RequestMemo;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -235,9 +237,16 @@ final class TreasuryService
      * Refuses money out by hand that the account does not hold — a vendor payment, like the
      * treasury's own withdrawals. Locks the account row first, so two payments cannot both spend
      * the last dinar. Call inside the transaction that will post the movement.
+     *
+     * @param  ?int  $actorId  من يسجّل — رسالةُ الرفض تذكر الرصيد لمن يراه وحده
+     *                         ({@see BalanceVisibility})، ولا تذكره حين لا يُعرف من يسأل
      */
-    public function guardCanSpend(TreasuryAccount $account, string $amount, string $field = 'amount'): void
-    {
+    public function guardCanSpend(
+        TreasuryAccount $account,
+        string $amount,
+        string $field = 'amount',
+        ?int $actorId = null,
+    ): void {
         if (! TreasurySetting::current()->block_overdraft) {
             return;
         }
@@ -247,7 +256,12 @@ final class TreasuryService
         $balance = $this->balances->of((int) $account->getKey());
 
         if (bccomp($amount, $balance, 2) > 0) {
-            throw InsufficientBalance::make((string) $account->name, $balance, $amount, $field);
+            throw InsufficientBalance::make(
+                (string) $account->name,
+                (new BalanceVisibility)->allows($account, $actorId) ? $balance : null,
+                $amount,
+                $field,
+            );
         }
     }
 
@@ -558,5 +572,33 @@ final class TreasuryService
     public function saveCategory(?ExpenseCategory $category, array $values): ExpenseCategory
     {
         return ($this->saveCategory)($category, $values);
+    }
+
+    // ── تاريخُ المال اليدوي ─────────────────────────────────────────────────────────────
+
+    /**
+     * يرفض مالاً يدوياً بتاريخٍ لا يجوز له — من شاشات الشراء والمصروف والمحفظة، كما ترفضه العمليات
+     * اليدوية نفسُها: داخل «مقفل حتى تاريخ»، أو قبل آخر نقطة عدٍّ للحساب ({@see CheckpointFloor}).
+     *
+     * @param  bool  $wholeDay  التاريخ يومٌ بلا ساعة (`occurred_on`, `incurred_on`) — يُقاس باليوم
+     */
+    public function guardManualEntry(
+        TreasuryAccount $account,
+        DateTimeInterface $at,
+        string $field,
+        bool $wholeDay = false,
+    ): void {
+        $this->guardNotLocked($at, $field);
+        $this->guardAfterCheckpoint($account, $at, $field, $wholeDay);
+    }
+
+    /** الأرضيةُ وحدها، لمن يفحص القفلَ قبل أن يعرف الحساب — دفعة المورد. */
+    public function guardAfterCheckpoint(
+        TreasuryAccount $account,
+        DateTimeInterface $at,
+        string $field,
+        bool $wholeDay = false,
+    ): void {
+        (new CheckpointFloor)->guard($account, $at, $field, $wholeDay);
     }
 }

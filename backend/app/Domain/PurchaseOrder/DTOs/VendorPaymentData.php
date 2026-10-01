@@ -25,6 +25,8 @@ final readonly class VendorPaymentData
         public Carbon $paidAt,
         public ?string $notes,
         public ?UploadedFile $receipt = null,
+        // رمزُ الإرسال من التطبيق — الرمزُ نفسه مرّةً ثانية يُرجع الدفعةَ الأولى.
+        public ?string $clientToken = null,
     ) {}
 
     /**
@@ -49,6 +51,7 @@ final readonly class VendorPaymentData
             paidAt: $text('paid_at') !== null ? Carbon::parse((string) $validated['paid_at']) : Carbon::now(),
             notes: $text('notes'),
             receipt: $receipt instanceof UploadedFile ? $receipt : null,
+            clientToken: $text('client_token'),
         );
     }
 }

@@ -86,6 +86,12 @@ class InvestorDealExpense extends Model
         return self::query()->where('reverses_expense_id', $this->getKey())->exists();
     }
 
+    /** أهذا الصفُّ عكسٌ لمصروفٍ آخر؟ — يحمل مبلغَ أصله كما هو، ويسقط الاثنان من كل مجموع. */
+    public function isReversal(): bool
+    {
+        return $this->reverses_expense_id !== null;
+    }
+
     /**
      * Whether this row reduces the deal's profit.
      *

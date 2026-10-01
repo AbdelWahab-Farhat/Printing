@@ -51,14 +51,20 @@ class TreasuryOperationController extends Controller
         return $this->success(new TreasuryOperationResource($this->treasury->loadOperation($operation)));
     }
 
+    /**
+     * `client_token` يجعل الإعادةَ آمنة: الرمزُ نفسه مرّةً ثانية يُرجع العمليةَ الأولى بحالة 200
+     * ولا يكتب شيئاً.
+     */
     public function store(StoreTreasuryOperationRequest $request): JsonResponse
     {
         $operation = $this->treasury->recordOperation(OperationData::fromArray($request->validated()), $request->user());
+        $resource = new TreasuryOperationResource($this->treasury->loadOperation($operation));
 
-        return $this->created(
-            new TreasuryOperationResource($this->treasury->loadOperation($operation)),
-            "تم تسجيل «{$operation->type->label()}»",
-        );
+        if (! $operation->wasRecentlyCreated) {
+            return $this->success($resource, "«{$operation->type->label()}» مسجَّلة من قبل");
+        }
+
+        return $this->created($resource, "تم تسجيل «{$operation->type->label()}»");
     }
 
     public function reverse(ReverseTreasuryOperationRequest $request, TreasuryOperation $operation): JsonResponse

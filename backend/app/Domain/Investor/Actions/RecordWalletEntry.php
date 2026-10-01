@@ -24,6 +24,7 @@ use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\TreasuryService;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -111,6 +112,10 @@ final class RecordWalletEntry
             $account = $data->type->movedCash() ? $this->accountFor($data, $actorId) : null;
             $entry->treasury_account_id = $account?->getKey();
 
+            if ($account !== null) {
+                $this->guardTreasury($data, $account, $occurredAt, $actorId);
+            }
+
             $entry->save();
 
             if ($account !== null) {
@@ -171,6 +176,24 @@ final class RecordWalletEntry
 
         if (bccomp($data->amount, $available, Money::SCALE) > 0) {
             throw WithdrawalExceedsBalance::make($data->amount, $available);
+        }
+    }
+
+    /**
+     * مالٌ عبر الطاولة باليد، فقواعدُ اليد عليه كما على شاشة الحسابات: لا تاريخَ في شهرٍ أُقفل
+     * ولا قبل آخر جردٍ للدرج، ولا سحبَ — رأسَ مالٍ أو ربحاً — بما ليس في الدرج ما دام «منع الرصيد
+     * السالب» مفعّلاً. والإيداعُ لا يُمنع لرصيد: مالٌ وصل فعلاً.
+     */
+    private function guardTreasury(
+        WalletEntryData $data,
+        TreasuryAccount $account,
+        DateTimeInterface $occurredAt,
+        ?int $actorId,
+    ): void {
+        $this->treasury->guardManualEntry($account, $occurredAt, 'occurred_at');
+
+        if ($data->type !== WalletEntryType::Deposit) {
+            $this->treasury->guardCanSpend($account, $data->amount, 'amount', $actorId);
         }
     }
 

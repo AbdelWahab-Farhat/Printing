@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Treasury\Queries;
 
 use App\Domain\Treasury\Support\Money;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,5 +41,22 @@ final class AccountBalances
     public function of(int $accountId): string
     {
         return $this->forAccounts([$accountId])[$accountId];
+    }
+
+    /**
+     * ما كان في الحساب عند لحظةٍ مضت: حركاتُه المؤرَّخة فيها أو قبلها وحدها.
+     *
+     * لـ«جرد الحساب» بتاريخٍ مضى — جردُ ٣٠ سبتمبر يُدخَل صباح ١ أكتوبر بعد إيداعٍ جديد، فيقاس
+     * المعدودُ بما كان يومها لا بما صار اليوم، وإلا كتب الفرقُ إيداعَ أكتوبر عجزاً.
+     */
+    public function asOf(int $accountId, DateTimeInterface $moment): string
+    {
+        $balance = DB::table('treasury_movements')
+            ->whereNull('deleted_at')
+            ->where('account_id', $accountId)
+            ->where('occurred_at', '<=', $moment)
+            ->sum(DB::raw("CASE WHEN direction = 'in' THEN amount ELSE -amount END"));
+
+        return Money::round((string) $balance);
     }
 }
