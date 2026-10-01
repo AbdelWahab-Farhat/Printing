@@ -75,9 +75,10 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
 
   /// Records what was bought — **and puts it on a shelf**.
   ///
-  /// The ceiling on [quantity] is re-checked on the server under a lock, so «الكمية أكبر من
-  /// المتبقي» can still arrive from a screen that capped the box: two clerks can record the last
-  /// ten kilos at once.
+  /// The remainder is re-checked on the server under a lock, so «الكمية أكبر من المتبقي» can
+  /// still arrive from a screen that thought it fitted: two clerks can record the last ten kilos
+  /// at once. [acceptSurplus] is the employee's «نعم، الزائد للمخزن», sent only after they
+  /// confirmed it.
   Future<Failure?> recordSupply({
     required String quantity,
     String? amount,
@@ -86,6 +87,7 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
     String? occurredOn,
     String? notes,
     PickedFile? receipt,
+    bool acceptSurplus = false,
   }) {
     return _write(
       () => _recordSupply(
@@ -97,6 +99,7 @@ class ShortageDetailCubit extends Cubit<ShortageDetailState> {
         occurredOn: occurredOn,
         notes: notes,
         receipt: receipt,
+        acceptSurplus: acceptSurplus,
       ),
     );
   }

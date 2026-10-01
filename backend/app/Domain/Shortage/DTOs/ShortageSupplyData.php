@@ -46,6 +46,15 @@ final readonly class ShortageSupplyData
          * **Never required**, unlike a customer's payment: see the request's own note.
          */
         public ?UploadedFile $receipt = null,
+
+        /**
+         * «نعم، الزائد يذهب للمخزن» — the employee has seen that this is more than is missing.
+         *
+         * **A confirmation, not a mode.** A quantity that fits never reads it. One that does not
+         * is refused without it, because the ordinary cause of a thirty against a remainder of
+         * three is still a slipped keystroke at the counter — see `SupplyExceedsRemaining`.
+         */
+        public bool $acceptSurplus = false,
     ) {}
 
     /**
@@ -74,6 +83,7 @@ final readonly class ShortageSupplyData
             receipt: ($validated['receipt'] ?? null) instanceof UploadedFile
                 ? $validated['receipt']
                 : null,
+            acceptSurplus: filter_var($validated['accept_surplus'] ?? false, FILTER_VALIDATE_BOOLEAN),
         );
     }
 }

@@ -222,7 +222,7 @@ A guard in PHP is forgotten by the second code path; the index is not.
 | --- | --- | --- |
 | **D1** | 30 of 30 | Completed, invoice restored in full |
 | **D2** | 20 then 10 of 30 | Open at 10, then Completed. Total 760 د.ل (§١) |
-| **D3** | 31 of 30 | **422** «الكمية (31) أكبر من المتبقي من النقص (30)». Buying extra for the shelf is a purchase order, not this |
+| **D3** | 31 of 30 | **422** «الكمية (31) أكبر من المتبقي من النقص (30) — أكّد إدخال الزائد (1) للمخزن» unless `accept_surplus: true`. With it: 31 reach the shelf, the shortage counts 30 and completes, and `surplus_quantity` is 1 — company stock. A shortage with no shelf refuses the extra either way |
 | **D4** | Supply against a «غير متوفر» shortage | **Reopens to «جاري البحث»**, then the arithmetic completes it if the remainder reached zero |
 | **D5** | Supply against a «مكتمل» shortage | **422** «النقص مكتمل». The way back is a reversal |
 | **D6** | Quantity only, no amount/method | **422** on both fields. All three are required, in the form, in the types, and as a CHECK |

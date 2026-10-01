@@ -178,8 +178,22 @@ required_quantity  =  order_item.shortage_quantity  +  Σ supplied_quantity
 
 ## ٧. تسجيل التوفير، والمال
 
-**٧٫١ العملية إلزامها ثلاثة:** الكمية، والقيمة، وطريقة الدفع. والملاحظة اختيارية. والكمية
-مسقوفةٌ بالمتبقي — فائضٌ عن المطلوب ليس توفيراً لهذا النقص بل شراءٌ للمخزن، وبابه غير هذا الباب.
+**٧٫١ العملية إلزامها ثلاثة:** الكمية، والقيمة، وطريقة الدفع. والملاحظة اختيارية.
+
+**والكمية قد تزيد على المتبقي — بتأكيدٍ صريح.** *(قرار المالك، ٢٠٢٦-٠٩-٢٦.)* كان السقف بالمتبقي،
+فكان من اشترى كيس ٣٠ كجم لنقصٍ من ٢٠ يُجبَر على تسجيل الشراء الواحد مرتين من بابين. الآن:
+
+- الكمية كلها (٣٠) تدخل المخزن بحركةٍ واحدة وطبقة تكلفةٍ واحدة بسعر `amount ÷ quantity`؛
+- النقص يحتسب منها ما كان ناقصاً فقط (٢٠) فيكتمل، والباقي (١٠) يُحفظ على صفّ التوفير في
+  `surplus_quantity` — مخزونٌ للشركة، لا يُنسب لأي صفقة استثمار، ولا يُضاف لفاتورة الزبون؛
+- `total_paid` يبقى المبلغ كاملاً، و`surplus_value` بجانبه حصّة الزائد منه («منها للمخزن»)؛
+- ما يُحتسب «موفَّراً» هو `quantity − surplus_quantity` — وهذا شرطٌ لا زينة: معادلة §٣
+  `required = missing + Σ supplied` لو قرأت الكمية كاملة لكبُر المطلوب بقدر الزائد وانفتح النقص من جديد.
+
+وتبقى ثلاثة رفوض، كلٌّ بجملته (`SupplyExceedsRemaining`): زائدٌ بلا `accept_surplus` — لأن أغلب
+«٣٠ مقابل متبقٍّ ٣» زلّة إصبع؛ وزائدٌ على نقصٍ لا مخزن خلفه — لا مكان يذهب إليه؛ ونقصٌ لم يبقَ منه
+شيء — الشراء كلّه للمخزن، وبابه أمر شراء. وعكسُ توفيرٍ فيه زائد يسحب الكمية كلها من المخزن، فإن
+كانت طلبيةٌ أخرى قد سحبت منه رُفض العكس كما يُرفض أي عكس.
 
 **٧٫٢ الدفتر يُضاف إليه ويُعكس ولا يُعدَّل.** صفُّ التوفير على شكل `order_payments` تماماً:
 تصحيحُه صفٌّ عكسيٌّ يشير إلى أصله، لا تعديلٌ على مكانه. وهذا ما يجعل «منع تكرار الخصم المالي»
@@ -321,6 +335,7 @@ required_quantity  =  order_item.shortage_quantity  +  Σ supplied_quantity
 | `required_quantity` | decimal(12,3) | |
 | `supplied_quantity` | decimal(12,3) افتراضي ٠ | كاتبه الوحيد `RecalculateShortageTotals` |
 | `total_paid` | decimal(14,2) افتراضي ٠ | نفسه |
+| `surplus_quantity` · `surplus_value` | decimal افتراضي ٠ | نفسه — «منها للمخزن». §٧٫١ |
 | `status` · `assigned_to_user_id` · `created_by_user_id` | | |
 | `description` | text nullable | |
 | `timestamps` + `softDeletes` | | `RULES.md` §١٠ |
@@ -345,7 +360,7 @@ required_quantity  =  order_item.shortage_quantity  +  Σ supplied_quantity
 
 ### `shortage_supplies`
 
-`shortage_id` · `kind` · `quantity` · `amount` · `payment_method` · `reference` · `receipt_path` ·
+`shortage_id` · `kind` · `quantity` · `surplus_quantity` (§٧٫١) · `amount` · `payment_method` · `reference` · `receipt_path` ·
 `notes` · `recorded_by_user_id` · `occurred_on` · `reversed_at` · `reversed_by_user_id` ·
 `reversal_of_id` · `timestamps` · `softDeletes`.
 

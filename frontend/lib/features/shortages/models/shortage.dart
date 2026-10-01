@@ -241,6 +241,11 @@ abstract class Shortage with _$Shortage {
     @JsonKey(name: 'remaining_quantity') required String remainingQuantity,
     @JsonKey(name: 'total_paid') required String totalPaid,
 
+    /// «منها للمخزن» — what was bought beyond the shortage and went to the shelf as company
+    /// stock, and its share of [totalPaid]. [totalPaid] still holds the whole payment.
+    @JsonKey(name: 'surplus_quantity') @Default('0.000') String surplusQuantity,
+    @JsonKey(name: 'surplus_value') @Default('0.00') String surplusValue,
+
     @JsonKey(unknownEnumValue: ShortageStatus.unknown) required ShortageStatus status,
     @JsonKey(name: 'status_label') required String statusLabel,
     @JsonKey(name: 'is_final') @Default(false) bool isFinal,
@@ -320,6 +325,9 @@ abstract class Shortage with _$Shortage {
   /// the server pads to is not this screen's business — and a figure it cannot read counts as
   /// outstanding, which is the safer of the two mistakes.
   bool get isOutstanding => (double.tryParse(remainingQuantity) ?? 1) > 0;
+
+  /// Whether anything was bought beyond the shortage — what draws «منها للمخزن».
+  bool get hasSurplus => (double.tryParse(surplusQuantity) ?? 0) > 0;
 
   /// Whether a person may still move it. An empty list is the server saying «nothing from here».
   bool get canChangeStatus => availableTransitions.isNotEmpty;

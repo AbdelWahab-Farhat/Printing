@@ -44,6 +44,17 @@ class RecordShortageSupplyRequest extends FormRequest
         if (! $this->has('occurred_on')) {
             $this->merge(['occurred_on' => now()->toDateString()]);
         }
+
+        // The form is multipart whenever a receipt rides along, and multipart has no booleans —
+        // «true» arrives as a string the `boolean` rule refuses. Left as it came when it is not
+        // a boolean in any spelling, so the rule still names the field.
+        if ($this->has('accept_surplus')) {
+            $this->merge(['accept_surplus' => filter_var(
+                $this->input('accept_surplus'),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            ) ?? $this->input('accept_surplus')]);
+        }
     }
 
     /**
@@ -91,6 +102,10 @@ class RecordShortageSupplyRequest extends FormRequest
              * would have to re-derive `Shortage::isStockable()` in a second place.
              */
             'warehouse_id' => ['nullable', 'integer', 'exists:warehouses,id'],
+
+            // «الزائد يذهب للمخزن». Only read when the quantity is bigger than what is missing,
+            // and that comparison is the domain's, under its lock — see `RecordShortageSupply`.
+            'accept_surplus' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -114,6 +129,7 @@ class RecordShortageSupplyRequest extends FormRequest
             'receipt.mimetypes' => 'الواصل يجب أن يكون ملف PDF أو صورة',
             'receipt.mimes' => 'الواصل يجب أن يكون بصيغة PDF أو JPG أو PNG أو WEBP',
             'receipt.max' => 'حجم الواصل أكبر من المسموح',
+            'accept_surplus.boolean' => 'تأكيد إدخال الزائد للمخزن غير صالح',
         ];
     }
 

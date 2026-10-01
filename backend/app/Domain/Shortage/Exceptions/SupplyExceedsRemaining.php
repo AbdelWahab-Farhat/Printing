@@ -7,22 +7,56 @@ namespace App\Domain\Shortage\Exceptions;
 use App\Support\Exceptions\DomainException;
 
 /**
- * More came back than was ever missing.
+ * More came back than was missing, and the extra has not been accepted.
  *
- * Refused rather than accepted and reported, for the reason `PaymentExceedsRemaining` gives: the
- * ordinary cause is a slipped keystroke while somebody is still standing at the counter, and the
- * moment to catch it is then.
+ * **A surplus is allowed — on purpose, and only on purpose.** Buying a thirty-kilo sack against a
+ * twenty-kilo shortage is ordinary, and the whole sack goes onto the shelf with the extra ten as
+ * company stock — see `RecordShortageSupply`. What this refuses is the same number arriving
+ * *without* the employee having said so, because the ordinary cause of a thirty against a
+ * remainder of three is still a slipped keystroke while somebody is standing at the counter, and
+ * the moment to catch it is then — the reason `PaymentExceedsRemaining` gives.
  *
- * **A surplus is a real thing that happens — it is simply not this.** Buying thirty kilos to
- * cover a shortage of twenty is a purchase for the shelf, and its door is a purchase order, where
- * it becomes stock with a cost layer. Letting it in here would put ten kilos of somebody's
- * inventory inside an order's shortage that no order was ever short of.
+ * And two cases where no confirmation helps: a shortage with no shelf behind it, where the extra
+ * would have nowhere to go, and one with nothing left to supply at all.
  */
 final class SupplyExceedsRemaining extends DomainException
 {
+    /** The extra was not confirmed. The message names it, so the screen can offer to send it. */
     public static function make(string $quantity, string $remaining): self
     {
-        return new self("الكمية ({$quantity}) أكبر من المتبقي من النقص ({$remaining})");
+        $surplus = bcsub($quantity, $remaining, 3);
+
+        return new self(
+            "الكمية ({$quantity}) أكبر من المتبقي من النقص ({$remaining}) — "
+            ."أكّد إدخال الزائد ({$surplus}) للمخزن",
+        );
+    }
+
+    /**
+     * The extra has nowhere to go.
+     *
+     * A shortage written down for something the warehouse does not hold posts no stock, so the
+     * part beyond the remainder would be money for goods recorded nowhere. See
+     * `Shortage::isStockable()`.
+     */
+    public static function nothingToHoldTheSurplus(string $quantity, string $remaining): self
+    {
+        return new self(
+            "الكمية ({$quantity}) أكبر من المتبقي من النقص ({$remaining}) — "
+            .'وهذا النقص ليس صنفاً في المخزون ليُدخَل الزائد إليه',
+        );
+    }
+
+    /**
+     * Nothing is missing any more, so none of it would count.
+     *
+     * Reachable only on a shortage the totals have met but a person has not closed — «مكتمل» is
+     * refused earlier, by `ShortageIsClosed`. An arrival here would be all surplus, and a whole
+     * purchase for the shelf belongs on a purchase order.
+     */
+    public static function nothingRemains(): self
+    {
+        return new self('لم يتبقَّ شيء من هذا النقص — سجّل الشراء على أمر شراء');
     }
 
     /**

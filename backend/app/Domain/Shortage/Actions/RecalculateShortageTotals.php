@@ -12,8 +12,8 @@ use App\Domain\Shortage\Support\Money;
 /**
  * Restates what has been supplied and what it cost, and closes the shortage when nothing is left.
  *
- * **The only writer of `supplied_quantity`, `total_paid` and «مكتمل».** All three are derived
- * from `shortage_supplies`, and deriving them in one place is what keeps the cache and the ledger
+ * **The only writer of `supplied_quantity`, `total_paid` and «مكتمل»** — and of the surplus pair
+ * beside them, «منها للمخزن». All of them are derived from `shortage_supplies`, and deriving them in one place is what keeps the cache and the ledger
  * from coming apart — the `RecalculateOrderPayments` arrangement, for the same reason.
  *
  * **Restated from the ledger, never adjusted by a delta.** Adding the new row's quantity to the
@@ -41,6 +41,8 @@ final class RecalculateShortageTotals
     public function __invoke(Shortage $shortage): Shortage
     {
         $paid = '0';
+        $surplus = '0.000';
+        $surplusValue = '0';
 
         foreach ($shortage->liveSupplies() as $supply) {
             /** @var ShortageSupply $supply */
@@ -48,13 +50,20 @@ final class RecalculateShortageTotals
             // for on a purchase order, and counting a zero for them here is harmless while
             // counting anything else would be a purchase nobody made.
             $paid = bcadd($paid, (string) ($supply->amount ?? '0'), 8);
+
+            // «منها للمخزن»: what went to the shelf beyond the shortage, and its share of the
+            // money. `total_paid` above keeps the whole payment — the sack was bought whole.
+            $surplus = bcadd($surplus, (string) $supply->surplus_quantity, 3);
+            $surplusValue = bcadd($surplusValue, $supply->surplusValue(), 8);
         }
 
         $shortage->forceFill([
             // Through the model's own definition, so this and the sync cannot come to different
             // answers about what has come back — see `liveSuppliedQuantity()`.
             'supplied_quantity' => $shortage->liveSuppliedQuantity(),
+            'surplus_quantity' => $surplus,
             'total_paid' => Money::round($paid),
+            'surplus_value' => Money::round($surplusValue),
         ]);
 
         $shortage->forceFill(['status' => $this->statusFor($shortage)])->save();

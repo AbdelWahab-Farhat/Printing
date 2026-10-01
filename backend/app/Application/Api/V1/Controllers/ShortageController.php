@@ -196,14 +196,19 @@ class ShortageController extends Controller
      * Record a supply
      *
      * «تسجيل توفير» — the quantity that came back, what was paid for it, and how. All three are
-     * required, and the quantity may not exceed what is left.
+     * required.
+     *
+     * A quantity bigger than what is left is refused unless `accept_surplus` is true. With it, the
+     * whole quantity goes onto the shelf, only what was missing counts toward the shortage, and
+     * the rest is published as `surplus_quantity` — ordinary company stock, bought at the same
+     * price. A shortage with no shelf behind it refuses the extra either way.
      *
      * Partial is ordinary: twenty kilos of a thirty-kilo shortage leaves it open with ten
      * remaining. The shortage closes itself, and only closes itself, when the remainder reaches
      * zero.
      *
      * On a shortage that came from an order, this also puts the goods back on the customer's
-     * invoice — the quantity is subtracted from the line's shortage, which is what
+     * invoice — the quantity (without any surplus) is subtracted from the line's shortage, which is what
      * `OrderItem::billableQuantity()` reads. An order whose lines have already closed, or that
      * has been archived, keeps its invoice as it stands; the purchase is recorded either way.
      */

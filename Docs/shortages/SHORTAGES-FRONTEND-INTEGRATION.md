@@ -144,6 +144,9 @@ without stripping anything.
   "supplied_quantity": "20.000",
   "remaining_quantity": "10.000",
   "total_paid": "500.00",
+  // «منها للمخزن» — bought beyond the shortage, now company stock. §٥٫١.
+  "surplus_quantity": "0.000",
+  "surplus_value": "0.00",
 
   "status": "searching", "status_label": "جاري البحث",
   "is_final": false,
@@ -194,6 +197,8 @@ hundred ledger rows.
   "id": 77, "shortage_id": 41,
   "kind": "purchased", "kind_label": "شراء",
   "quantity": "20.000",
+  // The part of `quantity` beyond what was missing. "0.000" on an entry that fitted.
+  "surplus_quantity": "0.000",
   "amount": "500.00", "method": "cash", "method_label": "كاش",
   "reference": null,
 
@@ -398,7 +403,8 @@ names a different problem and tells the person what to do instead.
 | --- | --- |
 | `status: "completed"` | «لا يُحوَّل النقص إلى «مكتمل» يدوياً — يكتمل وحده عند توفير كامل الكمية» |
 | an illegal move | «لا يمكن تحويل النقص من «…» إلى «…»» |
-| supply > remaining | «الكمية (…) أكبر من المتبقي من النقص (…)» — on field `quantity` |
+| supply > remaining, not confirmed | «الكمية (…) أكبر من المتبقي من النقص (…) — أكّد إدخال الزائد (…) للمخزن» — on field `quantity` |
+| supply > remaining, no shelf | «… وهذا النقص ليس صنفاً في المخزون ليُدخَل الزائد إليه» — on field `quantity` |
 | supply on a completed shortage | «النقص مكتمل — لا يمكن تسجيل توفير جديد عليه» |
 | editing an order-born shortage | «نقصٌ مصدره طلبية — تُعدَّل كميته من شاشة الطلبية لا من هنا» |
 | cutting the requirement below what was supplied | «الكمية المطلوبة (…) أقل مما تم توفيره فعلاً (…) — اعكس عملية التوفير أولاً» |
@@ -413,10 +419,24 @@ API refuses is a form that teaches people to distrust it:
 * `is_editable: false` greys the edit form on an order-born shortage.
 * `is_reversible` on each supply row is what puts a cancel action on it; the server has already
   decided that an arrival and a reversal are not candidates.
-* Cap the quantity box at `remaining_quantity` and show the remainder beside it.
+* Show the remainder beside the quantity box. When what is typed is bigger **and `is_stockable`
+  is true**, show «يذهب للمخزن …» and send `accept_surplus: true` once the employee confirms;
+  when `is_stockable` is false, refuse it in the form.
 
-**The ceiling is still checked on the server under a lock**, so the 422 can still arrive — two
-clerks recording the last ten kilos at once. Handle it; do not assume the cap prevented it.
+**The remainder is still checked on the server under a lock**, so the 422 can still arrive — two
+clerks recording the last ten kilos at once. Handle it; do not assume the form prevented it.
+
+### ٥٫١ The surplus — more bought than was missing
+
+```jsonc
+POST /api/v1/shortages/41/supplies
+{ "quantity": "40", "amount": "1000", "method": "cash", "warehouse_id": 3, "accept_surplus": true }
+```
+
+Against a remainder of 30: all 40 reach the shelf at 25 د.ل each, the shortage counts 30 and
+completes, and the row comes back with `surplus_quantity: "10.000"`. The shortage publishes
+`surplus_quantity` and `surplus_value` (250.00) beside a `total_paid` that is still the whole
+1000. Only the 30 is credited to the order line. A multipart form may send `"true"` as a string.
 
 ---
 

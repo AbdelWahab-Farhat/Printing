@@ -102,6 +102,8 @@ _Shortage _$ShortageFromJson(Map<String, dynamic> json) => _Shortage(
   suppliedQuantity: json['supplied_quantity'] as String,
   remainingQuantity: json['remaining_quantity'] as String,
   totalPaid: json['total_paid'] as String,
+  surplusQuantity: json['surplus_quantity'] as String? ?? '0.000',
+  surplusValue: json['surplus_value'] as String? ?? '0.00',
   status: $enumDecode(
     _$ShortageStatusEnumMap,
     json['status'],
@@ -172,6 +174,8 @@ Map<String, dynamic> _$ShortageToJson(_Shortage instance) => <String, dynamic>{
   'supplied_quantity': instance.suppliedQuantity,
   'remaining_quantity': instance.remainingQuantity,
   'total_paid': instance.totalPaid,
+  'surplus_quantity': instance.surplusQuantity,
+  'surplus_value': instance.surplusValue,
   'status': _$ShortageStatusEnumMap[instance.status]!,
   'status_label': instance.statusLabel,
   'is_final': instance.isFinal,

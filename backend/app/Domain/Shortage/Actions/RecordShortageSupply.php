@@ -117,24 +117,20 @@ final class RecordShortageSupply
                 throw ShortageIsClosed::make();
             }
 
-            // **Before the ceiling is even read, because the ceiling is in the wrong unit.** A
+            // **Before the remainder is even read, because the remainder is in the wrong unit.** A
             // shortage whose weight nobody has stated is still counted in the unit the customer
             // was billed in — the bags were missing, so there was nothing to weigh — and what is
             // about to be recorded was bought by the kilo. Subtracting one from the other is not
             // arithmetic anybody can do. See the exception, and `OrderItem::shortageWeightIsUnknown()`.
             $this->guardTheUnit($locked);
 
-            $remaining = $locked->remainingQuantity();
-
-            if (bccomp($data->quantity, $remaining, 3) > 0) {
-                throw SupplyExceedsRemaining::make($data->quantity, $remaining);
-            }
+            $surplus = $this->surplusOf($locked, $data);
 
             // **Before the money row, so the row can name it.** A failure here — no stock item
             // behind the size, a warehouse that has been retired — takes the whole transaction
             // with it, which is the point: a purchase recorded without the goods arriving is
             // exactly the state this action exists to make impossible.
-            $movement = $this->postArrival($locked, $data, $actor);
+            $movement = $this->postArrival($locked, $data, $surplus, $actor);
 
             $supply = $locked->supplies()->make();
 
@@ -147,6 +143,9 @@ final class RecordShortageSupply
                 // ledger and the cost layer alike; the invoice's share of it is apportioned on
                 // the order line and never stored here.
                 'quantity' => $data->quantity,
+                // The part of it that is shelf stock rather than supply — zero on every entry
+                // that fitted. See `ShortageSupply::appliedQuantity()`.
+                'surplus_quantity' => $surplus,
                 'amount' => $data->amount,
                 'method' => $data->method,
                 'reference' => $data->reference,
@@ -182,10 +181,51 @@ final class RecordShortageSupply
 
             ($this->recalculate)($locked->refresh());
 
-            $this->creditTheOrderLine($locked, $data->quantity, $actor);
+            // **What was missing, never the whole sack.** The extra was not short on the order,
+            // so it is not the customer's to be billed for.
+            $this->creditTheOrderLine($locked, $supply->appliedQuantity(), $actor);
 
             return $supply;
         });
+    }
+
+    /**
+     * How much of this arrival is beyond what is missing — `'0.000'` when it fits.
+     *
+     * **A surplus is accepted, but only when it was meant, and only where it can go.** The whole
+     * quantity still reaches the shelf through {@see postArrival()} at one price; this only
+     * decides how much of it the shortage counts. Three refusals, each its own sentence:
+     *
+     * - nothing left to supply — the arrival would be all surplus, which is a purchase order;
+     * - the extra not confirmed — the keystroke `SupplyExceedsRemaining` has always caught;
+     * - no shelf behind the shortage — the extra would be money for goods recorded nowhere.
+     *
+     * Read on the locked row, after the unit is known to be the shelf's: the remainder is only
+     * comparable to what was bought once both are counted in the same unit.
+     *
+     * @throws SupplyExceedsRemaining
+     */
+    private function surplusOf(Shortage $locked, ShortageSupplyData $data): string
+    {
+        $remaining = $locked->remainingQuantity();
+
+        if (bccomp($data->quantity, $remaining, 3) <= 0) {
+            return '0.000';
+        }
+
+        if (bccomp($remaining, '0', 3) <= 0) {
+            throw SupplyExceedsRemaining::nothingRemains();
+        }
+
+        if (! $locked->isStockable()) {
+            throw SupplyExceedsRemaining::nothingToHoldTheSurplus($data->quantity, $remaining);
+        }
+
+        if (! $data->acceptSurplus) {
+            throw SupplyExceedsRemaining::make($data->quantity, $remaining);
+        }
+
+        return bcsub($data->quantity, $remaining, 3);
     }
 
     /**
@@ -245,6 +285,7 @@ final class RecordShortageSupply
     private function postArrival(
         Shortage $shortage,
         ShortageSupplyData $data,
+        string $surplus,
         ?User $actor,
     ): ?StockMovement {
         if (! $shortage->isStockable()) {
@@ -282,7 +323,10 @@ final class RecordShortageSupply
             // The column's one meaning is «the order this belongs to» — null on a manual
             // shortage, which belongs to none.
             orderId: $shortage->order_id === null ? null : (int) $shortage->order_id,
-            notes: 'توفير نقص '.$shortage->code,
+            // The extra named on the movement too, so the stock ledger explains why more arrived
+            // than the shortage it cites was ever missing.
+            notes: 'توفير نقص '.$shortage->code
+                .(bccomp($surplus, '0', 3) > 0 ? " (منها {$surplus} زائد للمخزن)" : ''),
         ));
     }
 
