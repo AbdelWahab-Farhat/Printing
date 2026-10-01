@@ -64,8 +64,10 @@ class _OrderStatusView extends StatelessWidget {
         listener: (context, state) {
           // Only when there is a form underneath to keep. With nothing on screen the body
           // already shows the failure, and a snackbar over it would say it twice.
+          //
+          // وما عُلِّق تحت حقله لا يُقال مرةً ثانية في التوست — RULES §٥.
           if (state case OrderStatusFailure(:final failure)) {
-            if (state.order != null) context.showFailure(failure);
+            if (state.order != null && state.hasUnrenderedErrors) context.showFailure(failure);
           }
         },
         builder: (context, state) => switch (state) {
@@ -78,6 +80,7 @@ class _OrderStatusView extends StatelessWidget {
             order: state.order!,
             selected: state.selected,
             values: state.values,
+            errorOf: state.fieldError,
             isSubmitting: state.isSubmitting,
             canSubmit: state.canSubmit,
             onSelect: cubit.select,
@@ -95,6 +98,7 @@ class _Body extends StatelessWidget {
     required this.order,
     required this.selected,
     required this.values,
+    required this.errorOf,
     required this.isSubmitting,
     required this.canSubmit,
     required this.onSelect,
@@ -105,13 +109,16 @@ class _Body extends StatelessWidget {
   final Order order;
   final OrderTransition? selected;
   final Map<String, Object?> values;
+
+  /// رفضُ الخادم تحت كل حقل، باسم مفتاحه.
+  final String? Function(String key) errorOf;
   final bool isSubmitting;
   final bool canSubmit;
   final ValueChanged<OrderTransition> onSelect;
   final void Function(String key, Object? value) onValueChanged;
   final Future<void> Function() onSubmit;
 
-  /// The payment method answered on this move, if it asks for one — what «الحساب» narrows by.
+  /// طريقةُ الدفع المختارة في هذه الحركة، إن سألت عنها — وبها تضيق قائمةُ «الحساب».
   String? _methodIn(OrderTransition? transition) {
     final methodField = transition?.fields
         .where((f) => f.type == TransitionFieldType.paymentMethod)
@@ -150,6 +157,7 @@ class _Body extends StatelessWidget {
               _TransitionFields(
                 transition: transition,
                 values: values,
+                errorOf: errorOf,
                 customerId: order.customerId,
                 orderId: order.id,
                 paymentMethod: _methodIn(transition),
@@ -271,6 +279,7 @@ class _TransitionFields extends StatelessWidget {
   const _TransitionFields({
     required this.transition,
     required this.values,
+    required this.errorOf,
     required this.customerId,
     required this.orderId,
     required this.paymentMethod,
@@ -279,6 +288,7 @@ class _TransitionFields extends StatelessWidget {
 
   final OrderTransition? transition;
   final Map<String, Object?> values;
+  final String? Function(String key) errorOf;
   final int customerId;
   final int orderId;
 
@@ -304,22 +314,15 @@ class _TransitionFields extends StatelessWidget {
                 Padding(
                   key: ValueKey('${transition.status.wire}:${field.key}'),
                   padding: EdgeInsets.only(bottom: 16.h),
+                  // تغيّر الطريقة يمسح «الحساب» في الـ Cubit (`setValue`)، لا هنا.
                   child: TransitionFieldInput(
                     field: field,
                     value: values[field.key],
                     customerId: customerId,
                     paymentMethod: paymentMethod,
                     orderId: orderId,
-                    onChanged: (value) {
-                      onValueChanged(field.key, value);
-
-                      // An account picked for cash does not fit a transfer — the list
-                      // changes with the method, and so must the answer.
-                      if (field.type == TransitionFieldType.paymentMethod &&
-                          values[TransitionFieldInput.paymentAccountKey] != null) {
-                        onValueChanged(TransitionFieldInput.paymentAccountKey, null);
-                      }
-                    },
+                    errorText: errorOf(field.key),
+                    onChanged: (value) => onValueChanged(field.key, value),
                   ),
                 ),
             ],

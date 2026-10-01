@@ -238,13 +238,19 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
     // Nothing to record against — the form is not on screen yet.
     if (order == null) return;
 
-    emit(
-      OrderStatusState.ready(
-        order: order,
-        selected: selected,
-        values: {...state.values, key: value},
-      ),
-    );
+    final values = {...state.values, key: value};
+
+    // حسابٌ اختير للكاش لا يناسب الحوالة: قائمة «الحساب» تتغيّر مع الطريقة، فيتغيّر الجواب
+    // معها — لا يسافر حسابٌ قديم مع طريقةٍ جديدة.
+    final isMethod =
+        selected?.fields.any(
+          (field) => field.key == key && field.type == TransitionFieldType.paymentMethod,
+        ) ??
+        false;
+
+    if (isMethod && state.values[key] != value) values.remove(TransitionField.paymentAccountKey);
+
+    emit(OrderStatusState.ready(order: order, selected: selected, values: values));
   }
 
   /// Sends the move, and answers with the order the server sent back.

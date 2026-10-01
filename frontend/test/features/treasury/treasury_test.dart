@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/transition_field_input.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
@@ -47,15 +48,18 @@ void main() {
 
   group('the status screen', () {
     test('a treasury_account field from the server is drawn, not called unknown', () {
-      // Act
-      final field = TransitionField.fromJson({
+      // Arrange
+      final json = {
         'key': 'settlement_account_id',
         'type': 'treasury_account',
         'label': 'استُلم المال في',
         'options': [
           {'value': '2', 'label': 'المصرف'},
         ],
-      });
+      };
+
+      // Act
+      final field = TransitionField.fromJson(json);
 
       // Assert
       expect(field.type, TransitionFieldType.treasuryAccount);
@@ -88,9 +92,15 @@ void main() {
       );
       await tester.pump();
 
-      // Act
-      await tester.tap(find.text('مصرف علي'));
-      await tester.tap(find.text('تلقائي'));
+      // Act — الحسابات قائمةٌ منسدلة الآن، و«تلقائي» أول صفوفها.
+      await tester.tap(find.byType(AppDropdown<TransitionFieldOption>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('مصرف علي').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(AppDropdown<TransitionFieldOption>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تلقائي').last);
+      await tester.pumpAndSettle();
 
       // Assert
       expect(find.text('استُلم المال في (اختياري)'), findsOneWidget);
@@ -125,7 +135,7 @@ void main() {
       // Assert
       expect(find.text('تلقائي'), findsOneWidget);
       expect(find.text('المصرف'), findsNothing);
-      expect(find.text('اختر طريقة الدفع لتظهر حساباتها'), findsOneWidget);
+      expect(find.text('اختر طريقة الدفع لتظهر حساباتها'), findsNothing);
     });
 
     testWidgets('with cash picked, a payment offers only the accounts cash fits', (tester) async {
@@ -139,10 +149,13 @@ void main() {
               AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
             ],
             suggestedId: 1,
+            suggestedName: 'الخزنة الرئيسية',
           ),
         ),
       );
-      sl.registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(repository));
+      sl
+        ..registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(repository))
+        ..registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(repository));
       final reported = <Object?>[];
 
       await tester.pumpWidget(
@@ -157,13 +170,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      final automatic = find.text('تلقائي — الخزنة الرئيسية').evaluate().length;
 
       // Act
-      await tester.tap(find.text('خزنة فرع مصراتة'));
+      await tester.tap(find.byType(AppDropdown<AccountOption>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('خزنة فرع مصراتة').last);
+      await tester.pumpAndSettle();
 
       // Assert — no bank among them, and the pick still travels as the id the server reads
       expect(find.text('المصرف'), findsNothing);
-      expect(find.text('تلقائي — الخزنة الرئيسية'), findsOneWidget);
+      expect(automatic, 1);
       expect(reported, ['9']);
     });
   });
@@ -171,13 +188,14 @@ void main() {
   group('the account picker on a payment form', () {
     testWidgets('it steps aside when the treasury is not there', (tester) async {
       // Arrange — nothing registered, as in every older test of the payment sheet.
-      await tester.pumpWidget(
-        host(TreasuryAccountPicker(method: 'cash', value: null, onChanged: (_) {})),
-      );
+      final picker = TreasuryAccountPicker(method: 'cash', value: null, onChanged: (_) {});
+
+      // Act
+      await tester.pumpWidget(host(picker));
       await tester.pump();
 
       // Assert
-      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.byType(AppDropdown<AccountOption>), findsNothing);
     });
 
     testWidgets('it offers the accounts the method fits and names the automatic one', (
@@ -193,10 +211,13 @@ void main() {
               AccountOption(id: 7, name: 'مصرف علي', kindLabel: 'مصرف', isDefault: false),
             ],
             suggestedId: 7,
+            suggestedName: 'مصرف علي',
           ),
         ),
       );
-      sl.registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(repository));
+      sl
+        ..registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(repository))
+        ..registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(repository));
       int? picked = -1;
 
       await tester.pumpWidget(
@@ -209,12 +230,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      final automatic = find.text('تلقائي — مصرف علي').evaluate().length;
 
       // Act
-      await tester.tap(find.text('المصرف'));
+      await tester.tap(find.byType(AppDropdown<AccountOption>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('المصرف').last);
+      await tester.pumpAndSettle();
 
       // Assert — the server's pick is named on «تلقائي», so nobody has to guess where it lands
-      expect(find.text('تلقائي — مصرف علي'), findsOneWidget);
+      expect(automatic, 1);
       expect(picked, 2);
     });
   });
@@ -265,7 +290,15 @@ void main() {
           ),
         ),
       );
-      sl.registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(repository));
+      // الخادم يصرف من نقد المسجِّل أولاً، و`suggested_name` يسمّيه.
+      when(() => repository.accountOptions(method: 'cash', incoming: false)).thenAnswer(
+        (_) async => const Right<Failure, AccountOptions>(
+          AccountOptions(accounts: [], suggestedId: 1, suggestedName: 'الخزنة الرئيسية'),
+        ),
+      );
+      sl
+        ..registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(repository))
+        ..registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(repository));
       int? picked = -1;
 
       await tester.pumpWidget(
@@ -279,12 +312,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      final automatic = find.text('تلقائي — الخزنة الرئيسية').evaluate().length;
 
       // Act
-      await tester.tap(find.text('المصرف'));
+      await tester.tap(find.byType(AppDropdown<AccountOption>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('المصرف').last);
+      await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('تلقائي — الخزنة الرئيسية'), findsOneWidget);
+      expect(automatic, 1);
       expect(find.text('النورس'), findsNothing);
       expect(picked, 2);
     });
@@ -355,10 +392,20 @@ void main() {
     });
 
     test('money reads with its sign outside the digits', () {
+      // Arrange
+      const held = '1250.00';
+      const overdrawn = '-8450.50';
+      const moved = '50.00';
+
+      // Act
+      final heldText = treasuryMoney(held);
+      final overdrawnText = treasuryMoney(overdrawn);
+      final movedText = treasuryMoney(moved, signed: true);
+
       // Assert
-      expect(treasuryMoney('1250.00'), '1,250 د.ل');
-      expect(treasuryMoney('-8450.50'), '−8,450.5 د.ل');
-      expect(treasuryMoney('50.00', signed: true), '+50 د.ل');
+      expect(heldText, '1,250 د.ل');
+      expect(overdrawnText, '−8,450.5 د.ل');
+      expect(movedText, '+50 د.ل');
     });
   });
 }
