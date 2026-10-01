@@ -263,18 +263,21 @@ void main() {
     expect(find.text('9,157.9'), findsOneWidget);
   });
 
-  testWidgets('the coverage caveat is drawn when some value has no weight', (tester) async {
-    // Arrange — 92.2%: without this line the kilograms look wrong beside their own dinars
+  testWidgets('the coverage figure is drawn when some value has no weight, with no sentence', (
+    tester,
+  ) async {
+    // Arrange — 92.2%: without the figure the kilograms look wrong beside their own dinars
     stub();
 
     // Act
     await openTheBoard(tester);
 
     // Assert — «تغطية الوزن» was the label and nobody could read it; the figure is the share of
-    // the period's money that has a weight behind it, and the label now says so
+    // the period's money that has a weight behind it, and the label now says so. **والجملةُ التي
+    // كانت تشرحها تحتها أُزيلت** (2026-09-10، «لا أسطرَ شرحٍ تحت الأرقام») — الاسمُ يحمل المعنى.
     expect(find.text('من المبيعات لها وزن'), findsOneWidget);
     expect(find.text('92.2'), findsOneWidget);
-    expect(find.textContaining('تدخل في المال، ولا وزن لها'), findsOneWidget);
+    expect(find.textContaining('تدخل في المال، ولا وزن لها'), findsNothing);
   });
 
   testWidgets('the coverage caveat is absent when everything was weighed', (tester) async {

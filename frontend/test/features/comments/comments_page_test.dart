@@ -14,6 +14,10 @@ import 'package:dayaa/features/comments/usecases/add_comment.dart';
 import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
+import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
+import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
+import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +39,8 @@ import 'package:mocktail/mocktail.dart';
 ///
 /// Arrange - Act - Assert في كل اختبار.
 class _MockCommentRepository extends Mock implements CommentRepository {}
+
+class _MockNotificationsRepository extends Mock implements NotificationsRepository {}
 
 void main() {
   /// السجلّ الذي تتعلّق به كلّ ملاحظةٍ في هذا الملف — عميلٌ واحد، يُسمّى مرّة.
@@ -75,9 +81,18 @@ void main() {
 
     when(() => repository.comments(subject))
         .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
+    // فتحُ المحادثة يعلّمها مقروءة ويطفئ الجرس. يفشل هنا بصمت — كما تبتلعه الشاشة — فلا يحتاج
+    // الاختبارُ شارةَ الجرس، وهذا الملف عن المحادثة لا عن الشارة.
+    when(() => repository.markThreadRead(any()))
+        .thenAnswer((_) async => const Left(Failure.network(message: 'لا اتصال')));
 
     sl
       ..registerSingleton<Session>(session)
+      ..registerLazySingleton<MarkThreadRead>(() => MarkThreadRead(repository))
+      // الشاشة تقرأ الشارةَ لتضع فيها الرقم إن نجح التعليم — ولا تُطلب هنا إلا قراءتها.
+      ..registerLazySingleton<UnreadBadgeCubit>(
+        () => UnreadBadgeCubit(GetUnreadCount(_MockNotificationsRepository())),
+      )
       ..registerFactoryParam<CommentsCubit, CommentSubject, void>(
         (subject, _) => CommentsCubit(
           subject: subject,
