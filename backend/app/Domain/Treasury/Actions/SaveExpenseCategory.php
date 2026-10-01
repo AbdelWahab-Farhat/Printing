@@ -24,7 +24,8 @@ final class SaveExpenseCategory
         $category ??= new ExpenseCategory(['is_active' => true, 'requires_employee' => false]);
 
         if ($category->isSystem()) {
-            if (($values['is_active'] ?? true) === false) {
+            // بالقيمة لا بالهوية: `0` و`"0"` إطفاءٌ كما `false`، وقد يصل أيٌّ منها من غير الطلب.
+            if (array_key_exists('is_active', $values) && ! (bool) $values['is_active']) {
                 throw new AccountChangeRefused("تصنيف «{$category->name}» يعتمد عليه النظام ولا يُعطَّل", 'is_active');
             }
 

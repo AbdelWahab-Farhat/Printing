@@ -37,22 +37,18 @@ class ExpenseCategoryController extends Controller
 
     public function store(SaveExpenseCategoryRequest $request): JsonResponse
     {
-        /** @var array{name?: string, requires_employee?: bool, is_active?: bool, sort_order?: int} $values */
-        $values = $request->validated();
-
         return $this->created(
-            new ExpenseCategoryResource($this->treasury->saveCategory(null, $values)),
+            new ExpenseCategoryResource($this->treasury->saveCategory(null, $request->values())),
             'تمت إضافة التصنيف',
         );
     }
 
     public function update(SaveExpenseCategoryRequest $request, ExpenseCategory $category): JsonResponse
     {
-        /** @var array{name?: string, requires_employee?: bool, is_active?: bool, sort_order?: int} $values */
-        $values = $request->validated();
+        $saved = $this->treasury->saveCategory($category, $request->values());
 
         return $this->success(
-            new ExpenseCategoryResource($this->treasury->saveCategory($category, $values)),
+            new ExpenseCategoryResource($saved),
             'تم حفظ التصنيف',
         );
     }

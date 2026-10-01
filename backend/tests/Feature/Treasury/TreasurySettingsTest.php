@@ -11,6 +11,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\Models\Vendor;
@@ -363,5 +364,47 @@ class TreasurySettingsTest extends TestCase
         // Assert
         $allowed->assertOk();
         $refused->assertForbidden();
+    }
+
+    public function test_a_category_the_system_relies_on_stays_on_however_the_off_is_spelled(): void
+    {
+        // Arrange — «سلفة موظف» يعتمد عليها نموذجُ السلفة. قاعدةُ `boolean` تقبل 0 و"0" و false،
+        // والمقارنةُ بـ`=== false` كانت تُمرّر الأوليين.
+        [, $headers] = $this->owner();
+        $advance = ExpenseCategory::query()->where('code', ExpenseCategory::ADVANCE)->firstOrFail();
+        $switchOff = fn (mixed $off) => $this->putJson(
+            "/api/v1/treasury/expense-categories/{$advance->id}",
+            ['is_active' => $off],
+            $headers,
+        );
+
+        // Act
+        $asNumber = $switchOff(0);
+        $asText = $switchOff('0');
+        $asBoolean = $switchOff(false);
+
+        // Assert
+        $asNumber->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $asText->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $asBoolean->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $this->assertTrue($advance->refresh()->is_active);
+    }
+
+    public function test_a_category_people_added_switches_off_with_a_zero(): void
+    {
+        // Arrange
+        [, $headers] = $this->owner();
+        $rent = ExpenseCategory::query()->where('name', 'إيجار')->firstOrFail();
+
+        // Act
+        $response = $this->putJson(
+            "/api/v1/treasury/expense-categories/{$rent->id}",
+            ['is_active' => '0'],
+            $headers,
+        );
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.is_active', false);
+        $this->assertFalse($rent->refresh()->is_active);
     }
 }
