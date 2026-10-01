@@ -16,7 +16,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// «إعدادات المالية» — everything the owner can decide about the treasury, in one place.
 /// TREASURY-DESIGN §١٦.
 ///
-/// Seven sections, each saved the moment it changes:
+/// Six sections, each saved the moment it changes:
 ///
 /// 1. **القواعد** — own account first, overdrafts, the withdrawal reason, the carrier's cut, and
 ///    the lock date.
@@ -26,7 +26,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// 5. **التجميع عند التسوية** — per kind: on or off, where to, and which accounts keep their money
 ///    (§١٨).
 /// 6. **الحسابات** — every account, including the switched-off ones; tap to edit.
-/// 7. **تصنيفات المصروفات** — add, rename, switch off.
+///
+/// تصنيفاتُ المصروفات كانت القسمَ السابع، وصارت شاشةً وحدها تحت «المالية» في الدرج.
 class TreasurySettingsPage extends StatelessWidget {
   const TreasurySettingsPage({super.key});
 
@@ -39,8 +40,6 @@ class TreasurySettingsPage extends StatelessWidget {
         getAccounts: sl(),
         saveAccount: sl(),
         setSettlesInto: sl(),
-        getCategories: sl(),
-        saveCategory: sl(),
       )..load(),
       child: Scaffold(
         appBar: AppBar(title: const Text('إعدادات المالية')),
@@ -286,54 +285,6 @@ class _Loaded extends StatelessWidget {
             ),
           ),
 
-          const _Heading('تصنيفات المصروفات'),
-          for (final category in state.categories)
-            SwitchListTile(
-              key: ValueKey('category-${category.id}'),
-              contentPadding: EdgeInsets.zero,
-              value: category.isActive,
-              title: Text(category.name),
-              subtitle: Text(
-                [
-                  if (category.isSystem) 'يعتمد عليه النظام',
-                  if (category.requiresEmployee) 'يتطلب موظفاً',
-                ].join(' · '),
-              ),
-              secondary: IconButton(
-                tooltip: 'إعادة التسمية',
-                icon: Icon(AppIcons.edit),
-                onPressed: () async {
-                  final name = await _askName(
-                    context,
-                    title: 'تعديل التصنيف',
-                    initial: category.name,
-                  );
-
-                  if (name != null && context.mounted) {
-                    await _run(context, () => cubit.saveCategory(id: category.id, name: name));
-                  }
-                },
-              ),
-              // The two categories the system depends on cannot be switched off.
-              onChanged: category.isSystem
-                  ? null
-                  : (v) => _run(
-                      context,
-                      () => cubit.saveCategory(id: category.id, name: category.name, isActive: v),
-                    ),
-            ),
-          SizedBox(height: 8.h),
-          AppButton.tonal(
-            label: 'تصنيف جديد',
-            icon: AppIcons.add,
-            onPressed: () async {
-              final name = await _askName(context, title: 'تصنيف جديد');
-
-              if (name != null && context.mounted) {
-                await _run(context, () => cubit.saveCategory(name: name));
-              }
-            },
-          ),
         ],
       ),
     );
@@ -565,55 +516,4 @@ Future<T?> _pick<T>(
       ),
     ),
   );
-}
-
-Future<String?> _askName(BuildContext context, {required String title, String initial = ''}) {
-  return showDialog<String>(
-    context: context,
-    builder: (_) => _NameDialog(title: title, initial: initial),
-  );
-}
-
-/// The controller lives and dies with the dialog, not with whoever opened it.
-class _NameDialog extends StatefulWidget {
-  const _NameDialog({required this.title, required this.initial});
-
-  final String title;
-  final String initial;
-
-  @override
-  State<_NameDialog> createState() => _NameDialogState();
-}
-
-class _NameDialogState extends State<_NameDialog> {
-  late final _name = TextEditingController(text: widget.initial);
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _name,
-        autofocus: true,
-        decoration: const InputDecoration(labelText: 'الاسم'),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('إلغاء')),
-        FilledButton(
-          onPressed: () {
-            final text = _name.text.trim();
-
-            if (text.isNotEmpty) Navigator.of(context).pop(text);
-          },
-          child: const Text('حفظ'),
-        ),
-      ],
-    );
-  }
 }

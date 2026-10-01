@@ -200,11 +200,20 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'الحسابات والخزائن',
           route: Routes.treasury,
         ),
-        // Defaults, rules, the lock date, where custody settles, categories — the owner's.
+        // Defaults, rules, the lock date, where custody settles — the owner's.
         _Link(
           icon: _LinkIcon.settings,
           label: 'إعدادات المالية',
           route: Routes.treasurySettings,
+          permission: AppPermission.manageTreasury,
+        ),
+        // **صفٌّ وحده، لا قسمٌ في آخر الإعدادات** — طلب المستخدم، ٢٠٢٦-١٠-٠١. كان تحت الحسابات
+        // فلا يُبلغ إلا بتمريرٍ طويل، وهو قائمةٌ تُدار لا قاعدةٌ تُضبط. خلف الحقّ نفسه:
+        // `treasury.manage` هو ما يكتب التصنيفات على الخادم.
+        _Link(
+          icon: _LinkIcon.expense,
+          label: 'تصنيفات المصروفات',
+          route: Routes.expenseCategories,
           permission: AppPermission.manageTreasury,
         ),
       ],
@@ -497,10 +506,12 @@ enum _LinkIcon {
   employees,
   roles,
   orderArchive,
-  treasury;
+  treasury,
+  expense;
 
   IconData get data => switch (this) {
     _LinkIcon.treasury => AppIcons.treasury,
+    _LinkIcon.expense => AppIcons.expense,
     _LinkIcon.products => AppIcons.products,
     _LinkIcon.productCategory => AppIcons.productCategory,
     _LinkIcon.businessField => AppIcons.businessField,

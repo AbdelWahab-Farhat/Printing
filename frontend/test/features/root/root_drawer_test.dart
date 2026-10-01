@@ -28,6 +28,7 @@ void main() {
     'roles.manage',
     'orders.archive.view',
     'design_tickets.view',
+    'treasury.manage',
   ];
 
   /// Every screen the drawer can reach — the router has to know them, because tapping a row
@@ -48,6 +49,9 @@ void main() {
     '/tools/qr',
     '/orders/archive',
     '/tools/bag-preview',
+    '/treasury',
+    '/treasury/settings',
+    '/treasury/expense-categories',
   ];
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -410,5 +414,38 @@ void main() {
     // Assert
     expect(find.text('الصندوق الاستثماري'), findsOneWidget);
     expect(find.text('إعدادات الاستثمار'), findsNothing);
+  });
+
+  testWidgets('تصنيفات المصروفات is a row of its own under المالية, beside the settings', (
+    tester,
+  ) async {
+    // Arrange — كانت قسماً في آخر «إعدادات المالية»؛ صارت باباً وحدها.
+    await arrange(allGrants);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تصنيفات المصروفات'));
+    await tester.pumpAndSettle();
+
+    // Assert — the drawer closed behind it, and no route was missing.
+    expect(tester.takeException(), isNull);
+    expect(find.text('تصنيفات المصروفات'), findsNothing);
+  });
+
+  testWidgets('without treasury.manage, المالية offers the accounts alone', (tester) async {
+    // Arrange — الإعداداتُ والتصنيفاتُ كلاهما خلف `treasury.manage`.
+    await arrange([]);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('الحسابات والخزائن'), findsOneWidget);
+    expect(find.text('إعدادات المالية'), findsNothing);
+    expect(find.text('تصنيفات المصروفات'), findsNothing);
   });
 }
