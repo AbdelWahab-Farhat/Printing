@@ -11,6 +11,9 @@ import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.da
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+/// ما يحفظ الحساب — Cubit اللوحة أو صفحة الحساب أو الإعدادات. null عند النجاح.
+///
+/// [notes] الفارغة (`''`) تمسح الملاحظات على الخادم، والغائبة (`null`) تتركها كما هي.
 typedef SaveAccountCallback =
     Future<Failure?> Function({
       required String name,
@@ -21,11 +24,11 @@ typedef SaveAccountCallback =
       String? notes,
     });
 
-/// A new account — «مصرف علي»، a second bank, a driver's custody — or an edit of one.
+/// حسابٌ جديد — «مصرف علي»، مصرفٌ ثانٍ، عهدةُ مندوب — أو تعديلُ قائم.
 ///
-/// **The kind is chosen once.** It decides which payments may land in the account, so the edit
-/// form shows it and does not offer it. And the default of a kind is replaced, never unset: the
-/// switch is offered only to make an account the default.
+/// **النوع يُختار مرةً واحدة.** هو ما يقرّر أيُّ الدفعات تنزل في الحساب، فنموذج التعديل يُظهره
+/// ولا يعرضه للتغيير. **وافتراضيُّ النوع يُستبدل ولا يُنزع**: المفتاح يُعرض لجعل الحساب
+/// افتراضياً فقط.
 Future<void> showTreasuryAccountSheet({
   required BuildContext context,
   required SaveAccountCallback onSubmit,
@@ -60,6 +63,18 @@ class _AccountFormState extends State<_AccountForm> {
   AuthUser? _holder;
   bool _saving = false;
 
+  /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها.
+  Failure? _refusal;
+
+  static const _rendered = {
+    'name',
+    'kind',
+    'holder_user_id',
+    'is_default',
+    'is_active',
+    'notes',
+  };
+
   bool get _isNew => widget.account == null;
 
   static const _kinds = [
@@ -93,27 +108,37 @@ class _AccountFormState extends State<_AccountForm> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _refusal = null;
+    });
 
     final notes = _notes.text.trim();
     final account = widget.account;
 
+    // ملاحظاتٌ كانت ومُسحت: غيابُ المفتاح كان يُبقيها، فتُرسل فارغةً صراحةً — والخادم يقرأ
+    // الفارغة مسحاً (`AccountData::hasNotes`).
+    final cleared = !_isNew && notes.isEmpty && (account?.notes ?? '').trim().isNotEmpty;
+
     final failure = await widget.onSubmit(
       name: _name.text.trim(),
       kind: _isNew ? _kind.wire : null,
-      // Sent only when it changes something: an unchanged default is not re-asserted.
+      // يُرسل حين يغيّر شيئاً فقط: افتراضيٌّ لم يتغيّر لا يُعاد تأكيده.
       isDefault: _isDefault && !(account?.isDefault ?? false) ? true : null,
       isActive: _isNew || _isActive == account?.isActive ? null : _isActive,
       holderUserId: _holder?.id,
-      notes: notes.isEmpty ? null : notes,
+      notes: notes.isEmpty ? (cleared ? '' : null) : notes,
     );
 
     if (!mounted) return;
 
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _refusal = failure;
+    });
 
     if (failure != null) {
-      context.showError(failure.message, details: failure.details);
+      if (failure.hasErrorsBeyond(_rendered)) context.showFailure(failure);
 
       return;
     }
@@ -164,10 +189,12 @@ class _AccountFormState extends State<_AccountForm> {
                 controller: _name,
                 label: 'اسم الحساب',
                 prefixIcon: AppIcons.treasury,
+                errorText: _refusal?.fieldError('name'),
                 validator: (value) => (value ?? '').trim().isEmpty ? 'اسم الحساب مطلوب' : null,
               ),
               SizedBox(height: 16.h),
 
+              // النوع على التعديل معروضٌ لا معروضٌ للتغيير — الحقل نفسه معطّلاً، بلا سطرٍ يشرح.
               if (_isNew)
                 AppDropdown<AccountKind>(
                   value: _kind,
@@ -175,6 +202,7 @@ class _AccountFormState extends State<_AccountForm> {
                   labelOf: _kindLabel,
                   iconOf: accountKindIcon,
                   label: 'النوع',
+                  errorText: _refusal?.fieldError('kind'),
                   onChanged: (kind) {
                     if (kind == null) return;
 
@@ -185,37 +213,46 @@ class _AccountFormState extends State<_AccountForm> {
                   },
                 )
               else
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(accountKindIcon(_kind)),
-                  title: Text(account!.kindLabel),
-                  subtitle: const Text('نوع الحساب لا يتغيّر بعد إنشائه'),
+                AppDropdown<AccountKind>(
+                  value: _kind,
+                  items: [_kind],
+                  labelOf: (_) => account!.kindLabel,
+                  iconOf: accountKindIcon,
+                  label: 'النوع',
+                  enabled: false,
+                  onChanged: (_) {},
                 ),
-              SizedBox(height: 8.h),
+              SizedBox(height: 16.h),
 
               AppButton.tonal(
                 label: holderName == null ? 'صاحب الحساب (اختياري)' : 'باسم $holderName',
                 icon: AppIcons.employees,
                 onPressed: _pickHolder,
               ),
+              if (_refusal?.fieldError('holder_user_id') case final error?)
+                TreasuryFieldError(error),
               SizedBox(height: 8.h),
 
-              if (canBeDefault)
+              if (canBeDefault) ...[
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _isDefault,
                   title: const Text('الحساب الافتراضي لنوعه'),
-                  subtitle: const Text('تنزل فيه الدفعات حين لا يُختار حساب'),
                   onChanged: (value) => setState(() => _isDefault = value),
                 ),
-              if (!_isNew && !account!.isDefault && !account.isSystem)
+                if (_refusal?.fieldError('is_default') case final error?)
+                  TreasuryFieldError(error),
+              ],
+              if (!_isNew && !account!.isDefault && !account.isSystem) ...[
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _isActive,
                   title: const Text('مفعّل'),
-                  subtitle: const Text('المعطَّل لا يظهر في الاختيار ولا يستقبل عمليات يدوية'),
                   onChanged: (value) => setState(() => _isActive = value),
                 ),
+                if (_refusal?.fieldError('is_active') case final error?)
+                  TreasuryFieldError(error),
+              ],
               SizedBox(height: 8.h),
 
               AppTextField(
@@ -224,10 +261,11 @@ class _AccountFormState extends State<_AccountForm> {
                 prefixIcon: AppIcons.notes,
                 maxLines: 2,
                 textInputAction: TextInputAction.done,
+                errorText: _refusal?.fieldError('notes'),
               ),
               SizedBox(height: 24.h),
 
-              AppButton(label: 'حفظ', isLoading: _saving, onPressed: _saving ? null : _submit),
+              AppButton(label: 'حفظ', isLoading: _saving, onPressed: _submit),
               SizedBox(height: 8.h),
             ],
           ),
