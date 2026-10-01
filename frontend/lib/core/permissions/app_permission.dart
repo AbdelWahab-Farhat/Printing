@@ -186,6 +186,14 @@ enum AppPermission {
   /// roles screen lists every permission by name.
   recordPartialDelivery('orders.partial_delivery', 'تسجيل تسليم جزئي — يُنقص الفاتورة'),
   settleOrders('orders.status.settled', 'تسوية مبلغ الطلبية'),
+
+  /// «تراجع عن التسوية» و«تراجع عن التسليم» (PR #12).
+  ///
+  /// **التطبيق لا يسألهما**: الخادم يرسل `can_unsettle` و`undo_delivery_to` على الطلبية لمن
+  /// يملكهما، والشاشة ترسم ما تُعطى. هما هنا لأن شاشة الأدوار تعرض كل صلاحيةٍ باسمها، ولأن
+  /// العقد مع الخادم حالةً بحالة — `permission_contract_test`.
+  unsettleOrders('orders.status.unsettle', 'التراجع عن تسوية الطلبية'),
+  undoOrderDelivery('orders.status.undo_delivery', 'التراجع عن تسليم الطلبية'),
   recordCourierReturn(
     'orders.status.returned_courier',
     'تسجيل راجع لدى المندوب',
