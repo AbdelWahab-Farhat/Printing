@@ -2,16 +2,17 @@ import 'dart:async';
 
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// The treasury dashboard: every account with its balance, whose the money is, and what the
-/// shelves are worth — TREASURY-DESIGN §٩.
+/// لوحة الحسابات: كل حسابٍ برصيده، ولمن المال، وما تساويه الرفوف — TREASURY-DESIGN §٩.
 ///
-/// **The two cards are asked for only when the reader may see the whole treasury.** Somebody
-/// reading the accounts in their own name gets their own balance and nothing about the shop's.
-/// And a card that fails to load leaves the accounts standing: they are the screen, the cards
-/// are what sits under it.
+/// **البطاقتان لا تُطلبان إلا لمن يرى الخزينة كلها.** من يقرأ الحسابات التي باسمه يرى رصيده
+/// ولا شيء عن مال المحل. وبطاقةٌ تفشل لا تُسقط الحسابات: الحسابات هي الشاشة، والبطاقتان تحتها.
+///
+/// **إعادة التحميل لا تمحو ما على الشاشة.** فشلُها يُبقي آخر ما قُرئ ويحمل الفشل في
+/// [TreasuryLoaded.refreshFailure] ليقوله توست، والبطاقتان تبقيان في مكانهما حتى يصل جديدهما.
 class TreasuryCubit extends Cubit<TreasuryState> {
   TreasuryCubit({
     required GetTreasuryAccounts getAccounts,
@@ -32,34 +33,57 @@ class TreasuryCubit extends Cubit<TreasuryState> {
   final RecordTreasuryOperation _recordOperation;
   final SaveTreasuryAccount _saveAccount;
 
+  /// عدّادٌ يحمي من الرد المتأخر: تحميلٌ بدأ قبل آخرَ لا يكتب فوق جوابه — RULES §٤.
+  int _requestId = 0;
+
   Future<void> load() async {
-    if (state is! TreasuryLoaded) emit(const TreasuryLoading());
+    final requestId = ++_requestId;
+    final previous = switch (state) {
+      final TreasuryLoaded loaded => loaded,
+      _ => null,
+    };
+
+    // الدائرة لمن لا شيء على شاشته — وأولُ تحميلٍ يبدأ عليها أصلاً.
+    if (state is TreasuryFailed) emit(const TreasuryLoading());
 
     final result = await _getAccounts();
 
-    if (isClosed) return;
+    if (isClosed || requestId != _requestId) return;
 
-    await result.fold((failure) async => emit(TreasuryFailed(failure)), (accounts) async {
-      emit(TreasuryLoaded(accounts: accounts));
+    final accounts = result.fold<TreasuryAccounts?>((failure) {
+      emit(previous == null ? TreasuryFailed(failure) : previous.failedRefresh(failure));
 
-      if (!accounts.canViewAll) return;
+      return null;
+    }, (accounts) => accounts);
 
-      final (ownership, inventory) = await (_getOwnership(), _getInventoryValue()).wait;
+    if (accounts == null) return;
 
-      if (isClosed || state is! TreasuryLoaded) return;
+    // من فقد صلاحية الكل منذ آخر قراءة لا يبقى أمامه رقمٌ عن مال المحل.
+    final ownership = accounts.canViewAll ? previous?.ownership : null;
+    final inventory = accounts.canViewAll ? previous?.inventory : null;
 
-      emit(
-        TreasuryLoaded(
-          accounts: accounts,
-          ownership: ownership.fold((_) => null, (value) => value),
-          inventory: inventory.fold((_) => null, (value) => value),
-        ),
-      );
-    });
+    emit(TreasuryLoaded(accounts: accounts, ownership: ownership, inventory: inventory));
+
+    if (!accounts.canViewAll) return;
+
+    final (owners, shelves) = await (_getOwnership(), _getInventoryValue()).wait;
+
+    if (isClosed || requestId != _requestId) return;
+
+    emit(
+      TreasuryLoaded(
+        accounts: accounts,
+        // بطاقةٌ فشلت تُبقي آخر ما قالته — وفي أول تحميلٍ لا تُرسم.
+        ownership: owners.fold((_) => ownership, (value) => value),
+        inventory: shelves.fold((_) => inventory, (value) => value),
+      ),
+    );
   }
 
-  /// One hand operation from the dashboard. Null on success, the failure otherwise — the form
-  /// shows it and stays open.
+  /// عمليةٌ يدوية من اللوحة. null عند النجاح، والرفضُ غير ذلك — النموذج يعرضه ويبقى مفتوحاً.
+  ///
+  /// **النجاح يعيد قراءة اللوحة**: المجموع ورصيد الطرف الآخر في التحويل و«مال الشركة» حساباتُ
+  /// الخادم، لا يرقّعها التطبيق.
   Future<Failure?> record({
     required OperationKind kind,
     String? amount,
@@ -69,6 +93,7 @@ class TreasuryCubit extends Cubit<TreasuryState> {
     int? employeeId,
     String? countedBalance,
     String? notes,
+    String? clientToken,
   }) async {
     final result = await _recordOperation(
       kind: kind,
@@ -79,39 +104,54 @@ class TreasuryCubit extends Cubit<TreasuryState> {
       employeeId: employeeId,
       countedBalance: countedBalance,
       notes: notes,
+      clientToken: clientToken,
     );
 
     return result.fold((failure) => failure, (_) {
-      unawaited(load());
+      if (!isClosed) unawaited(load());
 
       return null;
     });
   }
 
+  /// حسابٌ جديد من اللوحة. **يعيد القراءة** لأن مكانه في القائمة ترتيبُ الخادم (النوع، ثم
+  /// الافتراضي، ثم الاسم) لا يخترعه التطبيق.
   Future<Failure?> saveAccount({
-    int? id,
     required String name,
     String? kind,
     bool? isDefault,
-    bool? isActive,
     int? holderUserId,
     String? notes,
   }) async {
     final result = await _saveAccount(
-      id: id,
       name: name,
       kind: kind,
       isDefault: isDefault,
-      isActive: isActive,
       holderUserId: holderUserId,
       notes: notes,
     );
 
     return result.fold((failure) => failure, (_) {
-      unawaited(load());
+      if (!isClosed) unawaited(load());
 
       return null;
     });
+  }
+
+  /// ما أعادته صفحة الحساب: التعديل يُرقَّع في مكانه، والمال الذي تحرّك يُقرأ من جديد.
+  Future<void> applyAccountChange(AccountChange change) async {
+    switch (change) {
+      case AccountEdited(:final account):
+        if (state case final TreasuryLoaded loaded) {
+          emit(
+            loaded.withAccounts(
+              loaded.accounts.withAccounts(withSavedAccount(loaded.accounts.accounts, account)),
+            ),
+          );
+        }
+      case AccountMoneyMoved():
+        await load();
+    }
   }
 }
 
@@ -130,11 +170,31 @@ final class TreasuryFailed extends TreasuryState {
 }
 
 final class TreasuryLoaded extends TreasuryState {
-  const TreasuryLoaded({required this.accounts, this.ownership, this.inventory});
+  const TreasuryLoaded({
+    required this.accounts,
+    this.ownership,
+    this.inventory,
+    this.refreshFailure,
+  });
 
   final TreasuryAccounts accounts;
 
-  /// Null until it arrives, or when it failed — the card is simply not drawn.
+  /// فارغةٌ حتى تصل، أو حين فشلت في أول تحميل — فلا تُرسم البطاقة.
   final TreasuryOwnership? ownership;
   final InventoryValue? inventory;
+
+  /// إعادةُ تحميلٍ فشلت والشاشة باقية على ما قبلها: يقوله توستٌ مرةً واحدة.
+  final Failure? refreshFailure;
+
+  /// ما على الشاشة كما هو، ومعه سببُ فشل إعادة التحميل.
+  TreasuryLoaded failedRefresh(Failure failure) => TreasuryLoaded(
+    accounts: accounts,
+    ownership: ownership,
+    inventory: inventory,
+    refreshFailure: failure,
+  );
+
+  /// الحالة نفسها بحساباتٍ رُقِّعت — بلا فشلٍ قديم يُقال من جديد.
+  TreasuryLoaded withAccounts(TreasuryAccounts accounts) =>
+      TreasuryLoaded(accounts: accounts, ownership: ownership, inventory: inventory);
 }
