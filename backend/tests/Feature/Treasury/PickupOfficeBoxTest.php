@@ -21,7 +21,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * «خزنة مكتب الاستلام» — cash taken while an order waits at a branch lands in that branch's box.
+ * «كاش مكتب الاستلام» — cash taken while an order waits at a branch lands in that branch's box.
  * TREASURY-DESIGN §١٩.
  *
  * Arrange - Act - Assert throughout.
@@ -45,7 +45,7 @@ class PickupOfficeBoxTest extends TestCase
         Storage::fake('local');
 
         $this->misrata = City::factory()->officePickup()->create(['name' => 'استلام مكتب مصراتة']);
-        $this->misrataBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->create(['name' => 'خزنة فرع مصراتة']);
+        $this->misrataBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->create(['name' => 'كاش فرع مصراتة']);
         $this->misrataBox->forceFill(['pickup_city_id' => $this->misrata->id])->save();
     }
 
@@ -226,7 +226,7 @@ class PickupOfficeBoxTest extends TestCase
         // Assert
         $offices = collect($response->assertOk()->json('data.pickup_offices'))->keyBy('city_id');
         $this->assertSame($this->misrataBox->id, $offices[$this->misrata->id]['account_id']);
-        $this->assertSame('خزنة فرع مصراتة', $offices[$this->misrata->id]['account_name']);
+        $this->assertSame('كاش فرع مصراتة', $offices[$this->misrata->id]['account_name']);
         $this->assertNull($offices[$tripoli->id]['account_id']);
     }
 
@@ -234,7 +234,7 @@ class PickupOfficeBoxTest extends TestCase
     {
         // Arrange
         [, $headers] = $this->clerk();
-        $newBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->create(['name' => 'خزنة مصراتة الجديدة']);
+        $newBox = TreasuryAccount::factory()->kind(AccountKind::Cash)->create(['name' => 'كاش مصراتة الجديد']);
 
         // Act
         $response = $this->putJson("/api/v1/treasury/accounts/{$newBox->id}", [

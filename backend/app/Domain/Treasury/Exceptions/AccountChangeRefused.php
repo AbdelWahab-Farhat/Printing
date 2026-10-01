@@ -79,7 +79,7 @@ final class AccountChangeRefused extends DomainException
 
     public static function onlyCashServesAnOffice(): self
     {
-        return new self('خزنة مكتب الاستلام تكون حساباً نقدياً', 'pickup_city_id');
+        return new self('كاش مكتب الاستلام يكون حساباً نقدياً', 'pickup_city_id');
     }
 
     public static function cannotCollectInto(string $account, string $kind, string $field): self

@@ -191,7 +191,7 @@ enum AuditSubject: string
     // same bargain every other case here makes.
     case Notification = 'notification';
 
-    // الحسابات والخزائن. The movement is the one `source_type` names back — a treasury operation
+    // الحسابات والكاش. The movement is the one `source_type` names back — a treasury operation
     // is itself the source of the movements it writes, under this same alias.
     case TreasuryAccount = 'treasury_account';
     case TreasuryOperation = 'treasury_operation';

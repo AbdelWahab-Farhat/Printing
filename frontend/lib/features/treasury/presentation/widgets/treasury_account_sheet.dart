@@ -86,7 +86,7 @@ class _AccountFormState extends State<_AccountForm> {
   ];
 
   static String _kindLabel(AccountKind kind) => switch (kind) {
-    AccountKind.cash => 'خزنة',
+    AccountKind.cash => 'كاش',
     AccountKind.bank => 'مصرف',
     AccountKind.wallet => 'محفظة ليبيانا',
     AccountKind.custody => 'عهدة (مال في يد مندوب أو شركة توصيل)',

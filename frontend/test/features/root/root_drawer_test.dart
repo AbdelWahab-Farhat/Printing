@@ -444,7 +444,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('الحسابات والخزائن'), findsOneWidget);
+    expect(find.text('الحسابات والكاش'), findsOneWidget);
     expect(find.text('إعدادات المالية'), findsNothing);
     expect(find.text('تصنيفات المصروفات'), findsNothing);
   });

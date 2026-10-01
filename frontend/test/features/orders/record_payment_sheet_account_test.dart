@@ -31,11 +31,11 @@ void main() {
 
   const options = AccountOptions(
     accounts: [
-      AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true),
-      AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
+      AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'خزنة', isDefault: true),
+      AccountOption(id: 9, name: 'كاش فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
     ],
     suggestedId: 1,
-    suggestedName: 'الخزنة الرئيسية',
+    suggestedName: 'الكاش الرئيسي',
   );
 
   setUp(() async {
@@ -114,7 +114,7 @@ void main() {
     await tester.pumpWidget(host((closed) => draft = closed));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
-    await choose(tester, find.byType(AppDropdown<AccountOption>), 'خزنة فرع مصراتة');
+    await choose(tester, find.byType(AppDropdown<AccountOption>), 'كاش فرع مصراتة');
 
     // Act
     await save(tester);
@@ -129,7 +129,7 @@ void main() {
     await tester.pumpWidget(host((closed) => draft = closed));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
-    await choose(tester, find.byType(AppDropdown<AccountOption>), 'خزنة فرع مصراتة');
+    await choose(tester, find.byType(AppDropdown<AccountOption>), 'كاش فرع مصراتة');
 
     // Act — البطاقة لا تنزل في خزنة نقد.
     await choose(tester, find.byType(AppDropdown<PaymentMethod>), PaymentMethod.bankCard.label);

@@ -31,16 +31,14 @@ class GetAccountMovements {
     int accountId, {
     required int page,
     int? perPage,
-    String? kind,
-    DateTime? from,
-    DateTime? to,
+    MovementFilter filter = MovementFilter.all,
+    String? search,
   }) => _repository.movements(
     accountId,
     page: page,
     perPage: perPage,
-    kind: kind,
-    from: from,
-    to: to,
+    filter: filter,
+    search: search,
   );
 }
 

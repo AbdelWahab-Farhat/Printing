@@ -4,7 +4,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/models/vendor_payment.dart';
 
-/// الحسابات والخزائن — TREASURY-DESIGN §١٠.
+/// الحسابات والكاش — TREASURY-DESIGN §١٠.
 abstract interface class TreasuryRepository {
   /// الحسابات التي يقرؤها هذا الشخص — كلُّها لمن يحمل `treasury.view`، وما باسمه لغيره.
   Future<Either<Failure, TreasuryAccounts>> accounts({bool activeOnly = false});
@@ -13,15 +13,15 @@ abstract interface class TreasuryRepository {
 
   /// سجلّ الحساب، الأحدث أولاً، وكل سطرٍ بالرصيد الذي تركه.
   ///
-  /// [kind] و[from] و[to] فلترُ الخادم نفسه (`AccountLedger`) — يُحسب الرصيد الجاري على السجل
-  /// كله ثم يُصفّى. و[perPage] لقراءة سطرٍ واحد: ما كتبه الخادم للتوّ.
+  /// [filter] يقصره على مال الطلبيات أو المصاريف، و[search] على طلبيةٍ برقمها — فلترُ الخادم
+  /// نفسه (`AccountLedger`): يُحسب الرصيد الجاري على السجل كله ثم يُصفّى. و[perPage] لقراءة
+  /// سطرٍ واحد: ما كتبه الخادم للتوّ.
   Future<Either<Failure, Paginated<TreasuryMovement>>> movements(
     int accountId, {
     required int page,
     int? perPage,
-    String? kind,
-    DateTime? from,
-    DateTime? to,
+    MovementFilter filter = MovementFilter.all,
+    String? search,
   });
 
   /// [notes] الفارغة (`''`) تمسح الملاحظات، والغائبة تتركها — `AccountData::hasNotes`.

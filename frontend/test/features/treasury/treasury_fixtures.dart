@@ -9,7 +9,7 @@ class MockTreasuryRepository extends Mock implements TreasuryRepository {}
 
 const cashBox = TreasuryAccount(
   id: 1,
-  name: 'الخزنة الرئيسية',
+  name: 'الكاش الرئيسي',
   kind: AccountKind.cash,
   kindLabel: 'خزنة',
   isDefault: true,

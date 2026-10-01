@@ -25,7 +25,7 @@ class UpdateTreasuryAccountRequest extends FormRequest
             'holder_user_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'is_default' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
-            // «خزنة مكتب الاستلام» — a branch customers collect from; cash accounts only (§١٩).
+            // «كاش مكتب الاستلام» — a branch customers collect from; cash accounts only (§١٩).
             'pickup_city_id' => ['sometimes', 'nullable',
                 'integer',
                 Rule::exists('cities', 'id')->where('fulfilment_type', 'office_pickup')->whereNull('deleted_at'),
@@ -61,7 +61,7 @@ class UpdateTreasuryAccountRequest extends FormRequest
             'is_default' => 'الحساب الافتراضي',
             'is_active' => 'مفعّل',
             'is_collected' => 'يُجمَع عند التسوية',
-            'pickup_city_id' => 'خزنة مكتب الاستلام',
+            'pickup_city_id' => 'كاش مكتب الاستلام',
             'notes' => 'الملاحظات',
         ];
     }

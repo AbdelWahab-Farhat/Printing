@@ -19,12 +19,7 @@ void main() {
 
   const offline = Failure.network(message: FailureMessages.noConnection);
 
-  const detail = TreasuryAccountDetail(
-    account: alisBank,
-    totalIn: '500.00',
-    totalOut: '200.00',
-    byKind: [],
-  );
+  const detail = TreasuryAccountDetail(account: alisBank);
 
   const deposit = TreasuryOperation(
     id: 31,
@@ -36,6 +31,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(OperationKind.deposit);
+    registerFallbackValue(MovementFilter.all);
   });
 
   setUp(() {
@@ -180,8 +176,7 @@ void main() {
       // Assert
       expect: () => [
         isA<TreasuryAccountLoaded>()
-            .having((s) => s.detail.account.isActive, 'isActive', isFalse)
-            .having((s) => s.detail.totalIn, 'totalIn', '500.00'),
+            .having((s) => s.detail.account.isActive, 'isActive', isFalse),
       ],
       verify: (cubit) {
         expect(saved, isNull);
@@ -241,8 +236,8 @@ void main() {
       () => repository.movements(alisBank.id, page: 1),
     ).thenAnswer((_) async => Right(pageOf([original, older])));
 
-    void answerNewest(TreasuryMovement row, {String kind = 'deposit'}) => when(
-      () => repository.movements(alisBank.id, page: 1, perPage: 1, kind: kind),
+    void answerNewest(TreasuryMovement row) => when(
+      () => repository.movements(alisBank.id, page: 1, perPage: 1),
     ).thenAnswer((_) async => Right(pageOf([row])));
 
     Failure? reversed;
@@ -345,19 +340,20 @@ void main() {
 
     blocTest<AccountMovementsCubit, AccountMovementsState>(
       'الفلتر يُرسل إلى الخادم، والسطر الذي لا يطابقه لا يُضاف',
-      // Arrange
+      // Arrange — «المصاريف»، ثم إيداعٌ يُسجَّل من الصفحة
       setUp: () {
         when(
-          () => repository.movements(alisBank.id, page: 1, kind: 'withdrawal'),
+          () => repository.movements(alisBank.id, page: 1, filter: MovementFilter.expenses),
         ).thenAnswer((_) async => Right(pageOf([older])));
+        answerNewest(movement(id: 72, operationId: deposit.id, balanceAfter: '350.00'));
       },
       build: build,
       // Act
       act: (cubit) async {
-        await cubit.filterBy('withdrawal');
+        await cubit.narrowTo(MovementFilter.expenses);
         await cubit.addWrittenBy(deposit);
       },
-      // Assert
+      // Assert — السجلّ على ما أرسله الخادم للمصاريف، والإيداع لم يُدسّ فيه
       skip: 1,
       expect: () => [
         isA<PagedLoaded<TreasuryMovement>>().having(
@@ -366,37 +362,37 @@ void main() {
           [60],
         ),
       ],
-      verify: (cubit) {
-        expect(cubit.kind, 'withdrawal');
-        verifyNever(() => repository.movements(alisBank.id, page: 1, perPage: 1, kind: 'deposit'));
-      },
+      verify: (cubit) => expect(cubit.filter, MovementFilter.expenses),
     );
 
     blocTest<AccountMovementsCubit, AccountMovementsState>(
-      'مدى الأيام يُرسل بطرفيه',
+      'رقمُ الطلبية المبحوث عنه يبقى حين يتغيّر الفلتر',
       // Arrange
       setUp: () {
         when(
           () => repository.movements(
             alisBank.id,
             page: 1,
-            from: DateTime(2026, 9, 1),
-            to: DateTime(2026, 9, 30),
+            filter: any(named: 'filter'),
+            search: any(named: 'search'),
           ),
         ).thenAnswer((_) async => Right(pageOf([older])));
       },
       build: build,
       // Act
-      act: (cubit) => cubit.between(DateTime(2026, 9, 1), DateTime(2026, 9, 30)),
-      // Assert
-      expect: () => [
-        isA<PagedLoading<TreasuryMovement>>(),
-        isA<PagedLoaded<TreasuryMovement>>(),
-      ],
-      verify: (cubit) {
-        expect(cubit.from, DateTime(2026, 9, 1));
-        expect(cubit.to, DateTime(2026, 9, 30));
+      act: (cubit) async {
+        await cubit.load(search: '1290');
+        await cubit.narrowTo(MovementFilter.orders);
       },
+      // Assert
+      verify: (_) => verify(
+        () => repository.movements(
+          alisBank.id,
+          page: 1,
+          filter: MovementFilter.orders,
+          search: '1290',
+        ),
+      ).called(1),
     );
   });
 }

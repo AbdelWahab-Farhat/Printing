@@ -196,7 +196,7 @@ class _RootDrawerState extends State<RootDrawer> {
       items: [
         _Link(
           icon: _LinkIcon.treasury,
-          label: 'الحسابات والخزائن',
+          label: 'الحسابات والكاش',
           route: Routes.treasury,
         ),
         // الافتراضيات والقواعد وتاريخ القفل ووجهة العهدة — للمالك. التصنيفاتُ صفٌّ وحدها أدناه.

@@ -5,12 +5,13 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/pagination/paged_cubit.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// رأس صفحة الحساب: رصيده ومجاميعه بالنوع.
+/// رأس صفحة الحساب: رصيده.
 ///
 /// **Cubit مستقلٌّ بجانب [AccountMovementsCubit] لا مدمجٌ فيه:** السجل يُصفَّح والرأس لا. وكلٌّ
 /// منهما يقرأ ما يخصّه بعد الكتابة — الرأس يُقرأ هنا مرةً واحدة، والسجل يُرقَّع بسطر.
@@ -173,7 +174,8 @@ final class TreasuryAccountLoaded extends TreasuryAccountState {
   final Failure? refreshFailure;
 }
 
-/// سجلّ الحساب، الأحدث أولاً، مصفّى بالنوع والتاريخ على الخادم.
+/// سجلّ الحساب، الأحدث أولاً، مقصوراً على الخادم بـ[filter] — الكل، مال الطلبيات، المصاريف —
+/// وبالبحث برقم الطلبية (`PagedCubit.search`). طلب المستخدم (2026-10-01) بدل صفّ المجاميع.
 ///
 /// **يُرقَّع ولا يُعاد.** ما يكتبه الخادم بعد عمليةٍ أو عكسٍ سطرٌ واحد في أعلاه، فيُقرأ ذلك السطر
 /// وحده ([addWrittenBy]) — معرّفه ورصيده بعده جوابُ الخادم لا يخترعه التطبيق — وتبقى الصفحات
@@ -190,34 +192,18 @@ class AccountMovementsCubit extends PagedCubit<TreasuryMovement> {
   final GetAccountMovements _getMovements;
   final ReverseTreasuryOperation _reverseOperation;
 
-  String? _kind;
-  DateTime? _from;
-  DateTime? _to;
+  MovementFilter filter = MovementFilter.all;
 
-  /// نوع الحركة المختار — `deposit`، `payment`… — أو null للكل.
-  String? get kind => _kind;
-  DateTime? get from => _from;
-  DateTime? get to => _to;
+  /// فلترٌ آخر — والبحثُ المكتوب يبقى معه.
+  Future<void> narrowTo(MovementFilter value) {
+    if (value == filter) return Future<void>.value();
 
-  /// اختيار المختار نفسه لا يعيد القراءة.
-  Future<void> filterBy(String? kind) async {
-    if (kind == _kind) return;
-    _kind = kind;
+    filter = value;
 
-    return load();
+    return load(search: currentSearch);
   }
 
-  /// الطرفان داخلان؛ null فيهما يمسح المدى.
-  Future<void> between(DateTime? from, DateTime? to) {
-    _from = from;
-    _to = to;
-
-    return load();
-  }
-
-  /// يعكس العملية التي كتبت [original]. null عند النجاح، والرفضُ غير ذلك.
-  ///
-  /// الأصل يُعلَّم معكوساً في مكانه، وسطرُ العكس يُقرأ من الخادم ويوضع أعلى السجل.
+  /// يعكس عمليةَ السطر: يُعلَّم الأصلُ معكوساً في مكانه، ويُلحق سطرُ العكس الذي كتبه الخادم.
   Future<Failure?> reverse(TreasuryMovement original, {required String reason}) async {
     final operationId = original.operationId;
 
@@ -227,31 +213,23 @@ class AccountMovementsCubit extends PagedCubit<TreasuryMovement> {
 
     return result.fold((failure) => failure, (reversal) async {
       replace(original.markedReversed());
-      await _addNewest(operationId: reversal.id, kind: original.kind);
+      await _addNewest(operationId: reversal.id);
 
       return null;
     });
   }
 
-  /// يضع أعلى السجل السطرَ الذي كتبته [operation] على هذا الحساب.
-  Future<void> addWrittenBy(TreasuryOperation operation) =>
-      _addNewest(operationId: operation.id, kind: operation.type);
+  /// ما كتبته عمليةٌ سُجّلت من هذه الصفحة.
+  Future<void> addWrittenBy(TreasuryOperation operation) => _addNewest(operationId: operation.id);
 
-  /// يقرأ أحدث سطرٍ من [kind] — ما كُتب للتوّ — ويضعه في أعلى السجل.
-  ///
-  /// **إن لم يكن سطرَ [operationId]** فقد كُتب غيره على الحساب في اللحظة نفسها، فيُقرأ السجل كله
-  /// مرةً واحدة. وإن فشلت القراءة بقي ما على الشاشة: السطر يظهر مع السحب التالي.
-  Future<void> _addNewest({required int operationId, required String kind}) async {
-    // سطرٌ من نوعٍ غير المختار لا مكان له في هذا السجل أصلاً.
-    if (_kind != null && _kind != kind) return;
+  /// أحدثُ سطرٍ في الحساب كلِّه — إن كان من هذه العملية أُلحق، وإلا فقد كتب غيرُها بينهما
+  /// فيُعاد السجل. وسطرٌ لا يطابق الفلتر أو البحث لا مكان له هنا أصلاً ([belongs]).
+  Future<void> _addNewest({required int operationId}) async {
+    final result = await _getMovements(accountId, page: 1, perPage: 1);
 
-    final result = await _getMovements(accountId, page: 1, perPage: 1, kind: kind);
-
-    if (isClosed) return;
+    if (isClosed || result.isLeft()) return;
 
     final newest = result.fold((_) => null, (page) => page.items.firstOrNull);
-
-    if (result.isLeft()) return;
 
     if (newest == null || newest.operationId != operationId) {
       await refresh();
@@ -265,31 +243,29 @@ class AccountMovementsCubit extends PagedCubit<TreasuryMovement> {
   @override
   Object identityOf(TreasuryMovement item) => item.id;
 
-  /// سطرٌ رُقِّع يغادر فلتراً لم يعد يطابقه — نوعاً أو مدى أيام.
   @override
   bool belongs(TreasuryMovement item) {
-    if (_kind != null && item.kind != _kind) return false;
+    final fits = switch (filter) {
+      MovementFilter.all => true,
+      MovementFilter.orders => item.orderId != null,
+      MovementFilter.expenses => item.kind == 'expense',
+    };
 
-    final at = item.occurredAt;
+    if (!fits) return false;
 
-    if (at == null) return _from == null && _to == null;
+    // البحثُ رقمُ طلبيةٍ كاملاً، كما يطابقه الخادم — بالأرقام العربية أيضاً.
+    final term = currentSearch?.trim();
 
-    final day = DateTime(at.year, at.month, at.day);
+    if (term == null || term.isEmpty) return true;
 
-    if (_from case final from? when day.isBefore(DateTime(from.year, from.month, from.day))) {
-      return false;
-    }
-
-    if (_to case final to? when day.isAfter(DateTime(to.year, to.month, to.day))) return false;
-
-    return true;
+    return item.orderId != null && '${item.orderId}' == Validators.toWesternDigits(term);
   }
 
   @override
   Future<Either<Failure, Paginated<TreasuryMovement>>> fetchPage({
     String? search,
     required int page,
-  }) => _getMovements(accountId, page: page, kind: _kind, from: _from, to: _to);
+  }) => _getMovements(accountId, page: page, filter: filter, search: search);
 }
 
 typedef AccountMovementsState = PagedState<TreasuryMovement>;

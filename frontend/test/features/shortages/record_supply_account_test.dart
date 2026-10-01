@@ -24,11 +24,11 @@ void main() {
 
   const options = AccountOptions(
     accounts: [
-      AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true),
-      AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
+      AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'خزنة', isDefault: true),
+      AccountOption(id: 9, name: 'كاش فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
     ],
     suggestedId: 1,
-    suggestedName: 'الخزنة الرئيسية',
+    suggestedName: 'الكاش الرئيسي',
   );
 
   const tape = Shortage(
@@ -110,14 +110,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// يفتح الصفحة، ويكتب الكمية والقيمة، ويختار «خزنة فرع مصراتة».
+  /// يفتح الصفحة، ويكتب الكمية والقيمة، ويختار «كاش فرع مصراتة».
   Future<void> fillAndPickBranchBox(WidgetTester tester) async {
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(AppTextField).at(0), '5');
     await tester.enterText(find.byType(AppTextField).at(1), '75');
     await tester.pump();
-    await choose(tester, find.byType(AppDropdown<AccountOption>), 'خزنة فرع مصراتة');
+    await choose(tester, find.byType(AppDropdown<AccountOption>), 'كاش فرع مصراتة');
   }
 
   Future<void> save(WidgetTester tester) async {

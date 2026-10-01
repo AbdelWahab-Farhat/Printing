@@ -41,16 +41,52 @@ String owedLabel(String owed, {String holder = 'عندهم'}) => owed.startsWith
 
 /// الرقم أعلى شاشة الخزينة — كل ما في الحسابات، أو رصيد حسابٍ واحد.
 class TreasuryTotalCard extends StatelessWidget {
-  const TreasuryTotalCard({required this.label, required this.amount, this.footnote, super.key});
+  const TreasuryTotalCard({
+    required this.label,
+    required this.amount,
+    this.footnote,
+    this.inline = false,
+    super.key,
+  });
 
   final String label;
   final String amount;
   final String? footnote;
 
+  /// سطر واحد: العنوان في جهة القراءة والرقم مقابله — للوحة الحسابات، حيث المساحة لما تحت
+  /// الرقم. صفحة الحساب تبقى على البطاقة الطويلة.
+  final bool inline;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final overdrawn = amount.startsWith('-');
+
+    if (inline) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 16.w),
+        decoration: BoxDecoration(
+          color: overdrawn ? scheme.errorContainer : scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              treasuryMoney(amount),
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -280,40 +316,61 @@ class TreasuryFiguresCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: 12.h),
-            for (final (label, amount) in lines)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 4.h),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
-                    Text(treasuryMoney(amount), textDirection: TextDirection.ltr),
-                  ],
-                ),
-              ),
-            if (emphasis case (final label, final amount)) ...[
-              const Divider(),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  Text(
-                    treasuryMoney(amount),
-                    textDirection: TextDirection.ltr,
-                    style: context.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: amount.startsWith('-') ? scheme.error : scheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            TreasuryFigures(lines: lines, emphasis: emphasis),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// أسطر «البيان — المبلغ» وتحتها السطر الذي تُقال لأجله، بلا بطاقة ولا عنوان: داخل تبويب
+/// يكون اسم التبويب هو العنوان.
+class TreasuryFigures extends StatelessWidget {
+  const TreasuryFigures({required this.lines, this.emphasis, super.key});
+
+  final List<(String, String)> lines;
+  final (String, String)? emphasis;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (label, amount) in lines)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 4.h),
+            child: Row(
+              children: [
+                Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
+                Text(treasuryMoney(amount), textDirection: TextDirection.ltr),
+              ],
+            ),
+          ),
+        if (emphasis case (final label, final amount)) ...[
+          const Divider(),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                treasuryMoney(amount),
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: amount.startsWith('-') ? scheme.error : scheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }

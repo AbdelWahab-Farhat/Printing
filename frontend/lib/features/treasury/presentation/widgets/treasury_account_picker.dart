@@ -130,6 +130,7 @@ class _PickerState extends State<_Picker> {
         AccountPickerLoaded(:final options) => _dropdown(
           options.accounts,
           automatic: automaticLabel(options.suggestedName),
+          suggestedId: options.suggestedId,
         ),
         AccountPickerFailed(:final failure) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -150,14 +151,20 @@ class _PickerState extends State<_Picker> {
   Widget _dropdown(
     List<AccountOption> accounts, {
     required String automatic,
+    int? suggestedId,
     bool enabled = true,
     String? error,
   }) {
-    final chosen = accounts.where((account) => account.id == widget.value).firstOrNull;
+    // «تلقائي — X» هو الحساب X نفسه، فلا يُعرض X صفاً ثانياً تحته — ومن اختاره يرى «تلقائي».
+    final rows = [
+      for (final account in accounts)
+        if (account.id != suggestedId) account,
+    ];
+    final chosen = rows.where((account) => account.id == widget.value).firstOrNull;
 
     return AppDropdown<AccountOption>(
       value: chosen,
-      items: accounts,
+      items: rows,
       keyOf: (account) => account.id,
       labelOf: (account) => account.name,
       label: widget.label,

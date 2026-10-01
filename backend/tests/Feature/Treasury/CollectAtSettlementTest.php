@@ -222,8 +222,8 @@ class CollectAtSettlementTest extends TestCase
     {
         // Arrange
         [, $headers] = $this->owner();
-        $misrata = $this->cashBox('خزنة فرع مصراتة');
-        $head = $this->cashBox('خزنة الإدارة');
+        $misrata = $this->cashBox('كاش فرع مصراتة');
+        $head = $this->cashBox('كاش الإدارة');
         $this->set($headers, ['collect_cash' => true, 'collect_cash_into_id' => $head->id]);
         $order = $this->order('150.00');
         $this->pay($headers, $order, '150', $misrata)->assertCreated();
@@ -285,7 +285,7 @@ class CollectAtSettlementTest extends TestCase
         // Arrange
         [, $headers] = $this->owner();
         $this->set($headers, ['collect_cash' => true]);
-        $float = $this->cashBox('خزنة فرع بنغازي', ['is_collected' => false]);
+        $float = $this->cashBox('كاش فرع بنغازي', ['is_collected' => false]);
         $order = $this->order('80.00');
         $this->pay($headers, $order, '80', $float)->assertCreated();
 
@@ -443,7 +443,7 @@ class CollectAtSettlementTest extends TestCase
     {
         // Arrange
         [, $headers] = $this->owner();
-        $box = $this->cashBox('خزنة فرع بنغازي');
+        $box = $this->cashBox('كاش فرع بنغازي');
 
         // Act
         $response = $this->putJson("/api/v1/treasury/accounts/{$box->id}", ['is_collected' => false], $headers);

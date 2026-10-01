@@ -34,11 +34,11 @@ void main() {
 
   const options = AccountOptions(
     accounts: [
-      AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true),
-      AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
+      AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'خزنة', isDefault: true),
+      AccountOption(id: 9, name: 'كاش فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
     ],
     suggestedId: 1,
-    suggestedName: 'الخزنة الرئيسية',
+    suggestedName: 'الكاش الرئيسي',
   );
 
   setUp(() async {
@@ -114,14 +114,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// يفتح الورقة، ويختار «خزنة فرع مصراتة» حساباً للإيداع.
+  /// يفتح الورقة، ويختار «كاش فرع مصراتة» حساباً للإيداع.
   Future<void> openAndPickBranchBox(WidgetTester tester) async {
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
     await choose<AccountOption>(
       tester,
       find.byType(AppDropdown<AccountOption>),
-      'خزنة فرع مصراتة',
+      'كاش فرع مصراتة',
     );
   }
 

@@ -731,7 +731,7 @@ final class AuditAttributeLabels
             'reverses_supply_id' => 'تعكس عملية',
             'recorded_by_user_id' => 'سجّلها',
         ],
-        // الحسابات والخزائن. `notes`, `is_active`, `amount`, `order_id` and `recorded_by` are named
+        // الحسابات والكاش. `notes`, `is_active`, `amount`, `order_id` and `recorded_by` are named
         // by SHARED.
         'treasury_setting' => [
             'own_account_first' => 'الحساب الشخصي أولاً',
@@ -754,7 +754,7 @@ final class AuditAttributeLabels
             'system_code' => 'رمز النظام',
             'settles_into_account_id' => 'تُسوّى إلى',
             'is_collected' => 'يُجمَع عند التسوية',
-            'pickup_city_id' => 'خزنة مكتب الاستلام',
+            'pickup_city_id' => 'كاش مكتب الاستلام',
             'is_default' => 'الحساب الافتراضي لنوعه',
             'currency' => 'العملة',
             'created_by' => 'أنشأه',

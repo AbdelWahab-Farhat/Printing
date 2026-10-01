@@ -20,9 +20,9 @@ void main() {
 
   const cashBox = TreasuryAccount(
     id: 1,
-    name: 'الخزنة الرئيسية',
+    name: 'الكاش الرئيسي',
     kind: AccountKind.cash,
-    kindLabel: 'خزنة',
+    kindLabel: 'كاش',
     isDefault: true,
     isActive: true,
     isSystem: false,
@@ -104,7 +104,7 @@ void main() {
     expect(find.text('منع الرصيد السالب في العمليات اليدوية'), findsOneWidget);
     expect(find.text('مقفل حتى تاريخ'), findsOneWidget);
     expect(find.text('كاش'), findsOneWidget);
-    expect(find.text('الخزنة الرئيسية'), findsWidgets);
+    expect(find.text('الكاش الرئيسي'), findsWidgets);
 
     await tester.scrollUntilVisible(find.text('القاعدة الافتراضية'), 200);
     expect(find.text('القاعدة الافتراضية'), findsOneWidget);
@@ -210,9 +210,9 @@ void main() {
     // Arrange
     const misrataBox = TreasuryAccount(
       id: 9,
-      name: 'خزنة فرع مصراتة',
+      name: 'كاش فرع مصراتة',
       kind: AccountKind.cash,
-      kindLabel: 'خزنة',
+      kindLabel: 'كاش',
       isDefault: false,
       isActive: true,
       isSystem: false,
@@ -240,22 +240,24 @@ void main() {
       ),
     );
     when(
-      () => repository.saveAccount(id: 9, name: 'خزنة فرع مصراتة', pickupCityId: 40),
+      () => repository.saveAccount(id: 9, name: 'كاش فرع مصراتة', pickupCityId: 40),
     ).thenAnswer((_) async => const Right(misrataBox));
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('استلام مكتب مصراتة'), 200);
+    expect(find.text('كاش كل مكتب استلام'), findsOneWidget);
 
     // Act
     await tester.tap(find.text('استلام مكتب مصراتة'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('خزنة فرع مصراتة').last);
+    expect(find.text('كاش «استلام مكتب مصراتة»'), findsOneWidget);
+    await tester.tap(find.text('كاش فرع مصراتة').last);
     await tester.pumpAndSettle();
 
     // Assert
     expect(find.text('القاعدة العادية'), findsWidgets);
     verify(
-      () => repository.saveAccount(id: 9, name: 'خزنة فرع مصراتة', pickupCityId: 40),
+      () => repository.saveAccount(id: 9, name: 'كاش فرع مصراتة', pickupCityId: 40),
     ).called(1);
   });
 
@@ -263,11 +265,24 @@ void main() {
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('حساب جديد'), 200);
+    await tester.scrollUntilVisible(find.text('تجميع ليبيانا'), 200);
 
-    // Assert — «حساب جديد» آخرُ ما في الصفحة الآن.
+    // Assert — «تجميع ليبيانا» آخرُ ما في الصفحة الآن.
     expect(find.text('تصنيفات المصروفات'), findsNothing);
     expect(find.text('تصنيف جديد'), findsNothing);
     verifyNever(() => repository.expenseCategories(activeOnly: false));
+  });
+
+  testWidgets('the accounts are not on this page — they live in «الحسابات والكاش»', (tester) async {
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('تجميع ليبيانا'), 200);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
+    await tester.pumpAndSettle();
+
+    // Assert — الإعداداتُ قواعد تُضبط؛ الحساباتُ تُفتح وتُضاف من صفحتها.
+    expect(find.text('الحسابات'), findsNothing);
+    expect(find.text('حساب جديد'), findsNothing);
   });
 }

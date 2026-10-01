@@ -25,11 +25,11 @@ void main() {
 
   const cashOptions = AccountOptions(
     accounts: [
-      AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true),
-      AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
+      AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'خزنة', isDefault: true),
+      AccountOption(id: 9, name: 'كاش فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
     ],
     suggestedId: 1,
-    suggestedName: 'الخزنة الرئيسية',
+    suggestedName: 'الكاش الرئيسي',
   );
 
   const bankOptions = AccountOptions(
@@ -98,7 +98,7 @@ void main() {
 
     // Assert
     expect(find.text('تلقائي — مصرف علي'), findsOneWidget);
-    expect(find.text('تلقائي — الخزنة الرئيسية'), findsNothing);
+    expect(find.text('تلقائي — الكاش الرئيسي'), findsNothing);
     verify(() => repository.accountOptions(method: 'bank_transfer', incoming: true)).called(1);
   });
 
@@ -124,7 +124,47 @@ void main() {
 
     // Assert
     expect(find.text('تلقائي — مصرف علي'), findsOneWidget);
-    expect(find.text('تلقائي — الخزنة الرئيسية'), findsNothing);
+    expect(find.text('تلقائي — الكاش الرئيسي'), findsNothing);
+  });
+
+  testWidgets('the account «تلقائي» names is not offered a second time', (tester) async {
+    // Arrange
+    when(
+      () => repository.accountOptions(method: 'bank_transfer', incoming: true),
+    ).thenAnswer((_) async => const Right(bankOptions));
+    await tester.pumpWidget(
+      host(TreasuryAccountPicker(method: 'bank_transfer', value: null, onChanged: (_) {})),
+    );
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byType(DropdownButton<AccountOption>));
+    await tester.pumpAndSettle();
+
+    // Assert — «تلقائي — مصرف علي» هو مصرف علي نفسه، فلا يبقى صفاً ثانياً تحته.
+    expect(find.text('تلقائي — مصرف علي'), findsWidgets);
+    expect(find.text('مصرف علي'), findsNothing);
+    expect(find.text('المصرف'), findsWidgets);
+  });
+
+  testWidgets('a pick that is the named account shows as «تلقائي»', (tester) async {
+    // Arrange
+    when(
+      () => repository.accountOptions(method: 'bank_transfer', incoming: true),
+    ).thenAnswer((_) async => const Right(bankOptions));
+
+    // Act
+    await tester.pumpWidget(
+      host(TreasuryAccountPicker(method: 'bank_transfer', value: 7, onChanged: (_) {})),
+    );
+    await tester.pumpAndSettle();
+
+    // Assert
+    final field = tester.widget<DropdownButton<AccountOption>>(
+      find.byType(DropdownButton<AccountOption>),
+    );
+    expect(field.value, isNull);
+    expect(find.text('مصرف علي'), findsNothing);
   });
 
   testWidgets('a failure is said under the field, and «إعادة المحاولة» asks again', (
@@ -152,7 +192,7 @@ void main() {
     // Assert — والاسم يقول من أين خرج المال، بلا سطرٍ تحته.
     expect(failedOnScreen, 1);
     expect(find.text(FailureMessages.noConnection), findsNothing);
-    expect(find.text('تلقائي — الخزنة الرئيسية'), findsOneWidget);
+    expect(find.text('تلقائي — الكاش الرئيسي'), findsOneWidget);
     expect(find.text('دُفع من'), findsOneWidget);
     expect(find.text('من أين خرج المال'), findsNothing);
   });

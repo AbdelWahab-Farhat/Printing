@@ -20,9 +20,9 @@ void main() {
   const offline = Failure.network(message: FailureMessages.noConnection);
 
   const cashOptions = AccountOptions(
-    accounts: [AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true)],
+    accounts: [AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'خزنة', isDefault: true)],
     suggestedId: 1,
-    suggestedName: 'الخزنة الرئيسية',
+    suggestedName: 'الكاش الرئيسي',
   );
 
   const bankOptions = AccountOptions(

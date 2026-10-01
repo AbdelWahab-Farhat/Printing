@@ -159,7 +159,7 @@ void main() {
       // Arrange — طردٌ للنورس في الطريق: الكاش اليدوي ينزل في حساب النورس، وليس من الخيارات.
       final json = {
         'accounts': [
-          {'id': 1, 'name': 'الخزنة الرئيسية', 'kind_label': 'خزنة', 'is_default': true},
+          {'id': 1, 'name': 'الكاش الرئيسي', 'kind_label': 'خزنة', 'is_default': true},
         ],
         'suggested_id': 4,
         'suggested_name': 'النورس',

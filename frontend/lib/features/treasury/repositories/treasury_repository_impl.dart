@@ -13,9 +13,6 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
 
   final Dio _dio;
 
-  /// `2026-09-30` — اليوم كما يقرؤه `date` في Laravel، بلا ساعةٍ تنقله المنطقةُ الزمنية يوماً.
-  static String _day(DateTime at) => at.toIso8601String().substring(0, 10);
-
   @override
   Future<Either<Failure, TreasuryAccounts>> accounts({bool activeOnly = false}) {
     return safeRequest<TreasuryAccounts>(
@@ -38,21 +35,14 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     int accountId, {
     required int page,
     int? perPage,
-    String? kind,
-    DateTime? from,
-    DateTime? to,
+    MovementFilter filter = MovementFilter.all,
+    String? search,
   }) {
     return safePaginatedRequest<TreasuryMovement>(
       () => _dio.get(
         TreasuryEndpoints.movements(accountId),
         // المفاتيح الفارغة تُحذف ولا تُرسل — RULES §٦.
-        queryParameters: {
-          'page': page,
-          'per_page': ?perPage,
-          'kind': ?kind,
-          if (from != null) 'from': _day(from),
-          if (to != null) 'to': _day(to),
-        },
+        queryParameters: {'page': page, 'per_page': ?perPage, ...filter.query, 'search': ?search},
       ),
       parseItem: (json) => TreasuryMovement.fromJson(json),
     );

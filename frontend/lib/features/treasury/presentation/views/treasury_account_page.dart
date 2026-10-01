@@ -14,6 +14,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_account_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
@@ -26,8 +27,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// حسابٌ واحد: رصيده، وما دخله وخرج منه بالنوع، وكل حركة — التاريخ، والمبلغ، والنوع، ومن
-/// فعلها، والطلبية التي تخصّها، والملاحظة. مُصفّى بالنوع والتاريخ. TREASURY-DESIGN §٩.
+/// حسابٌ واحد: رصيده، وكل حركة — التاريخ، والمبلغ، والنوع، ومن فعلها، والطلبية التي تخصّها،
+/// والملاحظة. يُقصر على مال الطلبيات أو المصاريف، ويُبحث فيه برقم الطلبية. TREASURY-DESIGN §٩.
 ///
 /// **يُعيد لمن فتحه ما تغيّر** ([TreasuryAccountCubit.change]) — فلا تعيد اللوحة قراءة نفسها
 /// بعد كل زيارة.
@@ -85,11 +86,6 @@ class _AccountView extends StatelessWidget {
           appBar: AppBar(
             title: Text(detail?.account.name ?? 'الحساب'),
             actions: [
-              IconButton(
-                tooltip: 'حسب التاريخ',
-                icon: Icon(AppIcons.month),
-                onPressed: () => _pickRange(context, movements),
-              ),
               if (detail != null && sl<Session>().can(AppPermission.manageTreasury))
                 IconButton(
                   tooltip: 'تعديل الحساب',
@@ -124,8 +120,15 @@ class _AccountView extends StatelessWidget {
                         : detail.account.owed.replaceFirst('-', ''),
                   ),
                 ),
-                _Totals(detail: detail),
-                _Filters(detail: detail),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                  child: SearchField(
+                    hint: 'ابحث برقم الطلبية',
+                    keyboardType: TextInputType.number,
+                    onChanged: movements.search,
+                  ),
+                ),
+                const _Filters(),
                 const Expanded(child: _History()),
               ],
             ),
@@ -150,98 +153,30 @@ class _AccountView extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _pickRange(BuildContext context, AccountMovementsCubit movements) async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2024),
-      lastDate: now,
-      initialDateRange: movements.from != null && movements.to != null
-          ? DateTimeRange(start: movements.from!, end: movements.to!)
-          : null,
-    );
-
-    if (picked == null) return;
-
-    await movements.between(picked.start, picked.end);
-  }
 }
 
-/// «الإيداعات · المسحوبات · التحويلات الداخلة والخارجة · التسويات» — كل نوعٍ رآه الحساب، صافياً
-/// من العكوس، بترتيب الخادم.
-class _Totals extends StatelessWidget {
-  const _Totals({required this.detail});
-
-  final TreasuryAccountDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    final chips = <String>[
-      'داخل ${treasuryMoney(detail.totalIn)}',
-      'خارج ${treasuryMoney(detail.totalOut)}',
-      for (final kind in detail.byKind)
-        if (kind.kind == 'transfer') ...[
-          'تحويلات داخلة ${treasuryMoney(kind.moneyIn)}',
-          'تحويلات خارجة ${treasuryMoney(kind.moneyOut)}',
-        ] else
-          '${kind.label} ${treasuryMoney(kind.net, signed: true)}',
-    ];
-
-    return SizedBox(
-      height: 44.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-        itemCount: chips.length,
-        separatorBuilder: (_, _) => SizedBox(width: 8.w),
-        itemBuilder: (context, index) => Chip(
-          label: Text(chips[index], textDirection: TextDirection.rtl),
-          backgroundColor: scheme.surfaceContainerHighest,
-          side: BorderSide.none,
-          visualDensity: VisualDensity.compact,
-        ),
-      ),
-    );
-  }
-}
-
-/// «الكل» ثم كل نوعٍ رآه الحساب، ومدى الأيام إن اختير — الفلتر كله على الخادم.
+/// «الكل · الطلبيات · المصاريف» — صفٌّ ثابت لا يمرَّر. حلّ محلَّ صفّ المجاميع بطلب المستخدم
+/// (2026-10-01): «داخل خارج هذي كلها ماليهاش فائدة».
 class _Filters extends StatelessWidget {
-  const _Filters({required this.detail});
-
-  final TreasuryAccountDetail detail;
+  const _Filters();
 
   @override
   Widget build(BuildContext context) {
-    final movements = context.watch<AccountMovementsCubit>();
-    final kinds = <(String?, String)>[
-      (null, 'الكل'),
-      for (final kind in detail.byKind) (kind.kind, kind.label),
-    ];
+    final cubit = context.read<AccountMovementsCubit>();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 4.h),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Wrap(
-          spacing: 8.w,
-          runSpacing: 8.h,
+    return BlocBuilder<AccountMovementsCubit, AccountMovementsState>(
+      builder: (context, _) => Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+        child: Row(
           children: [
-            for (final (kind, label) in kinds)
+            for (final filter in MovementFilter.values) ...[
+              if (filter != MovementFilter.values.first) SizedBox(width: 8.w),
               FilterOptionChip(
-                label: label,
-                isSelected: movements.kind == kind,
-                onTap: () => unawaited(movements.filterBy(kind)),
+                label: filter.label,
+                isSelected: cubit.filter == filter,
+                onTap: () => unawaited(cubit.narrowTo(filter)),
               ),
-            if (movements.from case final from?)
-              if (movements.to case final to?)
-                InputChip(
-                  label: Text(AppDates.span(from, to)),
-                  onDeleted: () => unawaited(movements.between(null, null)),
-                ),
+            ],
           ],
         ),
       ),
@@ -262,11 +197,13 @@ class _History extends StatelessWidget {
         final items = state is PagedLoaded<TreasuryMovement>
             ? state.page.items
             : const <TreasuryMovement>[];
-        final filtered = cubit.kind != null || cubit.from != null;
-
         return PagedListView<TreasuryMovement>(
           state: state,
-          emptyMessage: filtered ? 'لا حركات تطابق هذا الفلتر' : 'لم يتحرّك هذا الحساب بعد',
+          emptyMessage: switch (cubit.filter) {
+            MovementFilter.all => 'لم يتحرّك هذا الحساب بعد',
+            MovementFilter.orders => 'لا مال طلبيات في هذا الحساب',
+            MovementFilter.expenses => 'لا مصاريف من هذا الحساب',
+          },
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
           skeletonHeight: 84.h,

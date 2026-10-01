@@ -219,13 +219,13 @@ abstract final class AppIcons {
   /// وما انقضت مدّتُه: يُستردّ متى شاء.
   static IconData get unlocked => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
 
-  // ── الحسابات والخزائن ──────────────────────────────────────────────────────
+  // ── الحسابات والكاش ──────────────────────────────────────────────────────
 
   /// الخزينة كلها — القسم ولوحته.
   static IconData get treasury =>
       _pick(Icons.account_balance_wallet_outlined, CupertinoIcons.creditcard);
 
-  /// خزنةُ نقد — «الخزنة».
+  /// حسابُ نقد — «الكاش».
   static IconData get cashBox => _pick(Icons.payments_outlined, CupertinoIcons.money_dollar);
 
   /// حسابٌ مصرفي — «المصرف»، «مصرف علي».

@@ -325,9 +325,9 @@ enum AppPermission {
   submitDesignTickets('design_tickets.submit', 'رفع تصميم داخل التذكرة'),
   reviewDesignTickets('design_tickets.review', 'الموافقة على التصميم أو طلب تعديل'),
 
-  // الحسابات والخزائن — TREASURY-DESIGN §١٠. بلا `treasury.view` يقرأ الشخص الحسابات التي
+  // الحسابات والكاش — TREASURY-DESIGN §١٠. بلا `treasury.view` يقرأ الشخص الحسابات التي
   // باسمه وحدها؛ والخادم يقرّر ذلك حساباً حساباً.
-  viewTreasury('treasury.view', 'عرض الحسابات والخزائن'),
+  viewTreasury('treasury.view', 'عرض الحسابات والكاش'),
   recordTreasuryOperations('treasury.record', 'إيداع وسحب ومصروف وتحويل'),
   adjustTreasuryBalances('treasury.adjust', 'جرد الحسابات'),
   reverseTreasuryOperations('treasury.reverse', 'عكس عملية على الحسابات'),

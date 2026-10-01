@@ -1172,7 +1172,7 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->name('shortages.supplies.reversal');
 
-        // ── الحسابات والخزائن ─────────────────────────────────────────────────────────────
+        // ── الحسابات والكاش ─────────────────────────────────────────────────────────────
         // TREASURY-DESIGN §١٠. Reading an account is not behind middleware: `treasury.view` opens
         // every one, and a person reads the accounts in their own name without it — the rule is
         // asked in the controller, per account.

@@ -19,6 +19,7 @@ class SearchField extends StatefulWidget {
     this.hint = 'ابحث',
     this.controller,
     this.autofocus = false,
+    this.keyboardType,
     super.key,
   });
 
@@ -31,6 +32,9 @@ class SearchField extends StatefulWidget {
   final TextEditingController? controller;
 
   final bool autofocus;
+
+  /// لوحة الأرقام لمربّعٍ لا يُبحث فيه إلا برقم — رقم الطلبية في سجلّ الحساب.
+  final TextInputType? keyboardType;
 
   @override
   State<SearchField> createState() => _SearchFieldState();
@@ -83,6 +87,7 @@ class _SearchFieldState extends State<SearchField> {
       hint: widget.hint,
       prefixIcon: AppIcons.search,
       textInputAction: TextInputAction.search,
+      keyboardType: widget.keyboardType,
       autofocus: widget.autofocus,
       onChanged: _onChanged,
       suffix: _hasText

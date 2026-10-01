@@ -145,30 +145,31 @@ void main() {
     expect(untouched.body, isNot(contains('notes')));
   });
 
-  test('سجلّ الحساب يُرسل الفلتر والحجم حين يُطلبان، ولا يرسل فراغاً', () async {
+  test('سجلّ الحساب يُرسل الفلتر والبحث والحجم حين يُطلبان، ولا يرسل فراغاً', () async {
     // Arrange
-    final filtered = _CapturingAdapter(const <Object>[]);
+    final expenses = _CapturingAdapter(const <Object>[]);
+    final orders = _CapturingAdapter(const <Object>[]);
     final plain = _CapturingAdapter(const <Object>[]);
 
     // Act
-    await repositoryOver(filtered).movements(
+    await repositoryOver(expenses).movements(
       7,
       page: 2,
       perPage: 1,
-      kind: 'deposit',
-      from: DateTime(2026, 9, 1),
-      to: DateTime(2026, 9, 30),
+      filter: MovementFilter.expenses,
+      search: '1290',
     );
+    await repositoryOver(orders).movements(7, page: 1, filter: MovementFilter.orders);
     await repositoryOver(plain).movements(7, page: 1);
 
     // Assert
-    expect(filtered.request?.queryParameters, {
+    expect(expenses.request?.queryParameters, {
       'page': 2,
       'per_page': 1,
-      'kind': 'deposit',
-      'from': '2026-09-01',
-      'to': '2026-09-30',
+      'kind': 'expense',
+      'search': '1290',
     });
+    expect(orders.request?.queryParameters, {'page': 1, 'has_order': 1});
     expect(plain.request?.queryParameters, {'page': 1});
   });
 }

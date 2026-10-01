@@ -7,7 +7,9 @@ namespace Tests\Feature\Treasury;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -64,7 +66,7 @@ class TreasuryAccountsTest extends TestCase
 
         // Assert
         $response->assertOk()
-            ->assertJsonCount(4, 'data.accounts')
+            ->assertJsonCount(5, 'data.accounts')
             ->assertJsonPath('data.total', '21300.00')
             ->assertJsonPath('data.can_view_all', true);
 
@@ -157,6 +159,52 @@ class TreasuryAccountsTest extends TestCase
         $this->assertSame([false, false, false, false], $asReader);
     }
 
+    public function test_the_history_narrows_to_the_money_that_belongs_to_orders(): void
+    {
+        // Arrange — إيداعٌ باليد، ودفعةُ زبونٍ على طلبية.
+        [, $headers] = $this->user([PermissionName::ViewTreasury, PermissionName::RecordTreasuryOperations]);
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit', 'to_account_id' => $cash->id, 'amount' => '100',
+        ], $headers)->assertCreated();
+        TreasuryMovement::factory()->create([
+            'account_id' => $cash->id, 'kind' => MovementKind::Payment, 'amount' => '320.00', 'order_id' => 1290,
+        ]);
+
+        // Act
+        $response = $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements?has_order=1", $headers);
+
+        // Assert — الدفعة وحدها، ورصيدها بعدها محسوبٌ على الحساب كلّه.
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.order_id', 1290)
+            ->assertJsonPath('data.0.balance_after', '420.00');
+    }
+
+    public function test_the_history_is_searched_by_order_number(): void
+    {
+        // Arrange — دفعتان على طلبيتين مختلفتين.
+        [, $headers] = $this->user([PermissionName::ViewTreasury]);
+        $cash = $this->defaultOf(AccountKind::Cash);
+        foreach ([1290, 1291] as $orderId) {
+            TreasuryMovement::factory()->create([
+                'account_id' => $cash->id, 'kind' => MovementKind::Payment, 'order_id' => $orderId,
+            ]);
+        }
+
+        // Act — بأرقامٍ لاتينية، وبالعربية كما تكتبها لوحة المفاتيح، وبما ليس رقماً.
+        $latin = $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements?search=1290", $headers);
+        $arabic = $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements?search=".urlencode('١٢٩١'), $headers);
+        $prefix = $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements?search=129", $headers);
+        $word = $this->getJson("/api/v1/treasury/accounts/{$cash->id}/movements?search=".urlencode('فرحات'), $headers);
+
+        // Assert — رقم الطلبية يُطابق كاملاً، كما في بحث شاشة الطلبيات.
+        $latin->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', 1290);
+        $arabic->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', 1291);
+        $prefix->assertOk()->assertJsonCount(0, 'data');
+        $word->assertOk()->assertJsonCount(0, 'data');
+    }
+
     public function test_the_account_page_totals_each_kind(): void
     {
         // Arrange
@@ -215,14 +263,14 @@ class TreasuryAccountsTest extends TestCase
         $switchOffDefault = $this->putJson("/api/v1/treasury/accounts/{$cash->id}", ['is_active' => false], $headers);
         $switchOffNawris = $this->putJson("/api/v1/treasury/accounts/{$nawris->id}", ['is_active' => false], $headers);
         $custodyDefault = $this->putJson("/api/v1/treasury/accounts/{$nawris->id}", ['is_default' => true], $headers);
-        $rename = $this->putJson("/api/v1/treasury/accounts/{$cash->id}", ['name' => 'الخزنة'], $headers);
+        $rename = $this->putJson("/api/v1/treasury/accounts/{$cash->id}", ['name' => 'الكاش'], $headers);
 
         // Assert
         $unsetDefault->assertUnprocessable()->assertJsonValidationErrors('is_default');
         $switchOffDefault->assertUnprocessable()->assertJsonValidationErrors('is_active');
         $switchOffNawris->assertUnprocessable()->assertJsonValidationErrors('is_active');
         $custodyDefault->assertUnprocessable()->assertJsonValidationErrors('is_default');
-        $rename->assertOk()->assertJsonPath('data.name', 'الخزنة');
+        $rename->assertOk()->assertJsonPath('data.name', 'الكاش');
     }
 
     public function test_an_account_still_holding_money_cannot_be_switched_off(): void

@@ -27,7 +27,7 @@ enum AccountKind: string
     public function label(): string
     {
         return match ($this) {
-            self::Cash => 'خزنة',
+            self::Cash => 'كاش',
             self::Bank => 'مصرف',
             self::Wallet => 'محفظة ليبيانا',
             self::Custody => 'عهدة',

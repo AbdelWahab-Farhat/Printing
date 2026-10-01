@@ -20,7 +20,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * The hand operations of الحسابات والخزائن — TREASURY-DESIGN §٤, §١٢.
+ * The hand operations of الحسابات والكاش — TREASURY-DESIGN §٤, §١٢.
  *
  * Arrange - Act - Assert throughout.
  */

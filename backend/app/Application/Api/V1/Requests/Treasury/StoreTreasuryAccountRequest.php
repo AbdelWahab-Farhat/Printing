@@ -23,7 +23,7 @@ class StoreTreasuryAccountRequest extends FormRequest
             // «مصرف علي» — whose name the account is in. A removed employee cannot be given one.
             'holder_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'is_default' => ['nullable', 'boolean'],
-            // «خزنة مكتب الاستلام» — a branch customers collect from; cash accounts only (§١٩).
+            // «كاش مكتب الاستلام» — a branch customers collect from; cash accounts only (§١٩).
             'pickup_city_id' => ['nullable',
                 'integer',
                 Rule::exists('cities', 'id')->where('fulfilment_type', 'office_pickup')->whereNull('deleted_at'),
@@ -60,7 +60,7 @@ class StoreTreasuryAccountRequest extends FormRequest
             'holder_user_id' => 'صاحب الحساب',
             'is_default' => 'الحساب الافتراضي',
             'is_collected' => 'يُجمَع عند التسوية',
-            'pickup_city_id' => 'خزنة مكتب الاستلام',
+            'pickup_city_id' => 'كاش مكتب الاستلام',
             'notes' => 'الملاحظات',
         ];
     }

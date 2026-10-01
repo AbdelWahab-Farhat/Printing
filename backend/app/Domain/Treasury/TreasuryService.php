@@ -46,7 +46,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 /**
- * The door to الحسابات والخزائن.
+ * The door to الحسابات والكاش.
  *
  * **Two kinds of caller.** The treasury screens, through the controllers; and every context where
  * money moves — Order, Carrier, Shortage, Investor, Vendor — which call {@see accountFor()} to

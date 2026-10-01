@@ -340,7 +340,7 @@ enum PermissionName: string
     case SubmitDesignTickets = 'design_tickets.submit';
     case ReviewDesignTickets = 'design_tickets.review';
 
-    // الحسابات والخزائن — TREASURY-DESIGN §١٠. Split where the trust differs: seeing the money,
+    // الحسابات والكاش — TREASURY-DESIGN §١٠. Split where the trust differs: seeing the money,
     // moving it by hand, correcting a count, undoing an operation, and shaping the accounts
     // themselves. Recording a customer's payment stays under `orders.payments.record`; the
     // movement it writes needs no second grant. Somebody holding an account reads it without
@@ -485,7 +485,7 @@ enum PermissionName: string
             self::SubmitDesignTickets => 'رفع تصميم داخل التذكرة',
             self::ReviewDesignTickets => 'الموافقة على التصميم أو طلب تعديل',
             self::ViewCompanySettings => 'عرض إعدادات الشركة',
-            self::ViewTreasury => 'عرض الحسابات والخزائن',
+            self::ViewTreasury => 'عرض الحسابات والكاش',
             self::RecordTreasuryOperations => 'إيداع وسحب ومصروف وتحويل',
             self::AdjustTreasuryBalances => 'جرد الحسابات',
             self::ReverseTreasuryOperations => 'عكس عملية على الحسابات',
@@ -570,7 +570,7 @@ enum PermissionName: string
             self::RecordTreasuryOperations,
             self::AdjustTreasuryBalances,
             self::ReverseTreasuryOperations,
-            self::ManageTreasury => 'الحسابات والخزائن',
+            self::ManageTreasury => 'الحسابات والكاش',
             self::ViewVendorPayments,
             self::RecordVendorPayments,
             self::ReverseVendorPayments => 'دفعات الموردين',

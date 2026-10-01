@@ -50,7 +50,7 @@ abstract final class InvestorEndpoints {
       '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
-/// الحسابات والخزائن — TREASURY-DESIGN §١٠.
+/// الحسابات والكاش — TREASURY-DESIGN §١٠.
 abstract final class TreasuryEndpoints {
   static const String accounts = '/treasury/accounts';
   static String account(int id) => '/treasury/accounts/$id';
@@ -82,10 +82,6 @@ abstract final class TreasuryEndpoints {
       '/purchase-orders/$purchaseOrderId/count-as-debt';
 }
 
-/// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.
-///
-/// نقطةٌ واحدة لا اثنتان: الإعداداتُ صفٌّ واحد على الخادم، وتقسيمُها إلى «عامة» و«استثمار» في
-/// المسار كان سيعد بفصلٍ لا يوجد خلفه.
 /// الصندوق الاستثماري وفتراته.
 ///
 /// `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار هو
@@ -121,6 +117,10 @@ abstract final class InvestmentEndpoints {
       '/purchase-orders/$purchaseOrderId/fund-purchase';
 }
 
+/// إعدادات الشركة — نقطةٌ واحدة تُقرأ وتُكتب.
+///
+/// نقطةٌ واحدة لا اثنتان: الإعداداتُ صفٌّ واحد على الخادم، وتقسيمُها إلى «عامة» و«استثمار» في
+/// المسار كان سيعد بفصلٍ لا يوجد خلفه.
 abstract final class SettingsEndpoints {
   static const String settings = '/settings';
 }

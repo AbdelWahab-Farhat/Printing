@@ -15,7 +15,8 @@ import 'package:mocktail/mocktail.dart';
 
 import 'treasury_fixtures.dart';
 
-/// صفحة الحساب — اللمسة تفتح مصدر المال، والعكس في «...» وحدها، والسجل يُرقَّع بعده.
+/// صفحة الحساب — اللمسة تفتح مصدر المال، والعكس في «...» وحدها، والسجل يُرقَّع بعده. فلترُ
+/// «الكل · الطلبيات · المصاريف» والبحثُ برقم الطلبية في `treasury_account_page_test.dart`.
 /// TREASURY-DESIGN §٩.
 ///
 /// Arrange - Act - Assert throughout.
@@ -31,24 +32,6 @@ void main() {
       'balance': '300.00',
       'holder': {'id': 3, 'name': 'علي'},
     }),
-    totalIn: '500.00',
-    totalOut: '200.00',
-    byKind: const [
-      KindTotal(
-        kind: 'deposit',
-        label: 'إيداع',
-        moneyIn: '50.00',
-        moneyOut: '0.00',
-        net: '50.00',
-      ),
-      KindTotal(
-        kind: 'payment',
-        label: 'دفعة زبون',
-        moneyIn: '450.00',
-        moneyOut: '0.00',
-        net: '450.00',
-      ),
-    ],
   );
 
   final deposit = movement(id: 70, operationId: 30, balanceAfter: '300.00');
@@ -180,7 +163,7 @@ void main() {
         ),
       ),
     );
-    when(() => repository.movements(5, page: 1, perPage: 1, kind: 'deposit')).thenAnswer(
+    when(() => repository.movements(5, page: 1, perPage: 1)).thenAnswer(
       (_) async => Right(
         pageOf([
           movement(
@@ -205,7 +188,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('عكس العملية'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(AppTextField), 'سُجّل مرتين');
+    // حقلُ السبب في الحوار، لا مربّعُ البحث برقم الطلبية تحت الرصيد.
+    await tester.enterText(find.byType(AppTextField).last, 'سُجّل مرتين');
     await tester.pump();
     await tester.tap(find.widgetWithText(TextButton, 'عكس العملية'));
     await tester.pumpAndSettle();
@@ -218,22 +202,5 @@ void main() {
     expect(original.style?.decoration, TextDecoration.lineThrough);
     expect(find.byTooltip('خيارات الحركة'), findsNothing);
     verify(() => repository.movements(5, page: 1)).called(1);
-  });
-
-  testWidgets('picking a kind asks the server for that kind alone', (tester) async {
-    // Arrange
-    when(
-      () => repository.movements(5, page: 1, kind: 'payment'),
-    ).thenAnswer((_) async => Right(pageOf([payment])));
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    // Act
-    await tester.tap(find.text('دفعة زبون').first);
-    await tester.pumpAndSettle();
-
-    // Assert
-    verify(() => repository.movements(5, page: 1, kind: 'payment')).called(1);
-    expect(find.byTooltip('خيارات الحركة'), findsNothing);
   });
 }

@@ -22,7 +22,7 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockTreasuryRepository extends Mock implements TreasuryRepository {}
 
-/// الحسابات والخزائن on the phone — TREASURY-DESIGN §٥, §٦, §٩.
+/// الحسابات والكاش on the phone — TREASURY-DESIGN §٥, §٦, §٩.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -118,7 +118,7 @@ void main() {
       type: TransitionFieldType.treasuryAccount,
       label: 'الحساب',
       options: [
-        TransitionFieldOption(value: '1', label: 'الخزنة الرئيسية'),
+        TransitionFieldOption(value: '1', label: 'الكاش الرئيسي'),
         TransitionFieldOption(value: '2', label: 'المصرف'),
       ],
     );
@@ -150,11 +150,11 @@ void main() {
         (_) async => const Right<Failure, AccountOptions>(
           AccountOptions(
             accounts: [
-              AccountOption(id: 1, name: 'الخزنة الرئيسية', kindLabel: 'خزنة', isDefault: true),
-              AccountOption(id: 9, name: 'خزنة فرع مصراتة', kindLabel: 'خزنة', isDefault: false),
+              AccountOption(id: 1, name: 'الكاش الرئيسي', kindLabel: 'كاش', isDefault: true),
+              AccountOption(id: 9, name: 'كاش فرع مصراتة', kindLabel: 'كاش', isDefault: false),
             ],
             suggestedId: 1,
-            suggestedName: 'الخزنة الرئيسية',
+            suggestedName: 'الكاش الرئيسي',
           ),
         ),
       );
@@ -175,12 +175,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final automatic = find.text('تلقائي — الخزنة الرئيسية').evaluate().length;
+      final automatic = find.text('تلقائي — الكاش الرئيسي').evaluate().length;
 
       // Act
       await tester.tap(find.byType(AppDropdown<AccountOption>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('خزنة فرع مصراتة').last);
+      await tester.tap(find.text('كاش فرع مصراتة').last);
       await tester.pumpAndSettle();
 
       // Assert — no bank among them, and the pick still travels as the id the server reads
@@ -261,9 +261,9 @@ void main() {
             accounts: [
               TreasuryAccount(
                 id: 1,
-                name: 'الخزنة الرئيسية',
+                name: 'الكاش الرئيسي',
                 kind: AccountKind.cash,
-                kindLabel: 'خزنة',
+                kindLabel: 'كاش',
                 isDefault: true,
                 isActive: true,
                 isSystem: false,
@@ -298,7 +298,7 @@ void main() {
       // الخادم يصرف من نقد المسجِّل أولاً، و`suggested_name` يسمّيه.
       when(() => repository.accountOptions(method: 'cash', incoming: false)).thenAnswer(
         (_) async => const Right<Failure, AccountOptions>(
-          AccountOptions(accounts: [], suggestedId: 1, suggestedName: 'الخزنة الرئيسية'),
+          AccountOptions(accounts: [], suggestedId: 1, suggestedName: 'الكاش الرئيسي'),
         ),
       );
       sl
@@ -317,7 +317,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final automatic = find.text('تلقائي — الخزنة الرئيسية').evaluate().length;
+      final automatic = find.text('تلقائي — الكاش الرئيسي').evaluate().length;
 
       // Act
       await tester.tap(find.byType(AppDropdown<AccountOption>));
@@ -339,9 +339,9 @@ void main() {
         'accounts': [
           {
             'id': 1,
-            'name': 'الخزنة الرئيسية',
+            'name': 'الكاش الرئيسي',
             'kind': 'cash',
-            'kind_label': 'خزنة',
+            'kind_label': 'كاش',
             'is_default': true,
             'is_active': true,
             'is_system': false,

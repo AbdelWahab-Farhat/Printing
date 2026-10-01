@@ -8,8 +8,6 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_settings_cubit.dart';
-import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
-import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,17 +15,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// «إعدادات المالية» — everything the owner can decide about the treasury, in one place.
 /// TREASURY-DESIGN §١٦.
 ///
-/// Six sections, each saved the moment it changes:
+/// Five sections, each saved the moment it changes:
 ///
 /// 1. **القواعد** — own account first, overdrafts, the withdrawal reason, the carrier's cut, and
 ///    the lock date.
 /// 2. **الحساب الافتراضي لكل طريقة** — where «تلقائي» lands for cash, transfer and card, Libyana.
 /// 3. **أين تُسوّى العهدة** — where Nawris's and each driver's money goes at «تم التسوية».
-/// 4. **خزنة كل مكتب استلام** — the cash box of each branch customers collect from (§١٩).
+/// 4. **كاش كل مكتب استلام** — the cash box of each branch customers collect from (§١٩).
 /// 5. **التجميع عند التسوية** — per kind: on or off, where to, and which accounts keep their money
 ///    (§١٨).
-/// 6. **الحسابات** — every account, including the switched-off ones; tap to edit.
 ///
+/// الحساباتُ كانت القسمَ السادس، وصارت في «الحسابات والكاش» وحدها: هناك تُفتح وتُعدَّل وتُضاف.
 /// تصنيفاتُ المصروفات كانت القسمَ السابع، وصارت شاشةً وحدها تحت «المالية» في الدرج.
 class TreasurySettingsPage extends StatelessWidget {
   const TreasurySettingsPage({super.key});
@@ -178,7 +176,7 @@ class _Loaded extends StatelessWidget {
             const _Heading('أين تُسوّى العهدة'),
             const _Hint(
               'عند «تم التسوية» ينتقل مال العهدة إلى: ما يُختار على الشاشة، ثم حساب من يسوّي '
-              '(إن كانت «الحساب الشخصي أولاً» مفعّلة)، ثم ما يُحدَّد هنا، ثم المصرف للنورس والخزنة للمندوب',
+              '(إن كانت «الحساب الشخصي أولاً» مفعّلة)، ثم ما يُحدَّد هنا، ثم المصرف للنورس والكاش للمندوب',
             ),
             for (final account in custody)
               _ChoiceTile(
@@ -202,10 +200,10 @@ class _Loaded extends StatelessWidget {
           ],
 
           if (settings.pickupOffices.isNotEmpty) ...[
-            const _Heading('خزنة كل مكتب استلام'),
+            const _Heading('كاش كل مكتب استلام'),
             const _Hint(
               'الكاش المقبوض والطلبية في «استلام مكتب» — عند التسليم أو من شاشة المدفوعات — ينزل '
-              'في خزنة ذلك المكتب حين يُترك «تلقائي»، قبل حساب الموظف والخزنة الرئيسية',
+              'في كاش ذلك المكتب حين يُترك «تلقائي»، قبل حساب الموظف والكاش الافتراضي',
             ),
             for (final office in settings.pickupOffices)
               _ChoiceTile(
@@ -219,7 +217,7 @@ class _Loaded extends StatelessWidget {
                   ];
                   final picked = await _pick<int>(
                     context,
-                    title: 'خزنة «${office.name}»',
+                    title: 'كاش «${office.name}»',
                     options: [(0, 'القاعدة العادية'), for (final a in boxes) (a.id, a.name)],
                   );
 
@@ -239,7 +237,7 @@ class _Loaded extends StatelessWidget {
 
           const _Heading('التجميع عند التسوية'),
           const _Hint(
-            'عند «تم التسوية» ينتقل مال الطلبية من «مصرف علي» أو خزنة الفرع إلى حساب التجميع '
+            'عند «تم التسوية» ينتقل مال الطلبية من «مصرف علي» أو كاش الفرع إلى حساب التجميع '
             'لنوعه — ما بقي منه في الحساب فقط، وما اختير يدوياً على شاشة التسوية يبقى مكانه',
           ),
           for (final (label, kind) in const [
@@ -257,43 +255,6 @@ class _Loaded extends StatelessWidget {
                   if (a.kind == kind) a,
               ],
             ),
-
-          const _Heading('الحسابات'),
-          for (final account in state.accounts)
-            TreasuryAccountTile(
-              key: ValueKey(account.id),
-              account: account,
-              onTap: () => showTreasuryAccountSheet(
-                context: context,
-                account: account,
-                onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) =>
-                    cubit.saveAccount(
-                      id: account.id,
-                      name: name,
-                      isDefault: isDefault,
-                      isActive: isActive,
-                      holderUserId: holderUserId,
-                      notes: notes,
-                    ),
-              ),
-            ),
-          SizedBox(height: 8.h),
-          AppButton.tonal(
-            label: 'حساب جديد',
-            icon: AppIcons.add,
-            onPressed: () => showTreasuryAccountSheet(
-              context: context,
-              onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) =>
-                  cubit.saveAccount(
-                    name: name,
-                    kind: kind,
-                    isDefault: isDefault,
-                    holderUserId: holderUserId,
-                    notes: notes,
-                  ),
-            ),
-          ),
-
         ],
       ),
     );

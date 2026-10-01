@@ -27,7 +27,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * الحسابات والخزائن — the accounts, their balances and their history.
+ * الحسابات والكاش — the accounts, their balances and their history.
  *
  * **Reading is not behind route middleware.** `treasury.view` opens every account; without it a
  * person still reads the accounts in their own name — a driver sees what he is holding. The
@@ -112,6 +112,8 @@ class TreasuryAccountController extends Controller
             'to' => ['nullable', 'date'],
             'kind' => ['nullable', Rule::enum(MovementKind::class)],
             'order_id' => ['nullable', 'integer'],
+            'has_order' => ['nullable', 'boolean'],
+            'search' => ['nullable', 'string', 'max:50'],
         ]);
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);

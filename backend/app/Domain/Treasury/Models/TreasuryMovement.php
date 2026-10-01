@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * One effect on one account: +50 into المصرف, −300 out of الخزنة.
+ * One effect on one account: +50 into المصرف, −300 out of الكاش.
  *
  * **The ledger itself.** Only {@see PostMovement} writes one, nothing updates one, and a mistake
  * is a second row pointing back through `reverses_movement_id` — with the same kind and the

@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * A place money is: الخزنة الرئيسية, المصرف, مصرف علي, ليبيانا, النورس.
+ * A place money is: الكاش الرئيسي, المصرف, مصرف علي, ليبيانا, النورس.
  *
  * **No balance column.** The balance is the sum of {@see TreasuryMovement} rows — ask
  * `AccountBalances` for it. `kind`, `system_code` and `created_by` are stamped by the Action and

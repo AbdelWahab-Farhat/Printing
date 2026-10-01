@@ -10,7 +10,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
-import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/app_tab_bar.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_cubit.dart';
@@ -21,7 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// الحسابات والخزائن — every account and what it holds, whose the money is, and what the
+/// الحسابات والكاش — every account and what it holds, whose the money is, and what the
 /// shelves are worth. TREASURY-DESIGN §٩.
 ///
 /// **Somebody without `treasury.view` sees the accounts in their own name** — a driver his
@@ -60,7 +60,7 @@ class _TreasuryView extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('الحسابات والخزائن'),
+            title: const Text('الحسابات والكاش'),
             actions: [
               if (sl<Session>().can(AppPermission.manageTreasury))
                 IconButton(
@@ -75,16 +75,10 @@ class _TreasuryView extends StatelessWidget {
                 ),
             ],
           ),
-          floatingActionButton: state is TreasuryLoaded && state.accounts.canViewAll
-              ? _Actions(accounts: state.accounts.accounts)
-              : null,
           body: switch (state) {
             TreasuryLoading() => const Center(child: CircularProgressIndicator()),
             TreasuryFailed(:final failure) => _Failed(failure: failure, onRetry: cubit.load),
-            TreasuryLoaded() => RefreshIndicator(
-              onRefresh: cubit.load,
-              child: _Loaded(state: state),
-            ),
+            TreasuryLoaded() => _Loaded(state: state),
           },
         );
       },
@@ -92,6 +86,10 @@ class _TreasuryView extends StatelessWidget {
   }
 }
 
+/// المجموع وتحته زرّا ما لا يقدّمه أي حساب، ثم الإجابات الثلاث في تبويبات: الحسابات، ولمن
+/// المال، والمخزون — واحدة على الشاشة في كل مرة بدل ثلاث بطاقات تحت بعضها.
+///
+/// من لا يرى إلا حساباته لا يصله إلا تبويب واحد، فتُرسم القائمة وحدها بلا شريط تبويبات.
 class _Loaded extends StatelessWidget {
   const _Loaded({required this.state});
 
@@ -114,77 +112,107 @@ class _Loaded extends StatelessWidget {
     final money = [for (final a in accounts.accounts) if (!a.isPayable) a];
     final payables = [for (final a in accounts.accounts) if (a.isPayable) a];
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
-      children: [
-        TreasuryTotalCard(
-          label: accounts.canViewAll ? 'كل ما في الحسابات' : 'ما في حساباتك',
-          amount: accounts.total,
+    final tabs = <(String, Widget)>[
+      (
+        'الحسابات',
+        _Tab(
+          onRefresh: cubit.load,
+          children: [
+            if (accounts.accounts.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 32.h),
+                child: Text(
+                  'لا يوجد حساب باسمك',
+                  textAlign: TextAlign.center,
+                  style: context.textTheme.bodyLarge,
+                ),
+              ),
+            for (final account in money)
+              TreasuryAccountTile(
+                key: ValueKey(account.id),
+                account: account,
+                onTap: () => open(account),
+              ),
+            if (payables.isNotEmpty)
+              _Payables(payables: payables, total: accounts.payablesTotal, onOpen: open),
+          ],
         ),
-        SizedBox(height: 16.h),
+      ),
+      if (state.ownership case final ownership?)
+        (
+          'لمن المال',
+          _Tab(
+            onRefresh: cubit.load,
+            children: [
+              TreasuryFigures(
+                lines: [
+                  ('كل ما في الحسابات', ownership.totalHeld),
+                  for (final investor in ownership.investors)
+                    (investor.name, addDecimals(investor.capital, investor.profit)),
+                  ('نقد الصندوق الاستثماري', ownership.fundCash),
+                  // يُطرح من مال الشركة نفسها — فيُرسم بالإشارة التي يُطرح بها.
+                  if (ownership.payablesTotal != '0.00')
+                    ('علينا', negateAmount(ownership.payablesTotal)),
+                ],
+                emphasis: ('مال الشركة نفسها', ownership.companyOwn),
+              ),
+            ],
+          ),
+        ),
+      if (state.inventory case final inventory?)
+        (
+          'المخزون',
+          _Tab(
+            onRefresh: cubit.load,
+            children: [
+              TreasuryFigures(
+                lines: [
+                  ('بضاعة الشركة', inventory.company),
+                  ('بضاعة الصندوق', inventory.fund),
+                  for (final warehouse in inventory.byWarehouse)
+                    ('في ${warehouse.name}', warehouse.value),
+                ],
+                emphasis: ('الإجمالي', inventory.total),
+              ),
+            ],
+          ),
+        ),
+    ];
 
-        if (accounts.accounts.isEmpty)
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        children: [
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.h),
-            child: Text(
-              'لا يوجد حساب باسمك',
-              textAlign: TextAlign.center,
-              style: context.textTheme.bodyLarge,
+            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
+            child: Column(
+              children: [
+                TreasuryTotalCard(
+                  label: accounts.canViewAll ? 'كل ما في الحسابات' : 'ما في حساباتك',
+                  amount: accounts.total,
+                  inline: true,
+                ),
+                if (accounts.canViewAll) _Actions(accounts: accounts.accounts),
+              ],
             ),
           ),
-
-        for (final account in money)
-          TreasuryAccountTile(
-            key: ValueKey(account.id),
-            account: account,
-            onTap: () => open(account),
-          ),
-
-        if (payables.isNotEmpty)
-          _Payables(payables: payables, total: accounts.payablesTotal, onOpen: open),
-
-        if (state.ownership case final ownership?) ...[
-          SizedBox(height: 16.h),
-          TreasuryFiguresCard(
-            title: 'لمن المال',
-            icon: AppIcons.investors,
-            lines: [
-              ('كل ما في الحسابات', ownership.totalHeld),
-              for (final investor in ownership.investors)
-                (investor.name, addDecimals(investor.capital, investor.profit)),
-              ('نقد الصندوق الاستثماري', ownership.fundCash),
-              // Taken off the company's own money — so drawn with the sign it is subtracted by.
-              if (ownership.payablesTotal != '0.00')
-                ('علينا', negateAmount(ownership.payablesTotal)),
-            ],
-            emphasis: ('مال الشركة نفسها', ownership.companyOwn),
+          if (tabs.length > 1) AppTabBar(labels: [for (final (label, _) in tabs) label]),
+          Expanded(
+            child: tabs.length > 1
+                ? TabBarView(children: [for (final (_, body) in tabs) body])
+                : tabs.single.$2,
           ),
         ],
-
-        if (state.inventory case final inventory?) ...[
-          SizedBox(height: 16.h),
-          TreasuryFiguresCard(
-            title: 'قيمة المخزون بالتكلفة',
-            icon: AppIcons.warehouse,
-            lines: [
-              ('بضاعة الشركة', inventory.company),
-              ('بضاعة الصندوق', inventory.fund),
-              for (final warehouse in inventory.byWarehouse)
-                ('في ${warehouse.name}', warehouse.value),
-            ],
-            emphasis: ('الإجمالي', inventory.total),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
 
-/// «علينا» — what the company owes. TREASURY-DESIGN §٢٠.
+/// «علينا» — ما على الشركة. TREASURY-DESIGN §٢٠.
 ///
-/// The payables opened by hand — a loan, the rent — are few and named, so each is a row. The
-/// vendors' are one per vendor and could be dozens, so they fold into «ذمم الموردين» with their
-/// total, and open to the vendors that are owed something; a vendor paid off is left out.
+/// ما فُتح باليد — قرضٌ أو إيجار — قليلٌ ومسمّى، فلكلٍّ صفّ. أما الموردون فلكلٍّ منهم حساب وقد
+/// يكونون عشرات، فيُطوَون في «ذمم الموردين» بمجموعهم وتُفتح على من له شيءٌ منهم؛ ومن سُدّد له
+/// كلُّه لا يُذكر.
 class _Payables extends StatelessWidget {
   const _Payables({required this.payables, required this.total, required this.onOpen});
 
@@ -259,7 +287,7 @@ class _Payables extends StatelessWidget {
     );
   }
 
-  /// What the listed vendors are owed together — integers of millimes, never a float.
+  /// ما للموردين المعروضين معاً — بأعدادٍ صحيحة، لا بكسورٍ عائمة.
   static String _owedBy(List<TreasuryAccount> accounts) {
     var total = 0;
 
@@ -282,6 +310,10 @@ class _Payables extends StatelessWidget {
   }
 }
 
+/// ما لا يجده القارئ داخل أي حساب: فتح حساب جديد، والمصروف الذي يُسجَّل من هنا دون البحث
+/// أولاً عن الحساب الذي خرج منه. الإيداع والسحب والتحويل والجرد في صفحة الحساب نفسه.
+///
+/// كل زر يظهر لمن يملك صلاحيته فقط، والزر الباقي وحده يأخذ العرض كله.
 class _Actions extends StatelessWidget {
   const _Actions({required this.accounts});
 
@@ -290,61 +322,74 @@ class _Actions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<TreasuryCubit>();
+    final session = sl<Session>();
 
-    AppAction operation(OperationKind kind, IconData icon, AppPermission permission) => AppAction(
-      label: kind.label,
-      icon: icon,
-      permission: permission,
-      onTap: (context) => showTreasuryOperationSheet(
-        context: context,
-        kind: kind,
-        accounts: accounts,
-        onSubmit: cubit.record,
-      ),
-    );
-
-    return AppSpeedDial(
-      actions: [
-        operation(
-          OperationKind.deposit,
-          AppIcons.fundDeposit,
-          AppPermission.recordTreasuryOperations,
-        ),
-        operation(
-          OperationKind.withdrawal,
-          AppIcons.fundWithdraw,
-          AppPermission.recordTreasuryOperations,
-        ),
-        operation(OperationKind.expense, AppIcons.expense, AppPermission.recordTreasuryOperations),
-        operation(
-          OperationKind.transfer,
-          AppIcons.transfer,
-          AppPermission.recordTreasuryOperations,
-        ),
-        operation(
-          OperationKind.adjustment,
-          AppIcons.countBalance,
-          AppPermission.adjustTreasuryBalances,
-        ),
-        operation(OperationKind.opening, AppIcons.treasury, AppPermission.manageTreasury),
-        AppAction(
+    final buttons = [
+      if (session.can(AppPermission.manageTreasury))
+        AppButton.tonal(
           label: 'حساب جديد',
           icon: AppIcons.add,
-          tone: AppActionTone.primary,
-          permission: AppPermission.manageTreasury,
-          onTap: (context) => showTreasuryAccountSheet(
-            context: context,
-            onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) =>
-                cubit.saveAccount(
-                  name: name,
-                  kind: kind,
-                  isDefault: isDefault,
-                  holderUserId: holderUserId,
-                  notes: notes,
-                ),
+          onPressed: () => unawaited(
+            showTreasuryAccountSheet(
+              context: context,
+              onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) =>
+                  cubit.saveAccount(
+                    name: name,
+                    kind: kind,
+                    isDefault: isDefault,
+                    holderUserId: holderUserId,
+                    notes: notes,
+                  ),
+            ),
           ),
         ),
-      ],
+      if (session.can(AppPermission.recordTreasuryOperations))
+        AppButton.tonal(
+          label: 'مصروف جديد',
+          icon: AppIcons.expense,
+          onPressed: () => unawaited(
+            showTreasuryOperationSheet(
+              context: context,
+              kind: OperationKind.expense,
+              accounts: accounts,
+              onSubmit: cubit.record,
+            ),
+          ),
+        ),
+    ];
+
+    if (buttons.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 12.h),
+      child: Row(
+        children: [
+          for (final (index, button) in buttons.indexed) ...[
+            if (index > 0) SizedBox(width: 12.w),
+            Expanded(child: button),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// تبويب واحد: قائمة تُسحب للتحديث، حتى حين تكون أقصر من الشاشة.
+class _Tab extends StatelessWidget {
+  const _Tab({required this.onRefresh, required this.children});
+
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+        children: children,
+      ),
     );
   }
 }

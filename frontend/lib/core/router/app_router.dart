@@ -171,7 +171,7 @@ abstract final class Routes {
   /// قواعدُ الصندوق الأربع — خلف `settings.view`.
   static const String investmentSettings = '/investment-settings';
 
-  /// الحسابات والخزائن — اللوحة، وصفحة الحساب الواحد.
+  /// الحسابات والكاش — اللوحة، وصفحة الحساب الواحد.
   static const String treasury = '/treasury';
 
   static String treasuryAccount(int id) => '/treasury/accounts/$id';

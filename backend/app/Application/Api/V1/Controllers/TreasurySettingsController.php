@@ -71,7 +71,7 @@ class TreasurySettingsController extends Controller
             'collect_bank_into_id' => $settings->collect_bank_into_id,
             'collect_wallet' => (bool) $settings->collect_wallet,
             'collect_wallet_into_id' => $settings->collect_wallet_into_id,
-            // «خزنة كل مكتب استلام» — each branch customers collect from, and the cash box its
+            // «كاش كل مكتب استلام» — each branch customers collect from, and the cash box its
             // cash lands in (null: the usual rules). Linked on the account (§١٩).
             'pickup_offices' => $delivery->pickupOffices()->map(fn (City $city) => [
                 'city_id' => $city->id,

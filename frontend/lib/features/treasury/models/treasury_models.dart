@@ -1,4 +1,4 @@
-/// الحسابات والخزائن — ما ترسله نقاط الخزينة. TREASURY-DESIGN §٤، §٩.
+/// الحسابات والكاش — ما ترسله نقاط الخزينة. TREASURY-DESIGN §٤، §٩.
 ///
 /// **أصنافٌ عادية لا Freezed**، على نسق `ShortageCounts`: كلُّها للقراءة، و`fromJson` مكتوبٌ
 /// باليد أقصر من التعليقات التوضيحية — فلا يحتاج الجزء كلُّه إلى توليد. وما يُرقَّع منها بعد
@@ -63,7 +63,7 @@ class TreasuryPerson {
   }
 }
 
-/// مكانٌ فيه المال: الخزنة الرئيسية، المصرف، مصرف علي، ليبيانا، النورس.
+/// مكانٌ فيه المال: الكاش الرئيسي، المصرف، مصرف علي، ليبيانا، النورس.
 class TreasuryAccount {
   const TreasuryAccount({
     required this.id,
@@ -264,7 +264,7 @@ class TreasurySettings {
   /// «التجميع عند التسوية» للنقد والمصارف وليبيانا. النوع الغائب منها مطفأ.
   final Map<AccountKind, CollectionSetting> collections;
 
-  /// «خزنة كل مكتب استلام» — كل مكتب، وخزنته إن رُبطت.
+  /// «كاش كل مكتب استلام» — كل مكتب، وكاشه إن رُبط.
   final List<PickupOffice> pickupOffices;
 
   CollectionSetting collectionOf(AccountKind kind) =>
@@ -336,63 +336,41 @@ class TreasuryAccounts {
   );
 }
 
-/// الداخل والخارج من نوع حركةٍ واحد على حسابٍ واحد — «الإيداعات ٥٠٠».
-class KindTotal {
-  const KindTotal({
-    required this.kind,
-    required this.label,
-    required this.moneyIn,
-    required this.moneyOut,
-    required this.net,
-  });
+/// رأس صفحة الحساب: الحساب ورصيده.
+///
+/// **بلا مجاميع بالنوع** — طلب المستخدم (2026-10-01): «داخل خارج هذي كلها ماليهاش فائدة»، فحلّ
+/// محلَّها فلترُ [MovementFilter] والبحثُ برقم الطلبية.
+class TreasuryAccountDetail {
+  const TreasuryAccountDetail({required this.account});
 
-  final String kind;
-  final String label;
-  final String moneyIn;
-  final String moneyOut;
-  final String net;
+  final TreasuryAccount account;
 
-  factory KindTotal.fromJson(Map<String, dynamic> json) => KindTotal(
-    kind: _string(json['kind']),
-    label: _string(json['label']),
-    moneyIn: _string(json['in'], '0.00'),
-    moneyOut: _string(json['out'], '0.00'),
-    net: _string(json['net'], '0.00'),
+  /// الرأسُ نفسه بحسابٍ عُدّل — تعديلُ الحساب لا يحرّك مالاً، فيُرقَّع ولا يُعاد طلبه.
+  TreasuryAccountDetail withAccount(TreasuryAccount account) =>
+      TreasuryAccountDetail(account: account);
+
+  factory TreasuryAccountDetail.fromJson(Map<String, dynamic> json) => TreasuryAccountDetail(
+    account: TreasuryAccount.fromJson(json['account'] as Map<String, dynamic>),
   );
 }
 
-/// رأس صفحة الحساب: الحساب، وأرقامه بالنوع.
-class TreasuryAccountDetail {
-  const TreasuryAccountDetail({
-    required this.account,
-    required this.totalIn,
-    required this.totalOut,
-    required this.byKind,
-  });
+/// ما يُقصر عليه سجلّ الحساب. «الطلبيات» كلّ مالٍ تملكه طلبية (دفعاتها وردودها وتسوياتها)،
+/// و«المصاريف» المصروفات.
+enum MovementFilter {
+  all('الكل'),
+  orders('الطلبيات'),
+  expenses('المصاريف');
 
-  final TreasuryAccount account;
-  final String totalIn;
-  final String totalOut;
-  final List<KindTotal> byKind;
+  const MovementFilter(this.label);
 
-  /// الأرقام نفسها بحسابٍ عُدّل — التعديل لا يحرّك مالاً، فالمجاميع باقية.
-  TreasuryAccountDetail withAccount(TreasuryAccount account) => TreasuryAccountDetail(
-    account: account,
-    totalIn: totalIn,
-    totalOut: totalOut,
-    byKind: byKind,
-  );
+  final String label;
 
-  factory TreasuryAccountDetail.fromJson(Map<String, dynamic> json) {
-    final totals = _mapOrNull(json['totals']) ?? const <String, dynamic>{};
-
-    return TreasuryAccountDetail(
-      account: TreasuryAccount.fromJson(json['account'] as Map<String, dynamic>),
-      totalIn: _string(totals['total_in'], '0.00'),
-      totalOut: _string(totals['total_out'], '0.00'),
-      byKind: [for (final kind in _maps(totals['by_kind'])) KindTotal.fromJson(kind)],
-    );
-  }
+  /// ما يُرسل مع صفحة السجلّ ليقصرها الخادم، فالرصيد بعد كلّ حركة يبقى محسوباً على الحساب كلّه.
+  Map<String, Object> get query => switch (this) {
+    all => const {},
+    orders => const {'has_order': 1},
+    expenses => const {'kind': 'expense'},
+  };
 }
 
 /// سطرٌ واحد من سجلّ الحساب.
