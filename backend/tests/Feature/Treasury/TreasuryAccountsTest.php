@@ -186,6 +186,55 @@ class TreasuryAccountsTest extends TestCase
         $rename->assertOk()->assertJsonPath('data.name', 'الخزنة');
     }
 
+    public function test_an_account_still_holding_money_cannot_be_switched_off(): void
+    {
+        // Arrange — المعطَّل لا يظهر في منتقٍ ولا يستقبل حركة يدوية؛ مالٌ فيه لا يصله أحد.
+        [, $headers] = $this->user([
+            PermissionName::ManageTreasury,
+            PermissionName::RecordTreasuryOperations,
+        ]);
+        $branch = TreasuryAccount::factory()->kind(AccountKind::Cash)->create();
+        $empty = TreasuryAccount::factory()->kind(AccountKind::Cash)->create();
+        $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit', 'to_account_id' => $branch->id, 'amount' => '250',
+        ], $headers)->assertCreated();
+        $switchOff = fn (TreasuryAccount $account) => $this->putJson(
+            "/api/v1/treasury/accounts/{$account->id}",
+            ['is_active' => false],
+            $headers,
+        );
+
+        // Act
+        $holding = $switchOff($branch);
+        $nothing = $switchOff($empty);
+
+        // Assert
+        $holding->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $this->assertTrue($branch->refresh()->is_active);
+        $nothing->assertOk()->assertJsonPath('data.is_active', false);
+    }
+
+    public function test_one_request_cannot_make_an_account_the_default_and_switch_it_off(): void
+    {
+        // Arrange — كان يُعطَّل ثم يُعاد تفعيله صامتاً حين يصير افتراضياً، أو يصطدم بالقيد: 500.
+        [, $headers] = $this->user([PermissionName::ManageTreasury]);
+        $other = TreasuryAccount::factory()->kind(AccountKind::Bank)->create();
+        $bank = $this->defaultOf(AccountKind::Bank);
+        $both = ['is_default' => true, 'is_active' => false];
+
+        // Act
+        $promote = $this->putJson("/api/v1/treasury/accounts/{$other->id}", $both, $headers);
+        $current = $this->putJson("/api/v1/treasury/accounts/{$bank->id}", $both, $headers);
+
+        // Assert
+        $promote->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $current->assertUnprocessable()->assertJsonValidationErrors('is_active');
+        $this->assertTrue($other->refresh()->is_active);
+        $this->assertFalse($other->is_default);
+        $this->assertTrue($bank->refresh()->is_default);
+        $this->assertTrue($bank->is_active);
+    }
+
     public function test_only_the_manage_grant_shapes_accounts(): void
     {
         // Arrange

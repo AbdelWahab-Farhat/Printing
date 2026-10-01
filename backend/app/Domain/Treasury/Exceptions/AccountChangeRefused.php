@@ -26,6 +26,27 @@ final class AccountChangeRefused extends DomainException
         return new self("لا بد لكل نوع من حساب افتراضي — عيّن حساباً آخر افتراضياً بدل «{$account}»", 'is_default');
     }
 
+    /** طلبٌ واحد يجعله افتراضياً ويعطّله — والافتراضيُّ لا يكون معطَّلاً أبداً. */
+    public static function defaultAndOffAtOnce(string $account): self
+    {
+        return new self(
+            "لا يُجعل «{$account}» افتراضياً ويُعطَّل في الطلب نفسه — الافتراضي يبقى مفعّلاً",
+            'is_active',
+        );
+    }
+
+    /**
+     * المعطَّلُ لا يظهر في منتقٍ ولا يستقبل حركة يدوية، فمالٌ فيه يصير مالاً لا يصله أحد. بلا رقم:
+     * من يدير الحسابات قد لا يرى أرصدتها.
+     */
+    public static function stillHoldsMoney(string $account): self
+    {
+        return new self(
+            "لا يُعطَّل «{$account}» ورصيده ليس صفراً — انقل ما فيه أو اضبطه بـ«جرد الحساب» أولاً",
+            'is_active',
+        );
+    }
+
     public static function systemCannotBeSwitchedOff(string $account): self
     {
         return new self("«{$account}» حساب يعتمد عليه النظام ولا يُعطَّل", 'is_active');
