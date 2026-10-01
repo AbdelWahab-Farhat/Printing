@@ -7,8 +7,10 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Investor\FundPurchaseOrderRequest;
+use App\Application\Api\V1\Requests\Investor\ReverseDealExpenseRequest;
 use App\Application\Api\V1\Requests\Investor\StoreDealExpenseRequest;
 use App\Application\Api\V1\Resources\DealOrderResource;
+use App\Application\Api\V1\Resources\InvestorDealExpenseResource;
 use App\Application\Api\V1\Resources\InvestorDealResource;
 use App\Application\Api\V1\Resources\OrderInvestorShareResource;
 use App\Application\Controller;
@@ -17,6 +19,7 @@ use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\DTOs\FundPurchaseOrderData;
 use App\Domain\Investor\InvestorService;
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Order\Models\Order;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Support\ResponseTrait;
@@ -187,13 +190,44 @@ class InvestorDealController extends Controller
      */
     public function storeExpense(StoreDealExpenseRequest $request, InvestorDeal $deal): JsonResponse
     {
-        $this->investors->recordDealExpense(
+        $expense = $this->investors->recordDealExpense(
             $deal,
             DealExpenseData::fromArray($request->validated()),
             $request->user()?->id,
         );
 
-        return $this->successMessage('تم تسجيل المصروف وخصم حصة المستثمرين منه');
+        return $this->success(
+            new InvestorDealExpenseResource($expense->load('treasuryAccount')),
+            'تم تسجيل المصروف وخصم حصة المستثمرين منه',
+        );
+    }
+
+    /**
+     * Reverse a deal expense
+     *
+     * فاتورةٌ أُدخلت خطأً: صفٌّ عكسيّ يحمل مبلغَها، والمالُ يعود إلى الحساب الذي دفع، وما حُمِّل
+     * للشركاء يرجع إليهم. مصروفُ صفقةٍ أخرى 404.
+     */
+    public function reverseExpense(
+        ReverseDealExpenseRequest $request,
+        InvestorDeal $deal,
+        int $expense,
+    ): JsonResponse {
+        $original = InvestorDealExpense::query()
+            ->where('investor_deal_id', $deal->getKey())
+            ->whereKey($expense)
+            ->firstOrFail();
+
+        $reversal = $this->investors->reverseDealExpense(
+            $original,
+            (string) $request->validated('reason'),
+            $request->user()?->id,
+        );
+
+        return $this->created(
+            new InvestorDealExpenseResource($reversal->load('treasuryAccount')),
+            'تم عكس المصروف وإرجاع ما حُمِّل للمستثمرين',
+        );
     }
 
     /**

@@ -742,6 +742,9 @@ final class CloseInvestmentPeriod
      *
      * المحمَّلةُ على الطبقة (`is_landed`) داخلةٌ في تكلفة البضاعة أصلاً، وطرحُها ثانيةً يدفع
      * ثمنَ فاتورة شحنٍ واحدة مرّتين.
+     *
+     * **والمعكوسُ يسقط مع عكسه** — `InvestorDealExpense::isDeducted()` نفسُها: لا العكسُ يُعدّ ولا
+     * ما عُكس، وإلا بقيت فاتورةٌ مكرّرة في مصاريف شهرٍ صُحِّح خطؤه.
      */
     private function expensesOf(InvestmentPeriod $period): string
     {
@@ -749,6 +752,10 @@ final class CloseInvestmentPeriod
             ->whereNull('deleted_at')
             ->where('is_landed', false)
             ->whereNull('reverses_expense_id')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('investor_deal_expenses as r')
+                ->whereColumn('r.reverses_expense_id', 'investor_deal_expenses.id')
+                ->whereNull('r.deleted_at'))
             ->whereBetween('incurred_on', [
                 $period->starts_on->toDateString(),
                 $period->ends_on->toDateString(),

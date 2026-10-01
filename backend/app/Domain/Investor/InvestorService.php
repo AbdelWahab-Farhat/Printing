@@ -13,6 +13,7 @@ use App\Domain\Investor\Actions\PostDealEarningsForOrder;
 use App\Domain\Investor\Actions\PostDealStockPurchases;
 use App\Domain\Investor\Actions\RecordDealExpense;
 use App\Domain\Investor\Actions\RecordWalletEntry;
+use App\Domain\Investor\Actions\ReverseDealExpense;
 use App\Domain\Investor\Actions\SetInvestorActivation;
 use App\Domain\Investor\Actions\UnwindDealEarningsForOrder;
 use App\Domain\Investor\Actions\UpdateInvestor;
@@ -58,6 +59,7 @@ final class InvestorService
         private readonly CloseInvestorDeal $closeDeal,
         private readonly RecordWalletEntry $recordEntry,
         private readonly RecordDealExpense $recordExpense,
+        private readonly ReverseDealExpense $reverseExpense,
         private readonly PostDealEarningsForOrder $postEarnings,
         private readonly PostDealStockPurchases $postStockPurchases,
         private readonly UnwindDealEarningsForOrder $unwindEarnings,
@@ -154,6 +156,15 @@ final class InvestorService
     public function recordDealExpense(InvestorDeal $deal, DealExpenseData $data, ?int $actorId): InvestorDealExpense
     {
         return ($this->recordExpense)($deal, $data, $actorId);
+    }
+
+    /** يعكس مصروفاً على صفقةٍ أو على الصندوق — {@see ReverseDealExpense}. */
+    public function reverseDealExpense(
+        InvestorDealExpense $expense,
+        string $reason,
+        ?int $actorId,
+    ): InvestorDealExpense {
+        return ($this->reverseExpense)($expense, $reason, $actorId);
     }
 
     /**

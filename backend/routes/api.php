@@ -846,6 +846,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('investor-deals/{deal}/expenses', [InvestorDealController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investor-deals.expenses.store');
 
+        // عكسُ مصروفٍ أُدخل خطأً يحرّك مالَ المستثمرين والخزينة معاً، فصلاحيتُه صلاحيةُ عكس مالهم.
+        Route::post(
+            'investor-deals/{deal}/expenses/{expense}/reverse',
+            [InvestorDealController::class, 'reverseExpense'],
+        )->whereNumber('expense')
+            ->middleware('can:investors.money.reverse')->name('investor-deals.expenses.reverse');
+
         // ── الصندوق الاستثماري ──────────────────────────────────────────────────────────
         //
         // `investment` لا `investor-deals`: الصفقةُ صارت دفعةَ شراءٍ داخلية، والذي يُقرأ ويُدار
@@ -901,6 +908,12 @@ Route::prefix('v1')->group(function (): void {
         // المصروفُ يأكل من ربح الشهر، فصلاحيتُه صلاحيةُ مصروف الصفقة نفسُها.
         Route::post('investment/expenses', [InvestmentFundController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investment.expenses.store');
+
+        Route::post(
+            'investment/expenses/{expense}/reverse',
+            [InvestmentFundController::class, 'reverseExpense'],
+        )->whereNumber('expense')
+            ->middleware('can:investors.money.reverse')->name('investment.expenses.reverse');
 
         // **الشريحة ٠ب**: `can_be_reversed` كان يُرسَل إلى التطبيق بلا مسارٍ خلفه — يظهر الزرُّ
         // ولا يفعل شيئاً. والإبطالُ يبطل الوحداتِ والخزينةَ معه، فصلاحيتُه صلاحيةُ من كتبه.
