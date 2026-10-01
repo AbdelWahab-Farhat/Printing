@@ -184,6 +184,20 @@ final class CarrierService
      *
      * Reads `closed_at` rather than a status, which is what makes "still out there" a query.
      */
+    /**
+     * هل للطلبية طردٌ لدى النورس لم يُغلق بعد — في الطريق، فالمالُ إن دُفع فهو في يد المندوب.
+     *
+     * بالمعرّف لا بالنموذج، فيسأله من لا يحمل الطلبية: الخزينة حين تقترح حساب «تلقائي»، والدفعة
+     * حين تختار حسابها. انظر {@see openParcelFor()} للقراءة نفسها.
+     */
+    public function hasParcelOnTheRoad(int $orderId): bool
+    {
+        return NawrisParcel::query()
+            ->whereNull('closed_at')
+            ->whereHas('links', fn ($q) => $q->where('order_id', $orderId))
+            ->exists();
+    }
+
     public function openParcelFor(Order $order): ?NawrisParcel
     {
         return NawrisParcel::query()

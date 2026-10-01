@@ -44,7 +44,30 @@ final readonly class OrderPaymentData
          * TREASURY-DESIGN §٥. Null is what every screen that predates the treasury sends.
          */
         public ?int $treasuryAccountId = null,
+        /**
+         * حسابٌ يسمّيه النظامُ لا إنسان — `TreasuryAccount::NAWRIS` حين يكتب الـ webhook ما حصّله
+         * النورس. **لا يُقرأ من طلبٍ أبداً** ({@see fromArray()} لا يعرفه)، فلا يكتب أحدٌ بيده في
+         * حسابٍ لا يُختار باليد. انظر {@see intoSystemAccount()}.
+         */
+        public ?string $systemAccount = null,
     ) {}
+
+    /**
+     * النسخةُ نفسها مسجَّلةً في حسابٍ يسمّيه النظام، لا الحسابُ الذي يختاره القانون أو الإنسان.
+     */
+    public function intoSystemAccount(string $code): self
+    {
+        return new self(
+            amount: $this->amount,
+            method: $this->method,
+            reference: $this->reference,
+            paidAt: $this->paidAt,
+            notes: $this->notes,
+            receipt: $this->receipt,
+            treasuryAccountId: null,
+            systemAccount: $code,
+        );
+    }
 
     /**
      * @param  array<string, mixed>  $validated

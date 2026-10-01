@@ -53,7 +53,16 @@ final class SettleCustody
         ?int $actorId,
         DateTimeInterface $occurredAt,
         ?string $orderCode = null,
+        string $accountField = 'settlement_account_id',
+        string $feeField = 'settlement_fee',
+        bool $applySettings = true,
     ): ?TreasuryOperation {
+        // قبل أي قراءة: قاعدةُ الطلب (min:0) تحمي الشاشة، لا نداءً من داخل الخادم. رسومٌ سالبة
+        // كانت ستُخرج من العهدة أكثر مما فيها وتُدخل الحسابَ مالاً لم يوجد.
+        if ($fee !== null && bccomp(Money::round($fee), '0', Money::SCALE) < 0) {
+            throw new OperationRefused('ما احتفظ به الناقل لا يكون سالباً', $feeField);
+        }
+
         $held = $this->custody->of($orderId);
 
         if ($held === []) {
@@ -73,11 +82,11 @@ final class SettleCustody
         $fee = $fee === null ? '0.00' : Money::round($fee);
 
         if (bccomp($fee, $total, Money::SCALE) > 0) {
-            throw new OperationRefused("ما احتفظ به الناقل ({$fee}) أكبر من المال في العهدة ({$total})", 'settlement_fee');
+            throw new OperationRefused("ما احتفظ به الناقل ({$fee}) أكبر من المال في العهدة ({$total})", $feeField);
         }
 
         $custodyAccounts = TreasuryAccount::query()->whereIn('id', array_keys($held))->get()->keyBy('id');
-        $destination = $this->destination($destinationId, $actorId, $custodyAccounts);
+        $destination = $this->destination($destinationId, $actorId, $custodyAccounts, $accountField, $applySettings);
         $feeCategory = Money::isPositive($fee)
             ? ExpenseCategory::query()->where('code', ExpenseCategory::CARRIER_FEE)->first()
             : null;
@@ -151,19 +160,32 @@ final class SettleCustody
      *
      * @param  Collection<int, TreasuryAccount>  $custodyAccounts
      */
-    private function destination(?int $chosenId, ?int $actorId, Collection $custodyAccounts): TreasuryAccount
-    {
+    /**
+     * @param  bool  $applySettings  false لاستيراد الطلبيات القديمة: «تُسوّى إلى» والتجميعُ
+     *                               مفاتيحُ اليوم، والمالُ القديم سُجِّل في الافتراضيات (§١٧)
+     */
+    private function destination(
+        ?int $chosenId,
+        ?int $actorId,
+        Collection $custodyAccounts,
+        string $field,
+        bool $applySettings,
+    ): TreasuryAccount {
+        $redirect = fn (TreasuryAccount $account): TreasuryAccount => $applySettings
+            ? $this->collect->redirect($account)
+            : $account;
+
         $fromNawris = $custodyAccounts->contains(fn (TreasuryAccount $a) => $a->system_code === TreasuryAccount::NAWRIS);
 
         if ($chosenId !== null) {
             $account = TreasuryAccount::query()->findOrFail($chosenId);
 
             if (! $account->is_active) {
-                throw AccountDoesNotFitMethod::inactive((string) $account->name, 'settlement_account_id');
+                throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
             }
 
             if (! $account->kind->spendable()) {
-                throw AccountDoesNotFitMethod::custody((string) $account->name, 'settlement_account_id');
+                throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
             }
 
             return $account;
@@ -178,22 +200,22 @@ final class SettleCustody
                 ->get();
 
             if ($held->count() === 1) {
-                return $this->collect->redirect($held->first());
+                return $redirect($held->first());
             }
         }
 
         // A switched-off or since-removed target is skipped rather than refused: the settlement
         // is a fact, and the built-in rule below always has an answer.
-        foreach ($custodyAccounts as $custody) {
+        foreach ($applySettings ? $custodyAccounts : [] as $custody) {
             $target = $custody->settles_into_account_id === null
                 ? null
                 : TreasuryAccount::query()->find($custody->settles_into_account_id);
 
             if ($target !== null && $target->is_active && $target->kind->spendable()) {
-                return $this->collect->redirect($target);
+                return $redirect($target);
             }
         }
 
-        return $this->collect->redirect($this->resolver->defaultOf($fromNawris ? AccountKind::Bank : AccountKind::Cash));
+        return $redirect($this->resolver->defaultOf($fromNawris ? AccountKind::Bank : AccountKind::Cash));
     }
 }

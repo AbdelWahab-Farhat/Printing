@@ -16,6 +16,7 @@ use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\Models\TreasuryOperation;
+use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +157,32 @@ class ImportOldPaymentsTest extends TestCase
 
         $settlement = TreasuryOperation::query()->where('type', 'settlement')->sole();
         $this->assertSame('2026-09-10', $settlement->occurred_at->toDateString());
+    }
+
+    public function test_today_s_switches_do_not_redirect_an_old_settlement(): void
+    {
+        // Arrange — «تُسوّى إلى» على النورس، والتجميعُ في «مصرف ٢» مفعّل: مفاتيحُ اليوم، والمالُ
+        // القديم سُجِّل في الافتراضيات (§١٧)
+        $secondBank = TreasuryAccount::factory()->kind(AccountKind::Bank)->create(['name' => 'مصرف ٢']);
+        $thirdBank = TreasuryAccount::factory()->kind(AccountKind::Bank)->create(['name' => 'مصرف ٣']);
+        $this->nawris()->forceFill(['settles_into_account_id' => $thirdBank->id])->save();
+        TreasurySetting::current()
+            ->forceFill(['collect_bank' => true, 'collect_bank_into_id' => $secondBank->id])
+            ->save();
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Settled,
+            'grand_total' => '150.00',
+            'settled_at' => '2026-09-10 12:00:00',
+        ]);
+        $this->oldPayment($order, '150.00', PaymentMethod::Cash, '2026-09-08 10:00:00', $this->carrier);
+
+        // Act
+        $this->artisan('treasury:import-old-payments', ['--apply' => true])->assertSuccessful();
+
+        // Assert — في المصرف الافتراضي، لا حيث تقول مفاتيحُ اليوم
+        $this->assertSame('150.00', $this->balance($this->account(AccountKind::Bank)));
+        $this->assertSame('0.00', $this->balance($secondBank));
+        $this->assertSame('0.00', $this->balance($thirdBank));
     }
 
     public function test_an_old_refund_and_an_old_reversal_leave_the_account_again(): void

@@ -150,23 +150,24 @@ final class ReverseShortageSupply
     ): void {
         $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
 
-        $mirrored = $this->treasury->reverseSource($original->getMorphClass(), (int) $original->getKey(), $reason, $actorId);
-
-        if ($mirrored !== [] || $original->treasury_account_id !== null) {
-            return;
-        }
-
-        $this->treasury->post(new MovementData(
-            accountId: (int) $reversal->treasury_account_id,
-            direction: MovementDirection::In,
-            kind: MovementKind::SupplyPurchase,
-            amount: (string) $reversal->amount,
-            occurredAt: now(),
-            sourceType: $reversal->getMorphClass(),
-            sourceId: (int) $reversal->getKey(),
+        $this->treasury->reverseSourceOrFallback(
+            $original->getMorphClass(),
+            (int) $original->getKey(),
+            stamped: $original->treasury_account_id !== null,
             notes: $reason,
-            recordedBy: $actorId,
-        ));
+            actorId: $actorId,
+            fallback: fn (): MovementData => new MovementData(
+                accountId: (int) $reversal->treasury_account_id,
+                direction: MovementDirection::In,
+                kind: MovementKind::SupplyPurchase,
+                amount: (string) $reversal->amount,
+                occurredAt: now(),
+                sourceType: $reversal->getMorphClass(),
+                sourceId: (int) $reversal->getKey(),
+                notes: $reason,
+                recordedBy: $actorId,
+            ),
+        );
     }
 
     /**

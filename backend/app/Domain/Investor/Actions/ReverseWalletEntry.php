@@ -13,6 +13,7 @@ use App\Domain\Investor\Models\InvestmentUnit;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\PeriodForEntry;
 use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\TreasuryService;
@@ -120,25 +121,33 @@ final class ReverseWalletEntry
             return;
         }
 
-        $mirrored = $this->treasury->reverseSource($entry->getMorphClass(), (int) $entry->getKey(), $notes, $actorId);
-
-        if ($mirrored !== [] || $entry->treasury_account_id !== null) {
-            return;
-        }
-
         $deposit = $entry->type === WalletEntryType::Deposit;
 
-        $this->treasury->post(new MovementData(
-            accountId: (int) $this->treasury->accountFor('cash', null, incoming: false)->getKey(),
-            direction: $deposit ? MovementDirection::Out : MovementDirection::In,
-            kind: $deposit ? MovementKind::InvestorDeposit : MovementKind::InvestorWithdrawal,
-            amount: (string) $entry->amount,
-            occurredAt: now(),
-            sourceType: $reversal->getMorphClass(),
-            sourceId: (int) $reversal->getKey(),
+        // **بطريقةِ الحركة لا الخزنةِ دائماً**: إيداعٌ قديم بحوالة حسبه الافتتاحُ في المصرف، فعكسُه
+        // يخرج من المصرف. والطريقةُ نصٌّ حرّ في المحفظة — ما لا تعرفه الخزينة يُقرأ «كاش»، كما
+        // يقرؤه `RecordWalletEntry`.
+        $method = $entry->method !== null && AccountKind::forMethod((string) $entry->method) !== []
+            ? (string) $entry->method
+            : 'cash';
+
+        $this->treasury->reverseSourceOrFallback(
+            $entry->getMorphClass(),
+            (int) $entry->getKey(),
+            stamped: $entry->treasury_account_id !== null,
             notes: $notes,
-            recordedBy: $actorId,
-        ));
+            actorId: $actorId,
+            fallback: fn (): MovementData => new MovementData(
+                accountId: (int) $this->treasury->accountFor($method, null, incoming: $deposit)->getKey(),
+                direction: $deposit ? MovementDirection::Out : MovementDirection::In,
+                kind: $deposit ? MovementKind::InvestorDeposit : MovementKind::InvestorWithdrawal,
+                amount: (string) $entry->amount,
+                occurredAt: now(),
+                sourceType: $reversal->getMorphClass(),
+                sourceId: (int) $reversal->getKey(),
+                notes: $notes,
+                recordedBy: $actorId,
+            ),
+        );
     }
 
     /** الصفُّ الذي دخل الخزينة بسبب هذا الصفّ — إن دخل. */

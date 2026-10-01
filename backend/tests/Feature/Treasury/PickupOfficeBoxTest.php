@@ -197,6 +197,21 @@ class PickupOfficeBoxTest extends TestCase
         $forNoOrder->assertOk()->assertJsonPath('data.suggested_id', $this->defaultOf(AccountKind::Cash)->id);
     }
 
+    public function test_money_going_out_at_the_branch_is_not_named_after_the_branch_box(): void
+    {
+        // Arrange — الردُّ لا يُصرف من صندوق الفرع، فلا يسمّيه «تلقائي»
+        [, $headers] = $this->clerk();
+        $order = $this->atTheBranch();
+
+        // Act
+        $response = $this->getJson("/api/v1/treasury/account-options?method=cash&purpose=out&order_id={$order->id}", $headers);
+
+        // Assert — يسمّي ما سيُصرف منه فعلاً
+        $response->assertOk()
+            ->assertJsonPath('data.suggested_id', $this->defaultOf(AccountKind::Cash)->id)
+            ->assertJsonPath('data.suggested_name', $this->defaultOf(AccountKind::Cash)->name);
+    }
+
     // ── linking a box ───────────────────────────────────────────────────────────────────
 
     public function test_the_settings_list_each_branch_with_its_box(): void

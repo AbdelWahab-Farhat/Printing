@@ -14,13 +14,19 @@ use Illuminate\Support\Collection;
 /**
  * Which account a payment lands in — the three rules of TREASURY-DESIGN §٥, written once.
  *
- * 1. The account the person chose, if it fits the method.
- * 2. For cash on an order waiting at a branch, that branch's box (§١٩).
- * 3. Otherwise the one account *they* hold that fits — Ali lands in «مصرف علي».
- * 4. Otherwise the default of the method's kind.
+ * 1. The account the person chose, if it fits the method — and is theirs to choose: never a
+ *    system account (Nawris), never a colleague's custody.
+ * 2. For cash on an order whose Nawris parcel is still on the road, Nawris's custody — the money
+ *    is in the courier's hand, and «تم التسوية» carries it on.
+ * 3. For cash *arriving* on an order waiting at a branch, that branch's box (§١٩).
+ * 4. Otherwise the one account *they* hold that fits — Ali lands in «مصرف علي».
+ * 5. Otherwise the default of the method's kind.
  *
- * **Rule 3 always answers**, which is what keeps every existing screen working: today's app
+ * **Rule 5 always answers**, which is what keeps every existing screen working: today's app
  * sends no account, and the migration seeded a default for every kind.
+ *
+ * **والقاعدةُ نفسُها تجيب الدفعةَ والشاشة**: {@see options()} يقترح ما يختاره {@see forMethod()}
+ * فعلاً، فلا يسمّي «تلقائي» حساباً ويُسجَّل المالُ في غيره.
  */
 final class AccountResolver
 {
@@ -37,14 +43,36 @@ final class AccountResolver
         bool $incoming,
         string $field = 'treasury_account_id',
         ?int $pickupCityId = null,
+        bool $carrierHolds = false,
     ): TreasuryAccount {
         $kinds = $this->kindsFor($method, $incoming);
 
         if ($chosenId !== null) {
-            return $this->chosen($chosenId, $kinds, $incoming, $field);
+            return $this->chosen($chosenId, $kinds, $incoming, $field, $actorId);
         }
 
-        return $this->officeBox($pickupCityId, $kinds)
+        return $this->automatic($kinds, $actorId, $incoming, $pickupCityId, $carrierHolds);
+    }
+
+    /**
+     * القواعد ٢–٥ حين لم يختر أحد: ما يُسجَّل فيه المالُ فعلاً، وما يسمّيه «تلقائي».
+     *
+     * @param  non-empty-list<AccountKind>  $kinds
+     */
+    private function automatic(
+        array $kinds,
+        ?int $actorId,
+        bool $incoming,
+        ?int $pickupCityId,
+        bool $carrierHolds,
+    ): TreasuryAccount {
+        $withCarrier = $carrierHolds && $incoming && in_array(AccountKind::Custody, $kinds, true)
+            ? $this->system(TreasuryAccount::NAWRIS)
+            : null;
+
+        // خزنةُ المكتب للمال الداخل وحده: الردُّ والمصروف لا يُصرفان من صندوق فرعٍ لم يُفتح لهما.
+        return $withCarrier
+            ?? ($incoming ? $this->officeBox($pickupCityId, $kinds) : null)
             ?? $this->heldBy($actorId, $kinds)
             ?? $this->defaultOf($kinds[0]);
     }
@@ -74,8 +102,13 @@ final class AccountResolver
      *
      * @return array{accounts: Collection<int, TreasuryAccount>, suggested: TreasuryAccount}
      */
-    public function options(string $method, ?int $actorId, bool $incoming, ?int $pickupCityId = null): array
-    {
+    public function options(
+        string $method,
+        ?int $actorId,
+        bool $incoming,
+        ?int $pickupCityId = null,
+        bool $carrierHolds = false,
+    ): array {
         $kinds = $this->kindsFor($method, $incoming);
 
         $accounts = TreasuryAccount::query()
@@ -92,9 +125,7 @@ final class AccountResolver
 
         return [
             'accounts' => $accounts,
-            'suggested' => $this->officeBox($pickupCityId, $kinds)
-                ?? $this->heldBy($actorId, $kinds)
-                ?? $this->defaultOf($kinds[0]),
+            'suggested' => $this->automatic($kinds, $actorId, $incoming, $pickupCityId, $carrierHolds),
         ];
     }
 
@@ -139,12 +170,23 @@ final class AccountResolver
     /**
      * @param  list<AccountKind>  $kinds
      */
-    private function chosen(int $id, array $kinds, bool $incoming, string $field): TreasuryAccount
+    private function chosen(int $id, array $kinds, bool $incoming, string $field, ?int $actorId): TreasuryAccount
     {
         $account = TreasuryAccount::query()->findOrFail($id);
 
         if (! $account->is_active) {
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+        }
+
+        // **ما تخفيه الشاشة يرفضه الخادم أيضاً**: القائمة لا تعرض النورس ولا عهدةَ غيرك، لكنّ
+        // رقمه يصل في طلبٍ يُكتب باليد. حساب النورس يسمّيه الـ webhook من طريقٍ آخر — انظر
+        // `OrderPaymentData::intoSystemAccount()` — فلا يمرّ هنا أبداً.
+        if ($account->system_code !== null) {
+            throw AccountDoesNotFitMethod::system((string) $account->name, $field);
+        }
+
+        if ($account->kind === AccountKind::Custody && (int) $account->holder_user_id !== $actorId) {
+            throw AccountDoesNotFitMethod::notYours((string) $account->name, $field);
         }
 
         if (! $incoming && ! $account->kind->spendable()) {

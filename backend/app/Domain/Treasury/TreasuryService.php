@@ -34,8 +34,10 @@ use App\Domain\Treasury\Queries\AccountLedger;
 use App\Domain\Treasury\Queries\AccountTotals;
 use App\Domain\Treasury\Queries\CustodyForOrder;
 use App\Domain\Treasury\Support\AccountResolver;
+use App\Support\RequestMemo;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
@@ -153,13 +155,19 @@ final class TreasuryService
      *
      * @return array{accounts: \Illuminate\Support\Collection<int, TreasuryAccount>, suggested: TreasuryAccount}
      */
-    public function accountOptions(string $method, ?User $actor, bool $incoming, ?int $pickupCityId = null): array
-    {
+    public function accountOptions(
+        string $method,
+        ?User $actor,
+        bool $incoming,
+        ?int $pickupCityId = null,
+        bool $carrierHolds = false,
+    ): array {
         return $this->resolver->options(
             $method,
             $actor?->getKey() === null ? null : (int) $actor->getKey(),
             $incoming,
             $pickupCityId,
+            $carrierHolds,
         );
     }
 
@@ -170,7 +178,8 @@ final class TreasuryService
      *
      * `$chosenId` is what the person picked, or null to let the rules decide. Money leaving
      * (`$incoming = false`) is never taken from custody. `$pickupCityId` is the branch an order
-     * waits at, whose cash box takes its cash (§١٩).
+     * waits at, whose cash box takes its cash (§١٩). `$carrierHolds`: the order's Nawris parcel
+     * is still on the road, so cash typed for it is in the courier's hand — Nawris's custody.
      */
     public function accountFor(
         string $method,
@@ -179,8 +188,9 @@ final class TreasuryService
         bool $incoming = true,
         string $field = 'treasury_account_id',
         ?int $pickupCityId = null,
+        bool $carrierHolds = false,
     ): TreasuryAccount {
-        return $this->resolver->forMethod($method, $actorId, $chosenId, $incoming, $field, $pickupCityId);
+        return $this->resolver->forMethod($method, $actorId, $chosenId, $incoming, $field, $pickupCityId, $carrierHolds);
     }
 
     /**
@@ -202,11 +212,6 @@ final class TreasuryService
         return $account;
     }
 
-    /**
-     * Refuses money out by hand that the account does not hold — a vendor payment, like the
-     * treasury's own withdrawals. Locks the account row first, so two payments cannot both spend
-     * the last dinar. Call inside the transaction that will post the movement.
-     */
     /** «إعدادات المالية» — the owner's switches. */
     public function settings(): TreasurySetting
     {
@@ -226,6 +231,11 @@ final class TreasuryService
         }
     }
 
+    /**
+     * Refuses money out by hand that the account does not hold — a vendor payment, like the
+     * treasury's own withdrawals. Locks the account row first, so two payments cannot both spend
+     * the last dinar. Call inside the transaction that will post the movement.
+     */
     public function guardCanSpend(TreasuryAccount $account, string $amount, string $field = 'amount'): void
     {
         if (! TreasurySetting::current()->block_overdraft) {
@@ -274,6 +284,34 @@ final class TreasuryService
         }
 
         return $reversed;
+    }
+
+    /**
+     * يعكس ما سجّله المصدر، **أو** — لمصدرٍ من قبل الخزينة لم يُسجَّل له شيء — يكتب الحركةَ
+     * المعاكسة التي يصفها `$fallback`.
+     *
+     * **قاعدةٌ واحدة في موضعٍ واحد** (كانت ثلاثَ نسخٍ متباعدة في الدفعة والمحفظة والنواقص): مصدرٌ
+     * مختومٌ بحساب سجّل حركتَه، فعكسُها يكفي ولا بديل؛ ومصدرٌ بلا حساب حسبه يومُ الافتتاح في رصيد
+     * حسابِ طريقته (§١١)، فخروجُه — وقد تبيّن أنه لم يكن — يصيب ذلك الحساب.
+     *
+     * @param  bool  $stamped  هل خُتم على المصدر حسابُه — إذن سُجّلت له حركةٌ يومَ كُتب
+     * @param  \Closure(): MovementData  $fallback  كسولةٌ: لا يُسأل عن الحساب البديل إلا عند الحاجة
+     */
+    public function reverseSourceOrFallback(
+        string $sourceType,
+        int $sourceId,
+        bool $stamped,
+        ?string $notes,
+        ?int $actorId,
+        \Closure $fallback,
+    ): void {
+        $mirrored = $this->reverseSource($sourceType, $sourceId, $notes, $actorId);
+
+        if ($mirrored !== [] || $stamped) {
+            return;
+        }
+
+        $this->post($fallback());
     }
 
     /**
@@ -327,6 +365,9 @@ final class TreasuryService
      *
      * @param  bool  $collect  false for the import of old orders: their money was filed in the
      *                         defaults already, and a switch turned on today says nothing of then
+     *                         — neither the collection nor where a custody «تُسوّى إلى»
+     * @param  string  $accountField  where a refused destination is filed — `fields.…` on the
+     *                                status screen
      */
     public function settleCustody(
         int $orderId,
@@ -336,11 +377,23 @@ final class TreasuryService
         ?string $orderCode = null,
         ?DateTimeInterface $occurredAt = null,
         bool $collect = true,
+        string $accountField = 'settlement_account_id',
+        string $feeField = 'settlement_fee',
     ): ?TreasuryOperation {
         // A past date only for the import of old orders, which were settled on their own day.
         $occurredAt ??= now();
 
-        $settlement = ($this->settleCustody)($orderId, $destinationId, $fee, $actorId, $occurredAt, $orderCode);
+        $settlement = ($this->settleCustody)(
+            $orderId,
+            $destinationId,
+            $fee,
+            $actorId,
+            $occurredAt,
+            $orderCode,
+            accountField: $accountField,
+            feeField: $feeField,
+            applySettings: $collect,
+        );
 
         if ($collect) {
             ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId);
@@ -367,32 +420,66 @@ final class TreasuryService
      */
     public function unwindSettlementOf(int $orderId, string $reason, ?int $actorId, ?int $accountId = null): void
     {
-        $standing = TreasuryOperation::query()
+        foreach ($this->standingSettlements($orderId, $accountId)->get() as $settlement) {
+            ($this->reverseOperation)($settlement, $reason, $actorId, byHand: false);
+        }
+    }
+
+    /**
+     * هل نقلت التسويةُ مالاً لهذه الطلبية — من هذا الحساب إن سُمّي — ولم يُعكس بعد؟
+     *
+     * يسأله من يعكس دفعةً والطلبيةُ «تم التسوية»: فكُّ التسوية يفكّها كلَّها، والطلبيةُ لا تُسوّى
+     * ثانيةً وهي في آخر الطريق — فيبقى المالُ في العهدة إلى الأبد. فالجواب «نعم» يعني: تراجع
+     * عن التسوية أولاً.
+     */
+    public function hasStandingSettlementOf(int $orderId, ?int $accountId = null): bool
+    {
+        return $this->standingSettlements($orderId, $accountId)->exists();
+    }
+
+    /**
+     * @return Builder<TreasuryOperation>
+     */
+    private function standingSettlements(int $orderId, ?int $accountId): Builder
+    {
+        return TreasuryOperation::query()
             ->where('type', OperationType::Settlement->value)
             ->where('order_id', $orderId)
             ->whereNull('reverses_operation_id')
             ->whereDoesntHave('reversedBy')
             ->when($accountId !== null, fn ($q) => $q->whereHas('movements', fn ($m) => $m
                 ->where('account_id', $accountId)
-                ->where('direction', MovementDirection::Out->value)))
-            ->get();
-
-        foreach ($standing as $settlement) {
-            ($this->reverseOperation)($settlement, $reason, $actorId, byHand: false);
-        }
+                ->where('direction', MovementDirection::Out->value)));
     }
 
     /**
      * Every account a person may pick for money, with the methods each one takes — the list a
-     * form filters as the method changes. Nawris is left out: only its webhook writes to it.
+     * form filters as the method changes. Nawris is left out: only its webhook writes to it. **ولا
+     * عهدةَ إلا عهدةُ من يختار** — القاعدةُ التي يرفض بها الخادمُ اختيارَ غيرها.
+     *
+     * **مرّةً واحدة لكل طلب**: قائمةُ الطلبيات تبني حقولَ كل حركةٍ لكل طلبية، وكانت تسأل
+     * القاعدةَ السؤالَ نفسَه مرّتين لكل صف. انظر {@see RequestMemo}.
      *
      * @return list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>
      */
-    public function pickableAccounts(): array
+    public function pickableAccounts(?int $actorId = null): array
+    {
+        return RequestMemo::remember(
+            'treasury.pickable:'.($actorId ?? 'none'),
+            fn (): array => $this->queryPickableAccounts($actorId),
+        );
+    }
+
+    /**
+     * @return list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>
+     */
+    private function queryPickableAccounts(?int $actorId): array
     {
         return TreasuryAccount::query()
             ->active()
             ->whereNull('system_code')
+            ->where(fn ($q) => $q->where('kind', '<>', AccountKind::Custody->value)
+                ->when($actorId !== null, fn ($q) => $q->orWhere('holder_user_id', $actorId)))
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get()

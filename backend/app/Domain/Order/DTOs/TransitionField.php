@@ -309,14 +309,6 @@ final class TransitionField
     }
 
     /**
-     * What the app renders.
-     *
-     * Every key is always present, `null` included: a client that has to distinguish "absent"
-     * from "false" is a client written against one server's mood.
-     *
-     * @return array<string, mixed>
-     */
-    /**
      * Which account the money goes into — never required; empty lets the treasury decide.
      *
      * @param  list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>  $accounts
@@ -341,6 +333,14 @@ final class TransitionField
         );
     }
 
+    /**
+     * What the app renders.
+     *
+     * Every key is always present, `null` included: a client that has to distinguish "absent"
+     * from "false" is a client written against one server's mood.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

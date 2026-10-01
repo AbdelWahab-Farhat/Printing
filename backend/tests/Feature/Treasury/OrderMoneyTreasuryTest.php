@@ -14,6 +14,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Enums\OperationType;
+use App\Domain\Treasury\Exceptions\OperationRefused;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\Models\TreasuryOperation;
@@ -64,6 +65,7 @@ class OrderMoneyTreasuryTest extends TestCase
             PermissionName::ViewOrders,
             PermissionName::MarkOrdersDelivered,
             PermissionName::SettleOrders,
+            PermissionName::UnsettleOrders,
             PermissionName::ViewOrderPayments,
             PermissionName::RecordOrderPayments,
             PermissionName::ReverseOrderPayments,
@@ -150,6 +152,48 @@ class OrderMoneyTreasuryTest extends TestCase
             'status' => OrderStatus::Settled->value,
             'fields' => $fields,
         ]);
+    }
+
+    /**
+     * «تراجع عن التسوية» — الطلبية ترجع إلى «تم الاستلام» بسبب.
+     *
+     * @param  array<string, string>  $headers
+     */
+    private function unsettle(array $headers, Order $order): TestResponse
+    {
+        return $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/unsettle", [
+            'reason' => 'سُوّيت إلى الحساب الخطأ',
+        ]);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     */
+    private function reverse(array $headers, Order $order, OrderPayment $payment): TestResponse
+    {
+        return $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/{$payment->id}/reverse", [
+            'reason' => 'لم يُحصَّل فعلاً',
+        ]);
+    }
+
+    /** طردٌ في الطريق لهذه الطلبية — لم يُسلَّم ولم يُرجَع بعد. */
+    private function onTheRoadWithNawris(Order $order): NawrisParcel
+    {
+        $parcel = NawrisParcel::factory()->create([
+            'reference' => 'road-'.$order->id,
+            'code' => 'ROAD-'.$order->id,
+            'amount_to_collect' => (string) $order->grand_total,
+            'delivery_price_deducted' => '0.00',
+            'closed_at' => null,
+        ]);
+
+        NawrisParcelOrder::factory()->create([
+            'nawris_parcel_id' => $parcel->id,
+            'order_id' => $order->id,
+            'amount_to_collect' => (string) $order->grand_total,
+        ]);
+
+        return $parcel;
     }
 
     // ── a payment lands somewhere ───────────────────────────────────────────────────────
@@ -387,9 +431,9 @@ class OrderMoneyTreasuryTest extends TestCase
         $this->assertSame('150.00', $this->balance($this->defaultOf(AccountKind::Bank)));
     }
 
-    public function test_reversing_a_payment_already_settled_takes_it_out_of_where_it_arrived(): void
+    public function test_a_payment_whose_money_was_settled_is_not_reversed_while_the_order_is_settled(): void
     {
-        // Arrange
+        // Arrange — النورس سلّم ١٠٠ وسُوّيت إلى المصرف
         [, $headers] = $this->cashier();
         $order = $this->order(OrderStatus::OutForDelivery, '100.00');
         $this->deliveredByNawris($order, '100.00');
@@ -397,12 +441,262 @@ class OrderMoneyTreasuryTest extends TestCase
         $payment = OrderPayment::query()->where('order_id', $order->id)->where('type', 'payment')->sole();
 
         // Act
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/{$payment->id}/reverse", [
-            'reason' => 'لم يُحصَّل فعلاً',
-        ])->assertCreated();
+        $response = $this->reverse($headers, $order, $payment);
 
-        // Assert — the settlement is undone first, so nothing is left below zero
+        // Assert — يُطلب التراجع عن التسوية أولاً، ولا يتحرّك دينار
+        $response->assertUnprocessable();
+        $this->assertSame('100.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+        $this->assertSame('0.00', $this->balance($this->nawris()));
+        $this->assertSame(0, OrderPayment::query()->where('type', 'reversal')->count());
+    }
+
+    public function test_after_unsettling_a_reversed_payment_leaves_custody_and_bank_at_zero(): void
+    {
+        // Arrange
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+        $this->settle($headers, $order)->assertOk();
+        $this->unsettle($headers, $order)->assertOk();
+        $payment = OrderPayment::query()->where('order_id', $order->id)->where('type', 'payment')->sole();
+
+        // Act
+        $response = $this->reverse($headers, $order, $payment);
+
+        // Assert
+        $response->assertCreated();
         $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Bank)));
         $this->assertSame('0.00', $this->balance($this->nawris()));
+    }
+
+    // ── «تراجع عن التسوية» ──────────────────────────────────────────────────────────────
+
+    public function test_unsettling_puts_the_settled_money_back_in_custody(): void
+    {
+        // Arrange — سُوّيت ١٠٠ من النورس إلى المصرف
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+        $this->settle($headers, $order)->assertOk();
+
+        // Act
+        $response = $this->unsettle($headers, $order);
+
+        // Assert — المال عاد إلى العهدة، والتسوية معكوسة لا محذوفة
+        $response->assertOk();
+        $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+        $this->assertSame('100.00', $this->balance($this->nawris()));
+        $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
+        $this->assertSame(1, TreasuryOperation::query()->whereNotNull('reverses_operation_id')->count());
+    }
+
+    public function test_settling_again_after_unsettling_records_what_the_carrier_kept(): void
+    {
+        // Arrange — سُوّيت كاملةً بالخطأ، ثم تراجعنا لنسجّل أن النورس خصم ١٠
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+        $this->settle($headers, $order)->assertOk();
+        $this->unsettle($headers, $order)->assertOk();
+
+        // Act
+        $response = $this->settle($headers, $order, ['settlement_fee' => '10']);
+
+        // Assert — وصل ٩٠، والعشرة مصروفٌ حيّ واحد
+        $response->assertOk();
+        $this->assertSame('90.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+        $this->assertSame('0.00', $this->balance($this->nawris()));
+        $liveFees = TreasuryMovement::query()
+            ->where('kind', 'expense')
+            ->whereNull('reverses_movement_id')
+            ->whereDoesntHave('reversedBy')
+            ->get();
+        $this->assertCount(1, $liveFees);
+        $this->assertSame('10.00', (string) $liveFees->first()->amount);
+    }
+
+    public function test_unsettling_an_order_paid_straight_into_the_bank_moves_nothing(): void
+    {
+        // Arrange
+        [, $headers] = $this->cashier();
+        $order = $this->order();
+        $this->pay($headers, $order, '150', 'bank_transfer')->assertCreated();
+        $this->settle($headers, $order)->assertOk();
+
+        // Act
+        $response = $this->unsettle($headers, $order);
+
+        // Assert
+        $response->assertOk();
+        $this->assertSame(0, TreasuryOperation::query()->count());
+        $this->assertSame('150.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+    }
+
+    // ── حسابٌ يختاره إنسان ─────────────────────────────────────────────────────────────
+
+    public function test_nobody_picks_the_nawris_account_by_hand(): void
+    {
+        // Arrange — حساب النورس يكتب فيه الـ webhook وحده
+        [, $headers] = $this->cashier();
+        $order = $this->order();
+
+        // Act
+        $response = $this->pay($headers, $order, '50', 'cash', ['treasury_account_id' => $this->nawris()->id]);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('treasury_account_id');
+        $this->assertSame(0, OrderPayment::query()->count());
+        $this->assertSame('0.00', $this->balance($this->nawris()));
+    }
+
+    public function test_a_driver_s_custody_is_picked_by_that_driver_alone(): void
+    {
+        // Arrange — عهدة سائقٍ آخر، يعرف رقمها من أرسل الطلب
+        [, $headers] = $this->cashier();
+        $otherDriver = User::factory()->create();
+        $theirCustody = TreasuryAccount::factory()->kind(AccountKind::Custody)->heldBy($otherDriver)->create();
+        $order = $this->order();
+
+        // Act
+        $response = $this->pay($headers, $order, '50', 'cash', ['treasury_account_id' => $theirCustody->id]);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('treasury_account_id');
+        $this->assertSame('0.00', $this->balance($theirCustody));
+    }
+
+    public function test_a_driver_may_put_cash_in_his_own_custody(): void
+    {
+        // Arrange
+        [$driver, $headers] = $this->cashier();
+        $ownCustody = TreasuryAccount::factory()->kind(AccountKind::Custody)->heldBy($driver)->create();
+        $order = $this->order();
+
+        // Act
+        $response = $this->pay($headers, $order, '50', 'cash', ['treasury_account_id' => $ownCustody->id]);
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame('50.00', $this->balance($ownCustody));
+    }
+
+    // ── طردٌ في الطريق ─────────────────────────────────────────────────────────────────
+
+    public function test_cash_typed_by_hand_while_the_parcel_is_on_the_road_lands_with_nawris(): void
+    {
+        // Arrange — الموظف يكتب المبلغ قبل أن يصل تأكيد التسليم، والمال ما زال مع النورس
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->onTheRoadWithNawris($order);
+
+        // Act
+        $response = $this->pay($headers, $order, '100', 'cash');
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame('100.00', $this->balance($this->nawris()));
+        $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Cash)));
+    }
+
+    public function test_the_picker_suggests_nawris_while_the_parcel_is_on_the_road(): void
+    {
+        // Arrange
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->onTheRoadWithNawris($order);
+
+        // Act
+        $response = $this->withHeaders($headers)
+            ->getJson("/api/v1/treasury/account-options?method=cash&order_id={$order->id}");
+
+        // Assert — «تلقائي» يسمّي ما سيُستعمل فعلاً، ولو لم يكن في القائمة
+        $response->assertOk()
+            ->assertJsonPath('data.suggested_id', $this->nawris()->id)
+            ->assertJsonPath('data.suggested_name', $this->nawris()->name);
+    }
+
+    public function test_a_closed_parcel_no_longer_sends_cash_to_nawris(): void
+    {
+        // Arrange — الطرد أُغلق (سُلِّم أو أُرجِع)؛ ما يُكتب بعده دفعٌ عاديّ
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->onTheRoadWithNawris($order)->forceFill(['closed_at' => now()])->save();
+
+        // Act
+        $response = $this->pay($headers, $order, '100', 'cash');
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame('0.00', $this->balance($this->nawris()));
+        $this->assertSame('100.00', $this->balance($this->defaultOf(AccountKind::Cash)));
+    }
+
+    // ── أخطاء شاشة نقل الحالة تحت حقولها ─────────────────────────────────────────────────
+
+    public function test_a_refused_settlement_account_is_filed_under_its_field_on_the_status_screen(): void
+    {
+        // Arrange — الحساب المختار أُطفئ بعد أن فُتحت الشاشة
+        [, $headers] = $this->cashier();
+        $switchedOff = TreasuryAccount::factory()->kind(AccountKind::Bank)->inactive()->create();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+
+        // Act
+        $response = $this->settle($headers, $order, ['settlement_account_id' => $switchedOff->id]);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('fields.settlement_account_id');
+        $this->assertSame('100.00', $this->balance($this->nawris()));
+    }
+
+    public function test_a_carrier_fee_above_custody_is_filed_under_its_field_on_the_status_screen(): void
+    {
+        // Arrange
+        [, $headers] = $this->cashier();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+
+        // Act
+        $response = $this->settle($headers, $order, ['settlement_fee' => '100.50']);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('fields.settlement_fee');
+    }
+
+    public function test_a_refused_payment_account_is_filed_under_its_field_on_the_status_screen(): void
+    {
+        // Arrange — حسابُ مصرفٍ لدفعةٍ نقدية
+        [, $headers] = $this->cashier();
+        $bank = TreasuryAccount::factory()->kind(AccountKind::Bank)->create();
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+
+        // Act
+        $response = $this->withHeaders($headers)->post("/api/v1/orders/{$order->id}/status", [
+            'status' => OrderStatus::Delivered->value,
+            'fields' => [
+                'payment_amount' => '100',
+                'payment_method' => 'cash',
+                'payment_account_id' => $bank->id,
+            ],
+        ]);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('fields.payment_account_id');
+        $this->assertSame(0, OrderPayment::query()->count());
+    }
+
+    public function test_a_negative_carrier_fee_is_refused_by_the_treasury_itself(): void
+    {
+        // Arrange — قاعدة الطلب (min:0) لا تحمي نداءً من داخل الخادم
+        $order = $this->order(OrderStatus::OutForDelivery, '100.00');
+        $this->deliveredByNawris($order, '100.00');
+
+        // Act
+        $call = fn () => app(TreasuryService::class)->settleCustody((int) $order->id, null, '-10', null);
+
+        // Assert — يُرفض قبل أن يُكتب شيء
+        $this->assertThrows($call, OperationRefused::class);
+        $this->assertSame('100.00', $this->balance($this->nawris()));
+        $this->assertSame(0, TreasuryOperation::query()->count());
     }
 }

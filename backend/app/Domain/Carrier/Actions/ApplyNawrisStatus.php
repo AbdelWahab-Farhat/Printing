@@ -18,7 +18,6 @@ use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\Models\TreasuryAccount;
-use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -217,11 +216,9 @@ final class ApplyNawrisStatus
                 'notes' => "محصّلة من نورس — الطرد {$parcel->code}",
                 // **Into Nawris's custody, not the cash box.** The customer paid cash at the door
                 // — that is the method — but the money is with Nawris until it transfers it, and
-                // «تم التسوية» is what carries it on (TREASURY-DESIGN §٦).
-                'treasury_account_id' => app(TreasuryService::class)
-                    ->systemAccount(TreasuryAccount::NAWRIS)
-                    ->getKey(),
-            ]), $actor);
+                // «تم التسوية» is what carries it on (TREASURY-DESIGN §٦). يسمّيه النظام هنا، لا
+                // إنسانٌ يختاره — والاختيارُ باليد لحساب النورس يُرفض.
+            ])->intoSystemAccount(TreasuryAccount::NAWRIS), $actor);
         }
 
         $order->refresh();

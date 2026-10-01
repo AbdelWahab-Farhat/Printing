@@ -284,6 +284,9 @@ final class ChangeOrderStatus
                     self::amountIn($fields, TransitionFields::SETTLEMENT_FEE),
                     $actor?->getKey() === null ? null : (int) $actor->getKey(),
                     (string) $order->code,
+                    // تحت حقلَيهما في الشاشة: حقولُ الحركة معلّقةٌ بـ `fields`.
+                    accountField: 'fields.'.TransitionFields::SETTLEMENT_ACCOUNT,
+                    feeField: 'fields.'.TransitionFields::SETTLEMENT_FEE,
                 );
             }
 
@@ -608,7 +611,7 @@ final class ChangeOrderStatus
             'receipt' => $fields[TransitionFields::PAYMENT_RECEIPT] ?? null,
             // Empty unless the person picked one — the treasury then decides (TREASURY-DESIGN §٥).
             'treasury_account_id' => $fields[TransitionFields::PAYMENT_ACCOUNT] ?? null,
-        ]), $actor);
+        ]), $actor, accountField: 'fields.'.TransitionFields::PAYMENT_ACCOUNT);
 
         // `RecordOrderPayment` recalculates against its own locked copy, so the instance this
         // action is holding still carries the old `paid_amount` — and the settlement guard three

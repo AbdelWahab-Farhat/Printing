@@ -76,6 +76,19 @@ final class ReverseOrderPayment
                 throw PaymentAlreadyReversed::make((int) $payment->getKey());
             }
 
+            // **ومالٌ نقلته التسويةُ لا يُعكس والطلبيةُ «تم التسوية»**، ولو لم تصر مدينة: فكُّ
+            // التسوية يعيد إلى العهدة كلَّ ما نقلته من حساب هذه الدفعة، والطلبيةُ في آخر الطريق
+            // لا تُسوّى مرّةً ثانية. التراجعُ عن التسوية أولاً يفكّها ويعيدها حيث تُسوّى من جديد.
+            if ($locked->status === OrderStatus::Settled
+                && $payment->type->movedCash()
+                && $payment->method !== null
+                && $this->treasury->hasStandingSettlementOf(
+                    (int) $locked->getKey(),
+                    $payment->treasury_account_id === null ? null : (int) $payment->treasury_account_id,
+                )) {
+                throw SettledOrderMustBeUnsettledFirst::moneyAlreadySettled();
+            }
+
             $reversal = new OrderPayment([
                 'amount' => (string) $payment->amount,
                 // No method: no money moved. The table's CHECK refuses a reversal that names one.
@@ -141,23 +154,24 @@ final class ReverseOrderPayment
             $payment->treasury_account_id === null ? null : (int) $payment->treasury_account_id,
         );
 
-        $mirrored = $this->treasury->reverseSource($payment->getMorphClass(), (int) $payment->getKey(), $reason, $actorId);
-
-        if ($mirrored !== [] || $payment->treasury_account_id !== null) {
-            return;
-        }
-
-        $this->treasury->post(new MovementData(
-            accountId: (int) $this->treasury->accountFor($payment->method->value, null)->getKey(),
-            direction: MovementDirection::Out,
-            kind: MovementKind::Payment,
-            amount: (string) $payment->amount,
-            occurredAt: now(),
-            sourceType: $payment->getMorphClass(),
-            sourceId: (int) $payment->getKey(),
-            orderId: (int) $order->getKey(),
+        $this->treasury->reverseSourceOrFallback(
+            $payment->getMorphClass(),
+            (int) $payment->getKey(),
+            stamped: $payment->treasury_account_id !== null,
             notes: $reason,
-            recordedBy: $actorId,
-        ));
+            actorId: $actorId,
+            fallback: fn (): MovementData => new MovementData(
+                accountId: (int) $this->treasury->accountFor($payment->method->value, null)->getKey(),
+                direction: MovementDirection::Out,
+                kind: MovementKind::Payment,
+                amount: (string) $payment->amount,
+                occurredAt: now(),
+                sourceType: $payment->getMorphClass(),
+                sourceId: (int) $payment->getKey(),
+                orderId: (int) $order->getKey(),
+                notes: $reason,
+                recordedBy: $actorId,
+            ),
+        );
     }
 }

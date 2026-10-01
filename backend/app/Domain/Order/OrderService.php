@@ -332,14 +332,6 @@ class OrderService
     }
 
     /**
-     * An order's money ledger, oldest first.
-     *
-     * Not paginated: an order's entries are counted on one hand, and a page boundary through a
-     * ledger would hide the reversal that explains the entry above it.
-     *
-     * @return Collection<int, OrderPayment>
-     */
-    /**
      * The branch an order is waiting at, or null — for the account picker's «تلقائي», which
      * names that branch's cash box (TREASURY-DESIGN §١٩).
      */
@@ -348,6 +340,14 @@ class OrderService
         return Order::query()->find($orderId)?->pickupOfficeId();
     }
 
+    /**
+     * An order's money ledger, oldest first.
+     *
+     * Not paginated: an order's entries are counted on one hand, and a page boundary through a
+     * ledger would hide the reversal that explains the entry above it.
+     *
+     * @return Collection<int, OrderPayment>
+     */
     public function payments(Order $order): Collection
     {
         return $order->payments()->with(['recorder', 'reversal', 'reversedPayment', 'treasuryAccount'])->get();

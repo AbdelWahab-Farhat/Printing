@@ -35,4 +35,20 @@ final class SettledOrderMustBeUnsettledFirst extends DomainException
             ."تراجع عن التسوية أولاً — ترجع الطلبية إلى «{$delivered}» — ثم أعد المحاولة",
         );
     }
+
+    /**
+     * والطلبيةُ لا تصير مدينة، لكنّ مالَ هذه الدفعة نقلته التسوية إلى حسابٍ آخر — دفعٌ زائد
+     * يُعكس جزءٌ منه. فكُّ التسوية لعكسها يفكّها كلَّها، ولا تُسوّى الطلبية ثانيةً وهي في آخر
+     * الطريق، فيبقى المال في العهدة بلا طريقٍ إلى المصرف.
+     */
+    public static function moneyAlreadySettled(): self
+    {
+        $settled = OrderStatus::Settled->label();
+        $delivered = OrderStatus::Delivered->label();
+
+        return new self(
+            "الطلبية في «{$settled}»، ومالُ هذه الدفعة نُقل عند التسوية. "
+            ."تراجع عن التسوية أولاً — ترجع الطلبية إلى «{$delivered}» — ثم أعد المحاولة",
+        );
+    }
 }

@@ -9,6 +9,7 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\OrderIsNotSettled;
 use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
 use App\Domain\Order\Models\Order;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,10 +38,18 @@ use Illuminate\Support\Facades\DB;
  * `paid_amount`, never this status, so it answers the payment that follows rather than this move.
  *
  * The timeline gains «تم التسوية → تم الاستلام» with its reason; the settlement stays above it.
+ *
+ * **والمالُ يرجع معها إلى حيث كان قبل التسوية** (TREASURY-DESIGN §٦، «نقاط الوصل»). التسويةُ في
+ * الخزينة نقلت عهدةَ الطلبية إلى حساب الاستلام وجمّعت ما في «مصرف علي»؛ تُعكس هنا كلُّها داخل
+ * المعاملة نفسها، فلا تبقى طلبيةٌ «تم الاستلام» ومالُها مُسجَّلٌ في المصرف. ومن دونه كانت تسويةٌ
+ * ثانية لا تجد عهدةً تنقلها، فيضيع ما احتفظ به الناقل ويبقى المصرف بالمبلغ كاملاً.
  */
 final class UnsettleOrder
 {
-    public function __construct(private readonly RecordStatusTransition $record) {}
+    public function __construct(
+        private readonly RecordStatusTransition $record,
+        private readonly TreasuryService $treasury,
+    ) {}
 
     /**
      * @throws OrderIsNotSettled
@@ -55,6 +64,13 @@ final class UnsettleOrder
             if ($locked->status !== OrderStatus::Settled) {
                 throw OrderIsNotSettled::make($locked->status);
             }
+
+            // قبل نقل الحالة وفي المعاملة نفسها: إن رُفض شيءٌ هنا رجع كلُّ شيء.
+            $this->treasury->unwindSettlementOf(
+                (int) $locked->getKey(),
+                trim($reason),
+                $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            );
 
             $locked->forceFill([
                 'status' => OrderStatus::Delivered,

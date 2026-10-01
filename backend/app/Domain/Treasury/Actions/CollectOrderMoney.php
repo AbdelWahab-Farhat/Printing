@@ -58,17 +58,35 @@ final class CollectOrderMoney
         ?string $orderCode = null,
         ?int $keepAccountId = null,
     ): array {
-        $operations = [];
+        $plans = [];
 
         foreach (self::KINDS as $kind) {
             $target = $this->targetFor($kind);
 
-            if ($target === null) {
-                continue;
+            if ($target !== null) {
+                $plans[] = [$kind, $target, array_values(array_filter([(int) $target->getKey(), $keepAccountId]))];
             }
+        }
 
-            $except = array_values(array_filter([(int) $target->getKey(), $keepAccountId]));
+        // **كلُّ حسابات المصدر تُقفل دفعةً واحدة، بترتيب المعرّف، قبل أي نوع.** القفلُ نوعاً
+        // نوعاً (نقد ثم مصرف) يعاكس ترتيبَ المعرّف الذي يقفل به التحويلُ اليدوي حسابَيه، فتنتظر
+        // كلُّ معاملةٍ الأخرى ويُسقط PostgreSQL إحداهما بخطأ. وكلُّ نوعٍ يعيد القراءة بعد هذا.
+        $sources = [];
 
+        foreach ($plans as [$kind, , $except]) {
+            array_push($sources, ...array_keys($this->money->of($orderId, $kind, $except)));
+        }
+
+        if ($sources !== []) {
+            $sources = array_values(array_unique($sources));
+            sort($sources);
+
+            TreasuryAccount::query()->whereIn('id', $sources)->orderBy('id')->lockForUpdate()->get();
+        }
+
+        $operations = [];
+
+        foreach ($plans as [$kind, $target, $except]) {
             array_push($operations, ...$this->collect($orderId, $kind, $target, $except, $actorId, $occurredAt, $orderCode));
         }
 

@@ -12,6 +12,7 @@ use App\Application\Api\V1\Resources\TreasuryAccountResource;
 use App\Application\Api\V1\Resources\TreasuryMovementResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
+use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\OrderService;
 use App\Domain\Treasury\DTOs\AccountData;
@@ -108,7 +109,7 @@ class TreasuryAccountController extends Controller
      * `purpose=out` for money leaving — a refund, an expense — which is never taken from custody.
      * Open to anybody signed in: it names accounts, not balances, and every payment form needs it.
      */
-    public function options(Request $request, OrderService $orders): JsonResponse
+    public function options(Request $request, OrderService $orders, CarrierService $carrier): JsonResponse
     {
         $validated = $request->validate([
             'method' => ['required', 'string', Rule::in(['cash', 'bank_transfer', 'bank_card', 'libyana'])],
@@ -118,11 +119,15 @@ class TreasuryAccountController extends Controller
             'order_id' => ['nullable', 'integer'],
         ]);
 
+        $orderId = isset($validated['order_id']) ? (int) $validated['order_id'] : null;
+
         $options = $this->treasury->accountOptions(
             (string) $validated['method'],
             $request->user(),
             ($validated['purpose'] ?? 'in') === 'in',
-            isset($validated['order_id']) ? $orders->pickupOfficeOf((int) $validated['order_id']) : null,
+            $orderId === null ? null : $orders->pickupOfficeOf($orderId),
+            // والطردُ في الطريق: «تلقائي» هو النورس، كما تختاره الدفعةُ نفسها.
+            carrierHolds: $orderId !== null && $carrier->hasParcelOnTheRoad($orderId),
         );
 
         return $this->success([
@@ -134,6 +139,8 @@ class TreasuryAccountController extends Controller
                 'is_default' => (bool) $account->is_default,
             ])->values(),
             'suggested_id' => $options['suggested']->id,
+            // بالاسم أيضاً: المقترحُ قد يكون حساباً لا يُختار باليد فليس في القائمة — النورس.
+            'suggested_name' => $options['suggested']->name,
         ]);
     }
 

@@ -19,6 +19,7 @@ use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
@@ -62,6 +63,7 @@ class CollectAtSettlementTest extends TestCase
             PermissionName::ManageTreasury,
             PermissionName::ViewOrders,
             PermissionName::SettleOrders,
+            PermissionName::UnsettleOrders,
             PermissionName::ViewOrderPayments,
             PermissionName::RecordOrderPayments,
             PermissionName::ReverseOrderPayments,
@@ -333,9 +335,37 @@ class CollectAtSettlementTest extends TestCase
 
     // ── undoing ─────────────────────────────────────────────────────────────────────────
 
-    public function test_reversing_alis_payment_unwinds_alis_collection_and_leaves_omars(): void
+    public function test_a_collected_payment_on_an_overpaid_settled_order_waits_for_unsettling(): void
     {
-        // Arrange
+        // Arrange — دُفع ٥٠٠ على طلبيةٍ صارت ٤٠٠، فسُوّيت وجُمّع المالُ كلُّه في المصرف الافتراضي.
+        // عكسُ ١٠٠ لا يجعلها مدينة، لكنّ فكَّ التجميع لعكسها كان سيفكّه كلَّه ولا يُعاد.
+        [, $headers] = $this->owner();
+        $this->set($headers, ['collect_bank' => true]);
+        $alisBank = $this->bank('مصرف علي');
+        $omarsBank = $this->bank('مصرف عمر');
+        $order = $this->order('500.00');
+        $this->pay($headers, $order, '400', $alisBank)->assertCreated();
+        $this->pay($headers, $order, '100', $omarsBank)->assertCreated();
+        $order->forceFill(['items_total' => '400.00', 'grand_total' => '400.00'])->save();
+        $this->settle($headers, $order)->assertOk();
+        $omarsPayment = OrderPayment::query()->where('order_id', $order->id)->where('treasury_account_id', $omarsBank->id)->sole();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/{$omarsPayment->id}/reverse", [
+            'reason' => 'دفعةٌ مكرّرة',
+        ]);
+
+        // Assert — يُطلب التراجع عن التسوية أولاً، ولا يتحرّك دينار
+        $response->assertUnprocessable();
+        $this->assertSame('500.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+        $this->assertSame('0.00', $this->balance($alisBank));
+        $this->assertSame('0.00', $this->balance($omarsBank));
+        $this->assertSame(0, OrderPayment::query()->where('type', 'reversal')->count());
+    }
+
+    public function test_unsettling_hands_every_collection_back_before_a_payment_is_reversed(): void
+    {
+        // Arrange — جُمّع مالُ علي وعمر عند التسوية، ثم تراجعنا عنها
         [, $headers] = $this->owner();
         $this->set($headers, ['collect_bank' => true]);
         $alisBank = $this->bank('مصرف علي');
@@ -344,17 +374,48 @@ class CollectAtSettlementTest extends TestCase
         $this->pay($headers, $order, '300', $alisBank)->assertCreated();
         $this->pay($headers, $order, '200', $omarsBank)->assertCreated();
         $this->settle($headers, $order)->assertOk();
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/unsettle", [
+            'reason' => 'تحويلُ علي لم يصل',
+        ])->assertOk();
         $alisPayment = OrderPayment::query()->where('order_id', $order->id)->where('treasury_account_id', $alisBank->id)->sole();
 
         // Act
-        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/{$alisPayment->id}/reverse", [
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/{$alisPayment->id}/reverse", [
             'reason' => 'التحويل لم يصل',
-        ])->assertCreated();
+        ]);
 
-        // Assert — the 300 came back to Ali's bank and went out again; Omar's 200 stays collected
+        // Assert — كلُّ تجميعٍ عاد إلى حيث جُمّع، ثم خرجت ٣٠٠ علي وحدها
+        $response->assertCreated();
         $this->assertSame('0.00', $this->balance($alisBank));
-        $this->assertSame('0.00', $this->balance($omarsBank));
-        $this->assertSame('200.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+        $this->assertSame('200.00', $this->balance($omarsBank));
+        $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Bank)));
+    }
+
+    public function test_collection_locks_every_source_account_up_front_in_id_order(): void
+    {
+        // Arrange — مصرفٌ معرّفه أصغر من خزنة: الترتيبُ بالنوع (نقد ثم مصرف) يعكس ترتيبَ المعرّف،
+        // وتحويلٌ يدويّ يقفل بالمعرّف — فقفلان بترتيبين يتعانقان.
+        [, $headers] = $this->owner();
+        $this->set($headers, ['collect_bank' => true, 'collect_cash' => true]);
+        $alisBank = $this->bank('مصرف علي');
+        $alisBox = $this->cashBox('خزنة علي');
+        $order = $this->order('500.00');
+        $this->pay($headers, $order, '300', $alisBank)->assertCreated();
+        $this->pay($headers, $order, '200', $alisBox)->assertCreated();
+        $locks = [];
+        DB::listen(function ($query) use (&$locks): void {
+            if (str_contains($query->sql, 'treasury_accounts') && str_contains($query->sql, 'for update')) {
+                $locks[] = array_map('intval', $query->bindings);
+            }
+        });
+
+        // Act
+        $response = $this->settle($headers, $order);
+
+        // Assert — أوّلُ قفلٍ يأخذ المصدرين معاً، بترتيب المعرّف
+        $response->assertOk();
+        $this->assertNotEmpty($locks);
+        $this->assertSame([(int) $alisBank->id, (int) $alisBox->id], $locks[0]);
     }
 
     // ── the settings themselves ─────────────────────────────────────────────────────────

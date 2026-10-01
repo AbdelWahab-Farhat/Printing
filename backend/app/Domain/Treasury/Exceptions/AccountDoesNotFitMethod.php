@@ -27,6 +27,18 @@ final class AccountDoesNotFitMethod extends DomainException
         return new self("الحساب «{$account}» معطَّل", $field);
     }
 
+    /** حسابٌ يكتب فيه النظام وحده — النورس — ولا يختاره إنسان. */
+    public static function system(string $account, string $field = 'treasury_account_id'): self
+    {
+        return new self("«{$account}» حسابٌ يكتب فيه النظام وحده — لا يُختار باليد", $field);
+    }
+
+    /** عهدةُ شخصٍ آخر: لا يُدخل مالاً في يد زميلٍ لم يستلمه. */
+    public static function notYours(string $account, string $field = 'treasury_account_id'): self
+    {
+        return new self("«{$account}» عهدةُ زميلٍ آخر — لا يُسجَّل فيها إلا صاحبُها", $field);
+    }
+
     public static function custody(string $account, string $field = 'treasury_account_id'): self
     {
         return new self("«{$account}» حساب عهدة — لا يُصرف منه يدوياً، ويُفرَّغ بتسوية الطلبيات", $field);

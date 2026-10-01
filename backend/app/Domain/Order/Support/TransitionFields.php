@@ -441,7 +441,7 @@ final class TransitionFields
 
         array_push($fields, ...self::money($order, $target, $actor));
 
-        array_push($fields, ...self::settlement($order, $target));
+        array_push($fields, ...self::settlement($order, $target, $actor));
 
         // **A note travels with every move, and only a cancellation is made to justify itself.**
         // One field either way: the same input, renamed and made required where an explanation
@@ -631,7 +631,7 @@ final class TransitionFields
      *
      * @return list<TransitionField>
      */
-    private static function settlement(Order $order, OrderStatus $target): array
+    private static function settlement(Order $order, OrderStatus $target, ?User $actor): array
     {
         if ($target !== OrderStatus::Settled) {
             return [];
@@ -655,7 +655,7 @@ final class TransitionFields
                 key: self::SETTLEMENT_ACCOUNT,
                 label: 'استُلم المال في',
                 accounts: array_values(array_filter(
-                    $treasury->pickableAccounts(),
+                    $treasury->pickableAccounts($actor?->getKey() === null ? null : (int) $actor->getKey()),
                     fn (array $account) => $account['kind'] !== 'custody',
                 )),
                 hint: "في العهدة: {$where}",
@@ -667,7 +667,6 @@ final class TransitionFields
                     label: 'احتفظ به الناقل',
                     required: false,
                     max: (float) $total,
-                    hint: 'يُسجَّل مصروف «رسوم شركة التوصيل» ولا يصل إلى الحساب',
                 ),
             ] : []),
         ];
@@ -782,8 +781,9 @@ final class TransitionFields
             TransitionField::treasuryAccount(
                 key: self::PAYMENT_ACCOUNT,
                 label: 'الحساب',
-                accounts: app(TreasuryService::class)->pickableAccounts(),
-                hint: 'اتركه فارغاً ليُسجَّل في حسابك أو الحساب الافتراضي',
+                accounts: app(TreasuryService::class)->pickableAccounts(
+                    $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                ),
             ),
             // **One field, two jobs.** Obligatory for «حوالة», whose only proof is a document
             // the customer sends — see {@see PaymentMethod::requiresReceipt()} — and offered for

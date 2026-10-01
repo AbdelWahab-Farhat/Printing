@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderPaymentType;
@@ -45,8 +46,16 @@ final class RecordOrderPayment
         private readonly TreasuryService $treasury,
     ) {}
 
-    public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
-    {
+    /**
+     * @param  string  $accountField  where a refused account is filed — `fields.payment_account_id`
+     *                                on the status screen, whose fields hang off `fields`
+     */
+    public function __invoke(
+        Order $order,
+        OrderPaymentData $data,
+        ?User $actor = null,
+        string $accountField = 'treasury_account_id',
+    ): OrderPayment {
         if (bccomp($data->amount, '0', Money::SCALE) <= 0) {
             throw PaymentAmountMustBePositive::make($data->amount);
         }
@@ -57,7 +66,7 @@ final class RecordOrderPayment
             throw ReceiptRequiredForMethod::make($data->method);
         }
 
-        return DB::transaction(function () use ($order, $data, $actor): OrderPayment {
+        return DB::transaction(function () use ($order, $data, $actor, $accountField): OrderPayment {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
             // The one closed door, and only for money coming *in*: there is nothing left to pay
@@ -72,7 +81,7 @@ final class RecordOrderPayment
                 throw PaymentExceedsRemaining::make($data->amount, $remaining);
             }
 
-            $payment = $this->write($locked, $data, $actor);
+            $payment = $this->write($locked, $data, $actor, $accountField);
 
             ($this->recalculate)($locked);
 
@@ -104,7 +113,7 @@ final class RecordOrderPayment
      * payload that could set the type could turn a collection into a refund, and one that could
      * set `recorded_by` could put a colleague's name on it. See RULES.md §9.4.
      */
-    private function write(Order $order, OrderPaymentData $data, ?User $actor): OrderPayment
+    private function write(Order $order, OrderPaymentData $data, ?User $actor, string $accountField): OrderPayment
     {
         $payment = new OrderPayment([
             'amount' => $data->amount,
@@ -123,12 +132,22 @@ final class RecordOrderPayment
         // otherwise the method's default (TREASURY-DESIGN §٥, §١٩). Stamped, never fillable:
         // the account is decided here, by the rules, not by whatever a payload claims. The
         // order is the locked copy, read before this move writes its new status.
-        $account = $this->treasury->accountFor(
-            $data->method->value,
-            $actor?->getKey() === null ? null : (int) $actor->getKey(),
-            $data->treasuryAccountId,
-            pickupCityId: $order->pickupOfficeId(),
-        );
+        //
+        // **وحسابٌ يسمّيه النظام يُؤخذ كما هو** — النورس حين يكتب الـ webhook ما حصّله. **ونقدٌ يُكتب
+        // باليد والطردُ ما زال في الطريق يهبط في حساب النورس** إن لم يُختر غيره: الموظف علّم
+        // «تم الاستلام» قبل أن يصل تأكيد التسليم، والمالُ ما زال في يد المندوب، والتسوية تنقله.
+        $account = $data->systemAccount !== null
+            ? $this->treasury->systemAccount($data->systemAccount)
+            : $this->treasury->accountFor(
+                $data->method->value,
+                $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                $data->treasuryAccountId,
+                field: $accountField,
+                pickupCityId: $order->pickupOfficeId(),
+                carrierHolds: $data->treasuryAccountId === null
+                    // كسولاً لا في البنّاء: `CarrierService` يبلغ هذا الصنف من طرقٍ أخرى.
+                    && app(CarrierService::class)->hasParcelOnTheRoad((int) $order->getKey()),
+            );
 
         $payment->treasury_account_id = $account->getKey();
 
