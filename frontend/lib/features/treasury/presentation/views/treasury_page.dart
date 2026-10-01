@@ -95,6 +95,15 @@ class _Loaded extends StatelessWidget {
     final accounts = state.accounts;
     final cubit = context.read<TreasuryCubit>();
 
+    Future<void> open(TreasuryAccount account) async {
+      await context.push(Routes.treasuryAccount(account.id));
+
+      unawaited(cubit.load());
+    }
+
+    final money = [for (final a in accounts.accounts) if (!a.isPayable) a];
+    final payables = [for (final a in accounts.accounts) if (a.isPayable) a];
+
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
@@ -114,16 +123,15 @@ class _Loaded extends StatelessWidget {
             ),
           ),
 
-        for (final account in accounts.accounts)
+        for (final account in money)
           TreasuryAccountTile(
             key: ValueKey(account.id),
             account: account,
-            onTap: () async {
-              await context.push(Routes.treasuryAccount(account.id));
-
-              unawaited(cubit.load());
-            },
+            onTap: () => open(account),
           ),
+
+        if (payables.isNotEmpty)
+          _Payables(payables: payables, total: accounts.payablesTotal, onOpen: open),
 
         if (state.ownership case final ownership?) ...[
           SizedBox(height: 16.h),
@@ -135,6 +143,9 @@ class _Loaded extends StatelessWidget {
               for (final investor in ownership.investors)
                 (investor.name, _sum(investor.capital, investor.profit)),
               ('نقد الصندوق الاستثماري', ownership.fundCash),
+              // Taken off the company's own money — so drawn with the sign it is subtracted by.
+              if (ownership.payablesTotal != '0.00')
+                ('علينا', negateAmount(ownership.payablesTotal)),
             ],
             emphasis: ('مال الشركة نفسها', ownership.companyOwn),
           ),
@@ -173,6 +184,108 @@ class _Loaded extends StatelessWidget {
     }
 
     final total = millimes(a) + millimes(b);
+    final sign = total < 0 ? '-' : '';
+    final absolute = total.abs();
+
+    return '$sign${absolute ~/ 100}.${(absolute % 100).toString().padLeft(2, '0')}';
+  }
+}
+
+/// «علينا» — what the company owes. TREASURY-DESIGN §٢٠.
+///
+/// The payables opened by hand — a loan, the rent — are few and named, so each is a row. The
+/// vendors' are one per vendor and could be dozens, so they fold into «ذمم الموردين» with their
+/// total, and open to the vendors that are owed something; a vendor paid off is left out.
+class _Payables extends StatelessWidget {
+  const _Payables({required this.payables, required this.total, required this.onOpen});
+
+  final List<TreasuryAccount> payables;
+  final String total;
+  final void Function(TreasuryAccount account) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final own = [for (final a in payables) if (!a.isVendorPayable) a];
+    final vendors = [
+      for (final a in payables)
+        if (a.isVendorPayable && a.owed != '0.00') a,
+    ];
+
+    return Column(
+      key: const ValueKey('payables'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: 16.h),
+        Row(
+          children: [
+            Icon(AppIcons.payable, size: 20.sp, color: scheme.error),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                'علينا',
+                style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            Text(
+              owedLabel(total),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: total.startsWith('-') ? null : scheme.error,
+              ),
+            ),
+          ],
+        ),
+        for (final account in own)
+          TreasuryAccountTile(
+            key: ValueKey(account.id),
+            account: account,
+            onTap: () => onOpen(account),
+          ),
+        if (vendors.isNotEmpty)
+          ExpansionTile(
+            key: const ValueKey('vendor-payables'),
+            tilePadding: EdgeInsets.symmetric(horizontal: 4.w),
+            childrenPadding: EdgeInsetsDirectional.only(start: 12.w),
+            leading: Icon(AppIcons.vendors),
+            title: Text(
+              'ذمم الموردين',
+              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text('${vendors.length} مورد'),
+            trailing: Text(
+              owedLabel(_owedBy(vendors)),
+              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            children: [
+              for (final account in vendors)
+                TreasuryAccountTile(
+                  key: ValueKey(account.id),
+                  account: account,
+                  onTap: () => onOpen(account),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// What the listed vendors are owed together — integers of millimes, never a float.
+  static String _owedBy(List<TreasuryAccount> accounts) {
+    var total = 0;
+
+    for (final account in accounts) {
+      final owed = account.owed;
+      final negative = owed.startsWith('-');
+      final parts = (negative ? owed.substring(1) : owed).split('.');
+      final whole = int.tryParse(parts.first) ?? 0;
+      final fraction =
+          int.tryParse((parts.length > 1 ? parts[1] : '0').padRight(2, '0').substring(0, 2)) ?? 0;
+      final value = whole * 100 + fraction;
+
+      total += negative ? -value : value;
+    }
+
     final sign = total < 0 ? '-' : '';
     final absolute = total.abs();
 

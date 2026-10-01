@@ -26,6 +26,12 @@ enum MovementKind: string
     case InvestorWithdrawal = 'investor_withdrawal';
     case SupplyPurchase = 'supply_purchase';
 
+    /** A purchase order's total, owed to its vendor from the moment it is raised — §٢٠. */
+    case Purchase = 'purchase';
+
+    /** «خصم من المورد»: the vendor knocked something off what is owed. No money moved. */
+    case VendorCredit = 'vendor_credit';
+
     public function label(): string
     {
         return match ($this) {
@@ -42,6 +48,8 @@ enum MovementKind: string
             self::InvestorDeposit => 'إيداع مستثمر',
             self::InvestorWithdrawal => 'سحب مستثمر',
             self::SupplyPurchase => 'شراء نواقص',
+            self::Purchase => 'أمر شراء',
+            self::VendorCredit => 'خصم من المورد',
         };
     }
 }

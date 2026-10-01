@@ -26,7 +26,9 @@ final class CreateTreasuryAccount
         $kind = $data->kind ?? AccountKind::Cash;
 
         if ($data->isDefault === true && ! $kind->spendable()) {
-            throw AccountChangeRefused::custodyCannotBeDefault();
+            throw $kind === AccountKind::Payable
+                ? AccountChangeRefused::payableCannotBeDefault()
+                : AccountChangeRefused::custodyCannotBeDefault();
         }
 
         SettlesIntoRule::check($kind, $data->settlesIntoAccountId);

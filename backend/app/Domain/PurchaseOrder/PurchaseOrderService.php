@@ -7,6 +7,7 @@ namespace App\Domain\PurchaseOrder;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\InventoryService;
 use App\Domain\PurchaseOrder\Actions\CancelPurchaseOrder;
+use App\Domain\PurchaseOrder\Actions\CountOldOrderAsDebt;
 use App\Domain\PurchaseOrder\Actions\CreatePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\RecordVendorPayment;
@@ -52,6 +53,7 @@ class PurchaseOrderService
         private readonly RecordVendorPayment $recordVendorPayment,
         private readonly ReverseVendorPayment $reverseVendorPayment,
         private readonly VendorPaymentSummary $vendorPaymentSummary,
+        private readonly CountOldOrderAsDebt $countOldOrderAsDebt,
     ) {}
 
     /**
@@ -134,8 +136,14 @@ class PurchaseOrderService
         return ($this->reverseVendorPayment)($payment, $reason, $actor);
     }
 
+    /** «يُحسب عليه دين للمورد» — an old order still owed, brought onto «علينا» (§٢٠). */
+    public function countOldOrderAsDebt(PurchaseOrder $order, ?User $actor): PurchaseOrder
+    {
+        return ($this->countOldOrderAsDebt)($order, $actor?->getKey() === null ? null : (int) $actor->getKey());
+    }
+
     /**
-     * @return array{ordered: string, opening_debt: string, paid: string, owed: string}
+     * @return array{ordered: string, opening_debt: string, paid: string, credited: string, owed: string, paid_on_old_orders: string}
      */
     public function vendorPaymentSummary(int $vendorId): array
     {

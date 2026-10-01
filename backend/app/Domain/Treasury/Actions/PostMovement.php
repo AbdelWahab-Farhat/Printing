@@ -42,6 +42,7 @@ final class PostMovement
             'occurred_at' => $data->occurredAt,
             'source_type' => $data->sourceType,
             'source_id' => $data->sourceId,
+            'revision' => $data->revision,
             'operation_id' => $data->operationId,
             'order_id' => $data->orderId,
             'counterpart_account_id' => $data->counterpartAccountId,

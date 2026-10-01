@@ -31,5 +31,8 @@ final readonly class MovementData
         public ?int $operationId = null,
         public ?int $counterpartAccountId = null,
         public ?int $reversesMovementId = null,
+        // 0 for everything but a debt reposted after its source changed — a purchase order whose
+        // total was edited. The reversed original still holds revision 0 in the posted-once index.
+        public int $revision = 0,
     ) {}
 }

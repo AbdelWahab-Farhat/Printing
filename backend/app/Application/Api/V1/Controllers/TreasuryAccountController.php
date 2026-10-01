@@ -45,17 +45,35 @@ class TreasuryAccountController extends Controller
 
         $accounts = $this->treasury->accountsFor($user, $request->boolean('active_only'));
 
+        $active = $accounts->where('is_active', true);
+
         return $this->success([
             'accounts' => TreasuryAccountResource::collection($accounts),
             // Only the accounts the caller can see — for a holder, their own money, not the shop's.
-            'total' => number_format(
-                (float) $accounts->where('is_active', true)->sum(fn (TreasuryAccount $a) => (float) $a->getAttribute('balance')),
+            // Money only: a debt is not a dinar in any drawer, and an older app adds up `total`.
+            'total' => $this->sum($active->filter(fn (TreasuryAccount $a) => $a->kind->holdsMoney())),
+            // «علينا» — what the payables owe, as a positive figure (§٢٠).
+            'payables_total' => bcmul(
+                $this->sum($active->reject(fn (TreasuryAccount $a) => $a->kind->holdsMoney())),
+                '-1',
                 2,
-                '.',
-                '',
             ),
             'can_view_all' => $this->treasury->canViewAll($user),
         ]);
+    }
+
+    /**
+     * @param  Collection<int, TreasuryAccount>  $accounts
+     */
+    private function sum(Collection $accounts): string
+    {
+        $total = '0';
+
+        foreach ($accounts as $account) {
+            $total = bcadd($total, (string) $account->getAttribute('balance'), 2);
+        }
+
+        return $total;
     }
 
     public function show(Request $request, TreasuryAccount $account): JsonResponse

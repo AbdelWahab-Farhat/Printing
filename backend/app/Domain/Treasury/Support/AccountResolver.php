@@ -147,6 +147,10 @@ final class AccountResolver
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
         }
 
+        if ($account->kind === AccountKind::Payable) {
+            throw AccountDoesNotFitMethod::payable((string) $account->name, $field);
+        }
+
         if (! $incoming && ! $account->kind->spendable()) {
             throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
         }

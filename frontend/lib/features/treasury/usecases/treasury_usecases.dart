@@ -209,6 +209,41 @@ class GetPurchaseOrderPayments {
       _repository.purchaseOrderPayments(purchaseOrderId);
 }
 
+class GetVendorAccount {
+  const GetVendorAccount(this._repository);
+
+  final TreasuryRepository _repository;
+
+  Future<Either<Failure, VendorAccount>> call(int vendorId) => _repository.vendorAccount(vendorId);
+}
+
+class CountOldOrderAsDebt {
+  const CountOldOrderAsDebt(this._repository);
+
+  final TreasuryRepository _repository;
+
+  Future<Either<Failure, Unit>> call(int purchaseOrderId) =>
+      _repository.countOldOrderAsDebt(purchaseOrderId);
+}
+
+class CreditVendor {
+  const CreditVendor(this._repository);
+
+  final TreasuryRepository _repository;
+
+  Future<Either<Failure, Unit>> call({
+    required int vendorId,
+    required String amount,
+    int? purchaseOrderId,
+    String? notes,
+  }) => _repository.creditVendor(
+    vendorId: vendorId,
+    amount: amount,
+    purchaseOrderId: purchaseOrderId,
+    notes: notes,
+  );
+}
+
 class PayVendor {
   const PayVendor(this._repository);
 

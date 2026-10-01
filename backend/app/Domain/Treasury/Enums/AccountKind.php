@@ -11,6 +11,10 @@ namespace App\Domain\Treasury\Enums;
  * money somebody else is holding *for* the company — Nawris between the doorstep and its
  * transfer, or a driver between the delivery and the handover. It fills when a customer pays and
  * empties when the order is settled, and nothing else touches it — TREASURY-DESIGN §٦.
+ *
+ * **`payable` is not a place money is at all** — it is what the company owes: a vendor, the owner
+ * who lent it cash, the landlord. Its balance runs below zero, −500 being 500 owed, so the same
+ * transfers and expenses that move money also move debt — §٢٠.
  */
 enum AccountKind: string
 {
@@ -18,6 +22,7 @@ enum AccountKind: string
     case Bank = 'bank';
     case Wallet = 'wallet';
     case Custody = 'custody';
+    case Payable = 'payable';
 
     public function label(): string
     {
@@ -26,18 +31,27 @@ enum AccountKind: string
             self::Bank => 'مصرف',
             self::Wallet => 'محفظة ليبيانا',
             self::Custody => 'عهدة',
+            self::Payable => 'التزام',
         };
     }
 
     /**
-     * Whether money can be *sent* from here by hand — a refund, an expense, a transfer.
+     * Whether money can be *sent* from here by hand — a refund, a vendor payment, a settlement's
+     * destination — or fall back into it.
      *
      * Custody empties only through a settlement, which knows which order each dinar belongs to.
      * A hand transfer out of it would leave the per-order sums claiming money that already left.
+     * A payable holds no money to send.
      */
     public function spendable(): bool
     {
-        return $this !== self::Custody;
+        return $this === self::Cash || $this === self::Bank || $this === self::Wallet;
+    }
+
+    /** Whether the balance is money the company has — everything but a debt. */
+    public function holdsMoney(): bool
+    {
+        return $this !== self::Payable;
     }
 
     /**

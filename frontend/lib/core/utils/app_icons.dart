@@ -238,6 +238,10 @@ abstract final class AppIcons {
   /// Custody — money somebody else is holding for us: Nawris, a driver.
   static IconData get custody => _pick(Icons.local_shipping_outlined, CupertinoIcons.cube_box);
 
+  /// «علينا» — what the company owes: a vendor, a loan, the rent. A bill waiting to be paid.
+  static IconData get payable =>
+      _pick(Icons.request_quote_outlined, CupertinoIcons.doc_plaintext);
+
   /// Money moved between two accounts.
   static IconData get transfer => _pick(Icons.swap_horiz_rounded, CupertinoIcons.arrow_right_arrow_left);
 

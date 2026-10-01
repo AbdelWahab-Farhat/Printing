@@ -1,11 +1,16 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/transition_field_input.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/models/vendor_payment.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/vendor_account_section.dart';
 import 'package:dayaa/features/treasury/repositories/treasury_repository.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:flutter/material.dart';
@@ -359,6 +364,250 @@ void main() {
       expect(treasuryMoney('1250.00'), '1,250 د.ل');
       expect(treasuryMoney('-8450.50'), '−8,450.5 د.ل');
       expect(treasuryMoney('50.00', signed: true), '+50 د.ل');
+    });
+  });
+
+  group('«علينا» — what is owed (§٢٠)', () {
+    TreasuryAccount account({
+      required int id,
+      required String name,
+      required AccountKind kind,
+      String balance = '0.00',
+      int? vendorId,
+    }) => TreasuryAccount(
+      id: id,
+      name: name,
+      kind: kind,
+      kindLabel: kind.wire,
+      isDefault: false,
+      isActive: true,
+      isSystem: false,
+      isSpendable: kind == AccountKind.cash || kind == AccountKind.bank,
+      isPayable: kind == AccountKind.payable,
+      vendorId: vendorId,
+      balance: balance,
+    );
+
+    test('a debt reads as what is owed, never as a red minus', () {
+      // Act
+      final loan = TreasuryAccount.fromJson({
+        'id': 7,
+        'name': 'قرض المالك',
+        'kind': 'payable',
+        'kind_label': 'التزام',
+        'is_spendable': false,
+        'is_payable': true,
+        'vendor_id': null,
+        'balance': '-1000.00',
+      });
+      final overpaid = account(id: 8, name: 'المؤجر', kind: AccountKind.payable, balance: '50.00');
+
+      // Assert
+      expect(loan.kind, AccountKind.payable);
+      expect(loan.isVendorPayable, isFalse);
+      expect(loan.owed, '1000.00');
+      expect(loan.isOverdrawn, isFalse);
+      expect(treasuryBalanceLabel(loan), 'علينا 1,000 د.ل');
+      expect(overpaid.isOverdrawn, isTrue);
+      expect(treasuryBalanceLabel(overpaid), 'لنا عنده 50 د.ل');
+    });
+
+    test('the totals keep what is owed apart from the money', () {
+      // Act
+      final accounts = TreasuryAccounts.fromJson({
+        'accounts': const [],
+        'total': '1000.00',
+        'payables_total': '1000.00',
+        'can_view_all': true,
+      });
+      final ownership = TreasuryOwnership.fromJson({
+        'total_held': '1000.00',
+        'investors': const [],
+        'investors_total': '0.00',
+        'fund_cash': '0.00',
+        'payables_total': '1000.00',
+        'company_own': '0.00',
+      });
+
+      // Assert
+      expect(accounts.total, '1000.00');
+      expect(accounts.payablesTotal, '1000.00');
+      expect(ownership.payablesTotal, '1000.00');
+      expect(ownership.companyOwn, '0.00');
+    });
+
+    test('a vendor\'s account reads what was ordered, paid and credited, and its statement', () {
+      // Act
+      final vendor = VendorAccount.fromJson({
+        'summary': {
+          'ordered': '1300.00',
+          'opening_debt': '0.00',
+          'paid': '600.00',
+          'credited': '150.00',
+          'owed': '550.00',
+        },
+        'treasury_account_id': 12,
+        'payments': [
+          {'id': 3, 'type': 'credit', 'type_label': 'خصم من المورد', 'amount': '150.00'},
+        ],
+      });
+
+      // Assert
+      expect(vendor.owed, '550.00');
+      expect(vendor.credited, '150.00');
+      expect(vendor.treasuryAccountId, 12);
+      expect(vendor.payments.single.type, 'credit');
+    });
+
+    testWidgets('a transfer offers a loan to borrow from, never a vendor\'s account', (tester) async {
+      // Arrange
+      final accounts = [
+        account(id: 1, name: 'الخزنة الرئيسية', kind: AccountKind.cash, balance: '500.00'),
+        account(id: 7, name: 'قرض المالك', kind: AccountKind.payable, balance: '-1000.00'),
+        account(id: 9, name: 'مطبعة النور', kind: AccountKind.payable, balance: '-300.00', vendorId: 4),
+      ];
+
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showTreasuryOperationSheet(
+                context: context,
+                kind: OperationKind.transfer,
+                accounts: accounts,
+                onSubmit:
+                    ({
+                      required kind,
+                      amount,
+                      fromAccountId,
+                      toAccountId,
+                      categoryId,
+                      employeeId,
+                      countedBalance,
+                      notes,
+                    }) async => null,
+              ),
+              child: const Text('افتح'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('من حساب'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.textContaining('قرض المالك — علينا'), findsWidgets);
+      expect(find.textContaining('مطبعة النور'), findsNothing);
+    });
+
+    testWidgets('opened from an account, a transfer leaves from it and asks only where to', (
+      tester,
+    ) async {
+      // Arrange — opened from «المصرف»
+      final bank = account(id: 2, name: 'المصرف', kind: AccountKind.bank, balance: '900.00');
+      final accounts = [
+        account(id: 1, name: 'الخزنة الرئيسية', kind: AccountKind.cash, balance: '500.00'),
+        bank,
+      ];
+      int? sentFrom;
+      int? sentTo;
+
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showTreasuryOperationSheet(
+                context: context,
+                kind: OperationKind.transfer,
+                accounts: accounts,
+                account: bank,
+                onSubmit:
+                    ({
+                      required kind,
+                      amount,
+                      fromAccountId,
+                      toAccountId,
+                      categoryId,
+                      employeeId,
+                      countedBalance,
+                      notes,
+                    }) async {
+                      sentFrom = fromAccountId;
+                      sentTo = toAccountId;
+                      return null;
+                    },
+              ),
+              child: const Text('افتح'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Act — the bank is fixed; pick the cash box as the destination and send
+      await tester.tap(find.text('إلى حساب'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('الخزنة الرئيسية').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextFormField, 'المبلغ'), '100');
+      await tester.tap(find.text('تسجيل تحويل'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byKey(const ValueKey('locked-account')), findsNothing); // the sheet closed
+      expect(sentFrom, 2);
+      expect(sentTo, 1);
+
+      // The success snack holds a three-second timer: run it out, then let its exit settle —
+      // the order purchase_order_form_funding_test.dart explains.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the vendor\'s screen shows what is owed, and the statement only to the treasury', (
+      tester,
+    ) async {
+      // Arrange — allowed the vendor's payments, not the treasury
+      final repository = _MockTreasuryRepository();
+      when(() => repository.vendorAccount(4)).thenAnswer(
+        (_) async => const Right<Failure, VendorAccount>(
+          VendorAccount(
+            ordered: '1000.00',
+            openingDebt: '0.00',
+            paid: '400.00',
+            credited: '0.00',
+            owed: '600.00',
+            payments: [],
+            treasuryAccountId: 12,
+          ),
+        ),
+      );
+      sl
+        ..registerLazySingleton<GetVendorAccount>(() => GetVendorAccount(repository))
+        ..registerSingleton<Session>(
+          Session()..adopt(
+            const AuthUser(
+              id: 1,
+              name: 'علي',
+              phone: '0911234567',
+              permissions: ['vendors.payments.view'],
+            ),
+          ),
+        );
+
+      // Act
+      await tester.pumpWidget(host(const VendorAccountSection(vendorId: 4)));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('الحساب مع المورد'), findsOneWidget);
+      expect(find.text('600 د.ل'), findsOneWidget);
+      expect(find.text('كشف الحساب'), findsNothing);
     });
   });
 }

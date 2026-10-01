@@ -33,7 +33,16 @@ final class UpdateTreasuryAccount
             }
 
             if ($data->isDefault === true && ! $locked->kind->spendable()) {
-                throw AccountChangeRefused::custodyCannotBeDefault();
+                throw $locked->kind === AccountKind::Payable
+                    ? AccountChangeRefused::payableCannotBeDefault()
+                    : AccountChangeRefused::custodyCannotBeDefault();
+            }
+
+            // A vendor's account carries the vendor's name and stays open while the vendor does;
+            // only its notes are anybody's to change here.
+            if ($locked->isVendorPayable()
+                && (($data->name !== null && $data->name !== $locked->name) || $data->hasHolder || $data->isActive === false)) {
+                throw AccountChangeRefused::vendorPayableIsManagedByTheVendor((string) $locked->name);
             }
 
             if ($data->isActive === false && $locked->is_default && $data->isDefault !== true) {

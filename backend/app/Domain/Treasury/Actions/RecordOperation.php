@@ -7,6 +7,7 @@ namespace App\Domain\Treasury\Actions;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\DTOs\OperationData;
+use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\OperationType;
 use App\Domain\Treasury\Exceptions\AccountDoesNotFitMethod;
@@ -62,18 +63,29 @@ final class RecordOperation
             $from = $data->fromAccountId === null ? null : $accounts->get($data->fromAccountId);
             $to = $data->toAccountId === null ? null : $accounts->get($data->toAccountId);
 
+            // A payable's opening is a debt: it arrives as the account opened, and leaves it.
+            if ($data->type === OperationType::Opening && $to?->kind === AccountKind::Payable) {
+                [$from, $to] = [$to, null];
+            }
+
             $this->guardAccounts($data->type, $from, $to);
             $this->guardOpening($data, $from, $to);
 
             $category = $this->category($data);
 
-            [$amount, $from, $to, $systemBalance] = $data->type === OperationType::Adjustment
+            [$amount, $from, $to, $systemBalance, $counted] = $data->type === OperationType::Adjustment
                 ? $this->adjustment($data, $to ?? $from)
-                : [(string) $data->amount, $from, $to, null];
+                : [(string) $data->amount, $from, $to, null, null];
 
-            // «منع الرصيد السالب في العمليات اليدوية» — on unless the owner switched it off.
-            if ($from !== null && $data->type !== OperationType::Adjustment && $settings->block_overdraft) {
+            // «منع الرصيد السالب في العمليات اليدوية» — on unless the owner switched it off. A
+            // payable has no money to run out of: borrowing and buying on credit deepen its debt.
+            if ($from !== null && $from->kind->holdsMoney() && $data->type !== OperationType::Adjustment && $settings->block_overdraft) {
                 $this->guardBalance($from, $amount);
+            }
+
+            // Repaying more than is owed would leave the creditor holding the company's money.
+            if ($to !== null && $to->kind === AccountKind::Payable && $data->type === OperationType::Transfer) {
+                $this->guardDebt($to, $amount);
             }
 
             $operation = new TreasuryOperation;
@@ -86,7 +98,7 @@ final class RecordOperation
                 'category_id' => $category?->getKey(),
                 'employee_id' => $data->employeeId,
                 'system_balance' => $systemBalance,
-                'counted_balance' => $data->type === OperationType::Adjustment ? $data->countedBalance : null,
+                'counted_balance' => $counted,
                 'occurred_at' => $data->occurredAt,
                 'notes' => $data->notes,
                 'recorded_by' => $actorId,
@@ -115,41 +127,56 @@ final class RecordOperation
     }
 
     /**
-     * Switched-off accounts take nothing by hand, and custody takes nothing but its opening and
-     * a count: it fills from customers and empties by settlement, and anything else would leave
-     * the per-order sums claiming money that is not there.
+     * What each kind takes by hand.
+     *
+     * - A switched-off account takes nothing.
+     * - Custody takes its opening and a count: it fills from customers and empties by settlement,
+     *   and anything else would leave the per-order sums claiming money that is not there.
+     * - A vendor's payable takes nothing: its purchase orders and payments are the reasons.
+     * - Any other payable takes its opening, an expense bought on credit, a transfer (borrowing
+     *   from it or repaying into it) and a count — not a deposit or a withdrawal, which say
+     *   money arrived or left when none did.
      */
     private function guardAccounts(OperationType $type, ?TreasuryAccount $from, ?TreasuryAccount $to): void
     {
         foreach (array_filter([$from, $to]) as $account) {
+            $field = $account === $from && $type !== OperationType::Opening ? 'from_account_id' : 'to_account_id';
+
             if (! $account->is_active) {
-                throw AccountDoesNotFitMethod::inactive(
-                    (string) $account->name,
-                    $account === $from ? 'from_account_id' : 'to_account_id',
-                );
+                throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+            }
+
+            if ($account->isVendorPayable()) {
+                throw AccountDoesNotFitMethod::vendorPayable((string) $account->name, $field);
+            }
+
+            if ($account->kind === AccountKind::Payable) {
+                if ($type === OperationType::Deposit || $type === OperationType::Withdrawal) {
+                    throw OperationRefused::notOnPayable($type->label(), (string) $account->name, $field);
+                }
+
+                continue;
             }
 
             $custodyAllowed = $type === OperationType::Opening || $type === OperationType::Adjustment;
 
             if (! $custodyAllowed && ! $account->kind->spendable()) {
-                throw AccountDoesNotFitMethod::custody(
-                    (string) $account->name,
-                    $account === $from ? 'from_account_id' : 'to_account_id',
-                );
+                throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
             }
         }
     }
 
     /**
      * One opening per account, and nothing by hand dated before it — the opening count is the
-     * floor the balance was measured from.
+     * floor the balance was measured from. A payable's opening left it, so either side counts.
      */
     private function guardOpening(OperationData $data, ?TreasuryAccount $from, ?TreasuryAccount $to): void
     {
         foreach (array_filter([$from, $to]) as $account) {
             $opening = TreasuryOperation::query()
                 ->where('type', OperationType::Opening->value)
-                ->where('to_account_id', $account->getKey())
+                ->where(fn ($q) => $q->where('to_account_id', $account->getKey())
+                    ->orWhere('from_account_id', $account->getKey()))
                 ->first();
 
             if ($opening === null) {
@@ -194,20 +221,38 @@ final class RecordOperation
      * The account arrives as `to_account_id` and leaves on whichever side the difference falls:
      * a surplus goes in, a shortfall comes out. Both figures are kept on the operation.
      *
-     * @return array{0: string, 1: ?TreasuryAccount, 2: ?TreasuryAccount, 3: string}
+     * **A payable is counted as what is owed**, a figure people say as a positive number; the
+     * balance it means is that number below zero, and that is what is kept.
+     *
+     * @return array{0: string, 1: ?TreasuryAccount, 2: ?TreasuryAccount, 3: string, 4: string}
      */
     private function adjustment(OperationData $data, TreasuryAccount $account): array
     {
         $system = $this->balances->of((int) $account->getKey());
-        $difference = Money::round(bcsub((string) $data->countedBalance, $system, 8));
+        $counted = Money::round((string) $data->countedBalance);
+
+        if (! $account->kind->holdsMoney()) {
+            $counted = Money::round(bcmul($counted, '-1', Money::SCALE));
+        }
+
+        $difference = Money::round(bcsub($counted, $system, 8));
 
         if (bccomp($difference, '0', Money::SCALE) === 0) {
             throw OperationRefused::balanceUnchanged((string) $account->name);
         }
 
         return bccomp($difference, '0', Money::SCALE) > 0
-            ? [$difference, null, $account, $system]
-            : [bcmul($difference, '-1', Money::SCALE), $account, null, $system];
+            ? [$difference, null, $account, $system, $counted]
+            : [bcmul($difference, '-1', Money::SCALE), $account, null, $system, $counted];
+    }
+
+    private function guardDebt(TreasuryAccount $payable, string $amount): void
+    {
+        $owed = Money::round(bcmul($this->balances->of((int) $payable->getKey()), '-1', Money::SCALE));
+
+        if (bccomp($amount, $owed, Money::SCALE) > 0) {
+            throw OperationRefused::exceedsDebt((string) $payable->name, $owed);
+        }
     }
 
     private function guardBalance(TreasuryAccount $from, string $amount): void

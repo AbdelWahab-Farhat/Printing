@@ -32,6 +32,16 @@ final class AccountDoesNotFitMethod extends DomainException
         return new self("«{$account}» حساب عهدة — لا يُصرف منه يدوياً، ويُفرَّغ بتسوية الطلبيات", $field);
     }
 
+    public static function payable(string $account, string $field = 'treasury_account_id'): self
+    {
+        return new self("«{$account}» حساب التزام — ليس فيه مال يُدفع منه", $field);
+    }
+
+    public static function vendorPayable(string $account, string $field): self
+    {
+        return new self("«{$account}» حساب مورد — يتحرك من أوامر الشراء ودفعات المورد وحدها", $field);
+    }
+
     public static function unknownMethod(string $method): self
     {
         return new self("طريقة الدفع «{$method}» غير معروفة للحسابات");

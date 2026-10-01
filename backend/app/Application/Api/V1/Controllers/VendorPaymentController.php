@@ -13,9 +13,11 @@ use App\Domain\PurchaseOrder\Exceptions\VendorPaymentRefused;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\PurchaseOrderService;
+use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\Models\Vendor;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * دفعات الموردين — what the company paid each vendor, and what it still owes.
@@ -26,12 +28,18 @@ class VendorPaymentController extends Controller
 
     private const RELATIONS = ['treasuryAccount', 'recorder', 'reversal'];
 
-    public function __construct(private readonly PurchaseOrderService $orders) {}
+    public function __construct(
+        private readonly PurchaseOrderService $orders,
+        private readonly TreasuryService $treasury,
+    ) {}
 
     public function index(Vendor $vendor): JsonResponse
     {
         return $this->success([
             'summary' => $this->orders->vendorPaymentSummary((int) $vendor->getKey()),
+            // The vendor's «علينا» account — its page is the vendor's statement (§٢٠). Null until
+            // anything was owed or paid. Reading it takes `treasury.view`.
+            'treasury_account_id' => $this->treasury->payableIdOfVendor((int) $vendor->getKey()),
             'payments' => VendorPaymentResource::collection(
                 VendorPayment::query()
                     ->where('vendor_id', $vendor->getKey())
@@ -56,6 +64,19 @@ class VendorPaymentController extends Controller
                     ->get(),
             ),
         ]);
+    }
+
+    /**
+     * «يُحسب عليه دين للمورد» — an order from before the treasury that is still owed: its total
+     * onto the vendor's «علينا», with what was paid on it since. Answers with its new summary.
+     */
+    public function countAsDebt(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $order = $this->orders->countOldOrderAsDebt($purchaseOrder, $request->user());
+
+        return $this->success([
+            'summary' => $this->orders->purchaseOrderPaymentSummary($order),
+        ], 'حُسب دين الأمر على المورد');
     }
 
     public function store(StoreVendorPaymentRequest $request, Vendor $vendor): JsonResponse

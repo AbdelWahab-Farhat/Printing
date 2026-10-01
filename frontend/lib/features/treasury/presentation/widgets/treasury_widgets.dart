@@ -21,8 +21,25 @@ IconData accountKindIcon(AccountKind kind) => switch (kind) {
   AccountKind.bank => AppIcons.bank,
   AccountKind.wallet => AppIcons.mobileWallet,
   AccountKind.custody => AppIcons.custody,
+  AccountKind.payable => AppIcons.payable,
   AccountKind.unknown => AppIcons.treasury,
 };
+
+/// What an account holds, as people say it: «1,250 د.ل» for money, «علينا 1,000 د.ل» for a debt
+/// — never «−1,000», which reads as a mistake. «لنا عنده» when a creditor holds the company's
+/// money. TREASURY-DESIGN §٢٠.
+String treasuryBalanceLabel(TreasuryAccount account) {
+  if (!account.isPayable) return treasuryMoney(account.balance ?? '0');
+
+  return owedLabel(account.owed, holder: 'عنده');
+}
+
+/// What is owed, said the way people say it: «علينا 1,000 د.ل», or — when the creditor holds the
+/// company's money instead — «لنا عنده 50 د.ل». [holder] is «عنده» for one creditor, «عندهم» for
+/// several. Never a bare minus, which reads as a mistake.
+String owedLabel(String owed, {String holder = 'عندهم'}) => owed.startsWith('-')
+    ? 'لنا $holder ${treasuryMoney(owed.substring(1))}'
+    : 'علينا ${treasuryMoney(owed)}';
 
 /// The figure at the top of a treasury screen — everything held, or one account's balance.
 class TreasuryTotalCard extends StatelessWidget {
@@ -115,8 +132,9 @@ class TreasuryAccountTile extends StatelessWidget {
                 ),
               ),
               Text(
-                treasuryMoney(account.balance ?? '0'),
-                textDirection: TextDirection.ltr,
+                treasuryBalanceLabel(account),
+                // A bare figure reads left to right; «علينا …» is a sentence and reads as Arabic.
+                textDirection: account.isPayable ? null : TextDirection.ltr,
                 style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: account.isOverdrawn ? scheme.error : null,

@@ -79,7 +79,10 @@ class _AccountView extends StatelessWidget {
                 ),
             ],
           ),
-          floatingActionButton: detail == null ? null : _Actions(account: detail.account),
+          // A vendor's «علينا» moves by its purchase orders and payments alone (§٢٠).
+          floatingActionButton: detail == null || detail.account.isVendorPayable
+              ? null
+              : _Actions(account: detail.account),
           body: switch (state) {
             TreasuryAccountLoading() => const Center(child: CircularProgressIndicator()),
             TreasuryAccountFailed(:final failure) => _Failed(
@@ -90,12 +93,20 @@ class _AccountView extends StatelessWidget {
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 4.h),
+                  // A debt is said as what is owed — «علينا 1,000» — not as −1,000.
                   child: TreasuryTotalCard(
-                    label: 'الرصيد الحالي',
-                    amount: detail.account.balance ?? '0',
+                    label: !detail.account.isPayable
+                        ? 'الرصيد الحالي'
+                        : detail.account.owed.startsWith('-')
+                        ? 'لنا عنده'
+                        : 'المستحق علينا',
+                    amount: !detail.account.isPayable
+                        ? detail.account.balance ?? '0'
+                        : detail.account.owed.replaceFirst('-', ''),
                     footnote: [
                       detail.account.kindLabel,
                       if (detail.account.holder case final holder?) 'باسم ${holder.name}',
+                      if (detail.account.isVendorPayable) 'يتحرك من أوامر الشراء ودفعات المورد',
                     ].join(' · '),
                   ),
                 ),
@@ -305,7 +316,12 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<TreasuryAccountCubit>();
 
-    Future<void> open(BuildContext context, OperationKind kind) async {
+    Future<void> open(
+      BuildContext context,
+      OperationKind kind, {
+      bool into = false,
+      String? title,
+    }) async {
       // The other side of a transfer needs every account, not just this one.
       final all = await sl<GetTreasuryAccounts>()(activeOnly: true);
 
@@ -317,7 +333,10 @@ class _Actions extends StatelessWidget {
         context: context,
         kind: kind,
         accounts: accounts,
+        // This account is fixed in the sheet — only the other side is chosen.
         account: account,
+        into: into,
+        title: title,
         onSubmit:
             ({
               required kind,
@@ -356,6 +375,33 @@ class _Actions extends StatelessWidget {
 
     return AppSpeedDial(
       actions: [
+        // A payable takes an expense bought on credit and a transfer — borrowing from it,
+        // repaying into it — but no deposit or withdrawal: no money arrives or leaves (§٢٠).
+        if (account.isPayable) ...[
+          operation(
+            OperationKind.expense,
+            AppIcons.expense,
+            AppPermission.recordTreasuryOperations,
+          ),
+          // The two directions a transfer takes on a debt, each with the loan fixed on its side.
+          AppAction(
+            label: 'اقتراض',
+            icon: AppIcons.fundDeposit,
+            permission: AppPermission.recordTreasuryOperations,
+            onTap: (context) => open(context, OperationKind.transfer, title: 'اقتراض — من الالتزام إلى حساب'),
+          ),
+          AppAction(
+            label: 'سداد',
+            icon: AppIcons.fundWithdraw,
+            permission: AppPermission.recordTreasuryOperations,
+            onTap: (context) => open(
+              context,
+              OperationKind.transfer,
+              into: true,
+              title: 'سداد — من حساب إلى الالتزام',
+            ),
+          ),
+        ],
         if (account.isSpendable) ...[
           operation(
             OperationKind.deposit,

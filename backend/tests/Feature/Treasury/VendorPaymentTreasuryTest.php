@@ -105,9 +105,10 @@ class VendorPaymentTreasuryTest extends TestCase
 
     public function test_a_vendor_cannot_be_paid_money_the_drawer_does_not_hold(): void
     {
-        // Arrange
+        // Arrange — owed enough, so only the drawer stands in the way
         $headers = $this->buyer();
         $vendor = Vendor::factory()->create();
+        $this->purchaseOrder($vendor, '1000.00');
         $this->fundTheBank($headers, '100');
 
         // Act
@@ -149,13 +150,18 @@ class VendorPaymentTreasuryTest extends TestCase
             'type' => 'opening_debt', 'amount' => '750',
         ], $headers)->assertCreated();
 
-        // Assert — the order from before the treasury counts nothing; the debt counts
+        // Assert — the order from before the treasury counts nothing; the debt counts, on the
+        // vendor's «علينا» account alone: no drawer moved
         $this->getJson("/api/v1/vendors/{$vendor->id}/payments", $headers)
             ->assertOk()
             ->assertJsonPath('data.summary.ordered', '0.00')
             ->assertJsonPath('data.summary.opening_debt', '750.00')
             ->assertJsonPath('data.summary.owed', '750.00');
-        $this->assertSame(0, TreasuryMovement::query()->count());
+        $this->assertSame(0, TreasuryMovement::query()
+            ->whereHas('account', fn ($q) => $q->where('kind', '<>', AccountKind::Payable->value))
+            ->count());
+        $payable = TreasuryAccount::query()->where('vendor_id', $vendor->id)->firstOrFail();
+        $this->assertSame('-750.00', $this->balance($payable));
     }
 
     public function test_an_order_from_before_the_treasury_shows_nothing_owed(): void

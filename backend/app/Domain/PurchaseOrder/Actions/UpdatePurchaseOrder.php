@@ -13,11 +13,13 @@ use App\Domain\PurchaseOrder\DTOs\PurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderAdditionalCostDoesNotBelongToOrder;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderIsFunded;
+use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderIsPaid;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderItemDoesNotBelongToOrder;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotEditable;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\PurchaseOrder\Queries\VendorPaymentSummary;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,7 +54,35 @@ final class UpdatePurchaseOrder
         private readonly AllocatePurchaseOrderAdditionalCosts $allocateAdditionalCosts,
         private readonly RecalculatePurchaseOrderTotal $recalculateTotal,
         private readonly InvestorService $investors,
+        private readonly SyncPurchaseOrderDebt $syncDebt,
+        private readonly VendorPaymentSummary $payments,
     ) {}
+
+    /**
+     * «لا دفع مقدّم» (§٢٠): an edit may not leave the vendor holding more than the order now owes
+     * them, nor carry their payments over to another vendor. Thrown inside the transaction, so
+     * the edit rolls back whole.
+     *
+     * @throws PurchaseOrderIsPaid
+     */
+    private function guardWhatWasPaid(PurchaseOrder $order, int $previousVendorId): void
+    {
+        $settled = $this->payments->settledOn((int) $order->getKey());
+
+        if (bccomp($settled, '0', 2) <= 0) {
+            return;
+        }
+
+        if ((int) $order->vendor_id !== $previousVendorId) {
+            throw PurchaseOrderIsPaid::vendorCannotChange($settled);
+        }
+
+        $total = $order->total_amount === null ? '0.00' : (string) $order->total_amount;
+
+        if (bccomp($total, $settled, 2) < 0) {
+            throw PurchaseOrderIsPaid::totalBelowSettled($total, $settled);
+        }
+    }
 
     public function __invoke(PurchaseOrder $order, PurchaseOrderData $data): PurchaseOrder
     {
@@ -67,6 +97,8 @@ final class UpdatePurchaseOrder
         }
 
         return DB::transaction(function () use ($order, $data): PurchaseOrder {
+            $previousVendorId = (int) $order->vendor_id;
+
             // One save rather than two: fillable and non-fillable fields are combined before
             // the single save() call below, so the whole edit lands as one UPDATE and one audit
             // log entry, not two.
@@ -83,6 +115,11 @@ final class UpdatePurchaseOrder
             $this->syncAdditionalCosts($order, $data->additionalCosts);
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
+
+            $this->guardWhatWasPaid($order, $previousVendorId);
+
+            // The debt follows the new total, or the new vendor — TREASURY-DESIGN §٢٠.
+            ($this->syncDebt)($order, null);
 
             return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
         });

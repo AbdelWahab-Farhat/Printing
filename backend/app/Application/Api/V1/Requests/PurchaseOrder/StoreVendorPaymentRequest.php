@@ -9,8 +9,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * A payment to a vendor (`type=payment`, the default) or what was owed on opening day
- * (`type=opening_debt`, no method and no account — no money moved).
+ * A payment to a vendor (`type=payment`, the default), what was owed on opening day
+ * (`type=opening_debt`), or what the vendor knocked off (`type=credit`, «خصم من المورد»). The
+ * last two take no method and no account — no money moved.
  */
 class StoreVendorPaymentRequest extends FormRequest
 {
@@ -21,12 +22,14 @@ class StoreVendorPaymentRequest extends FormRequest
 
     public function rules(): array
     {
+        $movesNoMoney = Rule::excludeIf(fn () => in_array($this->input('type'), ['opening_debt', 'credit'], true));
+
         return [
-            'type' => ['nullable', Rule::in(['payment', 'opening_debt'])],
+            'type' => ['nullable', Rule::in(['payment', 'opening_debt', 'credit'])],
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
-            'method' => ['exclude_if:type,opening_debt', 'required', Rule::enum(PaymentMethod::class)],
+            'method' => [$movesNoMoney, 'required', Rule::enum(PaymentMethod::class)],
             'treasury_account_id' => [
-                'exclude_if:type,opening_debt',
+                $movesNoMoney,
                 'nullable',
                 'integer',
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),

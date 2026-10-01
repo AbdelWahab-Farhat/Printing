@@ -36,6 +36,16 @@ final class AccountChangeRefused extends DomainException
         return new self('حساب العهدة لا يكون افتراضياً — المال لا يُفترض أن ينتهي فيه', 'is_default');
     }
 
+    public static function payableCannotBeDefault(): self
+    {
+        return new self('حساب الالتزام لا يكون افتراضياً — لا مال ينزل فيه', 'is_default');
+    }
+
+    public static function vendorPayableIsManagedByTheVendor(string $account): self
+    {
+        return new self("«{$account}» حساب مورد — يتبع المورد في اسمه وحالته", 'name');
+    }
+
     public static function onlyCustodySettles(): self
     {
         return new self('«تُسوّى إلى» لحسابات العهدة وحدها', 'settles_into_account_id');

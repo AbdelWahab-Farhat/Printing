@@ -22,7 +22,7 @@ class VendorPayment {
 
   final int id;
 
-  /// `payment`, `reversal` or `opening_debt`.
+  /// `payment`, `reversal`, `opening_debt` or `credit` («خصم من المورد»).
   final String type;
   final String typeLabel;
   final String amount;
@@ -70,10 +70,19 @@ class PurchaseOrderPayments {
     required this.payments,
     this.total,
     this.remaining,
+    this.credited = '0.00',
+    this.payableUpTo,
   });
 
   final String? total;
   final String paid;
+
+  /// The most one payment may be — what is left, or on an order from before the treasury its
+  /// total less what was paid on it since. Null on a cancelled order. TREASURY-DESIGN §٢٠.
+  final String? payableUpTo;
+
+  /// «خصم من المورد» — what the vendor knocked off this order: a short delivery, a discount.
+  final String credited;
   final String? remaining;
   final bool predatesTreasury;
   final List<VendorPayment> payments;
@@ -87,8 +96,60 @@ class PurchaseOrderPayments {
     return PurchaseOrderPayments(
       total: summary['total']?.toString(),
       paid: summary['paid']?.toString() ?? '0.00',
+      credited: summary['credited']?.toString() ?? '0.00',
       remaining: summary['remaining']?.toString(),
+      payableUpTo: summary['payable_up_to']?.toString(),
       predatesTreasury: summary['predates_treasury'] == true,
+      payments: rows
+          .whereType<Map<String, dynamic>>()
+          .map(VendorPayment.fromJson)
+          .toList(growable: false),
+    );
+  }
+}
+
+/// «الحساب مع المورد» — what the company owes one vendor across all their orders. TREASURY-DESIGN
+/// §٢٠: owed from the moment an order is raised, at its full total.
+class VendorAccount {
+  const VendorAccount({
+    required this.ordered,
+    required this.openingDebt,
+    required this.paid,
+    required this.credited,
+    required this.owed,
+    required this.payments,
+    this.treasuryAccountId,
+    this.paidOnOldOrders = '0.00',
+  });
+
+  /// Paid on orders from before the treasury — apart from [owed], whose debt never held them.
+  final String paidOnOldOrders;
+
+  /// Every live order's total, from the treasury on.
+  final String ordered;
+  final String openingDebt;
+  final String paid;
+  final String credited;
+  final String owed;
+  final List<VendorPayment> payments;
+
+  /// The vendor's «علينا» account — its page is the statement. Null until anything was owed.
+  final int? treasuryAccountId;
+
+  factory VendorAccount.fromJson(Map<String, dynamic> json) {
+    final summary = json['summary'] is Map<String, dynamic>
+        ? json['summary'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final rows = json['payments'] is List ? json['payments'] as List : const [];
+
+    return VendorAccount(
+      ordered: summary['ordered']?.toString() ?? '0.00',
+      openingDebt: summary['opening_debt']?.toString() ?? '0.00',
+      paid: summary['paid']?.toString() ?? '0.00',
+      credited: summary['credited']?.toString() ?? '0.00',
+      owed: summary['owed']?.toString() ?? '0.00',
+      paidOnOldOrders: summary['paid_on_old_orders']?.toString() ?? '0.00',
+      treasuryAccountId: (json['treasury_account_id'] as num?)?.toInt(),
       payments: rows
           .whereType<Map<String, dynamic>>()
           .map(VendorPayment.fromJson)

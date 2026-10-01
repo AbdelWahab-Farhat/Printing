@@ -24,11 +24,15 @@ List<Map<String, dynamic>> _maps(Object? value) =>
 
 /// What kind of place the money is in. [unknown] keeps a kind this build has never heard of
 /// readable rather than failing the whole list.
+///
+/// [payable] is not a place money is: it is what the company owes — a vendor, a loan, the rent.
+/// Its balance runs below zero, −500 being 500 owed. TREASURY-DESIGN §٢٠.
 enum AccountKind {
   cash('cash'),
   bank('bank'),
   wallet('wallet'),
   custody('custody'),
+  payable('payable'),
   unknown('unknown');
 
   const AccountKind(this.wire);
@@ -77,12 +81,26 @@ class TreasuryAccount {
     this.settlesIntoName,
     this.isCollected = true,
     this.pickupCityId,
+    this.isPayable = false,
+    this.vendorId,
   });
 
   final int id;
   final String name;
   final AccountKind kind;
   final String kindLabel;
+
+  /// «علينا» — the balance is a debt below zero. TREASURY-DESIGN §٢٠.
+  final bool isPayable;
+
+  /// A vendor's payable: its purchase orders and payments move it, and nothing by hand.
+  final int? vendorId;
+
+  bool get isVendorPayable => vendorId != null;
+
+  /// What a payable says is owed, as people say it — «1000.00» for a balance of −1000.00. Below
+  /// zero when the creditor holds the company's money.
+  String get owed => negateAmount(balance ?? '0.00');
 
   /// Custody only: where its money goes at «تم التسوية» when nobody picks. Null: the built-in
   /// rule — the bank for Nawris, the cash box for a driver.
@@ -114,8 +132,9 @@ class TreasuryAccount {
   final String? balance;
   final String? notes;
 
-  /// Below zero: shown red, because it is meant to be seen (TREASURY-DESIGN §١٢).
-  bool get isOverdrawn => (balance ?? '').startsWith('-');
+  /// Below zero: shown red, because it is meant to be seen (TREASURY-DESIGN §١٢). A payable is
+  /// below zero by nature; it is the one that went *above* that is unusual.
+  bool get isOverdrawn => isPayable ? owed.startsWith('-') : (balance ?? '').startsWith('-');
 
   factory TreasuryAccount.fromJson(Map<String, dynamic> json) => TreasuryAccount(
     id: (json['id'] as num).toInt(),
@@ -133,7 +152,16 @@ class TreasuryAccount {
     settlesIntoName: _stringOrNull(_mapOrNull(json['settles_into'])?['name']),
     isCollected: json['is_collected'] != false,
     pickupCityId: _intOrNull(json['pickup_city_id']),
+    isPayable: json['is_payable'] == true,
+    vendorId: _intOrNull(json['vendor_id']),
   );
+}
+
+/// «-1000.00» ⇄ «1000.00», on the string — money never passes through a double here.
+String negateAmount(String amount) {
+  if (amount.startsWith('-')) return amount.substring(1);
+  if (RegExp(r'^0*(\.0*)?$').hasMatch(amount)) return amount;
+  return '-$amount';
 }
 
 /// A branch customers collect from, and the cash box its cash lands in — null for the usual
@@ -216,12 +244,21 @@ class TreasurySettings {
 
 /// Every account the reader may see, and what they hold together.
 class TreasuryAccounts {
-  const TreasuryAccounts({required this.accounts, required this.total, required this.canViewAll});
+  const TreasuryAccounts({
+    required this.accounts,
+    required this.total,
+    required this.canViewAll,
+    this.payablesTotal = '0.00',
+  });
 
   final List<TreasuryAccount> accounts;
 
-  /// The server's own sum of the active accounts — for a holder, their own money only.
+  /// The server's own sum of the active accounts — for a holder, their own money only. Money
+  /// only: what is owed is [payablesTotal].
   final String total;
+
+  /// «علينا» — what the active payables owe together, as a positive figure.
+  final String payablesTotal;
 
   /// False for somebody reading only the accounts in their name.
   final bool canViewAll;
@@ -229,6 +266,7 @@ class TreasuryAccounts {
   factory TreasuryAccounts.fromJson(Map<String, dynamic> json) => TreasuryAccounts(
     accounts: _maps(json['accounts']).map(TreasuryAccount.fromJson).toList(growable: false),
     total: _string(json['total'], '0.00'),
+    payablesTotal: _string(json['payables_total'], '0.00'),
     canViewAll: json['can_view_all'] == true,
   );
 }
@@ -469,12 +507,16 @@ class TreasuryOwnership {
     required this.investorsTotal,
     required this.fundCash,
     required this.companyOwn,
+    this.payablesTotal = '0.00',
   });
 
   final String totalHeld;
   final List<InvestorHolding> investors;
   final String investorsTotal;
   final String fundCash;
+
+  /// «علينا» — what the company owes, taken off its own money. TREASURY-DESIGN §٢٠.
+  final String payablesTotal;
   final String companyOwn;
 
   factory TreasuryOwnership.fromJson(Map<String, dynamic> json) => TreasuryOwnership(
@@ -482,6 +524,7 @@ class TreasuryOwnership {
     investors: _maps(json['investors']).map(InvestorHolding.fromJson).toList(growable: false),
     investorsTotal: _string(json['investors_total'], '0.00'),
     fundCash: _string(json['fund_cash'], '0.00'),
+    payablesTotal: _string(json['payables_total'], '0.00'),
     companyOwn: _string(json['company_own'], '0.00'),
   );
 }
