@@ -86,6 +86,29 @@ extension FailureMessage on Failure {
   };
 }
 
+/// أخطاءُ الحقول لنموذجٍ يعلّقها تحت حقوله — RULES §5: «ما له مربّع يُعلَّق تحته، وما تبقّى يذهب
+/// إلى `context.showFailure`».
+///
+/// نسخةٌ واحدة لما كتبته حالاتُ الحفظ كلٌّ لنفسه (`fieldError` و`hasUnrenderedErrors`)، لنماذج
+/// الأوراق السفلية التي لا حالةَ حفظٍ لها: الورقة تحفظ آخر رفضٍ وتسأله عن كل حقل.
+extension FailureFields on Failure {
+  /// أوّلُ ما قاله الخادم تحت [field]، أو null لرفضٍ لا يذكره أو لفشلٍ ليس رفضاً.
+  String? fieldError(String field) => switch (this) {
+    ServerFailure(:final fieldErrors) => fieldErrors?[field]?.firstOrNull,
+    _ => null,
+  };
+
+  /// هل في الرفض ما لا مربّع له بين [rendered]؟ — فيُقال في التوست.
+  ///
+  /// رفضٌ بلا `errors` أصلاً (رفضٌ من المجال، أو 403، أو انقطاع) يُقال كلُّه في التوست، لأن لا
+  /// شيء منه تحت حقل.
+  bool hasErrorsBeyond(Set<String> rendered) => switch (this) {
+    ServerFailure(:final fieldErrors) when fieldErrors != null && fieldErrors.isNotEmpty =>
+      fieldErrors.keys.any((key) => !rendered.contains(key)),
+    _ => true,
+  };
+}
+
 String? _joined(Map<String, List<String>> fieldErrors, {required String except}) {
   final lines = <String>[
     for (final messages in fieldErrors.values)
