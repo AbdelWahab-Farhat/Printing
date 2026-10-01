@@ -35,6 +35,7 @@ use App\Domain\Treasury\Queries\AccountTotals;
 use App\Domain\Treasury\Queries\CustodyForOrder;
 use App\Domain\Treasury\Support\AccountResolver;
 use App\Domain\Treasury\Support\BalanceVisibility;
+use App\Domain\Treasury\Support\CheckpointFloor;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -485,5 +486,33 @@ final class TreasuryService
     public function saveCategory(?ExpenseCategory $category, array $values): ExpenseCategory
     {
         return ($this->saveCategory)($category, $values);
+    }
+
+    // ── تاريخُ المال اليدوي ─────────────────────────────────────────────────────────────
+
+    /**
+     * يرفض مالاً يدوياً بتاريخٍ لا يجوز له — من شاشات الشراء والمصروف والمحفظة، كما ترفضه العمليات
+     * اليدوية نفسُها: داخل «مقفل حتى تاريخ»، أو قبل آخر نقطة عدٍّ للحساب ({@see CheckpointFloor}).
+     *
+     * @param  bool  $wholeDay  التاريخ يومٌ بلا ساعة (`occurred_on`, `incurred_on`) — يُقاس باليوم
+     */
+    public function guardManualEntry(
+        TreasuryAccount $account,
+        DateTimeInterface $at,
+        string $field,
+        bool $wholeDay = false,
+    ): void {
+        $this->guardNotLocked($at, $field);
+        $this->guardAfterCheckpoint($account, $at, $field, $wholeDay);
+    }
+
+    /** الأرضيةُ وحدها، لمن يفحص القفلَ قبل أن يعرف الحساب — دفعة المورد. */
+    public function guardAfterCheckpoint(
+        TreasuryAccount $account,
+        DateTimeInterface $at,
+        string $field,
+        bool $wholeDay = false,
+    ): void {
+        (new CheckpointFloor)->guard($account, $at, $field, $wholeDay);
     }
 }

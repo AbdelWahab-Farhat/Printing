@@ -62,6 +62,15 @@ final class RecordDealExpense
                 ? $this->treasury->spendableAccount($data->treasuryAccountId)
                 : $this->treasury->accountFor('cash', $actorId, incoming: false);
 
+            // يومُ المصروف لا يقع في شهرٍ أُقفل ولا قبل آخر جردٍ للدرج. ولا يُمنع لرصيدٍ لا يكفي:
+            // فاتورةٌ دُفعت فعلاً تُسجَّل ولو صار الدرج سالباً.
+            $this->treasury->guardManualEntry(
+                $account,
+                Carbon::parse($data->incurredOn),
+                'incurred_on',
+                wholeDay: true,
+            );
+
             $expense->treasury_account_id = $account->getKey();
             $expense->save();
 

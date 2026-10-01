@@ -73,6 +73,8 @@ final class RecordVendorPayment
                     incoming: false,
                 );
 
+                // ولا قبل آخر جردٍ للدرج الذي خرجت منه — الجردُ يشهد بما كان فيه يومها.
+                $this->treasury->guardAfterCheckpoint($account, $data->paidAt, 'paid_at');
                 $this->treasury->guardCanSpend($account, $data->amount, actorId: $actorId);
 
                 $payment->treasury_account_id = $account->getKey();

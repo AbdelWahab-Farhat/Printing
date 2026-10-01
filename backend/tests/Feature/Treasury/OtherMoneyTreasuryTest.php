@@ -125,13 +125,14 @@ class OtherMoneyTreasuryTest extends TestCase
             'type' => 'deposit', 'amount' => '10000', 'method' => 'bank_transfer',
         ], $headers)->assertCreated();
 
+        // من المصرف الذي فيه المال: السحبُ باليد لا يأخذ ما ليس في الدرج، والخزنةُ هنا فارغة.
         $this->postJson("/api/v1/investors/{$investor->id}/wallet", [
-            'type' => 'withdrawal', 'amount' => '1500', 'method' => 'cash',
+            'type' => 'withdrawal', 'amount' => '1500', 'method' => 'bank_transfer',
         ], $headers)->assertCreated();
 
         // Assert
-        $this->assertSame('10000.00', $this->balance($bank));
-        $this->assertSame('-1500.00', $this->balance($this->defaultOf(AccountKind::Cash)));
+        $this->assertSame('8500.00', $this->balance($bank));
+        $this->assertSame('0.00', $this->balance($this->defaultOf(AccountKind::Cash)));
         $this->assertSame(2, TreasuryMovement::query()->count());
     }
 

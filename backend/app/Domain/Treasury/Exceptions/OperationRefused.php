@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Treasury\Exceptions;
 
+use App\Domain\Treasury\Enums\OperationType;
 use App\Support\Exceptions\DomainException;
 
 /**
@@ -63,9 +64,20 @@ final class OperationRefused extends DomainException
         return new self('هذه العملية معكوسة مسبقاً');
     }
 
-    public static function beforeOpening(string $account, string $date): self
-    {
-        return new self("لا تُسجَّل حركة يدوية على «{$account}» قبل رصيده الافتتاحي ({$date})", 'occurred_at');
+    /**
+     * مالٌ يدويّ مؤرَّخٌ قبل آخر نقطة عدٍّ للحساب — افتتاحه أو آخر جردٍ له.
+     */
+    public static function beforeCheckpoint(
+        string $account,
+        OperationType $checkpoint,
+        string $at,
+        string $field = 'occurred_at',
+    ): self {
+        $floor = $checkpoint === OperationType::Opening
+            ? "رصيده الافتتاحي ({$at})"
+            : "آخر جردٍ له ({$at}) — الجرد يشهد بما كان فيه يومها";
+
+        return new self("لا تُسجَّل حركة يدوية على «{$account}» قبل {$floor}", $field);
     }
 
     public static function locked(string $until, string $field = 'occurred_at'): self

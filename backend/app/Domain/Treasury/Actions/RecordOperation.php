@@ -18,6 +18,7 @@ use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\Queries\AccountBalances;
 use App\Domain\Treasury\Support\BalanceVisibility;
+use App\Domain\Treasury\Support\CheckpointFloor;
 use App\Domain\Treasury\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,7 @@ final class RecordOperation
         private readonly PostMovement $post,
         private readonly AccountBalances $balances,
         private readonly BalanceVisibility $visibility,
+        private readonly CheckpointFloor $floor,
     ) {}
 
     public function __invoke(OperationData $data, ?int $actorId): TreasuryOperation
@@ -73,7 +75,7 @@ final class RecordOperation
             $to = $data->toAccountId === null ? null : $accounts->get($data->toAccountId);
 
             $this->guardAccounts($data->type, $from, $to);
-            $this->guardOpening($data, $from, $to);
+            $this->guardCheckpoints($data, $from, $to);
 
             $category = $this->category($data);
 
@@ -151,41 +153,35 @@ final class RecordOperation
     }
 
     /**
-     * One opening per account, and nothing by hand dated before it — the opening count is the
-     * floor the balance was measured from.
+     * One opening per account, and nothing by hand dated before the account's latest count —
+     * its opening, or its latest «جرد الحساب» ({@see CheckpointFloor}).
      *
      * **والافتتاحُ لحسابٍ لم يتحرّك بعد وحده.** حسابٌ استقبل مالاً — دفعاتٌ استُوردت، إيداعٌ
      * سبق — رصيدُه قائمٌ بحركاته، وافتتاحٌ فوقها يعدّ ذلك المال مرّتين.
      */
-    private function guardOpening(OperationData $data, ?TreasuryAccount $from, ?TreasuryAccount $to): void
-    {
+    private function guardCheckpoints(
+        OperationData $data,
+        ?TreasuryAccount $from,
+        ?TreasuryAccount $to,
+    ): void {
         foreach (array_filter([$from, $to]) as $account) {
-            $opening = TreasuryOperation::query()
+            if ($data->type !== OperationType::Opening) {
+                $this->floor->guard($account, $data->occurredAt, 'occurred_at');
+
+                continue;
+            }
+
+            $opened = TreasuryOperation::query()
                 ->where('type', OperationType::Opening->value)
                 ->where('to_account_id', $account->getKey())
-                ->first();
+                ->exists();
 
-            if ($data->type === OperationType::Opening) {
-                if ($opening !== null) {
-                    throw OperationRefused::openingExists((string) $account->name);
-                }
-
-                if ($account->movements()->exists()) {
-                    throw OperationRefused::accountHasMovements((string) $account->name);
-                }
-
-                continue;
+            if ($opened) {
+                throw OperationRefused::openingExists((string) $account->name);
             }
 
-            if ($opening === null) {
-                continue;
-            }
-
-            if ($data->occurredAt->lt($opening->occurred_at)) {
-                throw OperationRefused::beforeOpening(
-                    (string) $account->name,
-                    $opening->occurred_at->toDateString(),
-                );
+            if ($account->movements()->exists()) {
+                throw OperationRefused::accountHasMovements((string) $account->name);
             }
         }
     }
