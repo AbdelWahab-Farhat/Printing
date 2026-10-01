@@ -35,8 +35,8 @@ class ActivityLogController extends Controller
      * List everything that happened
      *
      * Newest first. Narrow it with `subject_type` (`product`, `customer`, `city` …), `event`
-     * (`created`, `updated`, `deleted`, `restored`), `causer_id`, and the inclusive date range
-     * `from` / `to`.
+     * (`created`, `updated`, `deleted`, `restored`), `causer_id`, the inclusive date range
+     * `from` / `to`, and `field` — one column of one kind of record, as `order_item:unit_price`.
      */
     public function index(ActivityLogFilterRequest $request): JsonResponse
     {

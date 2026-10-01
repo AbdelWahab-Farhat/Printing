@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/audit/models/activity_log_entry.dart';
 import 'package:dayaa/features/audit/models/audit_event.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
@@ -335,6 +336,287 @@ void main() {
 
     // Assert
     expect(find.textContaining('من نوع «حذف»'), findsOneWidget);
+  });
+
+  group('a creation or a deletion', () {
+    /// An entry stating [values], each labelled «حقل <column>».
+    ActivityLogEntry stating(
+      Map<String, dynamic> values, {
+      bool deleted = false,
+      bool restored = false,
+    }) => ActivityLogEntry(
+          id: 40,
+          event: deleted ? 'deleted' : (restored ? 'restored' : 'created'),
+          eventLabel: deleted ? 'حذف' : (restored ? 'استرجاع' : 'إنشاء'),
+          description: deleted ? 'تم حذف طلبية' : 'تم إنشاء طلبية',
+          subjectType: 'order',
+          changes: deleted ? AuditChanges(old: values) : AuditChanges(attributes: values),
+          attributeLabels: {for (final column in values.keys) column: 'حقل $column'},
+          createdAt: DateTime(2026, 1, 15, 9),
+        );
+
+    testWidgets('a creation leaves out the zeros and «لا» it merely started with', (
+      tester,
+    ) async {
+      // Arrange — what somebody chose, beside what every new order starts at.
+      whenAsking(
+        null,
+        page([
+          stating({
+            'grand_total': '450.00',
+            'written_off_amount': '0.00',
+            'delivery_price': 0,
+            'is_archived': false,
+            'city_id': 0,
+          }),
+        ]),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('حقل grand_total'), findsOneWidget);
+      expect(find.text('حقل written_off_amount'), findsNothing);
+      expect(find.text('حقل delivery_price'), findsNothing);
+      expect(find.text('حقل is_archived'), findsNothing);
+    });
+
+    testWidgets('a deletion shows no fields until asked, and then keeps its zeros', (
+      tester,
+    ) async {
+      // Arrange — who deleted it and when is the story; the heading already tells it.
+      whenAsking(
+        null,
+        page([
+          stating({'grand_total': '450.00', 'paid_amount': '0.00'}, deleted: true),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — closed.
+      expect(find.text('تم حذف طلبية'), findsOneWidget);
+      expect(find.text('حقل grand_total'), findsNothing);
+      expect(find.text('عرض الحقول (2)'), findsOneWidget);
+
+      // Act
+      await tester.tap(find.byKey(const ValueKey('show-all-fields')));
+      await tester.pumpAndSettle();
+
+      // Assert — the zero is the state it was deleted in, so it stays.
+      expect(find.text('حقل grand_total'), findsOneWidget);
+      expect(find.text('حقل paid_amount'), findsOneWidget);
+    });
+
+    testWidgets('a restore shows no fields until asked either', (tester) async {
+      // Arrange — it brings back what the deletion recorded; listing it again says nothing.
+      whenAsking(
+        null,
+        page([
+          stating({'grand_total': '450.00', 'written_off_amount': '0.00'}, restored: true),
+        ]),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('حقل grand_total'), findsNothing);
+      expect(find.text('عرض الحقول (2)'), findsOneWidget);
+    });
+
+    testWidgets('a long card shows five lines and a way to the rest', (tester) async {
+      // Arrange — nine values worth reading.
+      whenAsking(
+        null,
+        page([
+          stating({for (var i = 1; i <= 9; i++) 'column_$i': 'قيمة $i'}),
+        ]),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — collapsed.
+      expect(find.text('حقل column_5'), findsOneWidget);
+      expect(find.text('حقل column_6'), findsNothing);
+      expect(find.text('عرض كل الحقول (9)'), findsOneWidget);
+
+      // Act
+      await tester.tap(find.byKey(const ValueKey('show-all-fields')));
+      await tester.pumpAndSettle();
+
+      // Assert — everything, and the way back.
+      expect(find.text('حقل column_9'), findsOneWidget);
+      expect(find.text('عرض أقل'), findsOneWidget);
+    });
+
+    testWidgets('one line over the limit is shown rather than hidden behind a button', (
+      tester,
+    ) async {
+      // Arrange — six: a button revealing one line would take the room of the line.
+      whenAsking(
+        null,
+        page([
+          stating({for (var i = 1; i <= 6; i++) 'column_$i': 'قيمة $i'}),
+        ]),
+      );
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('حقل column_6'), findsOneWidget);
+      expect(find.byKey(const ValueKey('show-all-fields')), findsNothing);
+    });
+  });
+
+  group('the field search', () {
+    Paginated<ActivityLogEntry> withFields(List<ActivityLogEntry> items) =>
+        Paginated<ActivityLogEntry>(
+          items: items,
+          meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: items.length),
+          extraMeta: const {
+            'fields': [
+              {'key': 'order_item:unit_price', 'label': 'سعر الوحدة', 'subject_label': 'بند الطلبية'},
+              {'key': 'order:delivery_price', 'label': 'سعر التوصيل', 'subject_label': 'الطلبية'},
+              {'key': 'customer:phone', 'label': 'رقم الهاتف', 'subject_label': 'العميل'},
+            ],
+          },
+        );
+
+    void whenAskingField(String? field, Paginated<ActivityLogEntry> answer) {
+      when(
+        () => repository.logs(
+          any(),
+          any(),
+          event: any(named: 'event'),
+          field: field,
+          page: any(named: 'page'),
+          perPage: any(named: 'perPage'),
+        ),
+      ).thenAnswer((_) async => Right(answer));
+    }
+
+    Finder box() => find.descendant(
+      of: find.byKey(const ValueKey('field-search')),
+      matching: find.byType(EditableText),
+    );
+
+    testWidgets('typing part of a name suggests the fields that carry it', (tester) async {
+      // Arrange — a creation alone, so no card on screen already reads «رقم الهاتف».
+      whenAskingField(null, withFields([creation()]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act — «سعر», the way somebody looking for a price would start.
+      await tester.enterText(box(), 'سعر');
+      await tester.pumpAndSettle();
+
+      // Assert — both prices, with whose each is; not the phone.
+      expect(find.text('سعر الوحدة'), findsOneWidget);
+      expect(find.text('بند الطلبية'), findsOneWidget);
+      expect(find.text('سعر التوصيل'), findsOneWidget);
+      expect(find.text('رقم الهاتف'), findsNothing);
+    });
+
+    testWidgets('nothing is suggested before anything is typed', (tester) async {
+      // Arrange
+      whenAskingField(null, withFields([creation()]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(box());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('سعر الوحدة'), findsNothing);
+    });
+
+    testWidgets('picking a suggestion filters the history and says so', (tester) async {
+      // Arrange
+      whenAskingField(null, withFields([creation(), edit()]));
+      whenAskingField('order_item:unit_price', page([edit()]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      // «وحده» with a ha, as typed, for «الوحدة» with a ta marbuta.
+      await tester.enterText(box(), 'وحده');
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('سعر الوحدة'));
+      await tester.pumpAndSettle();
+
+      // Assert — asked of the server, and the box has become a chip naming the filter.
+      verify(
+        () => repository.logs(
+          any(),
+          any(),
+          event: any(named: 'event'),
+          field: 'order_item:unit_price',
+          page: 1,
+          perPage: any(named: 'perPage'),
+        ),
+      ).called(1);
+      expect(find.byKey(const ValueKey('field-filter')), findsOneWidget);
+      expect(find.text('الحقل: سعر الوحدة · بند الطلبية'), findsOneWidget);
+      expect(find.byType(AppTextField), findsNothing);
+      expect(find.text('تم إنشاء محل عميل'), findsNothing);
+    });
+
+    testWidgets('removing the chip brings the whole history and the box back', (tester) async {
+      // Arrange
+      whenAskingField(null, withFields([creation(), edit()]));
+      whenAskingField('order_item:unit_price', page([edit()]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await tester.enterText(box(), 'وحده');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('سعر الوحدة'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('إلغاء البحث بالحقل'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byKey(const ValueKey('field-filter')), findsNothing);
+      expect(box(), findsOneWidget);
+      expect(find.text('تم إنشاء محل عميل'), findsOneWidget);
+    });
+
+    testWidgets('an empty field search says which field found nothing', (tester) async {
+      // Arrange
+      whenAskingField(null, withFields([creation()]));
+      whenAskingField('customer:phone', page([]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await tester.enterText(box(), 'هاتف');
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('رقم الهاتف'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.textContaining('تخص «رقم الهاتف»'), findsOneWidget);
+    });
+
+    testWidgets('a history with nothing to search by has no box', (tester) async {
+      // Arrange — an older server, or a trail with no fields at all.
+      whenAskingField(null, page([creation()]));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byKey(const ValueKey('field-search')), findsNothing);
+    });
   });
 
   testWidgets('the bar says whose history this is', (tester) async {

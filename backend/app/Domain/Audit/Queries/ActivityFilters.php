@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Audit\Queries;
 
+use App\Domain\Audit\AuditField;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Enums\AuditSubject;
 use Carbon\CarbonImmutable;
@@ -29,6 +30,9 @@ final readonly class ActivityFilters
         /** Inclusive: the whole of this day counts. */
         public ?CarbonImmutable $from = null,
         public ?CarbonImmutable $to = null,
+
+        /** Only the entries that say something about this column — «سعر الوحدة» on an order line. */
+        public ?AuditField $field = null,
     ) {}
 
     /**
@@ -47,6 +51,7 @@ final readonly class ActivityFilters
             // End of day, not midnight: `to=2026-07-31` plainly means "including today", and a
             // bare date parsed as 00:00 would exclude every entry the day actually contains.
             to: self::date($data['to'] ?? null)?->endOfDay(),
+            field: is_string($data['field'] ?? null) ? AuditField::tryFromKey($data['field']) : null,
         );
     }
 

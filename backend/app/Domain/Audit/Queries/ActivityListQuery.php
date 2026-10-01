@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Audit\Queries;
 
+use App\Domain\Audit\AuditField;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Models\ActivityLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Reading the audit trail — either one record's history, or the whole feed.
@@ -73,7 +75,53 @@ final class ActivityListQuery
     }
 
     /**
-     * Everything both readers agree on: which records, by whom, and when.
+     * Every field this trail has something to say about — what a field search offers.
+     *
+     * Read from the entries rather than from the dictionary, so typing «سعر» on an order never
+     * offers a price that never moved there: every suggestion leads to at least one card. A
+     * column counts where {@see ActivityLog::scopeTouchingField()} would match it — present with
+     * a value on either side — so the two cannot disagree.
+     *
+     * **Ignores every filter but the record.** The picker is how you choose a filter; if it
+     * shrank to the entries of the last one chosen, the way back out would be missing from it.
+     *
+     * @param  array<string, list<int|string>>  $subjects
+     * @return list<AuditField>
+     */
+    public function fieldsIn(array $subjects): array
+    {
+        $half = fn (string $name): string => "case when json_typeof(activity_log.attribute_changes->'{$name}') = 'object'
+            then activity_log.attribute_changes->'{$name}' else '{}'::json end";
+
+        $rows = ActivityLog::query()
+            ->forSubjects($subjects)
+            ->getQuery()
+            ->crossJoin(DB::raw("lateral (
+                select key, value from json_each({$half('attributes')})
+                union all
+                select key, value from json_each({$half('old')})
+            ) as k"))
+            ->whereRaw("json_typeof(k.value) <> 'null'")
+            ->distinct()
+            ->get(['activity_log.subject_type', 'k.key']);
+
+        $fields = [];
+
+        foreach ($rows as $row) {
+            // Hidden, unlabelled or from a subject since renamed: not something to offer.
+            if ($field = AuditField::tryFrom((string) $row->subject_type, (string) $row->key)) {
+                $fields[] = $field;
+            }
+        }
+
+        usort($fields, fn (AuditField $a, AuditField $b): int => [$a->label(), $a->subject->label()] <=> [$b->label(), $b->subject->label()]);
+
+        return $fields;
+    }
+
+    /**
+     * Everything both readers agree on: which records, by whom, when, and about which field —
+     * minus the updates that changed nothing a person would read.
      *
      * The event filter is *not* here — see {@see countsByEvent()} for why the two differ on
      * exactly that one clause.
@@ -85,6 +133,8 @@ final class ActivityListQuery
     {
         return ActivityLog::query()
             ->when($subjects !== null, fn (Builder $q) => $q->forSubjects($subjects ?? []))
+            ->withoutNoiseOnlyUpdates()
+            ->when($filters->field !== null, fn (Builder $q) => $q->touchingField($filters->field))
             ->when($filters->subjectType !== null, fn (Builder $q) => $q->where('subject_type', $filters->subjectType?->value))
             ->when($filters->causerId !== null, fn (Builder $q) => $q->where('causer_id', $filters->causerId))
             ->when($filters->from !== null, fn (Builder $q) => $q->where('created_at', '>=', $filters->from))

@@ -6,9 +6,11 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/app_autocomplete_field.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/audit/models/activity_log_entry.dart';
 import 'package:dayaa/features/audit/models/audit_event.dart';
+import 'package:dayaa/features/audit/models/audit_field_option.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/audit/presentation/viewmodel/activity_log_cubit.dart';
 import 'package:flutter/material.dart';
@@ -94,15 +96,12 @@ class _ActivityLogView extends StatelessWidget {
             // Outside the list, so the control stays put while the list under it reloads. A
             // filter row that vanishes into a skeleton the moment it is used is a filter row
             // the thumb loses.
+            _FieldSearch(active: cubit.field, fields: cubit.fields),
             _EventFilter(active: cubit.event, counts: cubit.eventCounts),
             Expanded(
               child: PagedListView<ActivityLogEntry>(
                 state: state,
-                emptyMessage: cubit.event == null
-                    ? 'لا توجد تعديلات مسجّلة بعد'
-                    // Says which filter found nothing, so nobody concludes the record has no
-                    // history at all.
-                    : 'لا توجد أحداث من نوع «${cubit.event!.label}»',
+                emptyMessage: _emptyMessage(cubit.event, cubit.field),
                 onLoadMore: cubit.loadMore,
                 onRefresh: cubit.refresh,
                 skeletonHeight: 118.h,
@@ -121,6 +120,16 @@ class _ActivityLogView extends StatelessWidget {
       ),
     );
   }
+
+  /// Says which filter found nothing, so nobody concludes the record has no history at all.
+  static String _emptyMessage(AuditEvent? event, AuditFieldOption? field) =>
+      switch ((event, field)) {
+        (null, null) => 'لا توجد تعديلات مسجّلة بعد',
+        (final event?, null) => 'لا توجد أحداث من نوع «${event.label}»',
+        (null, final field?) => 'لا توجد أحداث تخص «${field.label}»',
+        (final event?, final field?) =>
+          'لا توجد أحداث من نوع «${event.label}» تخص «${field.label}»',
+      };
 
   /// The date rule to draw above this entry, or null when it is not the first of its day.
   ///
@@ -149,6 +158,56 @@ class _ActivityLogView extends StatelessWidget {
     }
 
     return _Day(at: at, count: count);
+  }
+}
+
+/// «ابحث بالحقل» — or, once a field is picked, the field itself with a way to let go of it.
+///
+/// The box suggests from `ActivityLogCubit.fields`, which the server built from this record's
+/// own entries, so every suggestion leads somewhere. It filters nothing while typing: the list
+/// only changes when a field is picked, and then the box gives its place to a chip saying which
+/// one — a filter that is on has to be visible, and a box with a word in it does not say
+/// whether that word was applied.
+///
+/// Absent altogether until the first page brings the list: a search box with nothing to find.
+class _FieldSearch extends StatelessWidget {
+  const _FieldSearch({required this.active, required this.fields});
+
+  final AuditFieldOption? active;
+  final List<AuditFieldOption> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<ActivityLogCubit>();
+    final active = this.active;
+
+    if (active == null && fields.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+      child: active == null
+          ? AppAutocompleteField<AuditFieldOption>(
+              key: const ValueKey('field-search'),
+              options: fields,
+              labelOf: (field) => field.label,
+              detailOf: (field) => field.subjectLabel,
+              hint: 'ابحث بالحقل… مثل «السعر»',
+              onSelected: (field) => unawaited(cubit.filterByField(field)),
+            )
+          : Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: InputChip(
+                key: const ValueKey('field-filter'),
+                label: Text(
+                  active.subjectLabel == null
+                      ? 'الحقل: ${active.label}'
+                      : 'الحقل: ${active.label} · ${active.subjectLabel}',
+                ),
+                onDeleted: () => unawaited(cubit.filterByField(null)),
+                deleteButtonTooltipMessage: 'إلغاء البحث بالحقل',
+              ),
+            ),
+    );
   }
 }
 
@@ -481,29 +540,7 @@ class _Card extends StatelessWidget {
                             afterLabel: entry.valueLabelFor(field, old: false),
                           ),
                       ]
-                    : [
-                        // **A value that was never filled in is not history.** A creation that
-                        // lists «ملاحظات —» and «الإجمالي —» buries the four facts worth
-                        // reading under the twelve columns that happened to be null. A *change*
-                        // is different and keeps both halves — see [_Movement]: «نص ← —» is
-                        // somebody clearing a field, which is exactly the kind of thing a trail
-                        // exists to record.
-                        for (final (field, value) in changes.statedValues)
-                          if (_saysSomething(value, entry.valueLabelFor(
-                            field,
-                            old: changes.attributes?.isEmpty ?? true,
-                          )))
-                            _Stated(
-                              label: entry.labelFor(field),
-                              value: value,
-                              // A deletion states its values from `old`, a creation from
-                              // `attributes` — the same half `statedValues` read them from.
-                              valueLabel: entry.valueLabelFor(
-                                field,
-                                old: changes.attributes?.isEmpty ?? true,
-                              ),
-                            ),
-                      ],
+                    : [_StatedList(entry: entry, changes: changes)],
               ),
             ),
           ],
@@ -511,6 +548,115 @@ class _Card extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What a creation or a deletion states — the values worth reading, a few at a time.
+///
+/// **Both record the whole row**, every column, because that is what the row was. Drawn as it
+/// came, a new order is thirty lines, and the five somebody chose are lost among the ones
+/// nobody did. Three things narrow it:
+///
+///   * **A value that was never filled in is not history.** A creation that lists «ملاحظات —»
+///     and «الإجمالي —» buries the facts worth reading under the columns that happened to be
+///     null. A *change* is different and keeps both halves — see [_Movement]: «نص ← —» is
+///     somebody clearing a field, which is exactly the kind of thing a trail exists to record.
+///   * **A creation's zeros and «لا» are the defaults**, not a decision: «المشطوب ٠» on a new
+///     order says nothing. A *deletion* keeps them — «the balance was 0 when it went» can be the
+///     very thing somebody is checking.
+///   * **A creation shows its first [_shownOnCreation] lines, and a button for the rest.**
+///   * **A deletion or a restore shows none, only the button.** What is worth knowing is who
+///     did it and when — the heading and the line under it already say so. A restore brings
+///     back exactly what the deletion recorded, so listing the whole order again under it says
+///     nothing new. Nothing is dropped: the full last state is one tap away.
+class _StatedList extends StatefulWidget {
+  const _StatedList({required this.entry, required this.changes});
+
+  final ActivityLogEntry entry;
+  final AuditChanges changes;
+
+  /// How many lines a collapsed creation shows.
+  static const _shownOnCreation = 5;
+
+  @override
+  State<_StatedList> createState() => _StatedListState();
+}
+
+class _StatedListState extends State<_StatedList> {
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final changes = widget.changes;
+
+    // A deletion states its values from `old`, a creation from `attributes` — the same half
+    // `statedValues` read them from.
+    final fromOld = changes.attributes?.isEmpty ?? true;
+    final isCreation = entry.event == 'created';
+
+    final rows = [
+      for (final (field, value) in changes.statedValues)
+        if (entry.valueLabelFor(field, old: fromOld) case final valueLabel
+            when _saysSomething(value, valueLabel) &&
+                // Only a creation's zeros are defaults; a deleted or restored record's zeros
+                // are the state it was in.
+                (!isCreation || !_isDefault(value, valueLabel)))
+          _Stated(label: entry.labelFor(field), value: value, valueLabel: valueLabel),
+    ];
+
+    // On a creation, one line more than the limit is shown rather than hidden: a button that
+    // reveals a single line takes the same room as the line.
+    final collapses = isCreation
+        ? rows.length > _StatedList._shownOnCreation + 1
+        : rows.isNotEmpty;
+    final shown = isCreation ? _StatedList._shownOnCreation : 0;
+    final visible = collapses && !_expanded ? rows.take(shown) : rows;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...visible,
+        if (collapses)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              key: const ValueKey('show-all-fields'),
+              onPressed: () => setState(() => _expanded = !_expanded),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                minimumSize: Size(0, 32.h),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(
+                _expanded
+                    ? 'عرض أقل'
+                    : isCreation
+                    ? 'عرض كل الحقول (${rows.length})'
+                    : 'عرض الحقول (${rows.length})',
+                style: context.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Whether a creation's value is only what the column starts at — a zero, or «لا».
+///
+/// A value the server named is never a default: «جديدة» is a status somebody's order is in,
+/// and a named reference is a choice. Numbers may arrive as strings («0.00» from a decimal
+/// column), so a string counts when it reads as zero.
+bool _isDefault(Object? value, String? label) {
+  if (label != null && label.isNotEmpty) return false;
+
+  return switch (value) {
+    false => true,
+    final num number => number == 0,
+    final String text => num.tryParse(text) == 0,
+    _ => false,
+  };
 }
 
 /// A value an entry simply states — a creation's starting values, or the last ones a deleted

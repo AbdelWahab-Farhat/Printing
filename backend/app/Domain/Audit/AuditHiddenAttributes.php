@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Audit;
 
+use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Audit\Models\ActivityLog;
 use App\Support\Media\StoredFile;
 
 /**
@@ -33,6 +35,69 @@ use App\Support\Media\StoredFile;
 final class AuditHiddenAttributes
 {
     /**
+     * Columns the application keeps up to date on its own, hidden from every kind of record.
+     *
+     * `sort_order` moves when somebody drags a row up a list, and on a catalogue it moves on
+     * every row below it too. Nobody opens a product's history to find out it went from 7 to 8.
+     *
+     * @var list<string>
+     */
+    private const NOISE_EVERYWHERE = ['sort_order'];
+
+    /**
+     * The same idea per kind of record, keyed by {@see AuditSubject::value}.
+     *
+     * **Unlike the storage columns, these are named one by one.** They are not a family with a
+     * shared suffix; each is here because its row moves it without anybody deciding anything:
+     *
+     * - read markers a ticket rewrites every time somebody opens it;
+     * - totals and costs recomputed from rows that have their own entries — «المدفوع» rises
+     *   because a payment was recorded, and the payment is already in the same trail;
+     * - pointers and watermarks the code uses to find its place (`through_*_id`,
+     *   `source_sequence`, `stock_movement_id`), which read as a bare number to anybody else.
+     *
+     * An update that touched nothing *but* these is dropped from the list altogether — see
+     * {@see ActivityLog::scopeWithoutNoiseOnlyUpdates()} — because a card whose every line is hidden is an empty card.
+     *
+     * @var array<string, list<string>>
+     */
+    private const NOISE = [
+        'user' => ['email_verified_at'],
+        'product' => ['slug'],
+        'nawris_parcel' => ['remote_status_code'],
+        'order' => ['paid_amount', 'total_cogs', 'stock_deducted_at', 'delete_returned_stock_at'],
+        'order_item' => [
+            'material_cost',
+            'material_cost_actual',
+            'labor_cost',
+            'overhead_cost',
+            'cogs',
+            'fulfillment_stock_movement_id',
+        ],
+        'stock_batch' => ['quantity_remaining', 'stock_movement_id'],
+        'stock_batch_consumption' => ['stock_movement_id'],
+        'stock_arrival_item' => ['stock_movement_id'],
+        'shortage_supply' => ['stock_movement_id'],
+        'investor_wallet_entry' => ['source_sequence'],
+        'investment_cash_entry' => ['source_sequence'],
+        'investment_period' => [
+            'through_consumption_id',
+            'through_movement_id',
+            'through_wallet_entry_id',
+            'through_cash_entry_id',
+        ],
+        'support_ticket' => [
+            'customer_read_at',
+            'staff_read_at',
+            'customer_read_message_id',
+            'staff_read_message_id',
+            'last_message_at',
+        ],
+        'ticket_message' => ['client_token'],
+        'notification' => ['dedupe_key'],
+    ];
+
+    /**
      * The columns {@see StoredFile} produces, minus the one a person chose.
      *
      * `original_filename` is deliberately absent: «شعار-الشركة.pdf» is a name somebody typed,
@@ -58,9 +123,16 @@ final class AuditHiddenAttributes
      * Matched whole or after a prefix — `checksum`, `receipt_checksum`. `_px` is the pixel
      * count of a stored image and never a measurement of the thing being printed: a bag's size
      * is `width_cm`, which is domain data and stays on the screen.
+     *
+     * Without a subject only the storage columns and {@see NOISE_EVERYWHERE} are known — the
+     * per-record noise needs to know which record it is on.
      */
-    public static function hides(string $column): bool
+    public static function hides(string $column, ?AuditSubject $subject = null): bool
     {
+        if (self::isNoise($column, $subject)) {
+            return true;
+        }
+
         foreach (self::STORAGE as $plumbing) {
             if ($column === $plumbing || str_ends_with($column, '_'.$plumbing)) {
                 return true;
@@ -78,7 +150,7 @@ final class AuditHiddenAttributes
      * JSON column, `null` is how an entry says a half never existed — a creation has no `old` —
      * and a history screen is the last place that should 500 over its own oldest rows.
      */
-    public static function strip(mixed $values): mixed
+    public static function strip(mixed $values, ?AuditSubject $subject = null): mixed
     {
         if (! is_array($values)) {
             return $values;
@@ -86,8 +158,30 @@ final class AuditHiddenAttributes
 
         return array_filter(
             $values,
-            fn (mixed $column): bool => ! self::hides((string) $column),
+            fn (mixed $column): bool => ! self::hides((string) $column, $subject),
             ARRAY_FILTER_USE_KEY,
         );
+    }
+
+    /**
+     * Whether the application moves this column by itself on this kind of record.
+     */
+    public static function isNoise(string $column, ?AuditSubject $subject = null): bool
+    {
+        return in_array($column, self::NOISE_EVERYWHERE, true)
+            || ($subject !== null && in_array($column, self::NOISE[$subject->value] ?? [], true));
+    }
+
+    /**
+     * Every noise column, as the list query needs them to drop the updates made of nothing else.
+     *
+     * The storage columns are deliberately not part of it: a file replaced is an event worth a
+     * card even with its lines hidden — the stored sentence says what happened.
+     *
+     * @return array{everywhere: list<string>, per_subject: array<string, list<string>>}
+     */
+    public static function noise(): array
+    {
+        return ['everywhere' => self::NOISE_EVERYWHERE, 'per_subject' => self::NOISE];
     }
 }

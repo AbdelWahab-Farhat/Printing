@@ -18,6 +18,7 @@ class AuditRepositoryImpl implements AuditRepository {
     AuditSubject subject,
     int recordId, {
     AuditEvent? event,
+    String? field,
     int page = 1,
     int perPage = 20,
   }) {
@@ -33,6 +34,7 @@ class AuditRepositoryImpl implements AuditRepository {
           // Omitted rather than sent as null: a null in a query string arrives as the literal
           // "null", and the API validates `event` against its four values.
           if (event != null) 'event': event.wire,
+          'field': ?field,
         },
       ),
       parseItem: ActivityLogEntry.fromJson,

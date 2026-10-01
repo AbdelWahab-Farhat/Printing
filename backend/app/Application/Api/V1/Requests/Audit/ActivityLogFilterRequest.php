@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Audit;
 
+use App\Domain\Audit\AuditField;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Audit\Queries\ActivityFilters;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -48,6 +50,20 @@ class ActivityLogFilterRequest extends FormRequest
             // Inclusive on both ends: `to` counts the whole of its day.
             'from' => ['sometimes', 'nullable', 'date'],
             'to' => ['sometimes', 'nullable', 'date', 'after_or_equal:from'],
+
+            // Only the entries about one column of one kind of record, as `order_item:unit_price`
+            // — the `key` of an entry in the trail's `meta.fields`. A column the screen hides, or
+            // one with no name to pick it by, is refused rather than answered with nothing.
+            'field' => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! is_string($value) || AuditField::tryFromKey($value) === null) {
+                        $fail('الحقل غير معروف');
+                    }
+                },
+            ],
 
             // Not validated, clamped — see perPage(). Declared so it appears in the spec.
             'per_page' => ['sometimes', 'integer'],
