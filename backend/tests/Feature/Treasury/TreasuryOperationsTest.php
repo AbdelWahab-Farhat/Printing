@@ -278,6 +278,55 @@ class TreasuryOperationsTest extends TestCase
         $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
     }
 
+    public function test_a_transfer_to_the_same_account_sent_as_text_is_refused_too(): void
+    {
+        // Arrange — `different:` يقارن بالهوية: الرقم 5 والنصّ "5" مختلفان عنده، فيمرّ الطلب ثم
+        // يصطدم بقيد القاعدة 500. والفعلُ يقارن بعد الصبّ إلى عدد.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->cashBox(), '100');
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'transfer',
+            'from_account_id' => $this->cashBox()->id,
+            'to_account_id' => (string) $this->cashBox()->id,
+            'amount' => '10',
+        ], $headers);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
+        $this->assertSame(1, TreasuryOperation::query()->count());
+    }
+
+    public function test_an_amount_finer_than_a_dirham_is_refused_before_the_ledger(): void
+    {
+        // Arrange — 0.001 كان يمرّ من `gt:0` ثم يُقرَّب إلى صفر فيصطدم بقيد `amount > 0`: 500.
+        [, $headers] = $this->clerk();
+        $deposit = fn (string $amount) => $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'deposit', 'to_account_id' => $this->cashBox()->id, 'amount' => $amount,
+        ], $headers);
+
+        // Act
+        $tooSmall = $deposit('0.001');
+        $tooFine = $deposit('10.555');
+        $zero = $deposit('0');
+        $oneDirham = $deposit('0.01');
+        $count = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'adjustment',
+            'to_account_id' => $this->cashBox()->id,
+            'counted_balance' => '10.555',
+            'notes' => 'جرد',
+        ], $headers);
+
+        // Assert
+        $tooSmall->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $tooFine->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $zero->assertUnprocessable()->assertJsonValidationErrors('amount');
+        $oneDirham->assertCreated();
+        $count->assertUnprocessable()->assertJsonValidationErrors('counted_balance');
+        $this->assertSame('0.01', $this->balance($this->cashBox()));
+    }
+
     public function test_custody_takes_nothing_by_hand_but_its_opening_and_a_count(): void
     {
         // Arrange

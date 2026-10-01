@@ -23,7 +23,8 @@ class StoreVendorPaymentRequest extends FormRequest
     {
         return [
             'type' => ['nullable', Rule::in(['payment', 'opening_debt'])],
-            'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
+            // خانتان عشريتان ودرهمٌ على الأقل — ما دون ذلك يُقرَّب صفراً فيصطدم بقيد القاعدة.
+            'amount' => ['required', 'decimal:0,2', 'min:0.01', 'max:9999999999'],
             'method' => ['exclude_if:type,opening_debt', 'required', Rule::enum(PaymentMethod::class)],
             'treasury_account_id' => [
                 'exclude_if:type,opening_debt',
@@ -49,7 +50,8 @@ class StoreVendorPaymentRequest extends FormRequest
     {
         return [
             'amount.required' => 'المبلغ مطلوب',
-            'amount.gt' => 'المبلغ يجب أن يكون أكبر من صفر',
+            'amount.decimal' => 'المبلغ رقمٌ بخانتين عشريتين على الأكثر',
+            'amount.min' => 'المبلغ يجب أن يكون 0.01 على الأقل',
             'method.required' => 'طريقة الدفع مطلوبة',
             'method.enum' => 'طريقة الدفع غير معروفة',
             'purchase_order_id.exists' => 'أمر الشراء غير موجود',

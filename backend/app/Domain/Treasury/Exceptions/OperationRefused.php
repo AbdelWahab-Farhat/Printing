@@ -61,6 +61,11 @@ final class OperationRefused extends DomainException
         return new self("الحسابات مقفلة حتى {$until} — لا تُسجَّل عملية يدوية بتاريخٍ قبله", $field);
     }
 
+    public static function sameAccount(): self
+    {
+        return new self('لا يُحوَّل من حساب إلى نفسه', 'to_account_id');
+    }
+
     public static function reasonRequired(): self
     {
         return new self('السبب مطلوب عند السحب', 'notes');

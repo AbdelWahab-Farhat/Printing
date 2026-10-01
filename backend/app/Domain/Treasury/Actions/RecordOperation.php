@@ -56,6 +56,14 @@ final class RecordOperation
             throw OperationRefused::reasonRequired();
         }
 
+        // بعد الصبّ إلى عدد لا قبله: `different:` في الطلب يقارن 5 بـ"5" فيراهما مختلفين، ثم
+        // يُقفل الحسابُ نفسُه مرّتين ويصطدم الصفُّ بقيد الشكل.
+        $toItself = $data->fromAccountId === $data->toAccountId;
+
+        if ($data->type === OperationType::Transfer && $toItself) {
+            throw OperationRefused::sameAccount();
+        }
+
         return DB::transaction(function () use ($data, $actorId, $settings): TreasuryOperation {
             $accounts = $this->lock($data);
 
