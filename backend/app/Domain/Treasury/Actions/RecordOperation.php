@@ -153,6 +153,9 @@ final class RecordOperation
     /**
      * One opening per account, and nothing by hand dated before it — the opening count is the
      * floor the balance was measured from.
+     *
+     * **والافتتاحُ لحسابٍ لم يتحرّك بعد وحده.** حسابٌ استقبل مالاً — دفعاتٌ استُوردت، إيداعٌ
+     * سبق — رصيدُه قائمٌ بحركاته، وافتتاحٌ فوقها يعدّ ذلك المال مرّتين.
      */
     private function guardOpening(OperationData $data, ?TreasuryAccount $from, ?TreasuryAccount $to): void
     {
@@ -162,12 +165,20 @@ final class RecordOperation
                 ->where('to_account_id', $account->getKey())
                 ->first();
 
-            if ($opening === null) {
+            if ($data->type === OperationType::Opening) {
+                if ($opening !== null) {
+                    throw OperationRefused::openingExists((string) $account->name);
+                }
+
+                if ($account->movements()->exists()) {
+                    throw OperationRefused::accountHasMovements((string) $account->name);
+                }
+
                 continue;
             }
 
-            if ($data->type === OperationType::Opening) {
-                throw OperationRefused::openingExists((string) $account->name);
+            if ($opening === null) {
+                continue;
             }
 
             if ($data->occurredAt->lt($opening->occurred_at)) {

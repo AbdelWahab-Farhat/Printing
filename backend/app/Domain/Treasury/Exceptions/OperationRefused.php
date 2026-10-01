@@ -21,6 +21,18 @@ final class OperationRefused extends DomainException
         return new self("لـ«{$account}» رصيد افتتاحي مسجَّل — صحّحه بجرد الحساب", 'to_account_id');
     }
 
+    /**
+     * حسابٌ تحرّك قبل أن يُفتتح — بعد استيراد المدفوعات القديمة مثلاً. افتتاحٌ فوق حركاته يعدّ
+     * مالها مرّتين؛ والعدُّ الذي يصحّحه هو «جرد الحساب»، يكتب الفرقَ وحده.
+     */
+    public static function accountHasMovements(string $account): self
+    {
+        return new self(
+            "«{$account}» عليه حركات مسجّلة — يُضبط رصيده بـ«جرد الحساب» لا برصيد افتتاحي",
+            'to_account_id',
+        );
+    }
+
     public static function balanceUnchanged(string $account): self
     {
         return new self("الرصيد المعدود يطابق رصيد «{$account}» — لا فرق يُسجَّل", 'counted_balance');

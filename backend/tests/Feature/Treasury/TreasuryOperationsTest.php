@@ -486,6 +486,26 @@ class TreasuryOperationsTest extends TestCase
         $noReason->assertUnprocessable()->assertJsonValidationErrors('notes');
     }
 
+    public function test_an_opening_is_refused_once_the_account_has_any_movement(): void
+    {
+        // Arrange — المصرف استقبل مالاً قبل أن يُسجَّل له افتتاح، كما بعد استيراد المدفوعات
+        // القديمة. افتتاحٌ فوقه يعدّ ذلك المال مرّتين.
+        [, $headers] = $this->clerk();
+        $this->deposit($headers, $this->bank(), '300');
+
+        // Act
+        $response = $this->postJson('/api/v1/treasury/operations', [
+            'type' => 'opening',
+            'to_account_id' => $this->bank()->id,
+            'amount' => '1000',
+        ], $headers);
+
+        // Assert — والرسالةُ تدلّه على الطريق: «جرد الحساب».
+        $response->assertUnprocessable()->assertJsonValidationErrors('to_account_id');
+        $this->assertStringContainsString('جرد الحساب', (string) $response->json('message'));
+        $this->assertSame('300.00', $this->balance($this->bank()));
+    }
+
     // ── reversing ───────────────────────────────────────────────────────────────────────
 
     public function test_reversing_an_operation_mirrors_every_movement_once(): void
