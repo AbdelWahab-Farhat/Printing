@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -44,7 +45,15 @@ class TreasurySettingsPage extends StatelessWidget {
       )..load(),
       child: Scaffold(
         appBar: AppBar(title: const Text('إعدادات المالية')),
-        body: BlocBuilder<TreasurySettingsCubit, TreasurySettingsState>(
+        body: BlocConsumer<TreasurySettingsCubit, TreasurySettingsState>(
+          listener: (context, state) {
+            // تعيد لمن فتحها `true` إن حُفظ فيها شيء، فتقرأ اللوحة حساباتها مرةً واحدة.
+            context.handBack(context.read<TreasurySettingsCubit>().changed ? true : null);
+
+            if (state case TreasurySettingsLoaded(:final refreshFailure?)) {
+              context.showFailure(refreshFailure);
+            }
+          },
           builder: (context, state) => switch (state) {
             TreasurySettingsLoading() => const Center(child: CircularProgressIndicator()),
             TreasurySettingsFailed(:final failure) => Center(

@@ -37,7 +37,18 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
   final GetExpenseCategories _getCategories;
   final SaveExpenseCategory _saveCategory;
 
+  bool _changed = false;
+
+  /// هل حُفظ شيءٌ منذ فُتحت الصفحة؟ — فتعيد اللوحةُ قراءة حساباتها حين تُغلق، لا بعد كل زيارة.
+  bool get changed => _changed;
+
   Future<void> load() async {
+    // ما على الشاشة يبقى إن فشلت إعادة القراءة، والفشل يُقال في توست.
+    final previous = switch (state) {
+      final TreasurySettingsLoaded loaded => loaded,
+      _ => null,
+    };
+
     final (settings, accounts, categories) = await (
       _getSettings(),
       _getAccounts(),
@@ -53,7 +64,16 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     ].nonNulls.firstOrNull;
 
     if (failure != null) {
-      emit(TreasurySettingsFailed(failure));
+      emit(
+        previous == null
+            ? TreasurySettingsFailed(failure)
+            : TreasurySettingsLoaded(
+                settings: previous.settings,
+                accounts: previous.accounts,
+                categories: previous.categories,
+                refreshFailure: failure,
+              ),
+      );
 
       return;
     }
@@ -71,6 +91,8 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
   Future<Failure?> _after<T>(Future<Either<Failure, T>> Function() write) async {
     final result = await write();
     final failure = result.fold<Failure?>((f) => f, (_) => null);
+
+    if (failure == null) _changed = true;
 
     if (failure == null && !isClosed) unawaited(load());
 
@@ -189,9 +211,13 @@ final class TreasurySettingsLoaded extends TreasurySettingsState {
     required this.settings,
     required this.accounts,
     required this.categories,
+    this.refreshFailure,
   });
 
   final TreasurySettings settings;
   final List<TreasuryAccount> accounts;
   final List<ExpenseCategory> categories;
+
+  /// قراءةٌ فشلت والصفحة باقية على ما قبلها: يقوله توست.
+  final Failure? refreshFailure;
 }
