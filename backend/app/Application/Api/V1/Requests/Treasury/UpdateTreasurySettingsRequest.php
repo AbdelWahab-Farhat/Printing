@@ -34,6 +34,8 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'collect_cash_into_id' => ['sometimes', 'nullable', 'integer', Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at')],
             'collect_bank_into_id' => ['sometimes', 'nullable', 'integer', Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at')],
             'collect_wallet_into_id' => ['sometimes', 'nullable', 'integer', Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at')],
+            // «التسوية إلى حساب المسوّي» (§٢٢).
+            'settle_into_settler' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -62,6 +64,7 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'collect_cash_into_id' => 'يُجمع النقد في',
             'collect_bank_into_id' => 'تُجمع المصارف في',
             'collect_wallet_into_id' => 'تُجمع المحافظ في',
+            'settle_into_settler' => 'التسوية إلى حساب المسوّي',
         ];
     }
 }

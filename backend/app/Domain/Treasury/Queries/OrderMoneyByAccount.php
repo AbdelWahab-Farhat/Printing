@@ -20,15 +20,17 @@ final class OrderMoneyByAccount
     /**
      * @param  list<int>  $except  accounts left where they are — the collecting one, and whatever
      *                             was picked by hand on the settle screen
+     * @param  bool  $evenUncollected  an account marked «لا يُجمع» gives up its money too — when it
+     *                                 goes to the settler's own account (§٢٢), not to collection
      * @return array<int, string> account id => what it holds for this order, > 0 only
      */
-    public function of(int $orderId, AccountKind $kind, array $except = []): array
+    public function of(int $orderId, AccountKind $kind, array $except = [], bool $evenUncollected = false): array
     {
         $rows = DB::table('treasury_movements as m')
             ->join('treasury_accounts as a', 'a.id', '=', 'm.account_id')
             ->where('m.order_id', $orderId)
             ->where('a.kind', $kind->value)
-            ->where('a.is_collected', true)
+            ->when(! $evenUncollected, fn ($q) => $q->where('a.is_collected', true))
             ->when($except !== [], fn ($q) => $q->whereNotIn('m.account_id', $except))
             ->whereNull('m.deleted_at')
             ->groupBy('m.account_id')

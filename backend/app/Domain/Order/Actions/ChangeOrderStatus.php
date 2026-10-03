@@ -287,6 +287,11 @@ final class ChangeOrderStatus
                     // تحت حقلَيهما في الشاشة: حقولُ الحركة معلّقةٌ بـ `fields`.
                     accountField: 'fields.'.TransitionFields::SETTLEMENT_ACCOUNT,
                     feeField: 'fields.'.TransitionFields::SETTLEMENT_FEE,
+                    // «التسوية إلى حساب المسوّي»: which of their accounts, kind by kind (§٢٢).
+                    settlerChoices: array_filter(array_map(
+                        fn (string $key) => self::idIn($fields, $key),
+                        TransitionFields::SETTLER_ACCOUNTS,
+                    )),
                 );
             }
 

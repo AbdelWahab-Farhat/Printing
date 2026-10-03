@@ -210,6 +210,8 @@ class TreasuryMovementRow extends StatelessWidget {
     final struck = movement.isReversed ? TextDecoration.lineThrough : null;
 
     final story = [
+      // «المصاريف» تجمع الحسابات كلها، فيقول كل سطرٍ من أيّها خرج.
+      if (movement.accountName case final account?) 'من $account',
       if (movement.counterpartName case final other?) movement.isIn ? 'من $other' : 'إلى $other',
       ?movement.categoryName,
       ?movement.employeeName,

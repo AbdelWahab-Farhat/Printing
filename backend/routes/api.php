@@ -44,6 +44,7 @@ use App\Application\Api\V1\Controllers\StockItemGroupController;
 use App\Application\Api\V1\Controllers\StockMovementController;
 use App\Application\Api\V1\Controllers\SupportTicketController;
 use App\Application\Api\V1\Controllers\TreasuryAccountController;
+use App\Application\Api\V1\Controllers\TreasuryExpenseController;
 use App\Application\Api\V1\Controllers\TreasuryOperationController;
 use App\Application\Api\V1\Controllers\TreasuryOverviewController;
 use App\Application\Api\V1\Controllers\TreasurySettingsController;
@@ -1219,6 +1220,10 @@ Route::prefix('v1')->group(function (): void {
                 ->name('treasury.ownership');
             Route::get('treasury/inventory-value', [TreasuryOverviewController::class, 'inventoryValue'])
                 ->name('treasury.inventory-value');
+
+            // «المصاريف» — every account's expenses on one page (§٢١).
+            Route::get('treasury/expenses', [TreasuryExpenseController::class, 'index'])
+                ->name('treasury.expenses.index');
 
             Route::get('treasury/operations', [TreasuryOperationController::class, 'index'])
                 ->name('treasury.operations.index');

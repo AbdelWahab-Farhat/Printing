@@ -24,6 +24,16 @@ abstract interface class TreasuryRepository {
     String? search,
   });
 
+  /// «المصاريف» — مصاريف كل الحسابات، الأحدث أولاً. مجموعُ الفترة المصفّاة كلِّها (لا الصفحة)
+  /// في `extraMeta['expenses_total']`، والمعكوسُ خارجه. §٢١.
+  Future<Either<Failure, Paginated<TreasuryMovement>>> expenses({
+    required int page,
+    DateTime? from,
+    DateTime? to,
+    int? categoryId,
+    int? accountId,
+  });
+
   /// [notes] الفارغة (`''`) تمسح الملاحظات، والغائبة تتركها — `AccountData::hasNotes`.
   Future<Either<Failure, TreasuryAccount>> saveAccount({
     int? id,
@@ -85,7 +95,8 @@ abstract interface class TreasuryRepository {
   /// المفاتيح الحاضرة وحدها تتغيّر؛ [clearLock] يُرسل `locked_until: null` ليفتح القفل.
   ///
   /// [collectKind] النوعُ الذي يخصّه [collectOn] و[collectIntoId] — «التجميع عند التسوية»؛
-  /// و[clearCollectInto] يرسل هدفاً فارغاً فيعود إلى افتراضي النوع.
+  /// و[clearCollectInto] يرسل هدفاً فارغاً فيعود إلى افتراضي النوع. و[settleIntoSettler]
+  /// «التسوية إلى حساب المسوّي» (§٢٢).
   Future<Either<Failure, TreasurySettings>> saveSettings({
     bool? ownAccountFirst,
     bool? blockOverdraft,
@@ -97,6 +108,7 @@ abstract interface class TreasuryRepository {
     bool? collectOn,
     int? collectIntoId,
     bool clearCollectInto = false,
+    bool? settleIntoSettler,
   });
 
   /// أين تُسوّى العهدة؛ [targetId] فارغٌ يعيدها إلى القاعدة المبنيّة.

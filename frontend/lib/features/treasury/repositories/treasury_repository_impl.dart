@@ -49,6 +49,33 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
   }
 
   @override
+  Future<Either<Failure, Paginated<TreasuryMovement>>> expenses({
+    required int page,
+    DateTime? from,
+    DateTime? to,
+    int? categoryId,
+    int? accountId,
+  }) {
+    return safePaginatedRequest<TreasuryMovement>(
+      () => _dio.get(
+        TreasuryEndpoints.expenses,
+        queryParameters: {
+          'page': page,
+          if (from != null) 'from': _day(from),
+          if (to != null) 'to': _day(to),
+          'category_id': ?categoryId,
+          'account_id': ?accountId,
+        },
+      ),
+      parseItem: (json) => TreasuryMovement.fromJson(json),
+    );
+  }
+
+  static String _day(DateTime at) =>
+      '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-'
+      '${at.day.toString().padLeft(2, '0')}';
+
+  @override
   Future<Either<Failure, TreasuryAccount>> saveAccount({
     int? id,
     required String name,
@@ -186,12 +213,14 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     bool? collectOn,
     int? collectIntoId,
     bool clearCollectInto = false,
+    bool? settleIntoSettler,
   }) {
     return safeRequest<TreasurySettings>(
       () => _dio.put(
         TreasuryEndpoints.settings,
         data: <String, dynamic>{
           'own_account_first': ?ownAccountFirst,
+          'settle_into_settler': ?settleIntoSettler,
           'block_overdraft': ?blockOverdraft,
           'withdrawal_needs_reason': ?withdrawalNeedsReason,
           'ask_carrier_fee': ?askCarrierFee,
