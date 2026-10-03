@@ -130,6 +130,28 @@ final class AccountResolver
     }
 
     /**
+     * «التسوية إلى حساب المسوّي» (§٢٢) — the active accounts of this kind in the settler's name,
+     * by name. One is where the kind's money goes; two or more, the settle screen asks which.
+     * Money kinds only: a driver's custody is what settling empties, never where it lands.
+     *
+     * @return Collection<int, TreasuryAccount>
+     */
+    public function settlersAccounts(?int $actorId, AccountKind $kind): Collection
+    {
+        if ($actorId === null || ! in_array($kind, [AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet], true)) {
+            return new Collection;
+        }
+
+        return TreasuryAccount::query()
+            ->active()
+            ->where('holder_user_id', $actorId)
+            ->where('kind', $kind->value)
+            ->whereNull('system_code')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
      * An account code depends on — the Nawris custody.
      *
      * @throws NoDefaultAccount

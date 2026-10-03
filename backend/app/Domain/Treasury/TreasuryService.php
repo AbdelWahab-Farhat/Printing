@@ -35,9 +35,12 @@ use App\Domain\Treasury\Queries\AccountBalances;
 use App\Domain\Treasury\Queries\AccountLedger;
 use App\Domain\Treasury\Queries\AccountTotals;
 use App\Domain\Treasury\Queries\CustodyForOrder;
+use App\Domain\Treasury\Queries\ExpenseLedger;
+use App\Domain\Treasury\Queries\OrderMoneyByAccount;
 use App\Domain\Treasury\Support\AccountResolver;
 use App\Domain\Treasury\Support\BalanceVisibility;
 use App\Domain\Treasury\Support\CheckpointFloor;
+use App\Domain\Treasury\Support\Money;
 use App\Support\RequestMemo;
 use DateTimeInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -61,6 +64,7 @@ final class TreasuryService
         private readonly AccountBalances $balances,
         private readonly AccountTotals $totals,
         private readonly AccountLedger $ledger,
+        private readonly ExpenseLedger $expenses,
         private readonly PostMovement $postMovement,
         private readonly ReverseMovement $reverseMovement,
         private readonly RecordOperation $recordOperation,
@@ -71,6 +75,7 @@ final class TreasuryService
         private readonly SettleCustody $settleCustody,
         private readonly CollectOrderMoney $collectOrderMoney,
         private readonly CustodyForOrder $custody,
+        private readonly OrderMoneyByAccount $orderMoney,
         private readonly SyncDebt $syncDebt,
     ) {}
 
@@ -143,6 +148,20 @@ final class TreasuryService
     public function ledger(TreasuryAccount $account, array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->ledger->page((int) $account->getKey(), $filters, $perPage);
+    }
+
+    /**
+     * «المصاريف» — every account's expenses on one page, and what they add up to (§٢١).
+     *
+     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int}  $filters
+     * @return array{page: LengthAwarePaginator<int, TreasuryMovement>, total: string}
+     */
+    public function expenses(array $filters, int $perPage): array
+    {
+        return [
+            'page' => $this->expenses->page($filters, $perPage),
+            'total' => $this->expenses->total($filters),
+        ];
     }
 
     public function createAccount(AccountData $data, ?User $actor): TreasuryAccount
@@ -468,6 +487,8 @@ final class TreasuryService
      *                         — neither the collection nor where a custody «تُسوّى إلى»
      * @param  string  $accountField  where a refused destination is filed — `fields.…` on the
      *                                status screen
+     * @param  array<string, int>  $settlerChoices  kind => the settler's account picked for it,
+     *                                              where they hold several (§٢٢)
      */
     public function settleCustody(
         int $orderId,
@@ -479,6 +500,7 @@ final class TreasuryService
         bool $collect = true,
         string $accountField = 'settlement_account_id',
         string $feeField = 'settlement_fee',
+        array $settlerChoices = [],
     ): ?TreasuryOperation {
         // A past date only for the import of old orders, which were settled on their own day.
         $occurredAt ??= now();
@@ -493,13 +515,102 @@ final class TreasuryService
             accountField: $accountField,
             feeField: $feeField,
             applySettings: $collect,
+            choices: $settlerChoices,
         );
 
         if ($collect) {
-            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId);
+            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId, $settlerChoices);
         }
 
         return $settlement;
+    }
+
+    /**
+     * What «تم التسوية» will do with this order's money under «التسوية إلى حساب المسوّي» (§٢٢),
+     * kind by kind — for the settle screen to say before it happens, and to ask which account
+     * where the settler holds several. Null when the switch is off or nobody is settling.
+     *
+     * Each kind lists what of it the order holds and where — the order's money in every account
+     * of the kind, «لا يُجمع» ones included, and the custody under the kind it would land in —
+     * the settler's accounts of the kind, and for a kind they hold none of, the collecting account
+     * it falls to (null: it stays where it is).
+     *
+     * Plain arrays, for the status screen in Order to print without knowing a treasury model.
+     *
+     * @return ?list<array{kind: string, kind_label: string, amount: string, sources: list<array{name: string, amount: string}>, accounts: list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>, fallback: ?string}>
+     */
+    public function settlerPlan(int $orderId, ?int $actorId): ?array
+    {
+        if ($actorId === null || ! TreasurySetting::current()->settle_into_settler) {
+            return null;
+        }
+
+        $sourcesByKind = [];
+
+        foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
+            $held = $this->orderMoney->of($orderId, $kind, [], true);
+            $names = TreasuryAccount::query()->whereIn('id', array_keys($held))->pluck('name', 'id');
+
+            foreach ($held as $accountId => $amount) {
+                $sourcesByKind[$kind->value][] = ['id' => $accountId, 'name' => (string) $names[$accountId], 'amount' => $amount];
+            }
+        }
+
+        $landing = $this->settleCustody->landingFor($orderId, $actorId);
+
+        if ($landing !== null) {
+            foreach ($this->custodyOf($orderId) as $row) {
+                $sourcesByKind[$landing->kind->value][] = ['id' => $row['account_id'], 'name' => $row['name'], 'amount' => $row['amount']];
+            }
+        }
+
+        $plan = [];
+
+        foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
+            $accounts = $this->resolver->settlersAccounts($actorId, $kind)->values()->all();
+            $own = count($accounts) === 1 ? (int) $accounts[0]->getKey() : null;
+
+            // What already sits in the settler's one account of the kind goes nowhere.
+            $sources = array_values(array_filter(
+                $sourcesByKind[$kind->value] ?? [],
+                fn (array $row) => $row['id'] !== $own,
+            ));
+
+            if ($sources === []) {
+                continue;
+            }
+
+            $plan[] = [
+                'kind' => $kind->value,
+                'kind_label' => $kind->label(),
+                'amount' => Money::sum('0', ...array_column($sources, 'amount')),
+                'sources' => array_map(fn (array $row) => ['name' => $row['name'], 'amount' => $row['amount']], $sources),
+                'accounts' => array_map(self::pickerRow(...), $accounts),
+                // A kind with no account of theirs is collected, if that is on — or stays.
+                'fallback' => $accounts === [] ? $this->collectOrderMoney->targetFor($kind)?->name : null,
+            ];
+        }
+
+        return $plan;
+    }
+
+    /**
+     * One row of a picker on the status screen.
+     *
+     * @return array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}
+     */
+    public static function pickerRow(TreasuryAccount $account): array
+    {
+        return [
+            'value' => (string) $account->getKey(),
+            'label' => (string) $account->name,
+            'kind' => $account->kind->value,
+            'methods' => array_values(array_filter(
+                ['cash', 'bank_transfer', 'bank_card', 'libyana'],
+                fn (string $method) => in_array($account->kind, AccountKind::forMethod($method), true),
+            )),
+            'is_default' => (bool) $account->is_default,
+        ];
     }
 
     /** Whether any account has its opening count yet — the import of old payments refuses after. */
@@ -585,16 +696,7 @@ final class TreasuryService
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get()
-            ->map(fn (TreasuryAccount $account) => [
-                'value' => (string) $account->getKey(),
-                'label' => (string) $account->name,
-                'kind' => $account->kind->value,
-                'methods' => array_values(array_filter(
-                    ['cash', 'bank_transfer', 'bank_card', 'libyana'],
-                    fn (string $method) => in_array($account->kind, AccountKind::forMethod($method), true),
-                )),
-                'is_default' => (bool) $account->is_default,
-            ])
+            ->map(fn (TreasuryAccount $account) => self::pickerRow($account))
             ->values()
             ->all();
     }

@@ -46,6 +46,9 @@ final class SettleCustody
         private readonly CollectOrderMoney $collect,
     ) {}
 
+    /**
+     * @param  array<string, int>  $choices  kind => the settler's account picked for it (§٢٢)
+     */
     public function __invoke(
         int $orderId,
         ?int $destinationId,
@@ -56,6 +59,7 @@ final class SettleCustody
         string $accountField = 'settlement_account_id',
         string $feeField = 'settlement_fee',
         bool $applySettings = true,
+        array $choices = [],
     ): ?TreasuryOperation {
         // قبل أي قراءة: قاعدةُ الطلب (min:0) تحمي الشاشة، لا نداءً من داخل الخادم. رسومٌ سالبة
         // كانت ستُخرج من العهدة أكثر مما فيها وتُدخل الحسابَ مالاً لم يوجد.
@@ -86,7 +90,7 @@ final class SettleCustody
         }
 
         $custodyAccounts = TreasuryAccount::query()->whereIn('id', array_keys($held))->get()->keyBy('id');
-        $destination = $this->destination($destinationId, $actorId, $custodyAccounts, $accountField, $applySettings);
+        $destination = $this->destination($destinationId, $actorId, $custodyAccounts, $accountField, $applySettings, $choices);
         $feeCategory = Money::isPositive($fee)
             ? ExpenseCategory::query()->where('code', ExpenseCategory::CARRIER_FEE)->first()
             : null;
@@ -154,15 +158,15 @@ final class SettleCustody
      * 3. the custody account's own «تُسوّى إلى», set in «إعدادات المالية»;
      * 4. the bank for Nawris's money (it pays by transfer), the cash box for a driver's.
      *
-     * Anything but a hand-picked account then goes on to its kind's collecting account when
+     * Anything but a hand-picked account then goes on to the settler's own account of its kind
+     * when «التسوية إلى حساب المسوّي» is on (§٢٢), or else to its kind's collecting account when
      * «التجميع عند التسوية» is on for it (§١٨) — straight there, rather than landing in Ali's bank
      * only to be collected out of it a moment later.
      *
      * @param  Collection<int, TreasuryAccount>  $custodyAccounts
-     */
-    /**
      * @param  bool  $applySettings  false لاستيراد الطلبيات القديمة: «تُسوّى إلى» والتجميعُ
      *                               مفاتيحُ اليوم، والمالُ القديم سُجِّل في الافتراضيات (§١٧)
+     * @param  array<string, int>  $choices  the settler's account picked per kind (§٢٢)
      */
     private function destination(
         ?int $chosenId,
@@ -170,13 +174,8 @@ final class SettleCustody
         Collection $custodyAccounts,
         string $field,
         bool $applySettings,
+        array $choices = [],
     ): TreasuryAccount {
-        $redirect = fn (TreasuryAccount $account): TreasuryAccount => $applySettings
-            ? $this->collect->redirect($account)
-            : $account;
-
-        $fromNawris = $custodyAccounts->contains(fn (TreasuryAccount $a) => $a->system_code === TreasuryAccount::NAWRIS);
-
         if ($chosenId !== null) {
             $account = TreasuryAccount::query()->findOrFail($chosenId);
 
@@ -191,6 +190,36 @@ final class SettleCustody
             return $account;
         }
 
+        $landing = $this->automatic($actorId, $custodyAccounts, $applySettings);
+
+        return $applySettings ? $this->collect->redirect($landing, $actorId, $choices) : $landing;
+    }
+
+    /**
+     * Where this order's custody money would land if nobody picked an account, before the
+     * settler's account or collection takes it on — what the settle screen groups it under (§٢٢).
+     * Null when nothing is in custody.
+     */
+    public function landingFor(int $orderId, ?int $actorId): ?TreasuryAccount
+    {
+        $held = $this->custody->of($orderId);
+
+        if ($held === []) {
+            return null;
+        }
+
+        return $this->automatic($actorId, TreasuryAccount::query()->whereIn('id', array_keys($held))->get(), true);
+    }
+
+    /**
+     * Rules 2–4 of {@see destination()}.
+     *
+     * @param  Collection<int, TreasuryAccount>  $custodyAccounts
+     */
+    private function automatic(?int $actorId, Collection $custodyAccounts, bool $applySettings): TreasuryAccount
+    {
+        $fromNawris = $custodyAccounts->contains(fn (TreasuryAccount $a) => $a->system_code === TreasuryAccount::NAWRIS);
+
         if ($actorId !== null && TreasurySetting::current()->own_account_first) {
             $held = TreasuryAccount::query()
                 ->active()
@@ -200,7 +229,7 @@ final class SettleCustody
                 ->get();
 
             if ($held->count() === 1) {
-                return $redirect($held->first());
+                return $held->first();
             }
         }
 
@@ -212,10 +241,10 @@ final class SettleCustody
                 : TreasuryAccount::query()->find($custody->settles_into_account_id);
 
             if ($target !== null && $target->is_active && $target->kind->spendable()) {
-                return $redirect($target);
+                return $target;
             }
         }
 
-        return $redirect($this->resolver->defaultOf($fromNawris ? AccountKind::Bank : AccountKind::Cash));
+        return $this->resolver->defaultOf($fromNawris ? AccountKind::Bank : AccountKind::Cash);
     }
 }

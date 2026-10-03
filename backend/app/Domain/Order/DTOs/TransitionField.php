@@ -309,7 +309,11 @@ final class TransitionField
     }
 
     /**
-     * Which account the money goes into — never required; empty lets the treasury decide.
+     * Which account the money goes into — empty lets the treasury decide.
+     *
+     * **Required only where there is nothing to decide by:** the settler holds several accounts of
+     * a kind and «التسوية إلى حساب المسوّي» needs one of them (§٢٢). Then the answer must be one of
+     * [$accounts] — their own — and the app draws no «تلقائي».
      *
      * @param  list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>  $accounts
      */
@@ -320,12 +324,13 @@ final class TransitionField
         ?string $hint = null,
         ?string $value = null,
         ?string $valueLabel = null,
+        bool $required = false,
     ): self {
         return new self(
             key: $key,
             type: TransitionFieldType::TreasuryAccount,
             label: $label,
-            required: false,
+            required: $required,
             hint: $hint,
             value: $value,
             valueLabel: $valueLabel,
@@ -479,11 +484,13 @@ final class TransitionField
             // Whether the account fits the method is the treasury's rule, and it answers in its
             // own words under this same field; here only that it exists.
             TransitionFieldType::TreasuryAccount => [
-                "fields.{$this->key}" => [
+                "fields.{$this->key}" => array_values(array_filter([
                     $presence,
                     'integer',
                     Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
-                ],
+                    // A required pick is one of the accounts offered — the settler's own.
+                    $this->required ? Rule::in(array_column($this->options, 'value')) : null,
+                ])),
             ],
         };
     }
@@ -537,7 +544,9 @@ final class TransitionField
                 "fields.{$this->key}.exists" => 'المخزن المختار غير موجود',
             ],
             TransitionFieldType::TreasuryAccount => [
+                "fields.{$this->key}.required" => "اختر {$this->label}",
                 "fields.{$this->key}.exists" => 'الحساب المختار غير موجود',
+                "fields.{$this->key}.in" => 'الحساب المختار ليس من حساباتك',
             ],
         };
     }

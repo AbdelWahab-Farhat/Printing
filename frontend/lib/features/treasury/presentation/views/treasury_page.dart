@@ -14,7 +14,9 @@ import 'package:dayaa/core/widgets/app_tab_bar.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_cubit.dart';
+import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_expenses_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_expenses_tab.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
 import 'package:flutter/material.dart';
@@ -32,14 +34,27 @@ class TreasuryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => TreasuryCubit(
-        getAccounts: sl(),
-        getOwnership: sl(),
-        getInventoryValue: sl(),
-        recordOperation: sl(),
-        saveAccount: sl(),
-      )..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => TreasuryCubit(
+            getAccounts: sl(),
+            getOwnership: sl(),
+            getInventoryValue: sl(),
+            recordOperation: sl(),
+            saveAccount: sl(),
+          )..load(),
+        ),
+        // Lazy: created — and read — the first time its tab is opened, which only somebody
+        // holding `treasury.view` ever sees.
+        BlocProvider(
+          create: (_) => TreasuryExpensesCubit(
+            getExpenses: sl(),
+            getCategories: sl(),
+            reverseOperation: sl(),
+          )..load(),
+        ),
+      ],
       child: const _TreasuryView(),
     );
   }
@@ -176,6 +191,13 @@ class _Loaded extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      // «المصاريف» — every account's expenses in one list (§٢١). It reads every account, so
+      // only for somebody who sees them all.
+      if (accounts.canViewAll)
+        (
+          'المصاريف',
+          TreasuryExpensesTab(accounts: accounts.accounts, onMoneyMoved: cubit.load),
         ),
     ];
 
@@ -352,7 +374,37 @@ class _Actions extends StatelessWidget {
               context: context,
               kind: OperationKind.expense,
               accounts: accounts,
-              onSubmit: cubit.record,
+              onSubmit:
+                  ({
+                    required kind,
+                    amount,
+                    fromAccountId,
+                    toAccountId,
+                    categoryId,
+                    employeeId,
+                    countedBalance,
+                    notes,
+                    clientToken,
+                  }) async {
+                    final failure = await cubit.record(
+                      kind: kind,
+                      amount: amount,
+                      fromAccountId: fromAccountId,
+                      toAccountId: toAccountId,
+                      categoryId: categoryId,
+                      employeeId: employeeId,
+                      countedBalance: countedBalance,
+                      notes: notes,
+                      clientToken: clientToken,
+                    );
+
+                    // The new expense belongs in «المصاريف», and changes its total.
+                    if (failure == null && context.mounted) {
+                      unawaited(context.read<TreasuryExpensesCubit>().refresh());
+                    }
+
+                    return failure;
+                  },
             ),
           ),
         ),

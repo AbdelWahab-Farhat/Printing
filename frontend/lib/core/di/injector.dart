@@ -704,6 +704,7 @@ abstract final class Injector {
       ..registerLazySingleton<GetTreasuryAccounts>(() => GetTreasuryAccounts(sl<TreasuryRepository>()))
       ..registerLazySingleton<GetTreasuryAccount>(() => GetTreasuryAccount(sl<TreasuryRepository>()))
       ..registerLazySingleton<GetAccountMovements>(() => GetAccountMovements(sl<TreasuryRepository>()))
+      ..registerLazySingleton<GetTreasuryExpenses>(() => GetTreasuryExpenses(sl<TreasuryRepository>()))
       ..registerLazySingleton<SaveTreasuryAccount>(() => SaveTreasuryAccount(sl<TreasuryRepository>()))
       ..registerLazySingleton<GetAccountOptions>(() => GetAccountOptions(sl<TreasuryRepository>()))
       ..registerLazySingleton<RecordTreasuryOperation>(

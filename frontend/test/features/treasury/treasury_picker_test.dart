@@ -222,4 +222,32 @@ void main() {
     // Assert
     expect(find.text('الحساب معطَّل'), findsOneWidget);
   });
+
+  testWidgets('a required account box — the settler\'s two banks — offers no «تلقائي» (§٢٢)', (
+    tester,
+  ) async {
+    // Arrange
+    const field = TransitionField(
+      key: 'settler_bank_account_id',
+      type: TransitionFieldType.treasuryAccount,
+      label: 'حسابك (مصرف)',
+      isRequired: true,
+      options: [
+        TransitionFieldOption(value: '5', label: 'مصرف علي الأول'),
+        TransitionFieldOption(value: '6', label: 'مصرف علي الثاني'),
+      ],
+    );
+    final input = TransitionFieldInput(field: field, value: null, customerId: 1, onChanged: (_) {});
+
+    // Act
+    await tester.pumpWidget(host(input));
+    await tester.pump();
+    await tester.tap(find.text('حسابك (مصرف)'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('تلقائي'), findsNothing);
+    expect(find.text('حسابك (مصرف) (اختياري)'), findsNothing);
+    expect(find.text('مصرف علي الثاني'), findsWidgets);
+  });
 }

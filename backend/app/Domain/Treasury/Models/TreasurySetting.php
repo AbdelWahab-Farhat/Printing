@@ -27,10 +27,12 @@ use Illuminate\Support\Carbon;
  * @property ?int $collect_bank_into_id
  * @property bool $collect_wallet
  * @property ?int $collect_wallet_into_id
+ * @property bool $settle_into_settler
  */
 #[Fillable([
     'own_account_first', 'block_overdraft', 'withdrawal_needs_reason', 'ask_carrier_fee', 'locked_until',
     'collect_cash', 'collect_cash_into_id', 'collect_bank', 'collect_bank_into_id', 'collect_wallet', 'collect_wallet_into_id',
+    'settle_into_settler',
 ])]
 class TreasurySetting extends Model implements HasAuditTrail
 {
@@ -52,6 +54,7 @@ class TreasurySetting extends Model implements HasAuditTrail
             'collect_cash' => 'boolean',
             'collect_bank' => 'boolean',
             'collect_wallet' => 'boolean',
+            'settle_into_settler' => 'boolean',
         ];
     }
 
