@@ -20,12 +20,19 @@ class TreasuryMovementResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $balanceAfter = $this->resource->getAttribute('balance_after');
+        // Only an account's own ledger selects it; «المصاريف» spans accounts and has no balance.
+        $balanceAfter = $this->resource->getAttributes()['balance_after'] ?? null;
         $operation = $this->relationLoaded('operation') ? $this->operation : null;
 
         return [
             'id' => $this->id,
             'account_id' => $this->account_id,
+            // «المصاريف» reads every account at once, so each line names its own.
+            'account' => $this->whenLoaded('account', fn (): ?array => $this->account === null ? null : [
+                'id' => $this->account->id,
+                'name' => $this->account->name,
+                'kind' => $this->account->kind->value,
+            ]),
 
             'direction' => $this->direction->value,
             'kind' => $this->kind->value,

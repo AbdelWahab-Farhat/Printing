@@ -745,6 +745,7 @@ final class AuditAttributeLabels
             'collect_bank_into_id' => 'تُجمع المصارف في',
             'collect_wallet' => 'تجميع المحافظ عند التسوية',
             'collect_wallet_into_id' => 'تُجمع المحافظ في',
+            'settle_into_settler' => 'التسوية إلى حساب المسوّي',
             'updated_by' => 'عدّلها',
         ],
         'treasury_account' => [

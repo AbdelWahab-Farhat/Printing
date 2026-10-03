@@ -237,8 +237,17 @@ class _Loaded extends StatelessWidget {
 
           const _Heading('التجميع عند التسوية'),
           const _Hint(
-            'عند «تم التسوية» ينتقل مال الطلبية من «مصرف علي» أو كاش الفرع إلى حساب التجميع '
-            'لنوعه — ما بقي منه في الحساب فقط، وما اختير يدوياً على شاشة التسوية يبقى مكانه',
+            'عند «تم التسوية» ينتقل مال الطلبية من الحسابات المختارة  إلى حساب التجميع لنوعه',
+          ),
+          // §٢٢ — before collection, so it sits above the per-kind switches it outranks.
+          _Switch(
+            key: const ValueKey('settle-into-settler'),
+            title: 'التسوية إلى حساب المسوّي',
+            subtitle:
+            'عند «تم التسوية» ينتقل مال كل نوع إلى حساب من يسوّي من النوع نفسه'
+             ' اي نوعٌ ليس له فيه حساب يتبع التجميع، أو يبقى مكانه.',
+            value: settings.settleIntoSettler,
+            onChanged: (v) => _run(context, () => cubit.saveSettings(settleIntoSettler: v)),
           ),
           for (final (label, kind) in const [
             ('النقد', AccountKind.cash),
@@ -300,6 +309,7 @@ class _Switch extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    super.key,
   });
 
   final String title;
@@ -404,7 +414,6 @@ class _CollectionTile extends StatelessWidget {
               contentPadding: EdgeInsetsDirectional.only(start: 16.w),
               controlAffinity: ListTileControlAffinity.leading,
               title: Text(account.name),
-              subtitle: Text(account.isCollected ? 'يُجمع' : 'يحتفظ بماله'),
               value: account.isCollected,
               onChanged: (v) => _run(context, () => cubit.setCollected(account, v ?? true)),
             ),

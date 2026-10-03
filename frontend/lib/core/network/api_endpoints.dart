@@ -56,6 +56,9 @@ abstract final class TreasuryEndpoints {
   static String account(int id) => '/treasury/accounts/$id';
   static String movements(int id) => '/treasury/accounts/$id/movements';
 
+  /// «المصاريف» — مصاريف كل الحسابات في صفحة واحدة. §٢١.
+  static const String expenses = '/treasury/expenses';
+
   /// الحسابات التي تقبلها طريقة الدفع، والذي ستختاره الخزينة لهذا الشخص.
   static const String accountOptions = '/treasury/account-options';
 

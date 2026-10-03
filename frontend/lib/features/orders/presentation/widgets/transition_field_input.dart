@@ -148,13 +148,17 @@ class _Account extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Required only when there is nothing to decide by — «حسابك (مصرف)» for a settler holding
+    // two banks (TREASURY-DESIGN §٢٢) — so no «تلقائي» to fall back on.
+    final required = field.isRequired;
+
     return AppDropdown<TransitionFieldOption>(
       value: field.options.where((option) => option.value == chosen).firstOrNull,
       items: field.options,
       labelOf: (option) => option.label,
-      label: '${field.label} (اختياري)',
+      label: required ? field.label : '${field.label} (اختياري)',
       prefixIcon: AppIcons.treasury,
-      placeholder: 'تلقائي',
+      placeholder: required ? null : 'تلقائي',
       helperText: field.hint,
       errorText: errorText,
       onChanged: (option) => onChanged(option?.value),

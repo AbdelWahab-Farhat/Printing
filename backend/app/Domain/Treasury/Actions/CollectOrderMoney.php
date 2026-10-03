@@ -34,6 +34,10 @@ use DateTimeInterface;
  *
  * Never refused: the settlement is a fact, and a switched-off or removed target falls back to the
  * kind's default.
+ *
+ * **«التسوية إلى حساب المسوّي» comes first** when it is on (§٢٢): a kind the settler holds an
+ * account of goes there instead — every account's share of it, «لا يُجمع» ones included — and only
+ * a kind they hold none of falls to collection, or stays put.
  */
 final class CollectOrderMoney
 {
@@ -49,6 +53,8 @@ final class CollectOrderMoney
     /**
      * @param  ?int  $keepAccountId  the account picked by hand on the settle screen — a person
      *                               said the money belongs there, and that choice wins
+     * @param  array<string, int>  $choices  kind => the settler's account picked for it, where
+     *                                       they hold more than one (§٢٢)
      * @return list<TreasuryOperation> one per account that had something to carry
      */
     public function __invoke(
@@ -57,14 +63,21 @@ final class CollectOrderMoney
         DateTimeInterface $occurredAt,
         ?string $orderCode = null,
         ?int $keepAccountId = null,
+        array $choices = [],
     ): array {
         $plans = [];
 
         foreach (self::KINDS as $kind) {
-            $target = $this->targetFor($kind);
+            $settlers = $this->settlersTarget($kind, $actorId, $choices);
+            $target = $settlers ?? $this->targetFor($kind);
 
             if ($target !== null) {
-                $plans[] = [$kind, $target, array_values(array_filter([(int) $target->getKey(), $keepAccountId]))];
+                $plans[] = [
+                    $kind,
+                    $target,
+                    array_values(array_filter([(int) $target->getKey(), $keepAccountId])),
+                    $settlers !== null,
+                ];
             }
         }
 
@@ -73,8 +86,8 @@ final class CollectOrderMoney
         // كلُّ معاملةٍ الأخرى ويُسقط PostgreSQL إحداهما بخطأ. وكلُّ نوعٍ يعيد القراءة بعد هذا.
         $sources = [];
 
-        foreach ($plans as [$kind, , $except]) {
-            array_push($sources, ...array_keys($this->money->of($orderId, $kind, $except)));
+        foreach ($plans as [$kind, , $except, $toSettler]) {
+            array_push($sources, ...array_keys($this->money->of($orderId, $kind, $except, $toSettler)));
         }
 
         if ($sources !== []) {
@@ -86,11 +99,35 @@ final class CollectOrderMoney
 
         $operations = [];
 
-        foreach ($plans as [$kind, $target, $except]) {
-            array_push($operations, ...$this->collect($orderId, $kind, $target, $except, $actorId, $occurredAt, $orderCode));
+        foreach ($plans as [$kind, $target, $except, $toSettler]) {
+            array_push($operations, ...$this->collect($orderId, $kind, $target, $except, $toSettler, $actorId, $occurredAt, $orderCode));
         }
 
         return $operations;
+    }
+
+    /**
+     * The settler's own account for this kind (§٢٢), or null: the switch is off, they hold none
+     * of the kind, or they hold several and named none of them — two accounts would be a guess,
+     * and the screen asks rather than guesses.
+     *
+     * @param  array<string, int>  $choices
+     */
+    public function settlersTarget(AccountKind $kind, ?int $actorId, array $choices = []): ?TreasuryAccount
+    {
+        if (! TreasurySetting::current()->settle_into_settler) {
+            return null;
+        }
+
+        $held = $this->resolver->settlersAccounts($actorId, $kind);
+
+        if ($held->count() === 1) {
+            return $held->first();
+        }
+
+        $chosen = $choices[$kind->value] ?? null;
+
+        return $chosen === null ? null : $held->firstWhere('id', (int) $chosen);
     }
 
     /**
@@ -115,12 +152,20 @@ final class CollectOrderMoney
     }
 
     /**
-     * Where money arriving in `$account` at settlement should go instead — the collecting account
-     * of its kind, unless that is off or the account keeps its own money. The account itself
-     * otherwise.
+     * Where money arriving in `$account` at settlement should go instead — the settler's own
+     * account of its kind (§٢٢), then the collecting account of its kind unless that is off or
+     * the account keeps its own money. The account itself otherwise.
+     *
+     * @param  array<string, int>  $choices
      */
-    public function redirect(TreasuryAccount $account): TreasuryAccount
+    public function redirect(TreasuryAccount $account, ?int $actorId = null, array $choices = []): TreasuryAccount
     {
+        $settlers = $this->settlersTarget($account->kind, $actorId, $choices);
+
+        if ($settlers !== null) {
+            return $settlers;
+        }
+
         if (! $account->is_collected) {
             return $account;
         }
@@ -137,11 +182,12 @@ final class CollectOrderMoney
         AccountKind $kind,
         TreasuryAccount $target,
         array $except,
+        bool $toSettler,
         ?int $actorId,
         DateTimeInterface $occurredAt,
         ?string $orderCode,
     ): array {
-        $held = $this->money->of($orderId, $kind, $except);
+        $held = $this->money->of($orderId, $kind, $except, $toSettler);
 
         if ($held === []) {
             return [];
@@ -149,7 +195,7 @@ final class CollectOrderMoney
 
         // Lock, then read again — two settlements racing would otherwise both carry the money.
         TreasuryAccount::query()->whereIn('id', array_keys($held))->orderBy('id')->lockForUpdate()->get();
-        $held = $this->money->of($orderId, $kind, $except);
+        $held = $this->money->of($orderId, $kind, $except, $toSettler);
         $balances = $this->balances->forAccounts(array_keys($held));
 
         $operations = [];
@@ -159,7 +205,7 @@ final class CollectOrderMoney
             $amount = bccomp($amount, $there, Money::SCALE) > 0 ? $there : $amount;
 
             if (Money::isPositive($amount)) {
-                $operations[] = $this->carry($orderId, $accountId, $target, $amount, $actorId, $occurredAt, $orderCode);
+                $operations[] = $this->carry($orderId, $accountId, $target, $amount, $toSettler, $actorId, $occurredAt, $orderCode);
             }
         }
 
@@ -175,11 +221,16 @@ final class CollectOrderMoney
         int $fromId,
         TreasuryAccount $target,
         string $amount,
+        bool $toSettler,
         ?int $actorId,
         DateTimeInterface $occurredAt,
         ?string $orderCode,
     ): TreasuryOperation {
         $operation = new TreasuryOperation;
+
+        $notes = $toSettler
+            ? ($orderCode === null ? 'إلى حساب المسوّي' : "الطلبية {$orderCode} إلى حساب المسوّي")
+            : ($orderCode === null ? 'تجميع عند التسوية' : "تجميع الطلبية {$orderCode}");
 
         $operation->forceFill([
             'type' => OperationType::Settlement,
@@ -188,7 +239,7 @@ final class CollectOrderMoney
             'to_account_id' => $target->getKey(),
             'order_id' => $orderId,
             'occurred_at' => $occurredAt,
-            'notes' => $orderCode === null ? 'تجميع عند التسوية' : "تجميع الطلبية {$orderCode}",
+            'notes' => $notes,
             'recorded_by' => $actorId,
         ])->save();
 

@@ -42,6 +42,26 @@ class GetAccountMovements {
   );
 }
 
+class GetTreasuryExpenses {
+  const GetTreasuryExpenses(this._repository);
+
+  final TreasuryRepository _repository;
+
+  Future<Either<Failure, Paginated<TreasuryMovement>>> call({
+    required int page,
+    DateTime? from,
+    DateTime? to,
+    int? categoryId,
+    int? accountId,
+  }) => _repository.expenses(
+    page: page,
+    from: from,
+    to: to,
+    categoryId: categoryId,
+    accountId: accountId,
+  );
+}
+
 class SaveTreasuryAccount {
   const SaveTreasuryAccount(this._repository);
 
@@ -172,6 +192,7 @@ class SaveTreasurySettings {
     bool? collectOn,
     int? collectIntoId,
     bool clearCollectInto = false,
+    bool? settleIntoSettler,
   }) => _repository.saveSettings(
     ownAccountFirst: ownAccountFirst,
     blockOverdraft: blockOverdraft,
@@ -183,6 +204,7 @@ class SaveTreasurySettings {
     collectOn: collectOn,
     collectIntoId: collectIntoId,
     clearCollectInto: clearCollectInto,
+    settleIntoSettler: settleIntoSettler,
   );
 }
 

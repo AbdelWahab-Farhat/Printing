@@ -245,6 +245,7 @@ class TreasurySettings {
     required this.askCarrierFee,
     this.lockedUntil,
     this.collections = const {},
+    this.settleIntoSettler = false,
     this.pickupOffices = const [],
   });
 
@@ -264,6 +265,10 @@ class TreasurySettings {
   /// «التجميع عند التسوية» للنقد والمصارف وليبيانا. النوع الغائب منها مطفأ.
   final Map<AccountKind, CollectionSetting> collections;
 
+  /// «التسوية إلى حساب المسوّي» — كل نوعٍ من مال الطلبية إلى حساب من يسوّي من النوع نفسه، قبل
+  /// التجميع. غائبٌ عند خادمٍ أقدم = مطفأ. §٢٢.
+  final bool settleIntoSettler;
+
   /// «كاش كل مكتب استلام» — كل مكتب، وكاشه إن رُبط.
   final List<PickupOffice> pickupOffices;
 
@@ -278,6 +283,7 @@ class TreasurySettings {
     askCarrierFee: askCarrierFee,
     lockedUntil: lockedUntil,
     collections: collections,
+    settleIntoSettler: settleIntoSettler,
     pickupOffices: offices,
   );
 
@@ -294,6 +300,7 @@ class TreasurySettings {
           intoId: _intOrNull(json['collect_${kind.wire}_into_id']),
         ),
     },
+    settleIntoSettler: json['settle_into_settler'] == true,
     pickupOffices: [
       for (final office in _maps(json['pickup_offices'])) PickupOffice.fromJson(office),
     ],
@@ -373,6 +380,26 @@ enum MovementFilter {
   };
 }
 
+/// الفترة التي يُقصر عليها تبويب «المصاريف». «من – إلى» يحمل تاريخيه في الـCubit.
+enum ExpensePeriod {
+  thisMonth('هذا الشهر'),
+  lastMonth('الشهر الماضي'),
+  all('الكل'),
+  custom('من – إلى');
+
+  const ExpensePeriod(this.label);
+
+  final String label;
+
+  /// أول يومٍ وآخره، أو `null` لـ«الكل». [now] يُمرَّر ليُختبر الشهر بلا ساعة حقيقية؛ و«من – إلى»
+  /// لا يعرف تاريخيه هنا فيجيب `null` — يملؤه الـCubit.
+  ({DateTime from, DateTime to})? rangeAt(DateTime now) => switch (this) {
+    thisMonth => (from: DateTime(now.year, now.month), to: DateTime(now.year, now.month + 1, 0)),
+    lastMonth => (from: DateTime(now.year, now.month - 1), to: DateTime(now.year, now.month, 0)),
+    all || custom => null,
+  };
+}
+
 /// سطرٌ واحد من سجلّ الحساب.
 class TreasuryMovement {
   const TreasuryMovement({
@@ -390,6 +417,7 @@ class TreasuryMovement {
     this.orderId,
     this.operationId,
     this.counterpartName,
+    this.accountName,
     this.categoryName,
     this.employeeName,
     this.recorderName,
@@ -416,6 +444,10 @@ class TreasuryMovement {
 
   /// الطرف الآخر في التحويل والتسوية — «من النورس» / «إلى المصرف».
   final String? counterpartName;
+
+  /// الحساب الذي فيه السطر — يُرسل في «المصاريف» وحدها، فهي تجمع الحسابات كلها. صفحةُ الحساب
+  /// تعرف حسابها فلا يُرسل لها.
+  final String? accountName;
   final String? categoryName;
   final String? employeeName;
 
@@ -449,6 +481,7 @@ class TreasuryMovement {
     orderId: orderId,
     operationId: operationId,
     counterpartName: counterpartName,
+    accountName: accountName,
     categoryName: categoryName,
     employeeName: employeeName,
     recorderName: recorderName,
@@ -466,6 +499,7 @@ class TreasuryMovement {
     orderId: _intOrNull(json['order_id']),
     operationId: _intOrNull(json['operation_id']),
     counterpartName: _stringOrNull(_mapOrNull(json['counterpart_account'])?['name']),
+    accountName: _stringOrNull(_mapOrNull(json['account'])?['name']),
     categoryName: _stringOrNull(_mapOrNull(json['category'])?['name']),
     employeeName: _stringOrNull(_mapOrNull(json['employee'])?['name']),
     recorderName: _stringOrNull(_mapOrNull(json['recorder'])?['name']),

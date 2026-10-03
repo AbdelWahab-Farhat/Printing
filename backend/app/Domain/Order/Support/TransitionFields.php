@@ -49,6 +49,16 @@ final class TransitionFields
     public const SETTLEMENT_FEE = 'settlement_fee';
 
     /**
+     * «التسوية إلى حساب المسوّي» (§٢٢) — kind => the box asking which of the settler's accounts
+     * of that kind, offered only where they hold more than one.
+     */
+    public const SETTLER_ACCOUNTS = [
+        'cash' => 'settler_cash_account_id',
+        'bank' => 'settler_bank_account_id',
+        'wallet' => 'settler_wallet_account_id',
+    ];
+
+    /**
      * What «انتظار العربون» asks for: the figure, and the way it is expected to arrive.
      *
      * **Keyed apart from the three above because they describe a different kind of thing.**
@@ -638,10 +648,11 @@ final class TransitionFields
         }
 
         $treasury = app(TreasuryService::class);
+        $settler = self::settler($order, $actor, $treasury);
         $held = $treasury->custodyOf((int) $order->getKey());
 
         if ($held === []) {
-            return [];
+            return $settler;
         }
 
         $total = Money::sum('0', ...array_column($held, 'amount'));
@@ -651,6 +662,7 @@ final class TransitionFields
         ));
 
         return [
+            ...$settler,
             TransitionField::treasuryAccount(
                 key: self::SETTLEMENT_ACCOUNT,
                 label: 'استُلم المال في',
@@ -669,6 +681,62 @@ final class TransitionFields
                     max: (float) $total,
                 ),
             ] : []),
+        ];
+    }
+
+    /**
+     * «التسوية إلى حساب المسوّي» (§٢٢) on the settle screen: a sentence saying where each kind
+     * of the order's money goes, and a required box for each kind the settler holds several
+     * accounts of. Nothing when the switch is off or the order has no money left to move.
+     *
+     * @return list<TransitionField>
+     */
+    private static function settler(Order $order, ?User $actor, TreasuryService $treasury): array
+    {
+        $plan = $treasury->settlerPlan(
+            (int) $order->getKey(),
+            $actor?->getKey() === null ? null : (int) $actor->getKey(),
+        );
+
+        if ($plan === null || $plan === []) {
+            return [];
+        }
+
+        $lines = [];
+        $boxes = [];
+
+        foreach ($plan as $kind) {
+            $from = implode('، ', array_map(
+                fn (array $row) => "{$row['name']} ".DecimalText::trim($row['amount']),
+                $kind['sources'],
+            ));
+            $what = "{$kind['kind_label']} ".DecimalText::trim($kind['amount'])." ({$from})";
+
+            $lines[] = match (true) {
+                count($kind['accounts']) === 1 => "• {$what} ← «{$kind['accounts'][0]['label']}»",
+                count($kind['accounts']) > 1 => "• {$what} ← حسابك الذي تختاره أدناه",
+                $kind['fallback'] !== null => "• {$what} ← «{$kind['fallback']}» — ليس لك حساب {$kind['kind_label']}",
+                default => "• {$what} — يبقى مكانه، ليس لك حساب {$kind['kind_label']}",
+            };
+
+            if (count($kind['accounts']) > 1) {
+                $boxes[] = TransitionField::treasuryAccount(
+                    key: self::SETTLER_ACCOUNTS[$kind['kind']],
+                    label: "حسابك ({$kind['kind_label']})",
+                    accounts: $kind['accounts'],
+                    hint: "{$kind['kind_label']} هذه الطلبية: ".DecimalText::trim($kind['amount']),
+                    required: true,
+                );
+            }
+        }
+
+        return [
+            TransitionField::notice(
+                key: 'settler_plan',
+                label: 'إلى حسابك عند التسوية',
+                hint: implode("\n", $lines),
+            ),
+            ...$boxes,
         ];
     }
 
