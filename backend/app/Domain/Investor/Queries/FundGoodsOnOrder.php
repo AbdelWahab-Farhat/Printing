@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Investor\Actions\PurchaseFromFund;
 use App\Domain\Investor\Support\Money;
+use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -27,19 +28,28 @@ use Illuminate\Support\Facades\DB;
  * المال، ولا يقرؤه سعرُ الوحدة. والبابُ لإدخاله سطرٌ واحد في {@see FundValuation} — انظر
  * `Docs/BACKLOG.md`.
  *
- * ## ما يُعدّ
+ * ## ما يُعدّ — أمرٌ لم تُسجَّل عليه شحنةٌ بعد، لا غير
  *
- * كلُّ سطرِ أمرِ شراءٍ طالب به مستثمرون (`investor_deal_supplies`)، بما لم يصل منه بعد:
+ * كلُّ سطرِ أمرِ شراءٍ طالب به مستثمرون (`investor_deal_supplies`) في أمرٍ ما زال `new` أو
+ * `arrived`، بما لم يصل منه:
  *
  * ```
  * القيمة = التكلفة الواصلة للسطر × (المطلوب − المستلَم) ÷ المطلوب
  * ```
  *
- * لم يصل شيءٌ فالقيمةُ التكلفةُ الواصلة كلُّها — المبلغُ الذي خرج من الخزينة بعينه. ووصل بعضُه
- * فالواصلُ على الرفّ بسعر الوحدة نفسه (`final_unit_cost`، ما تُفتح به الطبقة عند الاستلام)،
- * والباقي هنا — نقصٌ ما زال المورّدُ مديناً به. فلا يُعدّ كيلوٌ مرّتين، ولا يغيب.
+ * لم يصل شيءٌ فالقيمةُ التكلفةُ الواصلة كلُّها — المبلغُ الذي خرج من الخزينة بعينه.
  *
- * **والأمرُ الملغى لا يُعدّ**: لن يصل منه شيء. وما خرج له من الخزينة لا يعود بالإلغاء وحده —
+ * **والأمرُ المكتمل لا يُعدّ وإن بقي في سطوره نقص** — قرارُ المالك 2026-10-03: «خليها complete
+ * ينحّي أنه في بضاعة لم تصل». {@see ReceivePurchaseOrder} يختم الأمرَ `completed` بأوّل شحنةٍ
+ * مهما كانت ناقصة (قرارُ المالك 2026-09-06)، والمصنعُ لا يرسل الباقي بعدها: «النواقص خلاص تعتبر
+ * خسائر ولن تصل من مصنع». فعدُّه هنا يجعل اللوحةَ تَعِد ببضاعةٍ في الطريق لا طريقَ لها، إلى
+ * الأبد.
+ *
+ * **ولا يُطرح من القيمة مرّةً ثانية.** ثمنُه خرج من الخزينة يومَ الشراء ولم يصر طبقةً على الرفّ،
+ * فقيمةُ الصندوق وسعرُ الوحدة نزلا به يومَها وتحمّلته الوحداتُ القائمة. فسقوطُه من هنا إخفاءُ
+ * وعدٍ كاذب، لا شطبُ خسارةٍ ثانية. وما يُسمّي الخسارةَ على فترتها بندٌ في `Docs/BACKLOG.md`.
+ *
+ * **والأمرُ الملغى لا يُعدّ** كذلك: لن يصل منه شيء. وما خرج له من الخزينة لا يعود بالإلغاء وحده —
  * `CancelPurchaseOrder` لا يعرف الصندوق — وهو سؤالٌ للمالك لا يُحسم هنا بعدِّ ما لن يأتي.
  */
 final class FundGoodsOnOrder
@@ -128,7 +138,7 @@ final class FundGoodsOnOrder
     }
 
     /**
-     * سطورُ أوامر الشراء التي طالب بها مستثمرون وما زال فيها ما لم يصل.
+     * سطورُ أوامر الشراء التي طالب بها مستثمرون، في أمرٍ لم تُسجَّل عليه شحنةٌ بعد.
      *
      * بالمطالبة لا بصفّ الخزينة: المطالبةُ هي ما يختم الطبقةَ باسم الصندوق يوم تصل
      * (`InvestorService::dealForSupply`)، فهي وحدها تقول أيَّ سطرٍ ماله — أمرٌ اشترى الصندوقُ سطراً
@@ -147,7 +157,10 @@ final class FundGoodsOnOrder
             ->whereNull('s.deleted_at')
             ->whereNull('po.deleted_at')
             ->whereNull('poi.deleted_at')
-            ->where('po.status', '<>', PurchaseOrderStatus::Cancelled->value)
+            ->whereIn('po.status', [
+                PurchaseOrderStatus::New->value,
+                PurchaseOrderStatus::Arrived->value,
+            ])
             ->where('poi.quantity_ordered', '>', 0)
             ->whereColumn('poi.quantity_received', '<', 'poi.quantity_ordered');
     }

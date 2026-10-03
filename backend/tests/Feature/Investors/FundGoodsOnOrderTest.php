@@ -220,9 +220,9 @@ class FundGoodsOnOrderTest extends TestCase
             ->assertJsonPath('data.valuation.total', '7500.00');
     }
 
-    public function test_a_short_delivery_leaves_only_what_is_still_owed_on_order(): void
+    public function test_a_short_delivery_ends_the_order_so_nothing_is_left_on_order(): void
     {
-        // Arrange — وصل 300 كغ من 500: ما وصل على الرفّ، وما بقي عند المورّد ما زال مالَ الصندوق.
+        // Arrange — وصل 300 كغ من 500، والـ200 الباقية لن يرسلها المصنع.
         $headers = $this->manager();
         $this->fundHolding('20000.00');
         [$order, $bags] = $this->purchaseOrder();
@@ -231,9 +231,12 @@ class FundGoodsOnOrderTest extends TestCase
         // Act
         $this->receive($headers, $order, $bags, '300.000');
 
-        // Assert
+        // Assert — الشحنةُ تختم الأمرَ `completed`، فلا يبقى وعدٌ ببضاعةٍ قادمة: قرارُ المالك
+        // 2026-10-03. والـ5,000 التي خرجت لها خسارةٌ وقعت يومَ الشراء — نزلت بها قيمةُ الصندوق
+        // وسعرُ الوحدة — لا بضاعةٌ في الطريق تُعرض بجانبها.
+        $this->assertSame(PurchaseOrderStatus::Completed, $order->refresh()->status);
         $this->assertSame('7500.00', app(FundValuation::class)()['stock_on_shelf']);
-        $this->assertSame('5000.00', $this->onOrder());
+        $this->assertSame('0.00', $this->onOrder());
     }
 
     public function test_a_full_delivery_leaves_nothing_on_order(): void
@@ -289,27 +292,27 @@ class FundGoodsOnOrderTest extends TestCase
         $this->fundHolding('20000.00');
         [$order, $bags] = $this->purchaseOrder();
         $this->fundBuys($headers, $order, $bags);
-        $this->receive($headers, $order, $bags, '300.000');
 
         // Act
         $response = $this->withHeaders($headers)->getJson('/api/v1/investment/fund/on-order');
 
-        // Assert — والمجموعُ رقمُ اللوحة بعينه.
+        // Assert — والمجموعُ رقمُ اللوحة بعينه. ولا شحنةَ هنا: أوّلُ شحنةٍ تُنهي الأمرَ فتُسقطه
+        // من القائمة كلِّها، فالقائمةُ لا تعرف إلا أمراً ما زال ينتظر لورياً.
         $response->assertOk()
-            ->assertJsonPath('data.total', '5000.00')
+            ->assertJsonPath('data.total', '12500.00')
             ->assertJsonCount(1, 'data.orders')
             ->assertJsonPath('data.orders.0.purchase_order_id', $order->id)
             ->assertJsonPath('data.orders.0.vendor_name', 'مصنع الشرق للأكياس')
             ->assertJsonPath('data.orders.0.order_date', '2026-08-30')
-            ->assertJsonPath('data.orders.0.value', '5000.00')
+            ->assertJsonPath('data.orders.0.value', '12500.00')
             ->assertJsonCount(1, 'data.orders.0.lines')
             ->assertJsonPath('data.orders.0.lines.0.stock_item_id', $bags->id)
             ->assertJsonPath('data.orders.0.lines.0.name', 'كيس 25×35')
             ->assertJsonPath('data.orders.0.lines.0.unit_label', 'كجم')
             ->assertJsonPath('data.orders.0.lines.0.quantity_ordered', '500.000')
-            ->assertJsonPath('data.orders.0.lines.0.quantity_received', '300.000')
-            ->assertJsonPath('data.orders.0.lines.0.quantity_remaining', '200.000')
-            ->assertJsonPath('data.orders.0.lines.0.value', '5000.00');
+            ->assertJsonPath('data.orders.0.lines.0.quantity_received', '0.000')
+            ->assertJsonPath('data.orders.0.lines.0.quantity_remaining', '500.000')
+            ->assertJsonPath('data.orders.0.lines.0.value', '12500.00');
 
         $this->assertSame($this->onOrder(), $response->json('data.total'));
     }
