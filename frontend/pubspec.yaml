@@ -3,7 +3,7 @@ description: "دعاية Dayaa — إدارة مطبعة أكياس: العمل�
 publish_to: "none"
 
 # major.minor.patch+build — the build number is what the stores order releases by.
-version: 1.5.1+4
+version: 1.6.0+5
 
 environment:
   sdk: ^3.12.0
