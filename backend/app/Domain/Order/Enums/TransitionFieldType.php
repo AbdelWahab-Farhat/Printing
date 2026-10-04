@@ -111,4 +111,15 @@ enum TransitionFieldType: string
      * the same answer.
      */
     case TreasuryAccount = 'treasury_account';
+
+    /**
+     * **A question asked at the moment of sending, not a box on the form.** `confirm_when`
+     * names another field and a line — `{key: payment_amount, above: "99.00"}` — and the app,
+     * finding that answer past the line when the button is pressed, asks [label] and sends `true`
+     * if the person agrees. «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟».
+     *
+     * An app that predates the type skips it as unknown and never sends it, so the domain treats
+     * the answer as «لا» and refuses — exactly what it did before the question existed.
+     */
+    case Confirmation = 'confirmation';
 }

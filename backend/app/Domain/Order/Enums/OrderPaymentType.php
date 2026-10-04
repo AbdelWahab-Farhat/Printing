@@ -69,6 +69,17 @@ enum OrderPaymentType: string
      */
     case CarrierSettled = 'carrier_settled';
 
+    /**
+     * «اعتبار الزائد إيراداً» — what the customer paid beyond the order is the shop's now.
+     *
+     * **The mirror of a refund of the excess, with no cash moving.** A customer who handed over
+     * 100 on an order of 99 is owed one dinar — {@see Order::$excess_amount} — until somebody
+     * either hands it back (a {@see Refund}) or decides it stays. This is the second: it takes the
+     * figure off what is owed to the customer and off «علينا» in the treasury, and never touches
+     * `paid_amount`, so the order's sales stay 99. Undone by a {@see Reversal} like any decision.
+     */
+    case ExcessKept = 'excess_kept';
+
     public function label(): string
     {
         return match ($this) {
@@ -77,7 +88,20 @@ enum OrderPaymentType: string
             self::Refund => 'ردّ مبلغ',
             self::WriteOff => 'شطب فرق',
             self::CarrierSettled => 'سُدِّدت لدى الناقل',
+            self::ExcessKept => 'اعتبار الزائد إيراداً',
         };
+    }
+
+    /**
+     * Whether an entry of this type may be undone by a reversal.
+     *
+     * The three credits, each a claim that can simply be wrong, and the decision to keep an
+     * excess, which can be just as wrong. A refund cannot — undoing it is a payment — and a
+     * reversal of a reversal is a maze with no floor.
+     */
+    public function isReversible(): bool
+    {
+        return $this->isCredit() || $this === self::ExcessKept;
     }
 
     /** Whether this entry adds to what the order has been paid. */

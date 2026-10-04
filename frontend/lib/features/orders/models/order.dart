@@ -224,6 +224,11 @@ abstract class Order with _$Order {
     /// integration had nothing settled at one, and zero is what such a server means.
     @JsonKey(name: 'carrier_settled_amount') @Default('0.00') String carrierSettledAmount,
 
+    /// What the customer paid beyond the order — 100 handed over on 99 — and is owed back until
+    /// it is refunded or kept. **Never part of `paidAmount`**, so the sale stays what it cost.
+    /// Defaulted like its neighbours, for a server that predates it.
+    @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
+
     /// What is still owed — the invoice less what was collected **and** what was forgiven.
     /// **Negative on an overpaid order**, so «زائد ٥٠» can be said rather than floored away.
     @JsonKey(name: 'remaining_amount') @Default('0.00') String remainingAmount,

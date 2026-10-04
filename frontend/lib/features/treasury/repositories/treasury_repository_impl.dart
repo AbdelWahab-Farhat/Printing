@@ -55,6 +55,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     DateTime? to,
     int? categoryId,
     int? accountId,
+    String? search,
   }) {
     return safePaginatedRequest<TreasuryMovement>(
       () => _dio.get(
@@ -65,6 +66,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           if (to != null) 'to': _day(to),
           'category_id': ?categoryId,
           'account_id': ?accountId,
+          'search': ?search,
         },
       ),
       parseItem: (json) => TreasuryMovement.fromJson(json),

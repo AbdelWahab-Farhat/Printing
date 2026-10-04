@@ -422,6 +422,7 @@ class TreasuryMovement {
     this.employeeName,
     this.recorderName,
     this.notes,
+    this.paymentReview,
   });
 
   final int id;
@@ -466,6 +467,10 @@ class TreasuryMovement {
   final int? reversesMovementId;
   final String? notes;
 
+  /// «غير مراجَعة / تمت المراجعة» لدفعة الزبون أو ردّه الذي حرّك هذا السطر. يرسله سجلّ الحساب
+  /// وحده، و`null` على كل سطرٍ لا دفعةَ وراءه تُراجَع.
+  final MovementPaymentReview? paymentReview;
+
   /// السطر نفسه بعد أن عُكس: مشطوب، ولا يُعكس مرةً ثانية.
   TreasuryMovement markedReversed() => TreasuryMovement(
     id: id,
@@ -486,6 +491,7 @@ class TreasuryMovement {
     employeeName: employeeName,
     recorderName: recorderName,
     notes: notes,
+    paymentReview: paymentReview,
   );
 
   factory TreasuryMovement.fromJson(Map<String, dynamic> json) => TreasuryMovement(
@@ -508,6 +514,25 @@ class TreasuryMovement {
     isReversed: json['is_reversed'] == true,
     reversesMovementId: _intOrNull(json['reverses_movement_id']),
     notes: _stringOrNull(json['notes']),
+    paymentReview: switch (_mapOrNull(json['payment_review'])) {
+      final review? => MovementPaymentReview.fromJson(review),
+      null => null,
+    },
+  );
+}
+
+/// أين تقف دفعةُ الزبون التي وراء سطرٍ من سجلّ الحساب في المراجعة.
+class MovementPaymentReview {
+  const MovementPaymentReview({required this.isReviewed, this.reviewerName, this.reviewedAt});
+
+  final bool isReviewed;
+  final String? reviewerName;
+  final DateTime? reviewedAt;
+
+  factory MovementPaymentReview.fromJson(Map<String, dynamic> json) => MovementPaymentReview(
+    isReviewed: json['is_reviewed'] == true,
+    reviewerName: _stringOrNull(_mapOrNull(json['reviewer'])?['name']),
+    reviewedAt: _dateOrNull(json['reviewed_at']),
   );
 }
 

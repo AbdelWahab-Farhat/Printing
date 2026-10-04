@@ -43,6 +43,7 @@ final class PaymentStatusExpression
         return <<<SQL
             CASE
                 WHEN paid_amount + written_off_amount + carrier_settled_amount > grand_total THEN '{$overpaid}'
+                WHEN paid_amount + written_off_amount + carrier_settled_amount = grand_total AND excess_amount > 0 THEN '{$overpaid}'
                 WHEN paid_amount + written_off_amount + carrier_settled_amount = grand_total AND written_off_amount > 0 THEN '{$writtenOff}'
                 WHEN paid_amount + written_off_amount + carrier_settled_amount = grand_total THEN '{$paid}'
                 WHEN paid_amount + written_off_amount + carrier_settled_amount <= 0 THEN '{$unpaid}'

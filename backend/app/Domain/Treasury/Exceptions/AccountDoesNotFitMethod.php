@@ -54,6 +54,11 @@ final class AccountDoesNotFitMethod extends DomainException
         return new self("«{$account}» حساب مورد — يتحرك من أوامر الشراء ودفعات المورد وحدها", $field);
     }
 
+    public static function customerExcessPayable(string $account, string $field): self
+    {
+        return new self("«{$account}» يتحرك من دفعات الطلبيات وحدها — يُردّ الزائد أو يُعتبر إيراداً من شاشة دفعات الطلبية", $field);
+    }
+
     public static function unknownMethod(string $method): self
     {
         return new self("طريقة الدفع «{$method}» غير معروفة للحسابات");

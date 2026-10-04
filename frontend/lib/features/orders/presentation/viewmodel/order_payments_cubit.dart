@@ -31,12 +31,16 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     required RefundOrderPayment refundPayment,
     required ReverseOrderPayment reversePayment,
     required WriteOffOrderBalance writeOffBalance,
+    required ReviewOrderPayment reviewPayment,
+    required KeepOrderExcess keepExcess,
   }) : _orderId = orderId,
        _getLedger = getLedger,
        _recordPayment = recordPayment,
        _refundPayment = refundPayment,
        _reversePayment = reversePayment,
        _writeOffBalance = writeOffBalance,
+       _reviewPayment = reviewPayment,
+       _keepExcess = keepExcess,
        super(const OrderPaymentsState.loading());
 
   final int _orderId;
@@ -45,6 +49,8 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   final RefundOrderPayment _refundPayment;
   final ReverseOrderPayment _reversePayment;
   final WriteOffOrderBalance _writeOffBalance;
+  final ReviewOrderPayment _reviewPayment;
+  final KeepOrderExcess _keepExcess;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh path, and blanking the
@@ -76,6 +82,7 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     String? receiptPath,
     String? receiptFilename,
     int? treasuryAccountId,
+    bool acceptOverpayment = false,
   }) {
     return _write(
       () => _recordPayment(
@@ -88,9 +95,13 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
         receiptPath: receiptPath,
         receiptFilename: receiptFilename,
         treasuryAccountId: treasuryAccountId,
+        acceptOverpayment: acceptOverpayment,
       ),
     );
   }
+
+  /// «اعتبار الزائد إيراداً» — the excess the order holds is the shop's now.
+  Future<Failure?> keepExcess({String? notes}) => _write(() => _keepExcess(_orderId, notes: notes));
 
   /// Hands money back.
   Future<Failure?> refund({
@@ -129,6 +140,24 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   /// screen is reading the same number.
   Future<Failure?> writeOff({required String amount, required String reason}) =>
       _write(() => _writeOffBalance(_orderId, amount: amount, reason: reason));
+
+  /// «مراجعة الدفعة», or ([reviewed] false) taking it back.
+  ///
+  /// **Re-read like the four writes**, even though the summary cannot move: the server's answer
+  /// for the row — who reviewed it, and whether this person may now take it back — is what the
+  /// row should draw, and one path for every write keeps it that way.
+  Future<Failure?> review(int paymentId, {required bool reviewed}) async {
+    final ledger = state.ledger;
+    if (ledger != null) emit(OrderPaymentsState.loaded(ledger: ledger, isWorking: true));
+
+    final result = await _reviewPayment(_orderId, paymentId, reviewed: reviewed);
+
+    if (isClosed) return null;
+
+    await load();
+
+    return result.fold((failure) => failure, (_) => null);
+  }
 
   /// The shape every write shares: mark the screen busy, run it, re-read, report.
   ///

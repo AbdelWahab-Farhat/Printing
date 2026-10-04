@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Order\KeepOrderExcessRequest;
 use App\Application\Api\V1\Requests\Order\RefundOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\ReverseOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderPaymentRequest;
@@ -75,9 +76,10 @@ class OrderPaymentController extends Controller
     /**
      * Record a payment
      *
-     * Refused with 422 when the amount is larger than what the order still owes — the ordinary
-     * cause is a slipped keystroke at a counter, and the moment to catch it is while the customer
-     * is still standing there.
+     * Refused with 422 when the amount is larger than what the order still owes, **unless
+     * `accept_overpayment` is true** — the person was asked «المبلغ يزيد على المتبقي — تسجيل
+     * الزائد؟» and said yes. Then the whole amount is one entry, and the part beyond the debt is
+     * owed back to the customer (`excess_amount`) rather than counted as paid.
      *
      * Also refused on a cancelled order: there is nothing left to pay for. Refunds stay open on
      * one, which is where a deposit most often has to go back.
@@ -132,7 +134,9 @@ class OrderPaymentController extends Controller
      * `reverse` below. The two subtract the same figure and answer entirely different questions:
      * a refund is a cash event a report should count, and a typo is not.
      *
-     * Bounded by what the order has actually been paid, and allowed in every status.
+     * Bounded by what the order has actually been paid plus any excess it holds, and allowed in
+     * every status. **The excess goes back first**: a refund on an order of 99 paid 100 hands
+     * back the one dinar before it touches what the order was paid.
      */
     public function refund(RefundOrderPaymentRequest $request, Order $order): JsonResponse
     {
@@ -210,6 +214,31 @@ class OrderPaymentController extends Controller
     }
 
     /**
+     * Keep the excess
+     *
+     * «اعتبار الزائد إيراداً» — what the customer paid beyond the order is the shop's now. The
+     * whole excess the order holds, in one entry; handing part of it back is a refund, which takes
+     * from the excess first. No cash moves: «علينا» comes down by the excess and `paid_amount`
+     * stays what it was, so the order's sales are untouched.
+     *
+     * Refused with 422 when the order holds no excess. Undone by `reverse`, which puts the excess
+     * back as owed to the customer.
+     */
+    public function keepExcess(KeepOrderExcessRequest $request, Order $order): JsonResponse
+    {
+        $entry = $this->orders->keepExcess(
+            $order,
+            $request->validated('notes'),
+            $this->actor($request),
+        );
+
+        return $this->created(
+            $this->entry($entry, $order),
+            'اعتُبر الزائد إيراداً',
+        );
+    }
+
+    /**
      * One entry, with the order's money as it stands after it.
      *
      * The summary travels back with every write so a screen never has to re-fetch the order to
@@ -220,7 +249,7 @@ class OrderPaymentController extends Controller
     private function entry(OrderPayment $payment, Order $order): array
     {
         return [
-            'payment' => new OrderPaymentResource($payment->load(['recorder', 'reversal', 'treasuryAccount'])),
+            'payment' => new OrderPaymentResource($payment->load(['recorder', 'reviewer', 'reversal', 'treasuryAccount'])),
             'summary' => $this->summary($order->refresh()),
         ];
     }
@@ -240,6 +269,9 @@ class OrderPaymentController extends Controller
             // than folded into it, because a screen that showed one number could not tell a
             // customer who paid in full from one whose shortfall was forgiven.
             'written_off_amount' => (string) $order->written_off_amount,
+            // What the customer paid beyond the order and is owed back — «زائد للزبون». Beside
+            // the paid total and never inside it, so «المدفوع» stays what the order was paid.
+            'excess_amount' => (string) $order->excess_amount,
             'remaining_amount' => $order->remainingAmount(),
             'payment_status' => $order->paymentStatus()->value,
             'payment_status_label' => $order->paymentStatus()->label(),

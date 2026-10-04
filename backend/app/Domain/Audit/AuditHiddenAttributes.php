@@ -65,7 +65,7 @@ final class AuditHiddenAttributes
         'user' => ['email_verified_at'],
         'product' => ['slug'],
         'nawris_parcel' => ['remote_status_code'],
-        'order' => ['paid_amount', 'total_cogs', 'stock_deducted_at', 'delete_returned_stock_at'],
+        'order' => ['paid_amount', 'excess_amount', 'total_cogs', 'stock_deducted_at', 'delete_returned_stock_at'],
         'order_item' => [
             'material_cost',
             'material_cost_actual',

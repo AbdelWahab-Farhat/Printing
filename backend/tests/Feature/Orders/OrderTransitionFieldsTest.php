@@ -199,6 +199,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'required_if' => null,
                 'extensions' => [],
                 'max_kilobytes' => null,
+                'confirm_when' => null,
             ],
             [
                 'key' => 'reason',
@@ -217,6 +218,7 @@ class OrderTransitionFieldsTest extends TestCase
                 'required_if' => null,
                 'extensions' => [],
                 'max_kilobytes' => null,
+                'confirm_when' => null,
             ],
         ], $designing['fields']);
     }

@@ -43,6 +43,11 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
       requiredWith: json['required_with'] as String?,
       value: json['value'] as String?,
       valueLabel: json['value_label'] as String?,
+      confirmWhen: json['confirm_when'] == null
+          ? null
+          : TransitionFieldThreshold.fromJson(
+              json['confirm_when'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
@@ -63,6 +68,7 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'required_with': instance.requiredWith,
       'value': instance.value,
       'value_label': instance.valueLabel,
+      'confirm_when': instance.confirmWhen?.toJson(),
     };
 
 const _$TransitionFieldTypeEnumMap = {
@@ -76,6 +82,7 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.file: 'file',
   TransitionFieldType.vendor: 'vendor',
   TransitionFieldType.treasuryAccount: 'treasury_account',
+  TransitionFieldType.confirmation: 'confirmation',
   TransitionFieldType.unknown: 'unknown',
 };
 
@@ -89,6 +96,17 @@ _TransitionFieldCondition _$TransitionFieldConditionFromJson(
 Map<String, dynamic> _$TransitionFieldConditionToJson(
   _TransitionFieldCondition instance,
 ) => <String, dynamic>{'key': instance.key, 'value': instance.value};
+
+_TransitionFieldThreshold _$TransitionFieldThresholdFromJson(
+  Map<String, dynamic> json,
+) => _TransitionFieldThreshold(
+  key: json['key'] as String,
+  above: json['above'] as String,
+);
+
+Map<String, dynamic> _$TransitionFieldThresholdToJson(
+  _TransitionFieldThreshold instance,
+) => <String, dynamic>{'key': instance.key, 'above': instance.above};
 
 _TransitionFieldOption _$TransitionFieldOptionFromJson(
   Map<String, dynamic> json,

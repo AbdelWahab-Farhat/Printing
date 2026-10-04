@@ -232,6 +232,46 @@ class ExpenseListTest extends TestCase
         $cashOnly->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.expenses_total', '40.00');
     }
 
+    public function test_the_search_box_finds_by_everything_a_line_says_and_the_total_follows(): void
+    {
+        // Arrange — four expenses, each findable by one thing only.
+        [, $headers] = $this->clerk();
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $bank = $this->defaultOf(AccountKind::Bank);
+        $this->deposit($headers, $cash, '5000.00');
+        $this->deposit($headers, $bank, '5000.00');
+        $employee = User::factory()->create(['name' => 'عمر الساعدي']);
+        $rent = $this->expense($headers, $cash, '1200.00', $this->category('إيجار'));
+        $fromBank = $this->expense($headers, $bank, '40.00', $this->category('قرطاسية'));
+        $noted = $this->expense($headers, $cash, '75.00', $this->category('ضيافة'), ['notes' => 'قهوة للزبائن']);
+        $wages = $this->expense(
+            $headers,
+            $cash,
+            '300.00',
+            ExpenseCategory::factory()->create(['name' => 'سُلف', 'requires_employee' => true]),
+            ['employee_id' => $employee->id],
+        );
+
+        // Act
+        $byCategory = $this->list($headers, ['search' => 'إيجار']);
+        $byAccount = $this->list($headers, ['search' => $bank->name]);
+        $byNote = $this->list($headers, ['search' => 'قهوة']);
+        $byEmployee = $this->list($headers, ['search' => 'الساعدي']);
+        $byAmount = $this->list($headers, ['search' => '٣٠٠']);
+        $byPartOfAnAmount = $this->list($headers, ['search' => '12']);
+
+        // Assert — one line each, and the total is that line's, not the month's.
+        $byCategory->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.operation_id', $rent->id)
+            ->assertJsonPath('meta.expenses_total', '1200.00');
+        $byAccount->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.operation_id', $fromBank->id);
+        $byNote->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.operation_id', $noted->id);
+        $byEmployee->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.operation_id', $wages->id);
+        $byAmount->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.operation_id', $wages->id);
+        // An amount matches whole: «12» is not 1200.
+        $byPartOfAnAmount->assertOk()->assertJsonPath('meta.total', 0);
+    }
+
     public function test_the_list_is_paged_but_the_total_covers_every_page(): void
     {
         // Arrange

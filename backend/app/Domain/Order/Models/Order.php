@@ -138,6 +138,10 @@ class Order extends Model implements HasAuditTrail
             // of the others so `paid_amount` never stops meaning cash and `written_off_amount`
             // never stops meaning a loss. See OrderPaymentType::CarrierSettled.
             'carrier_settled_amount' => 'decimal:2',
+            // The fourth, and the only one that closes nothing: what the customer paid beyond
+            // the order and is owed back until it is refunded or kept. Never part of
+            // `paid_amount`, so the order's sales stay what it cost. Same writer.
+            'excess_amount' => 'decimal:2',
             // The عربون: an expectation, a claim, and a confirmation — three facts deliberately
             // kept apart. **`deposit_expected_amount` is not money that has moved**, and nothing
             // sums it: the real deposit is an ordinary entry in `payments`, counted there like
@@ -479,6 +483,7 @@ class Order extends Model implements HasAuditTrail
         }
 
         $last = OrderPayment::query()
+            ->with('reversedPayment')
             ->where('order_id', $this->getKey())
             ->orderByDesc('id')
             ->first();
@@ -487,7 +492,12 @@ class Order extends Model implements HasAuditTrail
             return false;
         }
 
-        $remainingBefore = bcadd($this->remainingAmount(), $last->signedAmount(), 8);
+        // What the row did to the three totals that close the debt — not its whole amount: the
+        // part of a payment beyond the debt, and a kept excess, close nothing.
+        $moved = $last->contributions();
+        $closed = bcadd(bcadd($moved['paid'], $moved['written_off'], 8), $moved['carrier_settled'], 8);
+
+        $remainingBefore = bcadd($this->remainingAmount(), $closed, 8);
 
         return bccomp($remainingBefore, '0', 8) <= 0;
     }
@@ -546,7 +556,7 @@ class Order extends Model implements HasAuditTrail
      *
      * **Credits only, and only those not already undone.** A refund is money that genuinely left
      * the drawer, so reversing it would claim it never did — {@see ReverseOrderPayment} refuses
-     * one outright via {@see OrderPaymentType::isCredit()}, and this filter is what keeps the
+     * one outright via {@see OrderPaymentType::isReversible()}, and this filter is what keeps the
      * delete from ever handing it one. An entry somebody already reversed by hand is skipped for
      * a harder reason: a second reversal breaks
      * `order_payments_reverses_payment_id_unique` and would read as money taken back twice.
@@ -561,12 +571,18 @@ class Order extends Model implements HasAuditTrail
      */
     public function liveCreditEntries(): EloquentCollection
     {
+        // Every type a reversal may undo — the three credits, and a kept excess.
         $credits = array_map(
             fn (OrderPaymentType $type) => $type->value,
-            array_filter(OrderPaymentType::cases(), fn (OrderPaymentType $type) => $type->isCredit()),
+            array_filter(OrderPaymentType::cases(), fn (OrderPaymentType $type) => $type->isReversible()),
         );
 
+        // **Newest first**, so the delete undoes a decision before the money it was about: a
+        // kept excess comes off before the payment that carried it, and the excess never has to
+        // be owed below nothing on the way.
         return $this->payments()
+            ->reorder()
+            ->orderByDesc('id')
             ->whereIn('type', $credits)
             ->whereDoesntHave('reversal')
             ->get();

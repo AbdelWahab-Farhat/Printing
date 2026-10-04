@@ -80,7 +80,33 @@ final class TransitionField
          */
         public readonly array $extensions = [],
         public readonly ?int $maxKilobytes = null,
+        /**
+         * When a {@see TransitionFieldType::Confirmation} is asked: `['key' => …, 'above' => …]` —
+         * the answer to [key] went past [above]. Null on every other type.
+         *
+         * @var array{key: string, above: string}|null
+         */
+        public readonly ?array $confirmWhen = null,
     ) {}
+
+    /**
+     * A yes the app asks for at the moment of sending, and only when another answer crossed a
+     * line — {@see TransitionFieldType::Confirmation}.
+     *
+     * [$label] is the question, «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟». Never required:
+     * left out, the domain treats it as «لا» and refuses whatever it guards, which is also what an
+     * app too old to know the type gets.
+     */
+    public static function confirmation(string $key, string $label, string $whenKey, string $above): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Confirmation,
+            label: $label,
+            required: false,
+            confirmWhen: ['key' => $whenKey, 'above' => $above],
+        );
+    }
 
     /**
      * تحذيرٌ يُقرأ ولا يُجاب — {@see TransitionFieldType::Notice}.
@@ -375,6 +401,8 @@ final class TransitionField
             // What a file field will accept. Empty and null for every other kind.
             'extensions' => $this->extensions,
             'max_kilobytes' => $this->maxKilobytes,
+            // When a confirmation is asked — `{key, above}` — and null on everything else.
+            'confirm_when' => $this->confirmWhen,
         ];
     }
 
@@ -409,6 +437,11 @@ final class TransitionField
         return match ($this->type) {
             // لا شيء: جملةٌ تُقرأ لا تُرسَل، فقاعدةٌ عليها قاعدةٌ على ما لا يصل.
             TransitionFieldType::Notice => [],
+
+            // A yes or nothing. What it permits is the domain's to decide, not this rule's.
+            TransitionFieldType::Confirmation => [
+                "fields.{$this->key}" => ['nullable', 'boolean'],
+            ],
 
             TransitionFieldType::Text => [
                 "fields.{$this->key}" => [$presence, 'string', 'max:1000'],
@@ -547,6 +580,9 @@ final class TransitionField
                 "fields.{$this->key}.required" => "اختر {$this->label}",
                 "fields.{$this->key}.exists" => 'الحساب المختار غير موجود',
                 "fields.{$this->key}.in" => 'الحساب المختار ليس من حساباتك',
+            ],
+            TransitionFieldType::Confirmation => [
+                "fields.{$this->key}.boolean" => 'التأكيد يجب أن يكون نعم أو لا',
             ],
         };
     }

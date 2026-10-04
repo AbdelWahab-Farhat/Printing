@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
+use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Support\Money;
 use Illuminate\Http\UploadedFile;
@@ -50,6 +51,12 @@ final readonly class OrderPaymentData
          * حسابٍ لا يُختار باليد. انظر {@see intoSystemAccount()}.
          */
         public ?string $systemAccount = null,
+        /**
+         * «تسجيل الزائد للزبون» — the person was told the amount is more than the order owes and
+         * said yes. Without it a payment beyond the debt is refused, which is what still catches
+         * 500 typed for 50. See {@see RecordOrderPayment}.
+         */
+        public bool $acceptOverpayment = false,
     ) {}
 
     /**
@@ -66,6 +73,7 @@ final readonly class OrderPaymentData
             receipt: $this->receipt,
             treasuryAccountId: null,
             systemAccount: $code,
+            acceptOverpayment: $this->acceptOverpayment,
         );
     }
 
@@ -85,6 +93,7 @@ final readonly class OrderPaymentData
             notes: self::textOrNull($validated['notes'] ?? null),
             receipt: $receipt instanceof UploadedFile ? $receipt : null,
             treasuryAccountId: $account === null || $account === '' ? null : (int) $account,
+            acceptOverpayment: filter_var($validated['accept_overpayment'] ?? false, FILTER_VALIDATE_BOOLEAN),
         );
     }
 

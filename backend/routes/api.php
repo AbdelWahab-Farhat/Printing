@@ -25,6 +25,7 @@ use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
+use App\Application\Api\V1\Controllers\OrderPaymentReviewController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductCategoryController;
 use App\Application\Api\V1\Controllers\ProductController;
@@ -561,11 +562,24 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/payments/write-offs', [OrderPaymentController::class, 'writeOff'])
             ->middleware('can:orders.payments.write_off')->name('orders.payments.write-off');
 
+        // «اعتبار الزائد إيراداً» — in front of `{payment}` for the reason the two above are, and
+        // behind its own grant: it decides money the shop owes a customer will never go back.
+        Route::post('orders/{order}/payments/keep-excess', [OrderPaymentController::class, 'keepExcess'])
+            ->middleware('can:orders.payments.keep_excess')->name('orders.payments.keep-excess');
+
         // scopeBindings(): another order's payment id is a 404 by construction rather than by a
         // check somebody has to remember — the same shape orders.designs already uses.
         Route::post('orders/{order}/payments/{payment}/reverse', [OrderPaymentController::class, 'reverse'])
             ->scopeBindings()
             ->middleware('can:orders.payments.reverse')->name('orders.payments.reverse');
+
+        // «مراجعة الدفعات» — a check on each payment and refund, and the queue of
+        // those still waiting. Gates nothing; see Docs/payments/PAYMENT-REVIEW-AND-OVERPAY.md.
+        Route::patch('orders/{order}/payments/{payment}/review', [OrderPaymentReviewController::class, 'update'])
+            ->scopeBindings()
+            ->middleware('can:orders.payments.review')->name('orders.payments.review');
+        Route::get('order-payments/review-queue', [OrderPaymentReviewController::class, 'queue'])
+            ->middleware('can:orders.payments.review')->name('order-payments.review-queue');
 
         // ── manufacturing cost rates ────────────────────────────────────────────────────
         // What a unit of production standard-costs at — applied automatically when an order

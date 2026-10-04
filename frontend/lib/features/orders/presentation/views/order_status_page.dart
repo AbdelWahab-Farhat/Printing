@@ -7,6 +7,7 @@ import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_bar.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
+import 'package:dayaa/features/orders/presentation/widgets/overpayment_confirmation.dart';
 import 'package:dayaa/features/orders/presentation/widgets/transition_field_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,11 +48,49 @@ class _OrderStatusView extends StatelessWidget {
   Future<void> _submit(BuildContext context) async {
     final cubit = context.read<OrderStatusCubit>();
 
+    if (!await _askWhatTheServerAsks(context, cubit) || !context.mounted) return;
+
     final updated = await cubit.submit();
     if (updated == null || !context.mounted) return;
 
     context.showSuccess('تم نقل الطلبية إلى «${updated.statusLabel}»');
     context.pop(updated);
+  }
+
+  /// Every [TransitionFieldType.confirmation] on the chosen move, asked now — and false when one
+  /// was declined, so nothing is sent.
+  ///
+  /// **Asked only when its line was crossed**: an amount at or under what is owed sends no
+  /// answer at all, and one past it is sent with the person's yes. Today there is one — «المبلغ
+  /// يزيد على المتبقي — تسجيل الزائد للزبون؟» — and it is worded by [confirmOverpayment] so the
+  /// payments screen asks it the same way.
+  Future<bool> _askWhatTheServerAsks(BuildContext context, OrderStatusCubit cubit) async {
+    final transition = cubit.state.selected;
+    if (transition == null) return true;
+
+    for (final field in transition.fields) {
+      final when = field.confirmWhen;
+      if (!field.isConfirmation || when == null) continue;
+
+      final typed = cubit.state.values[when.key];
+      final excess = typed is String ? overpaymentExcess(typed, when.above) : null;
+
+      if (excess == null) {
+        // Nothing crossed — a yes from an earlier attempt at a bigger figure must not travel
+        // with this one.
+        cubit.setValue(field.key, null);
+
+        continue;
+      }
+
+      final agreed = await confirmOverpayment(context, excess: excess);
+
+      if (!agreed || !context.mounted) return false;
+
+      cubit.setValue(field.key, true);
+    }
+
+    return true;
   }
 
   @override
@@ -310,8 +349,10 @@ class _TransitionFields extends StatelessWidget {
             children: [
               // داخل الحركة لا خارجها، وإلا قفز هذا الفراغ وحده قبل أن تبدأ.
               SizedBox(height: 12.h),
+              // A confirmation is a question asked on sending, not a control — see
+              // [_OrderStatusView._askWhatTheServerAsks].
               for (final field in transition.fields)
-                Padding(
+                if (!field.isConfirmation) Padding(
                   key: ValueKey('${transition.status.wire}:${field.key}'),
                   padding: EdgeInsets.only(bottom: 16.h),
                   // تغيّر الطريقة يمسح «الحساب» في الـ Cubit (`setValue`)، لا هنا.

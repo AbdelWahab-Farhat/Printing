@@ -90,6 +90,7 @@ enum PaymentStatus: string
             (string) $order->grand_total,
             (string) $order->written_off_amount,
             (string) $order->carrier_settled_amount,
+            (string) $order->excess_amount,
         );
     }
 
@@ -111,6 +112,11 @@ enum PaymentStatus: string
      * «غير مدفوعة». Nothing is owed on it, and «غير مدفوعة» would put it in the list of orders
      * somebody is meant to chase.
      *
+     * **An order holding an excess is «مدفوعة بالزيادة» once it is covered** — 100 handed over on
+     * 99 leaves `paid` at 99 and the one dinar in `excess`, and the customer did pay more than
+     * the order. Only once covered: an order whose total was raised after the excess was taken
+     * still owes, and saying «بالزيادة» over a debt would hide it.
+     *
      * **This rule is written twice**, here and in {@see PaymentStatusExpression} for the list and
      * the counts. `OrderPaymentStatusFilterTest` asserts the SQL against this enum, so the pair
      * cannot drift.
@@ -120,12 +126,15 @@ enum PaymentStatus: string
         string $grandTotal,
         string $writtenOff = '0',
         string $carrierSettled = '0',
+        string $excess = '0',
     ): self {
         $covered = bcadd(bcadd($paid, $writtenOff, Money::SCALE), $carrierSettled, Money::SCALE);
         $forgiven = bccomp($writtenOff, '0', Money::SCALE) > 0;
+        $holdsExcess = bccomp($excess, '0', Money::SCALE) > 0;
 
         return match (true) {
             bccomp($covered, $grandTotal, Money::SCALE) > 0 => self::Overpaid,
+            bccomp($covered, $grandTotal, Money::SCALE) === 0 && $holdsExcess => self::Overpaid,
             bccomp($covered, $grandTotal, Money::SCALE) === 0 => $forgiven ? self::WrittenOff : self::Paid,
             bccomp($covered, '0', Money::SCALE) <= 0 => self::Unpaid,
             default => self::PartiallyPaid,

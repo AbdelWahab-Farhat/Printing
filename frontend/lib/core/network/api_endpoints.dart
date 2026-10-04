@@ -605,6 +605,17 @@ abstract final class OrderEndpoints {
   /// Cancelling an entry that should never have been written.
   static String reversePayment(int orderId, int paymentId) =>
       '/orders/$orderId/payments/$paymentId/reverse';
+
+  /// «اعتبار الزائد إيراداً» — what the customer paid beyond the order is the shop's now.
+  static String keepExcess(int orderId) => '/orders/$orderId/payments/keep-excess';
+
+  /// «مراجعة الدفعة» — a check, `{reviewed: true|false}`. The one update a
+  /// ledger entry takes: the money on it never changes.
+  static String reviewPayment(int orderId, int paymentId) =>
+      '/orders/$orderId/payments/$paymentId/review';
+
+  /// Every payment and refund still waiting for a review, across all orders, oldest first.
+  static const String paymentReviewQueue = '/order-payments/review-queue';
 }
 
 abstract final class CustomerEndpoints {

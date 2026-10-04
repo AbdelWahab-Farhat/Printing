@@ -39,6 +39,13 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public const NAWRIS = 'nawris';
 
     /**
+     * «مبالغ زائدة للزبائن» — the payable holding what customers paid beyond their orders, until
+     * each excess is refunded or kept. Opened the first time one is taken; moved by the orders'
+     * ledger alone, like a vendor's payable by its purchase orders.
+     */
+    public const CUSTOMER_EXCESS = 'customer_excess';
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -73,6 +80,16 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public function isVendorPayable(): bool
     {
         return $this->vendor_id !== null;
+    }
+
+    /**
+     * «مبالغ زائدة للزبائن»: the orders' payments and refunds move it, and nothing by hand — the
+     * same line a vendor's payable holds. A hand transfer would part it from what the orders say
+     * their customers are owed.
+     */
+    public function isCustomerExcessPayable(): bool
+    {
+        return $this->system_code === self::CUSTOMER_EXCESS;
     }
 
     /** Whether this person may read the account without `treasury.view` — it is in their name. */

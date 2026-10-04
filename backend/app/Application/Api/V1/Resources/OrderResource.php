@@ -187,6 +187,10 @@ class OrderResource extends JsonResource
             // a 120 order with nothing outstanding needs the twenty to be visible somewhere, or
             // the arithmetic on screen reads as a bug. See OrderPaymentType::CarrierSettled.
             'carrier_settled_amount' => (string) $this->carrier_settled_amount,
+            // The sixth: what the customer paid beyond the order — 100 handed over on 99 — and is
+            // owed back until it is refunded or kept. It closes nothing, so `remaining_amount`
+            // ignores it, and it is never part of `paid_amount`, so the sale stays 99.
+            'excess_amount' => (string) $this->excess_amount,
             'remaining_amount' => $this->remainingAmount(),
             'payment_status' => $this->paymentStatus()->value,
             'payment_status_label' => $this->paymentStatus()->label(),

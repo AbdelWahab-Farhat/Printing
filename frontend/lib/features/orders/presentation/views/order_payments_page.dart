@@ -14,6 +14,7 @@ import 'package:dayaa/core/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
+import 'package:dayaa/features/orders/presentation/widgets/payment_review_line.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart';
 import 'package:flutter/material.dart';
@@ -93,7 +94,9 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
               onRecord: () => _write(PaymentDirection.incoming),
               onRefund: () => _write(PaymentDirection.outgoing),
               onWriteOff: _writeOff,
+              onKeepExcess: _keepExcess,
               onReverse: _reverse,
+              onReview: _review,
             ),
           ),
         },
@@ -126,6 +129,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
             receiptPath: draft.receipt?.path,
             receiptFilename: draft.receipt?.name,
             treasuryAccountId: draft.accountId,
+            acceptOverpayment: draft.acceptOverpayment,
           )
         : await cubit.refund(
             amount: draft.amount,
@@ -179,6 +183,49 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
     context.showSuccess('تم شطب الفرق');
   }
 
+  /// «اعتبار الزائد إيراداً» — what the customer paid beyond the order stays with the shop.
+  ///
+  /// Behind a plain yes/no rather than a form: there is no figure to type — the whole excess is
+  /// kept — and the entry is undone by cancelling it like any other.
+  Future<void> _keepExcess() async {
+    final cubit = context.read<OrderPaymentsCubit>();
+    final excess = cubit.state.summary?.excessAmount;
+    if (excess == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('اعتبار الزائد إيراداً'),
+        content: Text(
+          'يبقى زائد الزبون ${excess.grouped} للمحل ولا يُردّ له. لا يمسّ قيمة الطلبية ولا '
+          '«المدفوع»، ويُلغى كأيّ قيد إن كان خطأً.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('تراجع')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('اعتبار الزائد إيراداً'),
+          ),
+        ],
+      ),
+    );
+
+    if (!(confirmed ?? false) || !mounted) return;
+
+    final failure = await cubit.keepExcess();
+
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.handBack(true);
+    context.showSuccess('اعتُبر الزائد إيراداً');
+  }
+
   /// Cancels an entry, behind a confirmation and a required reason.
   ///
   /// **Two steps rather than one, and neither is ceremony.** This is money coming back off an
@@ -203,6 +250,25 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
 
     context.handBack(true);
     context.showSuccess('تم إلغاء الدفعة');
+  }
+
+  /// «مراجعة الدفعة», or taking a review back.
+  ///
+  /// **No confirmation, in either direction.** It moves no money, it is undone by the button
+  /// that appears in its place, and both taps land in the entry's history. Does not hand `true`
+  /// back to the order: nothing the order screen shows changed.
+  Future<void> _review(OrderPayment payment, bool reviewed) async {
+    final failure = await context.read<OrderPaymentsCubit>().review(payment.id, reviewed: reviewed);
+
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.showSuccess(reviewed ? 'تمت مراجعة الدفعة' : 'أُلغيت مراجعة الدفعة');
   }
 
   Future<String?> _askForReason(OrderPayment payment) {
@@ -251,7 +317,7 @@ class _ReasonDialogState extends State<_ReasonDialog> {
   Widget build(BuildContext context) {
     // «إلغاء القيد» on a write-off, for the reason the row's own action says it: the same
     // dialog now cancels either, and one of them is not a payment.
-    final title = widget.payment.isWriteOff ? 'إلغاء القيد' : 'إلغاء الدفعة';
+    final title = widget.payment.movesNoCash ? 'إلغاء القيد' : 'إلغاء الدفعة';
 
     return AlertDialog(
       title: Text(title),
@@ -262,11 +328,17 @@ class _ReasonDialogState extends State<_ReasonDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.payment.isWriteOff
-                  ? 'يعود الدَّين إلى الطلبية كما كان، ويبقى قيد الشطب في السجل مشطوباً — '
-                        'المبلغ ${widget.payment.amount.grouped}.'
-                  : 'الدفعة تبقى في السجل مشطوبة، ويُكتب بجانبها قيدُ إلغائها — '
-                        'المبلغ ${widget.payment.amount.grouped}.',
+              switch (widget.payment) {
+                final p when p.isWriteOff =>
+                  'يعود الدَّين إلى الطلبية كما كان، ويبقى قيد الشطب في السجل مشطوباً — '
+                      'المبلغ ${p.amount.grouped}.',
+                final p when p.isExcessKept =>
+                  'يعود الزائد للزبون كما كان، يُردّ له أو يُعتبر إيراداً من جديد — '
+                      'المبلغ ${p.amount.grouped}.',
+                final p =>
+                  'الدفعة تبقى في السجل مشطوبة، ويُكتب بجانبها قيدُ إلغائها — '
+                      'المبلغ ${p.amount.grouped}.',
+              },
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -301,7 +373,9 @@ class _Body extends StatelessWidget {
     required this.onRecord,
     required this.onRefund,
     required this.onWriteOff,
+    required this.onKeepExcess,
     required this.onReverse,
+    required this.onReview,
   });
 
   final PaymentSummary summary;
@@ -310,7 +384,9 @@ class _Body extends StatelessWidget {
   final Future<void> Function() onRecord;
   final Future<void> Function() onRefund;
   final Future<void> Function() onWriteOff;
+  final Future<void> Function() onKeepExcess;
   final Future<void> Function(OrderPayment payment) onReverse;
+  final Future<void> Function(OrderPayment payment, bool reviewed) onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +407,7 @@ class _Body extends StatelessWidget {
           onRecord: onRecord,
           onRefund: onRefund,
           onWriteOff: onWriteOff,
+          onKeepExcess: onKeepExcess,
         ),
         SizedBox(height: 16.h),
 
@@ -353,7 +430,12 @@ class _Body extends StatelessWidget {
                 )
               else
                 for (final payment in payments)
-                  _Entry(payment: payment, isBusy: isWorking, onReverse: () => onReverse(payment)),
+                  _Entry(
+                    payment: payment,
+                    isBusy: isWorking,
+                    onReverse: () => onReverse(payment),
+                    onReview: (reviewed) => unawaited(onReview(payment, reviewed)),
+                  ),
             ],
           ),
         ),
@@ -387,11 +469,17 @@ class _Card extends StatelessWidget {
 /// would make the ledger lie by omission: the row was written, somebody saw it, and the fact
 /// that it was caught is the part worth reading.
 class _Entry extends StatelessWidget {
-  const _Entry({required this.payment, required this.isBusy, required this.onReverse});
+  const _Entry({
+    required this.payment,
+    required this.isBusy,
+    required this.onReverse,
+    required this.onReview,
+  });
 
   final OrderPayment payment;
   final bool isBusy;
   final VoidCallback onReverse;
+  final void Function(bool reviewed) onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -403,8 +491,9 @@ class _Entry extends StatelessWidget {
       final p when p.isIncoming => scheme.primary,
       // Neutral, not the red of money leaving: a write-off closes a debt, and nothing left the
       // drawer for it. Painting it like a refund would put a cash event on screen that never
-      // happened — the same confusion `paid_amount` is kept clean of.
-      final p when p.isWriteOff => scheme.onSurfaceVariant,
+      // happened — the same confusion `paid_amount` is kept clean of. A kept excess is the same
+      // kind of row: the money was already in the drawer, and only whose it is changed.
+      final p when p.movesNoCash => scheme.onSurfaceVariant,
       _ => scheme.error,
     };
 
@@ -447,7 +536,7 @@ class _Entry extends StatelessWidget {
                 //
                 // **A write-off carries no sign at all**, because it moved in neither direction.
                 // A minus here would read as money going out to somebody scanning the column.
-                payment.isWriteOff
+                payment.movesNoCash
                     ? payment.amount.grouped
                     : '${payment.isIncoming ? '+' : '−'} ${payment.amount.grouped}',
                 style: context.textTheme.bodyLarge?.copyWith(
@@ -458,6 +547,22 @@ class _Entry extends StatelessWidget {
               ),
             ],
           ),
+
+          // The part beyond the debt, said on the row that carried it: 100 taken, 1 of it the
+          // customer's. On a refund, how much of it handed that back.
+          if (payment.hasExcess)
+            Padding(
+              padding: EdgeInsetsDirectional.only(start: 28.w, top: 4.h),
+              child: Text(
+                payment.isIncoming
+                    ? 'منها زائد للزبون ${payment.excessAmount.grouped}'
+                    : 'منه ردّ زائد ${payment.excessAmount.grouped}',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: scheme.tertiary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
 
           if (payment.notes case final notes? when notes.isNotEmpty)
             Padding(
@@ -482,6 +587,14 @@ class _Entry extends StatelessWidget {
               ),
             ),
 
+          // «غير مراجَعة» / «تمت المراجعة — فلان · التاريخ». Nothing on a row nobody is asked
+          // to check — see [PaymentReviewLine].
+          if (payment.showsReview)
+            Padding(
+              padding: EdgeInsetsDirectional.only(start: 28.w, top: 4.h),
+              child: PaymentReviewLine(payment: payment, isBusy: isBusy, onReview: onReview),
+            ),
+
           Padding(
             padding: EdgeInsetsDirectional.only(start: 28.w, top: 6.h),
             child: Row(
@@ -497,7 +610,7 @@ class _Entry extends StatelessWidget {
                     // «القيد», not «الدفعة»: the same button now cancels a write-off, and
                     // calling that a payment would name the row wrongly on the one screen where
                     // the names are the point.
-                    label: Text(payment.isWriteOff ? 'إلغاء القيد' : 'إلغاء الدفعة'),
+                    label: Text(payment.movesNoCash ? 'إلغاء القيد' : 'إلغاء الدفعة'),
                     style: TextButton.styleFrom(foregroundColor: scheme.error),
                   ),
               ],
@@ -514,6 +627,7 @@ class _Entry extends StatelessWidget {
   /// last is its own because it is neither of the other two — see [AppIcons.writeOff].
   IconData _glyph(OrderPayment payment) {
     if (payment.isWriteOff) return AppIcons.writeOff;
+    if (payment.isExcessKept) return AppIcons.excessKept;
 
     return payment.isIncoming ? AppIcons.payment : AppIcons.refund;
   }
@@ -594,6 +708,7 @@ class _Actions extends StatelessWidget {
     required this.onRecord,
     required this.onRefund,
     required this.onWriteOff,
+    required this.onKeepExcess,
   });
 
   final bool isWorking;
@@ -601,22 +716,27 @@ class _Actions extends StatelessWidget {
   final Future<void> Function() onRecord;
   final Future<void> Function() onRefund;
   final Future<void> Function() onWriteOff;
+  final Future<void> Function() onKeepExcess;
 
   @override
   Widget build(BuildContext context) {
     final session = sl<Session>();
     final mayRecord = session.can(AppPermission.recordOrderPayments);
-    // Offered only when there is something to give back. A refund on an order that has been
-    // paid nothing is refused by the server, and a button that can only fail is worse than none.
+    // Offered only when there is something to give back — what was paid, or an excess the
+    // customer is owed. A refund on an order holding neither is refused by the server, and a
+    // button that can only fail is worse than none.
     final mayRefund =
-        session.can(AppPermission.reverseOrderPayments) && summary.paidAmount != '0.00';
+        session.can(AppPermission.reverseOrderPayments) &&
+        (summary.paidAmount != '0.00' || summary.hasExcess);
     // And only when there is a debt to close. On an order that owes nothing the server refuses
     // it, and the button would be a door onto a 422.
     final mayWriteOff = session.can(AppPermission.writeOffOrderPayments) && summary.isOutstanding;
+    // Only while the order holds an excess — the mirror of a write-off, on the other side.
+    final mayKeepExcess = session.can(AppPermission.keepOrderExcess) && summary.hasExcess;
 
     // Nothing to offer, so nothing is drawn. A disabled row would advertise doors that open
     // onto a 403.
-    if (!mayRecord && !mayRefund && !mayWriteOff) return const SizedBox.shrink();
+    if (!mayRecord && !mayRefund && !mayWriteOff && !mayKeepExcess) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -660,6 +780,19 @@ class _Actions extends StatelessWidget {
             isLoading: isWorking,
             height: 46.h,
             onPressed: onWriteOff,
+          ),
+        ],
+
+        // On its own line like the write-off, for the same reasons: rare, and a decision about
+        // money rather than money moving.
+        if (mayKeepExcess) ...[
+          if (mayRecord || mayRefund || mayWriteOff) SizedBox(height: 10.h),
+          AppButton.outlined(
+            label: 'اعتبار الزائد إيراداً',
+            icon: AppIcons.excessKept,
+            isLoading: isWorking,
+            height: 46.h,
+            onPressed: onKeepExcess,
           ),
         ],
       ],

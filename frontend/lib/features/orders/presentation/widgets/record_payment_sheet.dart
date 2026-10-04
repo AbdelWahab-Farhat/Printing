@@ -10,6 +10,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/receipt_rules.dart';
+import 'package:dayaa/features/orders/presentation/widgets/overpayment_confirmation.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,6 +40,7 @@ class PaymentDraft {
     this.notes,
     this.receipt,
     this.accountId,
+    this.acceptOverpayment = false,
   });
 
   final PaymentDirection direction;
@@ -56,6 +58,10 @@ class PaymentDraft {
 
   /// حساب الخزينة المختار، أو null ليقرّر الخادم (TREASURY-DESIGN §٥).
   final int? accountId;
+
+  /// The yes to «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟». False unless it was asked
+  /// and answered — see [confirmOverpayment].
+  final bool acceptOverpayment;
 }
 
 /// Taking money, or giving it back.
@@ -358,7 +364,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final needsReceipt = _method.requiresReceipt && _receipt == null;
 
     // Set before validating, so a form that is otherwise fine still lights up the file field
@@ -366,6 +372,19 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
     if (needsReceipt) setState(() => _receiptWasMissed = true);
 
     if (!(_formKey.currentState?.validate() ?? false) || needsReceipt) return;
+
+    // **More than is owed is asked about here, while the customer is still at the counter** —
+    // 100 handed over on 99 is ordinary, 500 typed for 50 is not, and only the person holding
+    // the money knows which this is. A refund is bounded by the server alone.
+    var acceptOverpayment = false;
+
+    if (_isIncoming) {
+      if (overpaymentExcess(_amount.text, widget.remainingAmount) case final excess?) {
+        acceptOverpayment = await confirmOverpayment(context, excess: excess);
+
+        if (!acceptOverpayment || !mounted) return;
+      }
+    }
 
     Navigator.of(context).pop(
       PaymentDraft(
@@ -376,6 +395,7 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
         notes: _notes.text,
         receipt: _receipt,
         accountId: _accountId,
+        acceptOverpayment: acceptOverpayment,
       ),
     );
   }

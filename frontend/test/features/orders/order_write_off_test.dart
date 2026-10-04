@@ -175,6 +175,8 @@ void main() {
         refundPayment: RefundOrderPayment(repository),
         reversePayment: ReverseOrderPayment(repository),
         writeOffBalance: WriteOffOrderBalance(repository),
+        reviewPayment: ReviewOrderPayment(repository),
+        keepExcess: KeepOrderExcess(repository),
       );
     });
 

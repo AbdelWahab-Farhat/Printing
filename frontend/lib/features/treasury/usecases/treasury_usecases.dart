@@ -53,12 +53,14 @@ class GetTreasuryExpenses {
     DateTime? to,
     int? categoryId,
     int? accountId,
+    String? search,
   }) => _repository.expenses(
     page: page,
     from: from,
     to: to,
     categoryId: categoryId,
     accountId: accountId,
+    search: search,
   );
 }
 

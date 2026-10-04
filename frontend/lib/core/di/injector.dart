@@ -1034,6 +1034,15 @@ abstract final class Injector {
       ..registerLazySingleton<WriteOffOrderBalance>(
         () => WriteOffOrderBalance(sl<OrderPaymentRepository>()),
       )
+      ..registerLazySingleton<ReviewOrderPayment>(
+        () => ReviewOrderPayment(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<GetPaymentReviewQueue>(
+        () => GetPaymentReviewQueue(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<KeepOrderExcess>(
+        () => KeepOrderExcess(sl<OrderPaymentRepository>()),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       // Parameterised on the question it answers: this screen is *about* one filter, so it is
       // a construction argument rather than something the Cubit is told afterwards.
@@ -1076,6 +1085,8 @@ abstract final class Injector {
           refundPayment: sl<RefundOrderPayment>(),
           reversePayment: sl<ReverseOrderPayment>(),
           writeOffBalance: sl<WriteOffOrderBalance>(),
+          reviewPayment: sl<ReviewOrderPayment>(),
+          keepExcess: sl<KeepOrderExcess>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(

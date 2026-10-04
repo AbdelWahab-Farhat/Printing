@@ -44,6 +44,9 @@ final class TransitionFields
 
     public const PAYMENT_ACCOUNT = 'payment_account_id';
 
+    /** «تسجيل الزائد للزبون» — the yes to an amount beyond what the order owes. */
+    public const PAYMENT_ACCEPT_OVERPAYMENT = 'payment_accept_overpayment';
+
     public const SETTLEMENT_ACCOUNT = 'settlement_account_id';
 
     public const SETTLEMENT_FEE = 'settlement_fee';
@@ -807,9 +810,10 @@ final class TransitionFields
                 // handed over with the box left alone, and one settled after the money was
                 // recorded from the payments screen needs nothing here either.
                 required: false,
-                // The ceiling is the debt: an overpayment is refused by the ledger anyway, and
-                // being told so at the field beats being told so after the move is attempted.
-                max: (float) $remaining,
+                // **No ceiling.** 100 handed over on an order owing 99 is ordinary — nobody had
+                // the one dinar — and the confirmation below is what tells it apart from 500
+                // typed for 50. The debt is still in the hint, and in that question.
+                max: null,
                 // The figure and nothing else. «اتركه فارغاً إن لم يُقبض شيء» said out loud what
                 // «(اختياري)» beside the label already says, under a box whose only other line
                 // is the one number the person needs.
@@ -872,6 +876,15 @@ final class TransitionFields
                     'value' => PaymentMethod::BankTransfer->value,
                 ],
                 hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
+            ),
+            // Asked by the app when the button is pressed, and only if the amount is past the
+            // debt: yes takes the whole amount and owes the part beyond back to the customer.
+            // Not answered, the ledger refuses the amount as it always did.
+            TransitionField::confirmation(
+                key: self::PAYMENT_ACCEPT_OVERPAYMENT,
+                label: 'المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟',
+                whenKey: self::PAYMENT_AMOUNT,
+                above: $remaining,
             ),
         ];
     }

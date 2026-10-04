@@ -243,6 +243,14 @@ enum AppPermission {
   reverseOrderPayments('orders.payments.reverse', 'إلغاء دفعة أو ردّ مبلغ'),
   writeOffOrderPayments('orders.payments.write_off', 'شطب فرق مبلغ الطلبية'),
 
+  /// «مراجعة الدفعات». Gates the review queue in «المالية». **The button on a payment does not
+  /// gate on it** — the server folds the grant and the rule that whoever recorded an entry may not
+  /// review it into `can_review`, and the row reads that. See [OrderPayment.canReview].
+  reviewOrderPayments('orders.payments.review', 'مراجعة دفعات الطلبيات'),
+
+  /// «اعتبار الزائد إيراداً» — what a customer paid beyond the order stays with the shop.
+  keepOrderExcess('orders.payments.keep_excess', 'اعتبار زائد الزبون إيراداً'),
+
   // The carrier integration's own surface, and separate from `shipping_companies.*`: that pair
   // maintains the list of companies, this one hands parcels to one of them and answers for what
   // comes back. Split in two because seeing that a parcel is stuck is not the authority to

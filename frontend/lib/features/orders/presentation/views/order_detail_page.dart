@@ -1243,6 +1243,7 @@ class _Header extends StatelessWidget {
             summary: PaymentSummary(
               grandTotal: order.grandTotal,
               paidAmount: order.paidAmount,
+              excessAmount: order.excessAmount,
               remainingAmount: order.remainingAmount,
               paymentStatus: order.paymentStatus,
               paymentStatusLabel: order.paymentStatusLabel,
