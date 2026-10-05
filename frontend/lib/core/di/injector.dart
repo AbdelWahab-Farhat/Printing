@@ -103,8 +103,11 @@ import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repos
 import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repository_impl.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository_impl.dart';
+import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository.dart';
+import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository_impl.dart';
 import 'package:dayaa/features/investment_fund/usecases/fund_breakdown_usecases.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
+import 'package:dayaa/features/investment_fund/usecases/period_expenses_usecases.dart';
 import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository.dart';
 import 'package:dayaa/features/investment_settings/repositories/investment_settings_repository_impl.dart';
 import 'package:dayaa/features/investment_settings/usecases/investment_settings_usecases.dart';
@@ -776,6 +779,16 @@ abstract final class Injector {
       )
       ..registerLazySingleton<GetFundProfitOwed>(
         () => GetFundProfitOwed(sl<FundBreakdownRepository>()),
+      )
+      // مصاريفُ الفترة — تبويبٌ في شاشة الفترة، وعكسُ المصروف منه.
+      ..registerLazySingleton<PeriodExpensesRepository>(
+        () => PeriodExpensesRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetPeriodExpenses>(
+        () => GetPeriodExpenses(sl<PeriodExpensesRepository>()),
+      )
+      ..registerLazySingleton<ReverseFundExpense>(
+        () => ReverseFundExpense(sl<PeriodExpensesRepository>()),
       );
   }
 

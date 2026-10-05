@@ -118,6 +118,7 @@ class FundCashRow extends StatelessWidget {
     'profit_payout' || 'company_payout' || 'capital_return' => AppIcons.fundWithdraw,
     'legacy_transfer' => AppIcons.investorDeals,
     'write_off_covered_by_company' => AppIcons.writeOff,
+    'expense_covered_by_company' => AppIcons.expense,
     _ => AppIcons.more,
   };
 }

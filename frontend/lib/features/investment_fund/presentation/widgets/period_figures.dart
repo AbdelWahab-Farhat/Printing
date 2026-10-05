@@ -26,6 +26,13 @@ class PeriodFigures extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Figure(label: 'المبيعات', amount: period.salesRevenue ?? '0'),
+        // المصاريفُ تحت المبيعات لا مطروحةً من صافي الربح: ذاك ربحُ الطلبيات وحده — قرارُ
+        // المالك أن تبقى القائمةُ كما هي ويُضاف السطران.
+        if (period.expensesAmount case final expenses?) ...[
+          _Figure(label: 'المصاريف', amount: expenses),
+          if (period.expensesOnInvestors case final onInvestors?)
+            _Figure(label: 'منها على المستثمرين', amount: onInvestors),
+        ],
         _Figure(label: 'صافي الربح', amount: profit),
         _Figure(label: 'للمستثمرين', amount: period.investorsPool ?? '0'),
         _Figure(label: 'للشركة', amount: period.companyShare ?? '0'),

@@ -9,12 +9,14 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Investor\Enums\DealExpenseKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use Database\Factories\InvestorDealExpenseFactory;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * One cost booked against a deal.
@@ -79,6 +81,22 @@ class InvestorDealExpense extends Model
     public function treasuryAccount(): BelongsTo
     {
         return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
+    }
+
+    /**
+     * لحظةُ حركات المصروف في الدفاتر: يومُه المختار، في ساعة تسجيله — بتوقيت ليبيا.
+     *
+     * النموذجُ يرسل يوماً بلا ساعة، فكان يُكتب منتصفَ ليل UTC ويظهر الثانيةَ صباحاً، ويُرتَّب تحت
+     * كلِّ ما سُجِّل يومَه قبله وإن جاء بعده. اليومُ لا يتغيّر أبداً — الفترةُ وتاريخُ القفل يقرآن
+     * `incurred_on` — وتصير الساعةُ ساعةَ التسجيل، فمصروفُ اليوم يقع لحظةَ كُتب.
+     */
+    public static function momentFor(string|DateTimeInterface $day, ?DateTimeInterface $recordedAt = null): Carbon
+    {
+        $zone = (string) config('app.business_timezone', 'Africa/Tripoli');
+        $date = $day instanceof DateTimeInterface ? $day->format('Y-m-d') : Carbon::parse($day)->toDateString();
+        $clock = Carbon::instance($recordedAt ?? now())->setTimezone($zone)->format('H:i:s');
+
+        return Carbon::parse("{$date} {$clock}", $zone)->utc();
     }
 
     public function isReversed(): bool

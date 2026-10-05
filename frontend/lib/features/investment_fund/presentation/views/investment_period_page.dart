@@ -7,6 +7,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/period_orders_cubit.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/period_expenses_tab.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_figures.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_order_card.dart';
 import 'package:flutter/material.dart';
@@ -31,24 +32,40 @@ class InvestmentPeriodPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // **تبويبان لا قائمةٌ واحدة.** الطلبياتُ تطول، والمصاريفُ تحتها كانت لا يصلها أحد — وهي
+    // نصفُ «من أين جاء الرقم»: ما ربحته الطلبيات، وما أكلته المصاريف منه.
     return BlocProvider(
       create: (_) => PeriodOrdersCubit(getOrders: sl())..load(periodId),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(periodCode == null ? 'الفترة' : 'الفترة $periodCode'),
-        ),
-        body: BlocBuilder<PeriodOrdersCubit, PeriodOrdersState>(
-          builder: (context, state) => switch (state) {
-            PeriodOrdersLoading() => const Center(child: CircularProgressIndicator()),
-            PeriodOrdersFailure(:final failure) => _Retry(
-              message: failure.message,
-              periodId: periodId,
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(periodCode == null ? 'الفترة' : 'الفترة $periodCode'),
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'الطلبيات'),
+                Tab(text: 'المصاريف'),
+              ],
             ),
-            PeriodOrdersLoaded(:final held) => RefreshIndicator(
-              onRefresh: () => context.read<PeriodOrdersCubit>().load(periodId),
-              child: _Body(held: held),
-            ),
-          },
+          ),
+          body: TabBarView(
+            children: [
+              BlocBuilder<PeriodOrdersCubit, PeriodOrdersState>(
+                builder: (context, state) => switch (state) {
+                  PeriodOrdersLoading() => const Center(child: CircularProgressIndicator()),
+                  PeriodOrdersFailure(:final failure) => _Retry(
+                    message: failure.message,
+                    periodId: periodId,
+                  ),
+                  PeriodOrdersLoaded(:final held) => RefreshIndicator(
+                    onRefresh: () => context.read<PeriodOrdersCubit>().load(periodId),
+                    child: _Body(held: held),
+                  ),
+                },
+              ),
+              PeriodExpensesTab(periodId: periodId),
+            ],
+          ),
         ),
       ),
     );

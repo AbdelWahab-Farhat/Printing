@@ -901,6 +901,10 @@ Route::prefix('v1')->group(function (): void {
             ->whereNumber('period')
             ->middleware('can:investors.view')->name('investment.periods.orders');
 
+        Route::get('investment/periods/{period}/expenses', [InvestmentFundController::class, 'periodExpenses'])
+            ->whereNumber('period')
+            ->middleware('can:investors.view')->name('investment.periods.expenses');
+
         // **بـ`investors.money.record` لا بـ`investors.manage`.** هذه حركاتُ مالٍ تُسجَّل عند
         // الكاشير، وهي الصلاحيةُ نفسُها التي تحرس دفترَ المحفظة اليوم — بينما `manage` تقرّر
         // شروطَ الصندوق نفسِه. وصلاحيةٌ جديدة تعني مرآةً في التطبيق واختباراً تعاقدياً يسقط.

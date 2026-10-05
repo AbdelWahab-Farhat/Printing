@@ -24,6 +24,7 @@ use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Queries\InvestorBalances;
+use App\Domain\Investor\Queries\PeriodExpensesQuery;
 use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
@@ -63,6 +64,7 @@ class InvestmentFundController extends Controller
         private readonly ReverseDealExpense $reverseExpense,
         private readonly PurchaseFromFund $purchase,
         private readonly PeriodOrdersQuery $periodOrders,
+        private readonly PeriodExpensesQuery $periodExpenses,
         private readonly FundDeal $fund,
         private readonly SettingsService $settings,
     ) {}
@@ -212,8 +214,8 @@ class InvestmentFundController extends Controller
     /**
      * Reverse an expense recorded against the fund
      *
-     * يعود المالُ إلى الحساب الذي دفع وإلى نقد الصندوق، ويرجع ما حُمِّل للشركاء — في فترة المصروف
-     * ما دامت تقبل القيد، وإلا في المفتوحة اليوم. مصروفُ صفقةٍ أخرى 404.
+     * يعود المالُ إلى الحساب الذي دفع وإلى نقد الصندوق، ويرجع ما حُمِّل للشركاء في الفترة التي
+     * حُمِّل فيها. **ومصروفُ فترةٍ أُقفلت يُرفض 422** — أرقامُها أُعلنت. مصروفُ صفقةٍ أخرى 404.
      */
     public function reverseExpense(ReverseDealExpenseRequest $request, int $expense): JsonResponse
     {
@@ -306,6 +308,21 @@ class InvestmentFundController extends Controller
         return $this->success([
             'period' => $this->periodPayload($period),
             ...($this->periodOrders)((int) $period->getKey()),
+        ]);
+    }
+
+    /**
+     * The expenses of one period, and what the investors bore of each
+     *
+     * «لعرض المصاريف الخاصة بهذه الفترة وضمان الشفافية للمستثمرين» — مصاريفُ الصندوق المؤرّخةُ في
+     * نافذتها، وتحتها التصحيحاتُ التي وقعت عليها من فتراتٍ أُقفلت. التفصيل في
+     * {@see PeriodExpensesQuery}.
+     */
+    public function periodExpenses(InvestmentPeriod $period): JsonResponse
+    {
+        return $this->success([
+            'period' => $this->periodPayload($period),
+            ...($this->periodExpenses)($period),
         ]);
     }
 
@@ -492,6 +509,14 @@ class InvestmentFundController extends Controller
             'investors_pool' => $period->investors_pool === null ? null : (string) $period->investors_pool,
             'company_share' => $period->company_share === null ? null : (string) $period->company_share,
             'sales_revenue' => $period->sales_revenue === null ? null : (string) $period->sales_revenue,
+
+            // **المصاريفُ بجانب الأرقام لا داخل «صافي الربح».** صافي الربح ربحُ الطلبيات وحده،
+            // والمصروفُ يصل المستثمرين صفوفاً في محافظهم — فـ«للمستثمرين» نقص منه نصيبُهم قبلُ.
+            // والثاني من الدفتر لا من نسبة: الفترةُ المغلقة لا يدخلها صفّ، فهو مجمّدٌ كالأول.
+            'expenses_amount' => $period->expenses_amount === null ? null : (string) $period->expenses_amount,
+            'expenses_on_investors' => $period->status === PeriodStatus::Closed
+                ? $this->periodExpenses->investorsShareOf($period)
+                : null,
             'closing_stock_cost' => $period->closing_stock_cost === null ? null : (string) $period->closing_stock_cost,
             'closing_cash' => $period->closing_cash === null ? null : (string) $period->closing_cash,
         ];

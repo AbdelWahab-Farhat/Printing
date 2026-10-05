@@ -3,10 +3,13 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
+import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
+import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
+import 'package:dayaa/features/investment_fund/usecases/period_expenses_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -83,6 +86,17 @@ class _FakeRepository implements InvestmentFundRepository {
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 }
 
+/// تبويبُ المصاريف — فارغٌ هنا؛ تفصيلُه في `period_expenses_tab_test.dart`.
+class _FakeExpenses implements PeriodExpensesRepository {
+  @override
+  Future<Either<Failure, PeriodExpenses>> periodExpenses(int periodId) async =>
+      const Right(PeriodExpenses(period: _period));
+
+  @override
+  Future<Either<Failure, Unit>> reverseExpense(int expenseId, {required String reason}) async =>
+      const Right(unit);
+}
+
 const _period = FundPeriod(
   id: 7,
   code: 'P7',
@@ -107,9 +121,12 @@ void main() {
   Future<_FakeRepository> register(PeriodOrders held, {Failure? failure}) async {
     await sl.reset();
     final repository = _FakeRepository(held, failure: failure);
+    final expenses = _FakeExpenses();
     sl
       ..registerSingleton<Session>(Session())
-      ..registerLazySingleton<GetPeriodOrders>(() => GetPeriodOrders(repository));
+      ..registerLazySingleton<GetPeriodOrders>(() => GetPeriodOrders(repository))
+      ..registerLazySingleton<GetPeriodExpenses>(() => GetPeriodExpenses(expenses))
+      ..registerLazySingleton<ReverseFundExpense>(() => ReverseFundExpense(expenses));
 
     return repository;
   }
@@ -281,6 +298,45 @@ void main() {
     expect(find.text('2026-09-01 ← 2026-09-30'), findsOneWidget);
     expect(find.text('صافي الربح'), findsOneWidget);
     expect(find.text('9,000 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('a closed period lists its expenses beside the profit, not inside it', (
+    tester,
+  ) async {
+    // Arrange — قرارُ المالك: القائمةُ كما هي، والمصاريفُ ونصيبُ المستثمرين منها تحت المبيعات.
+    await register(
+      PeriodOrders(
+        period: _period.copyWith(expensesAmount: '400.00', expensesOnInvestors: '200.00'),
+      ),
+    );
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — وصافي الربح على رقمه: ربحُ الطلبيات وحده.
+    expect(find.text('المصاريف'), findsNWidgets(2));
+    expect(find.text('400 د.ل'), findsOneWidget);
+    expect(find.text('منها على المستثمرين'), findsOneWidget);
+    expect(find.text('200 د.ل'), findsOneWidget);
+    expect(find.text('1,500 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('the expenses tab opens beside the orders', (tester) async {
+    // Arrange
+    await register(const PeriodOrders(period: _period));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('المصاريف'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('لا مصاريف على الصندوق في هذه الفترة'), findsOneWidget);
   });
 
   testWidgets('a waiting period says how many orders still hold it', (tester) async {
