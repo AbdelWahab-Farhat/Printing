@@ -206,9 +206,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The shop row at [index]'s tile captioned [caption].
+  ///
+  /// One past [index], because «العنوان» — the customer's own city and region — sits above the
+  /// shops and carries the same two captions.
+  Finder shopTile(String caption, {int index = 0}) => find.text(caption).at(index + 1);
+
   /// Opens the city sheet from the row at [index] and taps [cityName].
   Future<void> pickCity(WidgetTester tester, String cityName, {int index = 0}) async {
-    await tester.tap(find.text('المدينة').at(index));
+    await tester.tap(shopTile('المدينة', index: index));
     await tester.pumpAndSettle();
     await tester.tap(find.text(cityName).last);
     await tester.pumpAndSettle();
@@ -236,8 +242,9 @@ void main() {
     // Arrange
     await startAShop(tester);
 
-    // Assert — the pin is gone from the screen, not merely optional on it.
-    expect(find.text('المدينة'), findsOneWidget);
+    // Assert — the pin is gone from the screen, not merely optional on it. Two city tiles: the
+    // customer's own address, which is optional, and the shop's, which is not.
+    expect(find.text('المدينة'), findsNWidgets(2));
     expect(find.text('مطلوبة'), findsOneWidget);
     expect(find.text('إدخال الإحداثيات يدوياً'), findsNothing);
     expect(find.text('الموقع على الخريطة'), findsNothing);
@@ -263,7 +270,7 @@ void main() {
 
     // Act
     await pickCity(tester, 'طرابلس');
-    await tester.tap(find.text('المنطقة'));
+    await tester.tap(shopTile('المنطقة'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('سوق الجمعة').last);
     await tester.pumpAndSettle();
@@ -283,16 +290,20 @@ void main() {
     // Act
     await pickCity(tester, 'مصراتة');
 
-    // Assert
+    // Assert — the one region tile left is the customer's own address, above the shop.
     expect(find.text('مصراتة'), findsOneWidget);
-    expect(find.text('المنطقة'), findsNothing);
+    expect(find.text('المنطقة'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('المنطقة')).dy,
+      lessThan(tester.getTopLeft(find.text('مصراتة')).dy),
+    );
   });
 
   testWidgets('changing the city drops the region that belonged to the old one', (tester) async {
     // Arrange — «طرابلس / سوق الجمعة», then moved to a city that neighbourhood is not in.
     await startAShop(tester);
     await pickCity(tester, 'طرابلس');
-    await tester.tap(find.text('المنطقة'));
+    await tester.tap(shopTile('المنطقة'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('سوق الجمعة').last);
     await tester.pumpAndSettle();
@@ -321,5 +332,56 @@ void main() {
     // Assert — inherited, and still one tap from being changed.
     expect(find.text('طرابلس'), findsNWidgets(2));
     expect(find.text('مطلوبة'), findsNothing);
+  });
+
+  // ─────────────────── عنوان العميل ───────────────────
+
+  testWidgets('the customer’s own address reaches the API, and needs no shop', (tester) async {
+    // Arrange — where «طلبية جديدة» starts when no shop is chosen.
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'مطبعة النور');
+    await tester.enterText(find.byType(TextFormField).at(1), '0913334444');
+
+    // Act
+    await tester.tap(find.text('المدينة').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('طرابلس').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('المنطقة').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('سوق الجمعة').last);
+    await tester.pumpAndSettle();
+    await save(tester);
+
+    // Assert
+    final sent = verify(() => customers.create(captureAny())).captured.last as NewCustomer;
+    expect(sent.cityId, 3);
+    expect(sent.regionId, 11);
+    expect(sent.shops, isNull);
+  });
+
+  testWidgets('«مسح» takes the address back off', (tester) async {
+    // Arrange
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'مطبعة النور');
+    await tester.enterText(find.byType(TextFormField).at(1), '0913334444');
+    await tester.tap(find.text('المدينة').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('طرابلس').last);
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('مسح'));
+    await tester.pumpAndSettle();
+    await save(tester);
+
+    // Assert
+    final sent = verify(() => customers.create(captureAny())).captured.last as NewCustomer;
+    expect(sent.cityId, isNull);
+    expect(sent.regionId, isNull);
   });
 }

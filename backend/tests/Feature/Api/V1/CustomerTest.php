@@ -388,6 +388,149 @@ class CustomerTest extends TestCase
         $this->assertNull($shop->fresh()->region_id);
     }
 
+    // ─────────────────── عنوان العميل ───────────────────
+
+    public function test_a_customer_records_a_default_address(): void
+    {
+        // Arrange — where an order for this customer goes when no shop is chosen, so staff stop
+        // picking the same city by hand on every order.
+        $tripoli = $this->city('طرابلس');
+        $soukAlJumaa = Region::factory()->create(['city_id' => $tripoli->id, 'name' => 'سوق الجمعة']);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $this->payload([
+            'city_id' => $tripoli->id,
+            'region_id' => $soukAlJumaa->id,
+        ]));
+
+        // Assert — the ids for the form to preselect, and the rows so it can price the delivery.
+        $response->assertCreated()
+            ->assertJsonPath('data.city_id', $tripoli->id)
+            ->assertJsonPath('data.city.name', 'طرابلس')
+            ->assertJsonPath('data.region_id', $soukAlJumaa->id)
+            ->assertJsonPath('data.region.name', 'سوق الجمعة');
+
+        $this->assertDatabaseHas('customers', [
+            'name' => 'مخبز النخيل',
+            'city_id' => $tripoli->id,
+            'region_id' => $soukAlJumaa->id,
+        ]);
+    }
+
+    public function test_a_customer_may_be_recorded_without_an_address(): void
+    {
+        // Arrange — every customer on record today has none, and none of them is half-saved.
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $this->payload());
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonPath('data.city_id', null)
+            ->assertJsonPath('data.city', null)
+            ->assertJsonPath('data.region_id', null)
+            ->assertJsonPath('data.region', null);
+    }
+
+    public function test_a_default_region_from_another_city_is_refused(): void
+    {
+        // Arrange — the same rule a shop's place answers to.
+        $tripoli = $this->city('طرابلس');
+        $zawiya = $this->city('الزاوية');
+        $foreignRegion = Region::factory()->create(['city_id' => $zawiya->id]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $this->payload([
+            'city_id' => $tripoli->id,
+            'region_id' => $foreignRegion->id,
+        ]));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('region_id');
+    }
+
+    public function test_a_default_region_without_a_city_is_refused(): void
+    {
+        // Arrange — a neighbourhood alone names no place an order can be priced to.
+        $region = Region::factory()->create();
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/customers', $this->payload([
+            'region_id' => $region->id,
+        ]));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('city_id');
+    }
+
+    public function test_update_leaves_the_address_alone_when_the_key_is_absent(): void
+    {
+        // Arrange — the same promise `shops` makes: a caller that never mentioned it keeps it.
+        $city = $this->city();
+        $region = Region::factory()->create(['city_id' => $city->id]);
+        $customer = Customer::factory()->create(['city_id' => $city->id, 'region_id' => $region->id]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.city_id', $city->id)
+            ->assertJsonPath('data.region_id', $region->id);
+    }
+
+    public function test_moving_a_customer_to_another_city_clears_the_old_neighbourhood(): void
+    {
+        // Arrange — the region belonged to the city being left.
+        $tripoli = $this->city('طرابلس');
+        $region = Region::factory()->create(['city_id' => $tripoli->id]);
+        $zawiya = $this->city('الزاوية');
+        $customer = Customer::factory()->create(['city_id' => $tripoli->id, 'region_id' => $region->id]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'city_id' => $zawiya->id,
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.city_id', $zawiya->id)
+            ->assertJsonPath('data.region_id', null);
+        $this->assertNull($customer->fresh()->region_id);
+    }
+
+    public function test_update_with_a_null_city_clears_the_address(): void
+    {
+        // Arrange
+        $city = $this->city();
+        $region = Region::factory()->create(['city_id' => $city->id]);
+        $customer = Customer::factory()->create(['city_id' => $city->id, 'region_id' => $region->id]);
+        $headers = $this->auth();
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/customers/{$customer->id}", [
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+            'city_id' => null,
+        ]);
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.city_id', null)
+            ->assertJsonPath('data.region_id', null);
+    }
+
     public function test_saving_a_shop_without_coordinates_keeps_the_pin_it_already_had(): void
     {
         // Arrange — the pin was dropped from the form, not from the database. An edit made

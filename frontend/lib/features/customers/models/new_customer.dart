@@ -20,6 +20,14 @@ abstract class NewCustomer with _$NewCustomer {
     required String name,
     required String phone,
 
+    /// عنوان العميل — where «طلبية جديدة» starts when no shop is chosen.
+    ///
+    /// **Sent even when null**, like a shop's region: the form shows the address whole, so an
+    /// omitted key would mean «اتركه كما هو» on the update endpoint and an address the user
+    /// cleared would quietly survive the save.
+    @JsonKey(name: 'city_id') int? cityId,
+    @JsonKey(name: 'region_id') int? regionId,
+
     /// The places this customer sells from.
     ///
     /// Omitted from the body entirely when empty rather than sent as `[]`: to this API an empty

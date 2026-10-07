@@ -39,6 +39,11 @@ class CustomerAccountResource extends JsonResource
             'phone' => $this->phone,
             'is_active' => $this->is_active,
 
+            // عنوان العميل، كما سجّله الموظفون: حيث تبدأ الطلبية حين لا متجر للعميل. المعرِّفان
+            // وحدهما، فالتطبيق يحمل خريطة المدن ومناطقها أصلاً ويرسم الاسم منها.
+            'city_id' => $this->city_id,
+            'region_id' => $this->region_id,
+
             // **The shop, when the account has one, and never a list of them.** «حسابي» draws one
             // line under a name, and picking which of four shops that line names is a decision
             // the app cannot make. The first is the one the account was opened with.

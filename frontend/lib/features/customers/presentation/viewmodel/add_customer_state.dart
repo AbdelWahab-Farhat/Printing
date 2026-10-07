@@ -34,6 +34,10 @@ extension AddCustomerStateX on AddCustomerState {
   /// phone box, next to the number the user must change.
   String? get phoneError => _fieldError('phone');
 
+  /// The server's complaint about the default address — a stale city from a cached map, or a
+  /// neighbourhood that is not in the city beside it.
+  String? get addressError => _fieldError('city_id') ?? _fieldError('region_id');
+
   /// The server's complaint about one field of one shop.
   ///
   /// Laravel keys nested errors by path — `shops.0.latitude` — and that path is exactly the

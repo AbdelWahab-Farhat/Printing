@@ -26,6 +26,13 @@ final class UpdateCustomer
                 $attributes['is_active'] = $data->isActive;
             }
 
+            // The same rule for the default address: a caller that never mentioned it keeps it.
+            // The pair moves together, so a new city never inherits the old neighbourhood.
+            if ($data->addressSupplied) {
+                $attributes['city_id'] = $data->cityId;
+                $attributes['region_id'] = $data->regionId;
+            }
+
             $customer->update($attributes);
 
             // A null `shops` means the caller did not mention shops at all, so they keep

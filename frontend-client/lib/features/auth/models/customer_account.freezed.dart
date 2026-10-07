@@ -31,7 +31,9 @@ mixin _$CustomerAccount {
 /// Absent altogether from `register` and `login`: neither is a moment when «حسابي» is on
 /// screen, and loading three relations to fill a card nobody is looking at is a query the
 /// sign-in screen would pay for.
- CustomerShop? get shop;@JsonKey(name: 'created_at') DateTime? get createdAt;
+ CustomerShop? get shop;/// عنوان العميل كما سجّله الموظفون — حيث تبدأ الطلبية حين لا متجر له. معرِّفان فقط: خريطة المدن
+/// ومناطقها في يد التطبيق أصلاً، ومنها يُرسم الاسم.
+@JsonKey(name: 'city_id') int? get cityId;@JsonKey(name: 'region_id') int? get regionId;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of CustomerAccount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -44,16 +46,16 @@ $CustomerAccountCopyWith<CustomerAccount> get copyWith => _$CustomerAccountCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,cityId,regionId,createdAt);
 
 @override
 String toString() {
-  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, createdAt: $createdAt)';
+  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, cityId: $cityId, regionId: $regionId, createdAt: $createdAt)';
 }
 
 
@@ -64,7 +66,7 @@ abstract mixin class $CustomerAccountCopyWith<$Res>  {
   factory $CustomerAccountCopyWith(CustomerAccount value, $Res Function(CustomerAccount) _then) = _$CustomerAccountCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String phone, String? code,@JsonKey(name: 'is_active') bool isActive, CustomerShop? shop,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String name, String phone, String? code,@JsonKey(name: 'is_active') bool isActive, CustomerShop? shop,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -81,7 +83,7 @@ class _$CustomerAccountCopyWithImpl<$Res>
 
 /// Create a copy of CustomerAccount
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? code = freezed,Object? isActive = null,Object? shop = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? code = freezed,Object? isActive = null,Object? shop = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -89,7 +91,9 @@ as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to
 as String,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,shop: freezed == shop ? _self.shop : shop // ignore: cast_nullable_to_non_nullable
-as CustomerShop?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as CustomerShop?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -187,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomerAccount() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.cityId,_that.regionId,_that.createdAt);case _:
   return orElse();
 
 }
@@ -208,10 +212,10 @@ return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _CustomerAccount():
-return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.cityId,_that.regionId,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -228,10 +232,10 @@ return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String phone,  String? code, @JsonKey(name: 'is_active')  bool isActive,  CustomerShop? shop, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomerAccount() when $default != null:
-return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.createdAt);case _:
+return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.shop,_that.cityId,_that.regionId,_that.createdAt);case _:
   return null;
 
 }
@@ -243,7 +247,7 @@ return $default(_that.id,_that.name,_that.phone,_that.code,_that.isActive,_that.
 @JsonSerializable()
 
 class _CustomerAccount implements CustomerAccount {
-  const _CustomerAccount({required this.id, required this.name, required this.phone, this.code, @JsonKey(name: 'is_active') this.isActive = true, this.shop, @JsonKey(name: 'created_at') this.createdAt});
+  const _CustomerAccount({required this.id, required this.name, required this.phone, this.code, @JsonKey(name: 'is_active') this.isActive = true, this.shop, @JsonKey(name: 'city_id') this.cityId, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'created_at') this.createdAt});
   factory _CustomerAccount.fromJson(Map<String, dynamic> json) => _$CustomerAccountFromJson(json);
 
 @override final  int id;
@@ -268,6 +272,10 @@ class _CustomerAccount implements CustomerAccount {
 /// screen, and loading three relations to fill a card nobody is looking at is a query the
 /// sign-in screen would pay for.
 @override final  CustomerShop? shop;
+/// عنوان العميل كما سجّله الموظفون — حيث تبدأ الطلبية حين لا متجر له. معرِّفان فقط: خريطة المدن
+/// ومناطقها في يد التطبيق أصلاً، ومنها يُرسم الاسم.
+@override@JsonKey(name: 'city_id') final  int? cityId;
+@override@JsonKey(name: 'region_id') final  int? regionId;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of CustomerAccount
@@ -283,16 +291,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,createdAt);
+int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,cityId,regionId,createdAt);
 
 @override
 String toString() {
-  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, createdAt: $createdAt)';
+  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, cityId: $cityId, regionId: $regionId, createdAt: $createdAt)';
 }
 
 
@@ -303,7 +311,7 @@ abstract mixin class _$CustomerAccountCopyWith<$Res> implements $CustomerAccount
   factory _$CustomerAccountCopyWith(_CustomerAccount value, $Res Function(_CustomerAccount) _then) = __$CustomerAccountCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String phone, String? code,@JsonKey(name: 'is_active') bool isActive, CustomerShop? shop,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, String name, String phone, String? code,@JsonKey(name: 'is_active') bool isActive, CustomerShop? shop,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -320,7 +328,7 @@ class __$CustomerAccountCopyWithImpl<$Res>
 
 /// Create a copy of CustomerAccount
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? code = freezed,Object? isActive = null,Object? shop = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? code = freezed,Object? isActive = null,Object? shop = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? createdAt = freezed,}) {
   return _then(_CustomerAccount(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -328,7 +336,9 @@ as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to
 as String,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,shop: freezed == shop ? _self.shop : shop // ignore: cast_nullable_to_non_nullable
-as CustomerShop?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as CustomerShop?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

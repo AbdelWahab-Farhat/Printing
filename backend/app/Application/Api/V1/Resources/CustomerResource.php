@@ -24,6 +24,14 @@ class CustomerResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'is_active' => $this->is_active,
+            // عنوان العميل — where the order form starts when no shop is chosen. The ids for a
+            // form to preselect and the rows so it can price the delivery without a second read,
+            // the same bargain `CustomerShopResource` makes. `city` is null while `city_id` is
+            // not when the city has since been soft-deleted: a default nobody can order to.
+            'city_id' => $this->city_id,
+            'city' => $this->whenLoaded('city', fn () => $this->city ? new CityResource($this->city) : null),
+            'region_id' => $this->region_id,
+            'region' => $this->whenLoaded('region', fn () => $this->region ? new RegionResource($this->region) : null),
             // whenLoaded keeps this resource honest: a caller that forgot to eager-load gets
             // no `shops` key rather than a silent query per row.
             'shops' => CustomerShopResource::collection($this->whenLoaded('shops')),

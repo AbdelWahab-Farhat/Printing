@@ -30,6 +30,12 @@ class StoreCustomerRequest extends FormRequest
             'phone' => ['required', 'string', 'regex:/^\d{9,15}$/', Rule::unique('customers', 'phone')->withoutTrashed()],
             'is_active' => ['sometimes', 'boolean'],
 
+            // عنوان العميل — where an order goes when no shop is chosen. Optional as a whole; a
+            // neighbourhood is never accepted without the city it is in, and belonging to that
+            // city is checked in `withValidator()`.
+            'city_id' => ['nullable', 'integer', 'required_with:region_id', Rule::exists('cities', 'id')->withoutTrashed()],
+            'region_id' => ['nullable', 'integer', Rule::exists('regions', 'id')->withoutTrashed()],
+
             // Shops are created together with the customer; the code never comes from here.
             'shops' => ['sometimes', 'array'],
             'shops.*.name' => ['required', 'string', 'max:255'],
@@ -68,6 +74,9 @@ class StoreCustomerRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            // The customer's own default address is the same pair, under the same rule.
+            $this->checkRegionIsInCity($validator, $this->input('city_id'), $this->input('region_id'), 'region_id');
+
             $shops = $this->input('shops');
 
             if (! is_array($shops)) {
@@ -75,27 +84,31 @@ class StoreCustomerRequest extends FormRequest
             }
 
             foreach ($shops as $index => $shop) {
-                $cityId = is_array($shop) ? ($shop['city_id'] ?? null) : null;
-                $regionId = is_array($shop) ? ($shop['region_id'] ?? null) : null;
-
-                // Nothing to compare: either half missing is already the other rules' business.
-                if ($cityId === null || $regionId === null || $regionId === '') {
-                    continue;
-                }
-
-                $isInThatCity = Region::query()
-                    ->whereKey($regionId)
-                    ->where('city_id', $cityId)
-                    ->exists();
-
-                if (! $isInThatCity) {
-                    $validator->errors()->add(
-                        "shops.{$index}.region_id",
-                        'المنطقة المختارة ليست ضمن المدينة المحددة',
-                    );
-                }
+                $this->checkRegionIsInCity(
+                    $validator,
+                    is_array($shop) ? ($shop['city_id'] ?? null) : null,
+                    is_array($shop) ? ($shop['region_id'] ?? null) : null,
+                    "shops.{$index}.region_id",
+                );
             }
         });
+    }
+
+    private function checkRegionIsInCity(Validator $validator, mixed $cityId, mixed $regionId, string $field): void
+    {
+        // Nothing to compare: either half missing is already the other rules' business.
+        if ($cityId === null || $cityId === '' || $regionId === null || $regionId === '') {
+            return;
+        }
+
+        $isInThatCity = Region::query()
+            ->whereKey($regionId)
+            ->where('city_id', $cityId)
+            ->exists();
+
+        if (! $isInThatCity) {
+            $validator->errors()->add($field, 'المنطقة المختارة ليست ضمن المدينة المحددة');
+        }
     }
 
     /**
@@ -110,6 +123,9 @@ class StoreCustomerRequest extends FormRequest
             'phone.regex' => 'رقم الهاتف يجب أن يكون أرقاماً فقط (من 9 إلى 15 رقماً)',
             'phone.unique' => 'رقم الهاتف مستخدم مسبقاً لعميل آخر',
             'is_active.boolean' => 'حالة التنشيط يجب أن تكون صحيحة أو خاطئة',
+            'city_id.exists' => 'المدينة المختارة غير موجودة',
+            'city_id.required_with' => 'اختر المدينة قبل المنطقة',
+            'region_id.exists' => 'المنطقة المختارة غير موجودة',
             'shops.array' => 'المحلات يجب أن تكون قائمة',
             'shops.*.name.required' => 'اسم المكان مطلوب',
             'shops.*.city_id.required' => 'مدينة المحل مطلوبة',
@@ -133,6 +149,8 @@ class StoreCustomerRequest extends FormRequest
             'name' => 'اسم العميل',
             'phone' => 'رقم الهاتف',
             'is_active' => 'الحالة',
+            'city_id' => 'المدينة',
+            'region_id' => 'المنطقة',
             'shops' => 'المحلات',
             'shops.*.name' => 'اسم المكان',
             'shops.*.city_id' => 'المدينة',

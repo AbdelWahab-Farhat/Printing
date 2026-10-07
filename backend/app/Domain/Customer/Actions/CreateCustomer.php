@@ -23,6 +23,8 @@ final class CreateCustomer
             $customer = new Customer([
                 'name' => $data->name,
                 'phone' => $data->phone,
+                'city_id' => $data->cityId,
+                'region_id' => $data->regionId,
                 // Not supplied means active — a new customer is someone you just started
                 // working with.
                 'is_active' => $data->isActive ?? true,

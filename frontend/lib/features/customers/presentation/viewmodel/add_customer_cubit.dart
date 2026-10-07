@@ -39,6 +39,8 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
     int? customerId,
     required String name,
     required String phone,
+    int? cityId,
+    int? regionId,
     List<ShopInput> shops = const [],
   }) async {
     // Ignored rather than queued: a second tap while the first request is in flight would be a
@@ -48,8 +50,21 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
     emit(const AddCustomerState.submitting());
 
     final result = customerId == null
-        ? await _createCustomer(name: name, phone: phone, shops: shops)
-        : await _updateCustomer(customerId: customerId, name: name, phone: phone, shops: shops);
+        ? await _createCustomer(
+            name: name,
+            phone: phone,
+            cityId: cityId,
+            regionId: regionId,
+            shops: shops,
+          )
+        : await _updateCustomer(
+            customerId: customerId,
+            name: name,
+            phone: phone,
+            cityId: cityId,
+            regionId: regionId,
+            shops: shops,
+          );
 
     // The screen may have been popped while the request was in flight, and emitting into a
     // closed Cubit throws.

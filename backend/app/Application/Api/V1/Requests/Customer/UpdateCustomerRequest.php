@@ -34,6 +34,12 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             // Omit to leave the customer's current state alone.
             'is_active' => ['sometimes', 'boolean'],
 
+            // Omit `city_id` to keep the current default address; send it as null to clear it.
+            // A city sent without a region clears the old neighbourhood, which was in some other
+            // city. Belonging is checked in `withValidator()` on the parent.
+            'city_id' => ['nullable', 'integer', 'required_with:region_id', Rule::exists('cities', 'id')->withoutTrashed()],
+            'region_id' => ['nullable', 'integer', Rule::exists('regions', 'id')->withoutTrashed()],
+
             // Omit `shops` to keep the existing ones. Sending the key replaces the whole set:
             // entries with an `id` are updated, entries without one are added, and anything
             // left out is deleted.

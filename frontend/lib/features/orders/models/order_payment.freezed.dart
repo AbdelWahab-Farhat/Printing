@@ -45,9 +45,9 @@ mixin _$OrderPayment {
 @JsonKey(name: 'paid_at') DateTime? get paidAt;@JsonKey(name: 'created_at') DateTime? get createdAt;/// «مراجعة الدفعات». False on a row nobody is asked to check — a reversal, a write-off, or a
 /// payment from before reviews existed — and such a row wears no badge at all.
 @JsonKey(name: 'requires_review') bool get requiresReview;@JsonKey(name: 'is_reviewed') bool get isReviewed;@JsonKey(name: 'reviewed_at') DateTime? get reviewedAt;/// Who checked it. Null until somebody has.
-@JsonKey(name: 'reviewer') PaymentRecorder? get reviewedBy;/// **The server's answer, not this app's.** It folds the grant together with the rule that
-/// whoever recorded the entry may not review it — and this app does not know who it is
-/// talking about well enough to apply the second half.
+@JsonKey(name: 'reviewer') PaymentRecorder? get reviewedBy;/// **The server's answer, not this app's.** It folds the grant together with the row's own
+/// state — a reversed or exempt entry has nothing to review — so this screen keeps no copy of
+/// the rule. Whoever recorded the entry may review it too, by the owner's choice.
 @JsonKey(name: 'can_review') bool get canReview;@JsonKey(name: 'can_unreview') bool get canUnreview;/// What to write under a greyed «مراجعة» — «لا يمكن لمن سجّل الدفعة أن يراجعها». Null when
 /// there is no button to grey.
 @JsonKey(name: 'review_blocked_reason') String? get reviewBlockedReason;/// The order the entry belongs to — present on the review queue, where entries from many
@@ -382,9 +382,9 @@ class _OrderPayment extends OrderPayment {
 @override@JsonKey(name: 'reviewed_at') final  DateTime? reviewedAt;
 /// Who checked it. Null until somebody has.
 @override@JsonKey(name: 'reviewer') final  PaymentRecorder? reviewedBy;
-/// **The server's answer, not this app's.** It folds the grant together with the rule that
-/// whoever recorded the entry may not review it — and this app does not know who it is
-/// talking about well enough to apply the second half.
+/// **The server's answer, not this app's.** It folds the grant together with the row's own
+/// state — a reversed or exempt entry has nothing to review — so this screen keeps no copy of
+/// the rule. Whoever recorded the entry may review it too, by the owner's choice.
 @override@JsonKey(name: 'can_review') final  bool canReview;
 @override@JsonKey(name: 'can_unreview') final  bool canUnreview;
 /// What to write under a greyed «مراجعة» — «لا يمكن لمن سجّل الدفعة أن يراجعها». Null when

@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/repositories/customer_repository.dart';
@@ -325,20 +326,104 @@ void main() {
     verifyNever(() => orders.create(any()));
   });
 
-  testWidgets('the customer’s shops are offered, and none is the default', (tester) async {
-    // Arrange
-    session.adopt(userWith(['orders.manage']));
+  bool chipIsOn(WidgetTester tester, String label) =>
+      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label)).selected;
 
-    // Act
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+  void answerWith(Customer answer) =>
+      when(() => customers.customer(7)).thenAnswer((_) async => Right(answer));
 
-    // Assert — optional, and «بدون تحديد» is a real answer rather than an unfilled box.
-    expect(find.text('فرع سوق الجمعة'), findsOneWidget);
-    final chosen = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'بدون تحديد'),
-    );
-    expect(chosen.selected, isTrue);
+  const tripoli = City(id: 1, name: 'طرابلس', isRegionRequired: false);
+  const soukAlJumaa = Region(id: 11, cityId: 1, name: 'سوق الجمعة');
+  const misrata = City(id: 2, name: 'مصراتة', isRegionRequired: false);
+
+  group('where the order starts', () {
+    testWidgets('a customer with one shop and no address starts on that shop', (tester) async {
+      // Arrange — the only place the record names.
+      session.adopt(userWith(['orders.manage']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(chipIsOn(tester, 'فرع سوق الجمعة'), isTrue);
+      expect(chipIsOn(tester, 'بدون تحديد'), isFalse);
+    });
+
+    testWidgets('a customer with several shops and no address is not guessed for', (
+      tester,
+    ) async {
+      // Arrange
+      answerWith(
+        customer.copyWith(
+          shops: const [
+            CustomerShop(id: 3, name: 'فرع سوق الجمعة'),
+            CustomerShop(id: 4, name: 'فرع مصراتة'),
+          ],
+        ),
+      );
+      session.adopt(userWith(['orders.manage']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — «بدون تحديد» is a real answer rather than an unfilled box.
+      expect(chipIsOn(tester, 'بدون تحديد'), isTrue);
+      expect(find.text('مطلوبة'), findsOneWidget);
+    });
+
+    testWidgets('the customer’s own address fills the place, with no shop chosen', (
+      tester,
+    ) async {
+      // Arrange — staff stop picking the same city by hand on every order.
+      answerWith(
+        customer.copyWith(cityId: 1, city: tripoli, regionId: 11, region: soukAlJumaa),
+      );
+      session.adopt(userWith(['orders.manage']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(chipIsOn(tester, 'بدون تحديد'), isTrue);
+      expect(find.text('طرابلس'), findsOneWidget);
+      expect(find.text('سوق الجمعة'), findsOneWidget);
+      expect(find.text('مطلوبة'), findsNothing);
+    });
+
+    testWidgets('choosing a shop moves the place there, and «بدون تحديد» brings it back', (
+      tester,
+    ) async {
+      // Arrange
+      answerWith(
+        customer.copyWith(
+          cityId: 1,
+          city: tripoli,
+          shops: const [CustomerShop(id: 4, name: 'فرع مصراتة', cityId: 2, city: misrata)],
+        ),
+      );
+      session.adopt(userWith(['orders.manage']));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.widgetWithText(ChoiceChip, 'فرع مصراتة'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('مصراتة'), findsOneWidget);
+      expect(find.text('طرابلس'), findsNothing);
+
+      // Act — back to no shop.
+      await tester.tap(find.widgetWithText(ChoiceChip, 'بدون تحديد'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('طرابلس'), findsOneWidget);
+      expect(find.text('مصراتة'), findsNothing);
+    });
   });
 
   testWidgets('a customer with no shops is not asked which shop', (tester) async {

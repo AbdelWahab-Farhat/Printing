@@ -114,10 +114,16 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
       customerPhone: account?.phone,
     );
 
-    // أول المتاجر مختارٌ سلفاً، فيصل العميل إلى خطوة البيانات وهي ممتلئة.
+    // أول المتاجر مختارٌ سلفاً، فيصل العميل إلى خطوة البيانات وهي ممتلئة. وبلا متجر، فعنوانُ الحساب
+    // إن سجّله الموظفون — وإلا فالوجهة فارغةٌ يختارها العميل بيده كما كانت.
     final first = ready.shops.firstOrNull;
+    final addressCityId = account?.cityId;
 
-    emit(first == null ? ready : _withShop(ready, first));
+    emit(switch (first) {
+      final shop? => _withShop(ready, shop),
+      null when addressCityId != null => _placed(ready, addressCityId, account?.regionId),
+      null => ready,
+    });
 
     await _price();
   }
@@ -305,17 +311,20 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
 
   /// يختار [shop] ويوجّه الطلبية إلى مدينته ومنطقته — **ما دامتا على الخريطة**. مدينةٌ أُخرجت منها لا
   /// تطابق شيئاً في المنتقي، فتبقى فارغةً ليختارها العميل بدل أن تُرسَل وجهةٌ يرفضها الخادم.
-  static PlaceOrderReady _withShop(PlaceOrderReady ready, Shop shop) {
+  static PlaceOrderReady _withShop(PlaceOrderReady ready, Shop shop) =>
+      _placed(ready.copyWith(shopId: shop.id), shop.cityId, shop.regionId);
+
+  /// يوجّه الطلبية إلى [cityId] و[regionId] — بالقاعدة نفسها التي يتبعها المتجر: ما ليس على الخريطة
+  /// يبقى فارغاً.
+  static PlaceOrderReady _placed(PlaceOrderReady ready, int? cityId, int? regionId) {
     City? city;
     for (final candidate in ready.cities) {
-      if (candidate.id == shop.cityId) city = candidate;
+      if (candidate.id == cityId) city = candidate;
     }
 
-    final regionId = shop.regionId;
     final hasRegion = city?.regions.any((region) => region.id == regionId) ?? false;
 
     return ready.copyWith(
-      shopId: shop.id,
       cityId: city?.id,
       regionId: hasRegion ? regionId : null,
       lastFailure: null,
