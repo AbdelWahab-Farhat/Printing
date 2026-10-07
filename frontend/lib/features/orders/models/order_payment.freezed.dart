@@ -18,7 +18,10 @@ mixin _$OrderPayment {
  int get id;@JsonKey(name: 'order_id') int get orderId;@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType get type;/// The Arabic the server chose. Rendered as-is, so an entry type this build does not know
 /// still reads correctly.
 @JsonKey(name: 'type_label') String get typeLabel;/// Always positive. Which direction it moves is [type]'s business — see [isIncoming].
- String get amount;/// **The two flags the ledger is drawn from**, both decided by the server. `isReversed`
+ String get amount;/// How much of [amount] was beyond what the order owed — 1 of a 100 handed over on 99 —
+/// and so owed back to the customer rather than paid. On a refund, how much of it handed
+/// that back. «0.00» on nearly every entry; defaulted for a server that predates it.
+@JsonKey(name: 'excess_amount') String get excessAmount;/// **The two flags the ledger is drawn from**, both decided by the server. `isReversed`
 /// strikes the row through; `isReversible` is what puts a cancel action on it — and the
 /// server has already decided that a refund and a reversal are not candidates, so this
 /// screen keeps no copy of that rule.
@@ -39,7 +42,17 @@ mixin _$OrderPayment {
  OrderPaymentReversal? get reversal;/// Who took it. Absent on an entry written by a console command or a seeder.
 @JsonKey(name: 'recorder') PaymentRecorder? get recordedBy;/// **When the money moved**, not when it was typed in — the two genuinely differ on a
 /// deposit taken on Thursday and entered on Saturday. [createdAt] answers the other one.
-@JsonKey(name: 'paid_at') DateTime? get paidAt;@JsonKey(name: 'created_at') DateTime? get createdAt;
+@JsonKey(name: 'paid_at') DateTime? get paidAt;@JsonKey(name: 'created_at') DateTime? get createdAt;/// «مراجعة الدفعات». False on a row nobody is asked to check — a reversal, a write-off, or a
+/// payment from before reviews existed — and such a row wears no badge at all.
+@JsonKey(name: 'requires_review') bool get requiresReview;@JsonKey(name: 'is_reviewed') bool get isReviewed;@JsonKey(name: 'reviewed_at') DateTime? get reviewedAt;/// Who checked it. Null until somebody has.
+@JsonKey(name: 'reviewer') PaymentRecorder? get reviewedBy;/// **The server's answer, not this app's.** It folds the grant together with the rule that
+/// whoever recorded the entry may not review it — and this app does not know who it is
+/// talking about well enough to apply the second half.
+@JsonKey(name: 'can_review') bool get canReview;@JsonKey(name: 'can_unreview') bool get canUnreview;/// What to write under a greyed «مراجعة» — «لا يمكن لمن سجّل الدفعة أن يراجعها». Null when
+/// there is no button to grey.
+@JsonKey(name: 'review_blocked_reason') String? get reviewBlockedReason;/// The order the entry belongs to — present on the review queue, where entries from many
+/// orders sit together, and absent on an order's own ledger.
+ PaymentOrderRef? get order;
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,16 +65,16 @@ $OrderPaymentCopyWith<OrderPayment> get copyWith => _$OrderPaymentCopyWithImpl<O
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.requiresReview, requiresReview) || other.requiresReview == requiresReview)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canUnreview, canUnreview) || other.canUnreview == canUnreview)&&(identical(other.reviewBlockedReason, reviewBlockedReason) || other.reviewBlockedReason == reviewBlockedReason)&&(identical(other.order, order) || other.order == order));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,excessAmount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt,requiresReview,isReviewed,reviewedAt,reviewedBy,canReview,canUnreview,reviewBlockedReason,order]);
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
+  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, excessAmount: $excessAmount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt, requiresReview: $requiresReview, isReviewed: $isReviewed, reviewedAt: $reviewedAt, reviewedBy: $reviewedBy, canReview: $canReview, canUnreview: $canUnreview, reviewBlockedReason: $reviewBlockedReason, order: $order)';
 }
 
 
@@ -72,11 +85,11 @@ abstract mixin class $OrderPaymentCopyWith<$Res>  {
   factory $OrderPaymentCopyWith(OrderPayment value, $Res Function(OrderPayment) _then) = _$OrderPaymentCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'excess_amount') String excessAmount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'requires_review') bool requiresReview,@JsonKey(name: 'is_reviewed') bool isReviewed,@JsonKey(name: 'reviewed_at') DateTime? reviewedAt,@JsonKey(name: 'reviewer') PaymentRecorder? reviewedBy,@JsonKey(name: 'can_review') bool canReview,@JsonKey(name: 'can_unreview') bool canUnreview,@JsonKey(name: 'review_blocked_reason') String? reviewBlockedReason, PaymentOrderRef? order
 });
 
 
-$OrderPaymentReversalCopyWith<$Res>? get reversal;$PaymentRecorderCopyWith<$Res>? get recordedBy;
+$OrderPaymentReversalCopyWith<$Res>? get reversal;$PaymentRecorderCopyWith<$Res>? get recordedBy;$PaymentRecorderCopyWith<$Res>? get reviewedBy;$PaymentOrderRefCopyWith<$Res>? get order;
 
 }
 /// @nodoc
@@ -89,13 +102,14 @@ class _$OrderPaymentCopyWithImpl<$Res>
 
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? excessAmount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,Object? requiresReview = null,Object? isReviewed = null,Object? reviewedAt = freezed,Object? reviewedBy = freezed,Object? canReview = null,Object? canUnreview = null,Object? reviewBlockedReason = freezed,Object? order = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as OrderPaymentType,typeLabel: null == typeLabel ? _self.typeLabel : typeLabel // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
+as String,excessAmount: null == excessAmount ? _self.excessAmount : excessAmount // ignore: cast_nullable_to_non_nullable
 as String,isReversed: null == isReversed ? _self.isReversed : isReversed // ignore: cast_nullable_to_non_nullable
 as bool,isReversible: null == isReversible ? _self.isReversible : isReversible // ignore: cast_nullable_to_non_nullable
 as bool,hasReceipt: null == hasReceipt ? _self.hasReceipt : hasReceipt // ignore: cast_nullable_to_non_nullable
@@ -112,7 +126,15 @@ as int?,reversal: freezed == reversal ? _self.reversal : reversal // ignore: cas
 as OrderPaymentReversal?,recordedBy: freezed == recordedBy ? _self.recordedBy : recordedBy // ignore: cast_nullable_to_non_nullable
 as PaymentRecorder?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,requiresReview: null == requiresReview ? _self.requiresReview : requiresReview // ignore: cast_nullable_to_non_nullable
+as bool,isReviewed: null == isReviewed ? _self.isReviewed : isReviewed // ignore: cast_nullable_to_non_nullable
+as bool,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as PaymentRecorder?,canReview: null == canReview ? _self.canReview : canReview // ignore: cast_nullable_to_non_nullable
+as bool,canUnreview: null == canUnreview ? _self.canUnreview : canUnreview // ignore: cast_nullable_to_non_nullable
+as bool,reviewBlockedReason: freezed == reviewBlockedReason ? _self.reviewBlockedReason : reviewBlockedReason // ignore: cast_nullable_to_non_nullable
+as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
+as PaymentOrderRef?,
   ));
 }
 /// Create a copy of OrderPayment
@@ -138,6 +160,30 @@ $PaymentRecorderCopyWith<$Res>? get recordedBy {
 
   return $PaymentRecorderCopyWith<$Res>(_self.recordedBy!, (value) {
     return _then(_self.copyWith(recordedBy: value));
+  });
+}/// Create a copy of OrderPayment
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PaymentRecorderCopyWith<$Res>? get reviewedBy {
+    if (_self.reviewedBy == null) {
+    return null;
+  }
+
+  return $PaymentRecorderCopyWith<$Res>(_self.reviewedBy!, (value) {
+    return _then(_self.copyWith(reviewedBy: value));
+  });
+}/// Create a copy of OrderPayment
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PaymentOrderRefCopyWith<$Res>? get order {
+    if (_self.order == null) {
+    return null;
+  }
+
+  return $PaymentOrderRefCopyWith<$Res>(_self.order!, (value) {
+    return _then(_self.copyWith(order: value));
   });
 }
 }
@@ -221,10 +267,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'requires_review')  bool requiresReview, @JsonKey(name: 'is_reviewed')  bool isReviewed, @JsonKey(name: 'reviewed_at')  DateTime? reviewedAt, @JsonKey(name: 'reviewer')  PaymentRecorder? reviewedBy, @JsonKey(name: 'can_review')  bool canReview, @JsonKey(name: 'can_unreview')  bool canUnreview, @JsonKey(name: 'review_blocked_reason')  String? reviewBlockedReason,  PaymentOrderRef? order)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderPayment() when $default != null:
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.excessAmount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt,_that.requiresReview,_that.isReviewed,_that.reviewedAt,_that.reviewedBy,_that.canReview,_that.canUnreview,_that.reviewBlockedReason,_that.order);case _:
   return orElse();
 
 }
@@ -242,10 +288,10 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'requires_review')  bool requiresReview, @JsonKey(name: 'is_reviewed')  bool isReviewed, @JsonKey(name: 'reviewed_at')  DateTime? reviewedAt, @JsonKey(name: 'reviewer')  PaymentRecorder? reviewedBy, @JsonKey(name: 'can_review')  bool canReview, @JsonKey(name: 'can_unreview')  bool canUnreview, @JsonKey(name: 'review_blocked_reason')  String? reviewBlockedReason,  PaymentOrderRef? order)  $default,) {final _that = this;
 switch (_that) {
 case _OrderPayment():
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.excessAmount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt,_that.requiresReview,_that.isReviewed,_that.reviewedAt,_that.reviewedBy,_that.canReview,_that.canUnreview,_that.reviewBlockedReason,_that.order);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -262,10 +308,10 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'order_id')  int orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown)  OrderPaymentType type, @JsonKey(name: 'type_label')  String typeLabel,  String amount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'is_reversed')  bool isReversed, @JsonKey(name: 'is_reversible')  bool isReversible, @JsonKey(name: 'has_receipt')  bool hasReceipt, @JsonKey(name: 'receipt_is_image')  bool receiptIsImage, @JsonKey(unknownEnumValue: PaymentMethod.unknown)  PaymentMethod? method, @JsonKey(name: 'method_label')  String? methodLabel,  String? reference, @JsonKey(name: 'receipt_url')  String? receiptUrl, @JsonKey(name: 'receipt_filename')  String? receiptFilename, @JsonKey(name: 'receipt_size_bytes')  int? receiptSizeBytes,  String? notes, @JsonKey(name: 'reverses_payment_id')  int? reversesPaymentId,  OrderPaymentReversal? reversal, @JsonKey(name: 'recorder')  PaymentRecorder? recordedBy, @JsonKey(name: 'paid_at')  DateTime? paidAt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'requires_review')  bool requiresReview, @JsonKey(name: 'is_reviewed')  bool isReviewed, @JsonKey(name: 'reviewed_at')  DateTime? reviewedAt, @JsonKey(name: 'reviewer')  PaymentRecorder? reviewedBy, @JsonKey(name: 'can_review')  bool canReview, @JsonKey(name: 'can_unreview')  bool canUnreview, @JsonKey(name: 'review_blocked_reason')  String? reviewBlockedReason,  PaymentOrderRef? order)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderPayment() when $default != null:
-return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt);case _:
+return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_that.excessAmount,_that.isReversed,_that.isReversible,_that.hasReceipt,_that.receiptIsImage,_that.method,_that.methodLabel,_that.reference,_that.receiptUrl,_that.receiptFilename,_that.receiptSizeBytes,_that.notes,_that.reversesPaymentId,_that.reversal,_that.recordedBy,_that.paidAt,_that.createdAt,_that.requiresReview,_that.isReviewed,_that.reviewedAt,_that.reviewedBy,_that.canReview,_that.canUnreview,_that.reviewBlockedReason,_that.order);case _:
   return null;
 
 }
@@ -277,7 +323,7 @@ return $default(_that.id,_that.orderId,_that.type,_that.typeLabel,_that.amount,_
 @JsonSerializable()
 
 class _OrderPayment extends OrderPayment {
-  const _OrderPayment({required this.id, @JsonKey(name: 'order_id') required this.orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown) required this.type, @JsonKey(name: 'type_label') required this.typeLabel, required this.amount, @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'is_reversible') this.isReversible = false, @JsonKey(name: 'has_receipt') this.hasReceipt = false, @JsonKey(name: 'receipt_is_image') this.receiptIsImage = false, @JsonKey(unknownEnumValue: PaymentMethod.unknown) this.method, @JsonKey(name: 'method_label') this.methodLabel, this.reference, @JsonKey(name: 'receipt_url') this.receiptUrl, @JsonKey(name: 'receipt_filename') this.receiptFilename, @JsonKey(name: 'receipt_size_bytes') this.receiptSizeBytes, this.notes, @JsonKey(name: 'reverses_payment_id') this.reversesPaymentId, this.reversal, @JsonKey(name: 'recorder') this.recordedBy, @JsonKey(name: 'paid_at') this.paidAt, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _OrderPayment({required this.id, @JsonKey(name: 'order_id') required this.orderId, @JsonKey(unknownEnumValue: OrderPaymentType.unknown) required this.type, @JsonKey(name: 'type_label') required this.typeLabel, required this.amount, @JsonKey(name: 'excess_amount') this.excessAmount = '0.00', @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'is_reversible') this.isReversible = false, @JsonKey(name: 'has_receipt') this.hasReceipt = false, @JsonKey(name: 'receipt_is_image') this.receiptIsImage = false, @JsonKey(unknownEnumValue: PaymentMethod.unknown) this.method, @JsonKey(name: 'method_label') this.methodLabel, this.reference, @JsonKey(name: 'receipt_url') this.receiptUrl, @JsonKey(name: 'receipt_filename') this.receiptFilename, @JsonKey(name: 'receipt_size_bytes') this.receiptSizeBytes, this.notes, @JsonKey(name: 'reverses_payment_id') this.reversesPaymentId, this.reversal, @JsonKey(name: 'recorder') this.recordedBy, @JsonKey(name: 'paid_at') this.paidAt, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'requires_review') this.requiresReview = false, @JsonKey(name: 'is_reviewed') this.isReviewed = false, @JsonKey(name: 'reviewed_at') this.reviewedAt, @JsonKey(name: 'reviewer') this.reviewedBy, @JsonKey(name: 'can_review') this.canReview = false, @JsonKey(name: 'can_unreview') this.canUnreview = false, @JsonKey(name: 'review_blocked_reason') this.reviewBlockedReason, this.order}): super._();
   factory _OrderPayment.fromJson(Map<String, dynamic> json) => _$OrderPaymentFromJson(json);
 
 @override final  int id;
@@ -288,6 +334,10 @@ class _OrderPayment extends OrderPayment {
 @override@JsonKey(name: 'type_label') final  String typeLabel;
 /// Always positive. Which direction it moves is [type]'s business — see [isIncoming].
 @override final  String amount;
+/// How much of [amount] was beyond what the order owed — 1 of a 100 handed over on 99 —
+/// and so owed back to the customer rather than paid. On a refund, how much of it handed
+/// that back. «0.00» on nearly every entry; defaulted for a server that predates it.
+@override@JsonKey(name: 'excess_amount') final  String excessAmount;
 /// **The two flags the ledger is drawn from**, both decided by the server. `isReversed`
 /// strikes the row through; `isReversible` is what puts a cancel action on it — and the
 /// server has already decided that a refund and a reversal are not candidates, so this
@@ -325,6 +375,24 @@ class _OrderPayment extends OrderPayment {
 /// deposit taken on Thursday and entered on Saturday. [createdAt] answers the other one.
 @override@JsonKey(name: 'paid_at') final  DateTime? paidAt;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
+/// «مراجعة الدفعات». False on a row nobody is asked to check — a reversal, a write-off, or a
+/// payment from before reviews existed — and such a row wears no badge at all.
+@override@JsonKey(name: 'requires_review') final  bool requiresReview;
+@override@JsonKey(name: 'is_reviewed') final  bool isReviewed;
+@override@JsonKey(name: 'reviewed_at') final  DateTime? reviewedAt;
+/// Who checked it. Null until somebody has.
+@override@JsonKey(name: 'reviewer') final  PaymentRecorder? reviewedBy;
+/// **The server's answer, not this app's.** It folds the grant together with the rule that
+/// whoever recorded the entry may not review it — and this app does not know who it is
+/// talking about well enough to apply the second half.
+@override@JsonKey(name: 'can_review') final  bool canReview;
+@override@JsonKey(name: 'can_unreview') final  bool canUnreview;
+/// What to write under a greyed «مراجعة» — «لا يمكن لمن سجّل الدفعة أن يراجعها». Null when
+/// there is no button to grey.
+@override@JsonKey(name: 'review_blocked_reason') final  String? reviewBlockedReason;
+/// The order the entry belongs to — present on the review queue, where entries from many
+/// orders sit together, and absent on an order's own ledger.
+@override final  PaymentOrderRef? order;
 
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
@@ -339,16 +407,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.requiresReview, requiresReview) || other.requiresReview == requiresReview)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canUnreview, canUnreview) || other.canUnreview == canUnreview)&&(identical(other.reviewBlockedReason, reviewBlockedReason) || other.reviewBlockedReason == reviewBlockedReason)&&(identical(other.order, order) || other.order == order));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt]);
+int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,excessAmount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt,requiresReview,isReviewed,reviewedAt,reviewedBy,canReview,canUnreview,reviewBlockedReason,order]);
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt)';
+  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, excessAmount: $excessAmount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt, requiresReview: $requiresReview, isReviewed: $isReviewed, reviewedAt: $reviewedAt, reviewedBy: $reviewedBy, canReview: $canReview, canUnreview: $canUnreview, reviewBlockedReason: $reviewBlockedReason, order: $order)';
 }
 
 
@@ -359,11 +427,11 @@ abstract mixin class _$OrderPaymentCopyWith<$Res> implements $OrderPaymentCopyWi
   factory _$OrderPaymentCopyWith(_OrderPayment value, $Res Function(_OrderPayment) _then) = __$OrderPaymentCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'order_id') int orderId,@JsonKey(unknownEnumValue: OrderPaymentType.unknown) OrderPaymentType type,@JsonKey(name: 'type_label') String typeLabel, String amount,@JsonKey(name: 'excess_amount') String excessAmount,@JsonKey(name: 'is_reversed') bool isReversed,@JsonKey(name: 'is_reversible') bool isReversible,@JsonKey(name: 'has_receipt') bool hasReceipt,@JsonKey(name: 'receipt_is_image') bool receiptIsImage,@JsonKey(unknownEnumValue: PaymentMethod.unknown) PaymentMethod? method,@JsonKey(name: 'method_label') String? methodLabel, String? reference,@JsonKey(name: 'receipt_url') String? receiptUrl,@JsonKey(name: 'receipt_filename') String? receiptFilename,@JsonKey(name: 'receipt_size_bytes') int? receiptSizeBytes, String? notes,@JsonKey(name: 'reverses_payment_id') int? reversesPaymentId, OrderPaymentReversal? reversal,@JsonKey(name: 'recorder') PaymentRecorder? recordedBy,@JsonKey(name: 'paid_at') DateTime? paidAt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'requires_review') bool requiresReview,@JsonKey(name: 'is_reviewed') bool isReviewed,@JsonKey(name: 'reviewed_at') DateTime? reviewedAt,@JsonKey(name: 'reviewer') PaymentRecorder? reviewedBy,@JsonKey(name: 'can_review') bool canReview,@JsonKey(name: 'can_unreview') bool canUnreview,@JsonKey(name: 'review_blocked_reason') String? reviewBlockedReason, PaymentOrderRef? order
 });
 
 
-@override $OrderPaymentReversalCopyWith<$Res>? get reversal;@override $PaymentRecorderCopyWith<$Res>? get recordedBy;
+@override $OrderPaymentReversalCopyWith<$Res>? get reversal;@override $PaymentRecorderCopyWith<$Res>? get recordedBy;@override $PaymentRecorderCopyWith<$Res>? get reviewedBy;@override $PaymentOrderRefCopyWith<$Res>? get order;
 
 }
 /// @nodoc
@@ -376,13 +444,14 @@ class __$OrderPaymentCopyWithImpl<$Res>
 
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? excessAmount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,Object? requiresReview = null,Object? isReviewed = null,Object? reviewedAt = freezed,Object? reviewedBy = freezed,Object? canReview = null,Object? canUnreview = null,Object? reviewBlockedReason = freezed,Object? order = freezed,}) {
   return _then(_OrderPayment(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as OrderPaymentType,typeLabel: null == typeLabel ? _self.typeLabel : typeLabel // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
+as String,excessAmount: null == excessAmount ? _self.excessAmount : excessAmount // ignore: cast_nullable_to_non_nullable
 as String,isReversed: null == isReversed ? _self.isReversed : isReversed // ignore: cast_nullable_to_non_nullable
 as bool,isReversible: null == isReversible ? _self.isReversible : isReversible // ignore: cast_nullable_to_non_nullable
 as bool,hasReceipt: null == hasReceipt ? _self.hasReceipt : hasReceipt // ignore: cast_nullable_to_non_nullable
@@ -399,7 +468,15 @@ as int?,reversal: freezed == reversal ? _self.reversal : reversal // ignore: cas
 as OrderPaymentReversal?,recordedBy: freezed == recordedBy ? _self.recordedBy : recordedBy // ignore: cast_nullable_to_non_nullable
 as PaymentRecorder?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,requiresReview: null == requiresReview ? _self.requiresReview : requiresReview // ignore: cast_nullable_to_non_nullable
+as bool,isReviewed: null == isReviewed ? _self.isReviewed : isReviewed // ignore: cast_nullable_to_non_nullable
+as bool,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as PaymentRecorder?,canReview: null == canReview ? _self.canReview : canReview // ignore: cast_nullable_to_non_nullable
+as bool,canUnreview: null == canUnreview ? _self.canUnreview : canUnreview // ignore: cast_nullable_to_non_nullable
+as bool,reviewBlockedReason: freezed == reviewBlockedReason ? _self.reviewBlockedReason : reviewBlockedReason // ignore: cast_nullable_to_non_nullable
+as String?,order: freezed == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
+as PaymentOrderRef?,
   ));
 }
 
@@ -427,7 +504,300 @@ $PaymentRecorderCopyWith<$Res>? get recordedBy {
   return $PaymentRecorderCopyWith<$Res>(_self.recordedBy!, (value) {
     return _then(_self.copyWith(recordedBy: value));
   });
+}/// Create a copy of OrderPayment
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PaymentRecorderCopyWith<$Res>? get reviewedBy {
+    if (_self.reviewedBy == null) {
+    return null;
+  }
+
+  return $PaymentRecorderCopyWith<$Res>(_self.reviewedBy!, (value) {
+    return _then(_self.copyWith(reviewedBy: value));
+  });
+}/// Create a copy of OrderPayment
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PaymentOrderRefCopyWith<$Res>? get order {
+    if (_self.order == null) {
+    return null;
+  }
+
+  return $PaymentOrderRefCopyWith<$Res>(_self.order!, (value) {
+    return _then(_self.copyWith(order: value));
+  });
 }
+}
+
+
+/// @nodoc
+mixin _$PaymentOrderRef {
+
+ int get id; String get code;@JsonKey(name: 'customer_name') String? get customerName;
+/// Create a copy of PaymentOrderRef
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PaymentOrderRefCopyWith<PaymentOrderRef> get copyWith => _$PaymentOrderRefCopyWithImpl<PaymentOrderRef>(this as PaymentOrderRef, _$identity);
+
+  /// Serializes this PaymentOrderRef to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,code,customerName);
+
+@override
+String toString() {
+  return 'PaymentOrderRef(id: $id, code: $code, customerName: $customerName)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PaymentOrderRefCopyWith<$Res>  {
+  factory $PaymentOrderRefCopyWith(PaymentOrderRef value, $Res Function(PaymentOrderRef) _then) = _$PaymentOrderRefCopyWithImpl;
+@useResult
+$Res call({
+ int id, String code,@JsonKey(name: 'customer_name') String? customerName
+});
+
+
+
+
+}
+/// @nodoc
+class _$PaymentOrderRefCopyWithImpl<$Res>
+    implements $PaymentOrderRefCopyWith<$Res> {
+  _$PaymentOrderRefCopyWithImpl(this._self, this._then);
+
+  final PaymentOrderRef _self;
+  final $Res Function(PaymentOrderRef) _then;
+
+/// Create a copy of PaymentOrderRef
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? customerName = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,customerName: freezed == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PaymentOrderRef].
+extension PaymentOrderRefPatterns on PaymentOrderRef {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PaymentOrderRef value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PaymentOrderRef() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PaymentOrderRef value)  $default,){
+final _that = this;
+switch (_that) {
+case _PaymentOrderRef():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PaymentOrderRef value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PaymentOrderRef() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(name: 'customer_name')  String? customerName)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PaymentOrderRef() when $default != null:
+return $default(_that.id,_that.code,_that.customerName);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(name: 'customer_name')  String? customerName)  $default,) {final _that = this;
+switch (_that) {
+case _PaymentOrderRef():
+return $default(_that.id,_that.code,_that.customerName);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(name: 'customer_name')  String? customerName)?  $default,) {final _that = this;
+switch (_that) {
+case _PaymentOrderRef() when $default != null:
+return $default(_that.id,_that.code,_that.customerName);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PaymentOrderRef implements PaymentOrderRef {
+  const _PaymentOrderRef({required this.id, required this.code, @JsonKey(name: 'customer_name') this.customerName});
+  factory _PaymentOrderRef.fromJson(Map<String, dynamic> json) => _$PaymentOrderRefFromJson(json);
+
+@override final  int id;
+@override final  String code;
+@override@JsonKey(name: 'customer_name') final  String? customerName;
+
+/// Create a copy of PaymentOrderRef
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PaymentOrderRefCopyWith<_PaymentOrderRef> get copyWith => __$PaymentOrderRefCopyWithImpl<_PaymentOrderRef>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PaymentOrderRefToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,code,customerName);
+
+@override
+String toString() {
+  return 'PaymentOrderRef(id: $id, code: $code, customerName: $customerName)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PaymentOrderRefCopyWith<$Res> implements $PaymentOrderRefCopyWith<$Res> {
+  factory _$PaymentOrderRefCopyWith(_PaymentOrderRef value, $Res Function(_PaymentOrderRef) _then) = __$PaymentOrderRefCopyWithImpl;
+@override @useResult
+$Res call({
+ int id, String code,@JsonKey(name: 'customer_name') String? customerName
+});
+
+
+
+
+}
+/// @nodoc
+class __$PaymentOrderRefCopyWithImpl<$Res>
+    implements _$PaymentOrderRefCopyWith<$Res> {
+  __$PaymentOrderRefCopyWithImpl(this._self, this._then);
+
+  final _PaymentOrderRef _self;
+  final $Res Function(_PaymentOrderRef) _then;
+
+/// Create a copy of PaymentOrderRef
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? customerName = freezed,}) {
+  return _then(_PaymentOrderRef(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,customerName: freezed == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
 }
 
 
@@ -979,7 +1349,9 @@ mixin _$PaymentSummary {
 /// **Beside «المدفوع» and never inside it**, so that number goes on meaning cash. Defaulted
 /// rather than required: an app talking to a server from before this existed reads a zero,
 /// which is exactly what such a server means.
-@JsonKey(name: 'written_off_amount') String get writtenOffAmount;/// What is still owed. **Negative when the order is overpaid**, so the screen can say
+@JsonKey(name: 'written_off_amount') String get writtenOffAmount;/// What the customer paid beyond the order and is owed back — «زائد للزبون» — until it is
+/// refunded or kept. **Never part of «المدفوع»**, so that stays what the order was paid.
+@JsonKey(name: 'excess_amount') String get excessAmount;/// What is still owed. **Negative when the order is overpaid**, so the screen can say
 /// «زائد ٥٠» rather than flooring the fact away.
 @JsonKey(name: 'remaining_amount') String get remainingAmount;@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus get paymentStatus;@JsonKey(name: 'payment_status_label') String get paymentStatusLabel;/// An order that finished without its money accounted for.
 ///
@@ -999,16 +1371,16 @@ $PaymentSummaryCopyWith<PaymentSummary> get copyWith => _$PaymentSummaryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
+int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,excessAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
+  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, excessAmount: $excessAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
 }
 
 
@@ -1019,7 +1391,7 @@ abstract mixin class $PaymentSummaryCopyWith<$Res>  {
   factory $PaymentSummaryCopyWith(PaymentSummary value, $Res Function(PaymentSummary) _then) = _$PaymentSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
+@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'excess_amount') String excessAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
 });
 
 
@@ -1036,11 +1408,12 @@ class _$PaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? excessAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
   return _then(_self.copyWith(
 grandTotal: null == grandTotal ? _self.grandTotal : grandTotal // ignore: cast_nullable_to_non_nullable
 as String,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
 as String,writtenOffAmount: null == writtenOffAmount ? _self.writtenOffAmount : writtenOffAmount // ignore: cast_nullable_to_non_nullable
+as String,excessAmount: null == excessAmount ? _self.excessAmount : excessAmount // ignore: cast_nullable_to_non_nullable
 as String,remainingAmount: null == remainingAmount ? _self.remainingAmount : remainingAmount // ignore: cast_nullable_to_non_nullable
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,paymentStatusLabel: null == paymentStatusLabel ? _self.paymentStatusLabel : paymentStatusLabel // ignore: cast_nullable_to_non_nullable
@@ -1130,10 +1503,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaymentSummary() when $default != null:
-return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.excessAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   return orElse();
 
 }
@@ -1151,10 +1524,10 @@ return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSummary():
-return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.excessAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1171,10 +1544,10 @@ return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'grand_total')  String grandTotal, @JsonKey(name: 'paid_amount')  String paidAmount, @JsonKey(name: 'written_off_amount')  String writtenOffAmount, @JsonKey(name: 'excess_amount')  String excessAmount, @JsonKey(name: 'remaining_amount')  String remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown)  PaymentStatus paymentStatus, @JsonKey(name: 'payment_status_label')  String paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money')  bool hasUnrecordedMoney)?  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSummary() when $default != null:
-return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
+return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.excessAmount,_that.remainingAmount,_that.paymentStatus,_that.paymentStatusLabel,_that.hasUnrecordedMoney);case _:
   return null;
 
 }
@@ -1186,7 +1559,7 @@ return $default(_that.grandTotal,_that.paidAmount,_that.writtenOffAmount,_that.r
 @JsonSerializable()
 
 class _PaymentSummary extends PaymentSummary {
-  const _PaymentSummary({@JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'paid_amount') required this.paidAmount, @JsonKey(name: 'written_off_amount') this.writtenOffAmount = '0.00', @JsonKey(name: 'remaining_amount') required this.remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) required this.paymentStatus, @JsonKey(name: 'payment_status_label') required this.paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money') this.hasUnrecordedMoney = false}): super._();
+  const _PaymentSummary({@JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'paid_amount') required this.paidAmount, @JsonKey(name: 'written_off_amount') this.writtenOffAmount = '0.00', @JsonKey(name: 'excess_amount') this.excessAmount = '0.00', @JsonKey(name: 'remaining_amount') required this.remainingAmount, @JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) required this.paymentStatus, @JsonKey(name: 'payment_status_label') required this.paymentStatusLabel, @JsonKey(name: 'has_unrecorded_money') this.hasUnrecordedMoney = false}): super._();
   factory _PaymentSummary.fromJson(Map<String, dynamic> json) => _$PaymentSummaryFromJson(json);
 
 @override@JsonKey(name: 'grand_total') final  String grandTotal;
@@ -1197,6 +1570,9 @@ class _PaymentSummary extends PaymentSummary {
 /// rather than required: an app talking to a server from before this existed reads a zero,
 /// which is exactly what such a server means.
 @override@JsonKey(name: 'written_off_amount') final  String writtenOffAmount;
+/// What the customer paid beyond the order and is owed back — «زائد للزبون» — until it is
+/// refunded or kept. **Never part of «المدفوع»**, so that stays what the order was paid.
+@override@JsonKey(name: 'excess_amount') final  String excessAmount;
 /// What is still owed. **Negative when the order is overpaid**, so the screen can say
 /// «زائد ٥٠» rather than flooring the fact away.
 @override@JsonKey(name: 'remaining_amount') final  String remainingAmount;
@@ -1222,16 +1598,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
+int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,excessAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney);
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
+  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, excessAmount: $excessAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney)';
 }
 
 
@@ -1242,7 +1618,7 @@ abstract mixin class _$PaymentSummaryCopyWith<$Res> implements $PaymentSummaryCo
   factory _$PaymentSummaryCopyWith(_PaymentSummary value, $Res Function(_PaymentSummary) _then) = __$PaymentSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
+@JsonKey(name: 'grand_total') String grandTotal,@JsonKey(name: 'paid_amount') String paidAmount,@JsonKey(name: 'written_off_amount') String writtenOffAmount,@JsonKey(name: 'excess_amount') String excessAmount,@JsonKey(name: 'remaining_amount') String remainingAmount,@JsonKey(name: 'payment_status', unknownEnumValue: PaymentStatus.unknown) PaymentStatus paymentStatus,@JsonKey(name: 'payment_status_label') String paymentStatusLabel,@JsonKey(name: 'has_unrecorded_money') bool hasUnrecordedMoney
 });
 
 
@@ -1259,11 +1635,12 @@ class __$PaymentSummaryCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? excessAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,}) {
   return _then(_PaymentSummary(
 grandTotal: null == grandTotal ? _self.grandTotal : grandTotal // ignore: cast_nullable_to_non_nullable
 as String,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
 as String,writtenOffAmount: null == writtenOffAmount ? _self.writtenOffAmount : writtenOffAmount // ignore: cast_nullable_to_non_nullable
+as String,excessAmount: null == excessAmount ? _self.excessAmount : excessAmount // ignore: cast_nullable_to_non_nullable
 as String,remainingAmount: null == remainingAmount ? _self.remainingAmount : remainingAmount // ignore: cast_nullable_to_non_nullable
 as String,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as PaymentStatus,paymentStatusLabel: null == paymentStatusLabel ? _self.paymentStatusLabel : paymentStatusLabel // ignore: cast_nullable_to_non_nullable

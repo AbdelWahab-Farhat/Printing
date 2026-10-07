@@ -320,6 +320,7 @@ final class AuditAttributeLabels
             'deposit_confirmed_by' => 'مَن أكّد استلام العربون',
             'written_off_amount' => 'المشطوب',
             'carrier_settled_amount' => 'المسدَّد لدى الناقل',
+            'excess_amount' => 'الزائد للزبون',
             'carrier_collection_recorded_at' => 'تاريخ تسجيل تحصيل الناقل',
             'collected_amount' => 'المبلغ المحصّل',
             'settled_at' => 'تاريخ التسوية',
@@ -385,6 +386,10 @@ final class AuditAttributeLabels
             // The reversal, not the reversed: a payment is never edited, it is undone by a
             // second row pointing back at the first. See PAYMENTS-DESIGN.md.
             'reverses_payment_id' => 'تعكس الدفعة',
+            'excess_amount' => 'الزائد عن المتبقي',
+            'requires_review' => 'تحتاج مراجعة',
+            'reviewed_at' => 'تاريخ المراجعة',
+            'reviewed_by' => 'راجعها',
             'receipt_disk' => 'مكان تخزين الإيصال',
             'receipt_path' => 'مسار الإيصال',
             'receipt_original_filename' => 'اسم ملف الإيصال',

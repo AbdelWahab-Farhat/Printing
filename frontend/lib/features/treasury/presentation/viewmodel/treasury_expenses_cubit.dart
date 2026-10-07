@@ -9,23 +9,21 @@ import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 /// «المصاريف» — مصاريف كل الحسابات في تبويبٍ واحد، فلا يُفتح كل حسابٍ ليُعرف ما خرج منه.
 /// TREASURY-DESIGN §٢١.
 ///
-/// يبدأ على «هذا الشهر»، ويُقصر بالفترة والتصنيف والحساب — كلُّها على الخادم، ومعها المجموع
-/// ([total]) الذي يحسبه الخادم على الفترة كلها لا على الصفحة المحمّلة.
+/// يبدأ على «هذا الشهر»، ويُقصر بالفترة **وبمربّع بحثٍ واحد** — التصنيف والحساب والملاحظة والموظف
+/// والمبلغ — كلُّها على الخادم، ومعها المجموع ([total]) الذي يحسبه الخادم على ما طابق كلّه لا على
+/// الصفحة المحمّلة. كان التصنيف والحساب شريحتين، فصار البحث يجدهما بالاسم (٢٠٢٦-١٠-٠٤).
 ///
 /// **يُعاد ولا يُرقَّع** بعد مصروفٍ جديد أو عكس: كلاهما يغيّر المجموع، والمجموع جوابُ الخادم.
 class TreasuryExpensesCubit extends PagedCubit<TreasuryMovement> {
   TreasuryExpensesCubit({
     required GetTreasuryExpenses getExpenses,
-    required GetExpenseCategories getCategories,
     required ReverseTreasuryOperation reverseOperation,
     DateTime Function()? now,
   }) : _getExpenses = getExpenses,
-       _getCategories = getCategories,
        _reverseOperation = reverseOperation,
        _now = now ?? DateTime.now;
 
   final GetTreasuryExpenses _getExpenses;
-  final GetExpenseCategories _getCategories;
   final ReverseTreasuryOperation _reverseOperation;
   final DateTime Function() _now;
 
@@ -34,10 +32,7 @@ class TreasuryExpensesCubit extends PagedCubit<TreasuryMovement> {
   /// تاريخا «من – إلى»، حين تكون [period] هي.
   ({DateTime from, DateTime to})? customRange;
 
-  ExpenseCategory? category;
-  TreasuryAccount? account;
-
-  /// المجموع كما قاله الخادم للفترة المصفّاة، و«0.00» قبل أن يجيب.
+  /// المجموع كما قاله الخادم للفترة والبحث، و«0.00» قبل أن يجيب.
   String get total => switch (state) {
     PagedLoaded(:final page) => '${page.extraMeta['expenses_total'] ?? '0.00'}',
     _ => '0.00',
@@ -50,33 +45,16 @@ class TreasuryExpensesCubit extends PagedCubit<TreasuryMovement> {
   };
 
   /// [between] لـ«من – إلى» وحدها، وتغيّره يُعيد القراءة ولو بقيت الفترة «من – إلى».
+  ///
+  /// **وما في مربّع البحث يبقى**: تغيير الفترة لا يمسح ما كتبه أحدٌ ليجده.
   Future<void> showPeriod(ExpensePeriod value, {({DateTime from, DateTime to})? between}) {
     if (value == period && between == null) return Future<void>.value();
 
     period = value;
     customRange = value == ExpensePeriod.custom ? between : null;
 
-    return load();
+    return load(search: currentSearch);
   }
-
-  Future<void> showCategory(ExpenseCategory? value) {
-    if (value?.id == category?.id) return Future<void>.value();
-
-    category = value;
-
-    return load();
-  }
-
-  Future<void> showAccount(TreasuryAccount? value) {
-    if (value?.id == account?.id) return Future<void>.value();
-
-    account = value;
-
-    return load();
-  }
-
-  /// كل التصنيفات، المعطَّل منها أيضاً: مصروفٌ قديم سُجّل تحت تصنيفٍ أُطفئ بعده.
-  Future<Either<Failure, List<ExpenseCategory>>> categories() => _getCategories(activeOnly: false);
 
   /// يعكس عمليةَ المصروف، ثم يُعاد التبويب ليُقرأ المجموع من جديد.
   Future<Failure?> reverse(TreasuryMovement expense, {required String reason}) async {
@@ -103,13 +81,7 @@ class TreasuryExpensesCubit extends PagedCubit<TreasuryMovement> {
   }) {
     final shown = range;
 
-    return _getExpenses(
-      page: page,
-      from: shown?.from,
-      to: shown?.to,
-      categoryId: category?.id,
-      accountId: account?.id,
-    );
+    return _getExpenses(page: page, from: shown?.from, to: shown?.to, search: search);
   }
 }
 

@@ -26,6 +26,11 @@ enum OrderPaymentType {
   @JsonValue('write_off')
   writeOff,
 
+  /// «اعتبار الزائد إيراداً» — what the customer paid beyond the order is the shop's now. Moves
+  /// no cash, like a write-off, and never touches «المدفوع».
+  @JsonValue('excess_kept')
+  excessKept,
+
   /// A type this build has not been taught. The server's own `type_label` is what gets drawn,
   /// so an entry added after this release still reads correctly — see [OrderPayment.typeLabel].
   unknown,
@@ -112,12 +117,21 @@ enum PaymentStatus {
   /// added later still reads correctly — see [PaymentSummary.paymentStatusLabel].
   final String label;
 
-  /// The three a person filters by.
+  /// The four a person filters by.
   ///
-  /// «مدفوعة بالزيادة» is absent deliberately: it is not a queue anybody works, it arises only
-  /// from a discount granted after payment, and a fourth row would push the three that matter
-  /// down the sheet. An overpaid order still says so on its own card.
+  /// «مدفوعة بالزيادة» joined the three once a customer could hand over 100 on 99: those orders
+  /// hold money owed back, and somebody works through them — refunding it or keeping it.
   static List<PaymentStatus> get filterable => const [
+    PaymentStatus.paid,
+    PaymentStatus.partiallyPaid,
+    PaymentStatus.unpaid,
+    PaymentStatus.overpaid,
+  ];
+
+  /// The three the home screen's payment board draws as cards — the queues somebody works
+  /// through in the morning. «مدفوعة بالزيادة» is filterable but stays off the board: it is a
+  /// handful of orders to settle with a refund or a keep, not a morning's work.
+  static List<PaymentStatus> get onTheBoard => const [
     PaymentStatus.paid,
     PaymentStatus.partiallyPaid,
     PaymentStatus.unpaid,
@@ -147,6 +161,11 @@ abstract class OrderPayment with _$OrderPayment {
 
     /// Always positive. Which direction it moves is [type]'s business — see [isIncoming].
     required String amount,
+
+    /// How much of [amount] was beyond what the order owed — 1 of a 100 handed over on 99 —
+    /// and so owed back to the customer rather than paid. On a refund, how much of it handed
+    /// that back. «0.00» on nearly every entry; defaulted for a server that predates it.
+    @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
 
     /// **The two flags the ledger is drawn from**, both decided by the server. `isReversed`
     /// strikes the row through; `isReversible` is what puts a cancel action on it — and the
@@ -195,6 +214,29 @@ abstract class OrderPayment with _$OrderPayment {
     /// deposit taken on Thursday and entered on Saturday. [createdAt] answers the other one.
     @JsonKey(name: 'paid_at') DateTime? paidAt,
     @JsonKey(name: 'created_at') DateTime? createdAt,
+
+    /// «مراجعة الدفعات». False on a row nobody is asked to check — a reversal, a write-off, or a
+    /// payment from before reviews existed — and such a row wears no badge at all.
+    @JsonKey(name: 'requires_review') @Default(false) bool requiresReview,
+    @JsonKey(name: 'is_reviewed') @Default(false) bool isReviewed,
+    @JsonKey(name: 'reviewed_at') DateTime? reviewedAt,
+
+    /// Who checked it. Null until somebody has.
+    @JsonKey(name: 'reviewer') PaymentRecorder? reviewedBy,
+
+    /// **The server's answer, not this app's.** It folds the grant together with the row's own
+    /// state — a reversed or exempt entry has nothing to review — so this screen keeps no copy of
+    /// the rule. Whoever recorded the entry may review it too, by the owner's choice.
+    @JsonKey(name: 'can_review') @Default(false) bool canReview,
+    @JsonKey(name: 'can_unreview') @Default(false) bool canUnreview,
+
+    /// What to write under a greyed «مراجعة» — «لا يمكن لمن سجّل الدفعة أن يراجعها». Null when
+    /// there is no button to grey.
+    @JsonKey(name: 'review_blocked_reason') String? reviewBlockedReason,
+
+    /// The order the entry belongs to — present on the review queue, where entries from many
+    /// orders sit together, and absent on an order's own ledger.
+    PaymentOrderRef? order,
   }) = _OrderPayment;
 
   const OrderPayment._();
@@ -209,8 +251,34 @@ abstract class OrderPayment with _$OrderPayment {
   /// Whether this entry closed part of the debt without any money moving.
   bool get isWriteOff => type == OrderPaymentType.writeOff;
 
+  /// «اعتبار الزائد إيراداً» — a decision about money already in the drawer, not money moving.
+  bool get isExcessKept => type == OrderPaymentType.excessKept;
+
+  /// Whether this entry moved no cash in either direction, so it wears no sign and no colour.
+  bool get movesNoCash => isWriteOff || isExcessKept;
+
+  /// Whether part of this entry was beyond what the order owed.
+  bool get hasExcess => excessAmount != '0.00' && excessAmount.isNotEmpty;
+
   /// Whether this entry counts for nothing any more — struck through on screen.
   bool get isVoid => isReversed || type == OrderPaymentType.reversal;
+
+  /// Whether the row carries a review badge at all: it was asked for a check, and either
+  /// somebody made one or the entry still counts. A reversed payment nobody reviewed has
+  /// nothing left to check, so it says nothing either way.
+  bool get showsReview => requiresReview && (isReviewed || !isReversed);
+}
+
+/// The order an entry belongs to, as much of it as a row in the review queue names.
+@freezed
+abstract class PaymentOrderRef with _$PaymentOrderRef {
+  const factory PaymentOrderRef({
+    required int id,
+    required String code,
+    @JsonKey(name: 'customer_name') String? customerName,
+  }) = _PaymentOrderRef;
+
+  factory PaymentOrderRef.fromJson(Map<String, dynamic> json) => _$PaymentOrderRefFromJson(json);
 }
 
 /// The reversal that undid an entry, as much of it as the row above needs to name it.
@@ -259,6 +327,10 @@ abstract class PaymentSummary with _$PaymentSummary {
     /// which is exactly what such a server means.
     @JsonKey(name: 'written_off_amount') @Default('0.00') String writtenOffAmount,
 
+    /// What the customer paid beyond the order and is owed back — «زائد للزبون» — until it is
+    /// refunded or kept. **Never part of «المدفوع»**, so that stays what the order was paid.
+    @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
+
     /// What is still owed. **Negative when the order is overpaid**, so the screen can say
     /// «زائد ٥٠» rather than flooring the fact away.
     @JsonKey(name: 'remaining_amount') required String remainingAmount,
@@ -293,6 +365,9 @@ abstract class PaymentSummary with _$PaymentSummary {
   /// the order still owing — «مدفوعة جزئياً» with five already written off is a real state, and
   /// the screen still owes the reader that line.
   bool get hasWriteOff => writtenOffAmount != '0.00' && writtenOffAmount.isNotEmpty;
+
+  /// Whether the order holds money the customer paid beyond it.
+  bool get hasExcess => excessAmount != '0.00' && excessAmount.isNotEmpty;
 }
 
 /// What the ledger endpoint answers with: the entries, and where the order stands after them.

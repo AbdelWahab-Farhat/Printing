@@ -95,6 +95,13 @@ enum TransitionFieldType {
   @JsonValue('treasury_account')
   treasuryAccount,
 
+  /// **A question asked when the button is pressed, not a box on the form.** [confirmWhen]
+  /// names another field and a line; when that answer is past the line, the screen asks
+  /// [TransitionField.label] — «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟» — and sends
+  /// `true` on a yes. Never drawn.
+  @JsonValue('confirmation')
+  confirmation,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.
@@ -173,6 +180,10 @@ abstract class TransitionField with _$TransitionField {
     /// without this app fetching the list to learn one word. Both halves or neither: an answer
     /// nobody can read is an answer nobody agreed to.
     @JsonKey(name: 'value_label') String? valueLabel,
+
+    /// When a [TransitionFieldType.confirmation] is asked: the answer to `key` went past
+    /// `above`. Null on every other kind.
+    @JsonKey(name: 'confirm_when') TransitionFieldThreshold? confirmWhen,
   }) = _TransitionField;
 
   const TransitionField._();
@@ -186,6 +197,10 @@ abstract class TransitionField with _$TransitionField {
 
   /// Whether this build can put a control on screen for it.
   bool get isRenderable => type != TransitionFieldType.unknown;
+
+  /// Whether it is a question asked at the moment of sending rather than a control — drawn by
+  /// nothing, and answered by the screen's own dialog.
+  bool get isConfirmation => type == TransitionFieldType.confirmation;
 
   /// Whether this field has to be answered, given everything else on the form.
   ///
@@ -243,6 +258,20 @@ abstract class TransitionFieldCondition with _$TransitionFieldCondition {
 
   factory TransitionFieldCondition.fromJson(Map<String, dynamic> json) =>
       _$TransitionFieldConditionFromJson(json);
+}
+
+/// The line a [TransitionFieldType.confirmation] watches: the answer to [key] past [above].
+///
+/// [above] is a decimal string, the server's own — compared in fixed point, never as a double.
+@freezed
+abstract class TransitionFieldThreshold with _$TransitionFieldThreshold {
+  const factory TransitionFieldThreshold({
+    required String key,
+    required String above,
+  }) = _TransitionFieldThreshold;
+
+  factory TransitionFieldThreshold.fromJson(Map<String, dynamic> json) =>
+      _$TransitionFieldThresholdFromJson(json);
 }
 
 /// One choice on a field that carries its own list.

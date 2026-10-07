@@ -406,6 +406,33 @@ final class TreasuryService
         ));
     }
 
+    /**
+     * «مبالغ زائدة للزبائن» — opened the first time a customer pays beyond their order.
+     *
+     * `createOrFirst` on the system code, for the reason {@see payableForVendor()} gives: two
+     * overpayments at once would both miss the lookup, and the second insert meets
+     * `treasury_accounts_system_code_unique` and reads the first one's row instead of failing.
+     */
+    public function customerExcessPayable(): TreasuryAccount
+    {
+        $existing = TreasuryAccount::query()->where('system_code', TreasuryAccount::CUSTOMER_EXCESS)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return TreasuryAccount::unguarded(fn () => TreasuryAccount::query()->createOrFirst(
+            ['system_code' => TreasuryAccount::CUSTOMER_EXCESS],
+            [
+                'name' => 'مبالغ زائدة للزبائن',
+                'kind' => AccountKind::Payable,
+                'is_default' => false,
+                'is_active' => true,
+                'currency' => 'LYD',
+            ],
+        ));
+    }
+
     /** The vendor's payable, if anything was ever owed to them. */
     public function payableIdOfVendor(int $vendorId): ?int
     {

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -37,6 +38,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     String? receiptPath,
     String? receiptFilename,
     int? treasuryAccountId,
+    bool acceptOverpayment = false,
   }) {
     return _write(
       OrderEndpoints.payments(orderId),
@@ -48,6 +50,18 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
       treasuryAccountId: treasuryAccountId,
+      acceptOverpayment: acceptOverpayment,
+    );
+  }
+
+  @override
+  Future<Either<Failure, PaymentResult>> keepExcess(int orderId, {String? notes}) {
+    return safeRequest<PaymentResult>(
+      () => _dio.post(
+        OrderEndpoints.keepExcess(orderId),
+        data: <String, dynamic>{'notes': ?notes},
+      ),
+      parse: _result,
     );
   }
 
@@ -109,6 +123,43 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, OrderPayment>> review(
+    int orderId,
+    int paymentId, {
+    required bool reviewed,
+  }) {
+    return safeRequest<OrderPayment>(
+      () => _dio.patch(
+        OrderEndpoints.reviewPayment(orderId, paymentId),
+        data: <String, dynamic>{'reviewed': reviewed},
+      ),
+      parse: (data) =>
+          OrderPayment.fromJson((data! as Map<String, dynamic>)['payment'] as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Paginated<OrderPayment>>> reviewQueue({
+    required int page,
+    OrderPaymentType? type,
+    int? accountId,
+  }) {
+    return safePaginatedRequest<OrderPayment>(
+      () => _dio.get(
+        OrderEndpoints.paymentReviewQueue,
+        queryParameters: {
+          'page': page,
+          // The two kinds of entry a review covers; anything else is not sent.
+          if (type == OrderPaymentType.payment) 'type': 'payment',
+          if (type == OrderPaymentType.refund) 'type': 'refund',
+          'account_id': ?accountId,
+        },
+      ),
+      parseItem: OrderPayment.fromJson,
+    );
+  }
+
   /// The two write paths differ only in their URL, so they share everything below it.
   ///
   /// **Always `FormData`, receipt or not.** A body that changed shape depending on whether a
@@ -124,6 +175,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     String? receiptPath,
     String? receiptFilename,
     int? treasuryAccountId,
+    bool acceptOverpayment = false,
   }) {
     return safeRequest<PaymentResult>(
       () async => _dio.post(
@@ -142,6 +194,9 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           // حين يختاره أحدٌ فقط: غائباً تقرّر الخزينة — حساب صاحب الدفعة، وإلا افتراضي
           // الطريقة (TREASURY-DESIGN §٥).
           'treasury_account_id': ?treasuryAccountId,
+          // Only when it was asked and answered — a multipart body carries no booleans, and `1`
+          // is what Laravel's `boolean` rule reads as yes.
+          if (acceptOverpayment) 'accept_overpayment': '1',
           // `fromFile` streams from disk rather than holding the file in memory. The fallback
           // name claims no extension on purpose: the server sniffs the bytes and would record
           // a made-up `.pdf` as the original name of what might be a photograph.

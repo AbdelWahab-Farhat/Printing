@@ -192,13 +192,14 @@ class OrderTransitionPaymentTest extends TestCase
         $amount = $this->field($receiving, 'payment_amount');
 
         // Assert — offered, never demanded: an order paid in full weeks ago is handed over with
-        // the box left alone. The ceiling is what is still owed, so the field refuses an
-        // overpayment before the request is even sent, and the hint says the figure out loud.
+        // the box left alone. **No ceiling** — 100 handed over on 99 is ordinary — and the hint
+        // says what is owed out loud; an amount past it is asked about when the move is sent
+        // (`payment_accept_overpayment`, PAYMENT-REVIEW-AND-OVERPAY.md).
         $this->assertNotNull($amount);
         $this->assertSame('number', $amount['type']);
         $this->assertSame('المبلغ المقبوض', $amount['label']);
         $this->assertFalse($amount['required']);
-        $this->assertEquals(250.0, $amount['max']);
+        $this->assertNull($amount['max']);
         $this->assertSame('المتبقي 250', $amount['hint']);
         $this->assertNull($amount['value']);
     }
@@ -530,8 +531,9 @@ class OrderTransitionPaymentTest extends TestCase
             'payment_method' => 'cash',
         ]);
 
-        // Assert — the ceiling on the field catches it first, and the move dies with it: a
-        // status that advanced while its money was refused would be the worst of both.
+        // Assert — nobody confirmed the excess, so the ledger refuses it under the box it was
+        // typed in, and the move dies with it: a status that advanced while its money was
+        // refused would be the worst of both.
         $response->assertStatus(422)->assertJsonValidationErrors('fields.payment_amount');
         $this->assertSame(OrderStatus::OfficePickup, $order->fresh()->status);
         $this->assertSame(1, $this->paymentCount($order), 'only the deposit the arrangement seeded');
@@ -572,7 +574,9 @@ class OrderTransitionPaymentTest extends TestCase
         // wrote a column nothing added up.
         $this->assertNotNull($amount);
         $this->assertSame('150', $amount['value']);
-        $this->assertEquals(150.0, $amount['max']);
+        // No ceiling: anything past the remainder is asked about on sending — see
+        // PAYMENT-REVIEW-AND-OVERPAY.md.
+        $this->assertNull($amount['max']);
         $this->assertNull($this->field($settling, 'collected_amount'));
     }
 

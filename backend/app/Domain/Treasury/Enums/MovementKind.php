@@ -32,6 +32,16 @@ enum MovementKind: string
     /** «خصم من المورد»: the vendor knocked something off what is owed. No money moved. */
     case VendorCredit = 'vendor_credit';
 
+    /**
+     * What a customer paid beyond their order, owed back to them — `out` on «مبالغ زائدة
+     * للزبائن» when the payment is taken, `in` when a refund hands it back. The cash itself is
+     * the payment's own movement into the drawer; this is the debt that came with it.
+     */
+    case CustomerExcess = 'customer_excess';
+
+    /** «اعتبار الزائد إيراداً»: the excess is the shop's now, and comes off «علينا». No money moved. */
+    case ExcessKept = 'excess_kept';
+
     public function label(): string
     {
         return match ($this) {
@@ -50,6 +60,8 @@ enum MovementKind: string
             self::SupplyPurchase => 'شراء نواقص',
             self::Purchase => 'أمر شراء',
             self::VendorCredit => 'خصم من المورد',
+            self::CustomerExcess => 'زائد لزبون',
+            self::ExcessKept => 'زائد اعتُبر إيراداً',
         };
     }
 }

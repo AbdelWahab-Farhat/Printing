@@ -14,10 +14,12 @@ use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Carrier\CarrierService;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
 use App\Domain\Treasury\DTOs\AccountData;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\ResponseTrait;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -103,7 +105,7 @@ class TreasuryAccountController extends Controller
         return $this->success(new TreasuryAccountResource($this->loaded($account)), 'تم حفظ الحساب');
     }
 
-    public function movements(Request $request, TreasuryAccount $account): JsonResponse
+    public function movements(Request $request, TreasuryAccount $account, OrderService $orders): JsonResponse
     {
         $this->authorizeRead($request, $account);
 
@@ -118,9 +120,38 @@ class TreasuryAccountController extends Controller
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
 
-        return $this->successWithPagination(
-            TreasuryMovementResource::collection($this->treasury->ledger($account, $filters, $perPage)),
+        $page = $this->treasury->ledger($account, $filters, $perPage);
+
+        $this->attachPaymentReviews($page->getCollection(), $orders);
+
+        return $this->successWithPagination(TreasuryMovementResource::collection($page));
+    }
+
+    /**
+     * «غير مراجَعة / تمت المراجعة» on the lines a customer's payment or refund moved.
+     *
+     * **Asked of the orders here, not by the treasury**, which knows nothing of order payments —
+     * one query for the page. A reversal's line carries none: the mirror undoes money, and a
+     * badge on it would read as a review of the undoing. The resource publishes it as
+     * `payment_review`, present only on this endpoint.
+     *
+     * @param  Collection<int, TreasuryMovement>  $movements
+     */
+    private function attachPaymentReviews(Collection $movements, OrderService $orders): void
+    {
+        $alias = (new OrderPayment)->getMorphClass();
+
+        $lines = $movements->filter(
+            fn (TreasuryMovement $movement): bool => $movement->source_type === $alias && ! $movement->isReversal(),
         );
+
+        $states = $orders->reviewStatesOf(
+            $lines->map(fn (TreasuryMovement $movement): int => (int) $movement->source_id)->unique()->values()->all(),
+        );
+
+        foreach ($lines as $movement) {
+            $movement->setRelation('paymentReview', $states[(int) $movement->source_id] ?? null);
+        }
     }
 
     /**

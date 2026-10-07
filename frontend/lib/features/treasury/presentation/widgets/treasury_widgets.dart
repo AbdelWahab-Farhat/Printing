@@ -247,6 +247,12 @@ class TreasuryMovementRow extends StatelessWidget {
                   SizedBox(height: 4.h),
                   Text(at.timeLabel, style: quiet),
                 ],
+                // دفعة الزبون أو ردّه وراء السطر: هل راجعها أحد؟ تُقرأ هنا، وتُراجَع من دفعات
+                // الطلبية أو تبويب «المراجعة».
+                if (movement.paymentReview case final review?) ...[
+                  SizedBox(height: 4.h),
+                  _ReviewBadge(review: review),
+                ],
               ],
             ),
           ),
@@ -276,6 +282,45 @@ class TreasuryMovementRow extends StatelessWidget {
     );
 
     return onTap == null ? row : InkWell(onTap: onTap, child: row);
+  }
+}
+
+/// «غير مراجَعة» أو «تمت المراجعة — فلان · التاريخ» تحت سطرٍ حرّكته دفعةُ زبون — بالكلمات والألوان
+/// نفسها التي في دفعات الطلبية، فلا يُقرأ الشيءُ الواحد في مكانين بلغتين.
+class _ReviewBadge extends StatelessWidget {
+  const _ReviewBadge({required this.review});
+
+  final MovementPaymentReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final tone = review.isReviewed ? scheme.primary : scheme.tertiary;
+    final text = review.isReviewed
+        ? [
+            'تمت المراجعة',
+            if (review.reviewerName case final who?) '— $who',
+            if (review.reviewedAt case final at?) '· ${at.stampLabel}',
+          ].join(' ')
+        : 'غير مراجَعة';
+
+    return Row(
+      key: const ValueKey('movement-review'),
+      children: [
+        Icon(
+          review.isReviewed ? AppIcons.paymentReviewed : AppIcons.awaitingReview,
+          size: 14.sp,
+          color: tone,
+        ),
+        SizedBox(width: 4.w),
+        Flexible(
+          child: Text(
+            text,
+            style: context.textTheme.bodySmall?.copyWith(color: tone, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -32,6 +32,8 @@ abstract interface class TreasuryRepository {
     DateTime? to,
     int? categoryId,
     int? accountId,
+    /// التصنيف والحساب والملاحظة والموظف بالاسم، والمبلغ بالتمام — والمجموع يتبعه.
+    String? search,
   });
 
   /// [notes] الفارغة (`''`) تمسح الملاحظات، والغائبة تتركها — `AccountData::hasNotes`.

@@ -75,6 +75,11 @@ class TreasuryMovementResource extends JsonResource
 
             'notes' => $this->notes,
 
+            // «غير مراجَعة / تمت المراجعة» on a line a customer's payment or refund moved —
+            // `{is_reviewed, reviewed_at, reviewer}`, null when that payment asks for no review.
+            // Only the account ledger attaches it; every other list leaves the key out.
+            'payment_review' => $this->whenLoaded('paymentReview'),
+
             'recorder' => $this->whenLoaded('recorder', fn (): ?array => $this->recorder === null ? null : [
                 'id' => $this->recorder->id,
                 'name' => $this->recorder->name,

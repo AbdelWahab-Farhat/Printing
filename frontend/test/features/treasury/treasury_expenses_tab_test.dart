@@ -87,6 +87,7 @@ void main() {
         to: any(named: 'to'),
         categoryId: any(named: 'categoryId'),
         accountId: any(named: 'accountId'),
+        search: any(named: 'search'),
       ),
     ).thenAnswer((_) async => Right(page));
   }
@@ -212,27 +213,55 @@ void main() {
       expect(find.text('كل المصاريف'), findsOneWidget);
     });
 
-    testWidgets('picking an account narrows the list to it', (tester) async {
+    testWidgets('one search box replaces the category and account chips', (tester) async {
       // Arrange
       session.adopt(userWith(['treasury.view']));
-      await openTheTab(tester);
 
       // Act
-      await tester.tap(find.text('الحساب: الكل'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ListTile, 'مصرف الجمهورية'));
+      await openTheTab(tester);
+
+      // Assert
+      expect(find.byKey(const ValueKey('expenses-search')), findsOneWidget);
+      expect(find.textContaining('التصنيف:'), findsNothing);
+      expect(find.textContaining('الحساب:'), findsNothing);
+    });
+
+    testWidgets('typing in the search box asks the server, for this month', (tester) async {
+      // Arrange
+      session.adopt(userWith(['treasury.view']));
+      final now = DateTime.now();
+      await openTheTab(tester);
+
+      // Act — past the debounce, so the request is actually sent.
+      await tester.enterText(find.byKey(const ValueKey('expenses-search')), 'إيجار');
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       // Assert
       verify(
         () => repository.expenses(
           page: 1,
-          from: any(named: 'from'),
-          to: any(named: 'to'),
-          accountId: 2,
+          from: DateTime(now.year, now.month),
+          to: DateTime(now.year, now.month + 1, 0),
+          search: 'إيجار',
         ),
       ).called(1);
-      expect(find.text('الحساب: مصرف الجمهورية'), findsOneWidget);
+    });
+
+    testWidgets('changing the period keeps what was typed', (tester) async {
+      // Arrange
+      session.adopt(userWith(['treasury.view']));
+      await openTheTab(tester);
+      await tester.enterText(find.byKey(const ValueKey('expenses-search')), 'وقود');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('الكل').first);
+      await tester.pumpAndSettle();
+
+      // Assert — every date, still searching.
+      verify(() => repository.expenses(page: 1, search: 'وقود')).called(1);
     });
 
     testWidgets('is not there for somebody who reads only their own accounts', (tester) async {
@@ -262,6 +291,7 @@ void main() {
           to: any(named: 'to'),
           categoryId: any(named: 'categoryId'),
           accountId: any(named: 'accountId'),
+          search: any(named: 'search'),
         ),
       );
     });
@@ -293,7 +323,6 @@ void main() {
       ).thenAnswer((_) async => const Left(_failure));
       final cubit = TreasuryExpensesCubit(
         getExpenses: GetTreasuryExpenses(repository),
-        getCategories: GetExpenseCategories(repository),
         reverseOperation: ReverseTreasuryOperation(repository),
         now: () => DateTime(2026, 10, 15),
       );

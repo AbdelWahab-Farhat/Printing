@@ -228,6 +228,17 @@ enum PermissionName: string
     case ReverseOrderPayments = 'orders.payments.reverse';
     case WriteOffOrderPayments = 'orders.payments.write_off';
 
+    // **«مراجعة الدفعات»: somebody saying an entry is right**, on every payment and refund. Unlike
+    // `orders.deposit.confirm`, whoever holds it may review their own entries too — the owner's
+    // choice. It gates nothing — see Docs/payments/PAYMENT-REVIEW-AND-OVERPAY.md.
+    case ReviewOrderPayments = 'orders.payments.review';
+
+    // **«اعتبار الزائد إيراداً»: deciding that what a customer paid beyond their order is the
+    // shop's.** Its own grant, beside the write-off and for the mirror reason: a write-off decides
+    // money owed to the shop will never come, this decides money the shop owes a customer will
+    // never go back. Handing it back is an ordinary refund, under `orders.payments.reverse`.
+    case KeepOrderExcess = 'orders.payments.keep_excess';
+
     // What a unit of production standard-costs at — labour, machine runtime, overhead. Applied
     // automatically when an order enters printing (see ApplyManufacturingRates), so this pair
     // guards only the admin screen that maintains the rate table itself, the same split
@@ -454,6 +465,8 @@ enum PermissionName: string
             self::RecordOrderPayments => 'تسجيل دفعة على الطلبية',
             self::ReverseOrderPayments => 'إلغاء دفعة أو ردّ مبلغ',
             self::WriteOffOrderPayments => 'شطب فرق مبلغ الطلبية',
+            self::ReviewOrderPayments => 'مراجعة دفعات الطلبيات',
+            self::KeepOrderExcess => 'اعتبار زائد الزبون إيراداً',
             self::ViewManufacturingCostRates => 'عرض معدلات تكلفة التصنيع',
             self::ManageManufacturingCostRates => 'إدارة معدلات تكلفة التصنيع',
 
@@ -548,7 +561,8 @@ enum PermissionName: string
             // over there, and this is the grant that vouches for them.
             self::ConfirmDepositReceipt,
             self::ViewOrderPayments, self::RecordOrderPayments,
-            self::ReverseOrderPayments, self::WriteOffOrderPayments => 'مدفوعات الطلبيات',
+            self::ReverseOrderPayments, self::WriteOffOrderPayments,
+            self::ReviewOrderPayments, self::KeepOrderExcess => 'مدفوعات الطلبيات',
 
             self::ViewManufacturingCostRates,
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',

@@ -8,11 +8,13 @@ use App\Domain\Order\Enums\PaymentStatus;
 use App\Support\Exceptions\DomainException;
 
 /**
- * Somebody typed 500 where they meant 50.
+ * Somebody typed 500 where they meant 50 — or the customer really did hand over 100 for 99.
  *
- * Refused rather than accepted-and-reported, because the ordinary cause is a slipped keystroke
- * at a counter and the moment to catch it is while the customer is still standing there. A
- * deposit larger than the whole order is not a thing that happens.
+ * **Refused unless the person confirmed it** (`accept_overpayment`). The ordinary cause of a
+ * figure beyond the debt used to be a slipped keystroke, and the confirmation is still what
+ * catches that while the customer is standing there. Confirmed, the payment is taken whole and
+ * the part beyond the debt is owed back to the customer — `excess_amount`, see
+ * Docs/payments/PAYMENT-REVIEW-AND-OVERPAY.md.
  *
  * **The rule binds at the moment of recording, not forever.** An order whose total is later cut
  * by a discount can end up paid more than it costs without anybody having done anything wrong —
@@ -22,9 +24,18 @@ use App\Support\Exceptions\DomainException;
  */
 final class PaymentExceedsRemaining extends DomainException
 {
-    public static function make(string $amount, string $remaining): self
+    private string $field = 'amount';
+
+    /**
+     * @param  string  $field  where the refusal is filed — `fields.payment_amount` on the status
+     *                         screen, whose fields hang off `fields`
+     */
+    public static function make(string $amount, string $remaining, string $field = 'amount'): self
     {
-        return new self("المبلغ ({$amount}) أكبر من المتبقي على الطلبية ({$remaining})");
+        $exception = new self("المبلغ ({$amount}) أكبر من المتبقي على الطلبية ({$remaining}) — أكّد تسجيل الزائد للزبون");
+        $exception->field = $field;
+
+        return $exception;
     }
 
     /**
@@ -32,6 +43,6 @@ final class PaymentExceedsRemaining extends DomainException
      */
     public function fieldErrors(): array
     {
-        return ['amount' => [$this->getMessage()]];
+        return [$this->field => [$this->getMessage()]];
     }
 }

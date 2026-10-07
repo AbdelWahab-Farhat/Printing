@@ -616,7 +616,12 @@ final class ChangeOrderStatus
             'receipt' => $fields[TransitionFields::PAYMENT_RECEIPT] ?? null,
             // Empty unless the person picked one — the treasury then decides (TREASURY-DESIGN §٥).
             'treasury_account_id' => $fields[TransitionFields::PAYMENT_ACCOUNT] ?? null,
-        ]), $actor, accountField: 'fields.'.TransitionFields::PAYMENT_ACCOUNT);
+            // The yes to «المبلغ يزيد على المتبقي». Absent, an amount beyond the debt is refused.
+            'accept_overpayment' => $fields[TransitionFields::PAYMENT_ACCEPT_OVERPAYMENT] ?? false,
+        ]), $actor,
+            accountField: 'fields.'.TransitionFields::PAYMENT_ACCOUNT,
+            amountField: 'fields.'.TransitionFields::PAYMENT_AMOUNT,
+        );
 
         // `RecordOrderPayment` recalculates against its own locked copy, so the instance this
         // action is holding still carries the old `paid_amount` — and the settlement guard three

@@ -17,7 +17,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// **Three cards, not four.** «مدفوعة بالزيادة» arises only from a discount granted after
 /// payment; it is a rarity to notice on an order, not a queue anybody works through in the
-/// morning — see [PaymentStatus.filterable]. An overpaid order still says so on its own card.
+/// morning — see [PaymentStatus.onTheBoard], which stays at three now that the orders filter
+/// offers it too. An overpaid order still says so on its own card.
 ///
 /// Rendered from the list the server sent, in its order, so a state added to the business
 /// appears here without an app release. The Arabic travels with the number for the same reason.
@@ -31,7 +32,7 @@ class PaymentBoard extends StatelessWidget {
 
   /// Only the states somebody works a queue of, in the order the filter offers them.
   List<OrderStatusCount> get _cards {
-    final wanted = PaymentStatus.filterable.map((status) => status.wire).toList();
+    final wanted = PaymentStatus.onTheBoard.map((status) => status.wire).toList();
 
     return [for (final wire in wanted) ...payments.where((payment) => payment.status == wire)];
   }

@@ -17,6 +17,7 @@ _OrderPayment _$OrderPaymentFromJson(Map<String, dynamic> json) =>
       ),
       typeLabel: json['type_label'] as String,
       amount: json['amount'] as String,
+      excessAmount: json['excess_amount'] as String? ?? '0.00',
       isReversed: json['is_reversed'] as bool? ?? false,
       isReversible: json['is_reversible'] as bool? ?? false,
       hasReceipt: json['has_receipt'] as bool? ?? false,
@@ -47,6 +48,20 @@ _OrderPayment _$OrderPaymentFromJson(Map<String, dynamic> json) =>
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
+      requiresReview: json['requires_review'] as bool? ?? false,
+      isReviewed: json['is_reviewed'] as bool? ?? false,
+      reviewedAt: json['reviewed_at'] == null
+          ? null
+          : DateTime.parse(json['reviewed_at'] as String),
+      reviewedBy: json['reviewer'] == null
+          ? null
+          : PaymentRecorder.fromJson(json['reviewer'] as Map<String, dynamic>),
+      canReview: json['can_review'] as bool? ?? false,
+      canUnreview: json['can_unreview'] as bool? ?? false,
+      reviewBlockedReason: json['review_blocked_reason'] as String?,
+      order: json['order'] == null
+          ? null
+          : PaymentOrderRef.fromJson(json['order'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
@@ -56,6 +71,7 @@ Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
       'type': _$OrderPaymentTypeEnumMap[instance.type]!,
       'type_label': instance.typeLabel,
       'amount': instance.amount,
+      'excess_amount': instance.excessAmount,
       'is_reversed': instance.isReversed,
       'is_reversible': instance.isReversible,
       'has_receipt': instance.hasReceipt,
@@ -72,6 +88,14 @@ Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
       'recorder': instance.recordedBy?.toJson(),
       'paid_at': instance.paidAt?.toIso8601String(),
       'created_at': instance.createdAt?.toIso8601String(),
+      'requires_review': instance.requiresReview,
+      'is_reviewed': instance.isReviewed,
+      'reviewed_at': instance.reviewedAt?.toIso8601String(),
+      'reviewer': instance.reviewedBy?.toJson(),
+      'can_review': instance.canReview,
+      'can_unreview': instance.canUnreview,
+      'review_blocked_reason': instance.reviewBlockedReason,
+      'order': instance.order?.toJson(),
     };
 
 const _$OrderPaymentTypeEnumMap = {
@@ -79,6 +103,7 @@ const _$OrderPaymentTypeEnumMap = {
   OrderPaymentType.reversal: 'reversal',
   OrderPaymentType.refund: 'refund',
   OrderPaymentType.writeOff: 'write_off',
+  OrderPaymentType.excessKept: 'excess_kept',
   OrderPaymentType.unknown: 'unknown',
 };
 
@@ -89,6 +114,20 @@ const _$PaymentMethodEnumMap = {
   PaymentMethod.libyana: 'libyana',
   PaymentMethod.unknown: 'unknown',
 };
+
+_PaymentOrderRef _$PaymentOrderRefFromJson(Map<String, dynamic> json) =>
+    _PaymentOrderRef(
+      id: (json['id'] as num).toInt(),
+      code: json['code'] as String,
+      customerName: json['customer_name'] as String?,
+    );
+
+Map<String, dynamic> _$PaymentOrderRefToJson(_PaymentOrderRef instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'customer_name': instance.customerName,
+    };
 
 _OrderPaymentReversal _$OrderPaymentReversalFromJson(
   Map<String, dynamic> json,
@@ -127,6 +166,7 @@ _PaymentSummary _$PaymentSummaryFromJson(Map<String, dynamic> json) =>
       grandTotal: json['grand_total'] as String,
       paidAmount: json['paid_amount'] as String,
       writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
+      excessAmount: json['excess_amount'] as String? ?? '0.00',
       remainingAmount: json['remaining_amount'] as String,
       paymentStatus: $enumDecode(
         _$PaymentStatusEnumMap,
@@ -142,6 +182,7 @@ Map<String, dynamic> _$PaymentSummaryToJson(_PaymentSummary instance) =>
       'grand_total': instance.grandTotal,
       'paid_amount': instance.paidAmount,
       'written_off_amount': instance.writtenOffAmount,
+      'excess_amount': instance.excessAmount,
       'remaining_amount': instance.remainingAmount,
       'payment_status': _$PaymentStatusEnumMap[instance.paymentStatus]!,
       'payment_status_label': instance.paymentStatusLabel,

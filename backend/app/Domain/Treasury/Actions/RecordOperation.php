@@ -181,6 +181,10 @@ final class RecordOperation
                 throw AccountDoesNotFitMethod::vendorPayable((string) $account->name, $field);
             }
 
+            if ($account->isCustomerExcessPayable()) {
+                throw AccountDoesNotFitMethod::customerExcessPayable((string) $account->name, $field);
+            }
+
             if ($account->kind === AccountKind::Payable) {
                 if ($type === OperationType::Deposit || $type === OperationType::Withdrawal) {
                     throw OperationRefused::notOnPayable($type->label(), (string) $account->name, $field);

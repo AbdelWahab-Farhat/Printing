@@ -49,12 +49,14 @@ final class RecordOrderPayment
     /**
      * @param  string  $accountField  where a refused account is filed — `fields.payment_account_id`
      *                                on the status screen, whose fields hang off `fields`
+     * @param  string  $amountField  the same, for an amount beyond the debt nobody confirmed
      */
     public function __invoke(
         Order $order,
         OrderPaymentData $data,
         ?User $actor = null,
         string $accountField = 'treasury_account_id',
+        string $amountField = 'amount',
     ): OrderPayment {
         if (bccomp($data->amount, '0', Money::SCALE) <= 0) {
             throw PaymentAmountMustBePositive::make($data->amount);
@@ -66,7 +68,7 @@ final class RecordOrderPayment
             throw ReceiptRequiredForMethod::make($data->method);
         }
 
-        return DB::transaction(function () use ($order, $data, $actor, $accountField): OrderPayment {
+        return DB::transaction(function () use ($order, $data, $actor, $accountField, $amountField): OrderPayment {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
             // The one closed door, and only for money coming *in*: there is nothing left to pay
@@ -77,11 +79,21 @@ final class RecordOrderPayment
 
             $remaining = $this->remaining($locked);
 
+            // **Beyond the debt only when somebody said so.** 100 handed over on an order of 99
+            // because nobody had the one dinar is ordinary, and the confirmation is what still
+            // tells it apart from 500 typed for 50. With it, the whole 100 is one entry and the 1
+            // is owed back to the customer — never part of what the order was paid.
+            $excess = '0.00';
+
             if (bccomp($data->amount, $remaining, Money::SCALE) > 0) {
-                throw PaymentExceedsRemaining::make($data->amount, $remaining);
+                if (! $data->acceptOverpayment) {
+                    throw PaymentExceedsRemaining::make($data->amount, $remaining, $amountField);
+                }
+
+                $excess = Money::round(bcsub($data->amount, $remaining, Money::SCALE));
             }
 
-            $payment = $this->write($locked, $data, $actor, $accountField);
+            $payment = $this->write($locked, $data, $actor, $accountField, $excess);
 
             ($this->recalculate)($locked);
 
@@ -113,8 +125,13 @@ final class RecordOrderPayment
      * payload that could set the type could turn a collection into a refund, and one that could
      * set `recorded_by` could put a colleague's name on it. See RULES.md §9.4.
      */
-    private function write(Order $order, OrderPaymentData $data, ?User $actor, string $accountField): OrderPayment
-    {
+    private function write(
+        Order $order,
+        OrderPaymentData $data,
+        ?User $actor,
+        string $accountField,
+        string $excess,
+    ): OrderPayment {
         $payment = new OrderPayment([
             'amount' => $data->amount,
             'method' => $data->method,
@@ -126,6 +143,15 @@ final class RecordOrderPayment
         $payment->order_id = $order->getKey();
         $payment->type = OrderPaymentType::Payment;
         $payment->recorded_by = $actor?->getKey();
+
+        // Into the reviewer's queue — a Nawris webhook's entry included: nobody signed it, so a
+        // person checks it against the settlement. Stamped here rather than defaulted in the
+        // table, so the rows from before reviews existed stay exempt.
+        $payment->requires_review = true;
+
+        // Stamped, never fillable: how much of this entry is beyond the debt is the lock's
+        // arithmetic, not a figure a payload may name.
+        $payment->excess_amount = $excess;
 
         // **Where the money landed.** The person's choice if they made one, otherwise — for cash
         // on an order waiting at a branch — that branch's box, otherwise their own account,
@@ -174,6 +200,25 @@ final class RecordOrderPayment
             notes: "دفعة على الطلبية {$order->code}",
             recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
         ));
+
+        // **And the debt that came with it.** The whole amount is in the drawer — that is the
+        // cash — but the part beyond the order is the customer's, so «علينا» says so until it is
+        // refunded or kept. Without this the shop would look richer by every dinar of change it
+        // could not give. Same source as the cash, so reversing the payment undoes both.
+        if (bccomp($excess, '0', Money::SCALE) > 0) {
+            $this->treasury->post(new MovementData(
+                accountId: (int) $this->treasury->customerExcessPayable()->getKey(),
+                direction: MovementDirection::Out,
+                kind: MovementKind::CustomerExcess,
+                amount: $excess,
+                occurredAt: $payment->paid_at,
+                sourceType: $payment->getMorphClass(),
+                sourceId: (int) $payment->getKey(),
+                orderId: (int) $order->getKey(),
+                notes: "زائد لزبون الطلبية {$order->code}",
+                recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            ));
+        }
 
         return $payment;
     }

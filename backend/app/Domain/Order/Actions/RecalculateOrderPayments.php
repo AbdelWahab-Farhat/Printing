@@ -36,37 +36,31 @@ final class RecalculateOrderPayments
 {
     public function __invoke(Order $order): Order
     {
-        $paid = '0';
-        $writtenOff = '0';
-        $carrierSettled = '0';
+        $totals = ['paid' => '0', 'written_off' => '0', 'carrier_settled' => '0', 'excess' => '0'];
 
         // `reversedPayment` eagerly, because a reversal is asked what it undoes: strict mode
         // would refuse the lazy load, and even without it this is the N+1 that turns saving one
         // payment into a query per row of the ledger.
+        //
+        // **Each row says what it does to each total** — {@see OrderPayment::contributions()} —
+        // which is how a payment of 100 on a debt of 99 lands 99 on «المدفوع» and 1 on what is
+        // owed back to the customer, without this loop knowing which part was which.
         foreach ($order->payments()->with('reversedPayment')->get() as $entry) {
-            if ($entry->affectsWriteOff()) {
-                $writtenOff = bcadd($writtenOff, $entry->signedAmount(), 8);
-
-                continue;
+            foreach ($entry->contributions() as $total => $part) {
+                $totals[$total] = bcadd($totals[$total], $part, 8);
             }
-
-            if ($entry->affectsCarrierSettlement()) {
-                $carrierSettled = bcadd($carrierSettled, $entry->signedAmount(), 8);
-
-                continue;
-            }
-
-            $paid = bcadd($paid, $entry->signedAmount(), 8);
         }
 
-        // forceFill, because none of the three is fillable: a request that could set
+        // forceFill, because none of the four is fillable: a request that could set
         // `paid_amount` could tell us it had been paid, one that could set `written_off_amount`
-        // could forgive a debt without anybody deciding to, and one that could set
-        // `carrier_settled_amount` could close an order by claiming a courier had been paid.
+        // could forgive a debt without anybody deciding to, one that could set
+        // `carrier_settled_amount` could close an order by claiming a courier had been paid, and
+        // one that could set `excess_amount` could make the shop owe a customer money.
         $order->forceFill([
-            'paid_amount' => Money::round($paid),
-            'written_off_amount' => Money::round($writtenOff),
-            'carrier_settled_amount' => Money::round($carrierSettled),
+            'paid_amount' => Money::round($totals['paid']),
+            'written_off_amount' => Money::round($totals['written_off']),
+            'carrier_settled_amount' => Money::round($totals['carrier_settled']),
+            'excess_amount' => Money::round($totals['excess']),
         ])->save();
 
         // **خزينةُ الصندوق تتحرّك من هنا.** هذا هو المعبرُ الذي يمرّ به كلُّ طريقٍ يحرّك مالَ

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\OrderPayment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -28,6 +30,10 @@ class OrderPaymentResource extends JsonResource
             // Always positive. Which direction it moves is the type's business — see the model.
             // A string, like every other money field: what was stored reaches the client exactly.
             'amount' => (string) $this->amount,
+
+            // How much of [amount] was beyond the order — owed back to the customer — or, on a
+            // refund, how much of it handed that back. «0.00» on nearly every entry.
+            'excess_amount' => (string) $this->excess_amount,
 
             // Null on a reversal alone, because no money moved for it to have a method.
             'method' => $this->method?->value,
@@ -88,9 +94,61 @@ class OrderPaymentResource extends JsonResource
                 'employee_code' => $this->recorder->employee_code,
             ]),
 
+            // «مراجعة الدفعات». `requires_review` false is a row nobody is asked to check — a
+            // reversal, a write-off, or a payment from before reviews existed — and the app draws
+            // no badge on it at all.
+            'requires_review' => (bool) $this->requires_review,
+            'is_reviewed' => $this->isReviewed(),
+            'reviewed_at' => $this->reviewed_at?->toIso8601String(),
+            'reviewer' => $this->whenLoaded('reviewer', fn (): ?array => $this->reviewer === null ? null : [
+                'id' => $this->reviewer->id,
+                'name' => $this->reviewer->name,
+            ]),
+            ...$this->reviewAbilities($request),
+
+            // The order the entry belongs to — on the review queue, where rows from many orders
+            // sit together. Absent on an order's own ledger, which is already about one order.
+            'order' => $this->whenLoaded('order', fn (): ?array => $this->order === null ? null : [
+                'id' => $this->order->id,
+                'code' => $this->order->code,
+                'customer_name' => $this->order->relationLoaded('customer') ? $this->order->customer?->name : null,
+            ]),
+
             // No `updated_at`: a ledger entry is never updated, and publishing one would invite
-            // a client to believe it could be.
+            // a client to believe it could be. A review is the one exception, and it carries its
+            // own stamp above.
             'created_at' => $this->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * What the signed-in person may do about the review, decided here so the app keeps no copy of
+     * the rule. `review_blocked_reason` is the sentence to write under a greyed button — a
+     * reversed payment — and is null whenever there is no button to grey.
+     *
+     * @return array{can_review: bool, can_unreview: bool, review_blocked_reason: ?string}
+     */
+    private function reviewAbilities(Request $request): array
+    {
+        $user = $request->user();
+        $user = $user instanceof User ? $user : null;
+
+        $granted = $user?->can(PermissionName::ReviewOrderPayments->value) ?? false;
+
+        if (! $granted || ! $this->requires_review) {
+            return ['can_review' => false, 'can_unreview' => false, 'review_blocked_reason' => null];
+        }
+
+        if ($this->isReviewed()) {
+            return ['can_review' => false, 'can_unreview' => true, 'review_blocked_reason' => null];
+        }
+
+        $refusal = $this->resource->reviewRefusal();
+
+        return [
+            'can_review' => $refusal === null,
+            'can_unreview' => false,
+            'review_blocked_reason' => $refusal?->getMessage(),
         ];
     }
 }

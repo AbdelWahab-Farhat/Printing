@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 
@@ -32,6 +33,7 @@ class RecordOrderPayment {
     String? receiptPath,
     String? receiptFilename,
     int? treasuryAccountId,
+    bool acceptOverpayment = false,
   }) {
     return _repository.record(
       orderId,
@@ -43,7 +45,21 @@ class RecordOrderPayment {
       receiptPath: receiptPath,
       receiptFilename: receiptFilename,
       treasuryAccountId: treasuryAccountId,
+      acceptOverpayment: acceptOverpayment,
     );
+  }
+}
+
+/// «اعتبار الزائد إيراداً» — the note is trimmed, like every other sentence on this screen.
+class KeepOrderExcess {
+  const KeepOrderExcess(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, PaymentResult>> call(int orderId, {String? notes}) {
+    final note = notes?.trim();
+
+    return _repository.keepExcess(orderId, notes: note == null || note.isEmpty ? null : note);
   }
 }
 
@@ -110,6 +126,32 @@ class WriteOffOrderBalance {
     required String amount,
     required String reason,
   }) => _repository.writeOff(orderId, amount: normaliseAmount(amount), reason: reason.trim());
+}
+
+/// «مراجعة الدفعة» — a check on an entry, or taking it back.
+class ReviewOrderPayment {
+  const ReviewOrderPayment(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, OrderPayment>> call(
+    int orderId,
+    int paymentId, {
+    required bool reviewed,
+  }) => _repository.review(orderId, paymentId, reviewed: reviewed);
+}
+
+/// A page of the entries still waiting for a review, across all orders.
+class GetPaymentReviewQueue {
+  const GetPaymentReviewQueue(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, Paginated<OrderPayment>>> call({
+    required int page,
+    OrderPaymentType? type,
+    int? accountId,
+  }) => _repository.reviewQueue(page: page, type: type, accountId: accountId);
 }
 
 /// Turns what somebody typed into the decimal string the API takes.

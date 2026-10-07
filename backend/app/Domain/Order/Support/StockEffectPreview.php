@@ -107,6 +107,9 @@ final class StockEffectPreview
         OrderPaymentType::Payment->value => 'مدفوع',
         OrderPaymentType::WriteOff->value => 'إعفاء',
         OrderPaymentType::CarrierSettled->value => 'تحصيل مندوب',
+        // What the customer paid beyond the order and the shop decided to keep — undone with the
+        // rest, so it is owed to them again until the payment carrying it is reversed too.
+        OrderPaymentType::ExcessKept->value => 'زائد اعتُبر إيراداً',
     ];
 
     /**

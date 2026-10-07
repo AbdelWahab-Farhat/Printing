@@ -123,6 +123,8 @@ class TransitionFieldInput extends StatelessWidget {
         errorText: errorText,
         onChanged: onChanged,
       ),
+      // Asked by the screen when the button is pressed, never drawn as a control.
+      TransitionFieldType.confirmation => const SizedBox.shrink(),
       TransitionFieldType.unknown => _Unsupported(field: field),
     };
   }

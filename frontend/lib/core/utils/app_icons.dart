@@ -248,6 +248,21 @@ abstract final class AppIcons {
   /// «جرد الحساب» — عدُّ ما هو موجودٌ فعلاً.
   static IconData get countBalance => _pick(Icons.fact_check_outlined, CupertinoIcons.checkmark_seal);
 
+  /// «تمت المراجعة» — somebody checked the payment and said it is right. A seal rather
+  /// than [sentMark]'s plain tick: this is somebody vouching for money, not a message arriving.
+  static IconData get paymentReviewed =>
+      _pick(Icons.verified_outlined, CupertinoIcons.checkmark_shield);
+
+  /// «اعتبار الزائد إيراداً» — what the customer paid beyond the order stays with the shop. A
+  /// money box, because the money was already in the drawer: nothing moved, only whose it is.
+  static IconData get excessKept =>
+      _pick(Icons.savings_outlined, CupertinoIcons.money_dollar_circle);
+
+  /// «غير مراجَعة» — recorded, counted, and waiting for somebody else to check it. Not a
+  /// warning: nothing is wrong with the payment and nothing waits on the check.
+  static IconData get awaitingReview =>
+      _pick(Icons.pending_outlined, CupertinoIcons.clock);
+
   /// A cost the fund carries — «تسجيل مصروف». A receipt, because what is recorded is a bill.
   static IconData get expense =>
       _pick(Icons.receipt_long_outlined, CupertinoIcons.doc_text);

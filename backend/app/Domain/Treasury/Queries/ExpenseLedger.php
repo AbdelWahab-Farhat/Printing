@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
 final class ExpenseLedger
 {
     /**
-     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int}  $filters
+     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int, search?: ?string}  $filters
      * @return LengthAwarePaginator<int, TreasuryMovement>
      */
     public function page(array $filters, int $perPage): LengthAwarePaginator
@@ -49,7 +49,7 @@ final class ExpenseLedger
     /**
      * What the filtered expenses add up to — the reversed ones left out.
      *
-     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int}  $filters
+     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int, search?: ?string}  $filters
      */
     public function total(array $filters): string
     {
@@ -59,7 +59,7 @@ final class ExpenseLedger
     }
 
     /**
-     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int}  $filters
+     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int, search?: ?string}  $filters
      * @return Builder<TreasuryMovement>
      */
     private function filtered(array $filters): Builder
@@ -76,6 +76,40 @@ final class ExpenseLedger
             ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->whereHas(
                 'operation',
                 fn ($q) => $q->where('category_id', $id),
-            ));
+            ))
+            ->when(trim((string) ($filters['search'] ?? '')), fn ($q, $search) => $this->whereMatches($q, $search));
+    }
+
+    /**
+     * مربّع البحث في التبويب — **كلُّ ما يُقرأ في السطر**: اسم التصنيف، واسم الحساب، والملاحظة
+     * (على الحركة أو على العملية)، واسم الموظف الذي صُرف له، والمبلغ.
+     *
+     * المبلغ يُطابَق **بالتمام** لا بالجزء: «150» تجد مصروف ١٥٠ لا ١٥٠٠. والأرقام العربية تُقرأ
+     * كما تكتبها لوحة المفاتيح، والفاصلة العربية «٫» نقطةً.
+     *
+     * @param  Builder<TreasuryMovement>  $query
+     * @return Builder<TreasuryMovement>
+     */
+    private function whereMatches(Builder $query, string $search): Builder
+    {
+        $like = '%'.$search.'%';
+        $amount = strtr($search, [
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9', '٫' => '.',
+        ]);
+
+        return $query->where(function (Builder $q) use ($like, $amount): void {
+            $q->where('notes', 'ilike', $like)
+                ->orWhereHas('account', fn ($q) => $q->where('name', 'ilike', $like))
+                ->orWhereHas('operation', fn ($q) => $q
+                    ->where('notes', 'ilike', $like)
+                    ->orWhereHas('category', fn ($q) => $q->where('name', 'ilike', $like))
+                    ->orWhereHas('employee', fn ($q) => $q->where('name', 'ilike', $like)));
+
+            // Plain digits with at most one point — `is_numeric` would let «1e5» through to bcmath.
+            if (preg_match('/^\d{1,12}(\.\d{1,2})?$/', $amount) === 1) {
+                $q->orWhere('amount', Money::round($amount));
+            }
+        });
     }
 }

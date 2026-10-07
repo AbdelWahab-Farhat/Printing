@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 
 /// What the app can ask about an order's money, stated without saying how.
@@ -24,6 +25,9 @@ abstract interface class OrderPaymentRepository {
   ///
   /// Answers with the entry *and* the order's money after it, so the screen never has to
   /// re-fetch the order to learn what the entry it just wrote did to the total.
+  ///
+  /// [acceptOverpayment] is the yes to «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟». Without
+  /// it the server refuses an amount beyond the debt; with it the part beyond is owed back.
   Future<Either<Failure, PaymentResult>> record(
     int orderId, {
     required String amount,
@@ -34,7 +38,12 @@ abstract interface class OrderPaymentRepository {
     String? receiptPath,
     String? receiptFilename,
     int? treasuryAccountId,
+    bool acceptOverpayment = false,
   });
+
+  /// «اعتبار الزائد إيراداً» — the whole excess the order holds is the shop's now. No amount: a
+  /// part handed back is a [refund] first. No cash moves; undone by [reverse].
+  Future<Either<Failure, PaymentResult>> keepExcess(int orderId, {String? notes});
 
   /// Money genuinely handed back.
   ///
@@ -77,6 +86,25 @@ abstract interface class OrderPaymentRepository {
     int orderId, {
     required String amount,
     required String reason,
+  });
+
+  /// «مراجعة الدفعة» — somebody with the grant saying the entry is right, or ([reviewed] false)
+  /// taking that back. Moves no money. Their own entries included; refused only on a reversed or
+  /// exempt entry, which the entry's own `can_review` says before anybody asks.
+  Future<Either<Failure, OrderPayment>> review(
+    int orderId,
+    int paymentId, {
+    required bool reviewed,
+  });
+
+  /// Every payment and refund still waiting for a review, across all orders, oldest first.
+  ///
+  /// `extraMeta` carries `incoming_total` and `outgoing_total` — what the whole filtered queue
+  /// adds up to, money in and money out apart.
+  Future<Either<Failure, Paginated<OrderPayment>>> reviewQueue({
+    required int page,
+    OrderPaymentType? type,
+    int? accountId,
   });
 }
 

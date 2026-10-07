@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_expenses_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_dialogs.dart';
@@ -23,12 +24,14 @@ import 'package:go_router/go_router.dart';
 /// تبويب «المصاريف» في «المالية» — مصاريف كل الحسابات في قائمة واحدة، ومجموعها فوقها.
 /// TREASURY-DESIGN §٢١.
 ///
-/// [accounts] لفلتر «الحساب» — ما قرأته اللوحة أصلاً، فلا يُسأل الخادم عنها مرة ثانية.
-/// و[onMoneyMoved] يُنادى بعد عكسٍ ناجح لتُقرأ أرصدة اللوحة.
+/// **الفترة في شرائح، وما سواها مربّعُ بحثٍ واحد**: التصنيف والحساب والملاحظة والموظف بالاسم،
+/// والمبلغ بالتمام. كانت «التصنيف» و«الحساب» شريحتين تفتحان قوائم، فصار يكفي أن يُكتب الاسم
+/// (٢٠٢٦-١٠-٠٤). والمجموع فوقها سطرٌ صغير يتبع البحث.
+///
+/// [onMoneyMoved] يُنادى بعد عكسٍ ناجح لتُقرأ أرصدة اللوحة.
 class TreasuryExpensesTab extends StatelessWidget {
-  const TreasuryExpensesTab({required this.accounts, required this.onMoneyMoved, super.key});
+  const TreasuryExpensesTab({required this.onMoneyMoved, super.key});
 
-  final List<TreasuryAccount> accounts;
   final Future<void> Function() onMoneyMoved;
 
   @override
@@ -41,14 +44,9 @@ class TreasuryExpensesTab extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-              child: TreasuryTotalCard(
-                key: const ValueKey('expenses-total'),
-                label: _totalLabel(cubit),
-                amount: cubit.total,
-                inline: true,
-              ),
+              child: _Total(label: _totalLabel(cubit), amount: cubit.total),
             ),
-            _Filters(accounts: accounts),
+            const _Filters(),
             Expanded(child: _List(onMoneyMoved: onMoneyMoved)),
           ],
         );
@@ -67,11 +65,48 @@ class TreasuryExpensesTab extends StatelessWidget {
   };
 }
 
-/// الفترة في صفّ، والتصنيف والحساب في صفٍّ تحته — كلاهما يُفتح على قائمة.
-class _Filters extends StatelessWidget {
-  const _Filters({required this.accounts});
+/// المجموع **سطرٌ صغير** لا بطاقةٌ كبيرة: فوقه في اللوحة مجموعُ الحسابات بالحجم الكبير، وتحته
+/// القائمة التي جاء التبويبُ من أجلها — فلا يأخذ منها أكثر من سطر.
+class _Total extends StatelessWidget {
+  const _Total({required this.label, required this.amount});
 
-  final List<TreasuryAccount> accounts;
+  final String label;
+  final String amount;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      key: const ValueKey('expenses-total'),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            treasuryMoney(amount),
+            textDirection: TextDirection.ltr,
+            style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// الفترة في صفّ، ومربّع البحث تحتها.
+class _Filters extends StatelessWidget {
+  const _Filters();
 
   @override
   Widget build(BuildContext context) {
@@ -97,29 +132,15 @@ class _Filters extends StatelessWidget {
             ],
           ),
           SizedBox(height: 8.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              FilterOptionChip(
-                label: 'التصنيف: ${_short(cubit.category?.name ?? 'الكل')}',
-                isSelected: cubit.category != null,
-                onTap: () => unawaited(_chooseCategory(context)),
-              ),
-              FilterOptionChip(
-                label: 'الحساب: ${_short(cubit.account?.name ?? 'الكل')}',
-                isSelected: cubit.account != null,
-                onTap: () => unawaited(_chooseAccount(context)),
-              ),
-            ],
+          SearchField(
+            key: const ValueKey('expenses-search'),
+            hint: 'ابحث بالتصنيف أو الحساب أو الموظف أو المبلغ',
+            onChanged: cubit.search,
           ),
         ],
       ),
     );
   }
-
-  /// A name is as long as whoever typed it made it, and a chip cannot wrap its own label.
-  static String _short(String name) => name.length <= 22 ? name : '${name.substring(0, 21)}…';
 
   Future<void> _choosePeriod(BuildContext context, ExpensePeriod period) async {
     final cubit = context.read<TreasuryExpensesCubit>();
@@ -139,70 +160,6 @@ class _Filters extends StatelessWidget {
 
     await cubit.showPeriod(ExpensePeriod.custom, between: (from: picked.start, to: picked.end));
   }
-
-  Future<void> _chooseCategory(BuildContext context) async {
-    final cubit = context.read<TreasuryExpensesCubit>();
-    final result = await cubit.categories();
-
-    if (!context.mounted) return;
-
-    final categories = result.fold((failure) {
-      context.showFailure(failure);
-
-      return null;
-    }, (list) => list);
-
-    if (categories == null) return;
-
-    final picked = await _pick<ExpenseCategory?>(
-      context,
-      title: 'التصنيف',
-      options: [(null, 'الكل'), for (final c in categories) (c, c.name)],
-    );
-
-    if (picked case (final category,)) await cubit.showCategory(category);
-  }
-
-  Future<void> _chooseAccount(BuildContext context) async {
-    final cubit = context.read<TreasuryExpensesCubit>();
-
-    final picked = await _pick<TreasuryAccount?>(
-      context,
-      title: 'الحساب',
-      options: [(null, 'الكل'), for (final a in accounts) (a, a.name)],
-    );
-
-    if (picked case (final account,)) await cubit.showAccount(account);
-  }
-}
-
-/// قائمةٌ يُختار منها سطر. تعود بـ`(القيمة,)` — فـ«الكل» (`null`) جوابٌ يختلف عن إغلاق القائمة.
-Future<(T,)?> _pick<T>(
-  BuildContext context, {
-  required String title,
-  required List<(T, String)> options,
-}) {
-  return showModalBottomSheet<(T,)>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    builder: (context) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
-            child: Text(
-              title,
-              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
-          for (final (value, label) in options)
-            ListTile(title: Text(label), onTap: () => Navigator.of(context).pop((value,))),
-        ],
-      ),
-    ),
-  );
 }
 
 class _List extends StatelessWidget {
@@ -223,7 +180,9 @@ class _List extends StatelessWidget {
 
         return PagedListView<TreasuryMovement>(
           state: state,
-          emptyMessage: 'لا مصاريف في هذه الفترة',
+          emptyMessage: cubit.currentSearch == null
+              ? 'لا مصاريف في هذه الفترة'
+              : 'لا مصاريف تطابق «${cubit.currentSearch}» في هذه الفترة',
           onLoadMore: cubit.loadMore,
           onRefresh: cubit.refresh,
           skeletonHeight: 84.h,

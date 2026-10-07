@@ -85,4 +85,6 @@ const Set<String> _wireValues = {
   'notice',
   'vendor',
   'treasury_account',
+  // Asked on sending rather than drawn — «تسجيل الزائد للزبون؟».
+  'confirmation',
 };

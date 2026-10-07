@@ -69,20 +69,28 @@ final class RefundOrderPayment
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
             $paid = (string) $locked->paid_amount;
+            $held = (string) $locked->excess_amount;
 
-            // We cannot give back what we were never given. Without this, two refunds racing
-            // each other would drive the paid total below zero — a debt to the customer, which
-            // is a customer account, which this system does not have.
-            if (bccomp($data->amount, $paid, Money::SCALE) > 0) {
-                throw RefundExceedsPaid::make($data->amount, $paid);
+            // We cannot give back what we were never given — what the order was paid, plus what
+            // the customer handed over beyond it. Without this, two refunds racing each other would
+            // drive the paid total below zero.
+            $refundable = bcadd($paid, $held, Money::SCALE);
+
+            if (bccomp($data->amount, $refundable, Money::SCALE) > 0) {
+                throw RefundExceedsPaid::make($data->amount, Money::round($refundable));
             }
+
+            // **The excess goes back first.** It is the customer's money already; only what is
+            // beyond it comes off what the order was paid.
+            $fromExcess = bccomp($data->amount, $held, Money::SCALE) > 0 ? Money::round($held) : $data->amount;
+            $fromPaid = bcsub($data->amount, $fromExcess, Money::SCALE);
 
             // **Before the row, not after it**, unlike the reversal: a refund may carry a receipt,
             // and a file already on disk would outlive the rolled-back row that named it. A refund
             // only ever lands on the paid total, so the outcome is known without writing anything.
             if ($locked->status === OrderStatus::Settled) {
                 $after = PaymentStatus::between(
-                    bcsub($paid, $data->amount, Money::SCALE),
+                    bcsub($paid, $fromPaid, Money::SCALE),
                     (string) $locked->grand_total,
                     (string) $locked->written_off_amount,
                     (string) $locked->carrier_settled_amount,
@@ -93,7 +101,7 @@ final class RefundOrderPayment
                 }
             }
 
-            $refund = $this->write($locked, $data, $actor);
+            $refund = $this->write($locked, $data, $actor, $fromExcess);
 
             ($this->recalculate)($locked);
 
@@ -101,7 +109,7 @@ final class RefundOrderPayment
         });
     }
 
-    private function write(Order $order, OrderPaymentData $data, ?User $actor): OrderPayment
+    private function write(Order $order, OrderPaymentData $data, ?User $actor, string $fromExcess): OrderPayment
     {
         $refund = new OrderPayment([
             'amount' => $data->amount,
@@ -116,6 +124,12 @@ final class RefundOrderPayment
         $refund->order_id = $order->getKey();
         $refund->type = OrderPaymentType::Refund;
         $refund->recorded_by = $actor?->getKey();
+
+        // Cash that left the drawer is checked like cash that came in.
+        $refund->requires_review = true;
+
+        // How much of it handed the excess back — stamped from the lock's arithmetic.
+        $refund->excess_amount = $fromExcess;
 
         // Paid out of a real drawer — never out of Nawris's custody, which empties only by
         // settlement. Not refused for balance: the money already went back to the customer, and
@@ -147,6 +161,23 @@ final class RefundOrderPayment
             notes: "ردّ مبلغ على الطلبية {$order->code}",
             recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
         ));
+
+        // The excess handed back is a debt paid: «علينا» comes down by it, while the cash left
+        // the drawer above.
+        if (bccomp($fromExcess, '0', Money::SCALE) > 0) {
+            $this->treasury->post(new MovementData(
+                accountId: (int) $this->treasury->customerExcessPayable()->getKey(),
+                direction: MovementDirection::In,
+                kind: MovementKind::CustomerExcess,
+                amount: $fromExcess,
+                occurredAt: $refund->paid_at,
+                sourceType: $refund->getMorphClass(),
+                sourceId: (int) $refund->getKey(),
+                orderId: (int) $order->getKey(),
+                notes: "ردّ زائد لزبون الطلبية {$order->code}",
+                recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
+            ));
+        }
 
         return $refund;
     }

@@ -28,6 +28,8 @@ class TreasuryExpenseController extends Controller
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'category_id' => ['nullable', 'integer'],
             'account_id' => ['nullable', 'integer'],
+            // مربّع البحث: التصنيف والحساب والملاحظة والموظف، والمبلغ بالتمام — والمجموع يتبعه.
+            'search' => ['nullable', 'string', 'max:100'],
         ]);
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);

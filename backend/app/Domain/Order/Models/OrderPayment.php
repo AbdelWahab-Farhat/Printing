@@ -6,9 +6,15 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\RecalculateOrderPayments;
+use App\Domain\Order\Actions\ReviewOrderPayment;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Order\Exceptions\PaymentNeedsNoReview;
+use App\Domain\Order\Exceptions\ReversedPaymentNeedsNoReview;
+use App\Domain\Order\Queries\PaymentReviewQueue;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Support\Exceptions\DomainException;
 use App\Support\Media\StoreReceipt;
 use Database\Factories\OrderPaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -56,8 +62,13 @@ class OrderPayment extends Model
             // A string, not a float: this is summed into `orders.paid_amount`, and money that
             // is summed must stay exact.
             'amount' => 'decimal:2',
+            // How much of a payment was beyond the debt, or of a refund handed that back. See
+            // {@see contributions()}.
+            'excess_amount' => 'decimal:2',
             'paid_at' => 'datetime',
             'receipt_size_bytes' => 'integer',
+            'requires_review' => 'boolean',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -150,6 +161,57 @@ class OrderPayment extends Model
     }
 
     /**
+     * Whoever checked this entry and said it is right. Null until somebody has, and after an
+     * employee is deleted — the review survives them, only the name goes.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function isReviewed(): bool
+    {
+        return $this->reviewed_at !== null;
+    }
+
+    /**
+     * Whether this entry sits in the reviewer's queue: it needs a check, nobody has made one, and
+     * it was not cancelled as a mistake in the meantime. The same three conditions
+     * {@see PaymentReviewQueue} filters on.
+     */
+    public function awaitsReview(): bool
+    {
+        return $this->requires_review && ! $this->isReviewed() && ! $this->isReversed();
+    }
+
+    /**
+     * Why this entry may not be marked reviewed — or null when it may.
+     *
+     * **The one place the rule is written**, so the action that refuses and the resource that
+     * greys the button can never disagree: {@see ReviewOrderPayment} throws what this returns, and
+     * `OrderPaymentResource` publishes its message as `review_blocked_reason`. The grant itself is
+     * the route's, not this method's.
+     *
+     * **Who recorded the entry does not matter** — the owner decided (2026-10-04) that anybody
+     * holding `orders.payments.review` may review, their own entries included. The stamp still
+     * says who reviewed, so a self-review is visible beside who recorded.
+     */
+    public function reviewRefusal(): ?DomainException
+    {
+        if (! $this->requires_review) {
+            return PaymentNeedsNoReview::make();
+        }
+
+        if ($this->isReversed()) {
+            return ReversedPaymentNeedsNoReview::make();
+        }
+
+        return null;
+    }
+
+    /**
      * Where the money landed — the cash box, «مصرف علي», Nawris's custody.
      *
      * Null on the entries that moved no money, and on every entry written before the treasury
@@ -193,7 +255,7 @@ class OrderPayment extends Model
      */
     public function isReversible(): bool
     {
-        return $this->type->isCredit() && ! $this->isReversed();
+        return $this->type->isReversible() && ! $this->isReversed();
     }
 
     /**
@@ -258,5 +320,46 @@ class OrderPayment extends Model
         $amount = (string) $this->amount;
 
         return $this->type->isCredit() ? $amount : '-'.$amount;
+    }
+
+    /**
+     * What this entry does to each of the order's four totals, signed.
+     *
+     * **The one place the excess is split off**, so {@see RecalculateOrderPayments} adds rows up
+     * without knowing which part of a payment was beyond the debt:
+     *
+     * | entry | paid | written off | carrier | excess |
+     * | --- | --- | --- | --- | --- |
+     * | payment of 100, 1 beyond the debt | +99 | | | +1 |
+     * | refund of 30, 1 of it the excess | −29 | | | −1 |
+     * | write-off | | +amount | | |
+     * | carrier settlement | | | +amount | |
+     * | excess kept | | | | −amount |
+     * | reversal | the row it undoes, negated | | | |
+     *
+     * A reversal whose original is somehow missing falls back to taking its amount off `paid`,
+     * which is what every reversal did before there were other totals.
+     *
+     * @return array{paid: string, written_off: string, carrier_settled: string, excess: string}
+     */
+    public function contributions(): array
+    {
+        $amount = (string) $this->amount;
+        $excess = (string) $this->excess_amount;
+        $none = ['paid' => '0', 'written_off' => '0', 'carrier_settled' => '0', 'excess' => '0'];
+
+        return match ($this->type) {
+            OrderPaymentType::Payment => [...$none, 'paid' => bcsub($amount, $excess, 2), 'excess' => $excess],
+            OrderPaymentType::Refund => [...$none, 'paid' => bcsub($excess, $amount, 2), 'excess' => '-'.$excess],
+            OrderPaymentType::WriteOff => [...$none, 'written_off' => $amount],
+            OrderPaymentType::CarrierSettled => [...$none, 'carrier_settled' => $amount],
+            OrderPaymentType::ExcessKept => [...$none, 'excess' => '-'.$amount],
+            OrderPaymentType::Reversal => $this->reversedPayment === null
+                ? [...$none, 'paid' => '-'.$amount]
+                : array_map(
+                    fn (string $part): string => bcsub('0', $part, 2),
+                    $this->reversedPayment->contributions(),
+                ),
+        };
     }
 }

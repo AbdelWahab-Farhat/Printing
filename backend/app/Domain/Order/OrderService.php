@@ -10,6 +10,7 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
+use App\Domain\Order\Actions\KeepOrderExcess;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\RecordOrderPayment;
@@ -18,6 +19,7 @@ use App\Domain\Order\Actions\RefundOrderPayment;
 use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
+use App\Domain\Order\Actions\ReviewOrderPayment;
 use App\Domain\Order\Actions\SetOrderShortages;
 use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Actions\UnsettleOrder;
@@ -52,6 +54,7 @@ use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStockShortfallQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
+use App\Domain\Order\Queries\PaymentReviewQueue;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
 use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -86,6 +89,9 @@ class OrderService
         private readonly RecordOrderPayment $recordPayment,
         private readonly RefundOrderPayment $refundPayment,
         private readonly ReverseOrderPayment $reversePayment,
+        private readonly ReviewOrderPayment $reviewPayment,
+        private readonly KeepOrderExcess $keepExcess,
+        private readonly PaymentReviewQueue $reviewQueue,
         private readonly WriteOffOrderBalance $writeOffBalance,
         private readonly CreateManufacturingCostRate $createManufacturingCostRate,
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
@@ -350,7 +356,7 @@ class OrderService
      */
     public function payments(Order $order): Collection
     {
-        return $order->payments()->with(['recorder', 'reversal', 'reversedPayment', 'treasuryAccount'])->get();
+        return $order->payments()->with(['recorder', 'reviewer', 'reversal', 'reversedPayment', 'treasuryAccount'])->get();
     }
 
     public function recordPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -361,6 +367,66 @@ class OrderService
     public function refundPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
     {
         return ($this->refundPayment)($order, $data, $actor);
+    }
+
+    /**
+     * «اعتبار الزائد إيراداً» — the excess the order holds is the shop's now. See {@see KeepOrderExcess}.
+     */
+    public function keepExcess(Order $order, ?string $notes = null, ?User $actor = null): OrderPayment
+    {
+        return ($this->keepExcess)($order, $notes, $actor);
+    }
+
+    /**
+     * «تمت المراجعة» on an entry, or taking it back — see {@see ReviewOrderPayment}.
+     */
+    public function reviewPayment(OrderPayment $payment, bool $reviewed, ?User $actor = null): OrderPayment
+    {
+        return ($this->reviewPayment)($payment, $reviewed, $actor);
+    }
+
+    /**
+     * Where each of these entries stands on review, keyed by id — for the treasury's account
+     * ledger, whose lines point back at the payments that moved them. Only entries that ask for a
+     * review are answered; an exempt one has no badge to draw.
+     *
+     * @param  list<int>  $paymentIds
+     * @return array<int, array{is_reviewed: bool, reviewed_at: ?string, reviewer: ?array{id: int, name: string}}>
+     */
+    public function reviewStatesOf(array $paymentIds): array
+    {
+        if ($paymentIds === []) {
+            return [];
+        }
+
+        return OrderPayment::query()
+            ->with('reviewer')
+            ->whereKey($paymentIds)
+            ->where('requires_review', true)
+            ->get()
+            ->mapWithKeys(fn (OrderPayment $payment): array => [(int) $payment->getKey() => [
+                'is_reviewed' => $payment->isReviewed(),
+                'reviewed_at' => $payment->reviewed_at?->toIso8601String(),
+                'reviewer' => $payment->reviewer === null ? null : [
+                    'id' => (int) $payment->reviewer->getKey(),
+                    'name' => (string) $payment->reviewer->name,
+                ],
+            ]])
+            ->all();
+    }
+
+    /**
+     * The reviewer's queue, a page of it and what the whole filtered list adds up to.
+     *
+     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string}  $filters
+     * @return array{page: LengthAwarePaginator<int, OrderPayment>, totals: array{incoming_total: string, outgoing_total: string}}
+     */
+    public function paymentReviewQueue(array $filters, int $perPage): array
+    {
+        return [
+            'page' => $this->reviewQueue->page($filters, $perPage),
+            'totals' => $this->reviewQueue->totals($filters),
+        ];
     }
 
     /**
