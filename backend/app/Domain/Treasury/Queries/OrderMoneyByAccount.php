@@ -50,4 +50,23 @@ final class OrderMoneyByAccount
 
         return $held;
     }
+
+    /**
+     * What one account still holds for this order, whatever its kind — custody included. «تسوية
+     * دفعة» (§٢٣) asks it before carrying a payment on: money a settlement or a hand already moved
+     * is not there to move twice. Never below zero.
+     */
+    public function inAccount(int $orderId, int $accountId): string
+    {
+        $held = DB::table('treasury_movements')
+            ->where('order_id', $orderId)
+            ->where('account_id', $accountId)
+            ->whereNull('deleted_at')
+            ->selectRaw("COALESCE(SUM(CASE WHEN direction = 'in' THEN amount ELSE -amount END), 0) AS held")
+            ->value('held');
+
+        $held = Money::round((string) $held);
+
+        return Money::isPositive($held) ? $held : '0.00';
+    }
 }

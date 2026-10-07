@@ -9,11 +9,15 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\RecalculateOrderPayments;
 use App\Domain\Order\Actions\ReviewOrderPayment;
 use App\Domain\Order\Enums\OrderPaymentType;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Order\Exceptions\PaymentCannotBeSettled;
 use App\Domain\Order\Exceptions\PaymentNeedsNoReview;
 use App\Domain\Order\Exceptions\ReversedPaymentNeedsNoReview;
 use App\Domain\Order\Queries\PaymentReviewQueue;
+use App\Domain\Treasury\Enums\OperationType;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryOperation;
 use App\Support\Exceptions\DomainException;
 use App\Support\Media\StoreReceipt;
 use Database\Factories\OrderPaymentFactory;
@@ -222,6 +226,64 @@ class OrderPayment extends Model
     public function treasuryAccount(): BelongsTo
     {
         return $this->belongsTo(TreasuryAccount::class, 'treasury_account_id');
+    }
+
+    /**
+     * «تسوية دفعة» still standing: the operation that carried this payment's money on before the
+     * order was settled, and was not taken back since. TREASURY-DESIGN §٢٣.
+     *
+     * @return HasOne<TreasuryOperation, $this>
+     */
+    public function standingSettlement(): HasOne
+    {
+        return $this->hasOne(TreasuryOperation::class, 'order_payment_id')
+            ->where('type', OperationType::Settlement->value)
+            ->whereNull('reverses_operation_id')
+            ->whereDoesntHave('reversedBy');
+    }
+
+    public function isSettled(): bool
+    {
+        if ($this->relationLoaded('standingSettlement')) {
+            return $this->standingSettlement !== null;
+        }
+
+        return $this->standingSettlement()->exists();
+    }
+
+    /**
+     * Why this payment's money may not be settled — or null when it may.
+     *
+     * **The one place the rule is written**, as {@see reviewRefusal()} is for the review: the
+     * action throws what this returns, and the resource greys the button with it. Whether the
+     * money is still in its account is the treasury's to answer, at the moment it moves it.
+     */
+    public function settlementRefusal(?Order $order): ?PaymentCannotBeSettled
+    {
+        return match (true) {
+            $this->type !== OrderPaymentType::Payment => PaymentCannotBeSettled::notAPayment(),
+            $this->isReversed() => PaymentCannotBeSettled::reversed(),
+            $this->treasury_account_id === null => PaymentCannotBeSettled::predatesTreasury(),
+            $order === null => PaymentCannotBeSettled::orderMissing(),
+            $order->status === OrderStatus::Settled => PaymentCannotBeSettled::orderSettled(),
+            $this->isSettled() => PaymentCannotBeSettled::alreadySettled(),
+            default => null,
+        };
+    }
+
+    /**
+     * Why this payment's settlement may not be taken back — or null when it may.
+     */
+    public function unsettlementRefusal(?Order $order): ?PaymentCannotBeSettled
+    {
+        return match (true) {
+            ! $this->isSettled() => PaymentCannotBeSettled::notSettled(),
+            $order === null => PaymentCannotBeSettled::orderMissing(),
+            // The order's settlement carried whatever was left; money put back into custody now
+            // would sit there with nothing left to settle it. Un-settle the order first.
+            $order->status === OrderStatus::Settled => PaymentCannotBeSettled::orderSettledCannotUndo(),
+            default => null,
+        };
     }
 
     /**

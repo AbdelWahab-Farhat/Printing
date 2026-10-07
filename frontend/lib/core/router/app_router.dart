@@ -68,6 +68,7 @@ import 'package:dayaa/features/orders/presentation/views/order_notes_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_payments_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_status_page.dart';
 import 'package:dayaa/features/orders/presentation/views/orders_page.dart';
+import 'package:dayaa/features/orders/presentation/views/payment_settlement_page.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/presentation/views/product_categories_page.dart';
 import 'package:dayaa/features/products/presentation/views/product_detail_page.dart';
@@ -181,6 +182,9 @@ abstract final class Routes {
 
   /// «تصنيفات المصروفات» — كانت قسماً في «إعدادات المالية».
   static const String expenseCategories = '/treasury/expense-categories';
+
+  /// «تسوية الدفعات» — من الرئيسية، خلف `orders.payments.settle`. TREASURY-DESIGN §٢٣.
+  static const String paymentSettlement = '/payment-settlement';
 
   static String investor(int id) => '/investors/$id';
 
@@ -692,6 +696,14 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.treasury,
         builder: (context, state) => const TreasuryPage(),
+      ),
+      // Guarded here as well as on the home shortcut, so a deep link cannot reach a screen whose
+      // every request answers 403.
+      GoRoute(
+        path: Routes.paymentSettlement,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.settleOrderPayments) ? null : Routes.home,
+        builder: (context, state) => const PaymentSettlementPage(),
       ),
       GoRoute(
         path: Routes.treasurySettings,

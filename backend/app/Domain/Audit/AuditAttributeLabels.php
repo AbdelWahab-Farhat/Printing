@@ -776,6 +776,8 @@ final class AuditAttributeLabels
             'occurred_at' => 'تاريخ العملية',
             'reverses_operation_id' => 'تعكس عملية',
             'client_token' => 'رمز الإرسال',
+            // «تسوية دفعة» — TREASURY-DESIGN §٢٣.
+            'order_payment_id' => 'الدفعة',
         ],
         'treasury_movement' => [
             'account_id' => 'الحساب',

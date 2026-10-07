@@ -4,6 +4,7 @@ import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -159,6 +160,79 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
       parseItem: OrderPayment.fromJson,
     );
   }
+
+  @override
+  Future<Either<Failure, Paginated<OrderPayment>>> settlementQueue({
+    required int page,
+    required SettlementState state,
+    DateTime? from,
+    DateTime? to,
+    int? accountId,
+    String? search,
+  }) {
+    return safePaginatedRequest<OrderPayment>(
+      () => _dio.get(
+        OrderEndpoints.paymentSettlementQueue,
+        queryParameters: {
+          'page': page,
+          'state': state.wire,
+          if (from != null) 'from': _day(from),
+          if (to != null) 'to': _day(to),
+          'account_id': ?accountId,
+          if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+        },
+      ),
+      parseItem: OrderPayment.fromJson,
+    );
+  }
+
+  @override
+  Future<Either<Failure, SettlementAccounts>> settlementAccounts() {
+    return safeRequest<SettlementAccounts>(
+      () => _dio.get(OrderEndpoints.paymentSettlementAccounts),
+      parse: (data) => SettlementAccounts.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<OrderPayment>>> settle(List<SettleRow> rows, {int? accountId}) {
+    return safeRequest<List<OrderPayment>>(
+      () => _dio.post(
+        OrderEndpoints.settlePayments,
+        data: <String, dynamic>{
+          'payments': [for (final row in rows) row.toJson()],
+          // Absent rather than null: each payment then goes to its own automatic account.
+          'account_id': ?accountId,
+        },
+      ),
+      parse: (data) => [
+        for (final row in ((data! as Map<String, dynamic>)['payments'] as List<dynamic>))
+          OrderPayment.fromJson(row as Map<String, dynamic>),
+      ],
+    );
+  }
+
+  @override
+  Future<Either<Failure, OrderPayment>> unsettle(
+    int orderId,
+    int paymentId, {
+    required String reason,
+  }) {
+    return safeRequest<OrderPayment>(
+      () => _dio.post(
+        OrderEndpoints.unsettlePayment(orderId, paymentId),
+        data: <String, dynamic>{'reason': reason.trim()},
+      ),
+      parse: (data) =>
+          OrderPayment.fromJson((data! as Map<String, dynamic>)['payment'] as Map<String, dynamic>),
+    );
+  }
+
+  /// A plain day, as the list filters take it. The phone's own calendar day — where that day
+  /// begins is the server's business.
+  static String _day(DateTime at) =>
+      '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-'
+      '${at.day.toString().padLeft(2, '0')}';
 
   /// The two write paths differ only in their URL, so they share everything below it.
   ///

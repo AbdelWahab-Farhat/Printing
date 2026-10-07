@@ -199,6 +199,14 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'الحسابات والكاش',
           route: Routes.treasury,
         ),
+        // «تسوية الدفعات» — مالُ كل دفعةٍ إلى حيث وصل، قبل تسوية الطلبية (TREASURY-DESIGN §٢٣).
+        // هنا لا في الرئيسية — طلب المستخدم، ٢٠٢٦-١٠-٠٧. خلف صلاحيتها كالصفحة نفسها.
+        _Link(
+          icon: _LinkIcon.paymentSettlement,
+          label: 'تسوية الدفعات',
+          route: Routes.paymentSettlement,
+          permission: AppPermission.settleOrderPayments,
+        ),
         // الافتراضيات والقواعد وتاريخ القفل ووجهة العهدة — للمالك. التصنيفاتُ صفٌّ وحدها أدناه.
         _Link(
           icon: _LinkIcon.settings,
@@ -506,10 +514,12 @@ enum _LinkIcon {
   roles,
   orderArchive,
   treasury,
+  paymentSettlement,
   expense;
 
   IconData get data => switch (this) {
     _LinkIcon.treasury => AppIcons.treasury,
+    _LinkIcon.paymentSettlement => AppIcons.transfer,
     _LinkIcon.expense => AppIcons.expense,
     _LinkIcon.products => AppIcons.products,
     _LinkIcon.productCategory => AppIcons.productCategory,

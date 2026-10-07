@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +34,9 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     required WriteOffOrderBalance writeOffBalance,
     required ReviewOrderPayment reviewPayment,
     required KeepOrderExcess keepExcess,
+    required GetSettlementAccounts getSettlementAccounts,
+    required SettleOrderPayments settlePayments,
+    required UnsettleOrderPayment unsettlePayment,
   }) : _orderId = orderId,
        _getLedger = getLedger,
        _recordPayment = recordPayment,
@@ -41,6 +45,9 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
        _writeOffBalance = writeOffBalance,
        _reviewPayment = reviewPayment,
        _keepExcess = keepExcess,
+       _getSettlementAccounts = getSettlementAccounts,
+       _settlePayments = settlePayments,
+       _unsettlePayment = unsettlePayment,
        super(const OrderPaymentsState.loading());
 
   final int _orderId;
@@ -51,6 +58,9 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   final WriteOffOrderBalance _writeOffBalance;
   final ReviewOrderPayment _reviewPayment;
   final KeepOrderExcess _keepExcess;
+  final GetSettlementAccounts _getSettlementAccounts;
+  final SettleOrderPayments _settlePayments;
+  final UnsettleOrderPayment _unsettlePayment;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh path, and blanking the
@@ -151,6 +161,36 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     if (ledger != null) emit(OrderPaymentsState.loaded(ledger: ledger, isWorking: true));
 
     final result = await _reviewPayment(_orderId, paymentId, reviewed: reviewed);
+
+    if (isClosed) return null;
+
+    await load();
+
+    return result.fold((failure) => failure, (_) => null);
+  }
+
+  /// Where a payment may be settled to — for the sheet. Null when the server could not say.
+  Future<SettlementAccounts?> settlementAccounts() async {
+    final result = await _getSettlementAccounts();
+
+    return result.fold((_) => null, (accounts) => accounts);
+  }
+
+  /// «تسوية دفعة» — the payment's money to the account it reached (TREASURY-DESIGN §٢٣). Moves
+  /// no figure on this screen, but the row's own answer changes, so it is re-read like a write.
+  Future<Failure?> settle(List<SettleRow> rows, {int? accountId}) =>
+      _quietWrite(() => _settlePayments(rows, accountId: accountId));
+
+  /// Takes a payment's settlement back.
+  Future<Failure?> unsettle(int paymentId, {required String reason}) =>
+      _quietWrite(() => _unsettlePayment(_orderId, paymentId, reason: reason));
+
+  /// A write that moves no money on the order: busy, run, re-read, report.
+  Future<Failure?> _quietWrite<T>(Future<Either<Failure, T>> Function() write) async {
+    final ledger = state.ledger;
+    if (ledger != null) emit(OrderPaymentsState.loaded(ledger: ledger, isWorking: true));
+
+    final result = await write();
 
     if (isClosed) return null;
 

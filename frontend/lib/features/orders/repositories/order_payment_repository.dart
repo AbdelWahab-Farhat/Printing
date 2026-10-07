@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 
 /// What the app can ask about an order's money, stated without saying how.
 ///
@@ -105,6 +106,31 @@ abstract interface class OrderPaymentRepository {
     required int page,
     OrderPaymentType? type,
     int? accountId,
+  });
+
+  /// «تسوية الدفعات» — waiting or settled payments. `extraMeta['amount_total']` is what the whole
+  /// filtered list adds up to. TREASURY-DESIGN §٢٣.
+  Future<Either<Failure, Paginated<OrderPayment>>> settlementQueue({
+    required int page,
+    required SettlementState state,
+    DateTime? from,
+    DateTime? to,
+    int? accountId,
+    String? search,
+  });
+
+  /// Where payments wait, and where they may be settled to.
+  Future<Either<Failure, SettlementAccounts>> settlementAccounts();
+
+  /// One or several payments' money to the account it reached, all or nothing. [accountId]
+  /// null: each to its own automatic account.
+  Future<Either<Failure, List<OrderPayment>>> settle(List<SettleRow> rows, {int? accountId});
+
+  /// Takes a payment's settlement back; its money returns to where it landed.
+  Future<Either<Failure, OrderPayment>> unsettle(
+    int orderId,
+    int paymentId, {
+    required String reason,
   });
 }
 

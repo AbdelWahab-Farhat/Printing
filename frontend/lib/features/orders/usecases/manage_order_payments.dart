@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 
 /// Reading an order's ledger.
@@ -152,6 +153,71 @@ class GetPaymentReviewQueue {
     OrderPaymentType? type,
     int? accountId,
   }) => _repository.reviewQueue(page: page, type: type, accountId: accountId);
+}
+
+/// «تسوية الدفعات» — a page of waiting or settled payments. TREASURY-DESIGN §٢٣.
+class GetPaymentSettlementQueue {
+  const GetPaymentSettlementQueue(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, Paginated<OrderPayment>>> call({
+    required int page,
+    required SettlementState state,
+    DateTime? from,
+    DateTime? to,
+    int? accountId,
+    String? search,
+  }) => _repository.settlementQueue(
+    page: page,
+    state: state,
+    from: from,
+    to: to,
+    accountId: accountId,
+    search: search,
+  );
+}
+
+/// Where payments wait, and where they may be settled to.
+class GetSettlementAccounts {
+  const GetSettlementAccounts(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, SettlementAccounts>> call() => _repository.settlementAccounts();
+}
+
+/// «تسوية دفعة» — one or several payments, all or nothing. A fee is typed money: its digits are
+/// cleaned like any amount's.
+class SettleOrderPayments {
+  const SettleOrderPayments(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, List<OrderPayment>>> call(List<SettleRow> rows, {int? accountId}) =>
+      _repository.settle(
+        [
+          for (final row in rows)
+            SettleRow(
+              paymentId: row.paymentId,
+              fee: row.fee == null || row.fee!.trim().isEmpty ? null : normaliseAmount(row.fee!),
+            ),
+        ],
+        accountId: accountId,
+      );
+}
+
+/// Takes a payment's settlement back, with a reason.
+class UnsettleOrderPayment {
+  const UnsettleOrderPayment(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, OrderPayment>> call(
+    int orderId,
+    int paymentId, {
+    required String reason,
+  }) => _repository.unsettle(orderId, paymentId, reason: reason.trim());
 }
 
 /// Turns what somebody typed into the decimal string the API takes.

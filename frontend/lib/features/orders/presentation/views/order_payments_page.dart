@@ -15,7 +15,9 @@ import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_review_line.dart';
+import 'package:dayaa/features/orders/presentation/widgets/payment_settlement_line.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/settle_payments_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/write_off_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,6 +99,8 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
               onKeepExcess: _keepExcess,
               onReverse: _reverse,
               onReview: _review,
+              onSettle: _settle,
+              onUnsettle: _unsettle,
             ),
           ),
         },
@@ -271,6 +275,49 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
     context.showSuccess(reviewed ? 'تمت مراجعة الدفعة' : 'أُلغيت مراجعة الدفعة');
   }
 
+  /// «تسوية دفعة» — this payment's money to the account it reached, without waiting for the order
+  /// to be settled (TREASURY-DESIGN §٢٣). Hands nothing back to the order: none of its figures
+  /// moved.
+  Future<void> _settle(OrderPayment payment) async {
+    final cubit = context.read<OrderPaymentsCubit>();
+    final accounts = await cubit.settlementAccounts();
+
+    if (!mounted) return;
+
+    if (accounts == null) {
+      context.showError('تعذّر تحميل الحسابات — حاول مجدداً');
+
+      return;
+    }
+
+    final saved = await showSettlePaymentsSheet(
+      context: context,
+      payments: [payment],
+      destinations: accounts.destinations,
+      onSubmit: (rows, accountId) => cubit.settle(rows, accountId: accountId),
+    );
+
+    if (saved == true && mounted) context.showSuccess('تمت تسوية الدفعة');
+  }
+
+  Future<void> _unsettle(OrderPayment payment) async {
+    final reason = await askUnsettleReason(context, payment);
+
+    if (reason == null || !mounted) return;
+
+    final failure = await context.read<OrderPaymentsCubit>().unsettle(payment.id, reason: reason);
+
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.showSuccess('أُلغيت تسوية الدفعة');
+  }
+
   Future<String?> _askForReason(OrderPayment payment) {
     return showDialog<String>(
       context: context,
@@ -376,6 +423,8 @@ class _Body extends StatelessWidget {
     required this.onKeepExcess,
     required this.onReverse,
     required this.onReview,
+    required this.onSettle,
+    required this.onUnsettle,
   });
 
   final PaymentSummary summary;
@@ -387,6 +436,8 @@ class _Body extends StatelessWidget {
   final Future<void> Function() onKeepExcess;
   final Future<void> Function(OrderPayment payment) onReverse;
   final Future<void> Function(OrderPayment payment, bool reviewed) onReview;
+  final Future<void> Function(OrderPayment payment) onSettle;
+  final Future<void> Function(OrderPayment payment) onUnsettle;
 
   @override
   Widget build(BuildContext context) {
@@ -435,6 +486,8 @@ class _Body extends StatelessWidget {
                     isBusy: isWorking,
                     onReverse: () => onReverse(payment),
                     onReview: (reviewed) => unawaited(onReview(payment, reviewed)),
+                    onSettle: () => unawaited(onSettle(payment)),
+                    onUnsettle: () => unawaited(onUnsettle(payment)),
                   ),
             ],
           ),
@@ -474,12 +527,16 @@ class _Entry extends StatelessWidget {
     required this.isBusy,
     required this.onReverse,
     required this.onReview,
+    required this.onSettle,
+    required this.onUnsettle,
   });
 
   final OrderPayment payment;
   final bool isBusy;
   final VoidCallback onReverse;
   final void Function(bool reviewed) onReview;
+  final VoidCallback onSettle;
+  final VoidCallback onUnsettle;
 
   @override
   Widget build(BuildContext context) {
@@ -593,6 +650,19 @@ class _Entry extends StatelessWidget {
             Padding(
               padding: EdgeInsetsDirectional.only(start: 28.w, top: 4.h),
               child: PaymentReviewLine(payment: payment, isBusy: isBusy, onReview: onReview),
+            ),
+
+          // «في النورس — تُسوّى إلى المصرف» with «تسوية», or «سُوّيت إلى المصرف» with «تراجع» —
+          // TREASURY-DESIGN §٢٣. Nothing on a row with nothing to settle.
+          if (payment.isSettled || payment.canSettle)
+            Padding(
+              padding: EdgeInsetsDirectional.only(start: 28.w, top: 4.h),
+              child: PaymentSettlementLine(
+                payment: payment,
+                isBusy: isBusy,
+                onSettle: onSettle,
+                onUnsettle: onUnsettle,
+              ),
             ),
 
           Padding(

@@ -26,6 +26,7 @@ use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\OrderPaymentReviewController;
+use App\Application\Api\V1\Controllers\OrderPaymentSettlementController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductCategoryController;
 use App\Application\Api\V1\Controllers\ProductController;
@@ -580,6 +581,18 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:orders.payments.review')->name('orders.payments.review');
         Route::get('order-payments/review-queue', [OrderPaymentReviewController::class, 'queue'])
             ->middleware('can:orders.payments.review')->name('order-payments.review-queue');
+
+        // «تسوية دفعة» — a payment's money to the account it reached, before the order is settled,
+        // and back. See TREASURY-DESIGN §٢٣.
+        Route::get('order-payments/settlement-queue', [OrderPaymentSettlementController::class, 'queue'])
+            ->middleware('can:orders.payments.settle')->name('order-payments.settlement-queue');
+        Route::get('order-payments/settlement-accounts', [OrderPaymentSettlementController::class, 'accounts'])
+            ->middleware('can:orders.payments.settle')->name('order-payments.settlement-accounts');
+        Route::post('order-payments/settle', [OrderPaymentSettlementController::class, 'settle'])
+            ->middleware('can:orders.payments.settle')->name('order-payments.settle');
+        Route::post('orders/{order}/payments/{payment}/unsettle', [OrderPaymentSettlementController::class, 'unsettle'])
+            ->scopeBindings()
+            ->middleware('can:orders.payments.settle')->name('orders.payments.unsettle');
 
         // ── manufacturing cost rates ────────────────────────────────────────────────────
         // What a unit of production standard-costs at — applied automatically when an order

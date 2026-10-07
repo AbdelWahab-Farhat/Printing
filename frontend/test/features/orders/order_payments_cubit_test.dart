@@ -67,6 +67,9 @@ void main() {
       writeOffBalance: WriteOffOrderBalance(repository),
       reviewPayment: ReviewOrderPayment(repository),
       keepExcess: KeepOrderExcess(repository),
+      getSettlementAccounts: GetSettlementAccounts(repository),
+      settlePayments: SettleOrderPayments(repository),
+      unsettlePayment: UnsettleOrderPayment(repository),
     );
   });
 
