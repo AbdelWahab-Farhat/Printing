@@ -63,6 +63,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [CUSTOMER-SHOP-LOCATION-DESIGN.md](customers/CUSTOMER-SHOP-LOCATION-DESIGN.md) | موقع المحل: مدينة ومنطقة بدل الإحداثيات. **مُنفَّذ.** |
+| [CUSTOMER-DEFAULT-ADDRESS.md](customers/CUSTOMER-DEFAULT-ADDRESS.md) | عنوان العميل، ومن أين تبدأ الطلبية الجديدة: المحل ثم العنوان. **مُنفَّذ.** |
 | [CUSTOMER-ORDERS-SECTION.md](customers/CUSTOMER-ORDERS-SECTION.md) | طلبيات العميل على شاشة العميل. |
 | [CUSTOMERS-ACTIVITY-FILTER.md](customers/CUSTOMERS-ACTIVITY-FILTER.md) | تصفية شاشة العملاء حسب الطلبيات — «بمن نتّصل؟». |
 
