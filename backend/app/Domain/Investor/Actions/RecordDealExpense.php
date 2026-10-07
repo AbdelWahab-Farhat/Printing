@@ -79,7 +79,7 @@ final class RecordDealExpense
                 direction: MovementDirection::Out,
                 kind: MovementKind::Expense,
                 amount: (string) $expense->amount,
-                occurredAt: Carbon::parse($data->incurredOn),
+                occurredAt: InvestorDealExpense::momentFor($data->incurredOn),
                 sourceType: $expense->getMorphClass(),
                 sourceId: (int) $expense->getKey(),
                 notes: "مصروف {$locked->code}: {$expense->name}",

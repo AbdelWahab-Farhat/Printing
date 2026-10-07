@@ -80,6 +80,16 @@ enum CashEntryType: string
      */
     case WriteOffCoveredByCompany = 'write_off_covered_by_company';
 
+    /**
+     * نصيبُ الشركة من مصروف الصندوق — تدفعه الشركة، مصدرُه صفُّ المصروف نفسُه (التسلسل ٢).
+     *
+     * قرارُ المالك 2026-10-05 (§١٠، الخيار ب): المصروفُ يخرج كاملاً بـ{@see self::Expense}،
+     * والشركاءُ يُحمَّلون نصيبَهم في محافظهم، والباقي يدخل هنا من مال الشركة — فلا ينقص النقدُ
+     * إلا بما كُتب على الشركاء، وتبقى قيمةُ الوحدات على ما يقوله الدفتر. ويُعكس مع المصروف:
+     * عكسُه يُبطل كلَّ صفٍّ قائمٍ لمصدره.
+     */
+    case ExpenseCoveredByCompany = 'expense_covered_by_company';
+
     /** يُبطل صفّاً واحداً سابقاً، حاملاً مبلغَه كما هو. */
     case Reversal = 'reversal';
 
@@ -96,6 +106,7 @@ enum CashEntryType: string
             self::StockSoldToPress => 'بيع سادة للمطبعة',
             self::LegacyTransfer => 'تحويل من صفقة سابقة',
             self::WriteOffCoveredByCompany => 'شطب تحمّلته الشركة',
+            self::ExpenseCoveredByCompany => 'نصيب الشركة من المصروف',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -110,7 +121,7 @@ enum CashEntryType: string
     {
         return match ($this) {
             self::Deposit, self::SaleProceeds, self::StockSoldToPress, self::LegacyTransfer,
-            self::WriteOffCoveredByCompany => true,
+            self::WriteOffCoveredByCompany, self::ExpenseCoveredByCompany => true,
             default => false,
         };
     }

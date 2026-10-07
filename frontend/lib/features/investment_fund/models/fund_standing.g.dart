@@ -52,6 +52,8 @@ _FundPeriod _$FundPeriodFromJson(Map<String, dynamic> json) => _FundPeriod(
   investorsPool: json['investors_pool'] as String?,
   companyShare: json['company_share'] as String?,
   salesRevenue: json['sales_revenue'] as String?,
+  expensesAmount: json['expenses_amount'] as String?,
+  expensesOnInvestors: json['expenses_on_investors'] as String?,
   closingStockCost: json['closing_stock_cost'] as String?,
   closingCash: json['closing_cash'] as String?,
 );
@@ -82,6 +84,8 @@ Map<String, dynamic> _$FundPeriodToJson(_FundPeriod instance) =>
       'investors_pool': instance.investorsPool,
       'company_share': instance.companyShare,
       'sales_revenue': instance.salesRevenue,
+      'expenses_amount': instance.expensesAmount,
+      'expenses_on_investors': instance.expensesOnInvestors,
       'closing_stock_cost': instance.closingStockCost,
       'closing_cash': instance.closingCash,
     };

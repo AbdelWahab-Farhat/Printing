@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Investor\Actions;
 
 use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Exceptions\EntryCannotBeReversed;
 use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
+use App\Domain\Investor\Queries\ExpenseChargePeriod;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
@@ -29,9 +31,9 @@ use Illuminate\Support\Facades\DB;
  * بأبوابها هي: {@see TreasuryService::reverseSource()}، و{@see PostDealShare} بصفر كما يفعل
  * {@see UnwindDealEarningsForOrder}، و{@see RecordCashEntry::reverse()}.
  *
- * **والفتراتُ على قاعدتها:** عكسُ ما حُمِّل للشركاء يقع في فترة المصروف ما دامت تقبل القيد، وإلا
- * في المفتوحة اليوم — {@see PostDealShare} يمرّ بـ`PeriodForEntry::floorOf()`، وحارسُ
- * `InvestorWalletEntry` يمنع أيّ صفٍّ في فترةٍ أُقفلت.
+ * **والفتراتُ على قاعدتها:** عكسُ ما حُمِّل للشركاء يقع في الفترة التي حُمِّل فيها، وهي تقبل القيد
+ * ما دامت مفتوحةً أو «قيد الإغلاق». **ومصروفُ الصندوق في فترةٍ أُقفلت لا يُعكس أصلاً** — قرارُ
+ * المالك 2026-10-05 — بدل أن يقع ردُّه على المفتوحة اليوم. {@see ExpenseChargePeriod}
  *
  * **والزوجُ يسقط من كل مجموع:** `InvestorDealExpense::isDeducted()` لا يعدّ عكساً ولا ما عُكس،
  * و`CloseInvestmentPeriod::expensesOf()` كذلك.
@@ -45,6 +47,7 @@ final class ReverseDealExpense
         private readonly PostDealShare $postShare,
         private readonly RecordCashEntry $cash,
         private readonly TreasuryService $treasury,
+        private readonly ExpenseChargePeriod $chargePeriod,
     ) {}
 
     /**
@@ -128,6 +131,19 @@ final class ReverseDealExpense
             throw EntryCannotBeReversed::make(
                 "الصفقة {$deal->code} «{$deal->status->label()}» ولا تقبل حركات مالية جديدة"
             );
+        }
+
+        // **مصروفُ فترةٍ أُقفلت لا يُعكس** — قرارُ المالك 2026-10-05. أرقامُها أُعلنت ووُزّع بها
+        // المال، وعكسُه كان يُنزل الردَّ على المفتوحة اليوم فيقرأ المستثمرون في فترتين قصّتين.
+        // «قيد الإغلاق» تقبل القيد، فيُعكس فيها.
+        if ($deal->isTheFund()) {
+            $period = $this->chargePeriod->of($original);
+
+            if ($period?->status === PeriodStatus::Closed) {
+                throw EntryCannotBeReversed::make(
+                    "حُمِّل هذا المصروف على الفترة {$period->code} وقد أُقفلت وأُعلنت أرقامها — لا يُعكس بعد الإقفال"
+                );
+            }
         }
     }
 

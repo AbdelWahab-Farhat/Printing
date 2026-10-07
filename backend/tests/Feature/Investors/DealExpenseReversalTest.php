@@ -389,9 +389,10 @@ class DealExpenseReversalTest extends TestCase
         $this->assertSame('100.00', (string) $period->expenses_amount);
     }
 
-    public function test_a_correction_after_its_period_closed_lands_in_the_open_one(): void
+    public function test_a_fund_expense_is_not_reversed_after_its_period_closed(): void
     {
         // Arrange — مصروفُ سبتمبر، وأُقفل سبتمبر، وفُتح أكتوبر — ثم ظهر أن الفاتورة مكرّرة.
+        // قرارُ المالك 2026-10-05: أرقامُ سبتمبر أُعلنت، فلا يُعكس مصروفُه ولا يقع ردُّه على أكتوبر.
         Carbon::setTestNow('2026-09-01 09:00:00');
         $september = app(OpenInvestmentPeriod::class)(actorId: null);
         $this->fundPartner('10000.00');
@@ -400,21 +401,46 @@ class DealExpenseReversalTest extends TestCase
         $expense = $this->fundExpense($headers, '400');
         Carbon::setTestNow('2026-10-02 09:00:00');
         app(CloseInvestmentPeriod::class)(actorId: null);
-        $october = app(OpenInvestmentPeriod::class)(actorId: null);
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $cashBefore = $this->balance($this->defaultOf(AccountKind::Cash));
 
         // Act
         $response = $this->reverse($headers, $this->onFund($expense));
 
-        // Assert — سبتمبر أُعلنت أرقامُه فلا يدخله صفّ، والتصحيحُ يقع على أكتوبر.
-        $response->assertCreated();
-        $periods = InvestorWalletEntry::query()
-            ->where('type', WalletEntryType::Reversal->value)
-            ->whereHas('reversedEntry', fn ($q) => $q->where('type', WalletEntryType::Loss->value))
-            ->pluck('investment_period_id')
-            ->unique()
-            ->values()
-            ->all();
-        $this->assertSame([(int) $october->id], array_map('intval', $periods));
+        // Assert — لا صفَّ عكسٍ في أيّ دفتر.
+        $response->assertUnprocessable()->assertJsonFragment([
+            'message' => "حُمِّل هذا المصروف على الفترة {$september->code} وقد أُقفلت وأُعلنت أرقامها — لا يُعكس بعد الإقفال",
+        ]);
+        $this->assertFalse(InvestorDealExpense::query()->where('reverses_expense_id', $expense)->exists());
+        $this->assertFalse(InvestorWalletEntry::query()->where('type', WalletEntryType::Reversal->value)->exists());
+        $this->assertSame($cashBefore, $this->balance($this->defaultOf(AccountKind::Cash)));
         $this->assertSame(PeriodStatus::Closed, $september->refresh()->status);
+    }
+
+    public function test_an_expense_dated_in_a_closed_period_is_reversed_while_its_charge_period_is_open(): void
+    {
+        // Arrange — أُقفل سبتمبر، ثم وصلت فاتورةٌ مؤرّخةٌ في ٢٠ منه فحُمِّلت على أكتوبر المفتوح.
+        // الخطأُ فيها لم يُعلَن بعد، فيُصحَّح.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        $partner = $this->fundPartner('10000.00');
+        Carbon::setTestNow('2026-10-02 09:00:00');
+        app(CloseInvestmentPeriod::class)(actorId: null);
+        app(OpenInvestmentPeriod::class)(actorId: null);
+        Carbon::setTestNow('2026-10-05 09:00:00');
+        $headers = $this->bookkeeper();
+        $expense = (int) $this->postJson('/api/v1/investment/expenses', [
+            'kind' => 'shipping',
+            'name' => 'شحن متأخّر',
+            'amount' => '400',
+            'incurred_on' => '2026-09-20',
+        ], $headers)->assertOk()->json('data.id');
+
+        // Act
+        $response = $this->reverse($headers, $this->onFund($expense));
+
+        // Assert
+        $response->assertCreated();
+        $this->assertSame('0.00', $this->profitOf($partner, app(FundDeal::class)()));
     }
 }

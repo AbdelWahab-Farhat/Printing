@@ -93,6 +93,13 @@ abstract class FundPeriod with _$FundPeriod {
     @JsonKey(name: 'investors_pool') String? investorsPool,
     @JsonKey(name: 'company_share') String? companyShare,
     @JsonKey(name: 'sales_revenue') String? salesRevenue,
+
+    /// مصاريفُ الفترة — **بجانب «صافي الربح» لا داخله**: ذاك ربحُ الطلبيات وحده، والمصروفُ
+    /// يصل المستثمرين صفوفاً في محافظهم، فـ«للمستثمرين» نقص منه نصيبُهم قبلُ.
+    @JsonKey(name: 'expenses_amount') String? expensesAmount,
+
+    /// ما تحمّله المستثمرون من المصاريف في هذه الفترة — من دفتر المحافظ.
+    @JsonKey(name: 'expenses_on_investors') String? expensesOnInvestors,
     @JsonKey(name: 'closing_stock_cost') String? closingStockCost,
     @JsonKey(name: 'closing_cash') String? closingCash,
   }) = _FundPeriod;
