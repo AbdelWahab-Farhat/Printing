@@ -237,6 +237,28 @@ abstract class OrderPayment with _$OrderPayment {
     /// The order the entry belongs to — present on the review queue, where entries from many
     /// orders sit together, and absent on an order's own ledger.
     PaymentOrderRef? order,
+
+    /// Where the money landed — the cash box, «مصرف علي», Nawris. Null on entries that moved
+    /// none, and on every entry from before the treasury.
+    @JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,
+
+    /// «تسوية دفعة» (TREASURY-DESIGN §٢٣): where this payment's money was carried before the
+    /// order was settled. Null on a payment never settled on its own.
+    PaymentSettlement? settlement,
+
+    /// **The server's answers, not this app's** — the grant folded together with the row: a
+    /// refund, a reversed payment, an order already «تم التسوية» are not candidates.
+    @JsonKey(name: 'can_settle') @Default(false) bool canSettle,
+    @JsonKey(name: 'settle_blocked_reason') String? settleBlockedReason,
+
+    /// Where the money goes when nobody picks. Null: it is already in its place, and settling it
+    /// means naming an account.
+    @JsonKey(name: 'settlement_target') PaymentAccountRef? settlementTarget,
+
+    @JsonKey(name: 'can_unsettle') @Default(false) bool canUnsettle,
+
+    /// «الطلبية "تم التسوية" — تراجع عن تسوية الطلبية أولاً». Null when there is no button to grey.
+    @JsonKey(name: 'unsettle_blocked_reason') String? unsettleBlockedReason,
   }) = _OrderPayment;
 
   const OrderPayment._();
@@ -267,6 +289,52 @@ abstract class OrderPayment with _$OrderPayment {
   /// somebody made one or the entry still counts. A reversed payment nobody reviewed has
   /// nothing left to check, so it says nothing either way.
   bool get showsReview => requiresReview && (isReviewed || !isReversed);
+
+  /// Whether this payment's money was carried on before its order was settled.
+  bool get isSettled => settlement != null;
+
+  /// Whether its money sits with a carrier — Nawris or a driver — the one place a fee can have
+  /// been kept from it.
+  bool get isHeldByCarrier => treasuryAccount?.kind == 'custody';
+}
+
+/// An account as a payment row names it.
+@freezed
+abstract class PaymentAccountRef with _$PaymentAccountRef {
+  const factory PaymentAccountRef({
+    required int id,
+    required String name,
+
+    /// `cash`, `bank`, `wallet`, `custody`. Absent where the server names only the account.
+    String? kind,
+  }) = _PaymentAccountRef;
+
+  factory PaymentAccountRef.fromJson(Map<String, dynamic> json) =>
+      _$PaymentAccountRefFromJson(json);
+}
+
+/// «تسوية دفعة» — where one payment's money was carried, and by whom.
+@freezed
+abstract class PaymentSettlement with _$PaymentSettlement {
+  const factory PaymentSettlement({
+    @JsonKey(name: 'operation_id') required int operationId,
+    @JsonKey(name: 'to_account') PaymentAccountRef? toAccount,
+
+    /// What the carrier kept — «0.00» on nearly every settlement.
+    @Default('0.00') String fee,
+
+    /// What reached [toAccount]: the payment less [fee].
+    @Default('0.00') String received,
+    @JsonKey(name: 'settled_at') DateTime? settledAt,
+    @JsonKey(name: 'settled_by') PaymentRecorder? settledBy,
+  }) = _PaymentSettlement;
+
+  const PaymentSettlement._();
+
+  factory PaymentSettlement.fromJson(Map<String, dynamic> json) =>
+      _$PaymentSettlementFromJson(json);
+
+  bool get hasFee => fee != '0.00' && fee.isNotEmpty;
 }
 
 /// The order an entry belongs to, as much of it as a row in the review queue names.

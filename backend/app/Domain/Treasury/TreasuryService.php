@@ -14,6 +14,7 @@ use App\Domain\Treasury\Actions\ReverseMovement;
 use App\Domain\Treasury\Actions\ReverseOperation;
 use App\Domain\Treasury\Actions\SaveExpenseCategory;
 use App\Domain\Treasury\Actions\SettleCustody;
+use App\Domain\Treasury\Actions\SettlePayment;
 use App\Domain\Treasury\Actions\SyncDebt;
 use App\Domain\Treasury\Actions\UpdateTreasuryAccount;
 use App\Domain\Treasury\DTOs\AccountData;
@@ -77,6 +78,7 @@ final class TreasuryService
         private readonly CustodyForOrder $custody,
         private readonly OrderMoneyByAccount $orderMoney,
         private readonly SyncDebt $syncDebt,
+        private readonly SettlePayment $settlePayment,
     ) {}
 
     // ── accounts ────────────────────────────────────────────────────────────────────────
@@ -656,9 +658,14 @@ final class TreasuryService
      *                           reversed payment's. Omar's collection stays when Ali's payment is
      *                           reversed. Null: every one, as un-settling the order needs.
      */
-    public function unwindSettlementOf(int $orderId, string $reason, ?int $actorId, ?int $accountId = null): void
-    {
-        foreach ($this->standingSettlements($orderId, $accountId)->get() as $settlement) {
+    public function unwindSettlementOf(
+        int $orderId,
+        string $reason,
+        ?int $actorId,
+        ?int $accountId = null,
+        ?int $paymentId = null,
+    ): void {
+        foreach ($this->standingSettlements($orderId, $accountId, $paymentId)->get() as $settlement) {
             ($this->reverseOperation)($settlement, $reason, $actorId, byHand: false);
         }
     }
@@ -670,24 +677,173 @@ final class TreasuryService
      * ثانيةً وهي في آخر الطريق — فيبقى المالُ في العهدة إلى الأبد. فالجواب «نعم» يعني: تراجع
      * عن التسوية أولاً.
      */
-    public function hasStandingSettlementOf(int $orderId, ?int $accountId = null): bool
+    public function hasStandingSettlementOf(int $orderId, ?int $accountId = null, ?int $paymentId = null): bool
     {
-        return $this->standingSettlements($orderId, $accountId)->exists();
+        return $this->standingSettlements($orderId, $accountId, $paymentId)->exists();
     }
 
     /**
+     * The order's own settlements — and, when a payment is named, that payment's settlement too
+     * (§٢٣). **Another payment's settlement is never in it:** reversing Nawris's first payment
+     * leaves the second where it was settled, and un-settling the order leaves both.
+     *
      * @return Builder<TreasuryOperation>
      */
-    private function standingSettlements(int $orderId, ?int $accountId): Builder
+    private function standingSettlements(int $orderId, ?int $accountId, ?int $paymentId = null): Builder
     {
         return TreasuryOperation::query()
             ->where('type', OperationType::Settlement->value)
             ->where('order_id', $orderId)
             ->whereNull('reverses_operation_id')
             ->whereDoesntHave('reversedBy')
-            ->when($accountId !== null, fn ($q) => $q->whereHas('movements', fn ($m) => $m
-                ->where('account_id', $accountId)
-                ->where('direction', MovementDirection::Out->value)));
+            ->where(fn ($q) => $q
+                ->where(fn ($orders) => $orders
+                    ->whereNull('order_payment_id')
+                    ->when($accountId !== null, fn ($m) => $m->whereHas('movements', fn ($m) => $m
+                        ->where('account_id', $accountId)
+                        ->where('direction', MovementDirection::Out->value))))
+                ->when($paymentId !== null, fn ($q) => $q->orWhere('order_payment_id', $paymentId)));
+    }
+
+    // ── «تسوية دفعة» (§٢٣) ──────────────────────────────────────────────────────────────
+
+    /**
+     * Carries one payment's money to the account it reached, before its order is settled. Call
+     * inside the caller's transaction, with the order locked. See {@see SettlePayment}.
+     */
+    public function settlePayment(
+        int $orderId,
+        int $paymentId,
+        int $sourceAccountId,
+        string $amount,
+        ?int $destinationId,
+        ?string $fee,
+        ?int $actorId,
+        ?string $orderCode = null,
+        string $paymentField = 'payment_id',
+        string $accountField = 'account_id',
+        string $feeField = 'fee',
+    ): TreasuryOperation {
+        return ($this->settlePayment)(
+            $orderId,
+            $paymentId,
+            $sourceAccountId,
+            $amount,
+            $destinationId,
+            $fee,
+            $actorId,
+            $orderCode,
+            $paymentField,
+            $accountField,
+            $feeField,
+        );
+    }
+
+    /**
+     * Takes a payment's settlement back: its money returns to the account it landed in. Never
+     * refused for balance — money already spent from the destination leaves it red, as every
+     * reversal does. Call inside the caller's transaction, with the order locked.
+     */
+    public function unsettlePayment(int $paymentId, string $reason, ?int $actorId): TreasuryOperation
+    {
+        $settlement = $this->settlePayment->standingFor($paymentId)
+            ?? throw new OperationRefused('هذه الدفعة غير مسوّاة');
+
+        return ($this->reverseOperation)($settlement, $reason, $actorId, byHand: false);
+    }
+
+    /**
+     * Locks these accounts in id order — before several payments are settled at once, so two
+     * batches over the same accounts wait for each other instead of deadlocking.
+     *
+     * @param  list<int>  $accountIds
+     */
+    public function lockAccounts(array $accountIds): void
+    {
+        if ($accountIds === []) {
+            return;
+        }
+
+        TreasuryAccount::query()->whereIn('id', array_values(array_unique($accountIds)))->orderBy('id')->lockForUpdate()->get();
+    }
+
+    /**
+     * Where a payment in this account goes when settled and nobody picks — null when it is
+     * already in its place. Asked once per account in a request: a list of fifty payments sits
+     * in three or four accounts.
+     *
+     * @return ?array{id: int, name: string}
+     */
+    public function paymentSettlementTarget(int $accountId, ?int $actorId): ?array
+    {
+        return RequestMemo::remember(
+            "treasury.payment-target:{$accountId}:".($actorId ?? 'none'),
+            function () use ($accountId, $actorId): ?array {
+                $source = TreasuryAccount::query()->find($accountId);
+                $target = $source === null ? null : $this->settlePayment->defaultDestination($source, $actorId);
+
+                return $target === null ? null : ['id' => (int) $target->getKey(), 'name' => (string) $target->name];
+            },
+        );
+    }
+
+    /**
+     * The settlement page's accounts: where payments wait (its filter chips — Nawris included,
+     * which no payment form offers), and where they may be settled to — every active cash box,
+     * bank and wallet, whoever is asking. Names, not balances.
+     *
+     * @return array{sources: list<array{id: int, name: string, kind: string}>, destinations: list<array{id: int, name: string, kind: string, kind_label: string}>}
+     */
+    public function settlementAccounts(?int $actorId): array
+    {
+        $waiting = $this->accountsAwaitingSettlement($actorId);
+
+        return [
+            'sources' => TreasuryAccount::query()
+                ->whereIn('id', $waiting)
+                ->orderByRaw("CASE WHEN kind = 'custody' THEN 0 ELSE 1 END")
+                ->orderBy('name')
+                ->get()
+                ->map(fn (TreasuryAccount $a) => ['id' => (int) $a->id, 'name' => (string) $a->name, 'kind' => $a->kind->value])
+                ->values()
+                ->all(),
+            'destinations' => TreasuryAccount::query()
+                ->active()
+                ->whereIn('kind', [AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (TreasuryAccount $a) => [
+                    'id' => (int) $a->id,
+                    'name' => (string) $a->name,
+                    'kind' => $a->kind->value,
+                    'kind_label' => $a->kind->label(),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * Every account whose money would move at settlement — custody always, and an employee's or a
+     * branch's account where the settler's account or collection would take it. Payments in these
+     * accounts are «بانتظار التسوية»; a payment anywhere else is already in its place.
+     *
+     * @return list<int>
+     */
+    public function accountsAwaitingSettlement(?int $actorId): array
+    {
+        return RequestMemo::remember(
+            'treasury.awaiting-settlement:'.($actorId ?? 'none'),
+            fn (): array => TreasuryAccount::query()
+                ->whereIn('kind', [AccountKind::Custody->value, AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn (int $id) => $this->paymentSettlementTarget($id, $actorId) !== null)
+                ->values()
+                ->all(),
+        );
     }
 
     /**

@@ -21,8 +21,10 @@ use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\ReviewOrderPayment;
 use App\Domain\Order\Actions\SetOrderShortages;
+use App\Domain\Order\Actions\SettleOrderPayments;
 use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Actions\UnsettleOrder;
+use App\Domain\Order\Actions\UnsettleOrderPayment;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
@@ -55,6 +57,7 @@ use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStockShortfallQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
 use App\Domain\Order\Queries\PaymentReviewQueue;
+use App\Domain\Order\Queries\PaymentSettlementQueue;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
 use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -92,6 +95,10 @@ class OrderService
         private readonly ReviewOrderPayment $reviewPayment,
         private readonly KeepOrderExcess $keepExcess,
         private readonly PaymentReviewQueue $reviewQueue,
+        // «تسوية دفعة» — TREASURY-DESIGN §٢٣.
+        private readonly SettleOrderPayments $settlePayments,
+        private readonly UnsettleOrderPayment $unsettlePayment,
+        private readonly PaymentSettlementQueue $settlementQueue,
         private readonly WriteOffOrderBalance $writeOffBalance,
         private readonly CreateManufacturingCostRate $createManufacturingCostRate,
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
@@ -356,7 +363,63 @@ class OrderService
      */
     public function payments(Order $order): Collection
     {
-        return $order->payments()->with(['recorder', 'reviewer', 'reversal', 'reversedPayment', 'treasuryAccount'])->get();
+        $payments = $order->payments()->with([
+            'recorder',
+            'reviewer',
+            'reversal',
+            'reversedPayment',
+            'treasuryAccount',
+            ...self::SETTLEMENT_RELATIONS,
+        ])->get();
+
+        // The order's status decides whether a payment may still be settled on its own (§٢٣).
+        // Handed to every row rather than asked once per row.
+        return $payments->each(fn (OrderPayment $payment) => $payment->setRelation('order', $order));
+    }
+
+    /** What a payment's «تسوية دفعة» block reads — see `OrderPaymentResource`. */
+    public const SETTLEMENT_RELATIONS = [
+        'standingSettlement.toAccount',
+        'standingSettlement.recorder',
+        'standingSettlement.movements',
+    ];
+
+    /**
+     * «تسوية دفعة» — one or several payments' money to the account it reached, before their
+     * orders are settled. See {@see SettleOrderPayments}.
+     *
+     * @param  list<array{payment_id: int, fee?: ?string}>  $rows
+     * @return Collection<int, OrderPayment>
+     */
+    public function settlePayments(array $rows, ?int $accountId, ?User $actor = null): Collection
+    {
+        return ($this->settlePayments)($rows, $accountId, $actor)
+            ->load(['order.customer', 'recorder', 'reviewer', 'reversal', 'treasuryAccount', ...self::SETTLEMENT_RELATIONS]);
+    }
+
+    /**
+     * Takes a payment's «تسوية دفعة» back. See {@see UnsettleOrderPayment}.
+     */
+    public function unsettlePayment(Order $order, OrderPayment $payment, string $reason, ?User $actor = null): OrderPayment
+    {
+        return ($this->unsettlePayment)($order, $payment, $reason, $actor)
+            ->load(['order.customer', 'recorder', 'reviewer', 'reversal', 'treasuryAccount', ...self::SETTLEMENT_RELATIONS]);
+    }
+
+    /**
+     * «تسوية الدفعات» — the page's list and what it adds up to.
+     *
+     * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
+     * @return array{page: LengthAwarePaginator<int, OrderPayment>, totals: array{amount_total: string}}
+     */
+    public function paymentSettlementQueue(array $filters, int $perPage, ?User $viewer): array
+    {
+        $viewerId = $viewer?->getKey() === null ? null : (int) $viewer->getKey();
+
+        return [
+            'page' => $this->settlementQueue->page($filters, $perPage, $viewerId),
+            'totals' => $this->settlementQueue->totals($filters, $viewerId),
+        ];
     }
 
     public function recordPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment

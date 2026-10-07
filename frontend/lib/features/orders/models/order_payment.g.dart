@@ -6,63 +6,79 @@ part of 'order_payment.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_OrderPayment _$OrderPaymentFromJson(Map<String, dynamic> json) =>
-    _OrderPayment(
-      id: (json['id'] as num).toInt(),
-      orderId: (json['order_id'] as num).toInt(),
-      type: $enumDecode(
-        _$OrderPaymentTypeEnumMap,
-        json['type'],
-        unknownValue: OrderPaymentType.unknown,
-      ),
-      typeLabel: json['type_label'] as String,
-      amount: json['amount'] as String,
-      excessAmount: json['excess_amount'] as String? ?? '0.00',
-      isReversed: json['is_reversed'] as bool? ?? false,
-      isReversible: json['is_reversible'] as bool? ?? false,
-      hasReceipt: json['has_receipt'] as bool? ?? false,
-      receiptIsImage: json['receipt_is_image'] as bool? ?? false,
-      method: $enumDecodeNullable(
-        _$PaymentMethodEnumMap,
-        json['method'],
-        unknownValue: PaymentMethod.unknown,
-      ),
-      methodLabel: json['method_label'] as String?,
-      reference: json['reference'] as String?,
-      receiptUrl: json['receipt_url'] as String?,
-      receiptFilename: json['receipt_filename'] as String?,
-      receiptSizeBytes: (json['receipt_size_bytes'] as num?)?.toInt(),
-      notes: json['notes'] as String?,
-      reversesPaymentId: (json['reverses_payment_id'] as num?)?.toInt(),
-      reversal: json['reversal'] == null
-          ? null
-          : OrderPaymentReversal.fromJson(
-              json['reversal'] as Map<String, dynamic>,
-            ),
-      recordedBy: json['recorder'] == null
-          ? null
-          : PaymentRecorder.fromJson(json['recorder'] as Map<String, dynamic>),
-      paidAt: json['paid_at'] == null
-          ? null
-          : DateTime.parse(json['paid_at'] as String),
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.parse(json['created_at'] as String),
-      requiresReview: json['requires_review'] as bool? ?? false,
-      isReviewed: json['is_reviewed'] as bool? ?? false,
-      reviewedAt: json['reviewed_at'] == null
-          ? null
-          : DateTime.parse(json['reviewed_at'] as String),
-      reviewedBy: json['reviewer'] == null
-          ? null
-          : PaymentRecorder.fromJson(json['reviewer'] as Map<String, dynamic>),
-      canReview: json['can_review'] as bool? ?? false,
-      canUnreview: json['can_unreview'] as bool? ?? false,
-      reviewBlockedReason: json['review_blocked_reason'] as String?,
-      order: json['order'] == null
-          ? null
-          : PaymentOrderRef.fromJson(json['order'] as Map<String, dynamic>),
-    );
+_OrderPayment _$OrderPaymentFromJson(
+  Map<String, dynamic> json,
+) => _OrderPayment(
+  id: (json['id'] as num).toInt(),
+  orderId: (json['order_id'] as num).toInt(),
+  type: $enumDecode(
+    _$OrderPaymentTypeEnumMap,
+    json['type'],
+    unknownValue: OrderPaymentType.unknown,
+  ),
+  typeLabel: json['type_label'] as String,
+  amount: json['amount'] as String,
+  excessAmount: json['excess_amount'] as String? ?? '0.00',
+  isReversed: json['is_reversed'] as bool? ?? false,
+  isReversible: json['is_reversible'] as bool? ?? false,
+  hasReceipt: json['has_receipt'] as bool? ?? false,
+  receiptIsImage: json['receipt_is_image'] as bool? ?? false,
+  method: $enumDecodeNullable(
+    _$PaymentMethodEnumMap,
+    json['method'],
+    unknownValue: PaymentMethod.unknown,
+  ),
+  methodLabel: json['method_label'] as String?,
+  reference: json['reference'] as String?,
+  receiptUrl: json['receipt_url'] as String?,
+  receiptFilename: json['receipt_filename'] as String?,
+  receiptSizeBytes: (json['receipt_size_bytes'] as num?)?.toInt(),
+  notes: json['notes'] as String?,
+  reversesPaymentId: (json['reverses_payment_id'] as num?)?.toInt(),
+  reversal: json['reversal'] == null
+      ? null
+      : OrderPaymentReversal.fromJson(json['reversal'] as Map<String, dynamic>),
+  recordedBy: json['recorder'] == null
+      ? null
+      : PaymentRecorder.fromJson(json['recorder'] as Map<String, dynamic>),
+  paidAt: json['paid_at'] == null
+      ? null
+      : DateTime.parse(json['paid_at'] as String),
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+  requiresReview: json['requires_review'] as bool? ?? false,
+  isReviewed: json['is_reviewed'] as bool? ?? false,
+  reviewedAt: json['reviewed_at'] == null
+      ? null
+      : DateTime.parse(json['reviewed_at'] as String),
+  reviewedBy: json['reviewer'] == null
+      ? null
+      : PaymentRecorder.fromJson(json['reviewer'] as Map<String, dynamic>),
+  canReview: json['can_review'] as bool? ?? false,
+  canUnreview: json['can_unreview'] as bool? ?? false,
+  reviewBlockedReason: json['review_blocked_reason'] as String?,
+  order: json['order'] == null
+      ? null
+      : PaymentOrderRef.fromJson(json['order'] as Map<String, dynamic>),
+  treasuryAccount: json['treasury_account'] == null
+      ? null
+      : PaymentAccountRef.fromJson(
+          json['treasury_account'] as Map<String, dynamic>,
+        ),
+  settlement: json['settlement'] == null
+      ? null
+      : PaymentSettlement.fromJson(json['settlement'] as Map<String, dynamic>),
+  canSettle: json['can_settle'] as bool? ?? false,
+  settleBlockedReason: json['settle_blocked_reason'] as String?,
+  settlementTarget: json['settlement_target'] == null
+      ? null
+      : PaymentAccountRef.fromJson(
+          json['settlement_target'] as Map<String, dynamic>,
+        ),
+  canUnsettle: json['can_unsettle'] as bool? ?? false,
+  unsettleBlockedReason: json['unsettle_blocked_reason'] as String?,
+);
 
 Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
     <String, dynamic>{
@@ -96,6 +112,13 @@ Map<String, dynamic> _$OrderPaymentToJson(_OrderPayment instance) =>
       'can_unreview': instance.canUnreview,
       'review_blocked_reason': instance.reviewBlockedReason,
       'order': instance.order?.toJson(),
+      'treasury_account': instance.treasuryAccount?.toJson(),
+      'settlement': instance.settlement?.toJson(),
+      'can_settle': instance.canSettle,
+      'settle_blocked_reason': instance.settleBlockedReason,
+      'settlement_target': instance.settlementTarget?.toJson(),
+      'can_unsettle': instance.canUnsettle,
+      'unsettle_blocked_reason': instance.unsettleBlockedReason,
     };
 
 const _$OrderPaymentTypeEnumMap = {
@@ -114,6 +137,47 @@ const _$PaymentMethodEnumMap = {
   PaymentMethod.libyana: 'libyana',
   PaymentMethod.unknown: 'unknown',
 };
+
+_PaymentAccountRef _$PaymentAccountRefFromJson(Map<String, dynamic> json) =>
+    _PaymentAccountRef(
+      id: (json['id'] as num).toInt(),
+      name: json['name'] as String,
+      kind: json['kind'] as String?,
+    );
+
+Map<String, dynamic> _$PaymentAccountRefToJson(_PaymentAccountRef instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'kind': instance.kind,
+    };
+
+_PaymentSettlement _$PaymentSettlementFromJson(
+  Map<String, dynamic> json,
+) => _PaymentSettlement(
+  operationId: (json['operation_id'] as num).toInt(),
+  toAccount: json['to_account'] == null
+      ? null
+      : PaymentAccountRef.fromJson(json['to_account'] as Map<String, dynamic>),
+  fee: json['fee'] as String? ?? '0.00',
+  received: json['received'] as String? ?? '0.00',
+  settledAt: json['settled_at'] == null
+      ? null
+      : DateTime.parse(json['settled_at'] as String),
+  settledBy: json['settled_by'] == null
+      ? null
+      : PaymentRecorder.fromJson(json['settled_by'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$PaymentSettlementToJson(_PaymentSettlement instance) =>
+    <String, dynamic>{
+      'operation_id': instance.operationId,
+      'to_account': instance.toAccount?.toJson(),
+      'fee': instance.fee,
+      'received': instance.received,
+      'settled_at': instance.settledAt?.toIso8601String(),
+      'settled_by': instance.settledBy?.toJson(),
+    };
 
 _PaymentOrderRef _$PaymentOrderRefFromJson(Map<String, dynamic> json) =>
     _PaymentOrderRef(

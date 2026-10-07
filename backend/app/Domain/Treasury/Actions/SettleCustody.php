@@ -212,6 +212,15 @@ final class SettleCustody
     }
 
     /**
+     * Where money held in this one custody account lands when nobody picks — «تسوية دفعة» (§٢٣)
+     * settling one of Nawris's payments asks what the whole order's settlement would have.
+     */
+    public function landingForCustody(TreasuryAccount $custody, ?int $actorId): TreasuryAccount
+    {
+        return $this->automatic($actorId, collect([$custody]), true);
+    }
+
+    /**
      * Rules 2–4 of {@see destination()}.
      *
      * @param  Collection<int, TreasuryAccount>  $custodyAccounts

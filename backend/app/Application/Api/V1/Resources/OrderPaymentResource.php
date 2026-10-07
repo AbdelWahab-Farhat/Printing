@@ -6,7 +6,13 @@ namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Support\Money;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\Models\TreasuryMovement;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -106,6 +112,12 @@ class OrderPaymentResource extends JsonResource
             ]),
             ...$this->reviewAbilities($request),
 
+            // «تسوية دفعة» (TREASURY-DESIGN §٢٣): where this payment's money was carried before
+            // the order was settled. Null on a payment never settled on its own — and on every
+            // entry that is not a payment.
+            'settlement' => $this->settlementBlock(),
+            ...$this->settlementAbilities($request),
+
             // The order the entry belongs to — on the review queue, where rows from many orders
             // sit together. Absent on an order's own ledger, which is already about one order.
             'order' => $this->whenLoaded('order', fn (): ?array => $this->order === null ? null : [
@@ -119,6 +131,94 @@ class OrderPaymentResource extends JsonResource
             // own stamp above.
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @return ?array{operation_id: int, to_account: ?array{id: int, name: string}, fee: string, received: string, settled_at: ?string, settled_by: ?array{id: int, name: string}}
+     */
+    private function settlementBlock(): ?array
+    {
+        if (! $this->settleable()) {
+            return null;
+        }
+
+        $settlement = $this->resource->relationLoaded('standingSettlement')
+            ? $this->standingSettlement
+            : $this->standingSettlement()->first();
+
+        if ($settlement === null) {
+            return null;
+        }
+
+        // What the carrier kept left custody as an expense, never reaching the account.
+        $fee = Money::sum('0', ...$settlement->movements
+            ->filter(fn (TreasuryMovement $m) => $m->kind === MovementKind::Expense && $m->direction === MovementDirection::Out)
+            ->map(fn (TreasuryMovement $m) => (string) $m->amount)
+            ->all());
+
+        return [
+            'operation_id' => (int) $settlement->id,
+            'to_account' => $settlement->toAccount === null ? null : [
+                'id' => (int) $settlement->toAccount->id,
+                'name' => (string) $settlement->toAccount->name,
+            ],
+            'fee' => $fee,
+            'received' => Money::round(bcsub((string) $settlement->amount, $fee, 8)),
+            'settled_at' => $settlement->occurred_at?->toIso8601String(),
+            'settled_by' => $settlement->recorder === null ? null : [
+                'id' => (int) $settlement->recorder->id,
+                'name' => (string) $settlement->recorder->name,
+            ],
+        ];
+    }
+
+    /**
+     * What the signed-in person may do about «تسوية دفعة», decided here as the review is. The
+     * target is where the money goes when nobody picks — null: it is already in its place, and
+     * settling it means choosing an account.
+     *
+     * @return array{can_settle: bool, settle_blocked_reason: ?string, settlement_target: ?array{id: int, name: string}, can_unsettle: bool, unsettle_blocked_reason: ?string}
+     */
+    private function settlementAbilities(Request $request): array
+    {
+        $none = [
+            'can_settle' => false,
+            'settle_blocked_reason' => null,
+            'settlement_target' => null,
+            'can_unsettle' => false,
+            'unsettle_blocked_reason' => null,
+        ];
+
+        $user = $request->user();
+        $user = $user instanceof User ? $user : null;
+
+        if (! ($user?->can(PermissionName::SettleOrderPayments->value) ?? false) || ! $this->settleable()) {
+            return $none;
+        }
+
+        $order = $this->order;
+
+        if ($this->resource->isSettled()) {
+            $refusal = $this->resource->unsettlementRefusal($order);
+
+            return ['can_unsettle' => $refusal === null, 'unsettle_blocked_reason' => $refusal?->getMessage()] + $none;
+        }
+
+        $refusal = $this->resource->settlementRefusal($order);
+
+        return [
+            'can_settle' => $refusal === null,
+            'settle_blocked_reason' => $refusal?->getMessage(),
+            'settlement_target' => $refusal === null
+                ? app(TreasuryService::class)->paymentSettlementTarget((int) $this->treasury_account_id, (int) $user->getKey())
+                : null,
+        ] + $none;
+    }
+
+    /** A payment whose money landed in a known account — the only entries «تسوية دفعة» touches. */
+    private function settleable(): bool
+    {
+        return $this->type === OrderPaymentType::Payment && $this->treasury_account_id !== null;
     }
 
     /**

@@ -239,6 +239,11 @@ enum PermissionName: string
     // never go back. Handing it back is an ordinary refund, under `orders.payments.reverse`.
     case KeepOrderExcess = 'orders.payments.keep_excess';
 
+    // **«تسوية دفعة»: moving one payment's money from where it landed to where it really is**,
+    // before the order reaches «تم التسوية» — and taking that move back. One grant for both, the
+    // owner's choice: whoever settles is whoever notices the mistake. TREASURY-DESIGN §٢٣.
+    case SettleOrderPayments = 'orders.payments.settle';
+
     // What a unit of production standard-costs at — labour, machine runtime, overhead. Applied
     // automatically when an order enters printing (see ApplyManufacturingRates), so this pair
     // guards only the admin screen that maintains the rate table itself, the same split
@@ -467,6 +472,7 @@ enum PermissionName: string
             self::WriteOffOrderPayments => 'شطب فرق مبلغ الطلبية',
             self::ReviewOrderPayments => 'مراجعة دفعات الطلبيات',
             self::KeepOrderExcess => 'اعتبار زائد الزبون إيراداً',
+            self::SettleOrderPayments => 'تسوية دفعات الطلبيات',
             self::ViewManufacturingCostRates => 'عرض معدلات تكلفة التصنيع',
             self::ManageManufacturingCostRates => 'إدارة معدلات تكلفة التصنيع',
 
@@ -562,7 +568,8 @@ enum PermissionName: string
             self::ConfirmDepositReceipt,
             self::ViewOrderPayments, self::RecordOrderPayments,
             self::ReverseOrderPayments, self::WriteOffOrderPayments,
-            self::ReviewOrderPayments, self::KeepOrderExcess => 'مدفوعات الطلبيات',
+            self::ReviewOrderPayments, self::KeepOrderExcess,
+            self::SettleOrderPayments => 'مدفوعات الطلبيات',
 
             self::ViewManufacturingCostRates,
             self::ManageManufacturingCostRates => 'معدلات تكلفة التصنيع',

@@ -94,6 +94,7 @@ final class ReverseOrderPayment
                 && $this->treasury->hasStandingSettlementOf(
                     (int) $locked->getKey(),
                     $payment->treasury_account_id === null ? null : (int) $payment->treasury_account_id,
+                    (int) $payment->getKey(),
                 )) {
                 throw SettledOrderMustBeUnsettledFirst::moneyAlreadySettled();
             }
@@ -168,12 +169,14 @@ final class ReverseOrderPayment
 
         // Only what carried this payment's own account onward: reversing Ali's transfer leaves
         // Omar's collection where it went. A payment from before the treasury names no account,
-        // so everything is unwound, as before (§١٨).
+        // so everything is unwound, as before (§١٨). **And this payment's own «تسوية دفعة»**
+        // (§٢٣) — never another payment's: Nawris's second parcel stays where it was settled.
         $this->treasury->unwindSettlementOf(
             (int) $order->getKey(),
             $reason,
             $actorId,
             $payment->treasury_account_id === null ? null : (int) $payment->treasury_account_id,
+            (int) $payment->getKey(),
         );
 
         $this->treasury->reverseSourceOrFallback(

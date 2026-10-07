@@ -55,6 +55,7 @@ final class ReverseOperation
                 'category_id' => $locked->category_id,
                 'employee_id' => $locked->employee_id,
                 'order_id' => $locked->order_id,
+                'order_payment_id' => $locked->order_payment_id,
                 'system_balance' => $locked->system_balance,
                 'counted_balance' => $locked->counted_balance,
                 'occurred_at' => now(),

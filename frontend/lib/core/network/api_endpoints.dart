@@ -622,6 +622,19 @@ abstract final class OrderEndpoints {
 
   /// Every payment and refund still waiting for a review, across all orders, oldest first.
   static const String paymentReviewQueue = '/order-payments/review-queue';
+
+  /// «تسوية الدفعات» — `state=pending` (the default) or `state=settled`. TREASURY-DESIGN §٢٣.
+  static const String paymentSettlementQueue = '/order-payments/settlement-queue';
+
+  /// Where payments wait, and where they may be settled to.
+  static const String paymentSettlementAccounts = '/order-payments/settlement-accounts';
+
+  /// One or several payments' money to the account it reached, all or nothing.
+  static const String settlePayments = '/order-payments/settle';
+
+  /// Taking a payment's settlement back, with a reason.
+  static String unsettlePayment(int orderId, int paymentId) =>
+      '/orders/$orderId/payments/$paymentId/unsettle';
 }
 
 abstract final class CustomerEndpoints {

@@ -147,6 +147,7 @@ import 'package:dayaa/features/notifications/usecases/release_device_token.dart'
 import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/archived_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
@@ -155,6 +156,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/payment_settlement_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository_impl.dart';
@@ -1056,6 +1058,29 @@ abstract final class Injector {
       ..registerLazySingleton<KeepOrderExcess>(
         () => KeepOrderExcess(sl<OrderPaymentRepository>()),
       )
+      // «تسوية دفعة» — TREASURY-DESIGN §٢٣.
+      ..registerLazySingleton<GetPaymentSettlementQueue>(
+        () => GetPaymentSettlementQueue(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<GetSettlementAccounts>(
+        () => GetSettlementAccounts(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<SettleOrderPayments>(
+        () => SettleOrderPayments(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<UnsettleOrderPayment>(
+        () => UnsettleOrderPayment(sl<OrderPaymentRepository>()),
+      )
+      // Parameterised on which list: each tab of the page owns one and closes it on dispose.
+      ..registerFactoryParam<PaymentSettlementCubit, SettlementState, void>(
+        (tab, _) => PaymentSettlementCubit(
+          getQueue: sl<GetPaymentSettlementQueue>(),
+          getAccounts: sl<GetSettlementAccounts>(),
+          settlePayments: sl<SettleOrderPayments>(),
+          unsettlePayment: sl<UnsettleOrderPayment>(),
+          tab: tab,
+        ),
+      )
       // Factory: the list screen owns its Cubit and closes it on dispose.
       // Parameterised on the question it answers: this screen is *about* one filter, so it is
       // a construction argument rather than something the Cubit is told afterwards.
@@ -1100,6 +1125,9 @@ abstract final class Injector {
           writeOffBalance: sl<WriteOffOrderBalance>(),
           reviewPayment: sl<ReviewOrderPayment>(),
           keepExcess: sl<KeepOrderExcess>(),
+          getSettlementAccounts: sl<GetSettlementAccounts>(),
+          settlePayments: sl<SettleOrderPayments>(),
+          unsettlePayment: sl<UnsettleOrderPayment>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(
