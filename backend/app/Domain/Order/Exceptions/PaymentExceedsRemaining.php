@@ -32,7 +32,7 @@ final class PaymentExceedsRemaining extends DomainException
      */
     public static function make(string $amount, string $remaining, string $field = 'amount'): self
     {
-        $exception = new self("المبلغ ({$amount}) أكبر من المتبقي على الطلبية ({$remaining}) — أكّد تسجيل الزائد للزبون");
+        $exception = new self("المبلغ ({$amount}) أكبر من المتبقي على الطلبية ({$remaining}) — أكّد تسجيل الزائد إيراداً");
         $exception->field = $field;
 
         return $exception;

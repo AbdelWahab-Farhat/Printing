@@ -54,6 +54,8 @@ class OrderPaymentReviewController extends Controller
             'recorded_by' => ['nullable', 'integer'],
             /** `payment` or `refund` — the two kinds of entry a review covers. */
             'type' => ['nullable', Rule::in([OrderPaymentType::Payment->value, OrderPaymentType::Refund->value])],
+            /** Part of an order code or of the customer's name. */
+            'q' => ['nullable', 'string', 'max:100'],
         ]);
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);

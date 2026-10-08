@@ -44,7 +44,7 @@ final class TransitionFields
 
     public const PAYMENT_ACCOUNT = 'payment_account_id';
 
-    /** «تسجيل الزائد للزبون» — the yes to an amount beyond what the order owes. */
+    /** «يُسجَّل الزائد إيراداً» — the yes to an amount beyond what the order owes. */
     public const PAYMENT_ACCEPT_OVERPAYMENT = 'payment_accept_overpayment';
 
     public const SETTLEMENT_ACCOUNT = 'settlement_account_id';
@@ -878,11 +878,11 @@ final class TransitionFields
                 hint: 'مطلوب مع الحوالة، ويُقبل مع غيرها',
             ),
             // Asked by the app when the button is pressed, and only if the amount is past the
-            // debt: yes takes the whole amount and owes the part beyond back to the customer.
+            // debt: yes takes the whole amount, and the part beyond is the shop's revenue.
             // Not answered, the ledger refuses the amount as it always did.
             TransitionField::confirmation(
                 key: self::PAYMENT_ACCEPT_OVERPAYMENT,
-                label: 'المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟',
+                label: 'المبلغ يزيد على المتبقي — يُسجَّل الزائد إيراداً',
                 whenKey: self::PAYMENT_AMOUNT,
                 above: $remaining,
             ),

@@ -10,7 +10,6 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
-use App\Domain\Order\Actions\KeepOrderExcess;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\RecordOrderPayment;
@@ -93,7 +92,6 @@ class OrderService
         private readonly RefundOrderPayment $refundPayment,
         private readonly ReverseOrderPayment $reversePayment,
         private readonly ReviewOrderPayment $reviewPayment,
-        private readonly KeepOrderExcess $keepExcess,
         private readonly PaymentReviewQueue $reviewQueue,
         // «تسوية دفعة» — TREASURY-DESIGN §٢٣.
         private readonly SettleOrderPayments $settlePayments,
@@ -412,13 +410,11 @@ class OrderService
      * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
      * @return array{page: LengthAwarePaginator<int, OrderPayment>, totals: array{amount_total: string}}
      */
-    public function paymentSettlementQueue(array $filters, int $perPage, ?User $viewer): array
+    public function paymentSettlementQueue(array $filters, int $perPage): array
     {
-        $viewerId = $viewer?->getKey() === null ? null : (int) $viewer->getKey();
-
         return [
-            'page' => $this->settlementQueue->page($filters, $perPage, $viewerId),
-            'totals' => $this->settlementQueue->totals($filters, $viewerId),
+            'page' => $this->settlementQueue->page($filters, $perPage),
+            'totals' => $this->settlementQueue->totals($filters),
         ];
     }
 
@@ -430,14 +426,6 @@ class OrderService
     public function refundPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
     {
         return ($this->refundPayment)($order, $data, $actor);
-    }
-
-    /**
-     * «اعتبار الزائد إيراداً» — the excess the order holds is the shop's now. See {@see KeepOrderExcess}.
-     */
-    public function keepExcess(Order $order, ?string $notes = null, ?User $actor = null): OrderPayment
-    {
-        return ($this->keepExcess)($order, $notes, $actor);
     }
 
     /**
@@ -481,7 +469,7 @@ class OrderService
     /**
      * The reviewer's queue, a page of it and what the whole filtered list adds up to.
      *
-     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string}  $filters
+     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string, q?: ?string}  $filters
      * @return array{page: LengthAwarePaginator<int, OrderPayment>, totals: array{incoming_total: string, outgoing_total: string}}
      */
     public function paymentReviewQueue(array $filters, int $perPage): array

@@ -56,6 +56,16 @@ class OrderPayment extends Model
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * افتراضُ الجدول نفسُه، على الصفّ الجديد قبل أن يُقرأ من القاعدة: الشطبُ والعكسُ والردُّ لا يكتبون
+     * زائداً، وبلا هذا كان ردُّ الكتابة يرسل `excess_amount` نصاً فارغاً بدل «0.00».
+     *
+     * @var array<string, string>
+     */
+    protected $attributes = [
+        'excess_amount' => '0.00',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -392,12 +402,17 @@ class OrderPayment extends Model
      *
      * | entry | paid | written off | carrier | excess |
      * | --- | --- | --- | --- | --- |
-     * | payment of 100, 1 beyond the debt | +99 | | | +1 |
-     * | refund of 30, 1 of it the excess | −29 | | | −1 |
+     * | payment of 100, 1 beyond the debt | +99 | | | |
+     * | refund of 30 | −30 | | | |
      * | write-off | | +amount | | |
      * | carrier settlement | | | +amount | |
-     * | excess kept | | | | −amount |
+     * | excess kept | | | | |
      * | reversal | the row it undoes, negated | | | |
+     *
+     * **الزائدُ لا يُجمع على الطلبية منذ ٢٠٢٦-١٠-٠٧** — صار إيراداً للمحلّ ساعةَ الدفعة، فلا يُدان به
+     * للزبون، و`orders.excess_amount` يبقى صفراً. وصفوفُ ما قبل القرار (ردٌّ أخذ من الزائد، أو
+     * «اعتبار الزائد إيراداً») تُقرأ بالقاعدة نفسها: جزءُ الزائد في الردّ خرج من الإيراد لا من المدفوع،
+     * والاعتبارُ لا يغيّر شيئاً.
      *
      * A reversal whose original is somehow missing falls back to taking its amount off `paid`,
      * which is what every reversal did before there were other totals.
@@ -411,11 +426,11 @@ class OrderPayment extends Model
         $none = ['paid' => '0', 'written_off' => '0', 'carrier_settled' => '0', 'excess' => '0'];
 
         return match ($this->type) {
-            OrderPaymentType::Payment => [...$none, 'paid' => bcsub($amount, $excess, 2), 'excess' => $excess],
-            OrderPaymentType::Refund => [...$none, 'paid' => bcsub($excess, $amount, 2), 'excess' => '-'.$excess],
+            OrderPaymentType::Payment => [...$none, 'paid' => bcsub($amount, $excess, 2)],
+            OrderPaymentType::Refund => [...$none, 'paid' => bcsub($excess, $amount, 2)],
             OrderPaymentType::WriteOff => [...$none, 'written_off' => $amount],
             OrderPaymentType::CarrierSettled => [...$none, 'carrier_settled' => $amount],
-            OrderPaymentType::ExcessKept => [...$none, 'excess' => '-'.$amount],
+            OrderPaymentType::ExcessKept => $none,
             OrderPaymentType::Reversal => $this->reversedPayment === null
                 ? [...$none, 'paid' => '-'.$amount]
                 : array_map(

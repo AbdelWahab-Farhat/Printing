@@ -13,20 +13,24 @@ use Spatie\Permission\PermissionRegistrar;
 return new class extends Migration
 {
     /**
-     * @return list<PermissionName>
+     * نصًّا لا حالةً من {@see PermissionName}: `orders.payments.keep_excess` خرج من الكتالوج يوم
+     * صار الزائدُ إيراداً بلا زرّ (٢٠٢٦-١٠-٠٧)، وهذا الترحيلُ يجب أن يجري كما جرى على كل قاعدة —
+     * والترحيلُ اللاحق `2026_10_08_100000` يُخرجها. ما يفعله لم يتغيّر حرفاً.
+     *
+     * @return list<string>
      */
     private function permissions(): array
     {
         return [
-            PermissionName::ReviewOrderPayments,
-            PermissionName::KeepOrderExcess,
+            PermissionName::ReviewOrderPayments->value,
+            'orders.payments.keep_excess',
         ];
     }
 
     public function up(): void
     {
         foreach ($this->permissions() as $permission) {
-            Permission::findOrCreate($permission->value, 'web');
+            Permission::findOrCreate($permission, 'web');
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -35,7 +39,7 @@ return new class extends Migration
     public function down(): void
     {
         Permission::query()
-            ->whereIn('name', array_map(fn (PermissionName $p) => $p->value, $this->permissions()))
+            ->whereIn('name', $this->permissions())
             ->where('guard_name', 'web')
             ->delete();
 

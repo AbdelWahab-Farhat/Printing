@@ -52,7 +52,7 @@ final readonly class OrderPaymentData
          */
         public ?string $systemAccount = null,
         /**
-         * «تسجيل الزائد للزبون» — the person was told the amount is more than the order owes and
+         * «يُسجَّل الزائد إيراداً» — the person was told the amount is more than the order owes and
          * said yes. Without it a payment beyond the debt is refused, which is what still catches
          * 500 typed for 50. See {@see RecordOrderPayment}.
          */

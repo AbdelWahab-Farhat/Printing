@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
@@ -571,6 +572,48 @@ class OrderPaymentReviewTest extends TestCase
         $byDay->assertOk()->assertJsonPath('meta.total', 1);
         $byRecorder->assertOk()->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.recorded_by', $counterOne->id);
+    }
+
+    public function test_the_queue_is_searched_by_order_code_or_customer_name(): void
+    {
+        // Arrange — بحثُ «مراجعة وتسوية الدفعات» نفسُه: رقمُ الطلبية أو جزءٌ من اسم الزبون.
+        [, $cashier] = $this->cashier();
+        [, $reviewer] = $this->reviewer();
+        $salem = Order::factory()->forCustomer(Customer::factory()->create(['name' => 'سالم البوري']))->create([
+            'items_total' => '450.00', 'delivery_price' => '0.00', 'grand_total' => '450.00', 'status' => OrderStatus::Ready,
+        ]);
+        $other = Order::factory()->forCustomer(Customer::factory()->create(['name' => 'مريم الطرابلسي']))->create([
+            'items_total' => '450.00', 'delivery_price' => '0.00', 'grand_total' => '450.00', 'status' => OrderStatus::Ready,
+        ]);
+        $this->pay($cashier, $salem);
+        $this->pay($cashier, $other);
+
+        // Act
+        $byName = $this->queue($reviewer, ['q' => 'البوري']);
+        $byCode = $this->queue($reviewer, ['q' => (string) $other->code]);
+        $nothing = $this->queue($reviewer, ['q' => 'لا أحد']);
+
+        // Assert
+        $byName->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.order_id', $salem->id);
+        $byCode->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.order_id', $other->id);
+        $nothing->assertOk()->assertJsonPath('meta.total', 0);
+    }
+
+    public function test_the_days_are_libyan_days_not_utc_ones(): void
+    {
+        // Arrange — ٢٢:٥٥ بتوقيت UTC يوم ٧ أكتوبر هي ٠٠:٥٥ في طرابلس يوم ٨: دفعةُ يوم ٨ (الطلبية 1307).
+        [, $cashier] = $this->cashier();
+        [, $reviewer] = $this->reviewer();
+        $this->travelTo('2026-10-07 22:55:00');
+        $this->pay($cashier, $this->order());
+
+        // Act
+        $onThe8th = $this->queue($reviewer, ['from' => '2026-10-08', 'to' => '2026-10-08']);
+        $onThe7th = $this->queue($reviewer, ['from' => '2026-10-07', 'to' => '2026-10-07']);
+
+        // Assert
+        $onThe8th->assertOk()->assertJsonPath('meta.total', 1);
+        $onThe7th->assertOk()->assertJsonPath('meta.total', 0);
     }
 
     public function test_a_deleted_orders_entries_leave_the_queue(): void

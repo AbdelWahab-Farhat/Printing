@@ -563,11 +563,6 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/payments/write-offs', [OrderPaymentController::class, 'writeOff'])
             ->middleware('can:orders.payments.write_off')->name('orders.payments.write-off');
 
-        // «اعتبار الزائد إيراداً» — in front of `{payment}` for the reason the two above are, and
-        // behind its own grant: it decides money the shop owes a customer will never go back.
-        Route::post('orders/{order}/payments/keep-excess', [OrderPaymentController::class, 'keepExcess'])
-            ->middleware('can:orders.payments.keep_excess')->name('orders.payments.keep-excess');
-
         // scopeBindings(): another order's payment id is a 404 by construction rather than by a
         // check somebody has to remember — the same shape orders.designs already uses.
         Route::post('orders/{order}/payments/{payment}/reverse', [OrderPaymentController::class, 'reverse'])

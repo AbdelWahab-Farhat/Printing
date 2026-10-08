@@ -9,7 +9,6 @@ use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\EntryCannotBeReversed;
 use App\Domain\Order\Exceptions\PaymentAlreadyReversed;
-use App\Domain\Order\Exceptions\PaymentExcessAlreadyHandedOn;
 use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
@@ -77,14 +76,6 @@ final class ReverseOrderPayment
                 throw PaymentAlreadyReversed::make((int) $payment->getKey());
             }
 
-            // **A payment whose excess has already gone somewhere is not undone in one step.** Its
-            // excess was refunded to the customer or kept as the shop's, so taking the payment back
-            // would leave the order owing the customer less than nothing — and the treasury's «علينا»
-            // with it. Whoever kept it undoes that first; a refund stands, being cash that left.
-            if (bccomp((string) $payment->excess_amount, (string) $locked->excess_amount, 2) > 0) {
-                throw PaymentExcessAlreadyHandedOn::make();
-            }
-
             // **ومالٌ نقلته التسويةُ لا يُعكس والطلبيةُ «تم التسوية»**، ولو لم تصر مدينة: فكُّ
             // التسوية يعيد إلى العهدة كلَّ ما نقلته من حساب هذه الدفعة، والطلبيةُ في آخر الطريق
             // لا تُسوّى مرّةً ثانية. التراجعُ عن التسوية أولاً يفكّها ويعيدها حيث تُسوّى من جديد.
@@ -149,7 +140,7 @@ final class ReverseOrderPayment
     private function reverseTheMoney(Order $order, OrderPayment $payment, string $reason, ?User $actor): void
     {
         // A kept excess moved no cash, but it did take the figure off «علينا»: that movement comes
-        // back, and the customer is owed the excess again.
+        // back. **صفوفُ ما قبل ٢٠٢٦-١٠-٠٧ وحدها** — لا شيء يكتب هذا النوعَ اليوم.
         if ($payment->type === OrderPaymentType::ExcessKept) {
             $this->treasury->reverseSource(
                 $payment->getMorphClass(),

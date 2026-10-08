@@ -788,19 +788,18 @@ final class TreasuryService
     }
 
     /**
-     * The settlement page's accounts: where payments wait (its filter chips — Nawris included,
-     * which no payment form offers), and where they may be settled to — every active cash box,
-     * bank and wallet, whoever is asking. Names, not balances.
+     * The settlement page's accounts: every account a payment can sit in (its filter — Nawris
+     * included, which no payment form offers; since choice B, 2026-10-08, every payment there waits
+     * until settled), and where they may be settled to — every active cash box, bank and wallet,
+     * whoever is asking. Names, not balances.
      *
      * @return array{sources: list<array{id: int, name: string, kind: string}>, destinations: list<array{id: int, name: string, kind: string, kind_label: string}>}
      */
-    public function settlementAccounts(?int $actorId): array
+    public function settlementAccounts(): array
     {
-        $waiting = $this->accountsAwaitingSettlement($actorId);
-
         return [
             'sources' => TreasuryAccount::query()
-                ->whereIn('id', $waiting)
+                ->whereIn('kind', [AccountKind::Custody->value, AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
                 ->orderByRaw("CASE WHEN kind = 'custody' THEN 0 ELSE 1 END")
                 ->orderBy('name')
                 ->get()
@@ -822,28 +821,6 @@ final class TreasuryService
                 ->values()
                 ->all(),
         ];
-    }
-
-    /**
-     * Every account whose money would move at settlement — custody always, and an employee's or a
-     * branch's account where the settler's account or collection would take it. Payments in these
-     * accounts are «بانتظار التسوية»; a payment anywhere else is already in its place.
-     *
-     * @return list<int>
-     */
-    public function accountsAwaitingSettlement(?int $actorId): array
-    {
-        return RequestMemo::remember(
-            'treasury.awaiting-settlement:'.($actorId ?? 'none'),
-            fn (): array => TreasuryAccount::query()
-                ->whereIn('kind', [AccountKind::Custody->value, AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
-                ->orderBy('id')
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->filter(fn (int $id) => $this->paymentSettlementTarget($id, $actorId) !== null)
-                ->values()
-                ->all(),
-        );
     }
 
     /**

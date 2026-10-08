@@ -517,7 +517,7 @@ class PaymentSettlementTest extends TestCase
 
     // ── the list ────────────────────────────────────────────────────────────────────────
 
-    public function test_the_list_holds_what_waits_and_what_was_settled_apart(): void
+    public function test_the_list_holds_every_unsettled_payment_and_what_was_settled_apart(): void
     {
         // Arrange
         [, $headers] = $this->owner();
@@ -533,19 +533,45 @@ class PaymentSettlementTest extends TestCase
         $pending = $this->getJson('/api/v1/order-payments/settlement-queue', $headers);
         $settled = $this->getJson('/api/v1/order-payments/settlement-queue?state=settled', $headers);
 
-        // Assert
+        // Assert — الخيار ب (٢٠٢٦-١٠-٠٨): ما في مكانه الأخير ينتظر هو أيضاً، بلا وجهةٍ تلقائية؛
+        // وما سُوّي، وما على طلبيةٍ «تم التسوية»، خارجها.
         $pending->assertOk()
-            ->assertJsonCount(1, 'data')
+            ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.id', $this->paymentOf($waiting)->id)
             ->assertJsonPath('data.0.order.code', $waiting->code)
             ->assertJsonPath('data.0.can_settle', true)
             ->assertJsonPath('data.0.settlement_target.id', $this->defaultOf(AccountKind::Bank)->id)
-            ->assertJsonPath('meta.amount_total', '250.00')
-            ->assertJsonPath('meta.total', 1);
+            ->assertJsonPath('data.1.order_id', $inPlace->id)
+            ->assertJsonPath('data.1.can_settle', true)
+            ->assertJsonPath('data.1.settlement_target', null)
+            ->assertJsonPath('meta.amount_total', '330.00')
+            ->assertJsonPath('meta.total', 2);
         $settled->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $this->paymentOf($done)->id)
             ->assertJsonPath('meta.amount_total', '100.00');
+    }
+
+    public function test_cash_in_the_company_box_waits_until_somebody_takes_it_elsewhere(): void
+    {
+        // Arrange — طلب صاحب العمل: مالٌ في «بريمولا» قد يأخذه أحدُهم إلى حسابه الشخصي أو إلى غيره،
+        // فيبقى «بانتظار التسوية» حتى يُسوّى.
+        [, $headers] = $this->owner();
+        $box = $this->defaultOf(AccountKind::Cash);
+        $alisBank = $this->bank('مصرف علي');
+        $payment = $this->pay($headers, $this->order('226.00'), '226', $box);
+        $before = $this->getJson('/api/v1/order-payments/settlement-queue', $headers);
+
+        // Act
+        $this->settle($headers, [['payment_id' => $payment->id]], $alisBank)->assertOk();
+        $after = $this->getJson('/api/v1/order-payments/settlement-queue', $headers);
+        $settled = $this->getJson('/api/v1/order-payments/settlement-queue?state=settled', $headers);
+
+        // Assert
+        $before->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $payment->id);
+        $after->assertJsonPath('meta.total', 0);
+        $settled->assertJsonPath('data.0.id', $payment->id);
+        $this->assertSame('226.00', $this->balance($alisBank));
     }
 
     public function test_the_dates_filter_when_paid_while_waiting_and_when_settled_once_settled(): void
@@ -567,6 +593,27 @@ class PaymentSettlementTest extends TestCase
         $pendingOnThe5th->assertJsonPath('meta.amount_total', '100.00');
         $settledOnThe5th->assertJsonPath('meta.amount_total', '250.00');
         $settledOnThe1st->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_days_are_libyan_days_not_utc_ones(): void
+    {
+        // Arrange — دُفعت ٢٢:٥٥ UTC يوم ٧ (٠٠:٥٥ في طرابلس يوم ٨)، وسُوّيت ٢٣:٣٠ UTC (٠١:٣٠ يوم ٨).
+        [, $headers] = $this->owner();
+        $this->travelTo('2026-10-07 22:55:00');
+        $waiting = $this->deliveredByNawris('250.00');
+        $settled = $this->deliveredByNawris('100.00');
+        $this->travelTo('2026-10-07 23:30:00');
+        $this->settle($headers, [['payment_id' => $this->paymentOf($settled)->id]])->assertOk();
+
+        // Act
+        $pendingOnThe8th = $this->getJson('/api/v1/order-payments/settlement-queue?from=2026-10-08&to=2026-10-08', $headers);
+        $pendingOnThe7th = $this->getJson('/api/v1/order-payments/settlement-queue?from=2026-10-07&to=2026-10-07', $headers);
+        $settledOnThe8th = $this->getJson('/api/v1/order-payments/settlement-queue?state=settled&from=2026-10-08&to=2026-10-08', $headers);
+
+        // Assert
+        $pendingOnThe8th->assertJsonPath('meta.amount_total', '250.00')->assertJsonPath('data.0.order_id', $waiting->id);
+        $pendingOnThe7th->assertJsonCount(0, 'data');
+        $settledOnThe8th->assertJsonPath('meta.amount_total', '100.00');
     }
 
     public function test_the_list_filters_by_account_and_order_code(): void
@@ -598,13 +645,15 @@ class PaymentSettlementTest extends TestCase
         // Act
         $response = $this->getJson('/api/v1/order-payments/settlement-accounts', $headers);
 
-        // Assert — Nawris waits; the default bank is where the bank's money goes, so it does not
+        // Assert — every account a payment can sit in is a place it may wait (الخيار ب، ٢٠٢٦-١٠-٠٨),
+        // the default bank included; a debt is not one.
         $response->assertOk();
         $sources = collect($response->json('data.sources'))->pluck('id');
         $destinations = collect($response->json('data.destinations'))->pluck('id');
         $this->assertContains($this->nawris()->id, $sources);
         $this->assertContains($alisBank->id, $sources);
-        $this->assertNotContains($this->defaultOf(AccountKind::Bank)->id, $sources);
+        $this->assertContains($this->defaultOf(AccountKind::Bank)->id, $sources);
+        $this->assertContains($this->defaultOf(AccountKind::Cash)->id, $sources);
         $this->assertContains($this->defaultOf(AccountKind::Bank)->id, $destinations);
         $this->assertNotContains($this->nawris()->id, $destinations);
     }

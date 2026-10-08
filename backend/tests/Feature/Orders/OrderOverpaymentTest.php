@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature\Orders;
 
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Enums\RoleName;
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\DeleteOrder;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
-use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
@@ -16,26 +17,30 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Treasury\TreasuryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * «الزائد للزبون» — 100 handed over on an order of 99, because nobody had the one dinar.
+ * «الزائد إيراد» — زبونٌ دفع ١٠٠ على طلبيةٍ بـ٩٩ لأنّ أحداً لا يملك الدينار.
  *
- * **What the suite holds the feature to**: the payment is taken whole, as one entry, and only
- * after somebody confirmed it; the order is paid 99 and its sale stays 99; the one dinar is owed
- * back to the customer — on the order and in the treasury's «علينا» — until it is refunded or
- * kept; and every one of those steps can be undone without the numbers parting company.
+ * **ما تُلزم به المجموعةُ الميزة** (قرار صاحب العمل ٢٠٢٦-١٠-٠٧: «ديمة اعتبره إيراد، لا حاجة لزر
+ * الإيراد»): الدفعةُ تُؤخذ كاملةً قيداً واحداً وبعد تأكيدٍ فقط؛ الطلبيةُ مدفوعةٌ ٩٩ ومبيعاتُها ٩٩؛
+ * والدينارُ للمحلّ من ساعته — لا يُكتب على الطلبية زائداً للزبون، ولا على «علينا»، ولا زرَّ يقرّره.
  *
  * See Docs/payments/PAYMENT-REVIEW-AND-OVERPAY.md. Arrange - Act - Assert throughout.
  */
 class OrderOverpaymentTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const RETIRE_KEEP_EXCESS = '2026_10_08_100100_retire_keep_excess_permission';
 
     protected function setUp(): void
     {
@@ -66,7 +71,6 @@ class OrderOverpaymentTest extends TestCase
             PermissionName::ViewOrderPayments,
             PermissionName::RecordOrderPayments,
             PermissionName::ReverseOrderPayments,
-            PermissionName::KeepOrderExcess,
             PermissionName::MarkOrdersDelivered,
         ]);
     }
@@ -115,14 +119,6 @@ class OrderOverpaymentTest extends TestCase
     }
 
     /** @param  array<string, string>  $headers */
-    private function keep(array $headers, Order $order): TestResponse
-    {
-        return $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/keep-excess", [
-            'notes' => 'الزبون لم يطلب الباقي',
-        ]);
-    }
-
-    /** @param  array<string, string>  $headers */
     private function reverse(array $headers, OrderPayment $entry): TestResponse
     {
         return $this->withHeaders($headers)
@@ -139,12 +135,16 @@ class OrderOverpaymentTest extends TestCase
         return app(TreasuryService::class)->balanceOf($account);
     }
 
-    private function owedToCustomers(): string
+    private function nothingIsOwedToCustomers(): void
     {
-        return $this->balance(app(TreasuryService::class)->customerExcessPayable());
+        $this->assertFalse(
+            TreasuryAccount::query()->where('system_code', TreasuryAccount::CUSTOMER_EXCESS)->exists(),
+            '«مبالغ زائدة للزبائن» لا يُفتح: الزائد ليس ديناً على المحل',
+        );
+        $this->assertSame(0, TreasuryMovement::query()->where('kind', MovementKind::CustomerExcess->value)->count());
     }
 
-    // ── taking it ───────────────────────────────────────────────────────────────────────
+    // ── أخذُه ────────────────────────────────────────────────────────────────────────────
 
     public function test_more_than_is_owed_is_refused_until_somebody_confirms_it(): void
     {
@@ -155,14 +155,14 @@ class OrderOverpaymentTest extends TestCase
         // Act
         $response = $this->pay($headers, $order, ['amount' => '100.00']);
 
-        // Assert — the confirmation is what still catches 500 typed for 50.
+        // Assert — التأكيدُ هو ما يزال يلتقط ٥٠٠ كُتبت مكان ٥٠.
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['amount'])
-            ->assertJsonPath('message', 'المبلغ (100.00) أكبر من المتبقي على الطلبية (99.00) — أكّد تسجيل الزائد للزبون');
+            ->assertJsonPath('message', 'المبلغ (100.00) أكبر من المتبقي على الطلبية (99.00) — أكّد تسجيل الزائد إيراداً');
         $this->assertSame(0, OrderPayment::query()->count());
     }
 
-    public function test_a_confirmed_overpayment_is_one_entry_and_the_order_is_paid_what_it_cost(): void
+    public function test_a_confirmed_overpayment_is_one_entry_and_the_excess_is_the_shops_at_once(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -171,23 +171,23 @@ class OrderOverpaymentTest extends TestCase
         // Act
         $response = $this->pay($headers, $order, ['amount' => '100.00', 'accept_overpayment' => true]);
 
-        // Assert
+        // Assert — الدفعةُ تحمل ما زاد منها، والطلبيةُ لا تحمل زائداً لأحد.
         $response->assertCreated()
             ->assertJsonPath('data.payment.amount', '100.00')
             ->assertJsonPath('data.payment.excess_amount', '1.00')
             ->assertJsonPath('data.summary.paid_amount', '99.00')
-            ->assertJsonPath('data.summary.excess_amount', '1.00')
+            ->assertJsonPath('data.summary.excess_amount', '0.00')
             ->assertJsonPath('data.summary.remaining_amount', '0.00')
-            ->assertJsonPath('data.summary.payment_status', PaymentStatus::Overpaid->value);
+            ->assertJsonPath('data.summary.payment_status', PaymentStatus::Paid->value);
 
         $order->refresh();
-        $this->assertSame('99.00', (string) $order->grand_total, 'the sale is untouched');
+        $this->assertSame('99.00', (string) $order->grand_total, 'المبيعات لم تتغيّر');
         $this->assertSame('99.00', (string) $order->paid_amount);
-        $this->assertSame('1.00', (string) $order->excess_amount);
+        $this->assertSame('0.00', (string) $order->excess_amount);
         $this->assertSame(1, OrderPayment::query()->where('order_id', $order->id)->count());
     }
 
-    public function test_the_drawer_holds_all_of_it_and_the_treasury_owes_the_customer_the_rest(): void
+    public function test_the_drawer_holds_all_of_it_and_nothing_is_owed_to_the_customer(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -197,9 +197,9 @@ class OrderOverpaymentTest extends TestCase
         // Act
         $this->overpay($headers, $order);
 
-        // Assert — 100 in the drawer, and «علينا» one dinar.
+        // Assert — ١٠٠ في الدُّرج، ولا شيء على «علينا».
         $this->assertSame(bcadd($before, '100.00', 2), $this->balance($this->cashBox()));
-        $this->assertSame('-1.00', $this->owedToCustomers());
+        $this->nothingIsOwedToCustomers();
     }
 
     public function test_an_order_already_paid_in_full_takes_a_confirmed_amount_as_all_excess(): void
@@ -215,7 +215,7 @@ class OrderOverpaymentTest extends TestCase
         // Assert
         $this->assertSame('5.00', (string) $payment->excess_amount);
         $this->assertSame('99.00', (string) $order->fresh()->paid_amount);
-        $this->assertSame('5.00', (string) $order->fresh()->excess_amount);
+        $this->assertSame('0.00', (string) $order->fresh()->excess_amount);
     }
 
     public function test_a_payload_cannot_name_its_own_excess(): void
@@ -228,33 +228,14 @@ class OrderOverpaymentTest extends TestCase
         $response = $this->pay($headers, $order, ['amount' => '50.00', 'excess_amount' => '40.00']);
 
         // Assert
-        $response->assertCreated()->assertJsonPath('data.payment.excess_amount', '0.00');
-        $this->assertSame('0.00', (string) $order->fresh()->excess_amount);
+        $response->assertCreated()
+            ->assertJsonPath('data.payment.excess_amount', '0.00')
+            ->assertJsonPath('data.summary.paid_amount', '50.00');
     }
 
-    public function test_the_overpaid_order_is_found_by_the_payment_status_filter(): void
-    {
-        // Arrange
-        $headers = $this->cashier();
-        $overpaid = $this->order('99.00');
-        $paid = $this->order('99.00');
-        $this->overpay($headers, $overpaid);
-        $this->pay($headers, $paid, ['amount' => '99.00'])->assertCreated();
+    // ── الردّ ────────────────────────────────────────────────────────────────────────────
 
-        // Act
-        $response = $this->withHeaders($headers)
-            ->getJson('/api/v1/orders?payment_status[]='.PaymentStatus::Overpaid->value);
-
-        // Assert
-        $response->assertOk();
-        $ids = array_column($response->json('data'), 'id');
-        $this->assertContains($overpaid->id, $ids);
-        $this->assertNotContains($paid->id, $ids);
-    }
-
-    // ── handing it back, or keeping it ──────────────────────────────────────────────────
-
-    public function test_a_refund_hands_the_excess_back_first(): void
+    public function test_a_refund_comes_off_what_the_order_was_paid(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -264,16 +245,15 @@ class OrderOverpaymentTest extends TestCase
         // Act
         $response = $this->refund($headers, $order, ['amount' => '1.00']);
 
-        // Assert — the order is still paid 99, and nobody is owed anything.
+        // Assert — الزائدُ صار للمحل، فلا زائدَ يُردّ منه: الردُّ ينقص المدفوع.
         $response->assertCreated()
-            ->assertJsonPath('data.payment.excess_amount', '1.00')
-            ->assertJsonPath('data.summary.paid_amount', '99.00')
-            ->assertJsonPath('data.summary.excess_amount', '0.00')
-            ->assertJsonPath('data.summary.payment_status', PaymentStatus::Paid->value);
-        $this->assertSame('0.00', $this->owedToCustomers());
+            ->assertJsonPath('data.payment.excess_amount', '0.00')
+            ->assertJsonPath('data.summary.paid_amount', '98.00')
+            ->assertJsonPath('data.summary.remaining_amount', '1.00');
+        $this->nothingIsOwedToCustomers();
     }
 
-    public function test_a_larger_refund_takes_the_excess_and_then_the_payment(): void
+    public function test_a_refund_may_reach_what_was_paid_and_no_further(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -281,110 +261,49 @@ class OrderOverpaymentTest extends TestCase
         $this->overpay($headers, $order);
 
         // Act
-        $response = $this->refund($headers, $order, ['amount' => '10.00']);
-
-        // Assert
-        $response->assertCreated()
-            ->assertJsonPath('data.payment.excess_amount', '1.00')
-            ->assertJsonPath('data.summary.paid_amount', '90.00')
-            ->assertJsonPath('data.summary.excess_amount', '0.00');
-    }
-
-    public function test_a_refund_may_reach_what_was_paid_and_the_excess_together_and_no_further(): void
-    {
-        // Arrange
-        $headers = $this->cashier();
-        $order = $this->order('99.00');
-        $this->overpay($headers, $order);
-
-        // Act
-        $tooMuch = $this->refund($headers, $order, ['amount' => '100.01']);
-        $all = $this->refund($headers, $order, ['amount' => '100.00']);
+        $tooMuch = $this->refund($headers, $order, ['amount' => '99.01']);
+        $all = $this->refund($headers, $order, ['amount' => '99.00']);
 
         // Assert
         $tooMuch->assertUnprocessable();
-        $all->assertCreated()
-            ->assertJsonPath('data.summary.paid_amount', '0.00')
-            ->assertJsonPath('data.summary.excess_amount', '0.00');
+        $all->assertCreated()->assertJsonPath('data.summary.paid_amount', '0.00');
     }
 
-    public function test_keeping_the_excess_takes_it_off_what_is_owed_and_leaves_the_sale_alone(): void
+    // ── لا زرَّ ولا صلاحية ───────────────────────────────────────────────────────────────
+
+    public function test_there_is_no_door_for_keeping_the_excess(): void
     {
         // Arrange
-        $headers = $this->cashier();
-        $order = $this->order('99.00');
-        $this->overpay($headers, $order);
-        $drawer = $this->balance($this->cashBox());
-
-        // Act
-        $response = $this->keep($headers, $order);
-
-        // Assert
-        $response->assertCreated()
-            ->assertJsonPath('message', 'اعتُبر الزائد إيراداً')
-            ->assertJsonPath('data.payment.type', OrderPaymentType::ExcessKept->value)
-            ->assertJsonPath('data.payment.amount', '1.00')
-            ->assertJsonPath('data.payment.method', null)
-            ->assertJsonPath('data.payment.requires_review', false)
-            ->assertJsonPath('data.payment.is_reversible', true)
-            ->assertJsonPath('data.summary.paid_amount', '99.00')
-            ->assertJsonPath('data.summary.excess_amount', '0.00')
-            ->assertJsonPath('data.summary.payment_status', PaymentStatus::Paid->value);
-
-        // No cash moved — the dinar has been in the drawer since the payment — and «علينا» is
-        // back at nothing.
-        $this->assertSame($drawer, $this->balance($this->cashBox()));
-        $this->assertSame('0.00', $this->owedToCustomers());
-    }
-
-    public function test_there_is_nothing_to_keep_on_an_order_that_holds_no_excess(): void
-    {
-        // Arrange
-        $headers = $this->cashier();
-        $order = $this->order('99.00');
-        $this->pay($headers, $order, ['amount' => '99.00'])->assertCreated();
-
-        // Act
-        $response = $this->keep($headers, $order);
-
-        // Assert
-        $response->assertUnprocessable()->assertJsonPath('message', 'لا زائد على هذه الطلبية ليُعتبر إيراداً');
-    }
-
-    public function test_keeping_it_costs_its_own_grant(): void
-    {
-        // Arrange
-        $order = $this->order('99.00');
-        $this->overpay($this->cashier(), $order);
         $headers = $this->auth([PermissionName::RecordOrderPayments, PermissionName::ReverseOrderPayments]);
-
-        // Act
-        $response = $this->keep($headers, $order);
-
-        // Assert
-        $response->assertForbidden();
-        $this->assertSame('1.00', (string) $order->fresh()->excess_amount);
-    }
-
-    // ── undoing ─────────────────────────────────────────────────────────────────────────
-
-    public function test_reversing_the_keep_owes_the_customer_again(): void
-    {
-        // Arrange
-        $headers = $this->cashier();
         $order = $this->order('99.00');
-        $this->overpay($headers, $order);
-        $kept = OrderPayment::query()->findOrFail($this->keep($headers, $order)->json('data.payment.id'));
 
         // Act
-        $response = $this->reverse($headers, $kept);
+        $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/payments/keep-excess");
 
         // Assert
-        $response->assertCreated()->assertJsonPath('data.summary.excess_amount', '1.00');
-        $this->assertSame('-1.00', $this->owedToCustomers());
+        $this->assertFalse(Route::has('orders.payments.keep-excess'));
+        $this->assertContains($response->status(), [404, 405]);
+        $this->assertNull(PermissionName::tryFrom('orders.payments.keep_excess'));
     }
 
-    public function test_reversing_an_overpayment_takes_back_the_cash_and_the_debt_together(): void
+    public function test_the_retired_grant_leaves_the_roles_that_held_it(): void
+    {
+        // Arrange — قاعدةٌ شغّلت ترحيل ٤ أكتوبر، ودورٌ أُعطيها.
+        $retired = Permission::findOrCreate('orders.payments.keep_excess', 'web');
+        $role = Role::findOrCreate(RoleName::Accountant->value, 'web');
+        $role->givePermissionTo($retired);
+
+        // Act
+        (require database_path('migrations/'.self::RETIRE_KEEP_EXCESS.'.php'))->up();
+
+        // Assert
+        $this->assertFalse(Permission::query()->where('name', 'orders.payments.keep_excess')->exists());
+        $this->assertFalse($role->fresh()->load('permissions')->permissions->contains('name', 'orders.payments.keep_excess'));
+    }
+
+    // ── التراجع ──────────────────────────────────────────────────────────────────────────
+
+    public function test_reversing_an_overpayment_takes_back_all_the_cash(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -400,29 +319,9 @@ class OrderOverpaymentTest extends TestCase
             ->assertJsonPath('data.summary.paid_amount', '0.00')
             ->assertJsonPath('data.summary.excess_amount', '0.00');
         $this->assertSame($before, $this->balance($this->cashBox()));
-        $this->assertSame('0.00', $this->owedToCustomers());
     }
 
-    public function test_a_payment_whose_excess_was_kept_is_not_reversed_before_the_keep(): void
-    {
-        // Arrange
-        $headers = $this->cashier();
-        $order = $this->order('99.00');
-        $payment = $this->overpay($headers, $order);
-        $this->keep($headers, $order)->assertCreated();
-
-        // Act
-        $response = $this->reverse($headers, $payment);
-
-        // Assert
-        $response->assertUnprocessable()->assertJsonPath(
-            'message',
-            'زائد هذه الدفعة رُدّ للزبون أو اعتُبر إيراداً — ألغِ «اعتبار الزائد إيراداً» أولاً، أو سجّل التصحيح بدفعة',
-        );
-        $this->assertFalse($payment->fresh()->isReversed());
-    }
-
-    public function test_deleting_the_order_undoes_the_keep_and_then_the_payment(): void
+    public function test_deleting_the_order_undoes_the_overpayment(): void
     {
         // Arrange
         $headers = $this->cashier();
@@ -437,19 +336,19 @@ class OrderOverpaymentTest extends TestCase
             'line_total' => '99.00',
         ]);
         app(RecalculateOrderTotals::class)($order->refresh());
+        $before = $this->balance($this->cashBox());
         $this->overpay($headers, $order);
-        $this->keep($headers, $order)->assertCreated();
 
         // Act
         $deleted = app(DeleteOrder::class)($order->refresh(), User::factory()->create());
 
-        // Assert — nothing paid, nothing owed, and «علينا» back where it started.
+        // Assert
         $this->assertSame('0.00', (string) $deleted->paid_amount);
         $this->assertSame('0.00', (string) $deleted->excess_amount);
-        $this->assertSame('0.00', $this->owedToCustomers());
+        $this->assertSame($before, $this->balance($this->cashBox()));
     }
 
-    // ── at the counter, on the status screen ────────────────────────────────────────────
+    // ── عند التسليم، في شاشة الحالة ──────────────────────────────────────────────────────
 
     public function test_the_status_screen_asks_before_taking_more_than_is_owed(): void
     {
@@ -466,7 +365,7 @@ class OrderOverpaymentTest extends TestCase
         // Assert
         $this->assertNotNull($confirm);
         $this->assertSame('confirmation', $confirm['type']);
-        $this->assertSame('المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟', $confirm['label']);
+        $this->assertSame('المبلغ يزيد على المتبقي — يُسجَّل الزائد إيراداً', $confirm['label']);
         $this->assertSame(['key' => 'payment_amount', 'above' => '99.00'], $confirm['confirm_when']);
     }
 
@@ -491,17 +390,17 @@ class OrderOverpaymentTest extends TestCase
         $order->refresh();
         $this->assertSame(OrderStatus::Delivered, $order->status);
         $this->assertSame('99.00', (string) $order->paid_amount);
-        $this->assertSame('1.00', (string) $order->excess_amount);
+        $this->assertSame('0.00', (string) $order->excess_amount);
+        $this->assertSame('1.00', (string) $order->payments()->sole()->excess_amount);
     }
 
-    // ── the payable is the orders' alone ────────────────────────────────────────────────
+    // ── حسابُ الزائد القديم ما زال للطلبيات وحدها ─────────────────────────────────────────
 
     public function test_nobody_moves_what_customers_are_owed_by_hand(): void
     {
-        // Arrange
-        $this->overpay($this->cashier(), $this->order('99.00'));
-        $headers = $this->auth([PermissionName::ViewTreasury, PermissionName::RecordTreasuryOperations]);
+        // Arrange — حسابٌ فُتح قبل القرار ما زال في القواعد التي فتحته.
         $payable = app(TreasuryService::class)->customerExcessPayable();
+        $headers = $this->auth([PermissionName::ViewTreasury, PermissionName::RecordTreasuryOperations]);
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/treasury/operations', [
@@ -513,6 +412,6 @@ class OrderOverpaymentTest extends TestCase
 
         // Assert
         $response->assertUnprocessable();
-        $this->assertSame('-1.00', $this->owedToCustomers());
+        $this->assertSame('0.00', $this->balance($payable));
     }
 }

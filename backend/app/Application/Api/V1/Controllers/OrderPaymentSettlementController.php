@@ -62,9 +62,8 @@ class OrderPaymentSettlementController extends Controller
         ]);
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
-        $user = $request->user();
 
-        $queue = $this->orders->paymentSettlementQueue($filters, $perPage, $user instanceof User ? $user : null);
+        $queue = $this->orders->paymentSettlementQueue($filters, $perPage);
 
         return $this->successWithPagination(
             OrderPaymentResource::collection($queue['page']),
@@ -75,17 +74,13 @@ class OrderPaymentSettlementController extends Controller
     /**
      * The settlement accounts
      *
-     * `sources`: where payments wait to be settled — Nawris, a driver, «مصرف علي» — for the
-     * page's filter. `destinations`: every active cash box, bank and wallet, where money may be
-     * settled to. Names, never balances.
+     * `sources`: every account a payment can sit in — Nawris, a cash box, a bank, a wallet — for
+     * the page's filter. `destinations`: every active cash box, bank and wallet, where money may
+     * be settled to. Names, never balances.
      */
-    public function accounts(Request $request): JsonResponse
+    public function accounts(): JsonResponse
     {
-        $user = $request->user();
-
-        return $this->success(
-            $this->treasury->settlementAccounts($user instanceof User ? (int) $user->getKey() : null),
-        );
+        return $this->success($this->treasury->settlementAccounts());
     }
 
     /**

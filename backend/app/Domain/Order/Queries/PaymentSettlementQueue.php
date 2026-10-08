@@ -7,23 +7,24 @@ namespace App\Domain\Order\Queries;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Support\BusinessDay;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\Enums\OperationType;
 use App\Domain\Treasury\Models\TreasuryOperation;
-use App\Domain\Treasury\TreasuryService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 /**
  * «تسوية الدفعات» — the payments whose money is still where it landed, and those already carried
  * on. TREASURY-DESIGN §٢٣.
  *
- * **«بانتظار التسوية»**: a live payment, on an order not yet «تم التسوية», sitting in an account
- * whose money would move at settlement — custody always, an employee's or a branch's account
- * where the settler's account or collection would take it ({@see TreasuryService::accountsAwaitingSettlement()}).
- * A payment straight into its final account is in its place and never listed. Oldest first, by
- * when the money was taken: it is a work list. The dates filter that day.
+ * **«بانتظار التسوية»**: every live payment with an account, on an order not yet «تم التسوية»,
+ * whose own settlement does not stand — **wherever the money sits**. The owner's choice B,
+ * 2026-10-08: cash in the company's box may still be taken to somebody's own account or another,
+ * so it waits too until somebody settles it. Money that would move by itself at settlement
+ * carries its account in `settlement_target`; money already in its place carries none and is
+ * settled to an account somebody names. Oldest first, by when the money was taken: it is a work
+ * list. The dates filter that day.
  *
  * **«مسوّاة»**: a payment whose own settlement stands. Newest settlement first, and the dates
  * filter the day it was settled — the question there is «what did we settle this week».
@@ -34,15 +35,13 @@ final class PaymentSettlementQueue
 
     public const SETTLED = 'settled';
 
-    public function __construct(private readonly TreasuryService $treasury) {}
-
     /**
      * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
      * @return LengthAwarePaginator<int, OrderPayment>
      */
-    public function page(array $filters, int $perPage, ?int $actorId): LengthAwarePaginator
+    public function page(array $filters, int $perPage): LengthAwarePaginator
     {
-        $query = $this->filtered($filters, $actorId)->with([
+        $query = $this->filtered($filters)->with([
             'order.customer',
             'recorder',
             'reviewer',
@@ -69,19 +68,20 @@ final class PaymentSettlementQueue
      * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
      * @return array{amount_total: string}
      */
-    public function totals(array $filters, ?int $actorId): array
+    public function totals(array $filters): array
     {
-        return ['amount_total' => Money::round((string) $this->filtered($filters, $actorId)->sum('amount'))];
+        return ['amount_total' => Money::round((string) $this->filtered($filters)->sum('amount'))];
     }
 
     /**
      * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
      * @return Builder<OrderPayment>
      */
-    private function filtered(array $filters, ?int $actorId): Builder
+    private function filtered(array $filters): Builder
     {
-        $from = ($filters['from'] ?? null) === null ? null : Carbon::parse($filters['from'])->startOfDay();
-        $to = ($filters['to'] ?? null) === null ? null : Carbon::parse($filters['to'])->endOfDay();
+        // أيامُ المحلّ بتوقيت طرابلس، لا أيامُ UTC ({@see BusinessDay}).
+        $from = ($filters['from'] ?? null) === null ? null : BusinessDay::start($filters['from']);
+        $to = ($filters['to'] ?? null) === null ? null : BusinessDay::end($filters['to']);
 
         $query = OrderPayment::query()
             ->where('type', OrderPaymentType::Payment->value)
@@ -100,7 +100,6 @@ final class PaymentSettlementQueue
         }
 
         return $query
-            ->whereIn('treasury_account_id', $this->treasury->accountsAwaitingSettlement($actorId))
             ->whereHas('order', fn ($order) => $order->where('status', '<>', OrderStatus::Settled->value))
             ->whereDoesntHave('standingSettlement')
             ->when($from, fn ($q) => $q->where('paid_at', '>=', $from))

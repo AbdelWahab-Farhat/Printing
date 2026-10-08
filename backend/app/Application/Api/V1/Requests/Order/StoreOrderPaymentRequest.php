@@ -44,9 +44,9 @@ class StoreOrderPaymentRequest extends FormRequest
 
             'notes' => ['nullable', 'string', 'max:1000'],
 
-            // «تسجيل الزائد للزبون» — the answer to «المبلغ يزيد على المتبقي». Without it an
+            // «يُسجَّل الزائد إيراداً» — the answer to «المبلغ يزيد على المتبقي». Without it an
             // amount beyond the debt is refused, which is what still catches 500 typed for 50;
-            // with it the part beyond the debt is owed back to the customer.
+            // with it the part beyond the debt is the shop's revenue.
             'accept_overpayment' => ['sometimes', 'boolean'],
 
             /*

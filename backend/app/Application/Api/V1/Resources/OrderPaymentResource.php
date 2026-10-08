@@ -37,8 +37,9 @@ class OrderPaymentResource extends JsonResource
             // A string, like every other money field: what was stored reaches the client exactly.
             'amount' => (string) $this->amount,
 
-            // How much of [amount] was beyond the order — owed back to the customer — or, on a
-            // refund, how much of it handed that back. «0.00» on nearly every entry.
+            // How much of [amount] was beyond the order — the shop's revenue since 2026-10-07 (owed
+            // back to the customer before it, or, on an older refund, how much of it handed that
+            // back). «0.00» on nearly every entry.
             'excess_amount' => (string) $this->excess_amount,
 
             // Null on a reversal alone, because no money moved for it to have a method.

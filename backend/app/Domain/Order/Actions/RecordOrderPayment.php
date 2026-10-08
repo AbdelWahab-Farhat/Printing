@@ -82,7 +82,10 @@ final class RecordOrderPayment
             // **Beyond the debt only when somebody said so.** 100 handed over on an order of 99
             // because nobody had the one dinar is ordinary, and the confirmation is what still
             // tells it apart from 500 typed for 50. With it, the whole 100 is one entry and the 1
-            // is owed back to the customer — never part of what the order was paid.
+            // is never part of what the order was paid.
+            //
+            // **والزائدُ للمحلّ من ساعته** — قرارُ صاحب العمل ٢٠٢٦-١٠-٠٧: «ديمة اعتبره إيراد». لا
+            // يُكتب للزبون على الطلبية ولا على «علينا»؛ يبقى رقمُه على صفّ الدفعة وحده.
             $excess = '0.00';
 
             if (bccomp($data->amount, $remaining, Money::SCALE) > 0) {
@@ -200,25 +203,6 @@ final class RecordOrderPayment
             notes: "دفعة على الطلبية {$order->code}",
             recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
         ));
-
-        // **And the debt that came with it.** The whole amount is in the drawer — that is the
-        // cash — but the part beyond the order is the customer's, so «علينا» says so until it is
-        // refunded or kept. Without this the shop would look richer by every dinar of change it
-        // could not give. Same source as the cash, so reversing the payment undoes both.
-        if (bccomp($excess, '0', Money::SCALE) > 0) {
-            $this->treasury->post(new MovementData(
-                accountId: (int) $this->treasury->customerExcessPayable()->getKey(),
-                direction: MovementDirection::Out,
-                kind: MovementKind::CustomerExcess,
-                amount: $excess,
-                occurredAt: $payment->paid_at,
-                sourceType: $payment->getMorphClass(),
-                sourceId: (int) $payment->getKey(),
-                orderId: (int) $order->getKey(),
-                notes: "زائد لزبون الطلبية {$order->code}",
-                recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
-            ));
-        }
 
         return $payment;
     }

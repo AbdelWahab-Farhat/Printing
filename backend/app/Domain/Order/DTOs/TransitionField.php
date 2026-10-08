@@ -93,7 +93,7 @@ final class TransitionField
      * A yes the app asks for at the moment of sending, and only when another answer crossed a
      * line — {@see TransitionFieldType::Confirmation}.
      *
-     * [$label] is the question, «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟». Never required:
+     * [$label] is the question, «المبلغ يزيد على المتبقي — يُسجَّل الزائد إيراداً». Never required:
      * left out, the domain treats it as «لا» and refuses whatever it guards, which is also what an
      * app too old to know the type gets.
      */
