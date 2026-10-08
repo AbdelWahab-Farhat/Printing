@@ -34,6 +34,16 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [BUSINESS-FIELDS-DESIGN.md](business-fields/BUSINESS-FIELDS-DESIGN.md) | مجالات العمل — الجداول والـ API والصلاحيات والشاشة. **مُنفَّذ.** |
 
+## [changes/](changes/)
+
+| Document | |
+|---|---|
+| [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-23-CUSTOMER-DEFAULT-ADDRESS.md](changes/PR-23-CUSTOMER-DEFAULT-ADDRESS.md) | العنوان الافتراضي للعميل. |
+| [PR-22-PAYMENT-SETTLEMENT.md](changes/PR-22-PAYMENT-SETTLEMENT.md) | «تسوية الدفعات». |
+| [PR-21-PERIOD-EXPENSES.md](changes/PR-21-PERIOD-EXPENSES.md) | «المصاريف» في شاشة الفترة. |
+| [PR-20-PAYMENT-REVIEW-AND-OVERPAY.md](changes/PR-20-PAYMENT-REVIEW-AND-OVERPAY.md) | «مراجعة الدفعات» و«الزائد» — ومعه «الزائد إيراد دايماً». |
+
 ## [comments/](comments/)
 
 | Document | |
