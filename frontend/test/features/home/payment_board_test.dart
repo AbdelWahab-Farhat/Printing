@@ -137,6 +137,35 @@ void main() {
     expect(number.style?.color, scheme.onSurface);
   });
 
+  group('«مراجعة وتسوية الدفعات»', () {
+    testWidgets('a wide card under the three states opens the page', (tester) async {
+      // Arrange
+      var opened = 0;
+      await tester.pumpWidget(
+        host(PaymentBoard(payments: payments, onReviewAndSettle: () => opened++)),
+      );
+      final card = find.byKey(const ValueKey('review-and-settle'));
+
+      // Act
+      await tester.tap(find.text('مراجعة وتسوية الدفعات'));
+      await tester.pumpAndSettle();
+
+      // Assert — تحت البطاقات الثلاث، وبعرضها كلّها لا بعرض واحدةٍ منها.
+      expect(opened, 1);
+      expect(tester.getTopLeft(card).dy, greaterThan(tester.getBottomLeft(find.text('غير مدفوعة')).dy));
+      final stateCard = find.ancestor(of: find.text('غير مدفوعة'), matching: find.byType(InkWell)).first;
+      expect(tester.getSize(card).width, greaterThan(tester.getSize(stateCard).width * 2));
+    });
+
+    testWidgets('somebody who may neither review nor settle sees no such card', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(const PaymentBoard(payments: payments)));
+
+      // Act - Assert
+      expect(find.text('مراجعة وتسوية الدفعات'), findsNothing);
+    });
+  });
+
   testWidgets('an API that sends no payment states draws no board at all', (tester) async {
     // Arrange — an empty board with a heading over it would be a section promising something.
     await tester.pumpWidget(host(const PaymentBoard(payments: [])));

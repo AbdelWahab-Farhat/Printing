@@ -33,6 +33,7 @@ class PagedListView<T> extends StatefulWidget {
     this.skeletonHeight,
     this.padding,
     this.separatorBuilder,
+    this.header,
     super.key,
   });
 
@@ -52,6 +53,15 @@ class PagedListView<T> extends StatefulWidget {
   /// What sits between two rows. Defaults to the gap two cards keep; a ledger passes a hairline,
   /// because its rows are lines in a table rather than cards on a board.
   final IndexedWidgetBuilder? separatorBuilder;
+
+  /// فوق الصفوف ويمرّ معها — فلاترُ قائمةٍ كانت ستمسك أعلى الشاشة كلَّه لو ثُبّتت («مراجعة وتسوية
+  /// الدفعات»، ٢٠٢٦-١٠-٠٨). يختفي حين تُمرَّر القائمة إلى الأسفل، ويعود مع أوّل تمريرٍ إلى الأعلى
+  /// ([SliverFloatingHeader]).
+  ///
+  /// **مرسومٌ في كل حال** — التحميل والفراغ والفشل — فتبقى فترةٌ لا تطابق شيئاً قابلةً للتغيير؛ و**في
+  /// المكان نفسه من الشجرة دائماً**، فيحتفظ حقلُ البحث فيه بما كُتب وبلوحة المفاتيح بينما يعيد كلُّ
+  /// حرفٍ تحميلَ الصفوف تحته.
+  final Widget? header;
 
   @override
   State<PagedListView<T>> createState() => _PagedListViewState<T>();
@@ -111,6 +121,8 @@ class _PagedListViewState<T> extends State<PagedListView<T>> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _fillViewport());
     }
 
+    if (widget.header case final header?) return _withHeader(header, padding);
+
     return switch (widget.state) {
       PagedInitial<T>() ||
       PagedLoading<T>() => _Skeleton(padding: padding, rowHeight: widget.skeletonHeight ?? 106.h),
@@ -134,24 +146,69 @@ class _PagedListViewState<T> extends State<PagedListView<T>> {
                   // One extra row while a page is on its way: the footer is part of the list, so
                   // it scrolls with it instead of floating over the last card.
                   itemCount: page.items.length + (isLoadingMore ? 1 : 0),
-                  separatorBuilder:
-                      widget.separatorBuilder ?? (context, index) => SizedBox(height: 12.h),
-                  itemBuilder: (context, index) {
-                    if (index >= page.items.length) {
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        child: const Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    return Appear(
-                      index: index,
-                      child: widget.itemBuilder(context, page.items[index], index),
-                    );
-                  },
+                  separatorBuilder: _separator,
+                  itemBuilder: (context, index) => _item(context, page.items, index),
                 ),
               ),
     };
+  }
+
+  IndexedWidgetBuilder get _separator =>
+      widget.separatorBuilder ?? (context, index) => SizedBox(height: 12.h);
+
+  /// One row — or, one past the last, the spinner of the page on its way.
+  Widget _item(BuildContext context, List<T> items, int index) {
+    if (index >= items.length) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Appear(index: index, child: widget.itemBuilder(context, items[index], index));
+  }
+
+  /// The same five states under a [header] that scrolls with them.
+  ///
+  /// **One shape for all of them** — a refresh around one [CustomScrollView] whose first sliver is
+  /// the header — so the header's element survives every change of state beneath it. A shape per
+  /// state would rebuild it, and the search box inside would lose its text and its keyboard on
+  /// every keystroke.
+  Widget _withHeader(Widget header, EdgeInsetsGeometry padding) {
+    final rows = switch (widget.state) {
+      PagedInitial<T>() || PagedLoading<T>() => SliverPadding(
+        padding: padding,
+        sliver: SliverList.separated(
+          itemCount: 6,
+          separatorBuilder: (context, index) => SizedBox(height: 12.h),
+          itemBuilder: (context, index) => _SkeletonRow(height: widget.skeletonHeight ?? 106.h),
+        ),
+      ),
+      PagedFailure<T>(:final failure) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: _FailureView(message: failure.message, onRetry: widget.onRefresh),
+      ),
+      PagedLoaded<T>(:final page, :final search) when page.isEmpty => SliverToBoxAdapter(
+        child: _EmptyMessage(search: search, message: widget.emptyMessage, top: 72.h),
+      ),
+      PagedLoaded<T>(:final page, :final isLoadingMore) => SliverPadding(
+        padding: padding,
+        sliver: SliverList.separated(
+          itemCount: page.items.length + (isLoadingMore ? 1 : 0),
+          separatorBuilder: _separator,
+          itemBuilder: (context, index) => _item(context, page.items, index),
+        ),
+      ),
+    };
+
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      child: CustomScrollView(
+        controller: _controller,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [SliverFloatingHeader(child: header), rows],
+      ),
+    );
   }
 }
 
@@ -167,12 +224,24 @@ class _Skeleton extends StatelessWidget {
       padding: padding,
       itemCount: 6,
       separatorBuilder: (context, index) => SizedBox(height: 12.h),
-      itemBuilder: (context, index) => Container(
-        height: rowHeight,
-        decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(20.r),
-        ),
+      itemBuilder: (context, index) => _SkeletonRow(height: rowHeight),
+    );
+  }
+}
+
+/// One placeholder row, card-shaped.
+class _SkeletonRow extends StatelessWidget {
+  const _SkeletonRow({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(20.r),
       ),
     );
   }
@@ -187,27 +256,45 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSearch = search != null && search!.isNotEmpty;
-
     // Scrollable despite having nothing to scroll: without it, pull-to-refresh is unavailable
     // on exactly the screen where the user most wants to try again.
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(height: 120.h),
-          Icon(AppIcons.empty, size: 52.sp, color: context.colorScheme.outline),
-          SizedBox(height: 14.h),
-          Text(
-            hasSearch ? 'لا توجد نتائج لـ «$search»' : message,
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyLarge?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        children: [_EmptyMessage(search: search, message: message, top: 120.h)],
       ),
+    );
+  }
+}
+
+/// «لا توجد نتائج لـ «…»» or the screen's own sentence, under the empty-box icon.
+class _EmptyMessage extends StatelessWidget {
+  const _EmptyMessage({required this.search, required this.message, required this.top});
+
+  final String? search;
+  final String message;
+
+  /// The gap above the icon — less under a header, which already holds the top of the screen.
+  final double top;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSearch = search != null && search!.isNotEmpty;
+
+    return Column(
+      children: [
+        SizedBox(height: top),
+        Icon(AppIcons.empty, size: 52.sp, color: context.colorScheme.outline),
+        SizedBox(height: 14.h),
+        Text(
+          hasSearch ? 'لا توجد نتائج لـ «$search»' : message,
+          textAlign: TextAlign.center,
+          style: context.textTheme.bodyLarge?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

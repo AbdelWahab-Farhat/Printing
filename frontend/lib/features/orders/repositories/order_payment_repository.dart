@@ -42,10 +42,6 @@ abstract interface class OrderPaymentRepository {
     bool acceptOverpayment = false,
   });
 
-  /// «اعتبار الزائد إيراداً» — the whole excess the order holds is the shop's now. No amount: a
-  /// part handed back is a [refund] first. No cash moves; undone by [reverse].
-  Future<Either<Failure, PaymentResult>> keepExcess(int orderId, {String? notes});
-
   /// Money genuinely handed back.
   ///
   /// **Not the way to fix a mistyped entry** — that is [reverse]. The two subtract the same
@@ -102,10 +98,16 @@ abstract interface class OrderPaymentRepository {
   ///
   /// `extraMeta` carries `incoming_total` and `outgoing_total` — what the whole filtered queue
   /// adds up to, money in and money out apart.
+  ///
+  /// [from] and [to] are the days the money moved, either open; [search] is part of an order
+  /// code or of the customer's name — the same box as the settlement list's.
   Future<Either<Failure, Paginated<OrderPayment>>> reviewQueue({
     required int page,
     OrderPaymentType? type,
     int? accountId,
+    DateTime? from,
+    DateTime? to,
+    String? search,
   });
 
   /// «تسوية الدفعات» — waiting or settled payments. `extraMeta['amount_total']` is what the whole

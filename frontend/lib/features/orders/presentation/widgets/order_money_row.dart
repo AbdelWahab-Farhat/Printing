@@ -81,24 +81,6 @@ class OrderMoneyRow extends StatelessWidget {
           ),
         ],
 
-        // What the customer paid beyond the order, and is owed back until somebody refunds it
-        // or keeps it. A sentence for the reason the write-off is one — and **never added to
-        // «المدفوع»**, which is what the order was paid.
-        if (summary.hasExcess) ...[
-          SizedBox(height: 10.h),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              'زائد للزبون ${summary.excessAmount.grouped} — يُردّ أو يُعتبر إيراداً',
-              key: const ValueKey('excess-line'),
-              style: context.textTheme.bodySmall?.copyWith(
-                color: scheme.tertiary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-
         // An order that finished with money the ledger never saw.
         //
         // **Settling an order writes no entry**, on purpose: nothing records a payment except

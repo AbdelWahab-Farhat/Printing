@@ -1,8 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/pagination/paged_cubit.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_review_line.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -155,8 +157,16 @@ void main() {
   });
 
   group('the queue', () {
+    setUpAll(() {
+      registerFallbackValue(OrderPaymentType.payment);
+      registerFallbackValue(DateTime(2026));
+    });
+
     late _MockOrderPaymentRepository repository;
     late PaymentReviewQueueCubit cubit;
+
+    /// الثلاثاء ٦ أكتوبر ٢٠٢٦، الثالثة عصراً — آخرُ يومٍ في «هذا الشهر».
+    final today = DateTime(2026, 10, 6);
 
     Paginated<OrderPayment> pageOf(List<OrderPayment> items) => Paginated<OrderPayment>(
       items: items,
@@ -168,10 +178,30 @@ void main() {
       cubit = PaymentReviewQueueCubit(
         getQueue: GetPaymentReviewQueue(repository),
         reviewPayment: ReviewOrderPayment(repository),
+        now: () => DateTime(2026, 10, 6, 15),
       );
+      when(
+        () => repository.reviewQueue(
+          page: any(named: 'page'),
+          type: any(named: 'type'),
+          accountId: any(named: 'accountId'),
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          search: any(named: 'search'),
+        ),
+      ).thenAnswer((_) async => Right(pageOf(const [])));
     });
 
     tearDown(() => cubit.close());
+
+    test('it opens on every entry — «الكل», the owner\'s default', () async {
+      // Act
+      await cubit.load();
+
+      // Assert
+      expect(cubit.period, SettlementPeriod.all);
+      verify(() => repository.reviewQueue(page: 1)).called(1);
+    });
 
     test('a reviewed entry leaves the list and the count follows it', () async {
       // Arrange
@@ -210,20 +240,62 @@ void main() {
       expect(cubit.waiting, 1);
     });
 
-    test('choosing refunds asks the server for refunds alone', () async {
+    test('typing searches the server by order or customer, inside the period', () async {
       // Arrange
-      when(() => repository.reviewQueue(page: 1)).thenAnswer((_) async => Right(pageOf(const [])));
-      when(
-        () => repository.reviewQueue(page: 1, type: OrderPaymentType.refund),
-      ).thenAnswer((_) async => Right(pageOf(const [])));
       await cubit.load();
 
       // Act
-      await cubit.showType(OrderPaymentType.refund);
+      cubit.search('البوري');
+      await Future<void>.delayed(PagedCubit.debounceDelay + const Duration(milliseconds: 50));
 
       // Assert
-      verify(() => repository.reviewQueue(page: 1, type: OrderPaymentType.refund)).called(1);
-      expect(cubit.type, OrderPaymentType.refund);
+      verify(() => repository.reviewQueue(page: 1, search: 'البوري')).called(1);
+    });
+
+    test('the advanced filter takes an open «من» and refunds alone', () async {
+      // Arrange
+      await cubit.load();
+
+      // Act
+      await cubit.applyAdvanced(from: DateTime(2026, 10, 1), type: OrderPaymentType.refund);
+
+      // Assert
+      verify(
+        () => repository.reviewQueue(page: 1, from: DateTime(2026, 10, 1), type: OrderPaymentType.refund),
+      ).called(1);
+      expect(cubit.period, SettlementPeriod.custom);
+      expect(cubit.hasAdvanced, isTrue);
+    });
+
+    test('a chip after the advanced dates forgets them and keeps the type', () async {
+      // Arrange
+      await cubit.applyAdvanced(from: DateTime(2026, 10, 1), type: OrderPaymentType.refund);
+
+      // Act
+      await cubit.showPeriod(SettlementPeriod.thisMonth);
+
+      // Assert
+      verify(
+        () => repository.reviewQueue(
+          page: 1,
+          from: DateTime(2026, 10),
+          to: today,
+          type: OrderPaymentType.refund,
+        ),
+      ).called(1);
+      expect(cubit.customRange, isNull);
+    });
+
+    test('clearing the advanced dates goes back to «الكل»', () async {
+      // Arrange
+      await cubit.applyAdvanced(from: DateTime(2026, 10, 1));
+
+      // Act
+      await cubit.applyAdvanced();
+
+      // Assert
+      expect(cubit.period, SettlementPeriod.all);
+      expect(cubit.hasAdvanced, isFalse);
     });
   });
 }

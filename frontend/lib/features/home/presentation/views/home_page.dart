@@ -109,6 +109,13 @@ class _HomeView extends StatelessWidget {
                   // order whatever stage each is at — which is what the number counted.
                   OrdersFilter(title: payment.label, paymentStatuses: [payment.status]),
                 ),
+                // «مراجعة وتسوية الدفعات» بجانب حالات الدفع — قرار صاحب العمل ٢٠٢٦-١٠-٠٨، بدل
+                // القائمة الجانبية. لمن يراجع أو يسوّي، فالصفحة تُري كلَّ واحدٍ تبويباته.
+                onReviewAndSettle:
+                    sl<Session>().can(AppPermission.reviewOrderPayments) ||
+                        sl<Session>().can(AppPermission.settleOrderPayments)
+                    ? () => context.push(Routes.paymentSettlement)
+                    : null,
               ),
               SizedBox(height: 24.h),
               StatusBoard(

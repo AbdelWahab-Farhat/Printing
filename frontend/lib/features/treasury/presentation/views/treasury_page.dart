@@ -11,8 +11,6 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_tab_bar.dart';
-import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
-import 'package:dayaa/features/orders/presentation/widgets/payment_review_queue_tab.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_cubit.dart';
@@ -53,14 +51,6 @@ class TreasuryPage extends StatelessWidget {
           create: (_) => TreasuryExpensesCubit(
             getExpenses: sl(),
             reverseOperation: sl(),
-          )..load(),
-        ),
-        // «مراجعة الدفعات» — lazy like the one above, and read only by somebody holding
-        // `orders.payments.review`, for whom the tab label needs its count from the start.
-        BlocProvider(
-          create: (_) => PaymentReviewQueueCubit(
-            getQueue: sl(),
-            reviewPayment: sl(),
           )..load(),
         ),
       ],
@@ -132,12 +122,6 @@ class _Loaded extends StatelessWidget {
 
       if (change != null) await cubit.applyAccountChange(change);
     }
-
-    final canReview = sl<Session>().can(AppPermission.reviewOrderPayments);
-    // Watched only by somebody who has the tab — anybody else never creates the Cubit at all.
-    final waiting = canReview
-        ? context.select((PaymentReviewQueueCubit queue) => queue.waiting)
-        : null;
 
     final money = [for (final a in accounts.accounts) if (!a.isPayable) a];
     final payables = [for (final a in accounts.accounts) if (a.isPayable) a];
@@ -214,16 +198,8 @@ class _Loaded extends StatelessWidget {
           'المصاريف',
           TreasuryExpensesTab(onMoneyMoved: cubit.load),
         ),
-      // «مراجعة الدفعات» — the reviewer's queue, with how many wait on the tab itself. Its own
-      // grant, not `treasury.view`: whoever checks the payments need not see every account.
-      if (canReview)
-        (
-          switch (waiting) {
-            final n? when n > 0 => 'المراجعة ($n)',
-            _ => 'المراجعة',
-          },
-          const PaymentReviewQueueTab(),
-        ),
+      // «مراجعة الدفعات» خرجت من هنا إلى «مراجعة وتسوية الدفعات» تحت «حالات الدفع» في
+      // الرئيسية — قرار صاحب العمل ٢٠٢٦-١٠-٠٨.
     ];
 
     return DefaultTabController(

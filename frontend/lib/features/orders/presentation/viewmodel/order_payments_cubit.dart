@@ -33,7 +33,6 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     required ReverseOrderPayment reversePayment,
     required WriteOffOrderBalance writeOffBalance,
     required ReviewOrderPayment reviewPayment,
-    required KeepOrderExcess keepExcess,
     required GetSettlementAccounts getSettlementAccounts,
     required SettleOrderPayments settlePayments,
     required UnsettleOrderPayment unsettlePayment,
@@ -44,7 +43,6 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
        _reversePayment = reversePayment,
        _writeOffBalance = writeOffBalance,
        _reviewPayment = reviewPayment,
-       _keepExcess = keepExcess,
        _getSettlementAccounts = getSettlementAccounts,
        _settlePayments = settlePayments,
        _unsettlePayment = unsettlePayment,
@@ -57,7 +55,6 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   final ReverseOrderPayment _reversePayment;
   final WriteOffOrderBalance _writeOffBalance;
   final ReviewOrderPayment _reviewPayment;
-  final KeepOrderExcess _keepExcess;
   final GetSettlementAccounts _getSettlementAccounts;
   final SettleOrderPayments _settlePayments;
   final UnsettleOrderPayment _unsettlePayment;
@@ -109,9 +106,6 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
       ),
     );
   }
-
-  /// «اعتبار الزائد إيراداً» — the excess the order holds is the shop's now.
-  Future<Failure?> keepExcess({String? notes}) => _write(() => _keepExcess(_orderId, notes: notes));
 
   /// Hands money back.
   Future<Failure?> refund({

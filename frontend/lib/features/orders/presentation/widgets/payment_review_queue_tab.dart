@@ -6,16 +6,20 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
-import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/payment_queue_filters.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_review_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// تبويب «مراجعة الدفعات» في «المالية» — كل دفعةٍ وردٍّ ينتظر أن يراجعه شخصٌ ثانٍ، الأقدم أولاً.
+/// تبويب «تحتاج مراجعة» في «مراجعة وتسوية الدفعات» — كل دفعةٍ وردٍّ ينتظر أن يراجعه شخص، الأقدم
+/// أولاً. (كان تبويباً في «المالية» حتى ٢٠٢٦-١٠-٠٨.)
+///
+/// **فوق الصفوف رأسُ الصفحة المشترك** ([PaymentQueueFilters]) ويمرّ معها: البحث، وأزرار الفترة على
+/// «الكل»، والفلتر المتقدّم بـ«من» / «إلى» والنوع. والعدد في اسم التبويب، لا في سطرٍ تحت الفلاتر.
 ///
 /// **لا يوقف شيئاً**: دفعةٌ غير مراجَعة تُحسب وتُسوّى وتحرّك الخزينة كالمراجَعة تماماً؛ هذه قائمة
 /// عمل المراجع لا بوّابة. واللمسة على الصفّ تفتح دفعات طلبيته، حيث يُرى الواصل والسجلّ كلّه.
@@ -24,67 +28,19 @@ class PaymentReviewQueueTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PaymentReviewQueueCubit, PaymentReviewQueueState>(
-      builder: (context, state) {
-        final cubit = context.read<PaymentReviewQueueCubit>();
-
-        return Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
-              child: Row(
-                children: [
-                  Icon(AppIcons.awaitingReview, size: 18.sp, color: context.colorScheme.tertiary),
-                  SizedBox(width: 8.w),
-                  Text(
-                    switch (cubit.waiting) {
-                      null => 'بانتظار المراجعة',
-                      0 => 'لا شيء بانتظار المراجعة',
-                      final n => 'بانتظار المراجعة: $n',
-                    },
-                    style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 4.h),
-              child: Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: [
-                  for (final (type, label) in const [
-                    (null, 'الكل'),
-                    (OrderPaymentType.payment, 'دفعات'),
-                    (OrderPaymentType.refund, 'ردود'),
-                  ])
-                    FilterOptionChip(
-                      label: label,
-                      isSelected: cubit.type == type,
-                      onTap: () => unawaited(cubit.showType(type)),
-                    ),
-                ],
-              ),
-            ),
-            const Expanded(child: _List()),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _List extends StatelessWidget {
-  const _List();
-
-  @override
-  Widget build(BuildContext context) {
     final cubit = context.read<PaymentReviewQueueCubit>();
 
     return BlocBuilder<PaymentReviewQueueCubit, PaymentReviewQueueState>(
       builder: (context, state) => PagedListView<OrderPayment>(
         state: state,
-        emptyMessage: 'كل الدفعات مراجَعة',
+        header: PaymentQueueFilters(
+          period: cubit.period,
+          onPeriod: (period) => unawaited(cubit.showPeriod(period)),
+          onSearch: cubit.search,
+          isAdvancedActive: cubit.hasAdvanced,
+          onAdvanced: () => unawaited(_advanced(context)),
+        ),
+        emptyMessage: 'لا دفعات تحتاج مراجعة',
         onLoadMore: cubit.loadMore,
         onRefresh: cubit.refresh,
         skeletonHeight: 96.h,
@@ -98,6 +54,21 @@ class _List extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// «من» / «إلى» and payments or refunds.
+  Future<void> _advanced(BuildContext context) async {
+    final cubit = context.read<PaymentReviewQueueCubit>();
+    final range = cubit.customRange;
+    final chosen = await showPaymentAdvancedFilter(
+      context: context,
+      current: PaymentAdvancedFilter(from: range?.from, to: range?.to, type: cubit.type),
+      offersType: true,
+    );
+
+    if (chosen == null) return;
+
+    await cubit.applyAdvanced(from: chosen.from, to: chosen.to, type: chosen.type);
   }
 
   /// The order's own ledger, where the receipt and every other entry are. Re-read on the way

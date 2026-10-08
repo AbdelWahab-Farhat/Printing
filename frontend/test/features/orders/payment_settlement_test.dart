@@ -490,15 +490,56 @@ void main() {
 
     tearDown(() => cubit.close());
 
-    test('it opens on every waiting payment, with the server\'s total and the accounts', () async {
+    test('it opens on every waiting payment — «الكل», the owner\'s default — with the accounts', () async {
       // Act
       await cubit.start();
 
       // Assert
       verify(() => repository.settlementQueue(page: 1, state: SettlementState.pending)).called(1);
-      expect(cubit.amountTotal, '250.00');
+      expect(cubit.period, SettlementPeriod.all);
       expect(cubit.count, 1);
       expect(cubit.accounts.value?.sources.single.name, 'النورس');
+    });
+
+    test('the advanced filter takes an open «إلى» and an account', () async {
+      // Arrange
+      await cubit.load();
+
+      // Act
+      await cubit.applyAdvanced(to: DateTime(2026, 10, 4), accountId: 9);
+
+      // Assert
+      verify(
+        () => repository.settlementQueue(
+          page: 1,
+          state: SettlementState.pending,
+          to: DateTime(2026, 10, 4),
+          accountId: 9,
+        ),
+      ).called(1);
+      expect(cubit.period, SettlementPeriod.custom);
+      expect(cubit.hasAdvanced, isTrue);
+    });
+
+    test('a chip after the advanced dates forgets them and keeps the account', () async {
+      // Arrange
+      await cubit.applyAdvanced(from: DateTime(2026, 10, 1), accountId: 9);
+
+      // Act
+      await cubit.showPeriod(SettlementPeriod.today);
+
+      // Assert
+      verify(
+        () => repository.settlementQueue(
+          page: 1,
+          state: SettlementState.pending,
+          from: DateTime(2026, 10, 6),
+          to: DateTime(2026, 10, 6),
+          accountId: 9,
+        ),
+      ).called(1);
+      expect(cubit.customRange, isNull);
+      expect(cubit.hasAdvanced, isTrue);
     });
 
     test('«هذا الأسبوع» asks from Saturday to today', () async {
@@ -527,12 +568,13 @@ void main() {
         settlePayments: SettleOrderPayments(repository),
         unsettlePayment: UnsettleOrderPayment(repository),
         tab: SettlementState.settled,
+        now: () => DateTime(2026, 10, 6, 15),
       );
       addTearDown(settled.close);
       await settled.load();
 
       // Act
-      await settled.showAccount(9);
+      await settled.applyAdvanced(accountId: 9);
 
       // Assert
       verify(() => repository.settlementQueue(page: 1, state: SettlementState.settled)).called(1);

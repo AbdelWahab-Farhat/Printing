@@ -56,17 +56,6 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
   }
 
   @override
-  Future<Either<Failure, PaymentResult>> keepExcess(int orderId, {String? notes}) {
-    return safeRequest<PaymentResult>(
-      () => _dio.post(
-        OrderEndpoints.keepExcess(orderId),
-        data: <String, dynamic>{'notes': ?notes},
-      ),
-      parse: _result,
-    );
-  }
-
-  @override
   Future<Either<Failure, PaymentResult>> refund(
     int orderId, {
     required String amount,
@@ -145,6 +134,9 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     required int page,
     OrderPaymentType? type,
     int? accountId,
+    DateTime? from,
+    DateTime? to,
+    String? search,
   }) {
     return safePaginatedRequest<OrderPayment>(
       () => _dio.get(
@@ -155,6 +147,9 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           if (type == OrderPaymentType.payment) 'type': 'payment',
           if (type == OrderPaymentType.refund) 'type': 'refund',
           'account_id': ?accountId,
+          if (from != null) 'from': _day(from),
+          if (to != null) 'to': _day(to),
+          if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
         },
       ),
       parseItem: OrderPayment.fromJson,

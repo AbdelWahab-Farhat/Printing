@@ -248,9 +248,6 @@ enum AppPermission {
   /// review it into `can_review`, and the row reads that. See [OrderPayment.canReview].
   reviewOrderPayments('orders.payments.review', 'مراجعة دفعات الطلبيات'),
 
-  /// «اعتبار الزائد إيراداً» — what a customer paid beyond the order stays with the shop.
-  keepOrderExcess('orders.payments.keep_excess', 'اعتبار زائد الزبون إيراداً'),
-
   /// «تسوية دفعة» — a payment's money to the account it reached, before the order is settled,
   /// and back. Gates the home shortcut and the page; the buttons on a payment read the server's
   /// `can_settle` / `can_unsettle`. TREASURY-DESIGN §٢٣.

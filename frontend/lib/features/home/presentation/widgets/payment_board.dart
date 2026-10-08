@@ -22,13 +22,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// Rendered from the list the server sent, in its order, so a state added to the business
 /// appears here without an app release. The Arabic travels with the number for the same reason.
+///
+/// **وتحت البطاقات الثلاث «مراجعة وتسوية الدفعات»** بعرض اللوحة — قرار صاحب العمل ٢٠٢٦-١٠-٠٨:
+/// بابُ الصفحة هنا بجانب حالات الدفع، لا في القائمة الجانبية. عريضةٌ لا رابعةٌ في الصف: اسمها
+/// طويل، وأربعُ بطاقاتٍ في صفٍّ واحد تضيّق الأربع.
 class PaymentBoard extends StatelessWidget {
-  const PaymentBoard({required this.payments, this.onOpen, super.key});
+  const PaymentBoard({required this.payments, this.onOpen, this.onReviewAndSettle, super.key});
 
   final List<OrderStatusCount> payments;
 
   /// Opens the orders behind one card. Null leaves the board readable and inert.
   final ValueChanged<OrderStatusCount>? onOpen;
+
+  /// يفتح «مراجعة وتسوية الدفعات». فارغٌ لمن لا يراجع ولا يسوّي، فلا تُرسم البطاقة أصلاً.
+  final VoidCallback? onReviewAndSettle;
 
   /// Only the states somebody works a queue of, in the order the filter offers them.
   List<OrderStatusCount> get _cards {
@@ -40,7 +47,7 @@ class PaymentBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cards = _cards;
-    if (cards.isEmpty) return const SizedBox.shrink();
+    if (cards.isEmpty && onReviewAndSettle == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,25 +62,77 @@ class PaymentBoard extends StatelessWidget {
             ),
           ),
         ),
-        Row(
-          children: [
-            for (final (index, payment) in cards.indexed) ...[
-              if (index > 0) SizedBox(width: 10.w),
+        if (cards.isNotEmpty)
+          Row(
+            children: [
+              for (final (index, payment) in cards.indexed) ...[
+                if (index > 0) SizedBox(width: 10.w),
+                Expanded(
+                  child: Appear(
+                    index: index,
+                    child: _PaymentCard(
+                      payment: payment,
+                      // A card counting nothing opens a screen saying so, which is a tap that
+                      // teaches the reader nothing they did not already see.
+                      onTap: onOpen == null || payment.count == 0 ? null : () => onOpen!(payment),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        if (onReviewAndSettle case final open?) ...[
+          if (cards.isNotEmpty) SizedBox(height: 10.h),
+          Appear(index: cards.length, child: _ReviewAndSettleCard(onTap: open)),
+        ],
+      ],
+    );
+  }
+}
+
+/// «مراجعة وتسوية الدفعات» — صفٌّ عريض على سطح بطاقات الدفع نفسه، كصندوق «رسالة الجاهزية» فوقه:
+/// أيقونة، والاسم، وسهمٌ إلى الأمام.
+class _ReviewAndSettleCard extends StatelessWidget {
+  const _ReviewAndSettleCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Material(
+      key: const ValueKey('review-and-settle'),
+      color: scheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(18.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+          ),
+          child: Row(
+            children: [
+              Icon(AppIcons.transfer, size: 22.sp, color: scheme.primary),
+              SizedBox(width: 12.w),
               Expanded(
-                child: Appear(
-                  index: index,
-                  child: _PaymentCard(
-                    payment: payment,
-                    // A card counting nothing opens a screen saying so, which is a tap that
-                    // teaches the reader nothing they did not already see.
-                    onTap: onOpen == null || payment.count == 0 ? null : () => onOpen!(payment),
+                child: Text(
+                  'مراجعة وتسوية الدفعات',
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
                   ),
                 ),
               ),
+              Icon(AppIcons.forward, size: 18.sp, color: scheme.onSurfaceVariant),
             ],
-          ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

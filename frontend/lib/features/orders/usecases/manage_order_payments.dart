@@ -51,19 +51,6 @@ class RecordOrderPayment {
   }
 }
 
-/// «اعتبار الزائد إيراداً» — the note is trimmed, like every other sentence on this screen.
-class KeepOrderExcess {
-  const KeepOrderExcess(this._repository);
-
-  final OrderPaymentRepository _repository;
-
-  Future<Either<Failure, PaymentResult>> call(int orderId, {String? notes}) {
-    final note = notes?.trim();
-
-    return _repository.keepExcess(orderId, notes: note == null || note.isEmpty ? null : note);
-  }
-}
-
 /// Handing money back.
 class RefundOrderPayment {
   const RefundOrderPayment(this._repository);
@@ -152,7 +139,17 @@ class GetPaymentReviewQueue {
     required int page,
     OrderPaymentType? type,
     int? accountId,
-  }) => _repository.reviewQueue(page: page, type: type, accountId: accountId);
+    DateTime? from,
+    DateTime? to,
+    String? search,
+  }) => _repository.reviewQueue(
+    page: page,
+    type: type,
+    accountId: accountId,
+    from: from,
+    to: to,
+    search: search,
+  );
 }
 
 /// «تسوية الدفعات» — a page of waiting or settled payments. TREASURY-DESIGN §٢٣.

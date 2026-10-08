@@ -156,6 +156,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_settlement_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -1055,8 +1056,12 @@ abstract final class Injector {
       ..registerLazySingleton<GetPaymentReviewQueue>(
         () => GetPaymentReviewQueue(sl<OrderPaymentRepository>()),
       )
-      ..registerLazySingleton<KeepOrderExcess>(
-        () => KeepOrderExcess(sl<OrderPaymentRepository>()),
+      // «بانتظار المراجعة» في «مراجعة وتسوية الدفعات» — الصفحة تملك الـCubit وتغلقه.
+      ..registerFactory<PaymentReviewQueueCubit>(
+        () => PaymentReviewQueueCubit(
+          getQueue: sl<GetPaymentReviewQueue>(),
+          reviewPayment: sl<ReviewOrderPayment>(),
+        ),
       )
       // «تسوية دفعة» — TREASURY-DESIGN §٢٣.
       ..registerLazySingleton<GetPaymentSettlementQueue>(
@@ -1124,7 +1129,6 @@ abstract final class Injector {
           reversePayment: sl<ReverseOrderPayment>(),
           writeOffBalance: sl<WriteOffOrderBalance>(),
           reviewPayment: sl<ReviewOrderPayment>(),
-          keepExcess: sl<KeepOrderExcess>(),
           getSettlementAccounts: sl<GetSettlementAccounts>(),
           settlePayments: sl<SettleOrderPayments>(),
           unsettlePayment: sl<UnsettleOrderPayment>(),

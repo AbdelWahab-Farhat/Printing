@@ -1,16 +1,27 @@
+import 'package:bloc_test/bloc_test.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
+import 'package:dayaa/features/orders/presentation/views/order_payments_page.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/overpayment_confirmation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
-/// «الزائد للزبون» on the phone — 100 handed over on 99.
+class _MockOrderPaymentsCubit extends MockCubit<OrderPaymentsState> implements OrderPaymentsCubit {}
+
+/// «الزائد إيراد» on the phone — 100 handed over on 99, and the dinar is the shop's at once.
 ///
-/// **The arithmetic is fixed-point and the wording lives in one place.** The excess is the
-/// figure somebody reads aloud to a customer, so it is asserted to the cent; and the question is
-/// asked the same way from the payments screen and the status screen.
+/// **The arithmetic is fixed-point and the wording lives in one place.** The excess is a figure
+/// somebody reads aloud, so it is asserted to the cent; and the question is asked the same way
+/// from the payments screen and the status screen. Since 2026-10-07 nothing is owed back to the
+/// customer, so no screen says so and no button decides it.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -72,12 +83,14 @@ void main() {
     // Act
     await tester.tap(find.text('سجّل'));
     await tester.pumpAndSettle();
-    final asked = find.textContaining('المبلغ يزيد على المتبقي بـ 1').evaluate().isNotEmpty;
+    final asked = find.textContaining('الزائد 1 يُسجَّل إيراداً').evaluate().isNotEmpty;
+    final saysOwed = find.textContaining('للزبون').evaluate().isNotEmpty;
     await tester.tap(find.byKey(const ValueKey('accept-overpayment')));
     await tester.pumpAndSettle();
 
     // Assert
     expect(asked, isTrue);
+    expect(saysOwed, isFalse);
     expect(answer, isTrue);
   });
 
@@ -105,8 +118,8 @@ void main() {
     expect(answer, isFalse);
   });
 
-  testWidgets('the order says what it owes the customer, apart from what it was paid', (tester) async {
-    // Arrange
+  testWidgets('the order never says it owes the customer, even with an excess from before', (tester) async {
+    // Arrange — طلبيةٌ حملت زائداً قبل ٢٠٢٦-١٠-٠٧ ولم تُحسب بعدُ من جديد.
     const summary = PaymentSummary(
       grandTotal: '99.00',
       paidAmount: '99.00',
@@ -120,25 +133,82 @@ void main() {
     await tester.pumpWidget(host(const SingleChildScrollView(child: OrderMoneyRow(summary: summary))));
 
     // Assert
-    expect(find.byKey(const ValueKey('excess-line')), findsOneWidget);
-    expect(find.textContaining('زائد للزبون'), findsOneWidget);
+    expect(find.byKey(const ValueKey('excess-line')), findsNothing);
+    expect(find.textContaining('زائد للزبون'), findsNothing);
   });
 
-  testWidgets('an order holding no excess draws no such line', (tester) async {
-    // Arrange
-    const summary = PaymentSummary(
-      grandTotal: '99.00',
-      paidAmount: '99.00',
-      remainingAmount: '0.00',
-      paymentStatus: PaymentStatus.paid,
-      paymentStatusLabel: 'مدفوعة بالكامل',
-    );
+  group('the payments screen', () {
+    late _MockOrderPaymentsCubit cubit;
 
-    // Act
-    await tester.pumpWidget(host(const SingleChildScrollView(child: OrderMoneyRow(summary: summary))));
+    setUp(() async {
+      await Injector.reset();
+      cubit = _MockOrderPaymentsCubit();
+      when(() => cubit.load()).thenAnswer((_) async {});
+      sl
+        ..registerFactoryParam<OrderPaymentsCubit, int, void>((_, _) => cubit)
+        ..registerSingleton<Session>(
+          Session()
+            ..adopt(
+              AuthUser(
+                id: 1,
+                name: 'فرحات',
+                phone: '0911234567',
+                permissions: [for (final permission in AppPermission.values) permission.wire],
+              ),
+            ),
+        );
+    });
 
-    // Assert
-    expect(find.byKey(const ValueKey('excess-line')), findsNothing);
+    tearDown(Injector.reset);
+
+    Future<void> open(WidgetTester tester, {required String excessOnOrder}) async {
+      final ledger = OrderLedger(
+        payments: const [
+          OrderPayment(
+            id: 1,
+            orderId: 7,
+            type: OrderPaymentType.payment,
+            typeLabel: 'دفعة',
+            amount: '140.00',
+            excessAmount: '5.00',
+            method: PaymentMethod.cash,
+            methodLabel: 'كاش',
+          ),
+        ],
+        summary: PaymentSummary(
+          grandTotal: '185.00',
+          paidAmount: '185.00',
+          excessAmount: excessOnOrder,
+          remainingAmount: '0.00',
+          paymentStatus: PaymentStatus.paid,
+          paymentStatusLabel: 'مدفوعة بالكامل',
+        ),
+      );
+      when(() => cubit.state).thenReturn(OrderPaymentsState.loaded(ledger: ledger));
+
+      await tester.pumpWidget(host(const OrderPaymentsPage(orderId: 7, orderCode: '1294')));
+      await tester.pump();
+    }
+
+    testWidgets('the row that carried an excess calls it revenue', (tester) async {
+      // Act
+      await open(tester, excessOnOrder: '0.00');
+
+      // Assert
+      expect(find.text('منها زائد 5 د.ل · إيراد'), findsOneWidget);
+      expect(find.textContaining('زائد للزبون'), findsNothing);
+    });
+
+    testWidgets('there is no button that decides the excess, even for somebody holding everything', (
+      tester,
+    ) async {
+      // Act — حتى طلبيةٌ تحمل زائداً من قبل القرار.
+      await open(tester, excessOnOrder: '5.00');
+
+      // Assert
+      expect(find.text('اعتبار الزائد إيراداً'), findsNothing);
+      expect(find.text('تسجيل دفعة'), findsOneWidget);
+    });
   });
 
   test('«مدفوعة بالزيادة» can be filtered by now', () {

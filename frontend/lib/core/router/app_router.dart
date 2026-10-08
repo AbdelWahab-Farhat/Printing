@@ -697,12 +697,16 @@ abstract final class AppRouter {
         path: Routes.treasury,
         builder: (context, state) => const TreasuryPage(),
       ),
-      // Guarded here as well as on the home shortcut, so a deep link cannot reach a screen whose
-      // every request answers 403.
+      // «مراجعة وتسوية الدفعات» — guarded here as well as on its card in «حالات الدفع», so a deep
+      // link cannot reach a screen whose every request answers 403. Either grant opens it: the
+      // page shows each person the tabs their grants allow.
       GoRoute(
         path: Routes.paymentSettlement,
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.settleOrderPayments) ? null : Routes.home,
+            sl<Session>().can(AppPermission.reviewOrderPayments) ||
+                sl<Session>().can(AppPermission.settleOrderPayments)
+            ? null
+            : Routes.home,
         builder: (context, state) => const PaymentSettlementPage(),
       ),
       GoRoute(

@@ -1,82 +1,177 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_tab_bar.dart';
-import 'package:dayaa/core/widgets/app_text_field.dart';
-import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
-import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_settlement_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/payment_queue_filters.dart';
+import 'package:dayaa/features/orders/presentation/widgets/payment_review_queue_tab.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_settlement_line.dart';
 import 'package:dayaa/features/orders/presentation/widgets/settle_payments_sheet.dart';
-import 'package:dayaa/features/orders/presentation/widgets/settlement_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «تسوية الدفعات» — opened from «المالية» in the drawer. TREASURY-DESIGN §٢٣.
+/// «مراجعة وتسوية الدفعات» — opened from its card under «حالات الدفع» on the home screen.
+/// TREASURY-DESIGN §٢٣.
 ///
-/// **The money moves when it really arrives, not when the order is closed.** Nawris pays a week
-/// of parcels in one transfer, a customer's transfer lands in «مصرف علي» days before the order is
-/// settled — this page carries each payment's money to where it really is, one at a time or a
-/// whole transfer's worth together, and takes it back when somebody got it wrong.
+/// **تبويبان، والعددُ في اسم كلٍّ منهما** — قرار صاحب العمل ٢٠٢٦-١٠-٠٨: «تحتاج مراجعة» لمن يحمل
+/// `orders.payments.review`، و«تحتاج تسوية» لمن يحمل `orders.payments.settle`. تبويبٌ واحد يُرسم
+/// بلا شريط، كـ«المالية».
 ///
-/// **Two tabs, drawn and swiped like المخزون's** ([AppTabBar] over a [TabBarView]): «بانتظار
-/// التسوية» — money still where it landed, oldest first — and «مسوّاة», newest first, each with
-/// its «تراجع». Each tab is its own list with its own Cubit, so its filters, search and scroll
-/// survive a swipe to the other and back.
+/// **في «تحتاج تسوية» مفتاحٌ: «بانتظار التسوية» / «مسوّاة»** — قائمتان بـCubit لكلٍّ منهما، فيحتفظ
+/// كلٌّ بفلاتره وبحثه وموضعه حين يُبدَّل المفتاح. الأولى تُنشأ مع الصفحة لأنّ اسم التبويب يقرأ عددها؛
+/// والثانية حين تُفتح أوّل مرة.
+///
+/// **والفلاتر فوق الصفوف وتمرّ معها** ([PaymentQueueFilters] في `PagedListView.header`): البحث،
+/// وأزرار الفترة على «الكل»، و«من» / «إلى» والحساب أو النوع في الفلتر المتقدّم.
 class PaymentSettlementPage extends StatelessWidget {
   const PaymentSettlementPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('تسوية الدفعات')),
-      body: DefaultTabController(
-        length: SettlementState.values.length,
-        child: Column(
-          children: [
-            AppTabBar(labels: [for (final tab in SettlementState.values) tab.label]),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  for (final tab in SettlementState.values) _KeptAlive(child: _SettlementTab(tab: tab)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    final session = sl<Session>();
+    final canReview = session.can(AppPermission.reviewOrderPayments);
+    final canSettle = session.can(AppPermission.settleOrderPayments);
+
+    // The route lets nobody in who holds neither; this keeps a stray deep link from building a
+    // provider list with nothing in it.
+    if (!canReview && !canSettle) {
+      return Scaffold(appBar: AppBar(title: const Text('مراجعة وتسوية الدفعات')));
+    }
+
+    return MultiBlocProvider(
+      providers: [
+        if (canReview) BlocProvider<PaymentReviewQueueCubit>(create: (_) => sl<PaymentReviewQueueCubit>()..load()),
+        if (canSettle)
+          BlocProvider<PaymentSettlementCubit>(
+            create: (_) => sl<PaymentSettlementCubit>(param1: SettlementState.pending)..start(),
+          ),
+      ],
+      child: _Desk(canReview: canReview, canSettle: canSettle),
     );
   }
 }
 
-/// One tab: its own Cubit, asking the server for one of the two lists.
-class _SettlementTab extends StatelessWidget {
-  const _SettlementTab({required this.tab});
+class _Desk extends StatelessWidget {
+  const _Desk({required this.canReview, required this.canSettle});
 
-  final SettlementState tab;
+  final bool canReview;
+  final bool canSettle;
+
+  /// «تحتاج مراجعة (٥)» — the count once the server has answered, and only when it is not zero.
+  static String _named(String name, int? count) => count == null || count == 0 ? name : '$name ($count)';
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<PaymentSettlementCubit>(
-      create: (_) => sl<PaymentSettlementCubit>(param1: tab)..start(),
-      child: const _SettlementList(),
+    // Watched only where the tab exists — reading a Cubit nobody provided would throw.
+    final waitingReview = canReview ? context.select((PaymentReviewQueueCubit c) => c.waiting) : null;
+    final waitingSettle = canSettle ? context.select((PaymentSettlementCubit c) => c.count) : null;
+
+    final tabs = <(String, Widget)>[
+      if (canReview) (_named('تحتاج مراجعة', waitingReview), const _KeptAlive(child: PaymentReviewQueueTab())),
+      if (canSettle) (_named('تحتاج تسوية', waitingSettle), const _KeptAlive(child: _SettlementTab())),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('مراجعة وتسوية الدفعات')),
+      body: switch (tabs) {
+        [(_, final only)] => only,
+        _ => DefaultTabController(
+          length: tabs.length,
+          child: Column(
+            children: [
+              AppTabBar(labels: [for (final (label, _) in tabs) label]),
+              Expanded(child: TabBarView(children: [for (final (_, body) in tabs) body])),
+            ],
+          ),
+        ),
+      },
+    );
+  }
+}
+
+/// «تحتاج تسوية»: «بانتظار التسوية» and «مسوّاة» behind one switch at the top of each list.
+class _SettlementTab extends StatefulWidget {
+  const _SettlementTab();
+
+  @override
+  State<_SettlementTab> createState() => _SettlementTabState();
+}
+
+class _SettlementTabState extends State<_SettlementTab> {
+  SettlementState _shown = SettlementState.pending;
+
+  /// The settled list is built — and asks the server — the first time it is shown, not before.
+  bool _settledOpened = false;
+
+  void _show(SettlementState value) => setState(() {
+    _shown = value;
+    if (value == SettlementState.settled) _settledOpened = true;
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final toggle = _ListSwitch(shown: _shown, onChanged: _show);
+
+    // Both kept mounted, so each list's filters, search and scroll survive the switch.
+    return IndexedStack(
+      index: _shown.index,
+      children: [
+        _SettlementList(top: toggle),
+        if (_settledOpened)
+          BlocProvider<PaymentSettlementCubit>(
+            create: (_) => sl<PaymentSettlementCubit>(param1: SettlementState.settled)..start(),
+            child: _SettlementList(top: toggle),
+          )
+        else
+          const SizedBox.shrink(),
+      ],
+    );
+  }
+}
+
+/// «بانتظار التسوية» | «مسوّاة» — the app's segmented control, the full width like every field
+/// under it.
+class _ListSwitch extends StatelessWidget {
+  const _ListSwitch({required this.shown, required this.onChanged});
+
+  final SettlementState shown;
+  final ValueChanged<SettlementState> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<SettlementState>(
+      key: const ValueKey('settlement-switch'),
+      segments: [
+        for (final state in SettlementState.values)
+          ButtonSegment<SettlementState>(value: state, label: Text(state.label)),
+      ],
+      selected: {shown},
+      showSelectedIcon: false,
+      expandedInsets: EdgeInsets.zero,
+      onSelectionChanged: (choice) => onChanged(choice.first),
     );
   }
 }
 
 class _SettlementList extends StatefulWidget {
-  const _SettlementList();
+  const _SettlementList({required this.top});
+
+  /// The switch between the two lists, drawn at the top of the header.
+  final Widget top;
 
   @override
   State<_SettlementList> createState() => _SettlementListState();
@@ -108,11 +203,17 @@ class _SettlementListState extends State<_SettlementList> {
     return BlocBuilder<PaymentSettlementCubit, PaymentSettlementState>(
       builder: (context, state) => Column(
         children: [
-          _Filters(onRefilter: _refilter),
-          _Summary(cubit: _cubit),
           Expanded(
             child: PagedListView<OrderPayment>(
               state: state,
+              header: PaymentQueueFilters(
+                top: widget.top,
+                period: _cubit.period,
+                onPeriod: (period) => unawaited(_refilter(() => _cubit.showPeriod(period))),
+                onSearch: _cubit.search,
+                isAdvancedActive: _cubit.hasAdvanced,
+                onAdvanced: () => unawaited(_advanced()),
+              ),
               emptyMessage: _cubit.tab == SettlementState.pending
                   ? 'لا دفعات بانتظار التسوية'
                   : 'لا دفعات مسوّاة في هذه الفترة',
@@ -144,6 +245,27 @@ class _SettlementListState extends State<_SettlementList> {
             ),
         ],
       ),
+    );
+  }
+
+  /// «من» / «إلى» and where the money waits. The accounts are asked again if the first answer
+  /// never came, so the field is never empty for want of a retry.
+  Future<void> _advanced() async {
+    if (_cubit.accounts.value == null) await _cubit.loadAccounts();
+
+    if (!mounted) return;
+
+    final range = _cubit.customRange;
+    final chosen = await showPaymentAdvancedFilter(
+      context: context,
+      current: PaymentAdvancedFilter(from: range?.from, to: range?.to, accountId: _cubit.accountId),
+      accounts: _cubit.accounts.value?.sources ?? const <SettlementAccount>[],
+    );
+
+    if (chosen == null || !mounted) return;
+
+    await _refilter(
+      () => _cubit.applyAdvanced(from: chosen.from, to: chosen.to, accountId: chosen.accountId),
     );
   }
 
@@ -204,174 +326,6 @@ class _SettlementListState extends State<_SettlementList> {
     }
 
     context.showSuccess('أُلغيت تسوية الدفعة');
-  }
-}
-
-/// The period, the search box, and where the money waits.
-class _Filters extends StatelessWidget {
-  const _Filters({required this.onRefilter});
-
-  final Future<void> Function(Future<void> Function() change) onRefilter;
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<PaymentSettlementCubit>();
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Wraps rather than scrolls: a chip pushed off the edge — «من – إلى» on a phone — is a
-          // filter nobody finds.
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              for (final period in SettlementPeriod.values)
-                FilterOptionChip(
-                  key: ValueKey('period-${period.name}'),
-                  label: _periodLabel(cubit, period),
-                  isSelected: cubit.period == period,
-                  onTap: () => unawaited(_choosePeriod(context, period)),
-                ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          SearchField(
-            key: const ValueKey('settlement-search'),
-            hint: 'ابحث برقم الطلبية أو اسم الزبون',
-            onChanged: cubit.search,
-          ),
-          SizedBox(height: 8.h),
-          ValueListenableBuilder<SettlementAccounts?>(
-            valueListenable: cubit.accounts,
-            builder: (context, accounts, _) => _AccountField(
-              accounts: accounts?.sources ?? const <SettlementAccount>[],
-              selectedId: cubit.accountId,
-              onChosen: (id) => unawaited(onRefilter(() => cubit.showAccount(id))),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// «من – إلى» names its two days once they are chosen.
-  static String _periodLabel(PaymentSettlementCubit cubit, SettlementPeriod period) {
-    final range = cubit.customRange;
-
-    if (period != SettlementPeriod.custom || range == null) return period.label;
-
-    return '${range.from.dayLabel} – ${range.to.dayLabel}';
-  }
-
-  Future<void> _choosePeriod(BuildContext context, SettlementPeriod period) async {
-    final cubit = context.read<PaymentSettlementCubit>();
-
-    if (period != SettlementPeriod.custom) {
-      return onRefilter(() => cubit.showPeriod(period));
-    }
-
-    final now = DateTime.now();
-    final current = cubit.customRange;
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2024),
-      lastDate: now,
-      initialDateRange: current == null ? null : DateTimeRange(start: current.from, end: current.to),
-    );
-
-    if (picked == null) return;
-
-    await onRefilter(
-      () => cubit.showPeriod(SettlementPeriod.custom, between: (from: picked.start, to: picked.end)),
-    );
-  }
-}
-
-/// «الحساب: النورس» — a field that opens a searchable list of where payments wait, with a cross
-/// to go back to every account. The owner's choice over a row of chips (2026-10-07).
-class _AccountField extends StatelessWidget {
-  const _AccountField({
-    required this.accounts,
-    required this.selectedId,
-    required this.onChosen,
-  });
-
-  final List<SettlementAccount> accounts;
-  final int? selectedId;
-  final ValueChanged<int?> onChosen;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = accounts.where((a) => a.id == selectedId).firstOrNull;
-
-    return AppTextField(
-      // Keyed on the choice: the field shows a value it was handed, and a new choice is a new
-      // value rather than an edit to the old one.
-      key: ValueKey('settlement-account-${selectedId ?? 'all'}'),
-      initialValue: selected?.name ?? 'كل الحسابات',
-      label: 'الحساب',
-      prefixIcon: AppIcons.treasury,
-      readOnly: true,
-      enabled: accounts.isNotEmpty,
-      suffix: selected == null
-          ? null
-          : IconButton(
-              tooltip: 'كل الحسابات',
-              onPressed: () => onChosen(null),
-              icon: Icon(AppIcons.close),
-            ),
-      onTap: () async {
-        final choice = await showSettlementAccountPicker(
-          context: context,
-          accounts: accounts,
-          selectedId: selectedId,
-        );
-
-        if (choice != null) onChosen(choice.accountId);
-      },
-    );
-  }
-}
-
-/// «١٢ دفعة · ٣٬٤٠٠٫٠٠» — the server's count and total for everything that matched.
-class _Summary extends StatelessWidget {
-  const _Summary({required this.cubit});
-
-  final PaymentSettlementCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    final count = cubit.count;
-
-    if (count == null) return SizedBox(height: 8.h);
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 6.h),
-      child: Row(
-        children: [
-          Icon(
-            cubit.tab == SettlementState.pending ? AppIcons.transfer : AppIcons.settled,
-            size: 18.sp,
-            color: context.colorScheme.tertiary,
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Text(
-              '${cubit.tab.label}: $count',
-              style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
-          Text(
-            cubit.amountTotal.grouped,
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
   }
 }
 

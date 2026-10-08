@@ -612,9 +612,6 @@ abstract final class OrderEndpoints {
   static String reversePayment(int orderId, int paymentId) =>
       '/orders/$orderId/payments/$paymentId/reverse';
 
-  /// «اعتبار الزائد إيراداً» — what the customer paid beyond the order is the shop's now.
-  static String keepExcess(int orderId) => '/orders/$orderId/payments/keep-excess';
-
   /// «مراجعة الدفعة» — a check, `{reviewed: true|false}`. The one update a
   /// ledger entry takes: the money on it never changes.
   static String reviewPayment(int orderId, int paymentId) =>

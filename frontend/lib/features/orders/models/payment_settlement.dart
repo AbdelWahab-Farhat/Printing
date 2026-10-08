@@ -15,10 +15,12 @@ enum SettlementState {
   final String label;
 }
 
-/// The page's period chips.
+/// The period a list of «مراجعة وتسوية الدفعات» shows.
 ///
 /// **The week starts on Saturday** — the shop's week, the owner's choice — so «هذا الأسبوع» on a
 /// Tuesday is Saturday to today.
+///
+/// [custom] is no chip: it is «من» / «إلى» from the advanced filter (2026-10-08).
 enum SettlementPeriod {
   today('اليوم'),
   thisWeek('هذا الأسبوع'),
@@ -29,6 +31,9 @@ enum SettlementPeriod {
   const SettlementPeriod(this.label);
 
   final String label;
+
+  /// The chips under the search box, in this order — «الكل» first, and picked to begin with.
+  static const List<SettlementPeriod> chips = [all, today, thisWeek, thisMonth];
 
   /// The first and last day, or null for «الكل». «من – إلى» knows no dates here and answers
   /// null — the Cubit holds them. [now] is passed so the week can be tested without a clock.

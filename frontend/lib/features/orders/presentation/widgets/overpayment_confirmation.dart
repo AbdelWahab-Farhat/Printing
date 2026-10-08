@@ -21,20 +21,19 @@ String? overpaymentExcess(String typed, String owed) {
   return beyond > BigInt.zero ? fromThousandths(beyond, scale: 2) : null;
 }
 
-/// «المبلغ يزيد على المتبقي بـ ١ — تسجيل الزائد للزبون؟» — and true only on a yes.
+/// «المبلغ يزيد على المتبقي — الزائد ١ يُسجَّل إيراداً» — and true only on a yes.
 ///
 /// **The one place this question is worded**, so the payments screen and the status screen ask
 /// it the same way. The server refuses an amount beyond the debt unless this was answered, which
-/// is what still catches 500 typed for 50; a yes takes the whole amount and owes the part beyond
-/// back to the customer, refundable or kept later.
+/// is what still catches 500 typed for 50; a yes takes the whole amount, and the part beyond is
+/// the shop's revenue at once — nothing is owed back to the customer (2026-10-07).
 Future<bool> confirmOverpayment(BuildContext context, {required String excess}) async {
   final answer = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('المبلغ يزيد على المتبقي'),
       content: Text(
-        'المبلغ يزيد على المتبقي بـ ${excess.grouped} — تسجيل الزائد للزبون؟\n'
-        'يُسجَّل المبلغ كاملاً، ويبقى الزائد للزبون حتى يُردّ له أو يُعتبر إيراداً.',
+        'الزائد ${excess.grouped} يُسجَّل إيراداً',
         style: dialogContext.textTheme.bodyMedium,
       ),
       actions: [
@@ -42,7 +41,7 @@ Future<bool> confirmOverpayment(BuildContext context, {required String excess}) 
         TextButton(
           key: const ValueKey('accept-overpayment'),
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('تسجيل الزائد'),
+          child: const Text('تسجيل'),
         ),
       ],
     ),
