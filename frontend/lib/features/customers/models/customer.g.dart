@@ -12,6 +12,14 @@ _Customer _$CustomerFromJson(Map<String, dynamic> json) => _Customer(
   name: json['name'] as String,
   phone: json['phone'] as String,
   isActive: json['is_active'] as bool,
+  cityId: (json['city_id'] as num?)?.toInt(),
+  city: json['city'] == null
+      ? null
+      : City.fromJson(json['city'] as Map<String, dynamic>),
+  regionId: (json['region_id'] as num?)?.toInt(),
+  region: json['region'] == null
+      ? null
+      : Region.fromJson(json['region'] as Map<String, dynamic>),
   shops: (json['shops'] as List<dynamic>?)
       ?.map((e) => CustomerShop.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -33,6 +41,10 @@ Map<String, dynamic> _$CustomerToJson(_Customer instance) => <String, dynamic>{
   'name': instance.name,
   'phone': instance.phone,
   'is_active': instance.isActive,
+  'city_id': instance.cityId,
+  'city': instance.city?.toJson(),
+  'region_id': instance.regionId,
+  'region': instance.region?.toJson(),
   'shops': instance.shops?.map((e) => e.toJson()).toList(),
   'orders_count': instance.ordersCount,
   'last_order_at': instance.lastOrderAt?.toIso8601String(),

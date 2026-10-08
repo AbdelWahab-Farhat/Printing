@@ -40,10 +40,15 @@ class CreateCustomer {
   Future<Either<Failure, Customer>> call({
     required String name,
     required String phone,
+    int? cityId,
+    int? regionId,
     List<ShopInput> shops = const [],
   }) {
     return _repository.create(
       NewCustomer(
+        // Picked off the delivery map, so already ids — nothing to normalise.
+        cityId: cityId,
+        regionId: cityId == null ? null : regionId,
         // A name pasted out of a message carries whitespace, and the customer it creates is one
         // nobody finds again by searching for it.
         name: name.trim(),

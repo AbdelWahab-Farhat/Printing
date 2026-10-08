@@ -8,6 +8,7 @@ use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
 use App\Domain\Delivery\Models\City;
+use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -353,6 +354,23 @@ class CustomerAuthTest extends TestCase
 
         // Assert
         $response->assertOk()->assertJsonPath('data.shop', null);
+    }
+
+    public function test_me_carries_the_default_address_staff_recorded(): void
+    {
+        // Arrange — عميلٌ بلا متجر تبدأ طلبيته من عنوانه، والتطبيق يقرؤه من هنا.
+        $customer = $this->registered();
+        $city = City::factory()->create(['name' => 'طرابلس']);
+        $region = Region::factory()->create(['city_id' => $city->id]);
+        $customer->update(['city_id' => $city->id, 'region_id' => $region->id]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($customer))->getJson('/api/v1/client/auth/me');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.city_id', $city->id)
+            ->assertJsonPath('data.region_id', $region->id);
     }
 
     /**

@@ -25,6 +25,15 @@ abstract class Customer with _$Customer {
     /// still exists. There is no destroy endpoint to call.
     @JsonKey(name: 'is_active') required bool isActive,
 
+    /// عنوان العميل — where «طلبية جديدة» starts when no shop is chosen. Optional as a whole,
+    /// and the region only ever beside the city it is in. `city` is the row, so the order form
+    /// can price the delivery without a second read; it is null while [cityId] is not when the
+    /// city has since been deleted — a default nobody can order to.
+    @JsonKey(name: 'city_id') int? cityId,
+    City? city,
+    @JsonKey(name: 'region_id') int? regionId,
+    Region? region,
+
     /// Absent — not empty — when the API did not load them. `whenLoaded` on the backend means
     /// a missing key rather than `[]`, and "we did not ask" is a different fact from "this
     /// customer has none".
@@ -59,6 +68,17 @@ abstract class Customer with _$Customer {
   /// True only when shops were loaded *and* there is at least one — a screen that shows
   /// "لا توجد محلات" must not say it about a customer whose shops were simply not requested.
   bool get hasShops => (shops ?? const []).isNotEmpty;
+
+  /// The default address in one line: «طرابلس · سوق الجمعة». Null when there is none, the
+  /// same contract [CustomerShop.placeLabel] keeps.
+  String? get addressLabel {
+    final parts = [
+      if (city != null) city!.name,
+      if (region != null) region!.name,
+    ];
+
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
 
   /// How long it has been since this customer last ordered, in words — «منذ شهرين».
   ///

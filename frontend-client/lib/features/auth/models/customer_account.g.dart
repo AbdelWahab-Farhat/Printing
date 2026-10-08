@@ -16,6 +16,8 @@ _CustomerAccount _$CustomerAccountFromJson(Map<String, dynamic> json) =>
       shop: json['shop'] == null
           ? null
           : CustomerShop.fromJson(json['shop'] as Map<String, dynamic>),
+      cityId: (json['city_id'] as num?)?.toInt(),
+      regionId: (json['region_id'] as num?)?.toInt(),
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),
@@ -29,6 +31,8 @@ Map<String, dynamic> _$CustomerAccountToJson(_CustomerAccount instance) =>
       'code': instance.code,
       'is_active': instance.isActive,
       'shop': instance.shop?.toJson(),
+      'city_id': instance.cityId,
+      'region_id': instance.regionId,
       'created_at': instance.createdAt?.toIso8601String(),
     };
 

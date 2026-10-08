@@ -12,6 +12,7 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/orders/models/default_destination.dart';
 import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
@@ -105,6 +106,11 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// The customer arrives asynchronously, and this screen rebuilds on every keystroke — without
   /// this the prefill would run again on each rebuild and overwrite the number being typed.
   bool _phoneSeeded = false;
+
+  /// Whether the shop chip and the destination have been filled from the customer yet — the
+  /// same guard as [_phoneSeeded], for the same reason: a city the clerk changed must not be
+  /// put back under them on the next rebuild.
+  bool _destinationSeeded = false;
 
   City? _city;
   Region? _region;
@@ -399,10 +405,49 @@ class _NewOrderViewState extends State<_NewOrderView> {
     _recipientPhone.text = customer.phone;
   }
 
+  /// Starts the form where the customer's record says their orders go — see
+  /// [defaultDestinationFor]. Once, like the phone.
+  ///
+  /// Waits for a customer whose shops were loaded: that is the response that also carries the
+  /// default address, and a [widget.fallback] handed over without them would seed an empty form
+  /// and then, guarded, never fill it.
+  void _seedDestination(Customer customer) {
+    if (_destinationSeeded || customer.shops == null) return;
+
+    _destinationSeeded = true;
+
+    final shop = initialShopFor(customer);
+    final destination = defaultDestinationFor(customer, shop);
+
+    _shopId = shop?.id;
+    _city = destination.city;
+    _region = destination.region;
+  }
+
+  /// A shop chip — or «بدون تحديد» — tapped.
+  ///
+  /// **Tapping one is choosing where the order goes**, so the tiles move to that shop's place, or
+  /// back to the customer's own address for «بدون تحديد». A source that names no place leaves
+  /// the tiles as they are: clearing a city somebody picked by hand would be the form inventing
+  /// a decision nobody made.
+  void _chooseShop(Customer customer, CustomerShop? shop) {
+    final destination = defaultDestinationFor(customer, shop);
+
+    setState(() {
+      _shopId = shop?.id;
+      if (destination.city != null) {
+        _city = destination.city;
+        _region = destination.region;
+      }
+    });
+    context.read<TakeOrderCubit>().clearFailure();
+  }
+
   Widget _body(Customer customer, TakeOrderState submission) {
     final shops = customer.shops ?? const <CustomerShop>[];
 
     _seedPhone(customer);
+    _seedDestination(customer);
 
     return Column(
       children: [
@@ -414,7 +459,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
               if (shops.isNotEmpty) ...[
                 SizedBox(height: 14.h),
-                _Section(title: 'المحل', child: _shops(shops)),
+                _Section(title: 'المحل', child: _shops(customer, shops)),
               ],
 
               // Where it goes and who answers the phone for it, together: they are the two
@@ -553,7 +598,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
   }
 
   /// Which branch the bags are for. Optional, and absent for a customer with no shops.
-  Widget _shops(List<CustomerShop> shops) {
+  Widget _shops(Customer customer, List<CustomerShop> shops) {
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
@@ -561,13 +606,13 @@ class _NewOrderViewState extends State<_NewOrderView> {
         ChoiceChip(
           label: const Text('بدون تحديد'),
           selected: _shopId == null,
-          onSelected: (_) => setState(() => _shopId = null),
+          onSelected: (_) => _chooseShop(customer, null),
         ),
         for (final shop in shops)
           ChoiceChip(
             label: Text(shop.name),
             selected: _shopId == shop.id,
-            onSelected: (_) => setState(() => _shopId = shop.id),
+            onSelected: (_) => _chooseShop(customer, shop),
           ),
       ],
     );

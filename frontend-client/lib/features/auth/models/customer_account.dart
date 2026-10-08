@@ -43,6 +43,11 @@ abstract class CustomerAccount with _$CustomerAccount {
     /// sign-in screen would pay for.
     CustomerShop? shop,
 
+    /// عنوان العميل كما سجّله الموظفون — حيث تبدأ الطلبية حين لا متجر له. معرِّفان فقط: خريطة المدن
+    /// ومناطقها في يد التطبيق أصلاً، ومنها يُرسم الاسم.
+    @JsonKey(name: 'city_id') int? cityId,
+    @JsonKey(name: 'region_id') int? regionId,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _CustomerAccount;
 

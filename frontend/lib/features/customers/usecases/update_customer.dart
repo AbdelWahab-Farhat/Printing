@@ -27,11 +27,15 @@ class UpdateCustomer {
     required int customerId,
     required String name,
     required String phone,
+    int? cityId,
+    int? regionId,
     List<ShopInput> shops = const [],
   }) {
     return _repository.update(
       customerId,
       NewCustomer(
+        cityId: cityId,
+        regionId: cityId == null ? null : regionId,
         name: name.trim(),
         phone: Validators.toWesternDigits(phone.trim()),
         // Always present, even when empty — see the note above. This is the single line that

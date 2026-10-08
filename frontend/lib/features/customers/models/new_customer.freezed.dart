@@ -14,7 +14,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NewCustomer {
 
- String get name; String get phone;/// The places this customer sells from.
+ String get name; String get phone;/// عنوان العميل — where «طلبية جديدة» starts when no shop is chosen.
+///
+/// **Sent even when null**, like a shop's region: the form shows the address whole, so an
+/// omitted key would mean «اتركه كما هو» on the update endpoint and an address the user
+/// cleared would quietly survive the save.
+@JsonKey(name: 'city_id') int? get cityId;@JsonKey(name: 'region_id') int? get regionId;/// The places this customer sells from.
 ///
 /// Omitted from the body entirely when empty rather than sent as `[]`: to this API an empty
 /// array is a *statement* ("this customer has no shops"), and on the update endpoint the
@@ -33,16 +38,16 @@ $NewCustomerCopyWith<NewCustomer> get copyWith => _$NewCustomerCopyWithImpl<NewC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&const DeepCollectionEquality().equals(other.shops, shops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other.shops, shops));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,phone,const DeepCollectionEquality().hash(shops));
+int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(shops));
 
 @override
 String toString() {
-  return 'NewCustomer(name: $name, phone: $phone, shops: $shops)';
+  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops)';
 }
 
 
@@ -53,7 +58,7 @@ abstract mixin class $NewCustomerCopyWith<$Res>  {
   factory $NewCustomerCopyWith(NewCustomer value, $Res Function(NewCustomer) _then) = _$NewCustomerCopyWithImpl;
 @useResult
 $Res call({
- String name, String phone,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
+ String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
 });
 
 
@@ -70,11 +75,13 @@ class _$NewCustomerCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? phone = null,Object? shops = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String,shops: freezed == shops ? _self.shops : shops // ignore: cast_nullable_to_non_nullable
+as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,shops: freezed == shops ? _self.shops : shops // ignore: cast_nullable_to_non_nullable
 as List<NewCustomerShop>?,
   ));
 }
@@ -160,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewCustomer() when $default != null:
-return $default(_that.name,_that.phone,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
   return orElse();
 
 }
@@ -181,10 +188,10 @@ return $default(_that.name,_that.phone,_that.shops);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomer():
-return $default(_that.name,_that.phone,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +208,10 @@ return $default(_that.name,_that.phone,_that.shops);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String phone, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomer() when $default != null:
-return $default(_that.name,_that.phone,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
   return null;
 
 }
@@ -216,11 +223,18 @@ return $default(_that.name,_that.phone,_that.shops);case _:
 @JsonSerializable(createFactory: false)
 
 class _NewCustomer implements NewCustomer {
-  const _NewCustomer({required this.name, required this.phone, @JsonKey(includeIfNull: false) final  List<NewCustomerShop>? shops}): _shops = shops;
+  const _NewCustomer({required this.name, required this.phone, @JsonKey(name: 'city_id') this.cityId, @JsonKey(name: 'region_id') this.regionId, @JsonKey(includeIfNull: false) final  List<NewCustomerShop>? shops}): _shops = shops;
   
 
 @override final  String name;
 @override final  String phone;
+/// عنوان العميل — where «طلبية جديدة» starts when no shop is chosen.
+///
+/// **Sent even when null**, like a shop's region: the form shows the address whole, so an
+/// omitted key would mean «اتركه كما هو» on the update endpoint and an address the user
+/// cleared would quietly survive the save.
+@override@JsonKey(name: 'city_id') final  int? cityId;
+@override@JsonKey(name: 'region_id') final  int? regionId;
 /// The places this customer sells from.
 ///
 /// Omitted from the body entirely when empty rather than sent as `[]`: to this API an empty
@@ -256,16 +270,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&const DeepCollectionEquality().equals(other._shops, _shops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._shops, _shops));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,phone,const DeepCollectionEquality().hash(_shops));
+int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(_shops));
 
 @override
 String toString() {
-  return 'NewCustomer(name: $name, phone: $phone, shops: $shops)';
+  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops)';
 }
 
 
@@ -276,7 +290,7 @@ abstract mixin class _$NewCustomerCopyWith<$Res> implements $NewCustomerCopyWith
   factory _$NewCustomerCopyWith(_NewCustomer value, $Res Function(_NewCustomer) _then) = __$NewCustomerCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String phone,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
+ String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
 });
 
 
@@ -293,11 +307,13 @@ class __$NewCustomerCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? phone = null,Object? shops = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,}) {
   return _then(_NewCustomer(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String,shops: freezed == shops ? _self._shops : shops // ignore: cast_nullable_to_non_nullable
+as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
+as int?,shops: freezed == shops ? _self._shops : shops // ignore: cast_nullable_to_non_nullable
 as List<NewCustomerShop>?,
   ));
 }

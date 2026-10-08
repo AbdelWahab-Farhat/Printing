@@ -198,6 +198,70 @@ void main() {
     expect: () => const <AddCustomerState>[],
   );
 
+  // ─────────────────────────── the default address ───────────────────────────
+
+  test('the default address is sent as its city and region', () async {
+    // Arrange
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444', cityId: 3, regionId: 11);
+
+    // Assert
+    final json = sentCustomer().toJson();
+    expect(json['city_id'], 3);
+    expect(json['region_id'], 11);
+  });
+
+  test('no address still sends both keys, so clearing one takes effect', () async {
+    // Arrange — on the update endpoint an omitted `city_id` means «اتركه كما هو», and an
+    // address the user cleared in the form would quietly survive the save.
+    when(() => repository.update(any(), any())).thenAnswer((_) async => const Right(created));
+
+    // Act
+    await cubit.submit(customerId: 7, name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert
+    final sent = verify(() => repository.update(7, captureAny())).captured.last as NewCustomer;
+    final json = sent.toJson();
+    expect(json.containsKey('city_id'), isTrue);
+    expect(json['city_id'], isNull);
+    expect(json.containsKey('region_id'), isTrue);
+    expect(json['region_id'], isNull);
+  });
+
+  test('a region is never sent without its city', () async {
+    // Arrange
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444', regionId: 11);
+
+    // Assert
+    expect(sentCustomer().regionId, isNull);
+  });
+
+  test('the server\'s complaint about the address is offered under it', () async {
+    // Arrange
+    arrangeCreate(
+      const Left(
+        ServerFailure(
+          message: 'البيانات المدخلة غير صحيحة',
+          statusCode: 422,
+          fieldErrors: {
+            'region_id': ['المنطقة المختارة ليست ضمن المدينة المحددة'],
+          },
+        ),
+      ),
+    );
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444', cityId: 3, regionId: 99);
+
+    // Assert
+    expect(cubit.state.addressError, 'المنطقة المختارة ليست ضمن المدينة المحددة');
+  });
+
   // ─────────────────────────── the shops ───────────────────────────
 
   test('a customer added without shops mentions none at all', () async {

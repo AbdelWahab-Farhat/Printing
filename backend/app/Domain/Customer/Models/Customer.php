@@ -10,6 +10,8 @@ use App\Domain\Comment\Concerns\HasComments;
 use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Actions\AllocateCustomerIdentifier;
+use App\Domain\Delivery\Models\City;
+use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\User;
 use Database\Factories\CustomerFactory;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
@@ -50,7 +53,7 @@ use Laravel\Sanctum\HasApiTokens;
  * What keeps the two apart is the `customer` guard's provider in config/auth.php, not the token.
  */
 #[UseFactory(CustomerFactory::class)]
-#[Fillable(['name', 'phone', 'is_active'])]
+#[Fillable(['name', 'phone', 'city_id', 'region_id', 'is_active'])]
 #[Hidden(['password'])]
 class Customer extends Model implements Authenticatable, Commentable, HasAuditTrail
 {
@@ -73,7 +76,9 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
     }
 
     /**
-     * Everything {@see CustomerShopResource} renders about a shop.
+     * Everything {@see CustomerShopResource} renders about a shop — and the customer's own
+     * default address beside them, because every screen that shows the shops is one the order
+     * form's starting place is read from.
      *
      * Named once because five call sites load it — create, update, show, activation and the
      * list — and a relation added to the resource but forgotten at one of them is not a broken
@@ -81,7 +86,7 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
      *
      * @var list<string>
      */
-    public const SHOP_RELATIONS = ['shops.businessField', 'shops.city', 'shops.region'];
+    public const SHOP_RELATIONS = ['shops.businessField', 'shops.city', 'shops.region', 'city', 'region'];
 
     /**
      * @return array<string, string>
@@ -120,6 +125,30 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
     public function shops(): HasMany
     {
         return $this->hasMany(CustomerShop::class);
+    }
+
+    /**
+     * عنوان العميل: the city an order goes to when no shop is chosen and nobody says otherwise.
+     *
+     * A default the order form starts from, never a fact about an order — orders copy the name
+     * when they are taken. Resolves to null for a customer with no address, and for one left
+     * pointing at a city that has since been soft-deleted.
+     *
+     * @return BelongsTo<City, $this>
+     */
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
+
+    /**
+     * The neighbourhood of that default address, when it is known.
+     *
+     * @return BelongsTo<Region, $this>
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 
     /**

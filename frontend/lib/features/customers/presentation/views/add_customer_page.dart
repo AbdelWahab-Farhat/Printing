@@ -93,6 +93,10 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
   final _phone = TextEditingController();
   final _shops = <_ShopFields>[];
 
+  /// عنوان العميل as picked — chosen, never typed, so no controllers to dispose.
+  City? _city;
+  Region? _region;
+
   bool get _isEditing => widget.customer != null;
 
   @override
@@ -104,6 +108,10 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
 
     _name.text = customer.name;
     _phone.text = customer.phone;
+    _city = customer.city;
+    // Only beside the city it is in: a deleted city comes back as null, and a region alone
+    // would be sent as a pair the server refuses.
+    _region = customer.city == null ? null : customer.region;
 
     // Each existing shop keeps its id, which is what makes saving an *edit* rather than a
     // replacement: without it the server would delete all three and create three new ones,
@@ -156,6 +164,8 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
       customerId: widget.customer?.id,
       name: _name.text,
       phone: _phone.text,
+      cityId: _city?.id,
+      regionId: _region?.id,
       shops: [for (final shop in _shops) shop.toInput()],
     );
   }
@@ -197,7 +207,9 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                 // Field-level errors are rendered under their inputs, so showing them again in
                 // a snackbar would say the same thing twice. A complaint about a *shop* still
                 // needs the toast: that row may be scrolled off the screen.
-                if (state.nameError == null && state.phoneError == null) {
+                if (state.nameError == null &&
+                    state.phoneError == null &&
+                    state.addressError == null) {
                   context.showFailure(failure);
                 }
 
@@ -260,6 +272,20 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                       ),
                       SizedBox(height: 28.h),
 
+                      _AddressSection(
+                        city: _city,
+                        region: _region,
+                        errorText: state.addressError,
+                        onChanged: (city, region) {
+                          setState(() {
+                            _city = city;
+                            _region = region;
+                          });
+                          context.read<AddCustomerCubit>().clearFailure();
+                        },
+                      ),
+                      SizedBox(height: 28.h),
+
                       _ShopsSection(
                         shops: _shops,
                         state: state,
@@ -285,6 +311,128 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// العنوان — where «طلبية جديدة» starts for this customer when no shop is chosen.
+///
+/// **Optional, and not a [FormField].** Unlike a shop row there is nothing half-finished to
+/// refuse: no city is a whole answer, and a region is only offered once a city is chosen. The
+/// server's complaint, when there is one, is drawn under the tiles.
+///
+/// The office branches are offered, unlike on a shop: a customer who always collects from قرجي
+/// has that as their default as truly as a street has.
+class _AddressSection extends StatelessWidget {
+  const _AddressSection({
+    required this.city,
+    required this.region,
+    required this.errorText,
+    required this.onChanged,
+  });
+
+  final City? city;
+  final Region? region;
+  final String? errorText;
+  final void Function(City? city, Region? region) onChanged;
+
+  Future<void> _pickCity(BuildContext context) async {
+    final picked = await showCityPicker(context: context, selectedId: city?.id);
+    if (picked == null || picked.id == city?.id) return;
+
+    // The neighbourhood belonged to the previous city.
+    onChanged(picked, null);
+  }
+
+  Future<void> _pickRegion(BuildContext context) async {
+    final current = city;
+    if (current == null) {
+      context.showInfo('اختر المدينة أولاً');
+
+      return;
+    }
+
+    final picked = await showRegionPicker(
+      context: context,
+      cityId: current.id,
+      selectedId: region?.id,
+    );
+
+    if (picked != null) onChanged(current, picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final current = city;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(AppIcons.mapPin, size: 18.sp, color: scheme.onSurfaceVariant),
+            SizedBox(width: 8.w),
+            Text(
+              'العنوان',
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            // Taken back off the way it was put on — one tap — rather than by hunting for an
+            // empty entry in the city list.
+            if (current != null)
+              TextButton(
+                onPressed: () => onChanged(null, null),
+                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                child: const Text('مسح'),
+              )
+            else
+              Text(
+                'اختياري',
+                style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          'تبدأ منه الطلبيات الجديدة حين لا يُختار محل، ويبقى قابلاً للتعديل في كل طلبية.',
+          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        SizedBox(height: 12.h),
+        Row(
+          children: [
+            Expanded(
+              child: PlacePickerTile(
+                caption: 'المدينة',
+                value: current?.name ?? 'اختياري',
+                isChosen: current != null,
+                onTap: () => _pickCity(context),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              // Hidden only for a city *known* to have no neighbourhoods. `regionsCount` comes
+              // from the picker's list; the city an existing customer arrives with is not
+              // counted, and hiding the tile then would hide a region that is already chosen.
+              child: current?.regionsCount != 0
+                  ? PlacePickerTile(
+                      caption: 'المنطقة',
+                      value: region?.name ?? 'اختياري',
+                      isChosen: region != null,
+                      onTap: () => _pickRegion(context),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+        if (errorText case final error?) ...[
+          SizedBox(height: 6.h),
+          Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+        ],
+      ],
     );
   }
 }

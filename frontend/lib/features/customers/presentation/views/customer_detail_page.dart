@@ -330,6 +330,22 @@ class _Body extends StatelessWidget {
           SizedBox(height: 14.h),
         ],
 
+        // Only when there is one: every customer recorded before the address existed has none,
+        // and «لا يوجد عنوان» on all of them would be a screen full of a sentence nobody acts on.
+        if (customer.addressLabel case final address?) ...[
+          _Section(
+            title: 'العنوان',
+            child: _CopyRow(
+              icon: AppIcons.mapPin,
+              label: 'تبدأ منه الطلبيات الجديدة',
+              value: address,
+              copiedMessage: 'تم نسخ العنوان',
+              isLatin: false,
+            ),
+          ),
+          SizedBox(height: 14.h),
+        ],
+
         // Absent, not empty, when the API did not load them — «لا توجد محلات» about a customer
         // whose shops were simply not requested is a lie the model already refuses to tell.
         if (shops != null) _Shops(shops: shops),
@@ -590,6 +606,7 @@ class _ShopRow extends StatelessWidget {
             label: 'الموقع',
             value: place,
             copiedMessage: 'تم نسخ الموقع',
+            isLatin: false,
           ),
         ],
         if (shop.pageUrl case final url? when url.isNotEmpty) ...[
@@ -626,12 +643,17 @@ class _CopyRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.copiedMessage,
+    this.isLatin = true,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final String copiedMessage;
+
+  /// False for an Arabic value such as «طرابلس · سوق الجمعة»: forced left-to-right, its two
+  /// halves swap places on screen.
+  final bool isLatin;
 
   @override
   Widget build(BuildContext context) {
@@ -663,7 +685,7 @@ class _CopyRow extends StatelessWidget {
                     value,
                     // Latin runs — a phone number, a code, coordinates, a URL — read
                     // left-to-right even here.
-                    textDirection: TextDirection.ltr,
+                    textDirection: isLatin ? TextDirection.ltr : null,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),

@@ -104,6 +104,8 @@ final class AuditAttributeLabels
 
         'customer' => [
             'name' => 'اسم العميل',
+            'city_id' => 'مدينة العميل',
+            'region_id' => 'منطقة العميل',
         ],
         'customer_shop' => [
             'customer_id' => 'العميل',

@@ -10,6 +10,8 @@ Map<String, dynamic> _$NewCustomerToJson(_NewCustomer instance) =>
     <String, dynamic>{
       'name': instance.name,
       'phone': instance.phone,
+      'city_id': instance.cityId,
+      'region_id': instance.regionId,
       'shops': ?instance.shops?.map((e) => e.toJson()).toList(),
     };
 

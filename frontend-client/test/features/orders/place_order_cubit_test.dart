@@ -189,6 +189,56 @@ void main() {
     );
 
     blocTest<PlaceOrderCubit, PlaceOrderState>(
+      'an account with no shops starts at the address staff recorded for it',
+      // Arrange
+      build: () {
+        when(() => shops.list()).thenAnswer((_) async => const Right(<Shop>[]));
+        when(() => auth.currentCustomer())
+            .thenAnswer((_) async => Right(me.copyWith(cityId: 1, regionId: 10)));
+
+        return build();
+      },
+      // Act
+      act: (cubit) => cubit.load(),
+      // Assert
+      skip: 2,
+      expect: () => [ready(shopList: const [], shopId: null)],
+    );
+
+    blocTest<PlaceOrderCubit, PlaceOrderState>(
+      'a shop wins over the account’s address',
+      // Arrange
+      build: () {
+        when(() => auth.currentCustomer())
+            .thenAnswer((_) async => Right(me.copyWith(cityId: 2)));
+
+        return build();
+      },
+      // Act
+      act: (cubit) => cubit.load(),
+      // Assert
+      skip: 2,
+      expect: () => [ready()],
+    );
+
+    blocTest<PlaceOrderCubit, PlaceOrderState>(
+      'an address whose city left the map is left for the customer to pick',
+      // Arrange
+      build: () {
+        when(() => shops.list()).thenAnswer((_) async => const Right(<Shop>[]));
+        when(() => auth.currentCustomer())
+            .thenAnswer((_) async => Right(me.copyWith(cityId: 99, regionId: 10)));
+
+        return build();
+      },
+      // Act
+      act: (cubit) => cubit.load(),
+      // Assert
+      skip: 2,
+      expect: () => [ready(shopList: const [], shopId: null, cityId: null, regionId: null)],
+    );
+
+    blocTest<PlaceOrderCubit, PlaceOrderState>(
       'a shop whose city left the map is chosen, but its city is left for the customer to pick',
       // Arrange
       build: () {
