@@ -18,6 +18,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../wallet/fake_wallet.dart';
+
 /// «حسابي»: بطاقةٌ تقول من أنت، وتحتها ثلاثة صفوف.
 ///
 /// **البطاقة تحمل الاسم والهاتف وكود العميل** كما في المرجع الذي أرسله صاحب العمل، وبفرقٍ واحد
@@ -103,6 +105,8 @@ void main() {
     sl
       ..registerLazySingleton<GetCurrentCustomer>(() => GetCurrentCustomer(auth))
       ..registerLazySingleton<Logout>(() => Logout(auth));
+    // «محفظتي» يقرأ رصيده على الصف.
+    FakeWallet(held: '120.00').register();
 
     router = GoRouter(
       initialLocation: Routes.profile,
@@ -118,6 +122,7 @@ void main() {
           builder: (context, state) => const Scaffold(body: Center(child: Text('شاشة الدخول'))),
         ),
         for (final (path, screen) in [
+          (Routes.wallet, 'شاشة محفظتي'),
           (Routes.qrTool, 'شاشة رمز QR'),
           (Routes.bagPreview, 'شاشة المعاينة'),
           (Routes.designs, 'شاشة تصاميمي'),
@@ -245,19 +250,20 @@ void main() {
   });
 
   group('the rows', () {
-    testWidgets('are one list: «تصاميمي» first, signing out last', (tester) async {
+    testWidgets('are one list: «محفظتي» first, then «تصاميمي», signing out last', (tester) async {
       // Arrange & Act
       await open(tester);
 
-      // Assert — بطاقةٌ واحدة لا اثنتان، و«تصاميمي» أولها، وتسجيل الخروج آخرها: كلاهما طلبه صاحب
-      // العمل بعد أن رأى الشاشة على الهاتف. «تواصل مع الدعم» مكرّر في الرئيسية، و«مظهر التطبيق»
-      // صار داخل الإعدادات.
+      // Assert — بطاقةٌ واحدة لا اثنتان، و«محفظتي» أولها (CUSTOMER-WALLET)، ثم «تصاميمي»، وتسجيل
+      // الخروج آخرها: طلبه صاحب العمل بعد أن رأى الشاشة على الهاتف. «تواصل مع الدعم» مكرّر في
+      // الرئيسية، و«مظهر التطبيق» صار داخل الإعدادات.
       final cards = tester
           .widgetList<MenuCard>(find.byType(MenuCard))
           .map((card) => [for (final row in card.rows) row.label]);
 
       expect(cards, [
         [
+          'محفظتي',
           'تصاميمي',
           'متاجري',
           'رمز QR',
@@ -269,7 +275,16 @@ void main() {
       ]);
     });
 
+    testWidgets('«محفظتي» carries its balance on the row', (tester) async {
+      // Arrange & Act
+      await open(tester);
+
+      // Assert — the server's figure, as money: «120 د.ل», not «120.00».
+      expect(find.text('120 د.ل'), findsOneWidget);
+    });
+
     for (final (label, screen) in [
+      ('محفظتي', 'شاشة محفظتي'),
       ('رمز QR', 'شاشة رمز QR'),
       ('معاينة على الكيس', 'شاشة المعاينة'),
       ('تصاميمي', 'شاشة تصاميمي'),

@@ -279,6 +279,11 @@ import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
 import 'package:dayaa/features/vendors/repositories/vendor_repository_impl.dart';
 import 'package:dayaa/features/vendors/usecases/get_vendors.dart';
 import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
+import 'package:dayaa/features/wallet/repositories/wallet_repository.dart';
+import 'package:dayaa/features/wallet/repositories/wallet_repository_impl.dart';
+import 'package:dayaa/features/wallet/usecases/wallet_usecases.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/shelf_balance_cubit.dart';
@@ -396,6 +401,7 @@ abstract final class Injector {
     _registerInvestmentSettings();
     _registerInvestmentFund();
     _registerTreasury();
+    _registerWallet();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -700,6 +706,37 @@ abstract final class Injector {
       // Factory: the screen owns its Cubit and closes it on dispose.
       ..registerFactory<InvestorPortalCubit>(
         () => InvestorPortalCubit(getPortfolio: sl<GetInvestorPortfolio>()),
+      );
+  }
+
+  /// «محفظة العميل» — Docs/payments/CUSTOMER-WALLET.md. الـCubitان مقيّدان برقم العميل كبقية
+  /// الشاشات المقيّدة؛ وسجلّ المحافظ بلا رقمٍ هو «المعاملات المالية».
+  static void _registerWallet() {
+    sl
+      ..registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetCustomerWallet>(() => GetCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<GetCustomerWalletEntries>(
+        () => GetCustomerWalletEntries(sl<WalletRepository>()),
+      )
+      ..registerLazySingleton<TopUpCustomerWallet>(() => TopUpCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<AdjustCustomerWallet>(() => AdjustCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<ReverseCustomerWalletEntry>(
+        () => ReverseCustomerWalletEntry(sl<WalletRepository>()),
+      )
+      ..registerFactoryParam<CustomerWalletCubit, int, void>(
+        (customerId, _) => CustomerWalletCubit(
+          customerId: customerId,
+          getWallet: sl<GetCustomerWallet>(),
+          topUp: sl<TopUpCustomerWallet>(),
+          adjust: sl<AdjustCustomerWallet>(),
+        ),
+      )
+      ..registerFactoryParam<WalletEntriesCubit, int?, void>(
+        (customerId, _) => WalletEntriesCubit(
+          customerId: customerId,
+          getEntries: sl<GetCustomerWalletEntries>(),
+          reverseEntry: sl<ReverseCustomerWalletEntry>(),
+        ),
       );
   }
 
@@ -1050,6 +1087,9 @@ abstract final class Injector {
       ..registerLazySingleton<WriteOffOrderBalance>(
         () => WriteOffOrderBalance(sl<OrderPaymentRepository>()),
       )
+      ..registerLazySingleton<PayOrderFromWallet>(
+        () => PayOrderFromWallet(sl<OrderPaymentRepository>()),
+      )
       ..registerLazySingleton<ReviewOrderPayment>(
         () => ReviewOrderPayment(sl<OrderPaymentRepository>()),
       )
@@ -1132,6 +1172,7 @@ abstract final class Injector {
           getSettlementAccounts: sl<GetSettlementAccounts>(),
           settlePayments: sl<SettleOrderPayments>(),
           unsettlePayment: sl<UnsettleOrderPayment>(),
+          payFromWallet: sl<PayOrderFromWallet>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(

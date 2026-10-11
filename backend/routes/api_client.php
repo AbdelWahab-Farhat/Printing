@@ -186,6 +186,15 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('orders/{order}/notes', [Client\OrderController::class, 'notes'])
             ->whereNumber('order')->name('orders.notes');
 
+        // ── wallet ──────────────────────────────────────────────────────────────────────
+        // «محفظتي» — Docs/payments/CUSTOMER-WALLET.md. Always the signed-in customer's own.
+        // Paying is throttled like placing an order: a double tap on a slow line must not pay
+        // twice — the second would meet a smaller debt, but it should not have to.
+        Route::get('wallet', [Client\WalletController::class, 'show'])->name('wallet.show');
+        Route::get('wallet/entries', [Client\WalletController::class, 'entries'])->name('wallet.entries');
+        Route::post('orders/{order}/pay-from-wallet', [Client\WalletController::class, 'payOrder'])
+            ->whereNumber('order')->middleware('throttle:20,1')->name('orders.pay-from-wallet');
+
         /*
          * ── support ─────────────────────────────────────────────────────────────────────
          *

@@ -361,6 +361,14 @@ enum PermissionName: string
     case ReverseTreasuryOperations = 'treasury.reverse';
     case ManageTreasury = 'treasury.manage';
 
+    // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md. Seeing a balance, putting money in at the
+    // counter, correcting a balance by hand, and undoing a mistaken entry are four trusts. Paying
+    // an order *from* the wallet stays under `orders.payments.record`: the wallet guards itself.
+    case ViewCustomerWallets = 'customers.wallet.view';
+    case TopUpCustomerWallets = 'customers.wallet.topup';
+    case AdjustCustomerWallets = 'customers.wallet.adjust';
+    case ReverseCustomerWalletEntries = 'customers.wallet.reverse';
+
     // Paying vendors — the `orders.payments.*` split, pointed the other way: money going out to
     // a vendor is a decision apart from seeing what was paid.
     case ViewVendorPayments = 'vendors.payments.view';
@@ -502,6 +510,10 @@ enum PermissionName: string
             self::AdjustTreasuryBalances => 'جرد الحسابات',
             self::ReverseTreasuryOperations => 'عكس عملية على الحسابات',
             self::ManageTreasury => 'إدارة الحسابات والتصنيفات',
+            self::ViewCustomerWallets => 'عرض محافظ العملاء ومعاملاتها',
+            self::TopUpCustomerWallets => 'شحن محفظة عميل',
+            self::AdjustCustomerWallets => 'تعديل رصيد محفظة عميل',
+            self::ReverseCustomerWalletEntries => 'عكس حركة على محفظة عميل',
             self::ViewVendorPayments => 'عرض دفعات الموردين',
             self::RecordVendorPayments => 'تسجيل دفعة لمورد',
             self::ReverseVendorPayments => 'عكس دفعة مورد',
@@ -584,6 +596,10 @@ enum PermissionName: string
             self::AdjustTreasuryBalances,
             self::ReverseTreasuryOperations,
             self::ManageTreasury => 'الحسابات والكاش',
+            self::ViewCustomerWallets,
+            self::TopUpCustomerWallets,
+            self::AdjustCustomerWallets,
+            self::ReverseCustomerWalletEntries => 'محافظ العملاء',
             self::ViewVendorPayments,
             self::RecordVendorPayments,
             self::ReverseVendorPayments => 'دفعات الموردين',

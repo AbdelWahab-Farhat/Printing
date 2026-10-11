@@ -33,7 +33,8 @@ class StoreOrderPaymentRequest extends FormRequest
             // of a decimal(12,2) column, where it would fail as a 500 instead of a 422.
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
 
-            'method' => ['required', Rule::enum(PaymentMethod::class)],
+            // Not the wallet: paying from it is `payments/from-wallet`, which checks the balance.
+            'method' => ['required', Rule::notIn([PaymentMethod::Wallet->value]), Rule::enum(PaymentMethod::class)],
 
             'reference' => ['nullable', 'string', 'max:100'],
 
@@ -98,6 +99,7 @@ class StoreOrderPaymentRequest extends FormRequest
             'amount.max' => 'المبلغ أكبر من الحد المسموح',
             'method.required' => 'طريقة الدفع مطلوبة',
             'method.enum' => 'طريقة الدفع غير معروفة',
+            'method.not_in' => 'الدفع من المحفظة له زرّه: «الدفع من المحفظة»',
             'reference.max' => 'رقم المرجع طويل جداً',
             'paid_at.date' => 'تاريخ الدفع غير صحيح',
             'paid_at.before_or_equal' => 'تاريخ الدفع لا يمكن أن يكون في المستقبل',

@@ -181,6 +181,10 @@ abstract final class AppIcons {
   static IconData get payment =>
       _pick(Icons.payments_outlined, CupertinoIcons.money_dollar_circle);
 
+  /// «محفظتي» — ما شحنه العميل ليدفع منه طلبياته. Docs/payments/CUSTOMER-WALLET.md.
+  static IconData get wallet =>
+      _pick(Icons.account_balance_wallet_rounded, CupertinoIcons.creditcard_fill);
+
   /// Money going back to the customer. An arrow turning back on itself, which is the one shape
   /// that reads as "the other direction" without a minus sign somebody could misread as a
   /// delete.

@@ -27,6 +27,14 @@ enum PaymentMethod: string
     /** Mobile money on Libyana. */
     case Libyana = 'libyana';
 
+    /**
+     * «المحفظة» — paid out of, or handed back into, the customer's wallet. No cash moves: the money
+     * came in when the wallet was topped up. **Never picked by hand for a payment** — see
+     * {@see handPicked()}; a payment from the wallet goes through the one action that checks the
+     * balance. Docs/payments/CUSTOMER-WALLET.md §٤.
+     */
+    case Wallet = 'wallet';
+
     public function label(): string
     {
         return match ($this) {
@@ -34,7 +42,20 @@ enum PaymentMethod: string
             self::BankTransfer => 'حوالة',
             self::BankCard => 'بطاقة مصرفية',
             self::Libyana => 'ليبيانا',
+            self::Wallet => 'المحفظة',
         };
+    }
+
+    /**
+     * The methods a person types money in with — every one but the wallet. The payment form, the
+     * status screen, a vendor payment and a shortage supply offer these; the wallet has its own
+     * door, and a vendor is never paid out of a customer's wallet.
+     *
+     * @return list<self>
+     */
+    public static function handPicked(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $method) => $method !== self::Wallet));
     }
 
     /**
@@ -46,7 +67,7 @@ enum PaymentMethod: string
      */
     public function suggestsReference(): bool
     {
-        return $this !== self::Cash;
+        return $this !== self::Cash && $this !== self::Wallet;
     }
 
     /**

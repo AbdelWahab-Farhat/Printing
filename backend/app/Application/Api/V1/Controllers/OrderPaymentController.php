@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Order\PayOrderFromWalletRequest;
 use App\Application\Api\V1\Requests\Order\RefundOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\ReverseOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderPaymentRequest;
@@ -17,6 +18,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Support\Money;
+use App\Domain\Wallet\WalletService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,6 +52,7 @@ class OrderPaymentController extends Controller
         private readonly OrderService $orders,
         // Told about money that moves while a parcel is out — see {@see tellTheCarrier()}.
         private readonly CarrierService $carrier,
+        private readonly WalletService $wallet,
     ) {}
 
     /**
@@ -99,6 +102,41 @@ class OrderPaymentController extends Controller
         return $this->created(
             $this->entry($payment, $order),
             'تم تسجيل الدفعة بنجاح',
+        );
+    }
+
+    /**
+     * Pay from the customer's wallet
+     *
+     * «الدفع من المحفظة» — Docs/payments/CUSTOMER-WALLET.md. Takes `amount` out of the order's
+     * customer's wallet, or, with no amount, as much as the wallet holds up to what the order owes.
+     * Refused beyond either: a wallet never overpays. An order «بانتظار العربون» whose agreed عربون
+     * this covers moves to «تم دفع العربون» by itself, its receipt confirmed.
+     *
+     * `client_token` makes a retry safe: the same token again returns the first payment with 200
+     * and pays nothing.
+     */
+    public function fromWallet(PayOrderFromWalletRequest $request, Order $order): JsonResponse
+    {
+        $amount = $request->validated('amount');
+
+        $payment = $this->orders->payFromWallet(
+            $order,
+            $amount === null ? null : Money::normalize($amount),
+            $this->actor($request),
+            $request->validated('client_token'),
+        );
+
+        // The same `client_token` again: the first payment, 200, and nothing paid.
+        if (! $payment->wasRecentlyCreated) {
+            return $this->success($this->entry($payment, $order), 'هذه الدفعة مسجَّلة من قبل');
+        }
+
+        $this->tellTheCarrier($order);
+
+        return $this->created(
+            $this->entry($payment, $order),
+            'تم الدفع من المحفظة',
         );
     }
 
@@ -252,6 +290,8 @@ class OrderPaymentController extends Controller
             'payment_status_label' => $order->paymentStatus()->label(),
             // An order that finished without its money accounted for. See Order::hasUnrecordedMoney().
             'has_unrecorded_money' => $order->hasUnrecordedMoney(),
+            // What the customer's wallet holds — what «الدفع من المحفظة» could take. CUSTOMER-WALLET.
+            'wallet_balance' => $this->wallet->balanceOf((int) $order->customer_id),
         ];
     }
 

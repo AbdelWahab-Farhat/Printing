@@ -273,6 +273,9 @@ class OrderPayment extends Model
         return match (true) {
             $this->type !== OrderPaymentType::Payment => PaymentCannotBeSettled::notAPayment(),
             $this->isReversed() => PaymentCannotBeSettled::reversed(),
+            // Its money came in when the wallet was topped up; this row only took it off
+            // «أرصدة محافظ الزبائن». CUSTOMER-WALLET §٤.
+            $this->method === PaymentMethod::Wallet => PaymentCannotBeSettled::fromWallet(),
             $this->treasury_account_id === null => PaymentCannotBeSettled::predatesTreasury(),
             $order === null => PaymentCannotBeSettled::orderMissing(),
             $order->status === OrderStatus::Settled => PaymentCannotBeSettled::orderSettled(),

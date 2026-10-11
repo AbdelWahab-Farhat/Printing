@@ -68,6 +68,7 @@ use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Wallet\Models\CustomerWalletEntry;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -200,6 +201,9 @@ enum AuditSubject: string
     case VendorPayment = 'vendor_payment';
     case TreasurySetting = 'treasury_setting';
 
+    // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md.
+    case CustomerWalletEntry = 'customer_wallet_entry';
+
     /**
      * @return class-string<Model>
      */
@@ -270,6 +274,7 @@ enum AuditSubject: string
             self::ExpenseCategory => ExpenseCategory::class,
             self::VendorPayment => VendorPayment::class,
             self::TreasurySetting => TreasurySetting::class,
+            self::CustomerWalletEntry => CustomerWalletEntry::class,
         };
     }
 
@@ -343,6 +348,7 @@ enum AuditSubject: string
             self::ExpenseCategory => 'تصنيف مصروف',
             self::VendorPayment => 'دفعة مورد',
             self::TreasurySetting => 'إعدادات المالية',
+            self::CustomerWalletEntry => 'حركة محفظة عميل',
         };
     }
 

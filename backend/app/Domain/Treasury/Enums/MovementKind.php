@@ -42,6 +42,15 @@ enum MovementKind: string
     /** «اعتبار الزائد إيراداً»: the excess is the shop's now, and comes off «علينا». No money moved. */
     case ExcessKept = 'excess_kept';
 
+    /**
+     * «شحن محفظة» — a customer put money in their wallet: `in` on the account the money reached,
+     * and `out` on «أرصدة محافظ الزبائن», the debt that came with it. CUSTOMER-WALLET §٤.
+     */
+    case WalletTopup = 'wallet_topup';
+
+    /** «تعديل محفظة» — a balance corrected by hand. On «أرصدة محافظ الزبائن» alone: no money moved. */
+    case WalletAdjustment = 'wallet_adjustment';
+
     public function label(): string
     {
         return match ($this) {
@@ -62,6 +71,8 @@ enum MovementKind: string
             self::VendorCredit => 'خصم من المورد',
             self::CustomerExcess => 'زائد لزبون',
             self::ExcessKept => 'زائد اعتُبر إيراداً',
+            self::WalletTopup => 'شحن محفظة زبون',
+            self::WalletAdjustment => 'تعديل محفظة زبون',
         };
     }
 }

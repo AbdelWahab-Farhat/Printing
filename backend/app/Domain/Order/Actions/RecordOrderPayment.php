@@ -9,16 +9,19 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Exceptions\OrderIsCancelledForPayment;
 use App\Domain\Order\Exceptions\PaymentAmountMustBePositive;
 use App\Domain\Order\Exceptions\PaymentExceedsRemaining;
 use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
+use App\Domain\Order\Exceptions\WalletPaymentRefused;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +69,13 @@ final class RecordOrderPayment
         // row while deciding that a form was incomplete buys nothing.
         if ($data->method->requiresReceipt() && $data->receipt === null) {
             throw ReceiptRequiredForMethod::make($data->method);
+        }
+
+        // **«المحفظة» comes through one door**, {@see PayOrderFromWallet}, which checks the balance
+        // and writes the wallet's row. Typed into the payments form or the status screen, it would
+        // take money off «أرصدة محافظ الزبائن» that no wallet gave up. CUSTOMER-WALLET §٤.
+        if ($data->method === PaymentMethod::Wallet && $data->systemAccount !== TreasuryAccount::CUSTOMER_WALLETS) {
+            throw WalletPaymentRefused::needsItsOwnDoor();
         }
 
         return DB::transaction(function () use ($order, $data, $actor, $accountField, $amountField): OrderPayment {
@@ -149,8 +159,9 @@ final class RecordOrderPayment
 
         // Into the reviewer's queue — a Nawris webhook's entry included: nobody signed it, so a
         // person checks it against the settlement. Stamped here rather than defaulted in the
-        // table, so the rows from before reviews existed stay exempt.
-        $payment->requires_review = true;
+        // table, so the rows from before reviews existed stay exempt. **Not a payment from the
+        // wallet**: nobody took money in, the system moved a balance it checked under a lock.
+        $payment->requires_review = $data->method !== PaymentMethod::Wallet;
 
         // Stamped, never fillable: how much of this entry is beyond the debt is the lock's
         // arithmetic, not a figure a payload may name.

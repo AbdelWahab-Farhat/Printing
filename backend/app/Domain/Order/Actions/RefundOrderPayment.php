@@ -8,11 +8,13 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\PaymentAmountMustBePositive;
 use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
 use App\Domain\Order\Exceptions\RefundExceedsPaid;
 use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
+use App\Domain\Order\Exceptions\WalletPaymentRefused;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
@@ -20,6 +22,7 @@ use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\TreasuryService;
+use App\Domain\Wallet\WalletService;
 use App\Support\Media\StoreReceipt;
 use Illuminate\Support\Facades\DB;
 
@@ -51,6 +54,7 @@ final class RefundOrderPayment
         private readonly RecalculateOrderPayments $recalculate,
         private readonly StoreReceipt $storeReceipt,
         private readonly TreasuryService $treasury,
+        private readonly WalletService $wallet,
     ) {}
 
     public function __invoke(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
@@ -76,6 +80,17 @@ final class RefundOrderPayment
             // دفعه الزبون فوق الطلبية صار إيراداً للمحلّ ساعةَ الدفعة (٢٠٢٦-١٠-٠٧).
             if (bccomp($data->amount, $paid, Money::SCALE) > 0) {
                 throw RefundExceedsPaid::make($data->amount, $paid);
+            }
+
+            // **What came from the wallet goes back to it.** Wallets do not pay out (2026-10-11), so
+            // a cash refund may hand back only what reached the order by other means; the rest
+            // is refunded with «المحفظة». CUSTOMER-WALLET §٢.
+            if ($data->method !== PaymentMethod::Wallet) {
+                $refundable = Money::round(bcsub($paid, $this->heldFromWallet($locked), Money::SCALE));
+
+                if (bccomp($data->amount, $refundable, Money::SCALE) > 0) {
+                    throw WalletPaymentRefused::refundMustGoToWallet($data->amount, $refundable);
+                }
             }
 
             // **Before the row, not after it**, unlike the reversal: a refund may carry a receipt,
@@ -118,18 +133,23 @@ final class RefundOrderPayment
         $refund->type = OrderPaymentType::Refund;
         $refund->recorded_by = $actor?->getKey();
 
-        // Cash that left the drawer is checked like cash that came in.
-        $refund->requires_review = true;
+        // Cash that left the drawer is checked like cash that came in. A refund into the wallet
+        // left no drawer: it is a balance the system moved.
+        $toWallet = $data->method === PaymentMethod::Wallet;
+        $refund->requires_review = ! $toWallet;
 
         // Paid out of a real drawer — never out of Nawris's custody, which empties only by
         // settlement. Not refused for balance: the money already went back to the customer, and
-        // the treasury records facts (TREASURY-DESIGN §١٢).
-        $account = $this->treasury->accountFor(
-            $data->method->value,
-            $actor?->getKey() === null ? null : (int) $actor->getKey(),
-            $data->treasuryAccountId,
-            incoming: false,
-        );
+        // the treasury records facts (TREASURY-DESIGN §١٢). **Into the wallet**, it is more owed
+        // on «أرصدة محافظ الزبائن» and no drawer moves.
+        $account = $toWallet
+            ? $this->treasury->customerWalletsPayable()
+            : $this->treasury->accountFor(
+                $data->method->value,
+                $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                $data->treasuryAccountId,
+                incoming: false,
+            );
 
         $refund->treasury_account_id = $account->getKey();
 
@@ -152,6 +172,42 @@ final class RefundOrderPayment
             recordedBy: $actor?->getKey() === null ? null : (int) $actor->getKey(),
         ));
 
+        if ($toWallet) {
+            $this->wallet->recordOrderRefund(
+                (int) $order->customer_id,
+                (int) $order->getKey(),
+                (int) $refund->getKey(),
+                (string) $refund->amount,
+                $refund->paid_at,
+                $actor?->getKey() === null ? null : (int) $actor->getKey(),
+                "ردّ على الطلبية {$order->code}",
+            );
+        }
+
         return $refund;
+    }
+
+    /**
+     * What the order still holds of money paid from the wallet: its live wallet payments, less
+     * what was already handed back into the wallet. Never below zero.
+     */
+    private function heldFromWallet(Order $order): string
+    {
+        $base = OrderPayment::query()
+            ->where('order_id', $order->getKey())
+            ->where('method', PaymentMethod::Wallet->value);
+
+        $paid = (string) (clone $base)
+            ->where('type', OrderPaymentType::Payment->value)
+            ->whereDoesntHave('reversal')
+            ->sum('amount');
+
+        $refunded = (string) (clone $base)
+            ->where('type', OrderPaymentType::Refund->value)
+            ->sum('amount');
+
+        $held = bcsub($paid, $refunded, Money::SCALE);
+
+        return bccomp($held, '0', Money::SCALE) < 0 ? '0.00' : Money::round($held);
     }
 }

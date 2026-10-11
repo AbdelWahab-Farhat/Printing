@@ -13,6 +13,7 @@ import 'package:dayaa_client/features/orders/presentation/widgets/order_lines_ca
 import 'package:dayaa_client/features/orders/presentation/widgets/order_money_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_button.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -158,6 +159,8 @@ class _Loaded extends StatelessWidget {
             ),
             SizedBox(height: 24.h),
             OrderMoneyCard(order: order),
+            // «ادفع من المحفظة» — يظهر وحده حين في المحفظة مالٌ وعلى الطلبية متبقٍّ.
+            PayFromWalletCard(order: order, onPaid: onRefresh),
             SizedBox(height: 24.h),
             _SectionTitle('المنتجات', count: order.items.length),
             SizedBox(height: 10.h),

@@ -114,6 +114,22 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
   }
 
   @override
+  Future<Either<Failure, PaymentResult>> payFromWallet(
+    int orderId, {
+    String? amount,
+    String? clientToken,
+  }) {
+    return safeRequest<PaymentResult>(
+      () => _dio.post(
+        OrderEndpoints.payFromWallet(orderId),
+        // No method, no account and no file: the wallet is all three.
+        data: <String, dynamic>{'amount': ?amount, 'client_token': ?clientToken},
+      ),
+      parse: _result,
+    );
+  }
+
+  @override
   Future<Either<Failure, OrderPayment>> review(
     int orderId,
     int paymentId, {

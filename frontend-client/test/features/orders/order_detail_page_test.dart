@@ -9,6 +9,7 @@ import 'package:dayaa_client/features/orders/presentation/views/order_detail_pag
 import 'package:dayaa_client/features/orders/presentation/widgets/order_money_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_button.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../wallet/fake_wallet.dart';
 
 class _MockOrderRepository extends Mock implements OrderRepository {}
 
@@ -95,14 +98,24 @@ void main() {
   });
 
   /// الطلبية فوق مسارٍ فيه الدعم، ليكون للزرّ العائم مكانٌ حقيقي يصل إليه.
-  Future<void> open(WidgetTester tester, CustomerOrderDetail order) async {
+  Future<void> open(
+    WidgetTester tester,
+    CustomerOrderDetail order, {
+    FakeWallet? wallet,
+    _MockOrderRepository? repository,
+  }) async {
     tester.view
       ..physicalSize = const Size(430, 932)
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    final orders = _MockOrderRepository();
-    when(() => orders.detail(any())).thenAnswer((_) async => Right(order));
+    // An empty wallet unless a test says otherwise — «ادفع من المحفظة» then stays away.
+    (wallet ?? FakeWallet()).register();
+
+    final orders = repository ?? _MockOrderRepository();
+    if (repository == null) {
+      when(() => orders.detail(any())).thenAnswer((_) async => Right(order));
+    }
     sl.registerFactoryParam<OrderDetailCubit, int, void>(
       (orderId, _) => OrderDetailCubit(orderId: orderId, get: GetOrder(orders)),
     );
@@ -419,6 +432,97 @@ void main() {
         find.descendant(of: find.byType(OrderNotesButton), matching: find.byType(CountPill)),
         findsNothing,
       );
+    });
+  });
+
+  // «ادفع من المحفظة» — Docs/payments/CUSTOMER-WALLET.md.
+  group('the wallet', () {
+    testWidgets('offers the smaller of the wallet and the debt on a priced order', (tester) async {
+      // Arrange & Act
+      await open(
+        tester,
+        order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'),
+        wallet: FakeWallet(held: '500.00'),
+      );
+
+      // Assert — 500 in the wallet, 2,332 owed: it pays 500.
+      expect(find.text('في محفظتك 500 د.ل'), findsOneWidget);
+      expect(find.text('ادفع 500'), findsOneWidget);
+    });
+
+    testWidgets('stays away while the shop has not reviewed the order', (tester) async {
+      // Arrange & Act
+      await open(tester, order1304(), wallet: FakeWallet(held: '500.00'));
+
+      // Assert
+      expect(find.byType(PayFromWalletCard), findsOneWidget);
+      expect(find.textContaining('في محفظتك'), findsNothing);
+    });
+
+    testWidgets('stays away with an empty wallet', (tester) async {
+      // Arrange & Act
+      await open(tester, order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'));
+
+      // Assert
+      expect(find.textContaining('في محفظتك'), findsNothing);
+    });
+
+    testWidgets('pays after a confirmation, then reads the order again', (tester) async {
+      // Arrange
+      final wallet = FakeWallet(held: '500.00');
+      final orders = _MockOrderRepository();
+      when(() => orders.detail(any())).thenAnswer(
+        (_) async => Right(order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز')),
+      );
+      await open(
+        tester,
+        order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'),
+        wallet: wallet,
+        repository: orders,
+      );
+
+      // Act
+      await tester.tap(find.text('ادفع 500'));
+      await tester.pumpAndSettle();
+      expect(find.text('يُدفع 500 د.ل من محفظتك لهذه الطلبية.'), findsOneWidget);
+      await tester.tap(find.text('ادفع'));
+      await tester.pumpAndSettle();
+
+      // Assert — paid once, the order re-read, and the emptied wallet takes the card away.
+      expect(wallet.paidOrders, [1304]);
+      verify(() => orders.detail(1304)).called(2);
+      expect(find.textContaining('في محفظتك'), findsNothing);
+      expect(find.text('تم الدفع من المحفظة'), findsOneWidget);
+
+      // The toast's own timer, so the test ends with nothing pending.
+      resetSnackBars();
+      await tester.pump();
+    });
+
+    testWidgets('a payment whose answer was lost is retried with the same key', (tester) async {
+      // Arrange — the first request never hears back.
+      final wallet = FakeWallet(held: '500.00')..dropNext = true;
+      await open(
+        tester,
+        order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'),
+        wallet: wallet,
+      );
+
+      // Act — pay, lose the answer, pay again.
+      for (var attempt = 0; attempt < 2; attempt++) {
+        await tester.tap(find.text('ادفع 500'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('ادفع'));
+        await tester.pumpAndSettle();
+        resetSnackBars();
+        await tester.pump();
+      }
+
+      // Assert — one key for both: the server answers the retry with the first payment.
+      expect(wallet.tokens, hasLength(2));
+      expect(wallet.tokens.first, isNotNull);
+      expect(wallet.tokens.last, wallet.tokens.first);
+      expect(wallet.paidOrders, [1304]);
     });
   });
 }

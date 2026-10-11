@@ -591,6 +591,25 @@ final class AuditAttributeLabels
             'reverses_entry_id' => 'تعكس الحركة',
             'investment_period_id' => 'الفترة',
         ],
+        // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md. Nothing here is ever edited; the
+        // history says who wrote each row and when.
+        'customer_wallet_entry' => [
+            'customer_id' => 'العميل',
+            'type' => 'نوع الحركة',
+            'method' => 'طريقة الشحن',
+            'treasury_account_id' => 'الحساب',
+            'order_id' => 'الطلبية',
+            'order_payment_id' => 'دفعة الطلبية',
+            'reference' => 'المرجع',
+            'occurred_at' => 'تاريخ الحركة',
+            'reverses_entry_id' => 'تعكس الحركة',
+            'client_token' => 'رمز الإرسال',
+            'receipt_disk' => 'مكان تخزين الإيصال',
+            'receipt_path' => 'مسار الإيصال',
+            'receipt_original_filename' => 'اسم ملف الإيصال',
+            'receipt_size_bytes' => 'حجم الإيصال',
+            'receipt_checksum' => 'بصمة الإيصال',
+        ],
         // ── الصندوق الاستثماري ──────────────────────────────────────────────────────────
         //
         // الفترةُ تُكتب مرّتين في عمرها: يوم تُفتح بما ورثته، ويوم تُقفَل بأرقامها. وكلُّ عمودٍ

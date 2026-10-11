@@ -343,6 +343,13 @@ enum AppPermission {
   reverseTreasuryOperations('treasury.reverse', 'عكس عملية على الحسابات'),
   manageTreasury('treasury.manage', 'إدارة الحسابات والتصنيفات'),
 
+  // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md. الرؤية والشحن والتعديل والعكس أربعُ ثقات؛
+  // والدفعُ من المحفظة على طلبيةٍ تحت `orders.payments.record`.
+  viewCustomerWallets('customers.wallet.view', 'عرض محافظ العملاء ومعاملاتها'),
+  topUpCustomerWallets('customers.wallet.topup', 'شحن محفظة عميل'),
+  adjustCustomerWallets('customers.wallet.adjust', 'تعديل رصيد محفظة عميل'),
+  reverseCustomerWalletEntries('customers.wallet.reverse', 'عكس حركة على محفظة عميل'),
+
   // دفعات الموردين — قسمةُ `orders.payments.*` نفسها، في الاتجاه الآخر.
   viewVendorPayments('vendors.payments.view', 'عرض دفعات الموردين'),
   recordVendorPayments('vendors.payments.record', 'تسجيل دفعة لمورد'),

@@ -85,6 +85,17 @@ abstract final class ShopEndpoints {
 /// The workshop's nineteen statuses reach this app as eight *stages* — the server does the
 /// collapsing, so nothing here needs a table of its own. `?open=1` narrows to the ones still
 /// moving.
+/// «محفظتي» — Docs/payments/CUSTOMER-WALLET.md. Always the signed-in customer's own.
+abstract final class WalletEndpoints {
+  static const String wallet = '/client/wallet';
+
+  /// المعاملات، الأحدث أولاً، و`meta.balance` الرصيد.
+  static const String entries = '/client/wallet/entries';
+
+  /// الدفع من المحفظة على طلبيةٍ من طلبيات العميل.
+  static String payOrder(int orderId) => '/client/orders/$orderId/pay-from-wallet';
+}
+
 abstract final class OrderEndpoints {
   static const String index = '/client/orders';
   static const String store = '/client/orders';

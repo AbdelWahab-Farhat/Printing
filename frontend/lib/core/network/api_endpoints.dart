@@ -51,6 +51,24 @@ abstract final class InvestorEndpoints {
 }
 
 /// الحسابات والكاش — TREASURY-DESIGN §١٠.
+/// «محفظة العميل» — Docs/payments/CUSTOMER-WALLET.md. تُشحن وتُصرف على الطلبيات ولا يُسحب منها.
+abstract final class WalletEndpoints {
+  /// رصيد محفظة العميل.
+  static String customerWallet(int customerId) => '/customers/$customerId/wallet';
+
+  /// سجلّ محفظة العميل، الأحدث أولاً، و`meta.balance` رصيدها.
+  static String customerEntries(int customerId) => '/customers/$customerId/wallet/entries';
+
+  static String topUp(int customerId) => '/customers/$customerId/wallet/top-ups';
+
+  static String adjust(int customerId) => '/customers/$customerId/wallet/adjustments';
+
+  /// «المعاملات المالية» — كل المحافظ في صفحة.
+  static const String entries = '/wallet-entries';
+
+  static String reverse(int entryId) => '/wallet-entries/$entryId/reverse';
+}
+
 abstract final class TreasuryEndpoints {
   static const String accounts = '/treasury/accounts';
   static String account(int id) => '/treasury/accounts/$id';
@@ -607,6 +625,10 @@ abstract final class OrderEndpoints {
   /// back. Its own path and its own permission: a refund hands back money the business holds,
   /// while this decides that money it is owed will never arrive.
   static String writeOffPayment(int orderId) => '/orders/$orderId/payments/write-offs';
+
+  /// «الدفع من المحفظة» — the order paid out of its customer's wallet. Its own path: the server
+  /// checks the balance here, and the payment form refuses the wallet method.
+  static String payFromWallet(int orderId) => '/orders/$orderId/payments/from-wallet';
 
   /// Cancelling an entry that should never have been written.
   static String reversePayment(int orderId, int paymentId) =>

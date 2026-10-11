@@ -10,6 +10,7 @@ use App\Application\Api\V1\Controllers\CompanySettingController;
 use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
+use App\Application\Api\V1\Controllers\CustomerWalletController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\ExpenseCategoryController;
@@ -183,6 +184,22 @@ Route::prefix('v1')->group(function (): void {
 
         Route::patch('customers/{customer}/activation', [CustomerController::class, 'setActivation'])
             ->middleware('can:customers.manage')->name('customers.activation');
+
+        // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md. Topped up and spent, never paid out;
+        // four grants because seeing, adding, correcting and undoing are four trusts.
+        Route::get('customers/{customer}/wallet', [CustomerWalletController::class, 'show'])
+            ->middleware('can:customers.wallet.view')->name('customers.wallet.show');
+        Route::get('customers/{customer}/wallet/entries', [CustomerWalletController::class, 'entries'])
+            ->middleware('can:customers.wallet.view')->name('customers.wallet.entries');
+        Route::post('customers/{customer}/wallet/top-ups', [CustomerWalletController::class, 'topUp'])
+            ->middleware('can:customers.wallet.topup')->name('customers.wallet.top-up');
+        Route::post('customers/{customer}/wallet/adjustments', [CustomerWalletController::class, 'adjust'])
+            ->middleware('can:customers.wallet.adjust')->name('customers.wallet.adjust');
+        // «المعاملات المالية» — every wallet on one page.
+        Route::get('wallet-entries', [CustomerWalletController::class, 'index'])
+            ->middleware('can:customers.wallet.view')->name('wallet-entries.index');
+        Route::post('wallet-entries/{entry}/reverse', [CustomerWalletController::class, 'reverse'])
+            ->middleware('can:customers.wallet.reverse')->name('wallet-entries.reverse');
 
         // A customer's artwork. `scoped()` makes {design} resolve *within* {customer}, so
         // another customer's design id is a 404 by construction rather than by a check somebody
@@ -555,6 +572,11 @@ Route::prefix('v1')->group(function (): void {
         // sits in front of.
         Route::post('orders/{order}/payments/refunds', [OrderPaymentController::class, 'refund'])
             ->middleware('can:orders.payments.reverse')->name('orders.payments.refund');
+
+        // «الدفع من المحفظة» — behind the grant that takes any payment: the wallet guards its own
+        // balance. Docs/payments/CUSTOMER-WALLET.md.
+        Route::post('orders/{order}/payments/from-wallet', [OrderPaymentController::class, 'fromWallet'])
+            ->middleware('can:orders.payments.record')->name('orders.payments.from-wallet');
 
         // In front of `{payment}` for the same reason "refunds" is. **And behind its own
         // permission rather than `payments.reverse`:** a refund hands back money the business

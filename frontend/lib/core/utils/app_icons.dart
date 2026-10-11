@@ -235,6 +235,14 @@ abstract final class AppIcons {
   static IconData get mobileWallet =>
       _pick(Icons.phone_android_rounded, CupertinoIcons.device_phone_portrait);
 
+  /// محفظة العميل — ما شحنه ليدفع منه طلبياته. Docs/payments/CUSTOMER-WALLET.md.
+  static IconData get wallet =>
+      _pick(Icons.account_balance_wallet_rounded, CupertinoIcons.money_dollar_circle);
+
+  /// شحنُ محفظة العميل.
+  static IconData get walletTopUp =>
+      _pick(Icons.add_card_rounded, CupertinoIcons.plus_circle);
+
   /// عهدة — مالٌ في يد غيرنا لحسابنا: النورس، أو مندوب.
   static IconData get custody => _pick(Icons.local_shipping_outlined, CupertinoIcons.cube_box);
 

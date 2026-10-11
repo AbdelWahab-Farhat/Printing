@@ -12,6 +12,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
+import 'package:dayaa/features/orders/presentation/widgets/pay_from_wallet_dialog.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_entry_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_settlement_line.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_payment_sheet.dart';
@@ -92,6 +93,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
               payments: state.payments,
               isWorking: state.isWorking,
               onRecord: () => _write(PaymentDirection.incoming),
+              onPayFromWallet: _payFromWallet,
               onRefund: () => _write(PaymentDirection.outgoing),
               onWriteOff: _writeOff,
               onReverse: _reverse,
@@ -154,6 +156,30 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
     context.showSuccess(
       direction == PaymentDirection.incoming ? 'تم تسجيل الدفعة' : 'تم تسجيل الردّ',
     );
+  }
+
+  /// «الدفع من المحفظة» — the order paid out of its customer's wallet. CUSTOMER-WALLET §٤.
+  Future<void> _payFromWallet() async {
+    final cubit = context.read<OrderPaymentsCubit>();
+    final summary = cubit.state.summary;
+    if (summary == null) return;
+
+    final amount = await showPayFromWalletDialog(context: context, summary: summary);
+
+    if (amount == null || !mounted) return;
+
+    final failure = await cubit.payFromWallet(amount: amount);
+
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.handBack(true);
+    context.showSuccess('تم الدفع من المحفظة');
   }
 
   /// Closes what is left of the debt without recording a payment.
@@ -372,6 +398,7 @@ class _Body extends StatelessWidget {
     required this.payments,
     required this.isWorking,
     required this.onRecord,
+    required this.onPayFromWallet,
     required this.onRefund,
     required this.onWriteOff,
     required this.onReverse,
@@ -384,6 +411,7 @@ class _Body extends StatelessWidget {
   final List<OrderPayment> payments;
   final bool isWorking;
   final Future<void> Function() onRecord;
+  final Future<void> Function() onPayFromWallet;
   final Future<void> Function() onRefund;
   final Future<void> Function() onWriteOff;
   final Future<void> Function(OrderPayment payment) onReverse;
@@ -409,6 +437,7 @@ class _Body extends StatelessWidget {
           isWorking: isWorking,
           summary: summary,
           onRecord: onRecord,
+          onPayFromWallet: onPayFromWallet,
           onRefund: onRefund,
           onWriteOff: onWriteOff,
         ),
@@ -479,6 +508,7 @@ class _Actions extends StatelessWidget {
     required this.isWorking,
     required this.summary,
     required this.onRecord,
+    required this.onPayFromWallet,
     required this.onRefund,
     required this.onWriteOff,
   });
@@ -486,6 +516,7 @@ class _Actions extends StatelessWidget {
   final bool isWorking;
   final PaymentSummary summary;
   final Future<void> Function() onRecord;
+  final Future<void> Function() onPayFromWallet;
   final Future<void> Function() onRefund;
   final Future<void> Function() onWriteOff;
 
@@ -493,6 +524,9 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = sl<Session>();
     final mayRecord = session.can(AppPermission.recordOrderPayments);
+    // Only when the wallet holds something and the order owes something — otherwise the server
+    // refuses, and a button that can only fail is worse than none.
+    final mayPayFromWallet = mayRecord && summary.hasWalletMoney && summary.isOutstanding;
     // Offered only when there is something to give back — what was paid. A refund on an order
     // paid nothing is refused by the server, and a button that can only fail is worse than none.
     final mayRefund = session.can(AppPermission.reverseOrderPayments) && summary.paidAmount != '0.00';
@@ -533,6 +567,18 @@ class _Actions extends StatelessWidget {
                 ),
             ],
           ),
+
+        // «الدفع من المحفظة», with what the wallet holds in the label: the reason to press it.
+        if (mayPayFromWallet) ...[
+          SizedBox(height: 10.h),
+          AppButton.tonal(
+            label: 'الدفع من المحفظة (${summary.walletBalance.grouped})',
+            icon: AppIcons.wallet,
+            isLoading: isWorking,
+            height: 46.h,
+            onPressed: onPayFromWallet,
+          ),
+        ],
 
         // **On its own line, the full width of the screen**, rather than squeezed in as a third
         // Expanded beside the two above. It is the rarest of the three and the only one that

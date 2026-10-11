@@ -28,7 +28,8 @@ class StoreVendorPaymentRequest extends FormRequest
             'type' => ['nullable', Rule::in(['payment', 'opening_debt', 'credit'])],
             // خانتان عشريتان ودرهمٌ على الأقل — ما دون ذلك يُقرَّب صفراً فيصطدم بقيد القاعدة.
             'amount' => ['required', 'decimal:0,2', 'min:0.01', 'max:9999999999'],
-            'method' => [$movesNoMoney, 'required', Rule::enum(PaymentMethod::class)],
+            // A vendor is never paid out of a customer's wallet.
+            'method' => [$movesNoMoney, 'required', Rule::enum(PaymentMethod::class)->except(PaymentMethod::Wallet)],
             'treasury_account_id' => [
                 $movesNoMoney,
                 'nullable',

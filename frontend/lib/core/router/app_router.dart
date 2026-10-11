@@ -113,6 +113,8 @@ import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_detail_page.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendor_form_page.dart';
 import 'package:dayaa/features/vendors/presentation/views/vendors_page.dart';
+import 'package:dayaa/features/wallet/presentation/views/customer_wallet_page.dart';
+import 'package:dayaa/features/wallet/presentation/views/wallet_transactions_page.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/views/record_movement_page.dart';
@@ -488,6 +490,14 @@ abstract final class Routes {
 
   static String customerComments(int id) => '/customers/$id/comments';
 
+  /// «محفظة العميل» — خلف `customers.wallet.view`. Docs/payments/CUSTOMER-WALLET.md.
+  static const String customerWalletPath = '/customers/:id/wallet';
+
+  static String customerWallet(int id) => '/customers/$id/wallet';
+
+  /// «المعاملات المالية» — كل المحافظ، تحت «المالية».
+  static const String walletTransactions = '/wallet-transactions';
+
   /// A supplier's notes. Nested under the supplier exactly as the customer's are, because that
   /// is what the API does and what a link should say.
   static const String vendorCommentsPath = '/vendors/:id/comments';
@@ -696,6 +706,23 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.treasury,
         builder: (context, state) => const TreasuryPage(),
+      ),
+      // «محفظة العميل» و«المعاملات المالية» — محروستان هنا كما على أزرارهما، فلا يفتح رابطٌ عميق
+      // شاشةً كلُّ طلبٍ فيها 403.
+      GoRoute(
+        path: Routes.customerWalletPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewCustomerWallets) ? null : Routes.home,
+        builder: (context, state) => CustomerWalletPage(
+          customerId: int.parse(state.pathParameters['id']!),
+          customerName: state.payload as String?,
+        ),
+      ),
+      GoRoute(
+        path: Routes.walletTransactions,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewCustomerWallets) ? null : Routes.home,
+        builder: (context, state) => const WalletTransactionsPage(),
       ),
       // «مراجعة وتسوية الدفعات» — guarded here as well as on its card in «حالات الدفع», so a deep
       // link cannot reach a screen whose every request answers 403. Either grant opens it: the

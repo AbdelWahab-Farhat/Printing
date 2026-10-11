@@ -12,6 +12,7 @@ use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
+use App\Domain\Order\Actions\PayOrderFromWallet;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RecordScrapLoss;
 use App\Domain\Order\Actions\RefundOrderPayment;
@@ -90,6 +91,7 @@ class OrderService
         private readonly ReviewOrderDesign $reviewDesign,
         private readonly RecordOrderPayment $recordPayment,
         private readonly RefundOrderPayment $refundPayment,
+        private readonly PayOrderFromWallet $payFromWallet,
         private readonly ReverseOrderPayment $reversePayment,
         private readonly ReviewOrderPayment $reviewPayment,
         private readonly PaymentReviewQueue $reviewQueue,
@@ -426,6 +428,19 @@ class OrderService
     public function refundPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment
     {
         return ($this->refundPayment)($order, $data, $actor);
+    }
+
+    /**
+     * «الدفع من المحفظة» — see {@see PayOrderFromWallet}. `$amount` null pays as much as the wallet
+     * and the debt both allow. `$actor` null: the customer paid from the app.
+     */
+    public function payFromWallet(
+        Order $order,
+        ?string $amount,
+        ?User $actor = null,
+        ?string $clientToken = null,
+    ): OrderPayment {
+        return ($this->payFromWallet)($order, $amount, $actor, $clientToken);
     }
 
     /**

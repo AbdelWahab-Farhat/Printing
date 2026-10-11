@@ -291,10 +291,15 @@ final class TreasuryService
         }
     }
 
-    /** An account code depends on — `TreasuryAccount::NAWRIS`. */
+    /**
+     * An account code depends on — `TreasuryAccount::NAWRIS`, or «أرصدة محافظ الزبائن», which
+     * opens itself the first time it is asked for.
+     */
     public function systemAccount(string $code): TreasuryAccount
     {
-        return $this->resolver->system($code);
+        return $code === TreasuryAccount::CUSTOMER_WALLETS
+            ? $this->customerWalletsPayable()
+            : $this->resolver->system($code);
     }
 
     /** Records one movement. Call it inside the transaction that wrote its source. */
@@ -427,6 +432,30 @@ final class TreasuryService
             ['system_code' => TreasuryAccount::CUSTOMER_EXCESS],
             [
                 'name' => 'مبالغ زائدة للزبائن',
+                'kind' => AccountKind::Payable,
+                'is_default' => false,
+                'is_active' => true,
+                'currency' => 'LYD',
+            ],
+        ));
+    }
+
+    /**
+     * «أرصدة محافظ الزبائن» — opened the first time a wallet moves. `createOrFirst` on the system
+     * code, for the reason {@see payableForVendor()} gives. CUSTOMER-WALLET §٤.
+     */
+    public function customerWalletsPayable(): TreasuryAccount
+    {
+        $existing = TreasuryAccount::query()->where('system_code', TreasuryAccount::CUSTOMER_WALLETS)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return TreasuryAccount::unguarded(fn () => TreasuryAccount::query()->createOrFirst(
+            ['system_code' => TreasuryAccount::CUSTOMER_WALLETS],
+            [
+                'name' => 'أرصدة محافظ الزبائن',
                 'kind' => AccountKind::Payable,
                 'is_default' => false,
                 'is_active' => true,

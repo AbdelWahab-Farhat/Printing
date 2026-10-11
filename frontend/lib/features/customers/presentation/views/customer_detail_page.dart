@@ -18,6 +18,8 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_orders_section.dart';
+import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,6 +47,8 @@ class CustomerDetailPage extends StatelessWidget {
     // request nobody may make is a request not worth sending, and the section it feeds is absent
     // for the same reason «طلبية جديدة» is — see [_Actions].
     final showsOrders = sl<Session>().can(AppPermission.viewOrders);
+    // The wallet card on the same terms: not built without the grant to read it.
+    final showsWallet = sl<Session>().can(AppPermission.viewCustomerWallets);
 
     return MultiBlocProvider(
       providers: [
@@ -55,16 +59,21 @@ class CustomerDetailPage extends StatelessWidget {
           BlocProvider<CustomerOrderCountsCubit>(
             create: (_) => sl<CustomerOrderCountsCubit>(param1: customerId)..load(),
           ),
+        if (showsWallet)
+          BlocProvider<CustomerWalletCubit>(
+            create: (_) => sl<CustomerWalletCubit>(param1: customerId)..load(),
+          ),
       ],
-      child: _CustomerDetailView(showsOrders: showsOrders),
+      child: _CustomerDetailView(showsOrders: showsOrders, showsWallet: showsWallet),
     );
   }
 }
 
 class _CustomerDetailView extends StatefulWidget {
-  const _CustomerDetailView({required this.showsOrders});
+  const _CustomerDetailView({required this.showsOrders, required this.showsWallet});
 
   final bool showsOrders;
+  final bool showsWallet;
 
   @override
   State<_CustomerDetailView> createState() => _CustomerDetailViewState();
@@ -77,8 +86,9 @@ class _CustomerDetailViewState extends State<_CustomerDetailView> {
   final _changes = Changes<Customer>();
 
   bool get showsOrders => widget.showsOrders;
+  bool get showsWallet => widget.showsWallet;
 
-  /// Both readings at once, so one pull answers the whole screen.
+  /// Every reading at once, so one pull answers the whole screen.
   ///
   /// `Future.wait` rather than one after the other: they are independent requests, and making
   /// the numbers wait on the customer would double how long the spinner sits there.
@@ -86,6 +96,7 @@ class _CustomerDetailViewState extends State<_CustomerDetailView> {
     await Future.wait([
       context.read<CustomerDetailCubit>().load(),
       if (showsOrders) context.read<CustomerOrderCountsCubit>().load(),
+      if (showsWallet) context.read<CustomerWalletCubit>().load(),
     ]);
   }
 
@@ -135,6 +146,7 @@ class _CustomerDetailViewState extends State<_CustomerDetailView> {
               customer: state.customer!,
               isChanging: state.isChanging,
               showsOrders: showsOrders,
+              showsWallet: showsWallet,
             ),
           ),
         },
@@ -285,11 +297,13 @@ class _Body extends StatelessWidget {
     required this.customer,
     required this.isChanging,
     required this.showsOrders,
+    required this.showsWallet,
   });
 
   final Customer customer;
   final bool isChanging;
   final bool showsOrders;
+  final bool showsWallet;
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +341,13 @@ class _Body extends StatelessWidget {
               onOpen: (filter) => context.push(Routes.ordersFiltered, extra: filter),
             ),
           ),
+          SizedBox(height: 14.h),
+        ],
+
+        // «المحفظة» — right under the orders: what the customer holds is asked about with what
+        // they ordered. Docs/payments/CUSTOMER-WALLET.md.
+        if (showsWallet) ...[
+          _WalletCard(customerId: customer.id, customerName: customer.name),
           SizedBox(height: 14.h),
         ],
 
@@ -695,6 +716,48 @@ class _CopyRow extends StatelessWidget {
             ),
             Icon(AppIcons.copy, size: 16.sp, color: scheme.outline),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «المحفظة»: الرصيد، واللمسة تفتح المحفظة — سجلّها والشحن والتعديل. يُعاد الرصيد حين يعود منها
+/// وقد تحرّك فيها مال.
+class _WalletCard extends StatelessWidget {
+  const _WalletCard({required this.customerId, required this.customerName});
+
+  final int customerId;
+  final String customerName;
+
+  @override
+  Widget build(BuildContext context) {
+    // **بطاقةُ مال المستثمر نفسها** ([InvestorMoneyTile]) بطلب صاحب العمل (٢٠٢٦-١٠-١١): الرصيدُ
+    // أكبرُ ما فيها بوحدته، والأيقونةُ في طرفها، واللمسةُ تفتح المحفظة.
+    return InkWell(
+      borderRadius: BorderRadius.circular(20.r),
+      onTap: () async {
+        final cubit = context.read<CustomerWalletCubit>();
+        final moved = await context.push<bool>(
+          Routes.customerWallet(customerId),
+          extra: customerName,
+        );
+
+        if (moved == true) await cubit.load();
+      },
+      child: BlocBuilder<CustomerWalletCubit, CustomerWalletState>(
+        builder: (context, state) => InvestorMoneyTile(
+          label: 'رصيد المحفظة',
+          amount: switch (state) {
+            CustomerWalletLoaded(:final balance) => balance,
+            _ => '0.00',
+          },
+          icon: AppIcons.wallet,
+          caption: switch (state) {
+            CustomerWalletFailed() => 'تعذّر تحميل الرصيد — اسحب للتحديث',
+            CustomerWalletLoading() => 'يُحمَّل…',
+            CustomerWalletLoaded() => 'السجل والشحن',
+          },
         ),
       ),
     );
