@@ -52,6 +52,8 @@ class PurchaseOrderResource extends JsonResource
             // into this figure) already carries its allocated share.
             'total_amount' => $this->total_amount !== null ? (string) $this->total_amount : null,
             'total_additional_cost' => $this->total_additional_cost !== null ? (string) $this->total_additional_cost : null,
+            // What the vendor is owed — the total less the costs paid to somebody else.
+            'vendor_amount' => $this->vendor_amount !== null ? (string) $this->vendor_amount : null,
 
             // The deals financing this order, each with the lines it claims and the partners in
             // it — the money each put in beside the percentage it produced. Present on the single

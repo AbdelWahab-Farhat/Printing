@@ -20,6 +20,8 @@ final readonly class PurchaseOrderData
         public array $additionalCosts = [],
         public ?CarbonImmutable $expectedDate = null,
         public ?string $notes = null,
+        /** Who saved it — stamped on a cost paid from a drawer and on its movement. */
+        public ?int $actorId = null,
     ) {}
 
     /**
@@ -28,7 +30,7 @@ final readonly class PurchaseOrderData
      *
      * @param  array<string, mixed>  $validated
      */
-    public static function fromArray(array $validated): self
+    public static function fromArray(array $validated, ?int $actorId = null): self
     {
         return new self(
             vendorId: (int) $validated['vendor_id'],
@@ -42,6 +44,7 @@ final readonly class PurchaseOrderData
                 ? CarbonImmutable::parse($validated['expected_date'])
                 : null,
             notes: self::textOrNull($validated['notes'] ?? null),
+            actorId: $actorId,
         );
     }
 

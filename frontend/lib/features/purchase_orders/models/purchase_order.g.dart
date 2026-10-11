@@ -29,6 +29,7 @@ _PurchaseOrder _$PurchaseOrderFromJson(
   notes: json['notes'] as String?,
   totalAmount: json['total_amount'] as String?,
   totalAdditionalCost: json['total_additional_cost'] as String?,
+  vendorAmount: json['vendor_amount'] as String?,
   additionalCosts:
       (json['additional_costs'] as List<dynamic>?)
           ?.map(
@@ -76,6 +77,7 @@ Map<String, dynamic> _$PurchaseOrderToJson(
   'notes': instance.notes,
   'total_amount': instance.totalAmount,
   'total_additional_cost': instance.totalAdditionalCost,
+  'vendor_amount': instance.vendorAmount,
   'additional_costs': instance.additionalCosts.map((e) => e.toJson()).toList(),
   'items': instance.items.map((e) => e.toJson()).toList(),
   'investor_funding': instance.investorFunding.map((e) => e.toJson()).toList(),
@@ -102,6 +104,13 @@ _PurchaseOrderAdditionalCost _$PurchaseOrderAdditionalCostFromJson(
   id: (json['id'] as num).toInt(),
   name: json['name'] as String,
   amount: json['amount'] as String,
+  stockArrivalId: (json['stock_arrival_id'] as num?)?.toInt(),
+  treasuryAccountId: (json['treasury_account_id'] as num?)?.toInt(),
+  treasuryAccount: json['treasury_account'] == null
+      ? null
+      : PaymentAccountRef.fromJson(
+          json['treasury_account'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
@@ -110,6 +119,9 @@ Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
   'id': instance.id,
   'name': instance.name,
   'amount': instance.amount,
+  'stock_arrival_id': instance.stockArrivalId,
+  'treasury_account_id': instance.treasuryAccountId,
+  'treasury_account': instance.treasuryAccount?.toJson(),
 };
 
 _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
@@ -129,6 +141,8 @@ _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>
       allocatedAdditionalCost: json['allocated_additional_cost'] as String?,
       finalUnitCost: json['final_unit_cost'] as String?,
       finalTotalCost: json['final_total_cost'] as String?,
+      arrivalAdditionalCost: json['arrival_additional_cost'] as String?,
+      landedUnitCost: json['landed_unit_cost'] as String?,
       unit: json['unit'] as String?,
       unitLabel: json['unit_label'] as String?,
     );
@@ -147,6 +161,8 @@ Map<String, dynamic> _$PurchaseOrderItemToJson(_PurchaseOrderItem instance) =>
       'allocated_additional_cost': instance.allocatedAdditionalCost,
       'final_unit_cost': instance.finalUnitCost,
       'final_total_cost': instance.finalTotalCost,
+      'arrival_additional_cost': instance.arrivalAdditionalCost,
+      'landed_unit_cost': instance.landedUnitCost,
       'unit': instance.unit,
       'unit_label': instance.unitLabel,
     };

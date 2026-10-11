@@ -57,8 +57,9 @@ final class ReverseDealExpense
         InvestorDealExpense $expense,
         string $reason,
         ?int $actorId,
+        bool $byHand = true,
     ): InvestorDealExpense {
-        return DB::transaction(function () use ($expense, $reason, $actorId): InvestorDealExpense {
+        return DB::transaction(function () use ($expense, $reason, $actorId, $byHand): InvestorDealExpense {
             // الصفقةُ أولاً ثم الصفّ — ترتيبُ الأقفال الواحد في هذا السياق.
             $deal = InvestorDeal::query()
                 ->whereKey($expense->investor_deal_id)
@@ -70,6 +71,14 @@ final class ReverseDealExpense
                 ->firstOrFail();
 
             $this->guard($deal, $original);
+
+            // A purchase order's arrival cost on a funded line follows its receipt: undone by
+            // hand here, the order would go on showing a cost the deal no longer carries.
+            if ($byHand && $original->source_type === AuditSubject::PurchaseOrderAdditionalCost->value) {
+                throw EntryCannotBeReversed::make(
+                    'هذا المصروف من تكاليف وصول أمر شراء — يُعكس بالتراجع عن استلام الشحنة'
+                );
+            }
 
             $reversal = new InvestorDealExpense([
                 'kind' => $original->kind,

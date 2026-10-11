@@ -357,7 +357,10 @@ final class PeriodExpensesQuery
             'is_reversed' => $reversal !== null,
 
             // **الخادمُ يقول أيُعكس** — الحارسُ نفسُه الذي يرفض العكس، لا نسخةٌ منه في التطبيق.
-            'can_reverse' => $reversal === null && ! $this->chargePeriod->isClosed($expense),
+            // ولا تكاليفُ وصول أمر شراء: تتبع استلامَها، وتُعكس بالتراجع عنه.
+            'can_reverse' => $reversal === null
+                && ! $this->chargePeriod->isClosed($expense)
+                && $expense->source_type !== AuditSubject::PurchaseOrderAdditionalCost->value,
 
             // **ما تحمّله المستثمرون منه في هذه الفترة** — موجبٌ ما حُمِّلوه، وسالبٌ ما رُدّ إليهم.
             'investors_amount' => Money::round($investorsTotal),

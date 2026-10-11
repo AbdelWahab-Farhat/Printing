@@ -95,6 +95,7 @@ class DraftAdditionalCost {
     required this.name,
     required this.amount,
     this.id,
+    this.treasuryAccountId,
   });
 
   /// Absent on a cost being added; present on one being corrected.
@@ -102,6 +103,9 @@ class DraftAdditionalCost {
 
   final String name;
   final String amount;
+
+  /// Who was paid — null is the vendor's bill. See [PurchaseOrderAdditionalCostLine].
+  final int? treasuryAccountId;
 
   /// Whether there is anything here to send.
   ///
@@ -143,15 +147,7 @@ class SavePurchaseOrder {
         ),
     ];
 
-    final costs = [
-      for (final cost in additionalCosts)
-        if (!cost.isBlank)
-          PurchaseOrderAdditionalCostLine(
-            id: cost.id,
-            name: cost.name.trim(),
-            amount: _number(cost.amount),
-          ),
-    ];
+    final costs = _costLines(additionalCosts);
 
     if (id == null) {
       return _repository.create(
@@ -206,9 +202,12 @@ class ReceivePurchaseOrderArrival {
   /// [quantities] is keyed by **stock item id**, not by the order line's own id — that is what
   /// the endpoint addresses a received line by, and it is what makes the map safe: an order
   /// carries one line per shelf, so a key can never stand for two of them.
+  ///
+  /// [additionalCosts] — «تكاليف الوصول» — drop their blank rows the way the order form does.
   Future<Either<Failure, StockArrival>> call(
     int purchaseOrderId, {
     required Map<int, String> quantities,
+    List<DraftAdditionalCost> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
   }) {
@@ -221,6 +220,7 @@ class ReceivePurchaseOrderArrival {
     return _repository.receiveArrival(
       purchaseOrderId,
       items: lines,
+      additionalCosts: _costLines(additionalCosts),
       invoiceNumber: _blankToNull(invoiceNumber),
       notes: _blankToNull(notes),
     );
@@ -259,6 +259,18 @@ class ReverseReceipt {
 /// Converted here, in the one layer a test can reach without a widget tree.
 String _number(String input) =>
     Validators.toWesternDigits(input.trim()).replaceAll(',', '.');
+
+/// The costs worth sending: blank rows dropped, digits normalised, the name trimmed.
+List<PurchaseOrderAdditionalCostLine> _costLines(List<DraftAdditionalCost> costs) => [
+  for (final cost in costs)
+    if (!cost.isBlank)
+      PurchaseOrderAdditionalCostLine(
+        id: cost.id,
+        name: cost.name.trim(),
+        amount: _number(cost.amount),
+        treasuryAccountId: cost.treasuryAccountId,
+      ),
+];
 
 String? _blankToNull(String? value) {
   final trimmed = value?.trim();

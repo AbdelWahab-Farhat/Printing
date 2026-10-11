@@ -494,6 +494,7 @@ final class AuditAttributeLabels
             // Part of `total_amount`, not on top of it: every line's final cost already carries
             // its share. The wording says «منها» for that reason, as the detail screen does.
             'total_additional_cost' => 'منها تكاليف إضافية',
+            'vendor_amount' => 'المستحق للمورد',
         ],
         'purchase_order_item' => [
             'purchase_order_id' => 'أمر الشراء',
@@ -507,12 +508,17 @@ final class AuditAttributeLabels
             'allocated_additional_cost' => 'حصة التكاليف الإضافية',
             'final_unit_cost' => 'تكلفة الوحدة النهائية',
             'final_total_cost' => 'التكلفة النهائية',
+            'arrival_additional_cost' => 'حصة تكاليف الوصول',
+            'landed_unit_cost' => 'تكلفة الوحدة عند الاستلام',
         ],
         'purchase_order_additional_cost' => [
             'purchase_order_id' => 'أمر الشراء',
             // Not the shared «الاسم»: this names what the charge was for — التوصيل، الجمارك —
             // which is what the form asks for and what the invoice calls it.
             'name' => 'البيان',
+            'stock_arrival_id' => 'الشحنة',
+            'treasury_account_id' => 'دُفعت من',
+            'recorded_by' => 'سجّلها',
         ],
         'investor' => [
             'name' => 'اسم المستثمر',

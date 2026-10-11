@@ -3,6 +3,8 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/additional_cost_row.dart';
+import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// per shelf, so a key can never stand for two of them.
 typedef ReceivedShipment = ({
   Map<int, String> quantities,
+  List<DraftAdditionalCost> additionalCosts,
   String? invoiceNumber,
   String? notes,
 });
@@ -54,8 +57,13 @@ class _ReceiveArrivalSheet extends StatefulWidget {
 }
 
 class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
+  final _form = GlobalKey<FormState>();
   final _invoice = TextEditingController();
   final _notes = TextEditingController();
+
+  /// «تكاليف الوصول» — what was paid when the lorry arrived. **Starts empty**: most shipments
+  /// carry none, and a blank row is one more box a storeman has to decide to leave alone.
+  final List<AdditionalCostDraft> _costs = [];
 
   /// One controller per line, keyed by stock item — which is what the API addresses a received
   /// line by, not by the line's own id.
@@ -71,10 +79,22 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
     for (final controller in _quantities.values) {
       controller.dispose();
     }
+    for (final cost in _costs) {
+      cost.dispose();
+    }
     super.dispose();
   }
 
+  void _addCost() => setState(() => _costs.add(AdditionalCostDraft(name: '', amount: '')));
+
+  void _removeCost(AdditionalCostDraft cost) {
+    setState(() => _costs.remove(cost));
+    WidgetsBinding.instance.addPostFrameCallback((_) => cost.dispose());
+  }
+
   void _submit() {
+    if (!(_form.currentState?.validate() ?? true)) return;
+
     final filled = {
       for (final entry in _quantities.entries)
         if (entry.value.text.trim().isNotEmpty) entry.key: entry.value.text,
@@ -88,6 +108,9 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
 
     Navigator.of(context).pop((
       quantities: filled,
+      // Plain strings rather than the drafts: their controllers are disposed with this sheet,
+      // while the page that receives this is still sending it.
+      additionalCosts: [for (final cost in _costs) cost.toDraft()],
       invoiceNumber: _invoice.text,
       notes: _notes.text,
     ));
@@ -132,31 +155,64 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
-              children: [
-                for (final item in lines) ...[
-                  _LineBox(
-                    item: item,
-                    controller: _quantities[item.stockItemId]!,
-                  ),
+            child: Form(
+              key: _form,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                children: [
+                  for (final item in lines) ...[
+                    _LineBox(
+                      item: item,
+                      controller: _quantities[item.stockItemId]!,
+                    ),
+                    SizedBox(height: 10.h),
+                  ],
                   SizedBox(height: 10.h),
+                  // Under the lines, because they are what it is spread over — by the value of
+                  // what arrived, into the cost the stock enters at.
+                  Text(
+                    'تكاليف الوصول',
+                    style: context.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: scheme.primary,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'النقل والتفريغ والجمارك المدفوعة عند الوصول — تدخل في تكلفة ما وصل حسب قيمته',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  for (final cost in _costs)
+                    AdditionalCostRow(
+                      key: ObjectKey(cost),
+                      cost: cost,
+                      requirePositive: true,
+                      onRemove: () => _removeCost(cost),
+                    ),
+                  AppButton.tonal(
+                    label: 'إضافة تكلفة',
+                    icon: AppIcons.add,
+                    onPressed: _addCost,
+                  ),
+                  SizedBox(height: 16.h),
+                  AppTextField(
+                    controller: _invoice,
+                    label: 'رقم الفاتورة (اختياري)',
+                    prefixIcon: AppIcons.tag,
+                    textDirection: TextDirection.ltr,
+                  ),
+                  SizedBox(height: 12.h),
+                  AppTextField(
+                    controller: _notes,
+                    label: 'ملاحظات (اختياري)',
+                    prefixIcon: AppIcons.edit,
+                    maxLines: 2,
+                  ),
                 ],
-                SizedBox(height: 6.h),
-                AppTextField(
-                  controller: _invoice,
-                  label: 'رقم الفاتورة (اختياري)',
-                  prefixIcon: AppIcons.tag,
-                  textDirection: TextDirection.ltr,
-                ),
-                SizedBox(height: 12.h),
-                AppTextField(
-                  controller: _notes,
-                  label: 'ملاحظات (اختياري)',
-                  prefixIcon: AppIcons.edit,
-                  maxLines: 2,
-                ),
-              ],
+              ),
             ),
           ),
           SafeArea(

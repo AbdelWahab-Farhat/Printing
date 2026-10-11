@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\DTOs;
 
+use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
+
 final readonly class ReceivePurchaseOrderData
 {
     /**
@@ -15,6 +17,13 @@ final readonly class ReceivePurchaseOrderData
         public array $items,
         public ?string $invoiceNumber = null,
         public ?string $notes = null,
+        /**
+         * What was paid on the lorry's arrival — delivery, porters, customs. Spread over what
+         * this receipt brought ({@see ReceivePurchaseOrder}).
+         *
+         * @var list<PurchaseOrderAdditionalCostData>
+         */
+        public array $additionalCosts = [],
     ) {}
 
     /**
@@ -27,6 +36,10 @@ final readonly class ReceivePurchaseOrderData
             items: array_map(ReceivePurchaseOrderItemData::fromArray(...), $validated['items']),
             invoiceNumber: self::textOrNull($validated['invoice_number'] ?? null),
             notes: self::textOrNull($validated['notes'] ?? null),
+            additionalCosts: array_map(
+                PurchaseOrderAdditionalCostData::fromArray(...),
+                array_values($validated['additional_costs'] ?? []),
+            ),
         );
     }
 

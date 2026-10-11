@@ -12,6 +12,11 @@ final readonly class PurchaseOrderAdditionalCostData
         public string $amount,
         /** Present when updating an existing cost; null when creating a new one. */
         public ?int $id = null,
+        /**
+         * Who was paid: null is the vendor's bill; a drawer it was paid from, or a manual
+         * payable it is owed to — see `PurchaseOrderAdditionalCost`.
+         */
+        public ?int $treasuryAccountId = null,
     ) {}
 
     /**
@@ -23,6 +28,9 @@ final readonly class PurchaseOrderAdditionalCostData
             name: trim((string) $validated['name']),
             amount: number_format((float) $validated['amount'], 2, '.', ''),
             id: isset($validated['id']) ? (int) $validated['id'] : null,
+            treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
+                ? (int) $validated['treasury_account_id']
+                : null,
         );
     }
 }

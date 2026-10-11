@@ -151,6 +151,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
 
     final failure = await cubit.receive(
       quantities: shipment.quantities,
+      additionalCosts: shipment.additionalCosts,
       invoiceNumber: shipment.invoiceNumber,
       notes: shipment.notes,
     );
@@ -434,6 +435,16 @@ class _Body extends StatelessWidget {
                     value: '${groupedDecimal(additional)} د.ل',
                   ),
                 ],
+              // What the vendor is owed differs from the total once a cost was paid to somebody
+              // else — the drawer, or a «التزام». Only then is it a second figure worth reading.
+              if (order.hasCostsPaidElsewhere)
+                if (order.vendorAmount case final owed?) ...[
+                  Divider(height: 18.h),
+                  _Row(
+                    label: 'المستحق للمورد',
+                    value: '${groupedDecimal(owed)} د.ل',
+                  ),
+                ],
             ],
           ),
         ),
@@ -443,20 +454,38 @@ class _Body extends StatelessWidget {
         // Itemised, and only when there is something to itemise. This is what answers «why is
         // this line dearer than the invoice said» — without it the allocated shares on the lines
         // below are a number with no source.
-        if (order.hasAdditionalCosts) ...[
-          SizedBox(height: 14.h),
-          _Section(
-            title: 'التكاليف الإضافية',
-            child: Column(
-              children: [
-                for (final (index, cost) in order.additionalCosts.indexed) ...[
-                  if (index > 0) Divider(height: 18.h),
-                  _Row(label: cost.name, value: '${cost.amountLabel} د.ل'),
+        // Planned and paid-at-the-door apart: the first was spread over what was ordered, the
+        // second over what arrived — two answers to «why is this line dearer».
+        for (final (title, costs) in [
+          ('التكاليف الإضافية', order.plannedCosts),
+          ('تكاليف الوصول', order.arrivalCosts),
+        ])
+          if (costs.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            _Section(
+              title: title,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final (index, cost) in costs.indexed) ...[
+                    if (index > 0) Divider(height: 18.h),
+                    _Row(label: cost.name, value: '${cost.amountLabel} د.ل'),
+                    // Who was paid — said only when it was not the vendor, which is what every
+                    // cost was before the question existed.
+                    if (!cost.isOnVendorBill) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        cost.paidByLabel,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
         if (order.notes case final notes?) ...[
           SizedBox(height: 14.h),
           _Section(title: 'ملاحظات', child: Text(notes)),
@@ -816,6 +845,18 @@ class _LineRow extends StatelessWidget {
             Text(
               'الأساسي ${item.baseTotalCostLabel} د.ل '
               '+ حصة من التكاليف الإضافية ${item.allocatedCostLabel} د.ل',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: scheme.outline,
+              ),
+            ),
+          ],
+          // What the stock actually entered at — over what arrived, with the costs paid at the
+          // door on top. Only when it differs from the planned price above.
+          if (item.landedDiffersFromPlanned) ...[
+            SizedBox(height: 2.h),
+            Text(
+              'دخل المخزن بـ ${item.landedCostLabel} د.ل ${item.perUnitSuffix}'
+              '${item.hasArrivalCost ? ' · منها حصة تكاليف الوصول ${item.arrivalCostLabel} د.ل' : ''}',
               style: context.textTheme.bodySmall?.copyWith(
                 color: scheme.outline,
               ),

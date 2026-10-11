@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\Actions;
 
+use App\Domain\Investor\InvestorService;
 use App\Domain\PurchaseOrder\DTOs\ReversePurchaseOrderReceiptData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderReceiptNotReversible;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\VendorService;
@@ -42,7 +44,13 @@ use Illuminate\Support\Facades\DB;
  */
 final class ReversePurchaseOrderReceipt
 {
-    public function __construct(private readonly VendorService $vendors) {}
+    public function __construct(
+        private readonly VendorService $vendors,
+        private readonly InvestorService $investors,
+        private readonly RecalculatePurchaseOrderTotal $recalculateTotal,
+        private readonly SyncPurchaseOrderDebt $syncDebt,
+        private readonly SyncAdditionalCostExpense $costExpense,
+    ) {}
 
     public function __invoke(PurchaseOrder $order, ReversePurchaseOrderReceiptData $data): PurchaseOrder
     {
@@ -74,14 +82,40 @@ final class ReversePurchaseOrderReceipt
                 $item->quantity_received = bcsub(
                     (string) $item->quantity_received, (string) $line->quantity, 3,
                 );
+                $item->forceFill(['arrival_additional_cost' => null, 'landed_unit_cost' => null]);
                 $item->save();
             }
+
+            $this->undoArrivalCosts($order, $arrival, $data);
 
             $order->status = PurchaseOrderStatus::Arrived;
             $order->save();
 
+            ($this->recalculateTotal)($order);
+            ($this->syncDebt)($order, $data->reversedBy);
+
             return $order;
         });
+    }
+
+    /**
+     * The costs typed on this receipt go with it — PURCHASE-ORDER-ARRIVAL-COSTS.md §3. A receipt
+     * taken back was entered in error, and its costs are typed again on the right one: each
+     * deal's share is reversed off the deal, the drawer gets its money back (or the payable its
+     * debt), and the row is removed — kept in the audit trail, out of every total.
+     */
+    private function undoArrivalCosts(PurchaseOrder $order, StockArrival $arrival, ReversePurchaseOrderReceiptData $data): void
+    {
+        $reason = "التراجع عن استلام أمر الشراء {$order->getKey()}: {$data->reason}";
+
+        $order->additionalCosts()
+            ->where('stock_arrival_id', $arrival->getKey())
+            ->each(function (PurchaseOrderAdditionalCost $cost) use ($reason, $data): void {
+                $this->investors->reverseSupplyExpensesOf($cost->getMorphClass(), (int) $cost->getKey(), $reason, $data->reversedBy);
+
+                $cost->delete();
+                ($this->costExpense)($cost, $data->reversedBy, reason: $reason);
+            });
     }
 
     /**

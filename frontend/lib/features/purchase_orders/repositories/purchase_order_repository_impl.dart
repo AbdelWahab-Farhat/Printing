@@ -150,6 +150,7 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
   Future<Either<Failure, StockArrival>> receiveArrival(
     int purchaseOrderId, {
     required List<ReceivedLine> items,
+    List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
   }) {
@@ -163,6 +164,10 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
             'invoice_number': invoiceNumber,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
           'items': items.map((line) => line.toJson()).toList(growable: false),
+          if (additionalCosts.isNotEmpty)
+            'additional_costs': additionalCosts
+                .map((cost) => cost.toJson())
+                .toList(growable: false),
         },
       ),
       parse: (data) => StockArrival.fromJson(data as Map<String, dynamic>),

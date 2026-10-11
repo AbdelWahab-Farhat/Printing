@@ -35,6 +35,19 @@ class PurchaseOrderFactory extends Factory
         ];
     }
 
+    /**
+     * A total typed straight onto the document is the vendor's, unless the test says otherwise —
+     * what the arrival-costs migration backfilled every existing order with.
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function (PurchaseOrder $order): void {
+            if ($order->vendor_amount === null && $order->total_amount !== null) {
+                $order->vendor_amount = $order->total_amount;
+            }
+        });
+    }
+
     public function from(Vendor $vendor): static
     {
         return $this->state(fn () => ['vendor_id' => $vendor->id]);

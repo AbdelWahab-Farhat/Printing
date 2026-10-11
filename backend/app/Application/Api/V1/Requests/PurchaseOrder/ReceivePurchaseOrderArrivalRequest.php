@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Receiving a shipment against a purchase order.
@@ -49,6 +50,35 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
             // StoreStockArrivalRequest holds. Whole numbers are enforced separately, per
             // product, when the line is posted to the ledger.
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999.999'],
+
+            // What was paid on the lorry's arrival — delivery, porters, customs — spread over
+            // what this shipment brought (PURCHASE-ORDER-ARRIVAL-COSTS.md). `gt:0`: a cost of
+            // nothing paid on arrival is not one. Who was paid as on the order form: absent is the
+            // vendor's bill, else a drawer or a manual «التزام».
+            'additional_costs' => ['nullable', 'array', 'max:20'],
+            'additional_costs.*.name' => ['required', 'string', 'max:255'],
+            'additional_costs.*.amount' => ['required', 'numeric', 'gt:0', 'max:999999999999.99'],
+            'additional_costs.*.treasury_account_id' => [
+                'nullable', 'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
+        ];
+    }
+
+    /**
+     * Charging a cost to an account is spending from it — {@see CostAccountGrant}. The
+     * storekeeper who receives may lack that grant, and then names no account.
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            fn (Validator $validator) => CostAccountGrant::check(
+                $validator,
+                $this->user(),
+                $this->input('additional_costs'),
+            ),
         ];
     }
 
@@ -69,6 +99,14 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
             'items.*.quantity.numeric' => 'الكمية يجب أن تكون رقماً',
             'items.*.quantity.gt' => 'الكمية يجب أن تكون أكبر من صفر',
             'items.*.quantity.max' => 'الكمية أكبر من الحد المسموح',
+            'additional_costs.max' => 'عدد التكاليف أكبر من المسموح',
+            'additional_costs.*.name.required' => 'اسم التكلفة مطلوب',
+            'additional_costs.*.name.max' => 'اسم التكلفة طويل جداً',
+            'additional_costs.*.amount.required' => 'قيمة التكلفة مطلوبة',
+            'additional_costs.*.amount.numeric' => 'قيمة التكلفة يجب أن تكون رقماً',
+            'additional_costs.*.amount.gt' => 'قيمة التكلفة يجب أن تكون أكبر من صفر',
+            'additional_costs.*.amount.max' => 'قيمة التكلفة أكبر من الحد المسموح',
+            'additional_costs.*.treasury_account_id.exists' => 'الحساب المحدد غير موجود',
         ];
     }
 
@@ -83,6 +121,10 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
             'items' => 'البنود',
             'items.*.stock_item_id' => 'المادة',
             'items.*.quantity' => 'الكمية',
+            'additional_costs' => 'تكاليف الوصول',
+            'additional_costs.*.name' => 'اسم التكلفة',
+            'additional_costs.*.amount' => 'قيمة التكلفة',
+            'additional_costs.*.treasury_account_id' => 'الحساب الذي دُفعت منه',
         ];
     }
 }

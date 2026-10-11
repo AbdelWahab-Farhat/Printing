@@ -1,4 +1,5 @@
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -196,6 +197,10 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     /// by the server from [additionalCosts].
     @JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,
 
+    /// What the vendor is owed — [totalAmount] less every cost paid to somebody else (a drawer,
+    /// or a «التزام»). The figure the vendor's account reads; null where [totalAmount] is.
+    @JsonKey(name: 'vendor_amount') String? vendorAmount,
+
     /// The order-level costs one by one, as they were typed.
     ///
     /// **Sent with the list as well as with a single order**, so the edit form always opens on
@@ -263,6 +268,18 @@ abstract class PurchaseOrder with _$PurchaseOrder {
   /// «التكاليف الإضافية» section drawn empty — or a «٠ د.ل» row — is a question on every screen
   /// that has no answer worth reading.
   bool get hasAdditionalCosts => additionalCosts.isNotEmpty;
+
+  /// The costs typed when the order was raised.
+  List<PurchaseOrderAdditionalCost> get plannedCosts =>
+      [for (final cost in additionalCosts) if (!cost.isArrivalCost) cost];
+
+  /// The costs typed on the receive screen — «تكاليف الوصول».
+  List<PurchaseOrderAdditionalCost> get arrivalCosts =>
+      [for (final cost in additionalCosts) if (cost.isArrivalCost) cost];
+
+  /// Whether some of its costs were paid to somebody other than the vendor, so what the vendor
+  /// is owed differs from the order's total and is worth its own row.
+  bool get hasCostsPaidElsewhere => additionalCosts.any((cost) => !cost.isOnVendorBill);
 }
 
 /// One order-level cost not tied to any line — delivery, unloading, customs.
@@ -278,6 +295,14 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
 
     /// A string like every other money field here: `'10.00'` as the server stored it.
     required String amount,
+
+    /// The receipt it was typed on; null on a cost planned when the order was raised.
+    @JsonKey(name: 'stock_arrival_id') int? stockArrivalId,
+
+    /// Who was paid. Null is the vendor's bill; otherwise the drawer that paid it, or the
+    /// «التزام» it is owed to ([treasuryAccount]'s `kind` is `payable`).
+    @JsonKey(name: 'treasury_account_id') int? treasuryAccountId,
+    @JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,
   }) = _PurchaseOrderAdditionalCost;
 
   const PurchaseOrderAdditionalCost._();
@@ -287,6 +312,19 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
 
   /// `'10.00'` → `'10'`, ready for a widget.
   String get amountLabel => groupedDecimal(amount);
+
+  bool get isArrivalCost => stockArrivalId != null;
+
+  bool get isOnVendorBill => treasuryAccountId == null;
+
+  /// «على فاتورة المورد» · «دُفعت من الخزنة» · «علينا لـ المخلّص».
+  String get paidByLabel {
+    if (isOnVendorBill) return 'على فاتورة المورد';
+
+    final name = treasuryAccount?.name ?? 'حساب #$treasuryAccountId';
+
+    return treasuryAccount?.kind == 'payable' ? 'علينا لـ$name' : 'دُفعت من $name';
+  }
 }
 
 /// One line: a shelf, how much was ordered, and how much of it has turned up.
@@ -355,6 +393,12 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
     /// line the allocator never ran over, where the base figures are all there is.
     @JsonKey(name: 'final_unit_cost') String? finalUnitCost,
     @JsonKey(name: 'final_total_cost') String? finalTotalCost,
+
+    /// Null until received. The line's share of the costs typed on the receive screen, and the
+    /// unit cost its stock actually entered at — over what **arrived**, so it can differ from
+    /// [finalUnitCost] on a short or an over shipment.
+    @JsonKey(name: 'arrival_additional_cost') String? arrivalAdditionalCost,
+    @JsonKey(name: 'landed_unit_cost') String? landedUnitCost,
 
     /// What this line is counted in, snapshotted from the **stock item** when the line was
     /// written — `CreatePurchaseOrder` force-fills it from `stockItem->unit` and never trusts a
@@ -435,6 +479,16 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   String get unitCostLabel =>
       groupedDecimal(finalUnitCost ?? baseUnitCost ?? '0');
 
+  /// What one of these entered the stock at, once received.
+  String get landedCostLabel => groupedDecimal(landedUnitCost ?? '0');
+
+  /// Whether the stock entered at something other than the planned unit cost — arrival costs
+  /// came on top, or the shipment was short or over. **Equal is not worth a second line**: it is
+  /// the price printed above it.
+  bool get landedDiffersFromPlanned =>
+      landedUnitCost != null &&
+      double.tryParse(landedUnitCost!) != double.tryParse(finalUnitCost ?? baseUnitCost ?? '');
+
   /// What the whole line really cost, on the same rule as [unitCostLabel].
   String get totalCostLabel =>
       groupedDecimal(finalTotalCost ?? baseTotalCost ?? '0');
@@ -453,6 +507,14 @@ abstract class PurchaseOrderItem with _$PurchaseOrderItem {
   /// the price twice and explains nothing.
   bool get hasAllocatedCost =>
       (double.tryParse(allocatedAdditionalCost ?? '0') ?? 0) > 0;
+
+  /// This line's share of the costs paid when the goods arrived.
+  String get arrivalCostLabel => groupedDecimal(arrivalAdditionalCost ?? '0');
+
+  /// Whether any of the arrival costs landed here — zero is not worth a row, as with
+  /// [hasAllocatedCost].
+  bool get hasArrivalCost =>
+      (double.tryParse(arrivalAdditionalCost ?? '0') ?? 0) > 0;
 }
 
 /// What a purchase-order line is counted in, and every phrase this app builds out of it.

@@ -80,7 +80,7 @@ class PurchaseOrderService
     public function find(int $id): PurchaseOrder
     {
         return PurchaseOrder::query()
-            ->with(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts'])
+            ->with(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount'])
             ->findOrFail($id);
     }
 

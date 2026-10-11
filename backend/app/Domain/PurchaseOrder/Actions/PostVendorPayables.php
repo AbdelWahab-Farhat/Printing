@@ -74,7 +74,7 @@ final class PostVendorPayables
         PurchaseOrder::query()
             ->where('predates_treasury', false)
             ->where('status', '<>', PurchaseOrderStatus::Cancelled->value)
-            ->whereNotNull('total_amount')
+            ->whereNotNull('vendor_amount')
             ->orderBy('id')
             ->each(function (PurchaseOrder $order) use (&$orders, &$skipped): void {
                 $before = $this->liveCount($order->getMorphClass(), (int) $order->getKey());

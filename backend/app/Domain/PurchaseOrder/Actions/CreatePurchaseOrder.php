@@ -34,6 +34,7 @@ final class CreatePurchaseOrder
         private readonly AllocatePurchaseOrderAdditionalCosts $allocateAdditionalCosts,
         private readonly RecalculatePurchaseOrderTotal $recalculateTotal,
         private readonly SyncPurchaseOrderDebt $syncDebt,
+        private readonly SyncAdditionalCostExpense $costExpense,
     ) {}
 
     public function __invoke(PurchaseOrderData $data): PurchaseOrder
@@ -78,17 +79,31 @@ final class CreatePurchaseOrder
                 $orderItem->save();
             }
 
-            foreach ($data->additionalCosts as $cost) {
-                $order->additionalCosts()->create(['name' => $cost->name, 'amount' => $cost->amount]);
+            $costs = [];
+
+            foreach ($data->additionalCosts as $index => $cost) {
+                $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id");
+
+                $row = $order->additionalCosts()->make(['name' => $cost->name, 'amount' => $cost->amount]);
+                $row->treasury_account_id = $cost->treasuryAccountId;
+                $row->recorded_by = $data->actorId;
+                $row->save();
+
+                $costs[] = $row;
             }
 
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
 
-            // Owed to the vendor from this moment, at the full total — TREASURY-DESIGN §٢٠.
+            // Owed to the vendor from this moment, at what is on their bill — TREASURY-DESIGN §٢٠.
             ($this->syncDebt)($order, null);
 
-            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
+            // And what was paid to somebody else, out of the drawer that paid it.
+            foreach ($costs as $row) {
+                ($this->costExpense)($row, $data->actorId);
+            }
+
+            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount']);
         });
     }
 }

@@ -478,6 +478,64 @@ final class TreasuryService
         );
     }
 
+    /**
+     * Makes the expense a source stands for equal `$amount` out of `$accountId` — a purchase
+     * order's delivery or customs paid from a drawer, or bought on credit from a manual payable.
+     * The same idempotent repost as the vendor's debt, under kind `expense`, so it lists in
+     * «المصاريف». Null account or zero: nothing spent any more, and what stood is reversed.
+     */
+    public function syncExpense(
+        string $sourceType,
+        int $sourceId,
+        ?int $accountId,
+        string $amount,
+        DateTimeInterface $firstPostedAt,
+        string $notes,
+        string $reason,
+        ?int $actorId,
+    ): void {
+        ($this->syncDebt)(
+            $sourceType,
+            $sourceId,
+            MovementKind::Expense,
+            $accountId,
+            $amount,
+            $firstPostedAt,
+            $notes,
+            $reason,
+            $actorId,
+        );
+    }
+
+    /**
+     * An account a cost may be charged to by hand: a drawer it was paid from, or a manual
+     * «التزام» it is owed to — what «مصروف» on the operation sheet offers. Refuses a
+     * switched-off account, custody, a vendor's payable (its orders and payments move it) and the
+     * customers' excess.
+     */
+    public function expenseAccount(int $id, string $field = 'treasury_account_id'): TreasuryAccount
+    {
+        $account = TreasuryAccount::query()->findOrFail($id);
+
+        if (! $account->is_active) {
+            throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+        }
+
+        if ($account->isVendorPayable()) {
+            throw AccountDoesNotFitMethod::vendorPayable((string) $account->name, $field);
+        }
+
+        if ($account->isCustomerExcessPayable()) {
+            throw AccountDoesNotFitMethod::customerExcessPayable((string) $account->name, $field);
+        }
+
+        if ($account->kind !== AccountKind::Payable && ! $account->kind->spendable()) {
+            throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
+        }
+
+        return $account;
+    }
+
     // ── settlement ──────────────────────────────────────────────────────────────────────
 
     /**

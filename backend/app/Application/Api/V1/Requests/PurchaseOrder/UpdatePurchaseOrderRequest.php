@@ -64,6 +64,10 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'additional_costs.*.id' => ['nullable', 'integer'],
             'additional_costs.*.name' => ['required', 'string', 'max:255'],
             'additional_costs.*.amount' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
+            'additional_costs.*.treasury_account_id' => [
+                'nullable', 'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
         ];
     }
 
@@ -87,6 +91,7 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
             'additional_costs.*.id' => 'معرف التكلفة الإضافية',
             'additional_costs.*.name' => 'اسم التكلفة الإضافية',
             'additional_costs.*.amount' => 'قيمة التكلفة الإضافية',
+            'additional_costs.*.treasury_account_id' => 'الحساب الذي دُفعت منه',
         ];
     }
 }

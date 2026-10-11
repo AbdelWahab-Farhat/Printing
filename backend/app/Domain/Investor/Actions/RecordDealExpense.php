@@ -54,6 +54,8 @@ final class RecordDealExpense
             $expense->investor_deal_id = $locked->getKey();
             $expense->is_landed = false;
             $expense->recorded_by = $actorId;
+            $expense->source_type = $data->sourceType;
+            $expense->source_id = $data->sourceId;
 
             // **Real money out** — shipping, customs, storage — from the drawer that paid. The
             // form carries no payment method, so an unnamed drawer is the cash box, or the
