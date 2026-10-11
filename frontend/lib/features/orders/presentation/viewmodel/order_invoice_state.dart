@@ -2,11 +2,14 @@ part of 'order_invoice_cubit.dart';
 
 /// One editable line of the invoice.
 ///
-/// `unitPrice` is carried to be *shown*, never sent: the server re-prices every line from the
-/// catalogue on save, which is what stops an edit quietly undercutting an agreed rate.
+/// `unitPrice` is carried to be *shown*, and sent only for a product priced «حسب الطلب»: for
+/// everything else the server prices the line from the catalogue, which is what stops an edit
+/// quietly undercutting an agreed rate.
 @freezed
 abstract class InvoiceLine with _$InvoiceLine {
   const factory InvoiceLine({
+    /// The server's line id — or, for a line added on this screen, a negative stand-in that
+    /// only keys the row until it is saved. See [isNew].
     required int id,
     required int productId,
     required int variantId,
@@ -15,6 +18,26 @@ abstract class InvoiceLine with _$InvoiceLine {
     required String pricingUnitLabel,
     required String unitPrice,
     required String quantity,
+
+    /// Added on this screen and not yet saved — sent without an id, so the server writes it.
+    @Default(false) bool isNew,
+
+    /// The quantity the line was opened with; null on a line added here. What decides whether
+    /// the line is priced again, and whether its stock moves.
+    String? originalQuantity,
+
+    /// A product the catalogue prices «حسب الطلب»: the clerk names the price.
+    @Default(false) bool isPricedByHand,
+
+    /// Sold in one unit and stocked in another — «٥٠٠ قطعة» off a shelf counted in kilograms.
+    /// Once the stock has left, such a line needs a weight whenever it changes.
+    @Default(false) bool isStockedInAnotherUnit,
+
+    /// What the shelf is counted in, for the weight box's label — «كيلوغرام».
+    String? stockUnitLabel,
+
+    /// What should now leave the shelf, as typed. Only asked for — see [needsWeight].
+    @Default('') String warehouseQuantity,
   }) = _InvoiceLine;
 
   const InvoiceLine._();
@@ -24,6 +47,40 @@ abstract class InvoiceLine with _$InvoiceLine {
     final parsed = double.tryParse(_ascii(quantity));
 
     return parsed != null && parsed > 0;
+  }
+
+  /// Added here, or its quantity moved from what it was opened with.
+  bool get quantityChanged {
+    if (isNew) return true;
+
+    final now = double.tryParse(_ascii(quantity));
+    final was = double.tryParse(originalQuantity ?? '');
+
+    return now == null || was == null || now != was;
+  }
+
+  /// Whether this line has to say what leaves the shelf before it can be saved.
+  ///
+  /// Only after the stock has left, and only for a line sold and stocked in different units
+  /// that is added or changes quantity — the same question «جاهزة للطباعة» asked the first
+  /// time, asked again because the line changed after it.
+  bool needsWeight({required bool movesStock}) =>
+      movesStock && isStockedInAnotherUnit && quantityChanged;
+
+  bool get hasValidWeight {
+    final parsed = double.tryParse(_ascii(warehouseQuantity));
+
+    return parsed != null && parsed > 0;
+  }
+
+  /// A hand-priced line added here must carry its price; one already on the order keeps the
+  /// price it was given unless the clerk changes it.
+  bool get hasValidPrice {
+    if (!isPricedByHand || !isNew) return true;
+
+    final parsed = double.tryParse(_ascii(unitPrice));
+
+    return parsed != null && parsed >= 0;
   }
 
   /// What one line is worth, for the running estimate only.
@@ -60,9 +117,16 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
     int? regionId,
     String? regionName,
 
-    /// Whether the lines may be touched at all. False from «جاهزة» onwards, where this screen
-    /// is open for the address alone.
+    /// Whether the lines may be touched at all. False from «قيد الطباعة» onwards, where this
+    /// screen is open for the address alone.
     @Default(false) bool linesAreEditable,
+
+    /// Whether saving the lines moves stock too — the order is past «جاهزة للطباعة». See
+    /// `Order.itemEditsMoveStock`.
+    @Default(false) bool linesMoveStock,
+
+    /// What the customer has paid so far, for the warning when the new total drops under it.
+    @Default('0.00') String paidAmount,
 
     /// The number the courier rings. Null on an order taken without one.
     ///
@@ -97,7 +161,37 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
   /// sends them, so a quantity it is merely displaying cannot be a reason to refuse a save.
   bool get isValid =>
       !linesAreEditable ||
-      (lines.isNotEmpty && lines.every((line) => line.hasValidQuantity));
+      (lines.isNotEmpty &&
+          lines.every(
+            (line) =>
+                line.hasValidQuantity &&
+                line.hasValidPrice &&
+                (!line.needsWeight(movesStock: linesMoveStock) || line.hasValidWeight),
+          ));
+
+  /// The server's complaint about the lines as a whole — «لا يوجد رصيد كافٍ…», «لا يمكن أن
+  /// يغيّر التعديل مسار الطلبية…». Painted at the top of «البنود» rather than lost in a snackbar.
+  String? get itemsError => switch (failure) {
+    ServerFailure(:final fieldErrors) => fieldErrors?['items']?.firstOrNull,
+    _ => null,
+  };
+
+  /// The server's complaint about one line's weight, keyed by the line's position in what was
+  /// sent — which is its position on screen, because the lines are sent in screen order.
+  String? weightErrorAt(int index) => switch (failure) {
+    ServerFailure(:final fieldErrors) =>
+      fieldErrors?['items.$index.warehouse_quantity']?.firstOrNull,
+    _ => null,
+  };
+
+  /// Whether the new total would be less than the customer has already paid. Said before the
+  /// save, because the difference becomes money owed back and nobody should find that out from
+  /// the order screen afterwards.
+  bool get dropsBelowPaid {
+    final paid = double.tryParse(paidAmount) ?? 0;
+
+    return paid > 0 && (double.tryParse(estimatedTotal) ?? 0) < paid;
+  }
 
   /// Where it goes, as one line: «طرابلس — سوق الجمعة».
   String get destination => regionName == null ? cityName : '$cityName — $regionName';

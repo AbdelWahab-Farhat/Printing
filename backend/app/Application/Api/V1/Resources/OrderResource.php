@@ -490,9 +490,15 @@ class OrderResource extends JsonResource
 
             // Three different lines, and the app draws each section from the one that governs
             // it rather than keeping its own copy of where they fall. They are deliberately not
-            // the same line: a quantity may be corrected while the press runs, the artwork may
-            // not, and the address freezes later still.
+            // the same line: the lines close when the press starts, the artwork as it starts,
+            // and the address later still.
             'items_are_editable' => $this->itemsAreEditable(),
+
+            // **Whether saving the lines moves stock as well** — true from «جاهزة للطباعة» until
+            // the press, where the shelf has already been drawn. The app asks the grant for that
+            // move before offering the lines, and asks for a weight on a line stocked by the
+            // kilo. Docs/orders/ORDER-LINES-ADD-REMOVE.md §6.
+            'item_edits_move_stock' => $this->itemsAreEditable() && $this->stock_deducted_at !== null,
             'designs_are_editable' => $this->designsAreEditable(),
             'destination_is_editable' => $this->destinationIsEditable(),
         ];

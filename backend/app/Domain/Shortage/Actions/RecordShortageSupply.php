@@ -432,7 +432,7 @@ final class RecordShortageSupply
          * definition, not billed for, and re-billing it after the fact is a decision for whoever
          * talks to the customer rather than a side effect of a purchase being logged.
          */
-        if (! $order->itemsAreEditable()) {
+        if (! $order->shortagesAreEditable()) {
             return;
         }
 

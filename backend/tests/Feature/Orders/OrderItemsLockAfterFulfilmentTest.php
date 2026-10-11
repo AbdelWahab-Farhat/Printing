@@ -23,22 +23,18 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * A line whose bags have already left the shelf may not be swapped for a different line.
+ * A line whose bags have already left the shelf is never silently dropped.
  *
- * **«جاهزة للطباعة» closes the lines and «قيد الطباعة» opened them again.** `itemsAreEditable()`
- * lists New, Designing, Shortage and Printing — and the stock leaves at ReadyToPrint, which sits
- * between the last two. So an order could be fulfilled, moved on to the press, and then have its
- * whole line set replaced.
+ * **The history.** Lines used to reopen at «قيد الطباعة», after the stock left at «جاهزة
+ * للطباعة», and an edit there replaced the whole set: each old line, carrying the
+ * `fulfillment_stock_movement_id` of its draw, was soft-deleted — and
+ * `ReverseOrderStockDeduction` walks `$order->items`, which excludes trashed rows, so **the bags
+ * were never credited back to the shelf**. A guard then refused any edit of drawn lines.
  *
- * What that cost, before this guard: `SyncOrderItems` soft-deletes the old lines, and each one
- * carries the `fulfillment_stock_movement_id` of the movement that drew its bags.
- * `ReverseOrderStockDeduction` iterates `$order->items`, which excludes trashed rows — so
- * **the bags were never credited back to the shelf**, and `orders.total_cogs` went on summing
- * lines that no longer existed.
- *
- * The sanctioned correction is still there and untouched: reach «جاهزة» with a corrected
- * `warehouse_quantity` and `RestateOrderStockDeduction` reverses the draw in full and posts a
- * fresh one. This closes the door that loses stock, not the door that fixes a number.
+ * **Now.** The lines close at «قيد الطباعة» (first test below), and before it an edit moves the
+ * stock of every line it changes — see `OrderLinesAddRemoveTest` and
+ * Docs/orders/ORDER-LINES-ADD-REMOVE.md. What this file still pins down is the floor: on the
+ * press nothing about the lines moves, and an edit to anything else still saves.
  *
  * Arrange - Act - Assert throughout.
  */
@@ -165,7 +161,7 @@ class OrderItemsLockAfterFulfilmentTest extends TestCase
 
     // ─────────────────────────── the door that loses stock ───────────────────────────
 
-    public function test_a_line_whose_bags_already_left_the_shelf_cannot_be_replaced(): void
+    public function test_a_line_on_the_press_cannot_be_replaced(): void
     {
         // Arrange — 300 drawn out of 1,000, and the order sitting on the press.
         $size = $this->sellableSize();

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
-use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\Exceptions\CustomerIsInactive;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
@@ -18,7 +17,6 @@ use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
 use App\Domain\Order\Exceptions\OutsourcedLineCannotShareAnOrder;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Models\Order;
-use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\Money;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +43,7 @@ final class CreateOrder
         // rather than the model, per RULES.md §3: cross-context work goes through the other
         // module's front door.
         private readonly VendorService $vendors,
+        private readonly GuardOneBench $guardOneBench,
     ) {}
 
     /**
@@ -184,7 +183,7 @@ final class CreateOrder
             // lines' categories, so it cannot be had until the lines exist. Inside the same
             // transaction, so a refused order is rolled back whole — and *both* doors come
             // through here, the clerk's and the app's, so there is one rule and no way round it.
-            $this->guardOneBench($order);
+            ($this->guardOneBench)($order);
 
             // **Asked here and nowhere earlier, because here is the first place it can be
             // asked.** Whether an order owes a vendor depends on the road it walks, and the road
@@ -211,34 +210,6 @@ final class CreateOrder
 
             return $order->refresh();
         });
-    }
-
-    /**
-     * Refuses an order whose lines are not all made in the same kind of place.
-     *
-     * **Unanimity about the group, not a limit on lines.** Several وسيط lines in one order are
-     * fine: the road is unanimous and the vendor is named once, at acceptance. What cannot
-     * happen is a وسيط line beside one that is not.
-     *
-     * A line whose product has no heading — the column is nullable — answers `in_house`, the
-     * same assumption {@see ResolveOrderFlow} makes. The unknown case takes the road that asks
-     * more of the shop, never the one that asks less.
-     *
-     * @throws OutsourcedLineCannotShareAnOrder
-     */
-    private function guardOneBench(Order $order): void
-    {
-        $order->loadMissing('items.product.productCategory.parent');
-
-        $groups = $order->items
-            ->map(fn (OrderItem $item): string => (
-                $item->product?->productCategory?->productionMode() ?? ProductionMode::InHouse
-            )->orderGroup())
-            ->unique();
-
-        if ($groups->count() > 1) {
-            throw OutsourcedLineCannotShareAnOrder::make();
-        }
     }
 
     /**

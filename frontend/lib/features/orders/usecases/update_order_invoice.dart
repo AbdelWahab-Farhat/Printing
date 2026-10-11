@@ -6,39 +6,51 @@ import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:flutter/foundation.dart';
 
-/// One line as the server needs it to re-price the invoice.
+/// One line as the server needs it to edit the invoice.
 ///
-/// **No unit price.** The rate comes from the catalogue when the server prices the line, which
-/// is what stops an edit from quietly undercutting an agreed rate — the same rule that makes
-/// `unit_price` ignored on creation for any product with listed prices.
+/// **[id] is what keeps a line the same line.** Sent, the server edits that row in place — its
+/// price, its shortage and its stock draw stay with it. Null, the line is new. A line on the
+/// order that is not sent at all is removed. See Docs/orders/ORDER-LINES-ADD-REMOVE.md §5.
 ///
-/// **And no shelf quantity.** `PUT /orders/{id}` no longer accepts one: what comes off the shelf
-/// is asked for on the way into «جاهزة», and by then `Order.itemsAreEditable` is false — so this
-/// payload can never reach a line that carries a measurement, and there is nothing to preserve
-/// through the rebuild.
+/// **[unitPrice] only for a product priced «حسب الطلب».** For anything with listed prices the
+/// catalogue's rate wins on the server and a number sent here is ignored, which is what stops an
+/// edit quietly undercutting an agreed rate.
+///
+/// **[warehouseQuantity] only once the stock has left**, and only for a line sold in one unit and
+/// stocked in another that is added or changes quantity: what should now leave the shelf, the
+/// same figure «جاهزة للطباعة» asked for the first time.
 @immutable
 class InvoiceLineUpdate {
   const InvoiceLineUpdate({
     required this.productId,
     required this.variantId,
     required this.quantity,
+    this.id,
+    this.unitPrice,
+    this.warehouseQuantity,
   });
 
+  final int? id;
   final int productId;
   final int variantId;
   final String quantity;
+  final String? unitPrice;
+  final String? warehouseQuantity;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': ?id,
     'product_id': productId,
     'product_variant_id': variantId,
     'quantity': quantity,
+    'unit_price': ?unitPrice,
+    'warehouse_quantity': ?warehouseQuantity,
   };
 }
 
 /// Editing an open order: its lines, its discount, and where it is going.
 ///
-/// `PUT /orders/{id}` replaces the whole set — the same contract a product's sizes follow — so
-/// a removed line is expressed by sending the ones that remain, not by a delete call.
+/// `PUT /orders/{id}` edits the line set by id — a removed line is expressed by not sending it,
+/// not by a delete call.
 ///
 /// **Urgency is null unless this edit is about it.** The server reads a missing `is_urgent` as
 /// «اتركها كما هي», which is what lets the additional-cost sheet write on its own without

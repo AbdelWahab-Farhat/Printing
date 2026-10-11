@@ -103,6 +103,11 @@ final class RestoreOrder
             // off the shelf that this archive never put there.
             if ($locked->deleteReturnedStock()) {
                 $redrawn = $this->drawTheStockAgain($locked, $actor);
+
+                // Remembered for good: the lines now point at a second draw beside a first one
+                // the ledger has settled, which is the one thing a line edit cannot re-post
+                // safely — see `SyncOrderItems` and `RedrawnOrderLinesAreLocked`.
+                $locked->forceFill(['stock_redrawn_at' => now()])->save();
             }
 
             // Cleared before the restore rather than left standing: unlike `stock_deducted_at`,

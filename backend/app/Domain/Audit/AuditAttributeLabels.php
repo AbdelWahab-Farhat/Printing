@@ -337,6 +337,7 @@ final class AuditAttributeLabels
             // the restore clears it on the way out. A reader of the history needs to tell the two
             // apart, so the label names the delete rather than the stock.
             'delete_returned_stock_at' => 'تاريخ إعادة المخزون عند الحذف',
+            'stock_redrawn_at' => 'تاريخ سحب المخزون مرة ثانية عند الاستعادة',
             'fulfillment_warehouse_id' => 'مخزن التنفيذ',
             'total_cogs' => 'إجمالي تكلفة البضاعة',
             // Its *values* need no dictionary: `OrderFlow` names itself, and AuditValueLabels

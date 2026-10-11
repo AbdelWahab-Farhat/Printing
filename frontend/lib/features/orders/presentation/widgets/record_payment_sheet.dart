@@ -4,6 +4,7 @@ import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -62,6 +63,26 @@ class PaymentDraft {
   /// The yes to «المبلغ يزيد على المتبقي — تسجيل الزائد للزبون؟». False unless it was asked
   /// and answered — see [confirmOverpayment].
   final bool acceptOverpayment;
+}
+
+/// What a refund opens on, or null when there is nothing paid to give back.
+///
+/// **The overpaid part when the order is overpaid, everything paid otherwise.** A negative
+/// [remainingAmount] is exactly what the customer paid beyond the order — a line taken off after
+/// the money came in — and giving that back is what the refund usually is. Capped at
+/// [paidAmount], the server's own ceiling: a write-off can be part of the gap, and a write-off is
+/// not cash anybody can hand back.
+///
+/// Fixed-point, never `double`, like [overpaymentExcess] — this figure goes into a box somebody
+/// counts cash against.
+String? suggestedRefund({required String remainingAmount, required String paidAmount}) {
+  final paid = thousandths(paidAmount);
+  if (paid <= BigInt.zero) return null;
+
+  final over = -thousandths(remainingAmount);
+  if (over <= BigInt.zero) return paidAmount;
+
+  return fromThousandths(over < paid ? over : paid, scale: 2);
 }
 
 /// Taking money, or giving it back.
@@ -131,14 +152,28 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
 
   /// What the field opens on.
   ///
-  /// **The whole balance for a payment, the whole paid amount for a refund** — each is the
-  /// ceiling the server would enforce anyway, and each is what the entry usually is. A negative
-  /// remaining (an overpaid order) has nothing sensible to prefill, so it opens blank.
+  /// **The whole balance for a payment** — what the entry usually is. A negative remaining (an
+  /// overpaid order) has nothing to pay, so a payment opens blank.
+  ///
+  /// **For a refund, the overpaid part if there is one, else everything paid** — see
+  /// [suggestedRefund].
   String get _defaultAmount {
-    final suggested = _isIncoming ? widget.remainingAmount : widget.paidAmount;
+    if (!_isIncoming) {
+      return suggestedRefund(
+            remainingAmount: widget.remainingAmount,
+            paidAmount: widget.paidAmount,
+          ) ??
+          '';
+    }
+
+    final suggested = widget.remainingAmount;
 
     return suggested.startsWith('-') || suggested == '0.00' ? '' : suggested;
   }
+
+  /// What the customer paid beyond the order, or null when nothing is over.
+  String? get _overpaid =>
+      widget.remainingAmount.startsWith('-') ? widget.remainingAmount.substring(1) : null;
 
   @override
   void initState() {
@@ -190,6 +225,10 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                 Text(
                   _isIncoming
                       ? 'المتبقي على الطلبية ${widget.remainingAmount.grouped}'
+                      // Said first on an overpaid order, because it is why the box opens on
+                      // that figure rather than on everything paid.
+                      : _overpaid != null
+                      ? 'على الطلبية مبلغ زائد ${_overpaid!.grouped} — مبدئياً يُردّ الزائد فقط'
                       : 'الردّ حركة نقدية حقيقية — لتصحيح دفعة مسجّلة بالخطأ استعمل «إلغاء الدفعة»',
                   style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),

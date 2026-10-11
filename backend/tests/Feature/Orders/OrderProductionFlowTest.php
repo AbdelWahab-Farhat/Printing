@@ -611,15 +611,15 @@ class OrderProductionFlowTest extends TestCase
         $response->assertOk()->assertJsonPath('data.production_flow', 'no_production');
     }
 
-    public function test_editing_the_lines_of_an_order_at_the_press_does_not_move_it_off_the_press(): void
+    public function test_swapping_the_last_printed_line_out_once_work_has_started_is_refused(): void
     {
-        // Arrange — the case the «جديدة»-only guard exists for. Lines stay editable while the
-        // press runs, on purpose: a quantity gets corrected mid-run.
-        $order = $this->orderOf([$this->sizeUnder($this->printedCategory())], OrderStatus::Printing);
+        // Arrange — the case the road guard exists for. Lines stay editable until the press, on
+        // purpose: a customer adds or drops a size while the artwork is being agreed.
+        $order = $this->orderOf([$this->sizeUnder($this->printedCategory())], OrderStatus::Designing);
         $plain = $this->sizeUnder($this->blankCategory());
         $headers = $this->auth(PermissionName::ViewOrders, PermissionName::ManageOrders);
 
-        // Act — swap the last printed line out of an order that is already being printed.
+        // Act — swap the last printed line out of an order already in design.
         $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
             'customer_id' => $order->customer_id,
             'city_id' => $order->city_id,
@@ -631,10 +631,12 @@ class OrderProductionFlowTest extends TestCase
             ]],
         ]);
 
-        // Assert — it stays on the road it is standing on. Re-reading here would put the order on
-        // a main line with no «قيد الطباعة» on it while it is *in* «قيد الطباعة», and
-        // `mainLinePosition()` would answer null — an ordinary order drawing itself as a detour.
-        $response->assertOk()->assertJsonPath('data.production_flow', 'standard');
-        $this->assertFalse($response->json('data.progress.is_detour'));
+        // Assert — refused, and the order stays on the road it is standing on. It used to be
+        // saved and left on the press's road with nothing to print; re-reading instead would
+        // put it on a main line with no «قيد التصميم» on it while it is *in* «قيد التصميم».
+        // Neither is an order anybody meant, so the edit is refused with a sentence saying why.
+        $response->assertStatus(422)->assertJsonValidationErrors('items');
+        $this->assertSame(OrderFlow::Standard, $order->refresh()->production_flow);
+        $this->assertSame(1, $order->items()->count());
     }
 }

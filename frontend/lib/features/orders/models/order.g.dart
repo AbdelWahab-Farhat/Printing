@@ -126,6 +126,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       ? OrderProgress.unknown
       : OrderProgress.fromJson(json['progress'] as Map<String, dynamic>),
   itemsAreEditable: json['items_are_editable'] as bool? ?? false,
+  itemEditsMoveStock: json['item_edits_move_stock'] as bool? ?? false,
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
   destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
@@ -247,6 +248,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'undo_delivery_to_label': instance.undoDeliveryToLabel,
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
+  'item_edits_move_stock': instance.itemEditsMoveStock,
   'designs_are_editable': instance.designsAreEditable,
   'destination_is_editable': instance.destinationIsEditable,
   'items_count': instance.itemsCount,
