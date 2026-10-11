@@ -58,8 +58,12 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
 
   /// Books a shipment in. [quantities] is keyed by product variant; empty boxes are dropped by
   /// the use case, so a partial shipment is simply the boxes that were filled.
+  ///
+  /// [additionalCosts] — what was paid on the lorry's arrival — go with it, and into what the
+  /// stock enters at.
   Future<Failure?> receive({
     required Map<int, String> quantities,
+    List<DraftAdditionalCost> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
   }) {
@@ -67,6 +71,7 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
       () => _receiveArrival(
         _id,
         quantities: quantities,
+        additionalCosts: additionalCosts,
         invoiceNumber: invoiceNumber,
         notes: notes,
       ),

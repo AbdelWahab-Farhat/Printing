@@ -18,6 +18,10 @@ final readonly class DealExpenseData
         public ?string $notes = null,
         // The drawer it was paid from; null lets the treasury take it from the cash box.
         public ?int $treasuryAccountId = null,
+        // The document that charged it — a purchase order's arrival cost on a funded line. Never
+        // from a request: a person's expense names nothing, and is reversed by hand.
+        public ?string $sourceType = null,
+        public ?int $sourceId = null,
     ) {}
 
     /**

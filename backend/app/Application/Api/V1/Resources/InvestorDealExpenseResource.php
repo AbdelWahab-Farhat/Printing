@@ -38,6 +38,10 @@ class InvestorDealExpenseResource extends JsonResource
             'is_reversal' => $this->resource->isReversal(),
             'is_reversed' => $this->resource->isReversed(),
             'reverses_expense_id' => $this->reverses_expense_id,
+            // A purchase order's arrival cost on a funded line: it follows its receipt and is not
+            // reversed from here — the screen hides the button rather than meeting the refusal.
+            'source_type' => $this->source_type,
+            'source_id' => $this->source_id,
 
             'recorded_by' => $this->recorded_by,
             'created_at' => $this->created_at?->toIso8601String(),

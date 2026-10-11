@@ -97,7 +97,7 @@ class PurchaseOrderController extends Controller
      */
     public function store(StorePurchaseOrderRequest $request): JsonResponse
     {
-        $order = $this->purchaseOrders->create(PurchaseOrderData::fromArray($request->validated()));
+        $order = $this->purchaseOrders->create(PurchaseOrderData::fromArray($request->validated(), (int) $request->user()->id));
 
         return $this->created(new PurchaseOrderResource($order), 'تم إنشاء أمر الشراء بنجاح');
     }
@@ -110,7 +110,7 @@ class PurchaseOrderController extends Controller
         // `stockArrivals` is what the reversal affordance is computed from — see
         // PurchaseOrderResource. Loaded here and not on the list: it is one query for one order,
         // and the list has no button to draw.
-        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts', 'stockArrivals']);
+        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount', 'stockArrivals']);
 
         // Whose money is on this lorry — asked here because this is the screen where somebody is
         // about to receive it. Empty for the ordinary order the company paid for itself.
@@ -138,7 +138,10 @@ class PurchaseOrderController extends Controller
      */
     public function update(UpdatePurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
-        $updated = $this->purchaseOrders->update($purchaseOrder, PurchaseOrderData::fromArray($request->validated()));
+        $updated = $this->purchaseOrders->update(
+            $purchaseOrder,
+            PurchaseOrderData::fromArray($request->validated(), (int) $request->user()->id),
+        );
 
         return $this->success(new PurchaseOrderResource($updated), 'تم تحديث أمر الشراء بنجاح');
     }
@@ -215,7 +218,7 @@ class PurchaseOrderController extends Controller
             ),
         );
 
-        $updated->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts', 'stockArrivals']);
+        $updated->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount', 'stockArrivals']);
 
         return $this->success(new PurchaseOrderResource($updated), 'تم التراجع عن الاستلام بنجاح');
     }

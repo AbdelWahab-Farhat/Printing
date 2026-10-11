@@ -61,6 +61,7 @@ class PurchaseOrderAdditionalCostLine {
     required this.name,
     required this.amount,
     this.id,
+    this.treasuryAccountId,
   });
 
   /// **Absent means "new", and a cost left out of the list is removed** — the same replace-in-
@@ -72,10 +73,16 @@ class PurchaseOrderAdditionalCostLine {
   /// As typed, normalised to ASCII digits.
   final String amount;
 
+  /// Who was paid: null is the vendor's bill; a drawer it was paid from, or a «التزام» it is
+  /// owed to. **Sent as null rather than left out**, so moving a cost back onto the vendor's
+  /// bill on an edit is said, not assumed.
+  final int? treasuryAccountId;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': ?id,
     'name': name,
     'amount': amount,
+    'treasury_account_id': treasuryAccountId,
   };
 }
 
@@ -173,9 +180,13 @@ abstract interface class PurchaseOrderRepository {
   /// **Answers with the arrival, not with the order** — so a caller that needs the order's new
   /// `quantity_received` and status has to read it again. That is the server's shape, and
   /// pretending otherwise here would mean inventing numbers.
+  ///
+  /// [additionalCosts] are what was paid on the lorry's arrival — spread by the server over what
+  /// this shipment brought, and into the cost its stock enters at.
   Future<Either<Failure, StockArrival>> receiveArrival(
     int purchaseOrderId, {
     required List<ReceivedLine> items,
+    List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
   });

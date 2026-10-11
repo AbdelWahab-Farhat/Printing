@@ -1359,7 +1359,7 @@ class PurchaseOrderTest extends TestCase
     public function test_receiving_a_shipment_carries_the_landed_cost_including_additional_costs(): void
     {
         // Arrange — order 10 at a base cost of 40.00 (4.00/unit) plus a 10.00 delivery fee, the
-        // order's only line, so it absorbs the whole fee: landed cost is (40 + 10) / 10 = 5.00/unit
+        // order's only line, so it absorbs the whole fee: planned at (40 + 10) / 10 = 5.00/unit
         $vendor = Vendor::factory()->create();
         $warehouse = Warehouse::factory()->create();
         $variant = $this->variant();
@@ -1381,13 +1381,15 @@ class PurchaseOrderTest extends TestCase
             ['items' => [['stock_item_id' => $variant->id, 'quantity' => 6]]],
         );
 
-        // Assert — 6 units at the landed 5.00/unit, not the base 4.00/unit
+        // Assert — the whole delivery fee lands on what arrived (the owner's decision 3,
+        // PURCHASE-ORDER-ARRIVAL-COSTS.md): 6 × 4.00 + 10.00 = 34.00, 5.667/unit. It used to be
+        // the planned 5.00/unit, which left 4.00 of a fee that was paid outside the stock.
         $response->assertCreated()
-            ->assertJsonPath('data.items.0.unit_cost', '5.000')
-            ->assertJsonPath('data.items.0.total_cost', '30.00');
+            ->assertJsonPath('data.items.0.unit_cost', '5.667')
+            ->assertJsonPath('data.items.0.total_cost', '34.00');
 
         $this->assertDatabaseHas('stock_arrival_items', [
-            'stock_item_id' => $variant->id, 'unit_cost' => '5.000', 'total_cost' => '30.00',
+            'stock_item_id' => $variant->id, 'unit_cost' => '5.667', 'total_cost' => '34.00',
         ]);
     }
 

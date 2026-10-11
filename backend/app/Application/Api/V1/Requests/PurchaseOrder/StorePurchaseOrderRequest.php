@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePurchaseOrderRequest extends FormRequest
 {
@@ -61,6 +62,29 @@ class StorePurchaseOrderRequest extends FormRequest
             'additional_costs' => ['nullable', 'array'],
             'additional_costs.*.name' => ['required', 'string', 'max:255'],
             'additional_costs.*.amount' => ['required', 'numeric', 'gte:0', 'max:999999999999.99'],
+            // Who was paid: absent is the vendor's bill; a drawer it was paid from, or a manual
+            // «التزام» it is owed to. Which accounts fit is the domain's — see expenseAccount().
+            'additional_costs.*.treasury_account_id' => [
+                'nullable', 'integer',
+                Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
+            ],
+        ];
+    }
+
+    /**
+     * Charging a cost to an account is spending from it — {@see CostAccountGrant}.
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            fn (Validator $validator) => CostAccountGrant::check(
+                $validator,
+                $this->user(),
+                $this->input('additional_costs'),
+                $this->route('purchase_order'),
+            ),
         ];
     }
 
@@ -98,6 +122,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'additional_costs.*.amount.numeric' => 'قيمة التكلفة الإضافية يجب أن تكون رقماً',
             'additional_costs.*.amount.gte' => 'قيمة التكلفة الإضافية لا يمكن أن تكون سالبة',
             'additional_costs.*.amount.max' => 'قيمة التكلفة الإضافية أكبر من الحد المسموح',
+            'additional_costs.*.treasury_account_id.exists' => 'الحساب المحدد غير موجود',
         ];
     }
 
@@ -119,6 +144,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'additional_costs' => 'التكاليف الإضافية',
             'additional_costs.*.name' => 'اسم التكلفة الإضافية',
             'additional_costs.*.amount' => 'قيمة التكلفة الإضافية',
+            'additional_costs.*.treasury_account_id' => 'الحساب الذي دُفعت منه',
         ];
     }
 }

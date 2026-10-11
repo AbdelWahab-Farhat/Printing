@@ -45,7 +45,7 @@ final class CountOldOrderAsDebt
                 throw VendorPaymentRefused::alreadyCounted('#'.$locked->getKey());
             }
 
-            if ($locked->status === PurchaseOrderStatus::Cancelled || $locked->total_amount === null) {
+            if ($locked->status === PurchaseOrderStatus::Cancelled || $locked->vendor_amount === null) {
                 throw VendorPaymentRefused::nothingToCount('#'.$locked->getKey());
             }
 

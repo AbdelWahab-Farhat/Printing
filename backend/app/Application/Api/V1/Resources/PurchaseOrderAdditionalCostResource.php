@@ -22,6 +22,16 @@ class PurchaseOrderAdditionalCostResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'amount' => (string) $this->amount,
+            // Set on a cost typed on the receive screen; null on one planned on the order.
+            'stock_arrival_id' => $this->stock_arrival_id,
+            // Who was paid: null is the vendor's bill; otherwise the drawer that paid, or the
+            // «التزام» it is owed to — `kind` = `payable` says which.
+            'treasury_account_id' => $this->treasury_account_id,
+            'treasury_account' => $this->whenLoaded('treasuryAccount', fn (): ?array => $this->treasuryAccount === null ? null : [
+                'id' => $this->treasuryAccount->id,
+                'name' => $this->treasuryAccount->name,
+                'kind' => $this->treasuryAccount->kind->value,
+            ]),
         ];
     }
 }

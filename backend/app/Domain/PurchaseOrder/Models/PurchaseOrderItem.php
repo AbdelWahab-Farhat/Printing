@@ -62,6 +62,10 @@ class PurchaseOrderItem extends Model
             'allocated_additional_cost' => 'decimal:2',
             'final_unit_cost' => 'decimal:3',
             'final_total_cost' => 'decimal:2',
+            // Written at receipt by ReceivePurchaseOrder, cleared by its reversal: this line's
+            // share of the arrival costs, and the unit cost its layer actually opened at.
+            'arrival_additional_cost' => 'decimal:2',
+            'landed_unit_cost' => 'decimal:3',
             'unit' => PricingUnit::class,
         ];
     }

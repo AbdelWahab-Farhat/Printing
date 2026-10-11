@@ -14,6 +14,7 @@ import 'package:dayaa/features/investment_fund/presentation/widgets/fund_purchas
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purchase_order_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/additional_cost_row.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
 import 'package:dayaa/features/vendors/models/vendor.dart';
@@ -123,15 +124,11 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   /// **Seeded from what the server has, and sent back in full every save.** The set is replaced
   /// wholesale, so a cost left out of this list is deleted — which is exactly what removing a
   /// row on screen should mean, and exactly what must not happen by accident.
-  late final List<_AdditionalCostDraft> _additionalCosts = [
+  late final List<AdditionalCostDraft> _additionalCosts = [
     for (final cost
         in widget.order?.additionalCosts ??
             const <PurchaseOrderAdditionalCost>[])
-      _AdditionalCostDraft(
-        id: cost.id,
-        name: cost.name,
-        amount: trimDecimals(cost.amount),
-      ),
+      AdditionalCostDraft.of(cost),
   ];
 
   /// **صفُّ الصندوق: هل يشتري هذا الأمرَ بماله؟** مطفأٌ حتى يُشعَل — الشراءُ قرارٌ يُتَّخذ لا
@@ -412,11 +409,11 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   /// supplier called it on the invoice — so a sheet would be one more tap around an empty box.
   void _addAdditionalCost() {
     setState(
-      () => _additionalCosts.add(_AdditionalCostDraft(name: '', amount: '')),
+      () => _additionalCosts.add(AdditionalCostDraft(name: '', amount: '')),
     );
   }
 
-  void _removeAdditionalCost(_AdditionalCostDraft cost) {
+  void _removeAdditionalCost(AdditionalCostDraft cost) {
     setState(() => _additionalCosts.remove(cost));
     WidgetsBinding.instance.addPostFrameCallback((_) => cost.dispose());
   }
@@ -478,12 +475,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
       // The whole current list every time, including when it is empty — that is how the server
       // is told the last one was removed.
       additionalCosts: [
-        for (final cost in _additionalCosts)
-          DraftAdditionalCost(
-            id: cost.id,
-            name: cost.name.text,
-            amount: cost.amount.text,
-          ),
+        for (final cost in _additionalCosts) cost.toDraft(),
       ],
       // فعلٌ ثانٍ في الضغطة نفسها، برقمِ الأمر الذي يعود من الأوّل — وسعرُ السادة يُكتب هنا أو
       // لا يُكتب أبداً: يُجمَّد على السطر لحظةَ المطالبة به.
@@ -666,7 +658,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                   ),
                   SizedBox(height: 8.h),
                   for (final cost in _additionalCosts)
-                    _AdditionalCostRow(
+                    AdditionalCostRow(
                       key: ObjectKey(cost),
                       cost: cost,
                       onChanged: (_) => _typed(cubit),
@@ -801,31 +793,6 @@ class _LineDraft {
     quantity.dispose();
     baseTotalCost.dispose();
     printingSalePrice.dispose();
-  }
-}
-
-/// One order-level cost as the form holds it.
-class _AdditionalCostDraft {
-  _AdditionalCostDraft({required String name, required String amount, this.id})
-    : name = TextEditingController(text: name),
-      amount = TextEditingController(text: amount);
-
-  /// Carried through so an existing cost is corrected rather than deleted and recreated.
-  final int? id;
-
-  final TextEditingController name;
-  final TextEditingController amount;
-
-  /// Whether anything has been typed into either box.
-  ///
-  /// **A row nobody filled in is dropped rather than refused.** Tapping «إضافة تكلفة» and
-  /// changing your mind is not an error worth blocking a save over, and the same test runs again
-  /// in [DraftAdditionalCost.isBlank] before anything reaches the wire.
-  bool get isBlank => name.text.trim().isEmpty && amount.text.trim().isEmpty;
-
-  void dispose() {
-    name.dispose();
-    amount.dispose();
   }
 }
 
@@ -997,91 +964,6 @@ class _LineRow extends StatelessWidget {
               if (parsed == null) return 'أدخل التكلفة';
 
               return parsed < 0 ? 'التكلفة لا يمكن أن تكون سالبة' : null;
-            },
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One order-level cost: what it was for, and how much.
-///
-/// **The same card the line items use**, so the two lists read as one screen rather than as two
-/// features bolted together — one add button under each, one delete on each row, in the same
-/// place.
-class _AdditionalCostRow extends StatelessWidget {
-  const _AdditionalCostRow({
-    required this.cost,
-    required this.onChanged,
-    required this.onRemove,
-    super.key,
-  });
-
-  final _AdditionalCostDraft cost;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 12.h),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  controller: cost.name,
-                  label: 'البيان',
-                  hint: 'توصيل، تفريغ، جمارك…',
-                  // Only when the row has something in it: an untouched row is dropped before
-                  // sending, so refusing to save because of one is a wall with nothing behind it.
-                  validator: (value) =>
-                      cost.isBlank || (value ?? '').trim().isNotEmpty
-                      ? null
-                      : 'أدخل بيان التكلفة',
-                  onChanged: onChanged,
-                ),
-              ),
-              IconButton(
-                onPressed: onRemove,
-                icon: Icon(AppIcons.delete, size: 20.sp),
-                color: scheme.error,
-                tooltip: 'إزالة التكلفة',
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          AppTextField(
-            controller: cost.amount,
-            label: 'القيمة (د.ل)',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
-            ],
-            validator: (value) {
-              if (cost.isBlank) return null;
-
-              final parsed = double.tryParse(
-                Validators.toWesternDigits(
-                  value ?? '',
-                ).replaceAll(',', '.').trim(),
-              );
-
-              if (parsed == null) return 'أدخل القيمة';
-
-              return parsed < 0 ? 'القيمة لا يمكن أن تكون سالبة' : null;
             },
             onChanged: onChanged,
           ),

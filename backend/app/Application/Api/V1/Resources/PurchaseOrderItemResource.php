@@ -55,6 +55,10 @@ class PurchaseOrderItemResource extends JsonResource
             // The landed cost — includes this line's share of the order's additional costs.
             'final_unit_cost' => $this->final_unit_cost !== null ? (string) $this->final_unit_cost : null,
             'final_total_cost' => $this->final_total_cost !== null ? (string) $this->final_total_cost : null,
+            // Null until received. The line's share of the costs typed on the receive screen, and
+            // the unit cost its stock actually entered at — PURCHASE-ORDER-ARRIVAL-COSTS.md.
+            'arrival_additional_cost' => $this->arrival_additional_cost !== null ? (string) $this->arrival_additional_cost : null,
+            'landed_unit_cost' => $this->landed_unit_cost !== null ? (string) $this->landed_unit_cost : null,
 
             'unit' => $this->unit?->value,
             'unit_label' => $this->unit?->label(),

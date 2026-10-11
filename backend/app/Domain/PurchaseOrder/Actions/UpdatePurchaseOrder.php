@@ -56,6 +56,7 @@ final class UpdatePurchaseOrder
         private readonly InvestorService $investors,
         private readonly SyncPurchaseOrderDebt $syncDebt,
         private readonly VendorPaymentSummary $payments,
+        private readonly SyncAdditionalCostExpense $costExpense,
     ) {}
 
     /**
@@ -77,7 +78,7 @@ final class UpdatePurchaseOrder
             throw PurchaseOrderIsPaid::vendorCannotChange($settled);
         }
 
-        $total = $order->total_amount === null ? '0.00' : (string) $order->total_amount;
+        $total = $order->vendor_amount === null ? '0.00' : (string) $order->vendor_amount;
 
         if (bccomp($total, $settled, 2) < 0) {
             throw PurchaseOrderIsPaid::totalBelowSettled($total, $settled);
@@ -112,7 +113,7 @@ final class UpdatePurchaseOrder
             $order->save();
 
             $this->syncItems($order, $data->items);
-            $this->syncAdditionalCosts($order, $data->additionalCosts);
+            $this->syncAdditionalCosts($order, $data->additionalCosts, $data->actorId);
             ($this->allocateAdditionalCosts)($order);
             ($this->recalculateTotal)($order);
 
@@ -121,7 +122,7 @@ final class UpdatePurchaseOrder
             // The debt follows the new total, or the new vendor — TREASURY-DESIGN §٢٠.
             ($this->syncDebt)($order, null);
 
-            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts']);
+            return $order->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount']);
         });
     }
 
@@ -206,11 +207,13 @@ final class UpdatePurchaseOrder
      *
      * @throws PurchaseOrderAdditionalCostDoesNotBelongToOrder
      */
-    private function syncAdditionalCosts(PurchaseOrder $order, array $additionalCosts): void
+    private function syncAdditionalCosts(PurchaseOrder $order, array $additionalCosts, ?int $actorId): void
     {
-        $keptIds = [];
+        $kept = [];
 
-        foreach ($additionalCosts as $cost) {
+        foreach ($additionalCosts as $index => $cost) {
+            $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id");
+
             if ($cost->id !== null) {
                 // Scoped through the relation, so another order's cost is never found here.
                 $existing = $order->additionalCosts()->whereKey($cost->id)->first();
@@ -219,20 +222,34 @@ final class UpdatePurchaseOrder
                     throw PurchaseOrderAdditionalCostDoesNotBelongToOrder::make($cost->id, (int) $order->getKey());
                 }
 
-                $existing->update(['name' => $cost->name, 'amount' => $cost->amount]);
-                $keptIds[] = $existing->getKey();
+                $existing->fill(['name' => $cost->name, 'amount' => $cost->amount]);
+                $existing->treasury_account_id = $cost->treasuryAccountId;
+                $existing->save();
+                $kept[] = $existing;
 
                 continue;
             }
 
-            $keptIds[] = $order->additionalCosts()->create(['name' => $cost->name, 'amount' => $cost->amount])->getKey();
+            $created = $order->additionalCosts()->make(['name' => $cost->name, 'amount' => $cost->amount]);
+            $created->treasury_account_id = $cost->treasuryAccountId;
+            $created->recorded_by = $actorId;
+            $created->save();
+            $kept[] = $created;
         }
 
         // One row at a time rather than a mass delete on the relation — see syncItems() above
         // for why: a mass delete fires no model events, leaving the audit trail with nothing to
-        // say a cost ever existed.
+        // say a cost ever existed. And a removed cost paid from a drawer gives its money back.
         $order->additionalCosts()
-            ->whereKeyNot($keptIds)
-            ->each(fn (PurchaseOrderAdditionalCost $cost) => $cost->delete());
+            ->whereKeyNot(array_map(fn (PurchaseOrderAdditionalCost $cost) => $cost->getKey(), $kept))
+            ->each(function (PurchaseOrderAdditionalCost $cost) use ($actorId): void {
+                $cost->delete();
+                ($this->costExpense)($cost, $actorId);
+            });
+
+        // A changed amount or drawer reposts; an unchanged one writes nothing.
+        foreach ($kept as $cost) {
+            ($this->costExpense)($cost, $actorId);
+        }
     }
 }

@@ -12,6 +12,7 @@ use App\Domain\Investor\Actions\FundPurchaseOrder;
 use App\Domain\Investor\Actions\PostDealEarningsForOrder;
 use App\Domain\Investor\Actions\PostDealStockPurchases;
 use App\Domain\Investor\Actions\RecordDealExpense;
+use App\Domain\Investor\Actions\RecordFundExpense;
 use App\Domain\Investor\Actions\RecordWalletEntry;
 use App\Domain\Investor\Actions\ReverseDealExpense;
 use App\Domain\Investor\Actions\SetInvestorActivation;
@@ -35,6 +36,7 @@ use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\InvestorListQuery;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PurchaseOrderFundingQuery;
+use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
 use App\Domain\Order\Events\OrderProfitUnwound;
 use App\Domain\Order\Events\OrderStockDrawn;
@@ -59,6 +61,8 @@ final class InvestorService
         private readonly CloseInvestorDeal $closeDeal,
         private readonly RecordWalletEntry $recordEntry,
         private readonly RecordDealExpense $recordExpense,
+        private readonly RecordFundExpense $recordFundExpense,
+        private readonly FundDeal $fund,
         private readonly ReverseDealExpense $reverseExpense,
         private readonly PostDealEarningsForOrder $postEarnings,
         private readonly PostDealStockPurchases $postStockPurchases,
@@ -165,6 +169,45 @@ final class InvestorService
         ?int $actorId,
     ): InvestorDealExpense {
         return ($this->reverseExpense)($expense, $reason, $actorId);
+    }
+
+    /**
+     * A cost that arrived with goods a deal bought — delivery, customs — charged to that deal
+     * as its expense rather than into the goods' cost, which was agreed when it was funded
+     * (PURCHASE-ORDER-ARRIVAL-COSTS.md, decision 2). The fund's goes through
+     * {@see RecordFundExpense}, so its cash and the company's share move as with any fund
+     * expense; any other deal's through {@see RecordDealExpense}. `$data` names the document.
+     */
+    public function recordSupplyExpense(int $dealId, DealExpenseData $data, ?int $actorId): InvestorDealExpense
+    {
+        $deal = InvestorDeal::query()->findOrFail($dealId);
+
+        return $this->fund->is($deal)
+            ? ($this->recordFundExpense)($data, $actorId)
+            : ($this->recordExpense)($deal, $data, $actorId);
+    }
+
+    /**
+     * Reverses every standing expense a document charged — a purchase order's receipt taken
+     * back. Returns how many it reversed.
+     */
+    public function reverseSupplyExpensesOf(string $sourceType, int $sourceId, string $reason, ?int $actorId): int
+    {
+        $standing = InvestorDealExpense::query()
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereNull('reverses_expense_id')
+            ->whereNotIn('id', InvestorDealExpense::query()
+                ->whereNotNull('reverses_expense_id')
+                ->select('reverses_expense_id'))
+            ->orderBy('id')
+            ->get();
+
+        foreach ($standing as $expense) {
+            ($this->reverseExpense)($expense, $reason, $actorId, byHand: false);
+        }
+
+        return $standing->count();
     }
 
     /**

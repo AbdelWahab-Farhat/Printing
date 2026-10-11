@@ -11,7 +11,8 @@ use App\Domain\Vendor\Models\Vendor;
 
 /**
  * Puts a purchase order's total on its vendor's payable — owed from the moment the order is
- * raised, at its full landed total (TREASURY-DESIGN §٢٠, the owner's decision).
+ * raised, at its full landed total (TREASURY-DESIGN §٢٠, the owner's decision) — less the costs
+ * paid to somebody else, which is `vendor_amount` (PURCHASE-ORDER-ARRIVAL-COSTS.md).
  *
  * Run after anything that can change what the order owes: raising it, editing its lines or
  * extra costs or vendor, cancelling it. Nothing is owed on a cancelled order, on one from before
@@ -26,7 +27,7 @@ final class SyncPurchaseOrderDebt
     {
         $owes = ! $order->predates_treasury
             && $order->status !== PurchaseOrderStatus::Cancelled
-            && $order->total_amount !== null;
+            && $order->vendor_amount !== null;
 
         $code = (string) $order->getKey();
         $account = null;
@@ -41,7 +42,7 @@ final class SyncPurchaseOrderDebt
             sourceType: $order->getMorphClass(),
             sourceId: (int) $order->getKey(),
             accountId: $account,
-            amount: $owes ? (string) $order->total_amount : '0',
+            amount: $owes ? (string) $order->vendor_amount : '0',
             firstPostedAt: $order->created_at ?? now(),
             notes: "أمر الشراء {$code}",
             reason: $order->status === PurchaseOrderStatus::Cancelled

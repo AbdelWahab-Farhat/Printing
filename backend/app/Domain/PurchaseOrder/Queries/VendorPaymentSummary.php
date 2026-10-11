@@ -14,9 +14,10 @@ use Illuminate\Support\Collection;
 /**
  * Paid and still owed — for one purchase order, and for a vendor across all of theirs.
  *
- * **A purchase order's total is its landed total** — the goods plus the extra costs spread over
- * them — and «المدفوع» is every live payment recorded against it, to the vendor or to whoever
- * carried the goods. An order from before the treasury (`predates_treasury`) shows what was paid
+ * **A purchase order's total here is what its vendor is owed** — `vendor_amount`: the goods plus
+ * the extra costs on the vendor's bill. A cost paid from a drawer or owed to somebody else is out
+ * of it (PURCHASE-ORDER-ARRIVAL-COSTS.md) — its own `expense` movement stands for it. «المدفوع»
+ * is every live payment recorded against the order. An order from before the treasury (`predates_treasury`) shows what was paid
  * on it and nothing owed: its payments were never recorded, TREASURY-DESIGN §٨.
  *
  * **This is the figure the rules read** — «لا دفع مقدّم» refuses a payment or a credit above
@@ -34,7 +35,7 @@ final class VendorPaymentSummary
 
         $paid = $this->net($rows, VendorPaymentType::Payment);
         $credited = $this->net($rows, VendorPaymentType::Credit);
-        $total = $order->total_amount === null ? null : (string) $order->total_amount;
+        $total = $order->vendor_amount === null ? null : (string) $order->vendor_amount;
         $counts = ! $order->predates_treasury && $order->status !== PurchaseOrderStatus::Cancelled && $total !== null;
 
         $remaining = $counts ? Money::round(bcsub(bcsub($total, $paid, 8), $credited, 8)) : null;
@@ -71,7 +72,7 @@ final class VendorPaymentSummary
             ->where('vendor_id', $vendorId)
             ->where('predates_treasury', false)
             ->where('status', '<>', PurchaseOrderStatus::Cancelled->value)
-            ->sum('total_amount');
+            ->sum('vendor_amount');
 
         $rows = VendorPayment::query()->where('vendor_id', $vendorId)->with(['reversesPayment', 'purchaseOrder'])->get();
 
@@ -113,7 +114,7 @@ final class VendorPaymentSummary
      */
     public function leftOnOldOrder(PurchaseOrder $order): string
     {
-        $total = $order->total_amount === null ? '0' : (string) $order->total_amount;
+        $total = $order->vendor_amount === null ? '0' : (string) $order->vendor_amount;
 
         return Money::round(bcsub($total, $this->settledOn((int) $order->getKey()), 8));
     }
