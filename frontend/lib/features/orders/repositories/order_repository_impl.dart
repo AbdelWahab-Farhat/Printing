@@ -234,6 +234,7 @@ class OrderRepositoryImpl implements OrderRepository {
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
     bool? isUrgent,
+    ({int? id})? vendor,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -288,8 +289,9 @@ class OrderRepositoryImpl implements OrderRepository {
             // Who is making it, echoed back like the address beside it. Absent means «no
             // vendor» here, not «leave it alone», and clearing it on a وسيط order makes the
             // server refuse the whole edit with «الطلبية الوسيطة تحتاج مورداً» — a message
-            // about a field this screen never opened.
-            'vendor_id': ?order.vendorId,
+            // about a field this screen never opened. Replaced only when this edit named one —
+            // a «جديدة» order whose lines became all وسيط — or let one go.
+            'vendor_id': ?(vendor == null ? order.vendorId : vendor.id),
             // Omitted entirely when this edit is not about the lines: `items` is the one field
             // whose absence means "leave them alone" rather than "clear them", which is what
             // lets an address be corrected on an order whose lines are already closed.

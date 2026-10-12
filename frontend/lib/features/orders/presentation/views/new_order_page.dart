@@ -13,6 +13,7 @@ import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/orders/models/default_destination.dart';
+import 'package:dayaa/features/orders/models/one_bench.dart';
 import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
@@ -124,6 +125,12 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// on its lines, by the server's own rule. See [vendorRequirementFor].
   VendorRequirement get _vendorRequirement =>
       vendorRequirementFor([for (final line in _lines) line.product]);
+
+  /// Whether the lines hold a وسيط product beside one of ours — refused by the server, so the
+  /// button stays shut and the lines say why. See `one_bench.dart`.
+  bool get _mixesBenches => linesMixBenches([
+    for (final line in _lines) line.product.productCategory?.productionMode.isOrderedAlone ?? false,
+  ]);
 
   _DesignSource _designSource = _DesignSource.none;
 
@@ -291,13 +298,16 @@ class _NewOrderViewState extends State<_NewOrderView> {
   }
 
   /// Every line has a quantity, every hand-priced line has a price, there is a city — and a
-  /// vendor, where every line is a vendor's work.
+  /// vendor, where every line is a vendor's work — and the lines are all on one bench.
   ///
   /// The button is disabled rather than the boxes marked red: nothing has been submitted yet,
-  /// and an error under a field somebody has not reached is an accusation.
+  /// and an error under a field somebody has not reached is an accusation. The one exception is
+  /// a mix of benches, which is said under the lines — the clerk made it, and nothing else on
+  /// the form would explain the shut button.
   bool get _isComplete =>
       _lines.isNotEmpty &&
       _city != null &&
+      !_mixesBenches &&
       (!_vendorRequirement.isRequired || _vendor != null) &&
       _lines.every(
         (line) =>
@@ -671,7 +681,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
 
   Widget _linesSection(TakeOrderState submission) {
     final scheme = context.colorScheme;
-    final itemsError = submission.itemsError;
+    final itemsError = submission.itemsError ?? (_mixesBenches ? mixedBenchesMessage : null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -711,9 +721,8 @@ class _NewOrderViewState extends State<_NewOrderView> {
   ///
   /// **Required where the server requires it, and nowhere else.** Every line وسيط puts the
   /// order on the vendor road, and `CreateOrder` refuses it without one — «الطلبية الوسيطة
-  /// تحتاج مورداً». One printed line beside four وسيط ones is a printed order on the standard
-  /// road, where a vendor is accepted and not owed; requiring it here would refuse an order the
-  /// server would have taken. The tile says which of the two this is.
+  /// تحتاج مورداً». A printed line beside وسيط ones is refused whole (see [_mixesBenches]), so
+  /// «اختياري» is only ever seen mid-edit, while the line that does not belong is removed.
   ///
   /// The clerk **never sees or types a cost** on this screen. That is not a layout decision —
   /// the payload does not carry one for them.

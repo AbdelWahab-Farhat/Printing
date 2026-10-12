@@ -82,6 +82,27 @@ final class ResolveOrderFlow
     }
 
     /**
+     * Whether this order's lines must stay on the bench they are on — ours, or a vendor's.
+     *
+     * **{@see mayMove()} asked of the other bench, so the rule lives in one place.** An order of
+     * ours asks whether it could still become a وسيط order; a وسيط order asks whether it could
+     * still come back to the standard road. Once work has started neither can, and an edit that
+     * swaps every line for the other bench's is refused by `UpdateOrder` — so the app greys those
+     * products out in the picker rather than letting the clerk build an edit nobody can save.
+     *
+     * Before work starts the answer is false, and the swap is legitimate: «جديدة» may become a
+     * وسيط order and back, provided the lines are unanimous by the time they are saved.
+     */
+    public function benchIsFixed(Order $order): bool
+    {
+        $other = ($order->production_flow ?? OrderFlow::Standard) === OrderFlow::Outsourced
+            ? OrderFlow::Standard
+            : OrderFlow::Outsourced;
+
+        return ! $this->mayMove($order->status, $other);
+    }
+
+    /**
      * What the lines say, read once with the whole chain loaded.
      *
      * `parent` is in the eager set because `ProductCategory::productionMode()` reads it — a

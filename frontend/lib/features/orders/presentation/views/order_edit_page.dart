@@ -25,6 +25,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.d
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
+import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -295,11 +296,24 @@ class _Form extends StatelessWidget {
     final picked = await showProductPicker(
       context: context,
       addedVariantIds: {for (final line in state.lines) line.variantId},
+      // Once work has started the order cannot change road, so the other bench's products
+      // could never be saved here — greyed out rather than refused on «حفظ التعديلات».
+      bench: state.pickerBench,
     );
 
     if (picked == null || !context.mounted) return;
 
     cubit.add(product: picked.product, variant: picked.variant);
+  }
+
+  /// The same picker «طلبية جديدة» and the purchase orders use — the vendors still dealt with.
+  Future<void> _pickVendor(BuildContext context) async {
+    final cubit = context.read<OrderInvoiceCubit>();
+
+    final vendor = await showVendorPicker(context: context);
+    if (vendor == null || !context.mounted) return;
+
+    cubit.setVendor(id: vendor.id, name: vendor.name);
   }
 
   @override
@@ -411,6 +425,20 @@ class _Form extends StatelessWidget {
                             onPressed: () => _addProduct(context, state),
                           ),
                         ),
+                      // **Drawn once every line is a vendor's work** — a «جديدة» order whose own
+                      // products were removed until only the وسيط one was left becomes a وسيط
+                      // order on save, and the server refuses one with nobody named to make it.
+                      if (mayEditItems && state.vendorIsRequired) ...[
+                        SizedBox(height: 12.h),
+                        PlacePickerTile(
+                          caption: 'المورد',
+                          value: state.vendorName ?? 'مطلوب',
+                          isChosen: state.vendorId != null,
+                          icon: AppIcons.vendors,
+                          onTap: () => _pickVendor(context),
+                        ),
+                        if (state.vendorError case final error?) _Error(text: error),
+                      ],
                     ],
                   ),
                 ),

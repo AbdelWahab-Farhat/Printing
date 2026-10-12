@@ -99,8 +99,6 @@ void main() {
     // The app renders `*_label` — the server's own Arabic — and never the raw enum beside it.
     'fulfilment_type': 'the label is what is drawn; the wire value has no reader',
     'pricing_unit': 'lines show `pricing_unit_label`, the server\'s own word for it',
-    'production_flow': 'the bar explains itself with `production_flow_label`; nothing branches '
-        'on the road in this app, because the server sends the transitions already resolved',
 
     // Nested summaries the app reaches by other means.
     'shop': 'the order carries `customer_shop_id` and `customer_shop_name` flat, and uses those',

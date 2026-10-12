@@ -84,7 +84,7 @@ abstract class NewOrder with _$NewOrder {
     /// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
     /// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
     /// cannot be told by a field rule and has to look at the products itself. See
-    /// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+    /// `vendorRequirementFor`. Accepted on any order the server takes.
     @JsonKey(name: 'vendor_id', includeIfNull: false) int? vendorId,
 
     @JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,

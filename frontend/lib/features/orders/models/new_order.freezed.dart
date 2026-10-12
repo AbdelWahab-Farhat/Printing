@@ -48,7 +48,7 @@ mixin _$NewOrder {
 @JsonKey(name: 'additional_cost_note', includeIfNull: false) String? get additionalCostNote;/// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
 /// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
 /// cannot be told by a field rule and has to look at the products itself. See
-/// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+/// `vendorRequirementFor`. Accepted on any order the server takes.
 @JsonKey(name: 'vendor_id', includeIfNull: false) int? get vendorId;@JsonKey(name: 'recipient_name', includeIfNull: false) String? get recipientName;@JsonKey(name: 'recipient_phone', includeIfNull: false) String? get recipientPhone;@JsonKey(name: 'address_details', includeIfNull: false) String? get addressDetails;@JsonKey(includeIfNull: false) String? get notes;/// «مستعجلة» — said at the counter, when the order is agreed.
 ///
 /// Omitted from the body when absent rather than sent as false, so this model follows the
@@ -333,7 +333,7 @@ class _NewOrder implements NewOrder {
 /// Who will make it. **Required by the server for an order whose lines are all وسيط**, and
 /// refused as a 422 on `vendor_id` when missing — the road is read off the lines, so the app
 /// cannot be told by a field rule and has to look at the products itself. See
-/// `vendorRequirementFor`. Accepted on any order, so a mixed one may name one too.
+/// `vendorRequirementFor`. Accepted on any order the server takes.
 @override@JsonKey(name: 'vendor_id', includeIfNull: false) final  int? vendorId;
 @override@JsonKey(name: 'recipient_name', includeIfNull: false) final  String? recipientName;
 @override@JsonKey(name: 'recipient_phone', includeIfNull: false) final  String? recipientPhone;

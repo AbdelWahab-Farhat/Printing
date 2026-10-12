@@ -33,6 +33,7 @@ use App\Domain\Order\Support\TransitionFields;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
@@ -467,6 +468,157 @@ class OrderLinesAddRemoveTest extends TestCase
         // Assert
         $response->assertStatus(422)->assertJsonValidationErrors('items');
         $this->assertSame(1, $order->items()->count());
+    }
+
+    public function test_an_outsourced_product_cannot_join_a_plain_order(): void
+    {
+        // Arrange — «سادة» skips the press, but it is still ours: the same side of the line.
+        $plain = $this->bagSize('سادة', ProductCategory::factory()->skipsProduction()->create());
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $order = $this->order([[$plain, '300']]);
+
+        // Act
+        $response = $this->edit($this->staff(), $order, [
+            $this->keep($order->items()->sole()),
+            $this->add($outsourced, '100'),
+        ]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('items');
+        $this->assertSame(1, $order->items()->count());
+        $this->assertSame(OrderFlow::NoProduction, $order->refresh()->production_flow);
+    }
+
+    public function test_an_in_house_product_cannot_join_an_outsourced_order(): void
+    {
+        // Arrange — the vendor is named, so the only thing wrong with the edit is the new line.
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $printed = $this->bagSize('25*35');
+        $vendor = Vendor::factory()->create();
+        $order = $this->order([[$outsourced, '100']]);
+        $order->forceFill(['vendor_id' => $vendor->getKey()])->save();
+
+        // Act
+        $response = $this->edit($this->staff(), $order, [
+            $this->keep($order->items()->sole()),
+            $this->add($printed, '300'),
+        ], ['vendor_id' => $vendor->getKey()]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('items');
+        $this->assertSame(1, $order->items()->count());
+        $this->assertSame(OrderFlow::Outsourced, $order->refresh()->production_flow);
+    }
+
+    public function test_a_plain_product_may_join_a_printed_order(): void
+    {
+        // Arrange — both are ours, so the rule has nothing to refuse.
+        $printed = $this->bagSize('25*35');
+        $plain = $this->bagSize('سادة', ProductCategory::factory()->skipsProduction()->create());
+        $order = $this->order([[$printed, '300']]);
+
+        // Act
+        $response = $this->edit($this->staff(), $order, [
+            $this->keep($order->items()->sole()),
+            $this->add($plain, '100'),
+        ]);
+
+        // Assert
+        $response->assertOk();
+        $this->assertSame(2, $order->items()->count());
+        $this->assertSame(OrderFlow::Standard, $order->refresh()->production_flow);
+    }
+
+    public function test_a_new_order_swapped_onto_a_vendor_saves_with_the_vendor_named(): void
+    {
+        // Arrange — the clerk keeps only the وسيط product, so the order becomes a وسيط one.
+        $printed = $this->bagSize('25*35');
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $vendor = Vendor::factory()->create();
+        $order = $this->order([[$printed, '300']]);
+
+        // Act
+        $response = $this->edit($this->staff(), $order, [
+            $this->add($outsourced, '100'),
+        ], ['vendor_id' => $vendor->getKey()]);
+
+        // Assert
+        $response->assertOk();
+        $order->refresh();
+        $this->assertSame(OrderFlow::Outsourced, $order->production_flow);
+        $this->assertSame($vendor->getKey(), $order->vendor_id);
+    }
+
+    public function test_a_new_order_swapped_onto_a_vendor_without_one_is_refused(): void
+    {
+        // Arrange
+        $printed = $this->bagSize('25*35');
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $order = $this->order([[$printed, '300']]);
+
+        // Act
+        $response = $this->edit($this->staff(), $order, [$this->add($outsourced, '100')]);
+
+        // Assert — refused whole: the printed line is still there.
+        $response->assertStatus(422)->assertJsonValidationErrors('vendor_id');
+        $this->assertSame($printed->getKey(), $order->items()->sole()->product_variant_id);
+        $this->assertSame(OrderFlow::Standard, $order->refresh()->production_flow);
+    }
+
+    public function test_a_vendor_order_swapped_back_onto_ours_lets_the_vendor_go(): void
+    {
+        // Arrange
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $printed = $this->bagSize('25*35');
+        $order = $this->order([[$outsourced, '100']]);
+        $order->forceFill(['vendor_id' => Vendor::factory()->create()->getKey()])->save();
+
+        // Act — no vendor sent, which is how the app clears it.
+        $response = $this->edit($this->staff(), $order, [$this->add($printed, '300')]);
+
+        // Assert
+        $response->assertOk();
+        $order->refresh();
+        $this->assertSame(OrderFlow::Standard, $order->production_flow);
+        $this->assertNull($order->vendor_id);
+    }
+
+    public function test_once_work_has_started_an_order_cannot_be_swapped_onto_a_vendor(): void
+    {
+        // Arrange — «جاهزة للطباعة»: every line swapped, so the bench check alone would pass.
+        $printed = $this->bagSize('25*35');
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $order = $this->order([[$printed, '300']], OrderStatus::ReadyToPrint);
+
+        // Act
+        $response = $this->edit($this->foreman(), $order, [
+            $this->add($outsourced, '100'),
+        ], ['vendor_id' => Vendor::factory()->create()->getKey()]);
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors('items');
+        $this->assertSame($printed->getKey(), $order->items()->sole()->product_variant_id);
+        $this->assertSame(OrderFlow::Standard, $order->refresh()->production_flow);
+    }
+
+    public function test_the_order_says_whether_its_bench_is_fixed(): void
+    {
+        // Arrange
+        $printed = $this->bagSize('25*35');
+        $outsourced = $this->bagSize('علبة', ProductCategory::factory()->outsourced()->create());
+        $fresh = $this->order([[$printed, '300']]);
+        $started = $this->order([[$printed, '300']], OrderStatus::ReadyToPrint);
+        $vendors = $this->order([[$outsourced, '100']]);
+        $headers = $this->staff();
+
+        // Act
+        $show = fn (Order $order): TestResponse => $this->withHeaders($headers)
+            ->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert — before work starts either bench may still be swapped onto; after, neither.
+        $show($fresh)->assertOk()->assertJsonPath('data.bench_is_fixed', false);
+        $show($started)->assertOk()->assertJsonPath('data.bench_is_fixed', true);
+        $show($vendors)->assertOk()->assertJsonPath('data.bench_is_fixed', false);
     }
 
     public function test_a_printed_product_added_while_the_deposit_is_paid_puts_the_order_on_the_press(): void

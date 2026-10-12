@@ -16,6 +16,13 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   ),
   statusLabel: json['status_label'] as String,
   productionFlowLabel: json['production_flow_label'] as String? ?? '',
+  productionFlow:
+      $enumDecodeNullable(
+        _$OrderFlowEnumMap,
+        json['production_flow'],
+        unknownValue: OrderFlow.unknown,
+      ) ??
+      OrderFlow.unknown,
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
   isUrgent: json['is_urgent'] as bool? ?? false,
@@ -127,6 +134,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       : OrderProgress.fromJson(json['progress'] as Map<String, dynamic>),
   itemsAreEditable: json['items_are_editable'] as bool? ?? false,
   itemEditsMoveStock: json['item_edits_move_stock'] as bool? ?? false,
+  benchIsFixed: json['bench_is_fixed'] as bool? ?? false,
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
   destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
@@ -180,6 +188,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'status': _$OrderStatusEnumMap[instance.status]!,
   'status_label': instance.statusLabel,
   'production_flow_label': instance.productionFlowLabel,
+  'production_flow': _$OrderFlowEnumMap[instance.productionFlow]!,
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
   'is_urgent': instance.isUrgent,
@@ -249,6 +258,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'progress': instance.progress.toJson(),
   'items_are_editable': instance.itemsAreEditable,
   'item_edits_move_stock': instance.itemEditsMoveStock,
+  'bench_is_fixed': instance.benchIsFixed,
   'designs_are_editable': instance.designsAreEditable,
   'destination_is_editable': instance.destinationIsEditable,
   'items_count': instance.itemsCount,
@@ -295,6 +305,13 @@ const _$OrderStatusEnumMap = {
   OrderStatus.delivered: 'delivered',
   OrderStatus.settled: 'settled',
   OrderStatus.unknown: 'unknown',
+};
+
+const _$OrderFlowEnumMap = {
+  OrderFlow.standard: 'standard',
+  OrderFlow.noProduction: 'no_production',
+  OrderFlow.outsourced: 'outsourced',
+  OrderFlow.unknown: 'unknown',
 };
 
 const _$AdditionalCostReasonEnumMap = {

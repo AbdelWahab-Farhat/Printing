@@ -134,5 +134,19 @@ stock before the new one draws.
 - `RestoreOrder` now stamps `orders.stock_redrawn_at` (backfilled from the audit trail), which is
   what lets a zone-2 edit refuse a restored order.
 
+**Follow-up 2026-10-12 — one bench, and the vendor on the edit screen:**
+
+- The app now says «المنتجات التي ينفّذها مورد خارجي تُطلب في طلبية مستقلة» under «البنود» the
+  moment the lines mix a وسيط product with ours, on both «طلبية جديدة» and «تعديل الطلبية», and
+  keeps the save shut (`one_bench.dart`). Checked on the form, not in the picker, so a «جديدة»
+  order can still be swapped across: add the new product, then remove the old one.
+- Once work has started (`ResolveOrderFlow::benchIsFixed()`, sent as `bench_is_fixed`) the order
+  cannot change road, so «إضافة منتج» greys the other bench out — «جاهزة للطباعة», «قيد التصميم»,
+  and «نواقص» for وسيط products. The server already refused that edit with `EditWouldChangeTheRoad`.
+- A «جديدة» order left with only وسيط products draws a required «المورد» row; the vendor picked
+  there is sent with the save. An order swapped back onto ours lets its vendor go.
+- Tests: `OrderLinesAddRemoveTest` 31; `order_invoice_cubit_test.dart`,
+  `product_picker_sheet_test.dart`.
+
 **Changed on purpose:** shortages keep their old window (`Order::shortagesAreEditable()` — جديدة ·
 قيد التصميم · نواقص · قيد الطباعة), so declaring a shortage is exactly as before.

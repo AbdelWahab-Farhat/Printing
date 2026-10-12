@@ -1,4 +1,5 @@
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/one_bench.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:dayaa/features/products/models/product.dart';
@@ -38,6 +39,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 originalQuantity: item.quantity,
                 isStockedInAnotherUnit: item.isStockedInAnotherUnit ?? false,
                 stockUnitLabel: item.stockUnitLabel,
+                // A line does not carry its product's heading; the order's road says it for all
+                // of them, since the server keeps an order's lines on one bench.
+                isOrderedAlone: order.productionFlow.isOrderedAlone,
               ),
           ],
           discount: order.discount,
@@ -53,6 +57,11 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           linesMoveStock: order.itemEditsMoveStock,
           paidAmount: order.paidAmount,
           destinationIsEditable: order.destinationIsEditable,
+          benchIsFixed: order.benchIsFixed,
+          wasOrderedAlone: order.productionFlow.isOrderedAlone,
+          vendorId: order.vendorId,
+          vendorName: order.vendorName,
+          originalVendorId: order.vendorId,
         ),
       );
 
@@ -88,6 +97,8 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
             // the customer is charged in — answered from what the catalogue sent.
             isStockedInAnotherUnit: shelf != null && shelf.unit != product.pricingUnit,
             stockUnitLabel: shelf?.unitLabel,
+            // Unknown heading shares, the same default the server takes.
+            isOrderedAlone: product.productCategory?.productionMode.isOrderedAlone ?? false,
           ),
         ],
         isDirty: true,
@@ -158,6 +169,13 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
         failure: null,
       ),
     );
+  }
+
+  /// Names who is making it — the «المورد» row, drawn once every line is a vendor's work.
+  void setVendor({required int id, required String name}) {
+    if (id == state.vendorId) return;
+
+    emit(state.copyWith(vendorId: id, vendorName: name, isDirty: true, failure: null));
   }
 
   void setDiscount(String discount) {
@@ -253,6 +271,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       // *different* number, and this screen has no business offering one it would refuse.
       recipientPhone: state.destinationIsEditable ? (number: state.recipientPhone) : null,
       isUrgent: state.isUrgent,
+      // Only when this edit changed it — picked on the «المورد» row, or let go with the last
+      // وسيط line. Otherwise absent, and the order's own vendor goes back untouched.
+      vendor: state.vendorToSend == state.originalVendorId ? null : (id: state.vendorToSend),
     );
 
     if (isClosed) return;
