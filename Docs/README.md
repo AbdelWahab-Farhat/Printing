@@ -39,6 +39,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-25-ORDER-LINES-ADD-REMOVE.md](changes/PR-25-ORDER-LINES-ADD-REMOVE.md) | إضافة وحذف منتجات في الطلبية. |
+| [PR-24-PURCHASE-ARRIVAL-COSTS.md](changes/PR-24-PURCHASE-ARRIVAL-COSTS.md) | «تكاليف الوصول» في طلبيات الشراء. |
 | [PR-23-CUSTOMER-DEFAULT-ADDRESS.md](changes/PR-23-CUSTOMER-DEFAULT-ADDRESS.md) | العنوان الافتراضي للعميل. |
 | [PR-22-PAYMENT-SETTLEMENT.md](changes/PR-22-PAYMENT-SETTLEMENT.md) | «تسوية الدفعات». |
 | [PR-21-PERIOD-EXPENSES.md](changes/PR-21-PERIOD-EXPENSES.md) | «المصاريف» في شاشة الفترة. |
