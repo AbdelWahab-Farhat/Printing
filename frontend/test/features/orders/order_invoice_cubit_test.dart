@@ -5,6 +5,7 @@ import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
+import 'package:dayaa/features/products/models/product.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -643,5 +644,177 @@ void main() {
 
     // Assert
     expect(cubit.state.isDirty, isFalse);
+  });
+
+  // ─────────────────── adding and removing products (ORDER-LINES-ADD-REMOVE) ───────────────────
+
+  Product productWith({bool listed = true, String unit = 'piece'}) => Product(
+    id: 30,
+    code: 'P30',
+    slug: 'box',
+    name: 'علبة',
+    pricingUnit: unit,
+    pricingUnitLabel: unit == 'piece' ? 'قطعة' : 'كيلوغرام',
+    pricingMode: listed ? 'tiered' : 'quote_on_request',
+    pricingModeLabel: listed ? 'حسب الكمية' : 'حسب الطلب',
+    hasListedPrices: listed,
+    minOrderQuantity: '1.000',
+  );
+
+  ProductVariant sizeWith({String? shelfUnit}) => ProductVariant(
+    id: 40,
+    label: '30*40',
+    stockItemId: shelfUnit == null ? null : 50,
+    stockItem: shelfUnit == null
+        ? null
+        : VariantStockItem(
+            id: 50,
+            code: 'S50',
+            name: 'كيس',
+            displayName: 'كيس 30*40',
+            unit: shelfUnit,
+            unitLabel: shelfUnit == 'kilogram' ? 'كيلوغرام' : 'قطعة',
+          ),
+  );
+
+  List<InvoiceLineUpdate> sentLines() => verify(
+    () => repository.updateInvoice(
+      any(),
+      lines: captureAny(named: 'lines'),
+      discount: any(named: 'discount'),
+      cityId: any(named: 'cityId'),
+      regionId: any(named: 'regionId'),
+      recipientPhone: any(named: 'recipientPhone'),
+      isUrgent: any(named: 'isUrgent'),
+    ),
+  ).captured.last as List<InvoiceLineUpdate>;
+
+  test('an untouched line goes back with its id, so the server keeps the row', () async {
+    // Arrange — the normal save: nothing about the lines changed.
+    final cubit = cubitFor(orderWith());
+    stubSave();
+    cubit.setUrgent(true);
+
+    // Act
+    await cubit.save();
+
+    // Assert
+    expect(sentLines().single.toJson(), {
+      'id': 1,
+      'product_id': 10,
+      'product_variant_id': 20,
+      'quantity': '300',
+    });
+  });
+
+  test('an added product waits for its quantity, then goes without an id', () async {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+    stubSave();
+
+    // Act
+    cubit.add(product: productWith(), variant: sizeWith());
+
+    // Assert — not saveable until somebody says how many.
+    expect(cubit.state.lines, hasLength(2));
+    expect(cubit.state.isValid, isFalse);
+
+    // Act
+    cubit.setQuantity(cubit.state.lines.last.id, '200');
+    await cubit.save();
+
+    // Assert
+    final added = sentLines().last.toJson();
+    expect(added.containsKey('id'), isFalse);
+    expect(added['product_variant_id'], 40);
+    expect(added['quantity'], '200');
+    expect(added.containsKey('unit_price'), isFalse);
+  });
+
+  test('a removed line is simply not sent', () async {
+    // Arrange
+    final cubit = cubitFor(orderWith(items: [itemWith(), itemWith(id: 2)]));
+    stubSave();
+
+    // Act
+    cubit.remove(2);
+    await cubit.save();
+
+    // Assert
+    expect(sentLines().map((line) => line.id), [1]);
+  });
+
+  test('a «حسب الطلب» product added here needs, and sends, its price', () async {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+    stubSave();
+    cubit.add(product: productWith(listed: false), variant: sizeWith());
+    final added = cubit.state.lines.last.id;
+    cubit.setQuantity(added, '50');
+
+    // Assert — no price, no save.
+    expect(cubit.state.isValid, isFalse);
+
+    // Act
+    // Arabic-Indic digits and a comma — what the price box lets through.
+    cubit.setUnitPrice(added, '٤,٥', typed: true);
+    await cubit.save();
+
+    // Assert
+    expect(sentLines().last.toJson()['unit_price'], '4.5');
+  });
+
+  test('a quoted price moves the estimate without marking the form dirty', () {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+
+    // Act — the catalogue answering is not an edit.
+    cubit.setUnitPrice(1, '2.000');
+
+    // Assert
+    expect(cubit.state.isDirty, isFalse);
+    expect(cubit.state.estimatedTotal, '600.00');
+  });
+
+  test('after the draw, a kilo-shelf product added here must say what leaves the shelf', () async {
+    // Arrange — the order is past «جاهزة للطباعة».
+    final cubit = cubitFor(orderWith().copyWith(itemEditsMoveStock: true));
+    stubSave();
+    cubit.add(product: productWith(), variant: sizeWith(shelfUnit: 'kilogram'));
+    final added = cubit.state.lines.last.id;
+    cubit.setQuantity(added, '1000');
+
+    // Assert
+    expect(cubit.state.isValid, isFalse);
+
+    // Act
+    cubit.setWeight(added, '22.5');
+    await cubit.save();
+
+    // Assert
+    expect(sentLines().last.toJson()['warehouse_quantity'], '22.5');
+  });
+
+  test('before the draw, no weight is asked even for a kilo-shelf product', () {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+
+    // Act
+    cubit.add(product: productWith(), variant: sizeWith(shelfUnit: 'kilogram'));
+    cubit.setQuantity(cubit.state.lines.last.id, '1000');
+
+    // Assert
+    expect(cubit.state.isValid, isTrue);
+  });
+
+  test('a total under what was paid is flagged before the save', () {
+    // Arrange — 330 paid, and the line halved.
+    final cubit = cubitFor(orderWith().copyWith(paidAmount: '330.00'));
+
+    // Act
+    cubit.setQuantity(1, '150');
+
+    // Assert
+    expect(cubit.state.dropsBelowPaid, isTrue);
   });
 }

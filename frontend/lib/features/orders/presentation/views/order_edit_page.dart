@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/pop_result.dart';
@@ -5,10 +7,12 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
@@ -16,8 +20,10 @@ import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.d
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
+import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,14 +43,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// can be redone after printing has started. A single "is this editable" flag over the whole
 /// screen would have to pick one of those and be wrong about the other.
 ///
-/// **No price is typed anywhere here.** Quantity is the only number a clerk changes; the rate
-/// comes back from the catalogue when the server re-prices the line, which is what stops an
-/// edit quietly undercutting an agreed price. The total shown while typing is an *estimate* and
-/// says so.
+/// **No catalogue price is typed here.** The rate comes back from the catalogue when the server
+/// prices a line, which is what stops an edit quietly undercutting an agreed price; only a
+/// product priced «حسب الطلب», added here, asks for its price. The total shown while typing is
+/// an *estimate* and says so.
 ///
-/// **What is deliberately not here: adding a product.** That needs the catalogue picker — a
-/// product, then one of its sizes, then a quantity priced live — which is the same machinery
-/// «طلبية جديدة» needs and is its own slice, recorded in BACKLOG.md.
+/// **Products are added and removed here until the press starts** — the picker and the live
+/// quote are «طلبية جديدة»'s own. After «جاهزة للطباعة» the stock has already left, so saving
+/// moves it too: a removed product goes back on the shelf, an added one comes off it. See
+/// Docs/orders/ORDER-LINES-ADD-REMOVE.md.
 ///
 /// Pops with `true` when anything was saved, so the screen behind re-reads.
 class OrderEditPage extends StatelessWidget {
@@ -191,8 +198,14 @@ class _OrderEditViewState extends State<_OrderEditView> {
               order: order,
               isWorking: state.isWorking,
               mayDiscount: session.can(AppPermission.discountOrders),
+              // **And, once the stock has left, the grant that took it out** — saving the lines
+              // there moves the shelf. The server asks the same; this keeps the screen from
+              // offering what it would refuse.
               mayEditItems:
-                  order.itemsAreEditable && session.can(AppPermission.manageOrders),
+                  order.itemsAreEditable &&
+                  session.can(AppPermission.manageOrders) &&
+                  (!order.itemEditsMoveStock ||
+                      session.can(AppPermission.moveOrderToReadyToPrint)),
               // A third line, and later than the other two: the address stays correctable
               // until somebody is driving to it.
               mayEditDestination: session.can(AppPermission.manageOrders),
@@ -274,6 +287,21 @@ class _Form extends StatelessWidget {
   })?
   onReviewDesign;
 
+  /// «طلبية جديدة»'s own picker, with the sizes already on the order greyed out — the same
+  /// size twice would be two lines the shelf and the invoice both have to add up.
+  Future<void> _addProduct(BuildContext context, OrderInvoiceState state) async {
+    final cubit = context.read<OrderInvoiceCubit>();
+
+    final picked = await showProductPicker(
+      context: context,
+      addedVariantIds: {for (final line in state.lines) line.variantId},
+    );
+
+    if (picked == null || !context.mounted) return;
+
+    cubit.add(product: picked.product, variant: picked.variant);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<OrderInvoiceCubit>();
@@ -340,17 +368,48 @@ class _Form extends StatelessWidget {
                     children: [
                       if (!mayEditItems)
                         _Note(
-                          text: order.itemsAreEditable
-                              ? 'لا تملك صلاحية تعديل بنود الطلبية'
-                              : 'البنود مقفلة بعد بدء الطباعة',
+                          text: !order.itemsAreEditable
+                              ? 'البنود مقفلة بعد بدء الطباعة'
+                              : order.itemEditsMoveStock &&
+                                    sl<Session>().can(AppPermission.manageOrders)
+                              ? 'خرجت بضاعة هذه الطلبية من المخزن، وتعديل بنودها يحرّك المخزن'
+                                    ' — يحتاج صلاحية «جاهزة للطباعة»'
+                              : 'لا تملك صلاحية تعديل بنود الطلبية',
+                        )
+                      else if (state.linesMoveStock)
+                        // Said before anything is touched, because the save does more here than
+                        // anywhere else on this screen: it moves the shelf.
+                        const _Note(
+                          text:
+                              'خرجت البضاعة من المخزن — عند الحفظ يعود المنتج المحذوف إلى الرف،'
+                              ' ويُسحب المضاف من نفس المخزن',
                         ),
-                      for (final line in state.lines)
+                      if (state.itemsError case final error?) _Error(text: error),
+                      for (final (index, line) in state.lines.indexed)
                         _LineRow(
+                          // Keyed by the line, not its position: removing the second of three
+                          // must not hand the third line's typed quantity to the second's box.
+                          key: ValueKey(line.id),
                           line: line,
                           isEditable: mayEditItems,
                           canRemove: mayEditItems && state.lines.length > 1,
+                          movesStock: state.linesMoveStock,
+                          weightError: state.weightErrorAt(index),
                           onQuantity: (value) => cubit.setQuantity(line.id, value),
+                          onQuoted: (price) => cubit.setUnitPrice(line.id, price),
+                          onUnitPrice: (price) =>
+                              cubit.setUnitPrice(line.id, price, typed: true),
+                          onWeight: (value) => cubit.setWeight(line.id, value),
                           onRemove: () => cubit.remove(line.id),
+                        ),
+                      if (mayEditItems)
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: AppButton.tonal(
+                            label: 'إضافة منتج',
+                            icon: AppIcons.add,
+                            onPressed: () => _addProduct(context, state),
+                          ),
                         ),
                     ],
                   ),
@@ -367,6 +426,16 @@ class _Form extends StatelessWidget {
                 ],
                 SizedBox(height: 16.h),
                 _Estimate(total: state.estimatedTotal),
+                if (mayEditItems && state.dropsBelowPaid) ...[
+                  SizedBox(height: 8.h),
+                  // Before the save, not discovered on the order screen after it: the
+                  // difference is money the customer has paid for goods no longer on the order.
+                  _Error(
+                    text:
+                        'الإجمالي الجديد أقل مما دفعه العميل (${state.paidAmount.grouped} د.ل)'
+                        ' — سيصبح على الطلبية مبلغ زائد',
+                  ),
+                ],
 
                 // **Under the estimate, never above it.** The charge is not part of that
                 // arithmetic — it is sent on its own the moment the sheet is answered, and the
@@ -577,25 +646,47 @@ class _DestinationState extends State<_Destination> {
 }
 
 
-/// One line: what it is, what it costs, and the only number that may be changed.
+/// One line: what it is, what it costs, and the numbers that may be changed.
 ///
 /// The quantity sits on its own row under the name rather than beside it. It shared that line
 /// once, in a box 84 wide, and «500.000» came out as «500.00(» — a number nobody can check
 /// against an invoice. Nothing about a three-digit quantity was wrong; the box was.
+///
+/// **The price under a changed quantity is the catalogue's**, asked again as it is typed — the
+/// same [LineQuoteCubit] «طلبية جديدة» uses, created only once a quantity actually changes so an
+/// untouched line asks nothing. Its answer moves the estimate; the server prices the line again
+/// on save either way.
 class _LineRow extends StatefulWidget {
   const _LineRow({
     required this.line,
     required this.isEditable,
     required this.canRemove,
+    required this.movesStock,
     required this.onQuantity,
+    required this.onQuoted,
+    required this.onUnitPrice,
+    required this.onWeight,
     required this.onRemove,
+    this.weightError,
+    super.key,
   });
 
   final InvoiceLine line;
   final bool isEditable;
   final bool canRemove;
+
+  /// The order's stock has left the shelf — see [InvoiceLine.needsWeight].
+  final bool movesStock;
   final ValueChanged<String> onQuantity;
+
+  /// The catalogue's rate for the typed quantity, for the estimate.
+  final ValueChanged<String> onQuoted;
+
+  /// The clerk's own rate, on a «حسب الطلب» product added here.
+  final ValueChanged<String> onUnitPrice;
+  final ValueChanged<String> onWeight;
   final VoidCallback onRemove;
+  final String? weightError;
 
   @override
   State<_LineRow> createState() => _LineRowState();
@@ -604,16 +695,56 @@ class _LineRow extends StatefulWidget {
 class _LineRowState extends State<_LineRow> {
   late final TextEditingController _controller =
       TextEditingController(text: widget.line.quantity);
+  late final TextEditingController _price = TextEditingController(
+    text: widget.line.isNew ? '' : widget.line.unitPrice,
+  );
+  late final TextEditingController _weight =
+      TextEditingController(text: widget.line.warehouseQuantity);
+
+  /// Created on the first changed quantity, never for a line nobody touches.
+  LineQuoteCubit? _quote;
+  Timer? _debounce;
+
+  /// The same pause «طلبية جديدة» waits: «300» is one request, not three.
+  static const Duration _pause = Duration(milliseconds: 400);
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    unawaited(_quote?.close());
     _controller.dispose();
+    _price.dispose();
+    _weight.dispose();
     super.dispose();
+  }
+
+  void _onQuantity(String value) {
+    widget.onQuantity(value);
+
+    if (widget.line.isPricedByHand) return;
+
+    _debounce?.cancel();
+    _debounce = Timer(_pause, () {
+      if (!mounted) return;
+
+      final quote = _quote ??= sl<LineQuoteCubit>();
+      setState(() {});
+
+      unawaited(
+        quote.quote(
+          productId: widget.line.productId,
+          variantId: widget.line.variantId,
+          quantity: Validators.toWesternDigits(value).replaceAll(',', '.'),
+        ),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final line = widget.line;
+    final quote = _quote;
 
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
@@ -626,16 +757,34 @@ class _LineRowState extends State<_LineRow> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${widget.line.productName} — ${widget.line.variantLabel}',
+            '${line.productName} — ${line.variantLabel}',
             style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: 2.h),
-          Text(
-            // The rate is shown and never edited: it comes from the catalogue, and a field
-            // here would be a way to undercut an agreed price.
-            'السعر: ${widget.line.unitPrice.grouped} · ${widget.line.pricingUnitLabel}',
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
+          if (quote != null && line.quantityChanged)
+            // The catalogue's answer for the new quantity, refusals included — «أقل كمية…» is
+            // worth reading while typing.
+            BlocConsumer<LineQuoteCubit, LineQuoteState>(
+              bloc: quote,
+              listener: (context, state) {
+                if (state case LineQuotePriced(:final quote)) {
+                  widget.onQuoted(quote.unitPrice);
+                }
+              },
+              builder: (context, state) => LineQuotePrice(state: state),
+            )
+          else if (line.isNew && !line.isPricedByHand)
+            Text(
+              'أدخل الكمية ليُحسب السعر',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            )
+          else if (!line.isNew)
+            Text(
+              // The rate is shown, not edited: it comes from the catalogue, and a field here
+              // would be a way to undercut an agreed price.
+              'السعر: ${line.unitPrice.grouped} · ${line.pricingUnitLabel}',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
           SizedBox(height: 10.h),
           Row(
             children: [
@@ -650,7 +799,7 @@ class _LineRowState extends State<_LineRow> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
                   ],
-                  onChanged: widget.onQuantity,
+                  onChanged: _onQuantity,
                 ),
               ),
               if (widget.canRemove)
@@ -661,6 +810,37 @@ class _LineRowState extends State<_LineRow> {
                 ),
             ],
           ),
+          if (line.isNew && line.isPricedByHand) ...[
+            SizedBox(height: 8.h),
+            AppTextField(
+              controller: _price,
+              label: 'سعر الوحدة',
+              // Said here rather than in a note under the section: this box exists for this
+              // product and no other, and the reason belongs beside it.
+              helperText: 'هذا المنتج يُسعَّر حسب الطلب',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+              ],
+              onChanged: widget.onUnitPrice,
+            ),
+          ],
+          if (line.needsWeight(movesStock: widget.movesStock) || widget.weightError != null) ...[
+            SizedBox(height: 8.h),
+            AppTextField(
+              controller: _weight,
+              label: 'الكمية من المخزن (${line.stockUnitLabel ?? 'وحدة المخزن'})',
+              // The question «جاهزة للطباعة» asked, asked again because the line changed after
+              // the stock left: bags weighed together have no per-bag weight to multiply out.
+              helperText: 'يُباع بال${line.pricingUnitLabel} ويُخزَّن بوحدة أخرى — كم يخرج من الرف؟',
+              errorText: widget.weightError,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+              ],
+              onChanged: widget.onWeight,
+            ),
+          ],
         ],
       ),
     );
@@ -805,6 +985,32 @@ class _Note extends StatelessWidget {
       child: Text(
         text,
         style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
+/// A [_Note] that is a warning: a refusal about the lines, or a total under what was paid.
+class _Error extends StatelessWidget {
+  const _Error({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Text(
+        text,
+        style: context.textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
       ),
     );
   }

@@ -38,30 +38,9 @@ final class AddOrderItem
      */
     public function __invoke(Order $order, OrderItemData $data): OrderItem
     {
-        $product = $this->catalog->findProduct($data->productId);
+        [$product, $variant] = $this->resolve($data);
 
-        /** @var ProductVariant $variant */
-        $variant = $product->variants->firstWhere('id', $data->productVariantId)
-            ?? $product->variants()->with('priceTiers')->findOrFail($data->productVariantId);
-
-        // **Before the pricing branch, so it binds to every product and not just the priced
-        // ones.** {@see QuoteProductPrice} has always refused a quantity under the minimum, but
-        // only a product with listed prices is ever quoted — so «حسب الطلب» products, the whole
-        // reinforced-bag and card half of the catalogue, carried a `min_order_quantity` that was
-        // required when the product was created and then never once read. The rule is the
-        // catalogue's, not the price list's.
-        if (! $product->meetsMinimumOrder($data->quantity)) {
-            throw QuantityBelowMinimum::make(
-                $data->quantity,
-                (string) $product->min_order_quantity,
-                $product->pricing_unit,
-                $product->name,
-            );
-        }
-
-        $unitPrice = $product->hasListedPrices()
-            ? $this->catalog->quote($product, $variant, $data->quantity)->unitPrice
-            : $this->manual($product, $data);
+        $unitPrice = $this->price($product, $variant, $data);
 
         /** @var OrderItem $item */
         $item = $order->items()->make([
@@ -97,6 +76,86 @@ final class AddOrderItem
         $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
         return $item;
+    }
+
+    /**
+     * Gives an existing line a new quantity, priced exactly as a new line at that quantity
+     * would be.
+     *
+     * **The same pricing as {@see __invoke()}, and that is why it lives here.** A size going
+     * from 300 to 500 can cross a price tier, so the line is quoted again rather than multiplied
+     * out at its old rate. A «حسب الطلب» line keeps the price it was given unless a new one is
+     * sent — the clerk named it once, and changing the quantity is not a reason to ask again.
+     *
+     * The snapshots and `unit_cost` are left alone: the line is still the size it was taken as,
+     * and the vendor's cost on a وسيط line was agreed when it was.
+     *
+     * @throws ManualPriceRequired
+     * @throws QuantityBelowMinimum
+     */
+    public function reprice(OrderItem $item, OrderItemData $data): OrderItem
+    {
+        [$product, $variant] = $this->resolve($data);
+
+        $unitPrice = $this->price($product, $variant, new OrderItemData(
+            productId: $data->productId,
+            productVariantId: $data->productVariantId,
+            quantity: $data->quantity,
+            unitPrice: $data->unitPrice ?? ($item->unit_price === null ? null : (string) $item->unit_price),
+            notes: $data->notes,
+            sortOrder: $data->sortOrder,
+        ));
+
+        $item->fill([
+            'quantity' => $data->quantity,
+            'notes' => $data->notes,
+            'sort_order' => $data->sortOrder,
+        ]);
+
+        $item->forceFill(['unit_price' => $unitPrice]);
+        $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
+
+        return $item;
+    }
+
+    /**
+     * @return array{0: Product, 1: ProductVariant}
+     */
+    private function resolve(OrderItemData $data): array
+    {
+        $product = $this->catalog->findProduct($data->productId);
+
+        /** @var ProductVariant $variant */
+        $variant = $product->variants->firstWhere('id', $data->productVariantId)
+            ?? $product->variants()->with('priceTiers')->findOrFail($data->productVariantId);
+
+        return [$product, $variant];
+    }
+
+    /**
+     * @throws ManualPriceRequired
+     * @throws QuantityBelowMinimum
+     */
+    private function price(Product $product, ProductVariant $variant, OrderItemData $data): ?string
+    {
+        // **Before the pricing branch, so it binds to every product and not just the priced
+        // ones.** {@see QuoteProductPrice} has always refused a quantity under the minimum, but
+        // only a product with listed prices is ever quoted — so «حسب الطلب» products, the whole
+        // reinforced-bag and card half of the catalogue, carried a `min_order_quantity` that was
+        // required when the product was created and then never once read. The rule is the
+        // catalogue's, not the price list's.
+        if (! $product->meetsMinimumOrder($data->quantity)) {
+            throw QuantityBelowMinimum::make(
+                $data->quantity,
+                (string) $product->min_order_quantity,
+                $product->pricing_unit,
+                $product->name,
+            );
+        }
+
+        return $product->hasListedPrices()
+            ? $this->catalog->quote($product, $variant, $data->quantity)->unitPrice
+            : $this->manual($product, $data);
     }
 
     /**

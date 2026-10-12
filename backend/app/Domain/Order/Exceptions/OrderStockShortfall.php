@@ -31,8 +31,10 @@ final class OrderStockShortfall extends DomainException
     /**
      * @param  non-empty-list<StockShortfall>  $shortfalls
      */
-    private function __construct(private readonly array $shortfalls)
-    {
+    private function __construct(
+        private readonly array $shortfalls,
+        private readonly string $field,
+    ) {
         parent::__construct(
             count($shortfalls) === 1
                 ? self::sentence($shortfalls[0])
@@ -42,10 +44,12 @@ final class OrderStockShortfall extends DomainException
 
     /**
      * @param  non-empty-list<StockShortfall>  $shortfalls
+     * @param  string  $field  where the app shows it — the warehouse box on a status move, the
+     *                         lines on the edit screen, which has no warehouse box to show it in
      */
-    public static function make(array $shortfalls): self
+    public static function make(array $shortfalls, string $field = 'fields.warehouse_id'): self
     {
-        return new self($shortfalls);
+        return new self($shortfalls, $field);
     }
 
     /**
@@ -58,7 +62,7 @@ final class OrderStockShortfall extends DomainException
     public function fieldErrors(): array
     {
         return [
-            'fields.warehouse_id' => count($this->shortfalls) === 1
+            $this->field => count($this->shortfalls) === 1
                 ? [self::sentence($this->shortfalls[0])]
                 : array_map(self::line(...), $this->shortfalls),
         ];

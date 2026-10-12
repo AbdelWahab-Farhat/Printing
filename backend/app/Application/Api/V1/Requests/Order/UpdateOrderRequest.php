@@ -72,8 +72,12 @@ class UpdateOrderRequest extends StoreOrderRequest
             // downstream has a meaning for. See `OrderData::$isUrgent`.
             'is_urgent' => ['sometimes', 'boolean'],
 
-            // Optional here: omit to leave the lines untouched, send to replace the whole set.
+            // Optional here: omit to leave the lines untouched, send to edit the set. A line that
+            // comes back with its `id` is kept and edited in place; one without is added; an
+            // existing id left out is removed — see `SyncOrderItems`. Whether an id belongs to
+            // this order is the action's question, not a rule here: it needs the order.
             'items' => ['sometimes', 'array', 'min:1', 'max:100'],
+            'items.*.id' => ['nullable', 'integer', 'distinct'],
             'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->withoutTrashed()],
             'items.*.product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->withoutTrashed()],
             'items.*.quantity' => ['required', 'numeric', 'min:0.001', 'max:999999999'],
@@ -81,9 +85,11 @@ class UpdateOrderRequest extends StoreOrderRequest
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
-            // Not accepted here either — see StoreOrderRequest. An edit rebuilds the whole line
-            // set, and the only status that holds a measured quantity («جاهزة») is one where
-            // `Order::itemsAreEditable()` is already false, so there is nothing here to preserve.
+            // **Only after the stock has left**, and only for a line stocked in another unit than
+            // it is sold in that is added or changes quantity: the shelf's figure, which
+            // «جاهزة للطباعة» asked for the first time. Whether it is needed is the action's
+            // question — it depends on the line and the order, not on the request.
+            'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999'],
         ];
     }
 }

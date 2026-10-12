@@ -177,6 +177,10 @@ class Order extends Model implements HasAuditTrail
             // `stock_deducted_at` above: that one remembers history and is never cleared, this
             // one describes what the archive is currently holding and is cleared by the restore.
             'delete_returned_stock_at' => 'datetime',
+            // When a restore took the stock off the shelf a second time. Never cleared: it is
+            // what stops a line edit re-posting a purchase the ledger has already settled — see
+            // `SyncOrderItems` and the migration that added it.
+            'stock_redrawn_at' => 'datetime',
             'ready_at' => 'datetime',
             // When somebody said they had told the customer their bags are ready — the one fact
             // about an order that happens outside this system, so it is here only because a
@@ -633,18 +637,48 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
-     * Whether the lines may still be edited.
+     * Whether lines may still be added, removed or have their quantity changed.
      *
-     * **Open while the press is running, closed once the bags are on the shelf.** A run that is
-     * being printed is exactly when a quantity gets corrected — the customer rings and asks for
-     * five hundred instead of three — and the shop floor can still act on it. From «جاهزة»
-     * onwards the bags exist and are counted, so changing what the order says was ordered would
-     * make the invoice disagree with the shelf.
+     * **Open until the press starts, closed from «قيد الطباعة».** Before it, the order is still
+     * a list somebody can argue with — the customer rings and adds a size, or drops one. Once
+     * the press runs, the order is ink on bags.
      *
-     * A customer taking one product and leaving another at the counter is a real thing that
-     * happens; it is recorded in BACKLOG.md rather than solved by leaving this open further.
+     * **«جاهزة للطباعة» and the standard road's «قيد التصميم» are open although the stock has
+     * already left the shelf.** An edit there moves each changed line's stock as well — see
+     * `SyncOrderItems` and Docs/orders/ORDER-LINES-ADD-REMOVE.md §6. That is why
+     * `stock_deducted_at`, not the status, decides how an edit is carried out.
+     *
+     * «قيد الطباعة» used to be open for quantity corrections, but by then every line had been
+     * drawn and the edit was always refused — the promise was never kept, so it is no longer
+     * made. «بانتظار المراجعة» stays closed: a request is accepted first and edited as «جديدة».
+     *
+     * Shortages keep their own, older line — see {@see shortagesAreEditable()}.
      */
     public function itemsAreEditable(): bool
+    {
+        return in_array(
+            $this->status,
+            [
+                OrderStatus::New,
+                OrderStatus::AwaitingDeposit,
+                OrderStatus::DepositPaid,
+                OrderStatus::Shortage,
+                OrderStatus::ReadyToPrint,
+                OrderStatus::Designing,
+            ],
+            true,
+        );
+    }
+
+    /**
+     * Whether a shortage may still be declared or corrected against the lines.
+     *
+     * **Open while the press is running, closed once the bags are on the shelf.** This was the
+     * line rule until lines got their own in {@see itemsAreEditable()}; a shortage is a number
+     * on an existing line rather than a change to which lines there are, and moving it with the
+     * lines would have changed when «النواقص» can be written without anybody asking for it.
+     */
+    public function shortagesAreEditable(): bool
     {
         return in_array(
             $this->status,

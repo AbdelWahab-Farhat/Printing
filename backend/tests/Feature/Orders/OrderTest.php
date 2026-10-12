@@ -1310,9 +1310,11 @@ class OrderTest extends TestCase
         $this->assertSame(1, $order->items()->count());
     }
 
-    public function test_a_run_being_printed_can_still_have_its_quantity_corrected(): void
+    public function test_the_lines_close_when_the_press_starts(): void
     {
-        // Arrange — the press is running; the quantity is exactly what is still being decided.
+        // Arrange — the press is running. Lines used to stay open here for quantity corrections,
+        // but every line had been drawn at «جاهزة للطباعة» by then and the edit was always
+        // refused; they now close where the work actually becomes ink on bags.
         $variant = $this->catalogue();
         $order = Order::factory()->status(OrderStatus::Printing)->create();
         $headers = $this->clerk();
@@ -1328,8 +1330,8 @@ class OrderTest extends TestCase
         ]);
 
         // Assert
-        $response->assertOk();
-        $this->assertSame('300.000', $order->fresh()->items()->value('quantity'));
+        $response->assertStatus(422)->assertJsonValidationErrors('items');
+        $this->assertSame(0, $order->fresh()->items()->count());
     }
 
     public function test_the_lines_close_once_the_bags_are_on_the_shelf(): void

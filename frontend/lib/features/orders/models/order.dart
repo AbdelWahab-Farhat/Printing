@@ -315,10 +315,15 @@ abstract class Order with _$Order {
     /// The journey, in the domain's own order — see [OrderProgress].
     @Default(OrderProgress.unknown) OrderProgress progress,
 
-    /// Whether the quantities may still be corrected. Open while the press is running — that is
-    /// exactly when a customer rings and asks for five hundred instead of three — and closed
-    /// from «جاهزة» onwards, when the bags exist and are counted.
+    /// Whether products may still be added, removed or have their quantity changed. Open until
+    /// the press starts, closed from «قيد الطباعة» onwards.
     @JsonKey(name: 'items_are_editable') @Default(false) bool itemsAreEditable,
+
+    /// Whether saving the lines moves stock as well — true from «جاهزة للطباعة» until the
+    /// press, where the shelf has already been drawn. A removed product goes back on the shelf,
+    /// an added one comes off it, so the screen asks the grant for that move and a weight for a
+    /// line stocked by the kilo. See Docs/orders/ORDER-LINES-ADD-REMOVE.md.
+    @JsonKey(name: 'item_edits_move_stock') @Default(false) bool itemEditsMoveStock,
 
     /// Whether another version of the artwork may be attached.
     ///

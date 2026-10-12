@@ -53,6 +53,7 @@ class OrderArchiveResourceTest extends TestCase
         'can_unsettle',
         'designs_are_editable',
         'destination_is_editable',
+        'item_edits_move_stock',
         'items_are_editable',
         'progress',
         'reinstate_to',
@@ -147,10 +148,10 @@ class OrderArchiveResourceTest extends TestCase
 
     public function test_an_archived_order_claims_nothing_about_what_may_still_be_edited(): void
     {
-        // Arrange — «قيد الطباعة» is the status that makes the bug visible: the lines *are*
+        // Arrange — «انتظار العربون» is a status that makes the bug visible: the lines *are*
         // editable there, so the flag published true on a row every write route refuses.
         $headers = $this->archivist();
-        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $order = Order::factory()->status(OrderStatus::AwaitingDeposit)->create();
         $order->delete();
 
         // Act
@@ -163,11 +164,11 @@ class OrderArchiveResourceTest extends TestCase
             ->assertJsonMissingPath('data.destination_is_editable');
     }
 
-    public function test_a_live_order_at_the_press_still_says_its_lines_may_be_corrected(): void
+    public function test_a_live_order_awaiting_its_deposit_still_says_its_lines_may_be_corrected(): void
     {
         // Arrange
         $headers = $this->archivist();
-        $order = Order::factory()->status(OrderStatus::Printing)->create();
+        $order = Order::factory()->status(OrderStatus::AwaitingDeposit)->create();
 
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");

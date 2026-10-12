@@ -44,6 +44,22 @@ final readonly class OrderItemData
          * true of every existing caller without touching one of them.
          */
         public bool $allowsQuoteLater = false,
+
+        /**
+         * The existing line this entry edits, or null for a line being added.
+         *
+         * **Only an edit sends it.** `SyncOrderItems` keeps a line whose id comes back — its
+         * price, its shortage and its stock draw with it — and removes one whose id does not.
+         * See Docs/orders/ORDER-LINES-ADD-REMOVE.md §5.
+         */
+        public ?int $id = null,
+
+        /**
+         * What leaves the shelf, in the shelf's own unit — only for a line stocked in another
+         * unit than it is sold in, and only once the order's stock has been drawn. The same
+         * figure «جاهزة للطباعة» asks for, asked again because the line changed after it.
+         */
+        public ?string $warehouseQuantity = null,
     ) {}
 
     /**
@@ -55,6 +71,7 @@ final readonly class OrderItemData
         bool $allowsQuoteLater = false,
     ): self {
         $price = $validated['unit_price'] ?? null;
+        $weight = $validated['warehouse_quantity'] ?? null;
 
         return new self(
             productId: (int) $validated['product_id'],
@@ -66,6 +83,8 @@ final readonly class OrderItemData
                 : null,
             sortOrder: (int) ($validated['sort_order'] ?? $index),
             allowsQuoteLater: $allowsQuoteLater,
+            id: isset($validated['id']) ? (int) $validated['id'] : null,
+            warehouseQuantity: $weight !== null && $weight !== '' ? (string) $weight : null,
         );
     }
 }

@@ -185,7 +185,7 @@ class _OrderLineRowState extends State<OrderLineRow> {
           SizedBox(height: 8.h),
           BlocBuilder<LineQuoteCubit, LineQuoteState>(
             bloc: line.quote,
-            builder: (context, state) => _Price(state: state),
+            builder: (context, state) => LineQuotePrice(state: state),
           ),
         ],
       ),
@@ -194,8 +194,10 @@ class _OrderLineRowState extends State<OrderLineRow> {
 }
 
 /// What the catalogue said about this line — or why it said nothing.
-class _Price extends StatelessWidget {
-  const _Price({required this.state});
+///
+/// Public because the edit screen shows the same sentence under a line whose quantity changed.
+class LineQuotePrice extends StatelessWidget {
+  const LineQuotePrice({required this.state, super.key});
 
   final LineQuoteState state;
 

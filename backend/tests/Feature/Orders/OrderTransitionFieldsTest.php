@@ -1166,8 +1166,10 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_the_order_says_which_of_the_two_may_still_be_changed(): void
     {
         // Arrange
+        // «تم دفع العربون»: the lines are open until the press, the artwork only from «جديدة»
+        // and «جاهزة للطباعة» onwards — so here the two answers part.
         [$order] = $this->orderNeedingArtwork();
-        $order->forceFill(['status' => OrderStatus::Printing])->save();
+        $order->forceFill(['status' => OrderStatus::DepositPaid])->save();
         $headers = $this->foreman();
 
         // Act

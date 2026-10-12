@@ -84,14 +84,15 @@ final class RedrawOrderLineStock
             ));
         }
 
-        // Written before the re-draw, because `producedQuantity()` is what the movement below
-        // takes off the shelf and it reads this column.
-        $item->forceFill(['warehouse_quantity' => $quantity])->save();
-
         // **Nothing leaves, so nothing is drawn.** A customer who took none of a line leaves it
         // costing nothing, and a zero-quantity movement is a row in the ledger that records an
         // event which did not happen. The columns below still have to be written: they carry the
         // *old* draw's cost until something says otherwise, and that draw is back on the shelf.
+        //
+        // **And `warehouse_quantity` is not written at all.** The column is CHECKed positive, so
+        // writing the zero here refused every call that reached this branch with a raw 500 — a
+        // removed order line, or a partial delivery that left a whole plain line behind. A line
+        // with no draw is told by `fulfillment_stock_movement_id` being null, not by this figure.
         if (bccomp($quantity, '0', 3) <= 0) {
             $item->forceFill([
                 'material_cost' => null,
@@ -104,6 +105,10 @@ final class RedrawOrderLineStock
 
             return;
         }
+
+        // Written before the re-draw, because `producedQuantity()` is what the movement below
+        // takes off the shelf and it reads this column.
+        $item->forceFill(['warehouse_quantity' => $quantity])->save();
 
         $movement = $this->inventory->recordMovement(StockMovementData::fulfillment([
             'stock_item_id' => $stockItem->getKey(),

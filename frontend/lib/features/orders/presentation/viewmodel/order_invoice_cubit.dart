@@ -1,13 +1,15 @@
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
+import 'package:dayaa/features/products/models/product.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'order_invoice_cubit.freezed.dart';
 part 'order_invoice_state.dart';
 
-/// Editing one order's lines and its discount.
+/// Editing one order's lines and its discount — including adding a product and removing one,
+/// until the press starts. See Docs/orders/ORDER-LINES-ADD-REMOVE.md.
 ///
 /// Seeded from the order the screen already has rather than re-fetching it: the sheet opens on
 /// top of a page that just loaded, and a spinner over data the user is looking at is a round
@@ -33,6 +35,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 pricingUnitLabel: item.pricingUnitLabel,
                 unitPrice: item.unitPriceOrZero,
                 quantity: item.quantity,
+                originalQuantity: item.quantity,
+                isStockedInAnotherUnit: item.isStockedInAnotherUnit ?? false,
+                stockUnitLabel: item.stockUnitLabel,
               ),
           ],
           discount: order.discount,
@@ -45,11 +50,83 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           recipientPhone: order.recipientPhone,
           isUrgent: order.isUrgent,
           linesAreEditable: order.itemsAreEditable,
+          linesMoveStock: order.itemEditsMoveStock,
+          paidAmount: order.paidAmount,
           destinationIsEditable: order.destinationIsEditable,
         ),
       );
 
   final UpdateOrderInvoice _updateInvoice;
+
+  /// Puts a product the picker returned on the order, with no quantity yet.
+  ///
+  /// **Empty, not a guessed default.** A quantity the clerk did not type is one they did not
+  /// agree with the customer; the save stays shut until there is one. The line is keyed by a
+  /// negative stand-in id — never a real line's — and sent without one, so the server writes it.
+  void add({required Product product, required ProductVariant variant}) {
+    final shelf = variant.stockItem;
+    final lowest = state.lines.fold<int>(0, (low, line) => line.id < low ? line.id : low);
+
+    emit(
+      state.copyWith(
+        lines: [
+          ...state.lines,
+          InvoiceLine(
+            id: lowest - 1,
+            productId: product.id,
+            variantId: variant.id,
+            productName: product.name,
+            variantLabel: variant.label,
+            pricingUnitLabel: product.pricingUnitLabel,
+            // Empty for a «حسب الطلب» product rather than `0`: zero is a price somebody could
+            // mean, and the save must wait until the clerk has actually named one.
+            unitPrice: product.hasListedPrices ? '0' : '',
+            quantity: '',
+            isNew: true,
+            isPricedByHand: !product.hasListedPrices,
+            // The same question the server asks of a line — the shelf's unit against the one
+            // the customer is charged in — answered from what the catalogue sent.
+            isStockedInAnotherUnit: shelf != null && shelf.unit != product.pricingUnit,
+            stockUnitLabel: shelf?.unitLabel,
+          ),
+        ],
+        isDirty: true,
+        failure: null,
+      ),
+    );
+  }
+
+  /// What one unit of a line costs now.
+  ///
+  /// From the catalogue's quote while a quantity is typed — shown, never sent — or typed by the
+  /// clerk for a product priced «حسب الطلب», which is sent. A quote arriving is not an edit, so
+  /// it leaves [OrderInvoiceState.isDirty] alone.
+  void setUnitPrice(int lineId, String price, {bool typed = false}) {
+    emit(
+      state.copyWith(
+        lines: [
+          for (final line in state.lines)
+            if (line.id == lineId) line.copyWith(unitPrice: price) else line,
+        ],
+        isDirty: typed || state.isDirty,
+        failure: typed ? null : state.failure,
+      ),
+    );
+  }
+
+  /// What should now leave the shelf for a line stocked in another unit than it is sold in.
+  void setWeight(int lineId, String weight) {
+    emit(
+      state.copyWith(
+        lines: [
+          for (final line in state.lines)
+            if (line.id == lineId) line.copyWith(warehouseQuantity: weight) else line,
+        ],
+        isDirty: true,
+        failure: null,
+      ),
+    );
+  }
 
   void setQuantity(int lineId, String quantity) {
     emit(
@@ -66,6 +143,8 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     );
   }
 
+  /// Takes a line off — one already on the order, or one added here and not yet saved. Nothing
+  /// leaves the screen until «حفظ التعديلات», so there is no confirmation to ask for.
   void remove(int lineId) {
     // The last line is never removed — an order with nothing on it is refused by the server, and
     // the button that would do it is hidden. Guarded here too, because a Cubit that only holds
@@ -151,9 +230,19 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
           ? [
               for (final line in state.lines)
                 InvoiceLineUpdate(
+                  // A line already on the order keeps its row — price, shortage and stock draw
+                  // with it. A line added here goes without, and the server writes it.
+                  id: line.isNew ? null : line.id,
                   productId: line.productId,
                   variantId: line.variantId,
                   quantity: _ascii(line.quantity),
+                  // Only the clerk's own number, on a line priced «حسب الطلب» they added here.
+                  // An existing one keeps the price it was given; every other line is the
+                  // catalogue's on the server.
+                  unitPrice: line.isPricedByHand && line.isNew ? _ascii(line.unitPrice) : null,
+                  warehouseQuantity: line.needsWeight(movesStock: state.linesMoveStock)
+                      ? _ascii(line.warehouseQuantity)
+                      : null,
                 ),
             ]
           : null,

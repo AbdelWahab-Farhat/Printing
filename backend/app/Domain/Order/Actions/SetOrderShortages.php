@@ -60,9 +60,10 @@ final class SetOrderShortages
         ?User $actor = null,
         ShortageRevision $reason = ShortageRevision::Corrected,
     ): Order {
-        // The same line the lines themselves close at: «جاهزة» means the run is made and
-        // counted, so what is missing is no longer an estimate somebody corrects.
-        if (! $order->itemsAreEditable()) {
+        // «جاهزة» means the run is made and counted, so what is missing is no longer an estimate
+        // somebody corrects. Its own rule since lines got theirs — see
+        // `Order::shortagesAreEditable()`.
+        if (! $order->shortagesAreEditable()) {
             throw OrderItemsAreLocked::make($order->status);
         }
 

@@ -9,10 +9,14 @@ use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\ShortageRevision;
+use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
+use App\Domain\Order\Exceptions\EditWouldChangeTheRoad;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\RecipientPhoneCannotChange;
@@ -32,7 +36,8 @@ use Illuminate\Support\Facades\DB;
  *   address on our screen and the address on the label have already parted company, and only
  *   the label is real. **The recipient's phone freezes with it**, being the other half of the
  *   same fact: the courier is already carrying both.
- * - **The lines close when printing starts**, enforced by {@see SyncOrderItems}.
+ * - **The lines close when printing starts**, enforced by {@see SyncOrderItems} — which also
+ *   moves the stock behind them once it has left the shelf.
  *
  * Changing the city re-snapshots its name and its rate, and re-derives the fulfilment type. An
  * order already dispatched cannot reach this code, so there is no case where that silently
@@ -47,6 +52,7 @@ final class UpdateOrder
         private readonly CustomerService $customers,
         private readonly ResolveOrderFlow $resolveFlow,
         private readonly VendorService $vendors,
+        private readonly GuardOneBench $guardOneBench,
     ) {}
 
     /**
@@ -91,7 +97,18 @@ final class UpdateOrder
             ? null
             : (string) $this->vendors->find($data->vendorId)->name;
 
-        return DB::transaction(function () use ($order, $data, $destination, $shopName, $vendorName): Order {
+        $updated = DB::transaction(function () use ($order, $data, $destination, $shopName, $vendorName, $actor): Order {
+            // **The lock `ChangeOrderStatus` takes first, taken first here too.** An edit to the
+            // lines can move stock, and so can a status move — so the two must not interleave: a
+            // cancellation crediting back a draw this edit is replacing would reverse it twice.
+            // Whichever arrives second waits, then reads the order as the first one left it.
+            Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $order->refresh();
+
+            // What the lines said before this edit, so a road the edit did not move is never a
+            // reason to refuse it — see the guard after the lines are written.
+            $roadBefore = $data->items === null ? null : $this->resolveFlow->fromLines($order);
+
             $order->update([
                 'customer_shop_id' => $data->customerShopId,
                 'customer_shop_name' => $shopName,
@@ -125,14 +142,18 @@ final class UpdateOrder
             ])->save();
 
             if ($data->items !== null) {
-                ($this->syncItems)($order, $data->items);
+                ($this->syncItems)($order, $data->items, $actor);
+
+                // The rule `CreateOrder` asks on the way in, asked again now that lines can be
+                // added: a وسيط line beside an in-house one is refused whichever door it used.
+                ($this->guardOneBench)($order);
+
+                $this->guardTheRoadCanMove($order, $roadBefore);
             }
 
             // Called unconditionally and idempotent: a set of lines that comes back unchanged
-            // resolves to the flow the order already has and writes nothing. It is a no-op for
-            // anything past «جديدة» too — swapping the last printed line out of an order that is
-            // already at the press does not move it onto a road with no press on it, see
-            // {@see ResolveOrderFlow}.
+            // resolves to the flow the order already has and writes nothing. Once work has
+            // started it writes nothing at all — see {@see ResolveOrderFlow::mayMove()}.
             ($this->resolveFlow)($order->load('items'));
 
             // **The same question `CreateOrder` asks, asked again for the same reason.** An edit
@@ -153,6 +174,42 @@ final class UpdateOrder
 
             return ($this->recalculate)($order->load('items'))->refresh();
         });
+
+        // **After the commit, never inside it** — the rule `SetOrderShortages` follows for the
+        // same event. A line removed from an order parked on a shortage takes its shortage row
+        // with it, and a kept line's changed quantity is mirrored; both are the listener's job.
+        if ($data->items !== null && $updated->status === OrderStatus::Shortage) {
+            OrderShortagesRecorded::dispatch(
+                (int) $updated->getKey(),
+                ShortageRevision::Corrected,
+                $actor === null ? null : (int) $actor->getKey(),
+            );
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Refuses an edit whose lines describe another road than they did, from a status the order
+     * can no longer change roads in.
+     *
+     * Compared with what the lines said *before* the edit rather than with the stamped road, so
+     * an order whose categories were re-filed after it was taken is never refused over a road
+     * this edit did not move.
+     *
+     * @throws EditWouldChangeTheRoad
+     */
+    private function guardTheRoadCanMove(Order $order, ?OrderFlow $before): void
+    {
+        if ($before === null) {
+            return;
+        }
+
+        $after = $this->resolveFlow->fromLines($order->load('items'));
+
+        if ($after !== $before && ! $this->resolveFlow->mayMove($order->status, $after)) {
+            throw EditWouldChangeTheRoad::make($order->status, $before, $after);
+        }
     }
 
     /**

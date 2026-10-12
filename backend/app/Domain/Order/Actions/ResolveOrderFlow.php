@@ -32,30 +32,9 @@ final class ResolveOrderFlow
 {
     public function __invoke(Order $order): Order
     {
-        // **Only «جديدة», and this is the guard that makes the snapshot true.** Lines stay
-        // editable through «قيد التصميم»، «قيد الطباعة» and «نواقص» (see
-        // {@see Order::itemsAreEditable()}), so without this an order already at the press could
-        // have its last printed line removed and land on a main line with no printing step on
-        // it — `mainLinePosition()` would answer null and a perfectly ordinary order would draw
-        // itself as a detour, from the status it is actually standing in.
-        //
-        // Which road an order walks is a decision taken when it is taken. After that it is
-        // history, exactly like the city name beside it.
-        //
-        // **«بانتظار المراجعة» is admitted beside «جديدة», because the guard is about work
-        // having *started*, not about the status being «جديدة».** A request from the customer
-        // app has not started: its lines are not editable either, and nothing has been weighed
-        // or queued. Resolving its road at intake is what lets the review screen say «هذه
-        // تحتاج وسيطاً» before anybody accepts it — without it the order would sit on the
-        // default road, and the vendor it needs would be discovered at the moment of
-        // acceptance, by a refusal.
-        if (! in_array($order->status, [OrderStatus::New, OrderStatus::Requested], true)) {
-            return $order;
-        }
+        $flow = $this->fromLines($order);
 
-        $flow = $this->readFromItems($order);
-
-        if ($order->production_flow === $flow) {
+        if ($order->production_flow === $flow || ! $this->mayMove($order->status, $flow)) {
             return $order;
         }
 
@@ -68,13 +47,51 @@ final class ResolveOrderFlow
     }
 
     /**
+     * Whether an order standing in `$status` may still be moved onto `$flow`.
+     *
+     * **Only while no work has started, and this is the guard that makes the snapshot true.**
+     * Lines stay editable until the press (see {@see Order::itemsAreEditable()}), so without it an
+     * order already handed to the press could have its last printed line removed and land on a
+     * main line with no printing step on it — `mainLinePosition()` would answer null and a
+     * perfectly ordinary order would draw itself as a detour, from the status it is actually
+     * standing in. Which road an order walks is a decision taken when it is taken; after that it
+     * is history, exactly like the city name beside it.
+     *
+     * **«بانتظار المراجعة» is admitted beside «جديدة», because the guard is about work having
+     * *started*, not about the status being «جديدة».** Resolving a request's road at intake is
+     * what lets the review screen say «هذه تحتاج وسيطاً» before anybody accepts it.
+     *
+     * **And so are the two عربون statuses**, for the same reason: an order waiting on its deposit
+     * has been weighed by nobody and queued nowhere, and every road has both statuses on it — a
+     * printed line added there must put the order back on the press's road, or it would skip it.
+     *
+     * **«نواقص» only between the two roads that have it.** The وسيط road never passes through it,
+     * so an order standing there cannot be moved onto one. Anything else is refused by the edit
+     * rather than left on a road its lines no longer describe — see `UpdateOrder`.
+     */
+    public function mayMove(OrderStatus $status, OrderFlow $flow): bool
+    {
+        return match ($status) {
+            OrderStatus::New,
+            OrderStatus::Requested,
+            OrderStatus::AwaitingDeposit,
+            OrderStatus::DepositPaid => true,
+            OrderStatus::Shortage => $flow !== OrderFlow::Outsourced,
+            default => false,
+        };
+    }
+
+    /**
      * What the lines say, read once with the whole chain loaded.
      *
      * `parent` is in the eager set because `ProductCategory::productionMode()` reads it — a
      * heading's answer reaches the headings under it — and strict mode turns a relation touched
      * cold into an exception rather than a query per line.
+     *
+     * Public because an edit compares the answer before and after it changes the lines: an edit
+     * that leaves the answer where it was is never refused over a road it did not move.
      */
-    private function readFromItems(Order $order): OrderFlow
+    public function fromLines(Order $order): OrderFlow
     {
         $order->loadMissing('items.product.productCategory.parent');
 
