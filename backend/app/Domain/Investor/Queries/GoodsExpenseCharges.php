@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Queries;
 
+use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Enums\FundExpenseChargeKind;
 use App\Domain\Investor\Models\InvestmentPeriod;
@@ -92,5 +93,60 @@ final class GoodsExpenseCharges
         }
 
         return $split;
+    }
+
+    /**
+     * «من كم لكم» — تكلفةُ وحدة كلِّ مادةٍ قبل المصروف وبعده، وكم كان منها على الرفّ يومَها.
+     *
+     * من صفوف الرفّ الأصلية: `unit_cost_before` كُتب لحظةَ الهبوط، والفرقُ `unit_amount`. ومادةٌ لم
+     * يبقَ منها شيءٌ على الرفّ تظهر أيضاً — تكلفتُها رُفعت لما يرجع إليها، وحصتُها على المبيعات.
+     *
+     * @param  list<int>  $expenseIds
+     * @return array<int, list<array{stock_item_id: int, name: string, unit: ?string, unit_label: ?string, quantity: string, cost_before: ?string, cost_after: ?string}>>
+     */
+    public function goodsOf(array $expenseIds): array
+    {
+        if ($expenseIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('fund_expense_charges as f')
+            ->join('stock_batches as b', 'b.id', '=', 'f.stock_batch_id')
+            ->join('stock_items as si', 'si.id', '=', 'b.stock_item_id')
+            ->whereIn('f.investor_deal_expense_id', $expenseIds)
+            ->where('f.kind', FundExpenseChargeKind::Shelf->value)
+            ->whereNull('f.deleted_at')
+            ->whereNull('f.reverses_charge_id')
+            ->where('f.amount', '>=', 0)
+            ->groupBy('f.investor_deal_expense_id', 'si.id', 'si.name', 'si.unit')
+            ->orderBy('si.name')
+            ->get([
+                'f.investor_deal_expense_id',
+                'si.id as stock_item_id',
+                'si.name',
+                'si.unit',
+                DB::raw('SUM(f.quantity) as quantity'),
+                DB::raw('MIN(f.unit_cost_before) as cost_before'),
+                DB::raw('MIN(f.unit_amount) as delta'),
+            ]);
+
+        $goods = [];
+
+        foreach ($rows as $row) {
+            $unit = $row->unit === null ? null : PricingUnit::tryFrom((string) $row->unit);
+            $before = $row->cost_before === null ? null : (string) $row->cost_before;
+
+            $goods[(int) $row->investor_deal_expense_id][] = [
+                'stock_item_id' => (int) $row->stock_item_id,
+                'name' => (string) $row->name,
+                'unit' => $unit?->value,
+                'unit_label' => $unit?->label(),
+                'quantity' => (string) $row->quantity,
+                'cost_before' => $before,
+                'cost_after' => $before === null ? null : bcadd($before, (string) $row->delta, 3),
+            ];
+        }
+
+        return $goods;
     }
 }

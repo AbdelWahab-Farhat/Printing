@@ -102,6 +102,10 @@ class FundExpenseCard extends StatelessWidget {
                   style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
+              for (final line in _costChanges) ...[
+                SizedBox(height: 2.h),
+                Text(line, style: context.textTheme.bodyMedium),
+              ],
               if (expense.notes case final notes? when notes.isNotEmpty) ...[
                 SizedBox(height: 4.h),
                 Text(notes, style: context.textTheme.bodyMedium),
@@ -148,6 +152,14 @@ class FundExpenseCard extends StatelessWidget {
       ],
     ].join(' · ');
   }
+
+  /// «من كم لكم» — تكلفةُ وحدة كلِّ مادةٍ قبل المصروف وبعده: «أكياس الشحن: الكجم من 5 إلى 5.25 د.ل».
+  List<String> get _costChanges => [
+    for (final goods in expense.goods)
+      if ((goods.costBefore, goods.costAfter) case (final before?, final after?))
+        '${goods.name}: ${goods.unitLabel == null ? 'الوحدة' : 'الـ${goods.unitLabel}'}'
+            ' من ${before.grouped} إلى ${after.grouped} د.ل',
+  ];
 
   /// لماذا لا يُعدّ، أو لماذا يُعدّ وقد عُكس — بلفظه لا بلونٍ يُخمَّن.
   String? get _note {

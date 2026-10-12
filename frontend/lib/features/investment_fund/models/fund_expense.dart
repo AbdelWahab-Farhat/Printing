@@ -39,6 +39,22 @@ abstract class FundExpenseSplit with _$FundExpenseSplit {
       _$FundExpenseSplitFromJson(json);
 }
 
+/// «من كم لكم» — تكلفةُ وحدة مادةٍ قبل مصروفٍ على البضاعة وبعده، وكم كان منها على الرفّ يومَها.
+@freezed
+abstract class FundExpenseGoodsCost with _$FundExpenseGoodsCost {
+  const factory FundExpenseGoodsCost({
+    @JsonKey(name: 'stock_item_id') required int stockItemId,
+    required String name,
+    @JsonKey(name: 'unit_label') String? unitLabel,
+    required String quantity,
+    @JsonKey(name: 'cost_before') String? costBefore,
+    @JsonKey(name: 'cost_after') String? costAfter,
+  }) = _FundExpenseGoodsCost;
+
+  factory FundExpenseGoodsCost.fromJson(Map<String, dynamic> json) =>
+      _$FundExpenseGoodsCostFromJson(json);
+}
+
 /// مصروفٌ في «مصاريف الصندوق» — ما خرج، ولماذا، وفي أيّ فترة.
 ///
 /// **أخفُّ من [PeriodExpense] عن قصد**: لا نصيبَ لكلِّ مستثمر ولا زرَّ عكس. ذلك ما حُمِّل في
@@ -72,6 +88,7 @@ abstract class FundExpense with _$FundExpense {
     @JsonKey(name: 'expense_amount') String? expenseAmount,
     @JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder,
     FundExpenseSplit? split,
+    @Default(<FundExpenseGoodsCost>[]) List<FundExpenseGoodsCost> goods,
   }) = _FundExpense;
 
   factory FundExpense.fromJson(Map<String, dynamic> json) => _$FundExpenseFromJson(json);

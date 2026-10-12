@@ -93,10 +93,12 @@ final class FundExpensesQuery
             ->with(['treasuryAccount:id,name', 'recordedBy:id,name'])
             ->paginate($perPage, ['*'], 'page', $page);
 
-        $splits = $this->goods->splitOf(array_map(
+        $onGoodsIds = array_values(array_map(
             fn (InvestorDealExpense $expense): int => (int) $expense->id,
             array_filter($paginator->items(), fn (InvestorDealExpense $expense): bool => $expense->purchase_order_id !== null),
         ));
+        $splits = $this->goods->splitOf($onGoodsIds);
+        $goodsCosts = $this->goods->goodsOf($onGoodsIds);
 
         $rows = [];
 
@@ -109,6 +111,7 @@ final class FundExpensesQuery
                 $row['counted'] = $period === null ? $reversal === null : true;
                 $row['recorded_after_close'] = false;
                 $row['split'] = $splits[(int) $expense->id] ?? ['on_goods' => '0.00', 'on_sales' => '0.00'];
+                $row['goods'] = $goodsCosts[(int) $expense->id] ?? [];
             }
 
             $rows[] = $row;
@@ -220,6 +223,7 @@ final class FundExpensesQuery
             'expense_amount' => (string) $expense->amount,
             'purchase_order' => $expense->purchase_order_id === null ? null : ['id' => (int) $expense->purchase_order_id],
             'split' => null,
+            'goods' => [],
             'incurred_on' => $expense->incurred_on?->toDateString(),
             'notes' => $expense->notes,
             'treasury_account' => $expense->treasuryAccount === null

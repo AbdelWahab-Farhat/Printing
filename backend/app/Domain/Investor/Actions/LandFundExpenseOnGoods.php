@@ -285,8 +285,11 @@ final class LandFundExpenseOnGoods
         $shelfCents = '0';
 
         foreach ($locked as $batchId => $row) {
+            // «من كم لكم» — تكلفتُها قبل هذا المصروف، تُقرأ قبل أن تُرفع.
+            $before = (string) $row->unit_cost;
+
             if (bccomp($delta, '0', 3) > 0) {
-                $row->unit_cost = bcadd((string) $row->unit_cost, $delta, 3);
+                $row->unit_cost = bcadd($before, $delta, 3);
                 $row->save();
             }
 
@@ -297,6 +300,7 @@ final class LandFundExpenseOnGoods
                 'stock_batch_id' => $batchId,
                 'quantity' => (string) $row->quantity_remaining,
                 'unit_amount' => $delta,
+                'unit_cost_before' => $before,
                 'amount' => $amount,
                 'charged_on' => $expense->incurred_on->toDateString(),
             ]);
@@ -409,6 +413,7 @@ final class LandFundExpenseOnGoods
         $charge->order_id = $attributes['order_id'] ?? null;
         $charge->quantity = $attributes['quantity'] ?? '0';
         $charge->unit_amount = $attributes['unit_amount'] ?? null;
+        $charge->unit_cost_before = $attributes['unit_cost_before'] ?? null;
         $charge->amount = $attributes['amount'];
         $charge->charged_on = $attributes['charged_on'];
         // مختومٌ قبل الكتابة: صفٌّ يُكتب ولا يُعدَّل، فسجلُّه حدثٌ واحد.

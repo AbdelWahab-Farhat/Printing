@@ -36,6 +36,7 @@ class FundExpenseCharge extends Model implements HasAuditTrail
             'kind' => FundExpenseChargeKind::class,
             'quantity' => 'decimal:3',
             'unit_amount' => 'decimal:3',
+            'unit_cost_before' => 'decimal:3',
             'amount' => 'decimal:2',
             'charged_on' => 'date',
         ];

@@ -2,7 +2,9 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/investment_fund/models/fund_expense.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
@@ -101,8 +103,15 @@ void main() {
 
   setUpAll(() => registerFallbackValue(0));
 
-  Future<void> register(Map<int?, Paginated<FundExpense>> pages) async {
+  /// [permissions]: ما يملكه المستخدم — فتحُ أمر الشراء من البطاقة يسأل الجلسةَ عن صلاحيته.
+  Future<void> register(
+    Map<int?, Paginated<FundExpense>> pages, {
+    List<String> permissions = const [],
+  }) async {
     await sl.reset();
+    sl.registerSingleton<Session>(
+      Session()..adopt(AuthUser(id: 1, name: 'فرحات', phone: '0911234567', permissions: permissions)),
+    );
     expenses = _FakeExpenses(pages);
     final fund = _MockFund();
     when(fund.periods).thenAnswer(
@@ -126,6 +135,14 @@ void main() {
         ),
         GoRoute(
           path: '/investment/periods/:id',
+          builder: (context, state) {
+            opened(state.uri, state.extra);
+
+            return const Scaffold(body: SizedBox.shrink());
+          },
+        ),
+        GoRoute(
+          path: '/purchase-orders/:id',
           builder: (context, state) {
             opened(state.uri, state.extra);
 
@@ -302,6 +319,16 @@ void main() {
           period: FundExpensePeriod(id: 1, code: 'P1', status: 'closing', statusLabel: 'قيد الإغلاق'),
           purchaseOrder: FundExpensePurchaseOrder(id: 12),
           split: FundExpenseSplit(onGoods: '400.00', onSales: '600.00'),
+          goods: [
+            FundExpenseGoodsCost(
+              stockItemId: 4,
+              name: 'أكياس الشحن',
+              unitLabel: 'كجم',
+              quantity: '200.000',
+              costBefore: '25.000',
+              costAfter: '27.000',
+            ),
+          ],
         ),
       ], '1000.00'),
     });
@@ -311,8 +338,38 @@ void main() {
     await tester.pumpWidget(host((_, _) {}));
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — وأين ذهب ما على البضاعة: تكلفةُ الكيلو من كم إلى كم.
     expect(find.text('أمر الشراء 12 · على البضاعة 400 · على المبيعات 600'), findsOneWidget);
+    expect(find.text('أكياس الشحن: الـكجم من 25 إلى 27 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('a tap on an expense on goods opens its purchase order', (tester) async {
+    // Arrange — طلبُ المالك: «اعطيني امكانية فتح امر شراء».
+    await register({
+      null: _page([
+        const FundExpense(
+          id: 61,
+          kind: 'shipping',
+          kindLabel: 'شحن',
+          name: 'شحن الحاوية',
+          amount: '1000.00',
+          incurredOn: '2026-09-15',
+          period: FundExpensePeriod(id: 1, code: 'P1', status: 'closing', statusLabel: 'قيد الإغلاق'),
+          purchaseOrder: FundExpensePurchaseOrder(id: 12),
+        ),
+      ], '1000.00'),
+    }, permissions: ['purchase_orders.view']);
+    tall(tester);
+    Uri? opened;
+    await tester.pumpWidget(host((uri, _) => opened = uri));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('شحن الحاوية'));
+    await tester.pumpAndSettle();
+
+    // Assert — أمرُ شرائه لا فترتُه: الفترةُ قد لا تحمل منه شيئاً.
+    expect(opened?.path, '/purchase-orders/12');
   });
 
   testWidgets('no expenses in a period says so', (tester) async {

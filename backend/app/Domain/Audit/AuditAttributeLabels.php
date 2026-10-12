@@ -594,6 +594,7 @@ final class AuditAttributeLabels
             'stock_batch_id' => 'دفعة المخزون',
             'stock_movement_id' => 'الحركة',
             'unit_amount' => 'الفرق في تكلفة الوحدة',
+            'unit_cost_before' => 'تكلفة الوحدة قبل المصروف',
             'charged_on' => 'يوم الحصة',
             'investment_period_id' => 'الفترة',
             'reverses_charge_id' => 'تعكس الحصة',

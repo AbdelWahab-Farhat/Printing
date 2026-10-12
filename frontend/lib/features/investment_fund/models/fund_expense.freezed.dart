@@ -814,12 +814,290 @@ as String,
 
 
 /// @nodoc
+mixin _$FundExpenseGoodsCost {
+
+@JsonKey(name: 'stock_item_id') int get stockItemId; String get name;@JsonKey(name: 'unit_label') String? get unitLabel; String get quantity;@JsonKey(name: 'cost_before') String? get costBefore;@JsonKey(name: 'cost_after') String? get costAfter;
+/// Create a copy of FundExpenseGoodsCost
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FundExpenseGoodsCostCopyWith<FundExpenseGoodsCost> get copyWith => _$FundExpenseGoodsCostCopyWithImpl<FundExpenseGoodsCost>(this as FundExpenseGoodsCost, _$identity);
+
+  /// Serializes this FundExpenseGoodsCost to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpenseGoodsCost&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.costBefore, costBefore) || other.costBefore == costBefore)&&(identical(other.costAfter, costAfter) || other.costAfter == costAfter));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stockItemId,name,unitLabel,quantity,costBefore,costAfter);
+
+@override
+String toString() {
+  return 'FundExpenseGoodsCost(stockItemId: $stockItemId, name: $name, unitLabel: $unitLabel, quantity: $quantity, costBefore: $costBefore, costAfter: $costAfter)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FundExpenseGoodsCostCopyWith<$Res>  {
+  factory $FundExpenseGoodsCostCopyWith(FundExpenseGoodsCost value, $Res Function(FundExpenseGoodsCost) _then) = _$FundExpenseGoodsCostCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'stock_item_id') int stockItemId, String name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity,@JsonKey(name: 'cost_before') String? costBefore,@JsonKey(name: 'cost_after') String? costAfter
+});
+
+
+
+
+}
+/// @nodoc
+class _$FundExpenseGoodsCostCopyWithImpl<$Res>
+    implements $FundExpenseGoodsCostCopyWith<$Res> {
+  _$FundExpenseGoodsCostCopyWithImpl(this._self, this._then);
+
+  final FundExpenseGoodsCost _self;
+  final $Res Function(FundExpenseGoodsCost) _then;
+
+/// Create a copy of FundExpenseGoodsCost
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = null,Object? name = null,Object? unitLabel = freezed,Object? quantity = null,Object? costBefore = freezed,Object? costAfter = freezed,}) {
+  return _then(_self.copyWith(
+stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as String,costBefore: freezed == costBefore ? _self.costBefore : costBefore // ignore: cast_nullable_to_non_nullable
+as String?,costAfter: freezed == costAfter ? _self.costAfter : costAfter // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FundExpenseGoodsCost].
+extension FundExpenseGoodsCostPatterns on FundExpenseGoodsCost {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FundExpenseGoodsCost value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FundExpenseGoodsCost value)  $default,){
+final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FundExpenseGoodsCost value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int stockItemId,  String name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity, @JsonKey(name: 'cost_before')  String? costBefore, @JsonKey(name: 'cost_after')  String? costAfter)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost() when $default != null:
+return $default(_that.stockItemId,_that.name,_that.unitLabel,_that.quantity,_that.costBefore,_that.costAfter);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int stockItemId,  String name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity, @JsonKey(name: 'cost_before')  String? costBefore, @JsonKey(name: 'cost_after')  String? costAfter)  $default,) {final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost():
+return $default(_that.stockItemId,_that.name,_that.unitLabel,_that.quantity,_that.costBefore,_that.costAfter);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int stockItemId,  String name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity, @JsonKey(name: 'cost_before')  String? costBefore, @JsonKey(name: 'cost_after')  String? costAfter)?  $default,) {final _that = this;
+switch (_that) {
+case _FundExpenseGoodsCost() when $default != null:
+return $default(_that.stockItemId,_that.name,_that.unitLabel,_that.quantity,_that.costBefore,_that.costAfter);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FundExpenseGoodsCost implements FundExpenseGoodsCost {
+  const _FundExpenseGoodsCost({@JsonKey(name: 'stock_item_id') required this.stockItemId, required this.name, @JsonKey(name: 'unit_label') this.unitLabel, required this.quantity, @JsonKey(name: 'cost_before') this.costBefore, @JsonKey(name: 'cost_after') this.costAfter});
+  factory _FundExpenseGoodsCost.fromJson(Map<String, dynamic> json) => _$FundExpenseGoodsCostFromJson(json);
+
+@override@JsonKey(name: 'stock_item_id') final  int stockItemId;
+@override final  String name;
+@override@JsonKey(name: 'unit_label') final  String? unitLabel;
+@override final  String quantity;
+@override@JsonKey(name: 'cost_before') final  String? costBefore;
+@override@JsonKey(name: 'cost_after') final  String? costAfter;
+
+/// Create a copy of FundExpenseGoodsCost
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FundExpenseGoodsCostCopyWith<_FundExpenseGoodsCost> get copyWith => __$FundExpenseGoodsCostCopyWithImpl<_FundExpenseGoodsCost>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FundExpenseGoodsCostToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpenseGoodsCost&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.costBefore, costBefore) || other.costBefore == costBefore)&&(identical(other.costAfter, costAfter) || other.costAfter == costAfter));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stockItemId,name,unitLabel,quantity,costBefore,costAfter);
+
+@override
+String toString() {
+  return 'FundExpenseGoodsCost(stockItemId: $stockItemId, name: $name, unitLabel: $unitLabel, quantity: $quantity, costBefore: $costBefore, costAfter: $costAfter)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FundExpenseGoodsCostCopyWith<$Res> implements $FundExpenseGoodsCostCopyWith<$Res> {
+  factory _$FundExpenseGoodsCostCopyWith(_FundExpenseGoodsCost value, $Res Function(_FundExpenseGoodsCost) _then) = __$FundExpenseGoodsCostCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'stock_item_id') int stockItemId, String name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity,@JsonKey(name: 'cost_before') String? costBefore,@JsonKey(name: 'cost_after') String? costAfter
+});
+
+
+
+
+}
+/// @nodoc
+class __$FundExpenseGoodsCostCopyWithImpl<$Res>
+    implements _$FundExpenseGoodsCostCopyWith<$Res> {
+  __$FundExpenseGoodsCostCopyWithImpl(this._self, this._then);
+
+  final _FundExpenseGoodsCost _self;
+  final $Res Function(_FundExpenseGoodsCost) _then;
+
+/// Create a copy of FundExpenseGoodsCost
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = null,Object? name = null,Object? unitLabel = freezed,Object? quantity = null,Object? costBefore = freezed,Object? costAfter = freezed,}) {
+  return _then(_FundExpenseGoodsCost(
+stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as String,costBefore: freezed == costBefore ? _self.costBefore : costBefore // ignore: cast_nullable_to_non_nullable
+as String?,costAfter: freezed == costAfter ? _self.costAfter : costAfter // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$FundExpense {
 
  int get id; String get kind;@JsonKey(name: 'kind_label') String get kindLabel; String get name; String get amount;@JsonKey(name: 'incurred_on') String? get incurredOn; String? get notes;@JsonKey(name: 'treasury_account') PeriodExpenseRef? get treasuryAccount;@JsonKey(name: 'recorded_by') PeriodExpenseRef? get recordedBy;/// `null` لمصروفٍ بتاريخٍ قبل أوّل فترة.
  FundExpensePeriod? get period; bool get counted;/// مؤرّخٌ في فترةٍ أُقفلت وسُجِّل بعد إقفالها — فحُمِّل على المفتوحة يومَ سُجِّل.
 @JsonKey(name: 'recorded_after_close') bool get recordedAfterClose;@JsonKey(name: 'is_reversed') bool get isReversed; PeriodExpenseReversal? get reversal;/// مصروفٌ على البضاعة: `amount` ما وقع منه في الفترة المختارة، وكاملُه في [expenseAmount].
-@JsonKey(name: 'expense_amount') String? get expenseAmount;@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? get purchaseOrder; FundExpenseSplit? get split;
+@JsonKey(name: 'expense_amount') String? get expenseAmount;@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? get purchaseOrder; FundExpenseSplit? get split; List<FundExpenseGoodsCost> get goods;
 /// Create a copy of FundExpense
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -832,16 +1110,16 @@ $FundExpenseCopyWith<FundExpense> get copyWith => _$FundExpenseCopyWithImpl<Fund
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split)&&const DeepCollectionEquality().equals(other.goods, goods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split);
+int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split,const DeepCollectionEquality().hash(goods));
 
 @override
 String toString() {
-  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split)';
+  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split, goods: $goods)';
 }
 
 
@@ -852,7 +1130,7 @@ abstract mixin class $FundExpenseCopyWith<$Res>  {
   factory $FundExpenseCopyWith(FundExpense value, $Res Function(FundExpense) _then) = _$FundExpenseCopyWithImpl;
 @useResult
 $Res call({
- int id, String kind,@JsonKey(name: 'kind_label') String kindLabel, String name, String amount,@JsonKey(name: 'incurred_on') String? incurredOn, String? notes,@JsonKey(name: 'treasury_account') PeriodExpenseRef? treasuryAccount,@JsonKey(name: 'recorded_by') PeriodExpenseRef? recordedBy, FundExpensePeriod? period, bool counted,@JsonKey(name: 'recorded_after_close') bool recordedAfterClose,@JsonKey(name: 'is_reversed') bool isReversed, PeriodExpenseReversal? reversal,@JsonKey(name: 'expense_amount') String? expenseAmount,@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder, FundExpenseSplit? split
+ int id, String kind,@JsonKey(name: 'kind_label') String kindLabel, String name, String amount,@JsonKey(name: 'incurred_on') String? incurredOn, String? notes,@JsonKey(name: 'treasury_account') PeriodExpenseRef? treasuryAccount,@JsonKey(name: 'recorded_by') PeriodExpenseRef? recordedBy, FundExpensePeriod? period, bool counted,@JsonKey(name: 'recorded_after_close') bool recordedAfterClose,@JsonKey(name: 'is_reversed') bool isReversed, PeriodExpenseReversal? reversal,@JsonKey(name: 'expense_amount') String? expenseAmount,@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder, FundExpenseSplit? split, List<FundExpenseGoodsCost> goods
 });
 
 
@@ -869,7 +1147,7 @@ class _$FundExpenseCopyWithImpl<$Res>
 
 /// Create a copy of FundExpense
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? period = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? reversal = freezed,Object? expenseAmount = freezed,Object? purchaseOrder = freezed,Object? split = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? period = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? reversal = freezed,Object? expenseAmount = freezed,Object? purchaseOrder = freezed,Object? split = freezed,Object? goods = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -888,7 +1166,8 @@ as bool,reversal: freezed == reversal ? _self.reversal : reversal // ignore: cas
 as PeriodExpenseReversal?,expenseAmount: freezed == expenseAmount ? _self.expenseAmount : expenseAmount // ignore: cast_nullable_to_non_nullable
 as String?,purchaseOrder: freezed == purchaseOrder ? _self.purchaseOrder : purchaseOrder // ignore: cast_nullable_to_non_nullable
 as FundExpensePurchaseOrder?,split: freezed == split ? _self.split : split // ignore: cast_nullable_to_non_nullable
-as FundExpenseSplit?,
+as FundExpenseSplit?,goods: null == goods ? _self.goods : goods // ignore: cast_nullable_to_non_nullable
+as List<FundExpenseGoodsCost>,
   ));
 }
 /// Create a copy of FundExpense
@@ -1045,10 +1324,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split,  List<FundExpenseGoodsCost> goods)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundExpense() when $default != null:
-return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split);case _:
+return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split,_that.goods);case _:
   return orElse();
 
 }
@@ -1066,10 +1345,10 @@ return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split,  List<FundExpenseGoodsCost> goods)  $default,) {final _that = this;
 switch (_that) {
 case _FundExpense():
-return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split);case _:
+return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split,_that.goods);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1086,10 +1365,10 @@ return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String kind, @JsonKey(name: 'kind_label')  String kindLabel,  String name,  String amount, @JsonKey(name: 'incurred_on')  String? incurredOn,  String? notes, @JsonKey(name: 'treasury_account')  PeriodExpenseRef? treasuryAccount, @JsonKey(name: 'recorded_by')  PeriodExpenseRef? recordedBy,  FundExpensePeriod? period,  bool counted, @JsonKey(name: 'recorded_after_close')  bool recordedAfterClose, @JsonKey(name: 'is_reversed')  bool isReversed,  PeriodExpenseReversal? reversal, @JsonKey(name: 'expense_amount')  String? expenseAmount, @JsonKey(name: 'purchase_order')  FundExpensePurchaseOrder? purchaseOrder,  FundExpenseSplit? split,  List<FundExpenseGoodsCost> goods)?  $default,) {final _that = this;
 switch (_that) {
 case _FundExpense() when $default != null:
-return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split);case _:
+return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_that.incurredOn,_that.notes,_that.treasuryAccount,_that.recordedBy,_that.period,_that.counted,_that.recordedAfterClose,_that.isReversed,_that.reversal,_that.expenseAmount,_that.purchaseOrder,_that.split,_that.goods);case _:
   return null;
 
 }
@@ -1101,7 +1380,7 @@ return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_tha
 @JsonSerializable()
 
 class _FundExpense implements FundExpense {
-  const _FundExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.period, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, this.reversal, @JsonKey(name: 'expense_amount') this.expenseAmount, @JsonKey(name: 'purchase_order') this.purchaseOrder, this.split});
+  const _FundExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.period, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, this.reversal, @JsonKey(name: 'expense_amount') this.expenseAmount, @JsonKey(name: 'purchase_order') this.purchaseOrder, this.split, final  List<FundExpenseGoodsCost> goods = const <FundExpenseGoodsCost>[]}): _goods = goods;
   factory _FundExpense.fromJson(Map<String, dynamic> json) => _$FundExpenseFromJson(json);
 
 @override final  int id;
@@ -1124,6 +1403,13 @@ class _FundExpense implements FundExpense {
 @override@JsonKey(name: 'expense_amount') final  String? expenseAmount;
 @override@JsonKey(name: 'purchase_order') final  FundExpensePurchaseOrder? purchaseOrder;
 @override final  FundExpenseSplit? split;
+ final  List<FundExpenseGoodsCost> _goods;
+@override@JsonKey() List<FundExpenseGoodsCost> get goods {
+  if (_goods is EqualUnmodifiableListView) return _goods;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_goods);
+}
+
 
 /// Create a copy of FundExpense
 /// with the given fields replaced by the non-null parameter values.
@@ -1138,16 +1424,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split)&&const DeepCollectionEquality().equals(other._goods, _goods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split);
+int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split,const DeepCollectionEquality().hash(_goods));
 
 @override
 String toString() {
-  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split)';
+  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split, goods: $goods)';
 }
 
 
@@ -1158,7 +1444,7 @@ abstract mixin class _$FundExpenseCopyWith<$Res> implements $FundExpenseCopyWith
   factory _$FundExpenseCopyWith(_FundExpense value, $Res Function(_FundExpense) _then) = __$FundExpenseCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String kind,@JsonKey(name: 'kind_label') String kindLabel, String name, String amount,@JsonKey(name: 'incurred_on') String? incurredOn, String? notes,@JsonKey(name: 'treasury_account') PeriodExpenseRef? treasuryAccount,@JsonKey(name: 'recorded_by') PeriodExpenseRef? recordedBy, FundExpensePeriod? period, bool counted,@JsonKey(name: 'recorded_after_close') bool recordedAfterClose,@JsonKey(name: 'is_reversed') bool isReversed, PeriodExpenseReversal? reversal,@JsonKey(name: 'expense_amount') String? expenseAmount,@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder, FundExpenseSplit? split
+ int id, String kind,@JsonKey(name: 'kind_label') String kindLabel, String name, String amount,@JsonKey(name: 'incurred_on') String? incurredOn, String? notes,@JsonKey(name: 'treasury_account') PeriodExpenseRef? treasuryAccount,@JsonKey(name: 'recorded_by') PeriodExpenseRef? recordedBy, FundExpensePeriod? period, bool counted,@JsonKey(name: 'recorded_after_close') bool recordedAfterClose,@JsonKey(name: 'is_reversed') bool isReversed, PeriodExpenseReversal? reversal,@JsonKey(name: 'expense_amount') String? expenseAmount,@JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder, FundExpenseSplit? split, List<FundExpenseGoodsCost> goods
 });
 
 
@@ -1175,7 +1461,7 @@ class __$FundExpenseCopyWithImpl<$Res>
 
 /// Create a copy of FundExpense
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? period = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? reversal = freezed,Object? expenseAmount = freezed,Object? purchaseOrder = freezed,Object? split = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? period = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? reversal = freezed,Object? expenseAmount = freezed,Object? purchaseOrder = freezed,Object? split = freezed,Object? goods = null,}) {
   return _then(_FundExpense(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -1194,7 +1480,8 @@ as bool,reversal: freezed == reversal ? _self.reversal : reversal // ignore: cas
 as PeriodExpenseReversal?,expenseAmount: freezed == expenseAmount ? _self.expenseAmount : expenseAmount // ignore: cast_nullable_to_non_nullable
 as String?,purchaseOrder: freezed == purchaseOrder ? _self.purchaseOrder : purchaseOrder // ignore: cast_nullable_to_non_nullable
 as FundExpensePurchaseOrder?,split: freezed == split ? _self.split : split // ignore: cast_nullable_to_non_nullable
-as FundExpenseSplit?,
+as FundExpenseSplit?,goods: null == goods ? _self._goods : goods // ignore: cast_nullable_to_non_nullable
+as List<FundExpenseGoodsCost>,
   ));
 }
 

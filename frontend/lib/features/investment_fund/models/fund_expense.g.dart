@@ -42,6 +42,28 @@ Map<String, dynamic> _$FundExpenseSplitToJson(_FundExpenseSplit instance) =>
       'on_sales': instance.onSales,
     };
 
+_FundExpenseGoodsCost _$FundExpenseGoodsCostFromJson(
+  Map<String, dynamic> json,
+) => _FundExpenseGoodsCost(
+  stockItemId: (json['stock_item_id'] as num).toInt(),
+  name: json['name'] as String,
+  unitLabel: json['unit_label'] as String?,
+  quantity: json['quantity'] as String,
+  costBefore: json['cost_before'] as String?,
+  costAfter: json['cost_after'] as String?,
+);
+
+Map<String, dynamic> _$FundExpenseGoodsCostToJson(
+  _FundExpenseGoodsCost instance,
+) => <String, dynamic>{
+  'stock_item_id': instance.stockItemId,
+  'name': instance.name,
+  'unit_label': instance.unitLabel,
+  'quantity': instance.quantity,
+  'cost_before': instance.costBefore,
+  'cost_after': instance.costAfter,
+};
+
 _FundExpense _$FundExpenseFromJson(Map<String, dynamic> json) => _FundExpense(
   id: (json['id'] as num).toInt(),
   kind: json['kind'] as String,
@@ -78,6 +100,11 @@ _FundExpense _$FundExpenseFromJson(Map<String, dynamic> json) => _FundExpense(
   split: json['split'] == null
       ? null
       : FundExpenseSplit.fromJson(json['split'] as Map<String, dynamic>),
+  goods:
+      (json['goods'] as List<dynamic>?)
+          ?.map((e) => FundExpenseGoodsCost.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <FundExpenseGoodsCost>[],
 );
 
 Map<String, dynamic> _$FundExpenseToJson(_FundExpense instance) =>
@@ -99,4 +126,5 @@ Map<String, dynamic> _$FundExpenseToJson(_FundExpense instance) =>
       'expense_amount': instance.expenseAmount,
       'purchase_order': instance.purchaseOrder?.toJson(),
       'split': instance.split?.toJson(),
+      'goods': instance.goods.map((e) => e.toJson()).toList(),
     };

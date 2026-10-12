@@ -733,6 +733,26 @@ class FundExpenseOnGoodsTest extends TestCase
         $this->assertSame((int) $order->id, $periodScreen['expenses'][0]['purchase_order']['id']);
     }
 
+    public function test_the_list_says_how_much_the_goods_cost_before_and_after(): void
+    {
+        // Arrange — طلبُ المالك: «توضيح تغيير تكلفة بضاعة من كم لكم بناء على مصروف».
+        $headers = $this->manager();
+        $this->founder();
+        [$size, , $order] = $this->shipment($headers);
+        $this->expenseOn($headers, $order, '1000.00');
+
+        // Act
+        $row = app(FundExpensesQuery::class)->page(null)['rows'][0];
+
+        // Assert — 25.000 كانت، و27.000 صارت، على 500 كيلو كانت على الرفّ.
+        $this->assertCount(1, $row['goods']);
+        $this->assertSame((int) $size->stock_item_id, $row['goods'][0]['stock_item_id']);
+        $this->assertSame('25.000', $row['goods'][0]['cost_before']);
+        $this->assertSame('27.000', $row['goods'][0]['cost_after']);
+        $this->assertSame('500.000', $row['goods'][0]['quantity']);
+        $this->assertSame('كجم', $row['goods'][0]['unit_label']);
+    }
+
     public function test_the_pennies_always_add_up(): void
     {
         // Arrange — 100 على 3 كغ لا تنقسم، وكيلو منها بِيع.

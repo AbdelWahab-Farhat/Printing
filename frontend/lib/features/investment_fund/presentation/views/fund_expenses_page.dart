@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/pagination/paged_state.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
@@ -56,12 +58,16 @@ class FundExpensesPage extends StatelessWidget {
               itemBuilder: (context, expense, index) => FundExpenseCard(
                 key: ValueKey(expense.id),
                 expense: expense,
-                onTap: switch (expense.period) {
-                  final period? => () => context.push(
+                onTap: switch ((expense.purchaseOrder, expense.period)) {
+                  // **مصروفٌ على البضاعة يُفتح على أمر شرائه** — طلبُ المالك 2026-10-12. فترتُه قد
+                  // لا تحمل منه شيئاً (كلُّه على الرفّ)، فشاشتُها لا تذكره.
+                  (final order?, _) when sl<Session>().can(AppPermission.viewPurchaseOrders) =>
+                    () => context.push(Routes.purchaseOrder(order.id)),
+                  (_, final period?) => () => context.push(
                     Routes.investmentPeriodExpenses(period.id),
                     extra: period.code,
                   ),
-                  null => null,
+                  _ => null,
                 },
               ),
             );
