@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/investment_fund/models/fund_expense.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository.dart';
 import 'package:dio/dio.dart';
@@ -16,6 +18,17 @@ class PeriodExpensesRepositoryImpl implements PeriodExpensesRepository {
     return safeRequest<PeriodExpenses>(
       () => _dio.get(InvestmentEndpoints.periodExpenses(periodId)),
       parse: (data) => PeriodExpenses.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Paginated<FundExpense>>> fundExpenses({int? periodId, required int page}) {
+    return safePaginatedRequest<FundExpense>(
+      () => _dio.get(
+        InvestmentEndpoints.expenses,
+        queryParameters: {'page': page, 'period_id': ?periodId},
+      ),
+      parseItem: FundExpense.fromJson,
     );
   }
 

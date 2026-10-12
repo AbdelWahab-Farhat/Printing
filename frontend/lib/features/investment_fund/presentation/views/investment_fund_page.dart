@@ -14,6 +14,7 @@ import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_capital_sheet.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense_sheet.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_total_card.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -125,7 +126,7 @@ class _Standing extends StatelessWidget {
       // الحاشيةُ السفلى بطولِ الزرّ العائم وأكثر: آخرُ بابٍ في اللوحة لا يُدفن تحته.
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
-        _Total(amount: value.total),
+        _Total(standing: standing),
         SizedBox(height: 20.h),
         // **كلُّ رقمٍ بابٌ إلى ما صنعه** — طلبُ المالك 2026-09-24: النقدُ إلى سجلّه، والبضاعةُ
         // إلى موادّها وطلبياتها، والأرباحُ إلى الطلبيات التي أعطتها. وكلُّ قائمةٍ هناك تجمع إلى
@@ -156,32 +157,27 @@ class _Standing extends StatelessWidget {
           amount: standing.goodsOnOrder,
           opens: Routes.investmentOnOrder,
         ),
+        // **الأبوابُ تحت آخر البنود لا في ذيل اللوحة** — قرارُ المالك 2026-10-12: «تنتقل ٣ أزرار
+        // تحت بضاعة مشتراة لم تصل». كانت بعد بطاقات الفترات، لا تُرى إلا بعد تمرير اللوحة كلِّها.
+        SizedBox(height: 16.h),
+        const _Doors(),
         SizedBox(height: 24.h),
-        _Unit(price: standing.unitPrice, outstanding: standing.unitsOutstanding),
-        SizedBox(height: 24.h),
-        if (standing.period case final period?) ...[
-          _Period(period: period),
-          if (!period.acceptsCapital) ...[
-            SizedBox(height: 12.h),
-            const _SubscriptionClosed(),
-          ],
-        ] else
-          const _NoPeriod(),
+        // **ولا سطرَ «أُغلقت نافذة الاكتتاب» تحتها** — قرارُ المالك 2026-10-12: «مش ضروري تذكرها،
+        // المهم انها فعالة». غيابُ «اشتراك في الصندوق» من الزرّ العائم يكفي.
+        if (standing.period case final period?) _Period(period: period) else const _NoPeriod(),
         for (final waiting in standing.waitingPeriods) ...[
           SizedBox(height: 12.h),
           _WaitingPeriod(period: waiting),
         ],
-        SizedBox(height: 16.h),
-        const _Doors(),
       ],
     );
   }
 }
 
 class _Total extends StatelessWidget {
-  const _Total({required this.amount});
+  const _Total({required this.standing});
 
-  final String amount;
+  final FundStanding standing;
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +185,8 @@ class _Total extends StatelessWidget {
     // يفتحه سطرُ النقد تحته، في الموضع الذي تقع عليه العينُ أوّلاً.
     return FundTotalCard(
       label: 'قيمة الصندوق',
-      amount: amount,
+      amount: standing.valuation.total,
+      footer: _Unit(price: standing.unitPrice, outstanding: standing.unitsOutstanding),
       action: IconButton(
         tooltip: 'سجل الخزينة',
         onPressed: () => context.push(Routes.investmentCash),
@@ -270,10 +267,21 @@ class _Period extends StatelessWidget {
           children: [
             Row(
               children: [
+                // الرمزُ والشريحةُ في `Expanded` واحد، فيقع السهمُ في آخر السطر لا في منتصفه.
                 Expanded(
-                  child: Text(
-                    'الفترة ${period.code} — ${period.statusLabel}',
-                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'الفترة ${period.code}',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      PeriodStatusChip(status: period.status, label: period.statusLabel),
+                    ],
                   ),
                 ),
                 // السهمُ هو ما يقول إنها تُفتح — بلا كلمةٍ تحتها تشرح ذلك.
@@ -361,12 +369,20 @@ class _WaitingPeriod extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'الفترة ${period.code} — ${period.statusLabel}',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSecondaryContainer,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'الفترة ${period.code}',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSecondaryContainer,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      PeriodStatusChip(status: period.status, label: period.statusLabel),
+                    ],
                   ),
                 ),
                 Icon(AppIcons.forward, size: 20.sp, color: scheme.onSecondaryContainer),
@@ -488,7 +504,7 @@ class _NoPeriodState extends State<_NoPeriod> {
   }
 }
 
-/// بابان متجاوران — **سجلُّ الفترات، والمستثمرون**.
+/// ثلاثةُ أبوابٍ متجاورة — **سجلُّ الفترات، والمستثمرون، والمصاريف**.
 ///
 /// **واللوحةُ تعرض فترةً واحدة عن قصد**: هي التي تستقبل القيد اليوم، وحشرُ السجلِّ كلِّه فوقها
 /// يدفن السؤالَ الذي فُتحت الشاشةُ لأجله. وما خلف الباب الأول سؤالٌ آخر — **ماذا صنعت كلُّ
@@ -497,27 +513,95 @@ class _NoPeriodState extends State<_NoPeriod> {
 /// **والشركاءُ خلف الباب الثاني لا على اللوحة.** قرارُ المالك 2026-09-23: «سجل الفترات يكون
 /// بجانبه زر المستثمرين الحاليين، والصفحة فيها تبويبان: الفترة الحالية والفترة القادمة». كانت
 /// قائمةُ الشركاء هنا وزرٌّ تحتها إلى القادمة، فصار للسؤال نفسِه نصفان في شاشتين.
+///
+/// **و«المصاريف» ثالثُها** — قرارُ المالك 2026-10-12: «خليني اقدر اخش عليها من هنا مباشرة»،
+/// «يعرض بجانبهم». كانت لا تُرى إلا فترةً فترة.
+///
+/// **بلاطاتٌ بأيقونةٍ فوق الكلمة، لا [AppButton]** — هو وحده ما يخالف قاعدةَ مكوّناتنا هنا، وعن
+/// اضطرار: ثلاثةُ أزرارٍ في سطر هاتف تترك لكلٍّ نحو ١٢٧ نقطة، و[AppButton] يحجز منها ٤٨ حاشيةً
+/// ويقصّ ما زاد في سطرٍ واحد، فكانت «المستثمرون الحاليون» تصير «المستثمرون…». والإطارُ إطارُ
+/// [AppButton.outlined] نفسُه — حدُّه ولونُه وزاويتُه — فالثلاثةُ تُقرأ أزراراً من العائلة نفسِها.
 class _Doors extends StatelessWidget {
   const _Doors();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: AppButton.outlined(
-            label: 'سجل الفترات',
-            onPressed: () => context.push(Routes.investmentPeriods),
+    // بارتفاع أطولها: «المستثمرون الحاليون» قد تنزل سطرين، فلا تقف الثلاثةُ على ثلاثة أطوال.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _Door(
+              label: 'سجل الفترات',
+              icon: AppIcons.periods,
+              opens: Routes.investmentPeriods,
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: _Door(
+              label: 'المستثمرون الحاليون',
+              icon: AppIcons.investors,
+              opens: Routes.investmentPartners,
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: _Door(
+              label: 'المصاريف',
+              icon: AppIcons.expense,
+              opens: Routes.investmentExpenses,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Door extends StatelessWidget {
+  const _Door({required this.label, required this.icon, required this.opens});
+
+  final String label;
+  final IconData icon;
+  final String opens;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16.r),
+      side: BorderSide(color: scheme.outlineVariant, width: 1.4),
+    );
+
+    return Material(
+      color: Colors.transparent,
+      shape: shape,
+      child: InkWell(
+        onTap: () => context.push(opens),
+        customBorder: shape,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 24.sp, color: scheme.primary),
+              SizedBox(height: 6.h),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(width: 12.w),
-        Expanded(
-          child: AppButton.outlined(
-            label: 'المستثمرون الحاليون',
-            onPressed: () => context.push(Routes.investmentPartners),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -527,6 +611,9 @@ class _Doors extends StatelessWidget {
 /// **من يقبض مالاً من مستثمرٍ اليوم يحتاج أن يرى السعرَ قبل أن يكتب.** هو ما يقرّر كم وحدةً
 /// يشتري ذلك المال، أي كم نسبةً يأخذ من ربح الصندوق — ومن دخل صندوقاً قيمتُه ١٬٦٠٠ ووحداتُه
 /// ١٬٠٠٠ يشتري الوحدةَ بـ١٫٦، فلا يقاسم أحداً ربحاً صُنع قبله.
+///
+/// **داخل بطاقة القيمة تحت شعرة، لا بطاقةً وحدها** — قرارُ المالك 2026-10-12: «انزعها وخليها
+/// تحت قيمة الصندوق». السعرُ قسمةُ تلك القيمة على هذه الوحدات، فمكانُه تحتها.
 class _Unit extends StatelessWidget {
   const _Unit({required this.price, required this.outstanding});
 
@@ -535,47 +622,43 @@ class _Unit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
+    final ink = context.colorScheme.onPrimaryContainer;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
+    return IntrinsicHeight(
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('سعر الوحدة', style: context.textTheme.bodyMedium),
-                SizedBox(height: 4.h),
-                Text(
-                  price,
-                  textDirection: TextDirection.ltr,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('الوحدات القائمة', style: context.textTheme.bodyMedium),
-                SizedBox(height: 4.h),
-                Text(
-                  outstanding.grouped,
-                  textDirection: TextDirection.ltr,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _UnitFigure(label: 'سعر الوحدة', value: price)),
+          VerticalDivider(width: 1, thickness: 1, color: ink.withValues(alpha: 0.18)),
+          Expanded(child: _UnitFigure(label: 'الوحدات القائمة', value: outstanding.grouped)),
         ],
       ),
+    );
+  }
+}
+
+class _UnitFigure extends StatelessWidget {
+  const _UnitFigure({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = context.colorScheme.onPrimaryContainer;
+
+    return Column(
+      children: [
+        Text(
+          label,
+          style: context.textTheme.bodyMedium?.copyWith(color: ink.withValues(alpha: 0.8)),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          value,
+          textDirection: TextDirection.ltr,
+          style: context.textTheme.titleMedium?.copyWith(color: ink, fontWeight: FontWeight.w800),
+        ),
+      ],
     );
   }
 }
@@ -590,8 +673,7 @@ class _Unit extends StatelessWidget {
 ///
 /// **الاشتراكُ يغيب حين تُغلق نافذةُ الاكتتاب**، والخادمُ هو من قال إنها أُغلقت
 /// (`accepts_capital`): مقارنةُ تواريخ هنا نسخةٌ ثانية من القاعدة تخالف الأولى يوم تتغيّر.
-/// والسطرُ الذي يقول ذلك في جسم اللوحة — [_SubscriptionClosed] — لا هنا، لأن الزرَّ المطويّ لا
-/// يقول شيئاً عمّا غاب منه.
+/// ولا سطرَ يقول ذلك في جسم اللوحة بعد 2026-10-12 — «مش ضروري تذكرها، المهم انها فعالة».
 class _Actions extends StatelessWidget {
   const _Actions({required this.standing});
 
@@ -637,27 +719,6 @@ class _Actions extends StatelessWidget {
           onTap: (context) => showFundExpenseSheet(context: context, cubit: cubit),
         ),
       ],
-    );
-  }
-}
-
-/// نافذةُ الاكتتاب أُغلقت — يقولها سطرٌ تحت الفترة بدل زرٍّ يغيب بصمت.
-class _SubscriptionClosed extends StatelessWidget {
-  const _SubscriptionClosed();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Text(
-        'أُغلقت نافذة الاكتتاب — يُقبل رأس المال في الفترة التالية',
-        style: context.textTheme.bodyMedium,
-      ),
     );
   }
 }

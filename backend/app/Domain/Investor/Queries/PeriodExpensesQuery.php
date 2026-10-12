@@ -373,8 +373,11 @@ final class PeriodExpensesQuery
      *
      * يُعدّ ما لم يُعكس، وما عُكس **بعد** أن أُقفلت فترتُه: الإقفالُ عدّه يومها، وردُّه وقع على
      * غيرها. ومصروفٌ من خارج النافذة لا يُعدّ هنا أبداً — مكانُه مصاريفُ فترة تاريخه.
+     *
+     * **عامّةٌ لأن قائمةَ مصاريف الصندوق تقرؤها** ({@see FundExpensesQuery}): مجموعُها مفلترةً
+     * بفترةٍ هو مجموعُ هذه الشاشة، والقاعدةُ في موضعٍ واحد لا يختلفان عليه.
      */
-    private function counts(InvestorDealExpense $expense, InvestmentPeriod $period, ?InvestorDealExpense $reversal): bool
+    public function counts(InvestorDealExpense $expense, InvestmentPeriod $period, ?InvestorDealExpense $reversal): bool
     {
         $date = $expense->incurred_on?->toDateString();
 
@@ -398,7 +401,7 @@ final class PeriodExpensesQuery
     }
 
     /** مصروفٌ بتاريخٍ في فترةٍ أُقفلت، كُتب بعد إقفالها — {@see PeriodForEntry} أنزله على المفتوحة. */
-    private function recordedAfterClose(InvestorDealExpense $expense, InvestmentPeriod $period): bool
+    public function recordedAfterClose(InvestorDealExpense $expense, InvestmentPeriod $period): bool
     {
         return $period->status === PeriodStatus::Closed
             && $period->closed_at !== null

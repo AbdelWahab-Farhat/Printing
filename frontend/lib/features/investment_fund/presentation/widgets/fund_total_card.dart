@@ -8,13 +8,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **البطاقةُ نفسُها في الموضعين عن قصد**: من فتح «بضاعة على الرفّ» من اللوحة يرى فوق القائمة
 /// الرقمَ الذي ضغطه في الإطار نفسِه، فيعرف أن ما تحته هو ما يتكوّن منه ذلك الرقم.
 class FundTotalCard extends StatelessWidget {
-  const FundTotalCard({required this.label, required this.amount, this.action, super.key});
+  const FundTotalCard({
+    required this.label,
+    required this.amount,
+    this.action,
+    this.footer,
+    super.key,
+  });
 
   final String label;
   final String amount;
 
   /// زرٌّ في زاوية البطاقة — سجلُّ الخزينة بجانب قيمة الصندوق.
   final Widget? action;
+
+  /// ما يُقرأ مع الرقم تحت شعرةٍ في البطاقة نفسِها — سعرُ الوحدة والوحداتُ القائمة تحت قيمة
+  /// الصندوق.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +52,12 @@ class FundTotalCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (footer case final footer?) ...[
+            SizedBox(height: 16.h),
+            Divider(height: 1, color: scheme.onPrimaryContainer.withValues(alpha: 0.18)),
+            SizedBox(height: 14.h),
+            footer,
+          ],
         ],
       ),
     );

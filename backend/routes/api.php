@@ -936,6 +936,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('investment/withdrawals', [InvestmentFundController::class, 'storeWithdrawal'])
             ->middleware('can:investors.money.record')->name('investment.withdrawals.store');
 
+        // «مصاريف الصندوق» — كلُّها بجانب فتراتها، قراءةٌ بصلاحية اللوحة نفسِها.
+        Route::get('investment/expenses', [InvestmentFundController::class, 'expenses'])
+            ->middleware('can:investors.view')->name('investment.expenses.index');
+
         // المصروفُ يأكل من ربح الشهر، فصلاحيتُه صلاحيةُ مصروف الصفقة نفسُها.
         Route::post('investment/expenses', [InvestmentFundController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investment.expenses.store');

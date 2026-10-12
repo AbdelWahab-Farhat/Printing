@@ -796,6 +796,10 @@ abstract final class Injector {
       )
       ..registerLazySingleton<ReverseFundExpense>(
         () => ReverseFundExpense(sl<PeriodExpensesRepository>()),
+      )
+      // «مصاريف الصندوق» — كلُّها بجانب فتراتها، من بابٍ على اللوحة.
+      ..registerLazySingleton<GetFundExpenses>(
+        () => GetFundExpenses(sl<PeriodExpensesRepository>()),
       );
   }
 

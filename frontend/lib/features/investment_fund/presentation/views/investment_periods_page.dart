@@ -6,6 +6,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_periods_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_figures.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -106,7 +107,7 @@ class _PeriodCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(period.statusLabel, style: context.textTheme.bodyMedium),
+                    PeriodStatusChip(status: period.status, label: period.statusLabel),
                   ],
                 ),
                 SizedBox(height: 8.h),

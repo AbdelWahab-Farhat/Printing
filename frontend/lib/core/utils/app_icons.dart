@@ -219,6 +219,22 @@ abstract final class AppIcons {
   /// وما انقضت مدّتُه: يُستردّ متى شاء.
   static IconData get unlocked => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
 
+  // ── فترات الصندوق ─────────────────────────────────────────────────────────
+  /// «سجل الفترات» — تقويمٌ بمداه، لأن الفترةَ نافذةُ أيامٍ لا حدثٌ واحد.
+  static IconData get periods => _pick(Icons.date_range_rounded, CupertinoIcons.calendar);
+
+  /// فترةٌ «مفتوحة» — تجري الآن وتستقبل القيد. زرُّ تشغيلٍ لا علامةُ صحّ: الصحُّ يقول «انتهى».
+  static IconData get periodOpen =>
+      _pick(Icons.play_circle_rounded, CupertinoIcons.play_circle_fill);
+
+  /// «قيد الإغلاق» — انتهت نافذتُها وتنتظر طلبياتِها. ساعةٌ رملية، كـ[awaitingDeposit]: لا خطأ،
+  /// وإنما انتظارٌ على أحدٍ خارجها.
+  static IconData get periodClosing =>
+      _pick(Icons.hourglass_top_rounded, CupertinoIcons.hourglass);
+
+  /// «مغلقة» — جُمِّدت أرقامُها ووُزّع مالُها. قفلٌ، لأن لا شيءَ يُكتب فيها بعد.
+  static IconData get periodClosed => _pick(Icons.lock_rounded, CupertinoIcons.lock_fill);
+
   // ── الحسابات والكاش ──────────────────────────────────────────────────────
 
   /// الخزينة كلها — القسم ولوحته.

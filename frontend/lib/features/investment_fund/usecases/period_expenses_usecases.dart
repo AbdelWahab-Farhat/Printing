@@ -1,5 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/investment_fund/models/fund_expense.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository.dart';
 
@@ -21,4 +23,14 @@ class ReverseFundExpense {
 
   Future<Either<Failure, Unit>> call(int expenseId, {required String reason}) =>
       _repository.reverseExpense(expenseId, reason: reason);
+}
+
+/// «مصاريف الصندوق» كلُّها، أو مصاريفُ فترةٍ واحدة.
+class GetFundExpenses {
+  const GetFundExpenses(this._repository);
+
+  final PeriodExpensesRepository _repository;
+
+  Future<Either<Failure, Paginated<FundExpense>>> call({int? periodId, required int page}) =>
+      _repository.fundExpenses(periodId: periodId, page: page);
 }

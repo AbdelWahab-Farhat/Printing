@@ -7,6 +7,8 @@ import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_fund_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_total_card.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:flutter/material.dart';
@@ -139,6 +141,13 @@ void main() {
     );
   }
 
+  /// شاشةٌ طويلة — بطاقةُ الفترة تحت الأبواب الثلاثة، و`ListView` لا يبني ما تحت الطيّة.
+  void tall(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   /// اللوحةُ داخل موجّه — لما يُفتح منها. كلُّ بابٍ يكتب مسارَه في [pushed] ويقف.
   Widget routedHost(void Function(String path) pushed) {
     final router = GoRouter(
@@ -152,6 +161,7 @@ void main() {
           '/investment/in-flight',
           '/investment/receivables',
           '/investment/profit-owed',
+          '/investment/expenses',
         ])
           GoRoute(
             path: path,
@@ -272,6 +282,8 @@ void main() {
     // Arrange — لا تُخترع فترةٌ وهمية لتملأ الفراغ.
     await register(const FundStanding(valuation: _valuation));
 
+    tall(tester);
+
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
@@ -304,12 +316,15 @@ void main() {
       ),
     );
 
+    tall(tester);
+
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('الفترة P1 — مفتوحة'), findsOneWidget);
+    // Assert — الرمزُ عنوانٌ، والحالةُ شريحةٌ بجانبه.
+    expect(find.text('الفترة P1'), findsOneWidget);
+    expect(find.widgetWithText(PeriodStatusChip, 'مفتوحة'), findsOneWidget);
     expect(find.text('2026-09-01 ← 2026-09-30'), findsOneWidget);
     expect(find.text('الاكتتاب مفتوح حتى 2026-09-07'), findsOneWidget);
     expect(find.text('مستحقّة الإقفال منذ 3 أيام'), findsOneWidget);
@@ -364,15 +379,16 @@ void main() {
     await tester.scrollUntilVisible(find.text('تنتظر طلبيتين'), 200);
 
     // Assert — بابٌ يُفتح على الفترة، ويقول كم طلبيةً تحبسها.
-    final card = find.ancestor(
-      of: find.text('الفترة P1 — قيد الإغلاق'),
-      matching: find.byType(InkWell),
-    );
+    final card = find.ancestor(of: find.text('الفترة P1'), matching: find.byType(InkWell));
 
     expect(card, findsOneWidget);
     expect(tester.widget<InkWell>(card).onTap, isNotNull);
+    expect(
+      find.descendant(of: card, matching: find.widgetWithText(PeriodStatusChip, 'قيد الإغلاق')),
+      findsOneWidget,
+    );
     expect(find.text('تنتظر طلبيتين'), findsOneWidget);
-    expect(find.text('الفترة P2 — مفتوحة'), findsOneWidget);
+    expect(find.text('الفترة P2'), findsOneWidget);
   });
 
   testWidgets('a refusal to close is shown in the server words', (tester) async {
@@ -532,6 +548,14 @@ void main() {
 
     // Assert — السعرُ كما وصل، ولا شريكَ على اللوحة، ولا زرَّ اشتراكٍ في جسمها.
     expect(find.text('1.600000'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(FundTotalCard), matching: find.text('1.600000')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(FundTotalCard), matching: find.text('2,000')),
+      findsOneWidget,
+    );
     expect(find.text('أحمد'), findsNothing);
     expect(
       find.descendant(of: find.byType(ListView), matching: find.text('اشتراك في الصندوق')),
@@ -549,9 +573,12 @@ void main() {
     expect(find.text('تسجيل مصروف'), findsNothing);
   });
 
-  testWidgets('a closed subscription window says so instead of offering a deposit', (tester) async {
+  testWidgets('a closed subscription window hides the deposit, and says nothing more', (
+    tester,
+  ) async {
     // Arrange — «يمكنه فقط في بداية الفترة». والخادمُ هو من قرّر أنها أُغلقت؛ الشاشةُ تعرض
-    // قرارَه ولا تقارن تواريخ.
+    // قرارَه ولا تقارن تواريخ. وسطرُ «أُغلقت نافذة الاكتتاب» رُفع — قرارُ المالك 2026-10-12:
+    // «مش ضروري تذكرها، المهم انها فعالة».
     await register(
       const FundStanding(
         valuation: _valuation,
@@ -590,10 +617,7 @@ void main() {
 
     // Assert — والاستردادُ وحده يبقى، فهو الزرُّ العائم نفسُه باسمه لا زرٌّ يتفتّح عن واحد.
     expect(find.text('اشتراك في الصندوق'), findsNothing);
-    expect(
-      find.text('أُغلقت نافذة الاكتتاب — يُقبل رأس المال في الفترة التالية'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('أُغلقت نافذة الاكتتاب'), findsNothing);
     expect(find.text('استرداد رأس مال'), findsOneWidget);
   });
 
@@ -610,23 +634,134 @@ void main() {
     // Assert — بلا صلاحيةٍ في الجلسة: القراءةُ ليست خلف `manage`، ومن يرى اللوحة يرى سجلَّها.
     expect(find.text('سجل الفترات'), findsOneWidget);
     expect(find.text('المستثمرون الحاليون'), findsOneWidget);
+    expect(find.text('المصاريف'), findsOneWidget);
   });
 
-  testWidgets('the investors door sits beside the periods record, on one row', (tester) async {
-    // Arrange — قرارُ المالك 2026-09-23: «سجل الفترات يكون بجانبه زر المستثمرين الحاليين».
-    await register(const FundStanding(valuation: _valuation));
+  testWidgets('three doors share one row, right under the goods not yet arrived', (tester) async {
+    // Arrange — قرارُ المالك 2026-09-23: «سجل الفترات يكون بجانبه زر المستثمرين الحاليين»؛
+    // و2026-10-12: «المصاريف» بجانبهما، والثلاثةُ تحت «بضاعة مشتراة لم تصل».
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 2,
+          code: 'P2',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-10-01',
+          endsOn: '2026-10-31',
+          subscriptionClosesOn: '2026-10-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+      ),
+    );
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
 
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('سجل الفترات'), 200);
 
-    // Assert — على سطرٍ واحد، والسجلُّ على اليمين حيث يبدأ السطرُ العربيّ.
+    // Assert — على سطرٍ واحد يبدأ من اليمين بالسجلّ، بين آخر البنود وبطاقة الفترة.
     final periods = tester.getCenter(find.text('سجل الفترات'));
     final investors = tester.getCenter(find.text('المستثمرون الحاليون'));
+    final expenses = tester.getCenter(find.text('المصاريف'));
+    final onOrder = tester.getCenter(find.text('بضاعة مشتراة لم تصل'));
+    final period = tester.getCenter(find.text('الفترة P2'));
 
-    expect(periods.dy, investors.dy);
+    expect(investors.dy, closeTo(periods.dy, 1));
+    expect(expenses.dy, closeTo(periods.dy, 1));
     expect(periods.dx, greaterThan(investors.dx));
+    expect(investors.dx, greaterThan(expenses.dx));
+    expect(periods.dy, greaterThan(onOrder.dy));
+    expect(periods.dy, lessThan(period.dy));
+  });
+
+  testWidgets('«المصاريف» opens every expense of the fund', (tester) async {
+    // Arrange
+    await register(const FundStanding(valuation: _valuation));
+    String? opened;
+    await tester.pumpWidget(routedHost((path) => opened = path));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('المصاريف'), 200);
+
+    // Act
+    await tester.tap(find.text('المصاريف'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(opened, '/investment/expenses');
+  });
+
+  testWidgets('each period status wears its own colour and icon', (tester) async {
+    // Arrange — «تميز حالة الفترة باللون مختلف و Chip + icon».
+    await register(
+      const FundStanding(
+        valuation: _valuation,
+        period: FundPeriod(
+          id: 2,
+          code: 'P2',
+          status: 'open',
+          statusLabel: 'مفتوحة',
+          startsOn: '2026-10-01',
+          endsOn: '2026-10-31',
+          subscriptionClosesOn: '2026-10-07',
+          isDueToClose: false,
+          periodMonths: 1,
+          investorProfitSharePercent: '50.00',
+          openingStockCost: '0.00',
+          openingCash: '0.00',
+        ),
+        waitingPeriods: [
+          FundPeriod(
+            id: 1,
+            code: 'P1',
+            status: 'closing',
+            statusLabel: 'قيد الإغلاق',
+            startsOn: '2026-09-22',
+            endsOn: '2026-09-30',
+            subscriptionClosesOn: '2026-09-30',
+            isDueToClose: false,
+            periodMonths: 1,
+            investorProfitSharePercent: '50.00',
+            openingStockCost: '0.00',
+            openingCash: '0.00',
+          ),
+        ],
+      ),
+    );
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — شريحتان بأيقونتين ولونين لا يتشابهان.
+    final open = find.widgetWithText(PeriodStatusChip, 'مفتوحة');
+    final closing = find.widgetWithText(PeriodStatusChip, 'قيد الإغلاق');
+
+    expect(find.descendant(of: open, matching: find.byIcon(AppIcons.periodOpen)), findsOneWidget);
+    expect(
+      find.descendant(of: closing, matching: find.byIcon(AppIcons.periodClosing)),
+      findsOneWidget,
+    );
+
+    Color fillOf(Finder chip) {
+      final box = tester.widget<Container>(
+        find.descendant(of: chip, matching: find.byType(Container)).first,
+      );
+
+      return (box.decoration! as BoxDecoration).color!;
+    }
+
+    expect(fillOf(open), isNot(fillOf(closing)));
   });
   testWidgets('the running period card is a door into the period itself', (tester) async {
     // Arrange — الأرقامُ على البطاقة صحيحةٌ ولا تقول من أين جاءت. وكان الطريقُ الوحيد إلى
@@ -651,15 +786,14 @@ void main() {
       ),
     );
 
+    tall(tester);
+
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
     // Assert — بطاقةٌ تُنقر، وسهمٌ يقول ذلك قبل أن يجرّب أحد.
-    final card = find.ancestor(
-      of: find.text('الفترة P7 — مفتوحة'),
-      matching: find.byType(InkWell),
-    );
+    final card = find.ancestor(of: find.text('الفترة P7'), matching: find.byType(InkWell));
 
     expect(card, findsOneWidget);
     expect(tester.widget<InkWell>(card).onTap, isNotNull);
@@ -692,6 +826,8 @@ void main() {
       ),
     );
 
+    tall(tester);
+
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
@@ -723,6 +859,8 @@ void main() {
         ),
       ),
     );
+
+    tall(tester);
 
     // Act
     await tester.pumpWidget(host());

@@ -4,6 +4,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_periods_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:flutter/material.dart';
@@ -201,7 +202,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('قيد الإغلاق'), findsOneWidget);
+    expect(find.widgetWithText(PeriodStatusChip, 'قيد الإغلاق'), findsOneWidget);
     expect(find.text('تنتظر 3 طلبيات'), findsOneWidget);
   });
 }

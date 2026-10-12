@@ -20,6 +20,7 @@ use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDealExpense;
+use App\Domain\Investor\Queries\FundExpensesQuery;
 use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
@@ -65,6 +66,7 @@ class InvestmentFundController extends Controller
         private readonly PurchaseFromFund $purchase,
         private readonly PeriodOrdersQuery $periodOrders,
         private readonly PeriodExpensesQuery $periodExpenses,
+        private readonly FundExpensesQuery $fundExpenses,
         private readonly FundDeal $fund,
         private readonly SettingsService $settings,
     ) {}
@@ -323,6 +325,40 @@ class InvestmentFundController extends Controller
         return $this->success([
             'period' => $this->periodPayload($period),
             ...($this->periodExpenses)($period),
+        ]);
+    }
+
+    /**
+     * List every fund expense, each beside its period
+     *
+     * «تعرض لي كل مصاريف وبجانبها الفترة الخاصة بها واقدر افلتر حسب الفترة». الأحدثُ أوّلاً،
+     * و`meta.expenses_total` مجموعُ المعدود منها في كل الصفحات — ومفلترةً بفترةٍ هو مجموعُ شاشة
+     * تلك الفترة. التفصيل في {@see FundExpensesQuery}.
+     */
+    public function expenses(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'period_id' => ['nullable', 'integer', Rule::exists('investment_periods', 'id')->whereNull('deleted_at')],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $period = isset($validated['period_id'])
+            ? InvestmentPeriod::query()->findOrFail((int) $validated['period_id'])
+            : null;
+
+        $listed = $this->fundExpenses->page(
+            $period,
+            (int) ($validated['page'] ?? 1),
+            (int) ($validated['per_page'] ?? FundExpensesQuery::PER_PAGE),
+        );
+
+        return $this->successWithMeta($listed['rows'], [
+            'current_page' => $listed['current_page'],
+            'per_page' => $listed['per_page'],
+            'last_page' => $listed['last_page'],
+            'total' => $listed['total'],
+            'expenses_total' => $listed['expenses_total'],
         ]);
     }
 

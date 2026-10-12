@@ -33,6 +33,7 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/fund_expenses_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_on_order_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_out_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_profit_owed_page.dart';
@@ -156,6 +157,12 @@ abstract final class Routes {
 
   /// فترةٌ واحدة: طلبياتُها، ونصيبُ كلِّ مستثمرٍ من كلٍّ منها.
   static String investmentPeriod(int id) => '/investment/periods/$id';
+
+  /// الفترةُ مفتوحةً على تبويب «المصاريف» — من بطاقة مصروفٍ في «مصاريف الصندوق».
+  static String investmentPeriodExpenses(int id) => '/investment/periods/$id?tab=expenses';
+
+  /// «مصاريف الصندوق» — كلُّها بجانب فتراتها، من بابٍ على اللوحة.
+  static const String investmentExpenses = '/investment/expenses';
 
   /// شراءُ أمرِ شراءٍ بمال الصندوق — ما حلّ محلّ شاشة «تمويل الأمر».
   static const String fundPurchase = '/investment/purchase';
@@ -670,11 +677,18 @@ abstract final class AppRouter {
         builder: (context, state) => const FundProfitOwedPage(),
       ),
       GoRoute(
+        path: Routes.investmentExpenses,
+        builder: (context, state) => const FundExpensesPage(),
+      ),
+      GoRoute(
         // خلف «/periods» لا أمامه: المسارُ الثابتُ أطولُ مطابقةً، ولا يبتلعه متغيّرٌ بعده.
         path: '/investment/periods/:id',
         builder: (context, state) => InvestmentPeriodPage(
           periodId: int.parse(state.pathParameters['id']!),
           periodCode: state.payload as String?,
+          opensOn: state.uri.queryParameters['tab'] == 'expenses'
+              ? PeriodTab.expenses
+              : PeriodTab.orders,
         ),
       ),
       GoRoute(

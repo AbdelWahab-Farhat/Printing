@@ -10,10 +10,14 @@ import 'package:dayaa/features/investment_fund/presentation/viewmodel/period_ord
 import 'package:dayaa/features/investment_fund/presentation/views/period_expenses_tab.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_figures.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_order_card.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+
+/// تبويبا شاشة الفترة، بترتيبهما.
+enum PeriodTab { orders, expenses }
 
 /// شاشةُ الفترة الواحدة — **ما ربحه المستثمرون فيها، طلبيةً طلبية**.
 ///
@@ -23,12 +27,20 @@ import 'package:go_router/go_router.dart';
 /// **والأرقامُ صفوفُ الدفتر نفسُها التي قُبض بها.** الفترةُ المغلقة وُزّع مالُها بأرقامٍ مُعلنة،
 /// وإعادةُ اشتقاقها من الـFIFO بعد سنةٍ — بدفترٍ تحرّكت طبقاتُه — كانت تُظهر غيرَ ما دخل الجيوب.
 class InvestmentPeriodPage extends StatelessWidget {
-  const InvestmentPeriodPage({required this.periodId, this.periodCode, super.key});
+  const InvestmentPeriodPage({
+    required this.periodId,
+    this.periodCode,
+    this.opensOn = PeriodTab.orders,
+    super.key,
+  });
 
   final int periodId;
 
   /// يُعرض في الشريط ريثما تصل الفترة، حين فُتحت الشاشة من صفٍّ يعرف رمزَها.
   final String? periodCode;
+
+  /// التبويبُ الذي تُفتح عليه — «المصاريف» حين جاءت من بطاقة مصروفٍ في «مصاريف الصندوق».
+  final PeriodTab opensOn;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +49,8 @@ class InvestmentPeriodPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => PeriodOrdersCubit(getOrders: sl())..load(periodId),
       child: DefaultTabController(
-        length: 2,
+        length: PeriodTab.values.length,
+        initialIndex: opensOn.index,
         child: Scaffold(
           appBar: AppBar(
             title: Text(periodCode == null ? 'الفترة' : 'الفترة $periodCode'),
@@ -164,9 +177,16 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'الفترة ${period.code} — ${period.statusLabel}',
-            style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'الفترة ${period.code}',
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              PeriodStatusChip(status: period.status, label: period.statusLabel),
+            ],
           ),
           SizedBox(height: 10.h),
           Text(

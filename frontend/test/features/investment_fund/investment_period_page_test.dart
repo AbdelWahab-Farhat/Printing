@@ -1,11 +1,14 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/investment_fund/models/fund_expense.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
 import 'package:dayaa/features/investment_fund/repositories/period_expenses_repository.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
@@ -95,6 +98,12 @@ class _FakeExpenses implements PeriodExpensesRepository {
   @override
   Future<Either<Failure, Unit>> reverseExpense(int expenseId, {required String reason}) async =>
       const Right(unit);
+
+  @override
+  Future<Either<Failure, Paginated<FundExpense>>> fundExpenses({
+    int? periodId,
+    required int page,
+  }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 }
 
 const _period = FundPeriod(
@@ -131,20 +140,20 @@ void main() {
     return repository;
   }
 
-  Widget host() {
+  Widget host({PeriodTab opensOn = PeriodTab.orders}) {
     return ScreenUtilInit(
       designSize: const Size(430, 932),
-      builder: (context, _) => const MaterialApp(
-        locale: Locale('ar'),
-        supportedLocales: [Locale('ar')],
-        localizationsDelegates: [
+      builder: (context, _) => MaterialApp(
+        locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar')],
+        localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         home: Directionality(
           textDirection: TextDirection.rtl,
-          child: InvestmentPeriodPage(periodId: 7, periodCode: 'P7'),
+          child: InvestmentPeriodPage(periodId: 7, periodCode: 'P7', opensOn: opensOn),
         ),
       ),
     );
@@ -294,7 +303,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('الفترة P7 — مغلقة'), findsOneWidget);
+    // الرمزُ في الشريط وفي الترويسة، والحالةُ شريحةٌ بجانبه في الترويسة.
+    expect(find.text('الفترة P7'), findsNWidgets(2));
+    expect(find.widgetWithText(PeriodStatusChip, 'مغلقة'), findsOneWidget);
     expect(find.text('2026-09-01 ← 2026-09-30'), findsOneWidget);
     expect(find.text('صافي الربح'), findsOneWidget);
     expect(find.text('9,000 د.ل'), findsOneWidget);
@@ -339,6 +350,18 @@ void main() {
     expect(find.text('لا مصاريف على الصندوق في هذه الفترة'), findsOneWidget);
   });
 
+  testWidgets('opened from the fund expenses, it starts on «المصاريف»', (tester) async {
+    // Arrange — لمسةُ مصروفٍ في «مصاريف الصندوق» تأتي لتقرأ نصيبَ كلِّ مستثمرٍ منه.
+    await register(const PeriodOrders(period: _period));
+
+    // Act
+    await tester.pumpWidget(host(opensOn: PeriodTab.expenses));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('لا مصاريف على الصندوق في هذه الفترة'), findsOneWidget);
+  });
+
   testWidgets('a waiting period says how many orders still hold it', (tester) async {
     // Arrange — «قيد الإغلاق»: أرقامُها لم تُجمَّد بعد، وطلبيتان لم تصلا أو لم تُحصَّلا.
     await register(
@@ -366,7 +389,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('الفترة P8 — قيد الإغلاق'), findsOneWidget);
+    expect(find.text('الفترة P8'), findsOneWidget);
+    expect(find.widgetWithText(PeriodStatusChip, 'قيد الإغلاق'), findsOneWidget);
     expect(find.text('تنتظر طلبيتين'), findsOneWidget);
   });
 

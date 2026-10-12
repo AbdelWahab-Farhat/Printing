@@ -115,6 +115,7 @@ abstract final class InvestmentEndpoints {
   /// حركاتُ مالٍ تمرّ بالصندوق: تشتري وحداتٍ أو تُلغيها، فلها بابُها لا بابُ المحفظة.
   static const String deposits = '/investment/deposits';
   static const String withdrawals = '/investment/withdrawals';
+  /// يُكتب فيها المصروف (POST)، وتُقرأ منها «مصاريف الصندوق» كلُّها بجانب فتراتها (GET).
   static const String expenses = '/investment/expenses';
 
   /// إبطالُ حركةٍ في محفظة — يبطل الخزينةَ والوحداتِ معها.

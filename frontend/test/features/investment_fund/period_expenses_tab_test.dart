@@ -1,9 +1,11 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/investment_fund/models/fund_expense.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
@@ -41,6 +43,12 @@ class _FakeRepository implements PeriodExpensesRepository {
 
     return const Right(unit);
   }
+
+  @override
+  Future<Either<Failure, Paginated<FundExpense>>> fundExpenses({
+    int? periodId,
+    required int page,
+  }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 }
 
 const _period = FundPeriod(
