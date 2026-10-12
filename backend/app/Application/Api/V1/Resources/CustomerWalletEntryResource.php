@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Wallet\Enums\TopUpMethod;
 use App\Domain\Wallet\Models\CustomerWalletEntry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -72,6 +73,7 @@ class CustomerWalletEntryResource extends JsonResource
             'is_reversed' => $this->resource->isReversed(),
             // What puts «عكس» on the row: a top-up or an adjustment, not yet undone, and the grant.
             'can_reverse' => $this->type->isReversibleByHand()
+                && $this->method !== TopUpMethod::Online
                 && ! $this->resource->isReversed()
                 && ($user?->can(PermissionName::ReverseCustomerWalletEntries->value) ?? false),
             'reverses_entry_id' => $this->reverses_entry_id,

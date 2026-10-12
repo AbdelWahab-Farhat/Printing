@@ -10,6 +10,7 @@ use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\TreasuryService;
 use App\Domain\Wallet\DTOs\TopUpData;
+use App\Domain\Wallet\Enums\TopUpMethod;
 use App\Domain\Wallet\Enums\WalletEntryType;
 use App\Domain\Wallet\Exceptions\TopUpNeedsReceipt;
 use App\Domain\Wallet\Models\CustomerWalletEntry;
@@ -39,6 +40,10 @@ final class TopUpWallet
     {
         if (! Money::isPositive($data->amount)) {
             throw new InvalidArgumentException('A top-up moves a positive amount.');
+        }
+
+        if ($data->method === TopUpMethod::Online) {
+            throw new InvalidArgumentException('An online top-up is written by WalletService::creditOnlineTopUp alone.');
         }
 
         if ($data->method->requiresReceipt() && $data->receipt === null) {

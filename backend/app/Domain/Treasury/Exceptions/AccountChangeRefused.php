@@ -62,6 +62,12 @@ final class AccountChangeRefused extends DomainException
         return new self('حساب الالتزام لا يكون افتراضياً — لا مال ينزل فيه', 'is_default');
     }
 
+    /** «Ezone» is a wallet too, but only EzonePay fills it — never a hand payment. CUSTOMER-WALLET §٥. */
+    public static function systemCannotBeDefault(string $account): self
+    {
+        return new self("«{$account}» حساب نظام يملؤه مزوّده وحده — لا يكون افتراضياً", 'is_default');
+    }
+
     public static function vendorPayableIsManagedByTheVendor(string $account): self
     {
         return new self("«{$account}» حساب مورد — يتبع المورد في اسمه وحالته", 'name');
@@ -84,7 +90,7 @@ final class AccountChangeRefused extends DomainException
 
     public static function cannotCollectInto(string $account, string $kind, string $field): self
     {
-        return new self("لا يُجمع «{$kind}» في «{$account}» — يلزم حساب مفعّل من النوع نفسه", $field);
+        return new self("لا يُجمع «{$kind}» في «{$account}» — يلزم حساب مفعّل من النوع نفسه، لا حساب نظام", $field);
     }
 
     public function fieldErrors(): array

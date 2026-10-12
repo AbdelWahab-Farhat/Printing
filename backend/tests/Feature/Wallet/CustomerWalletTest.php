@@ -618,6 +618,50 @@ class CustomerWalletTest extends TestCase
         $this->assertNull(OrderPayment::query()->firstOrFail()->recorded_by);
     }
 
+    public function test_the_customer_is_offered_the_deposit_beside_the_whole_amount_and_may_pay_just_it(): void
+    {
+        // Arrange — the shop asked for 50 of 200.
+        $customer = Customer::factory()->registered()->create();
+        $this->topUp($this->cashier(), $customer, ['amount' => '120'])->assertCreated();
+        $order = $this->order($customer, '200.00', OrderStatus::AwaitingDeposit);
+        $order->forceFill(['deposit_expected_amount' => '50.00'])->save();
+        $app = $this->customerHeaders($customer);
+
+        // Act & Assert — both figures on the screen.
+        $this->withHeaders($app)->getJson("/api/v1/client/orders/{$order->id}")
+            ->assertOk()
+            ->assertJsonPath('data.balance', '200.00')
+            ->assertJsonPath('data.deposit_due', '50.00');
+
+        // The customer taps «ادفع العربون».
+        $this->withHeaders($app)->postJson("/api/v1/client/orders/{$order->id}/pay-from-wallet", ['amount' => '50.00'])
+            ->assertCreated()
+            ->assertJsonPath('data.balance', '70.00')
+            ->assertJsonPath('data.order.deposit_due', null)
+            ->assertJsonPath('data.order.balance', '150.00');
+
+        $this->assertSame(OrderStatus::DepositPaid, $order->refresh()->status);
+    }
+
+    public function test_no_deposit_is_offered_without_a_figure_outside_the_stage_or_at_the_whole_amount(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->registered()->create();
+        $app = $this->customerHeaders($customer);
+        $noFigure = $this->order($customer, '200.00', OrderStatus::AwaitingDeposit);
+        $ready = $this->order($customer, '200.00');
+        $ready->forceFill(['deposit_expected_amount' => '50.00'])->save();
+        $whole = $this->order($customer, '40.00', OrderStatus::AwaitingDeposit);
+        $whole->forceFill(['deposit_expected_amount' => '50.00'])->save();
+
+        // Act & Assert — the whole amount is then the only choice.
+        foreach ([$noFigure, $ready, $whole] as $order) {
+            $this->withHeaders($app)->getJson("/api/v1/client/orders/{$order->id}")
+                ->assertOk()
+                ->assertJsonPath('data.deposit_due', null);
+        }
+    }
+
     public function test_the_customer_cannot_pay_another_customers_order(): void
     {
         $customer = Customer::factory()->registered()->create();

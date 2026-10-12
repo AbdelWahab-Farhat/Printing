@@ -43,6 +43,12 @@ final class UpdateTreasuryAccount
                     : AccountChangeRefused::custodyCannotBeDefault();
             }
 
+            // «Ezone» is a wallet, so the kind alone would let it be Libyana's default — and every
+            // hand payment by Libyana would land in what only EzonePay should fill.
+            if ($data->isDefault === true && $locked->isSystem()) {
+                throw AccountChangeRefused::systemCannotBeDefault((string) $locked->name);
+            }
+
             // A vendor's account carries the vendor's name and stays open while the vendor does;
             // only its notes are anybody's to change here.
             if ($locked->isVendorPayable()

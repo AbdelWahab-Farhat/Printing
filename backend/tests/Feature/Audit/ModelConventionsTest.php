@@ -13,6 +13,7 @@ use App\Domain\Notification\Models\CustomerDeviceToken;
 use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Notification\Models\NotificationRecipient;
+use App\Domain\OnlinePayment\Models\GatewayWebhookEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
@@ -49,6 +50,8 @@ class ModelConventionsTest extends TestCase
         // a second row saying the first arrived, and soft-deleting it would defeat the
         // point of keeping it. It is also the only table here that grows with traffic.
         NawrisWebhookEvent::class,
+        // EzonePay's inbound webhook log — the same kind of record as Nawris's.
+        GatewayWebhookEvent::class,
 
         // The notification centre's three tables, all event records rather than business
         // records — the same category as the two above.

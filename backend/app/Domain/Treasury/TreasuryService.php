@@ -9,6 +9,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Actions\CollectOrderMoney;
 use App\Domain\Treasury\Actions\CreateTreasuryAccount;
 use App\Domain\Treasury\Actions\PostMovement;
+use App\Domain\Treasury\Actions\RecordGatewayFee;
 use App\Domain\Treasury\Actions\RecordOperation;
 use App\Domain\Treasury\Actions\ReverseMovement;
 use App\Domain\Treasury\Actions\ReverseOperation;
@@ -26,6 +27,7 @@ use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Enums\OperationType;
 use App\Domain\Treasury\Exceptions\AccountDoesNotFitMethod;
 use App\Domain\Treasury\Exceptions\InsufficientBalance;
+use App\Domain\Treasury\Exceptions\NoDefaultAccount;
 use App\Domain\Treasury\Exceptions\OperationRefused;
 use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\Models\TreasuryAccount;
@@ -295,6 +297,16 @@ final class TreasuryService
      * An account code depends on — `TreasuryAccount::NAWRIS`, or «أرصدة محافظ الزبائن», which
      * opens itself the first time it is asked for.
      */
+    /**
+     * The default account of [$kind] — where «تلقائي» lands.
+     *
+     * @throws NoDefaultAccount
+     */
+    public function defaultAccountOf(AccountKind $kind): TreasuryAccount
+    {
+        return $this->resolver->defaultOf($kind);
+    }
+
     public function systemAccount(string $code): TreasuryAccount
     {
         return $code === TreasuryAccount::CUSTOMER_WALLETS
@@ -462,6 +474,20 @@ final class TreasuryService
                 'currency' => 'LYD',
             ],
         ));
+    }
+
+    /**
+     * What a payment provider kept, as an expense out of its account — see {@see RecordGatewayFee}.
+     * Call inside the caller's transaction.
+     */
+    public function recordGatewayFee(
+        int $accountId,
+        string $fee,
+        DateTimeInterface $occurredAt,
+        string $notes,
+        ?int $actorId = null,
+    ): TreasuryOperation {
+        return app(RecordGatewayFee::class)($accountId, $fee, $occurredAt, $notes, $actorId);
     }
 
     /** The vendor's payable, if anything was ever owed to them. */
@@ -837,6 +863,8 @@ final class TreasuryService
                 ->all(),
             'destinations' => TreasuryAccount::query()
                 ->active()
+                // Not «Ezone» or any account code moves: no order's money is settled into them.
+                ->whereNull('system_code')
                 ->whereIn('kind', [AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
                 ->orderByDesc('is_default')
                 ->orderBy('name')

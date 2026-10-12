@@ -57,6 +57,8 @@ import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manuf
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
 import 'package:dayaa/features/notifications/presentation/views/compose_announcement_page.dart';
 import 'package:dayaa/features/notifications/presentation/views/notifications_page.dart';
+import 'package:dayaa/features/online_payments/presentation/views/online_payment_methods_page.dart';
+import 'package:dayaa/features/online_payments/presentation/views/online_payments_page.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/views/archived_orders_page.dart';
@@ -498,6 +500,12 @@ abstract final class Routes {
   /// «المعاملات المالية» — كل المحافظ، تحت «المالية».
   static const String walletTransactions = '/wallet-transactions';
 
+  /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، تحت «المالية». CUSTOMER-WALLET §٥.
+  static const String onlinePayments = '/online-payments';
+
+  /// «طرق الدفع الإلكتروني» وحدودها.
+  static const String onlinePaymentMethods = '/online-payments/methods';
+
   /// A supplier's notes. Nested under the supplier exactly as the customer's are, because that
   /// is what the API does and what a link should say.
   static const String vendorCommentsPath = '/vendors/:id/comments';
@@ -723,6 +731,18 @@ abstract final class AppRouter {
         redirect: (context, state) =>
             sl<Session>().can(AppPermission.viewCustomerWallets) ? null : Routes.home,
         builder: (context, state) => const WalletTransactionsPage(),
+      ),
+      GoRoute(
+        path: Routes.onlinePayments,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewOnlinePayments) ? null : Routes.home,
+        builder: (context, state) => const OnlinePaymentsPage(),
+      ),
+      GoRoute(
+        path: Routes.onlinePaymentMethods,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewOnlinePayments) ? null : Routes.home,
+        builder: (context, state) => const OnlinePaymentMethodsPage(),
       ),
       // «مراجعة وتسوية الدفعات» — guarded here as well as on its card in «حالات الدفع», so a deep
       // link cannot reach a screen whose every request answers 403. Either grant opens it: the

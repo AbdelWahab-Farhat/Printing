@@ -38,5 +38,17 @@
              a shipping_companies id that exists on their box and not in the test database made
              every dispatch test a foreign-key error. -->
         <env name="NAWRIS_SHIPPING_COMPANY_ID" value=""/>
+        <!-- EzonePay likewise: a developer trying the top-up on an emulator with
+             EZONE_PAY_DRIVER=fake turned every OnlineTopUpTest case onto the pretend gateway.
+             Off and real here; each test switches on what it needs. -->
+        <env name="EZONE_PAY_ENABLED" value="false"/>
+        <env name="EZONE_PAY_DRIVER" value="ezonepay"/>
+        <!-- And never a developer's real sandbox credentials: a test that forgot its HTTP fake
+             would otherwise sign in to EzonePay for real. Tests set what they need. -->
+        <env name="EZONE_PAY_BASE_URL" value="https://ezone.invalid"/>
+        <env name="EZONE_PAY_EMAIL" value=""/>
+        <env name="EZONE_PAY_PASSWORD" value=""/>
+        <env name="EZONE_PAY_SHOP_ID" value=""/>
+        <env name="EZONE_PAY_WEBHOOK_SECRET" value=""/>
     </php>
 </phpunit>

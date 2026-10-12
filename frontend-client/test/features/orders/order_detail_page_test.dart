@@ -61,7 +61,9 @@ void main() {
     List<OrderTimelineEntry>? timeline,
     String? rejectionReason,
     int unreadNotesCount = 0,
+    String? depositDue,
   }) => CustomerOrderDetail(
+    depositDue: depositDue,
     id: 1304,
     code: '1304',
     stage: stage,
@@ -523,6 +525,75 @@ void main() {
       expect(wallet.tokens.first, isNotNull);
       expect(wallet.tokens.last, wallet.tokens.first);
       expect(wallet.paidOrders, [1304]);
+    });
+
+    group('awaiting the deposit', () {
+      CustomerOrderDetail awaitingDeposit() =>
+          order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز', depositDue: '500.00');
+
+      testWidgets('offers the deposit and the whole amount side by side, nothing chosen for the customer', (tester) async {
+        // Arrange & Act
+        await open(tester, awaitingDeposit(), wallet: FakeWallet(held: '3000.00'));
+
+        // Assert
+        Finder within(String key, String text) =>
+            find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
+
+        expect(within('pay-deposit', 'العربون'), findsOneWidget);
+        expect(within('pay-deposit', '${'500.00'.asMoney} د.ل'), findsOneWidget);
+        expect(within('pay-all', 'المبلغ كاملاً'), findsOneWidget);
+        expect(within('pay-all', '${'2332.00'.asMoney} د.ل'), findsOneWidget);
+        expect(find.text('من محفظتك'), findsNWidgets(2));
+        expect(find.textContaining('ادفع ${'2332.00'.asMoney}'), findsNothing);
+      });
+
+      testWidgets('«العربون» pays exactly the deposit', (tester) async {
+        // Arrange
+        final wallet = FakeWallet(held: '3000.00', owedAfterPay: '2500.00');
+        await open(tester, awaitingDeposit(), wallet: wallet);
+
+        // Act
+        await tester.tap(find.byKey(const Key('pay-deposit')));
+        await tester.pumpAndSettle();
+        expect(find.text('يُدفع العربون ${'500.00'.asMoney} د.ل من محفظتك، وتبدأ المطبعة العمل على طلبيتك.'), findsOneWidget);
+        await tester.tap(find.text('ادفع'));
+        await tester.pumpAndSettle();
+        resetSnackBars();
+        await tester.pump();
+
+        // Assert
+        expect(wallet.paidOrders, [1304]);
+        expect(wallet.amounts, ['500.00']);
+      });
+
+      testWidgets('«المبلغ كاملاً» pays the whole amount, as the card always did', (tester) async {
+        // Arrange
+        final wallet = FakeWallet(held: '3000.00', owedAfterPay: '668.00');
+        await open(tester, awaitingDeposit(), wallet: wallet);
+
+        // Act
+        await tester.tap(find.byKey(const Key('pay-all')));
+        await tester.pumpAndSettle();
+        expect(find.text('يُدفع ${'2332.00'.asMoney} د.ل من محفظتك لهذه الطلبية.'), findsOneWidget);
+        await tester.tap(find.text('ادفع'));
+        await tester.pumpAndSettle();
+        resetSnackBars();
+        await tester.pump();
+
+        // Assert — no figure: the server takes what is owed.
+        expect(wallet.amounts, [null]);
+      });
+
+      testWidgets('a wallet short of the deposit, with no online top-up, keeps the old single button', (
+        tester,
+      ) async {
+        // Arrange & Act — 200 cannot pay a 500 deposit, and nothing can top it up.
+        await open(tester, awaitingDeposit(), wallet: FakeWallet(held: '200.00'));
+
+        // Assert
+        expect(find.byKey(const Key('pay-deposit')), findsNothing);
+        expect(find.text('ادفع 200'), findsOneWidget);
+      });
     });
   });
 }

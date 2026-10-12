@@ -22,6 +22,9 @@ class FakeWallet implements WalletRepository {
   /// رمزُ كلّ طلب دفعٍ وصل — ما نجح منه وما فشل.
   final List<String?> tokens = [];
 
+  /// المبلغ الذي طلبه كلُّ دفعٍ وصل — null: «ادفع ما تستطيع».
+  final List<String?> amounts = [];
+
   /// يُفشل الطلبَ التالي كاتصالٍ انقطع، ثم يعود إلى النجاح.
   bool dropNext = false;
 
@@ -37,6 +40,7 @@ class FakeWallet implements WalletRepository {
   @override
   Future<Either<Failure, String>> payOrder(int orderId, {String? amount, String? clientToken}) async {
     tokens.add(clientToken);
+    amounts.add(amount);
 
     if (dropNext) {
       dropNext = false;

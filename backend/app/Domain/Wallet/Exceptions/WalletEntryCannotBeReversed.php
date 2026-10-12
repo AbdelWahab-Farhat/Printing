@@ -13,6 +13,11 @@ final class WalletEntryCannotBeReversed extends DomainException
         return new self("«{$label}» تُعكس من دفعات الطلبية، لا من المحفظة");
     }
 
+    public static function online(): self
+    {
+        return new self('شحنٌ إلكتروني أكّده مزوّد الدفع — لا يُلغى من هنا');
+    }
+
     public static function alreadyReversed(): self
     {
         return new self('هذه الحركة معكوسة من قبل');

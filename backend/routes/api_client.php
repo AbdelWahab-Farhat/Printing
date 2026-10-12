@@ -34,12 +34,17 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
         // Throttled: unauthenticated, and worth brute-forcing. The same 6/minute the staff
         // endpoints carry — see routes/api.php.
+        //
+        // **Every limit in this file has its own counter** (the third argument): Laravel keys
+        // `throttle:N,1` by the customer — or, signed out, the IP — and not by the route, so
+        // without it the realtime sign-ins of one app start used up the twenty orders a minute,
+        // and a family behind one IP shared its logins with its registrations.
         Route::post('register', [AuthController::class, 'register'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,client-register')
             ->name('register');
 
         Route::post('login', [AuthController::class, 'login'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,client-login')
             ->name('login');
 
         /*
@@ -144,7 +149,7 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
          */
         Route::get('shops', [Client\ShopController::class, 'index'])->name('shops.index');
         Route::post('shops', [Client\ShopController::class, 'store'])
-            ->middleware('throttle:20,1')->name('shops.store');
+            ->middleware('throttle:20,1,shops-store')->name('shops.store');
         Route::put('shops/{shop}', [Client\ShopController::class, 'update'])
             ->whereNumber('shop')->name('shops.update');
         Route::delete('shops/{shop}', [Client\ShopController::class, 'destroy'])
@@ -172,7 +177,7 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         // that creates work for the shop, and a double-tapped button on a slow connection must
         // not put the same order on the review queue twice.
         Route::post('orders', [Client\OrderController::class, 'store'])
-            ->middleware('throttle:20,1')->name('orders.store');
+            ->middleware('throttle:20,1,orders-store')->name('orders.store');
 
         // تسعير السلة قبل إرسالها — «التكلفة النهائية». POST ولا يكتب شيئاً، كتسعير المنتج: السطور
         // جسمٌ لا رابط. وثابتٌ لا يلتبس بـ`orders/{order}`، فذاك رقميٌّ وGET.
@@ -193,7 +198,24 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('wallet', [Client\WalletController::class, 'show'])->name('wallet.show');
         Route::get('wallet/entries', [Client\WalletController::class, 'entries'])->name('wallet.entries');
         Route::post('orders/{order}/pay-from-wallet', [Client\WalletController::class, 'payOrder'])
-            ->whereNumber('order')->middleware('throttle:20,1')->name('orders.pay-from-wallet');
+            ->whereNumber('order')->middleware('throttle:20,1,wallet-pay')->name('orders.pay-from-wallet');
+
+        // «اشحن محفظتك» online — CUSTOMER-WALLET §٥. Starting is throttled like paying; the poll a
+        // card page makes every few seconds is allowed sixty a minute.
+        //
+        // **Each limit has its own counter** (the third argument): Laravel keys `throttle:N,1` by
+        // the customer alone, not the route, so without it the card page's poll — fifteen a
+        // minute — used up the ten a minute of starting and of the OTP, and «عدد المحاولات كبير»
+        // met a customer who had tried once.
+        Route::get('payments/methods', [Client\OnlinePaymentController::class, 'methods'])->name('payments.methods');
+        Route::post('payments/quote', [Client\OnlinePaymentController::class, 'quote'])
+            ->middleware('throttle:60,1,payments-quote')->name('payments.quote');
+        Route::post('payments/intents', [Client\OnlinePaymentController::class, 'start'])
+            ->middleware('throttle:10,1,payments-start')->name('payments.start');
+        Route::post('payments/intents/{intent}/otp', [Client\OnlinePaymentController::class, 'confirm'])
+            ->whereUuid('intent')->middleware('throttle:10,1,payments-otp')->name('payments.otp');
+        Route::get('payments/intents/{intent}', [Client\OnlinePaymentController::class, 'show'])
+            ->whereUuid('intent')->middleware('throttle:60,1,payments-show')->name('payments.show');
 
         /*
          * ── support ─────────────────────────────────────────────────────────────────────
@@ -208,11 +230,11 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('support/tickets', [Client\SupportController::class, 'index'])
             ->name('support.tickets.index');
         Route::post('support/tickets', [Client\SupportController::class, 'store'])
-            ->middleware('throttle:20,1')->name('support.tickets.store');
+            ->middleware('throttle:20,1,support-ticket')->name('support.tickets.store');
         Route::get('support/tickets/{ticket}', [Client\SupportController::class, 'show'])
             ->whereNumber('ticket')->name('support.tickets.show');
         Route::post('support/tickets/{ticket}/messages', [Client\SupportController::class, 'reply'])
-            ->whereNumber('ticket')->middleware('throttle:30,1')->name('support.tickets.messages.store');
+            ->whereNumber('ticket')->middleware('throttle:30,1,support-reply')->name('support.tickets.messages.store');
 
         /*
          * ── الإشعارات: الدفع وحده ───────────────────────────────────────────────────────────
@@ -234,7 +256,7 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
          * `customers.{customerId}` في routes/channels.php تقارنه برمزه.
          */
         Route::post('broadcasting/auth', RealtimeAuthController::class)
-            ->middleware('throttle:60,1')->name('broadcasting.auth');
+            ->middleware('throttle:60,1,client-realtime')->name('broadcasting.auth');
     });
 
 });

@@ -50,7 +50,6 @@ abstract final class InvestorEndpoints {
       '/purchase-orders/$purchaseOrderId/investor-funding';
 }
 
-/// الحسابات والكاش — TREASURY-DESIGN §١٠.
 /// «محفظة العميل» — Docs/payments/CUSTOMER-WALLET.md. تُشحن وتُصرف على الطلبيات ولا يُسحب منها.
 abstract final class WalletEndpoints {
   /// رصيد محفظة العميل.
@@ -69,6 +68,22 @@ abstract final class WalletEndpoints {
   static String reverse(int entryId) => '/wallet-entries/$entryId/reverse';
 }
 
+/// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay. Docs/payments/CUSTOMER-WALLET.md §٥.
+abstract final class OnlinePaymentEndpoints {
+  /// كل محاولات الشحن، الأحدث أولاً. `meta.enabled` و`meta.ezone_balance`.
+  static const String intents = '/online-payments';
+
+  /// «إعادة التحقق» — يسأل EzonePay عن المحاولة.
+  static String recheck(String uuid) => '/online-payments/$uuid/recheck';
+
+  static const String methods = '/online-payment-methods';
+  static String method(int id) => '/online-payment-methods/$id';
+
+  /// «تحويل Ezone إلى المصرف».
+  static const String payouts = '/ezone-payouts';
+}
+
+/// الحسابات والكاش — TREASURY-DESIGN §١٠.
 abstract final class TreasuryEndpoints {
   static const String accounts = '/treasury/accounts';
   static String account(int id) => '/treasury/accounts/$id';

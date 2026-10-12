@@ -610,6 +610,43 @@ final class AuditAttributeLabels
             'receipt_size_bytes' => 'حجم الإيصال',
             'receipt_checksum' => 'بصمة الإيصال',
         ],
+        // الشحن الإلكتروني — CUSTOMER-WALLET §٥. كلُّ عمودٍ يكتبه الخادم؛ والسجلُّ يقول متى تغيّرت
+        // حالُ المحاولة ولماذا.
+        'payment_intent' => [
+            'uuid' => 'المعرّف',
+            'gateway' => 'مزوّد الدفع',
+            'customer_id' => 'العميل',
+            'order_id' => 'الطلبية',
+            'method' => 'طريقة الدفع',
+            'flow' => 'نوع العملية',
+            'net_amount' => 'المبلغ المشحون',
+            'fee_rate' => 'نسبة العمولة',
+            'fee_payer' => 'العمولة على',
+            'gross_amount' => 'المبلغ المخصوم',
+            'provider_fee' => 'عمولة المزوّد',
+            'our_reference' => 'المرجع',
+            'provider_transaction_id' => 'رقم المعاملة عند المزوّد',
+            'provider_link_id' => 'رقم رابط الدفع',
+            'payment_url' => 'رابط الدفع',
+            'otp_attempts' => 'محاولات رمز التحقق',
+            'otp_accepted_at' => 'قُبل رمز التحقق',
+            'customer_info' => 'بيانات العميل المرسلة',
+            'provider_response' => 'رد المزوّد',
+            'failure_reason' => 'سبب الفشل',
+            'wallet_entry_id' => 'حركة المحفظة',
+            'client_token' => 'رمز الإرسال',
+            'expires_at' => 'تنتهي في',
+            'succeeded_at' => 'تاريخ النجاح',
+            'failed_at' => 'تاريخ الفشل',
+        ],
+        'online_payment_method' => [
+            'gateway' => 'مزوّد الدفع',
+            'method' => 'الطريقة',
+            'daily_limit' => 'الحد اليومي',
+            'monthly_limit' => 'الحد الشهري',
+            'yearly_limit' => 'الحد السنوي',
+            'updated_by' => 'عدّلها',
+        ],
         // ── الصندوق الاستثماري ──────────────────────────────────────────────────────────
         //
         // الفترةُ تُكتب مرّتين في عمرها: يوم تُفتح بما ورثته، ويوم تُقفَل بأرقامها. وكلُّ عمودٍ
@@ -772,6 +809,7 @@ final class AuditAttributeLabels
             'collect_wallet' => 'تجميع المحافظ عند التسوية',
             'collect_wallet_into_id' => 'تُجمع المحافظ في',
             'settle_into_settler' => 'التسوية إلى حساب المسوّي',
+            'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
             'updated_by' => 'عدّلها',
         ],
         'treasury_account' => [

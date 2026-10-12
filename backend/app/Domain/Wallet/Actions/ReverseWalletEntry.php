@@ -6,6 +6,7 @@ namespace App\Domain\Wallet\Actions;
 
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Treasury\TreasuryService;
+use App\Domain\Wallet\Enums\TopUpMethod;
 use App\Domain\Wallet\Enums\WalletEntryType;
 use App\Domain\Wallet\Exceptions\WalletEntryCannotBeReversed;
 use App\Domain\Wallet\Models\CustomerWalletEntry;
@@ -35,6 +36,12 @@ final class ReverseWalletEntry
     {
         if (! $entry->type->isReversibleByHand()) {
             throw WalletEntryCannotBeReversed::notByHand($entry->type->label());
+        }
+
+        // Money EzonePay confirmed it took: undoing it by hand would leave «Ezone» short of what
+        // EzonePay will pay out. A refund to the customer goes through EzonePay, not this.
+        if ($entry->method === TopUpMethod::Online) {
+            throw WalletEntryCannotBeReversed::online();
         }
 
         return DB::transaction(function () use ($entry, $reason, $actorId): CustomerWalletEntry {

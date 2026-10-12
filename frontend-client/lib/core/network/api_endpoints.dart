@@ -96,6 +96,22 @@ abstract final class WalletEndpoints {
   static String payOrder(int orderId) => '/client/orders/$orderId/pay-from-wallet';
 }
 
+/// «اشحن محفظتك» عبر EzonePay — CUSTOMER-WALLET §٥. المحاولةُ محاولةُ صاحب التوكن دائماً.
+abstract final class TopUpEndpoints {
+  /// الطرق بعمولتها وما بقي من حدودها، و`enabled`.
+  static const String methods = '/client/payments/methods';
+
+  /// ما يُخصم لمبلغٍ وطريقة — لا يكتب شيئاً.
+  static const String quote = '/client/payments/quote';
+
+  static const String start = '/client/payments/intents';
+
+  static String otp(String id) => '/client/payments/intents/$id/otp';
+
+  /// أين وصلت — تسألها صفحة البطاقة كل بضع ثوانٍ.
+  static String show(String id) => '/client/payments/intents/$id';
+}
+
 abstract final class OrderEndpoints {
   static const String index = '/client/orders';
   static const String store = '/client/orders';

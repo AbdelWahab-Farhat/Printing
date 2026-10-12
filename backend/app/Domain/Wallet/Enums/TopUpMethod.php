@@ -19,6 +19,12 @@ enum TopUpMethod: string
     case BankCard = 'bank_card';
     case Libyana = 'libyana';
 
+    /**
+     * «دفع إلكتروني» — through EzonePay, into «Ezone». **Never typed at the counter**: only a
+     * confirmed payment writes it (CUSTOMER-WALLET §٥), and it is never undone by hand.
+     */
+    case Online = 'online';
+
     public function label(): string
     {
         return match ($this) {
@@ -26,7 +32,18 @@ enum TopUpMethod: string
             self::BankTransfer => 'حوالة',
             self::BankCard => 'بطاقة مصرفية',
             self::Libyana => 'ليبيانا',
+            self::Online => 'دفع إلكتروني',
         };
+    }
+
+    /**
+     * The four a person records at the counter.
+     *
+     * @return list<self>
+     */
+    public static function atTheCounter(): array
+    {
+        return [self::Cash, self::BankTransfer, self::BankCard, self::Libyana];
     }
 
     /** A transfer's only proof is the paper the customer sends — the order payments' rule. */

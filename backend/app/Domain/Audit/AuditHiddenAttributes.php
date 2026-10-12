@@ -97,6 +97,8 @@ final class AuditHiddenAttributes
         'treasury_operation' => ['client_token'],
         'vendor_payment' => ['client_token'],
         'customer_wallet_entry' => ['client_token'],
+        // The provider's raw answer and what we sent it are for the `ezone` log, not the history.
+        'payment_intent' => ['client_token', 'provider_response', 'customer_info'],
         'notification' => ['dedupe_key'],
     ];
 

@@ -27,7 +27,8 @@ class TopUpWalletRequest extends FormRequest
         return [
             'amount' => ['required', 'decimal:0,2', 'min:0.01', 'max:9999999999'],
 
-            'method' => ['required', Rule::enum(TopUpMethod::class)],
+            // Not «دفع إلكتروني»: only a confirmed EzonePay payment writes that.
+            'method' => ['required', Rule::enum(TopUpMethod::class)->only(TopUpMethod::atTheCounter())],
 
             'reference' => ['nullable', 'string', 'max:100'],
 

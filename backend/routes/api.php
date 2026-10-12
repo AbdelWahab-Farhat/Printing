@@ -14,6 +14,8 @@ use App\Application\Api\V1\Controllers\CustomerWalletController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\ExpenseCategoryController;
+use App\Application\Api\V1\Controllers\EzonePayWebhookController;
+use App\Application\Api\V1\Controllers\FakeEzonePayController;
 use App\Application\Api\V1\Controllers\FundBreakdownController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
@@ -24,6 +26,7 @@ use App\Application\Api\V1\Controllers\InvestorPortalController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\NotificationController;
+use App\Application\Api\V1\Controllers\OnlinePaymentController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\OrderPaymentReviewController;
@@ -59,6 +62,7 @@ use App\Application\Api\V1\Controllers\WarehouseController;
 use App\Application\Api\V1\Controllers\WarehouseStockController;
 use App\Application\Api\V1\Middleware\ArchivedOrderShortagesNeedTheArchiveGrant;
 use App\Application\Api\V1\Middleware\ArchivedOrdersNeedTheArchiveGrant;
+use App\Application\Api\V1\Middleware\VerifyEzonePaySignature;
 use App\Application\Api\V1\Middleware\VerifyNawrisWebhook;
 use Illuminate\Support\Facades\Route;
 
@@ -86,17 +90,37 @@ Route::prefix('v1')->group(function (): void {
      * free retry loop for anyone holding the token.
      */
     Route::post('webhooks/nawris', NawrisWebhookController::class)
-        ->middleware([VerifyNawrisWebhook::class, 'throttle:120,1'])
+        ->middleware([VerifyNawrisWebhook::class, 'throttle:120,1,nawris-webhook'])
         ->name('webhooks.nawris');
+
+    // EzonePay's webhook — CUSTOMER-WALLET §٥. Outside `auth:sanctum` like Nawris's; guarded by
+    // the signature over the raw body, failing closed without a secret. Throttled the same way.
+    Route::post('webhooks/ezonepay', EzonePayWebhookController::class)
+        ->middleware([VerifyEzonePaySignature::class, 'throttle:120,1,ezonepay-webhook'])
+        ->name('webhooks.ezonepay');
+
+    // The pretend card page of `EZONE_PAY_DRIVER=fake` — never registered in production, and
+    // answering 404 wherever the real gateway is bound.
+    if (! app()->isProduction()) {
+        Route::get('fake-ezone/pay/{link}', [FakeEzonePayController::class, 'show'])
+            ->whereNumber('link')->name('fake-ezone.show');
+        Route::post('fake-ezone/pay/{link}', [FakeEzonePayController::class, 'pay'])
+            ->whereNumber('link')->middleware('throttle:30,1,fake-ezone')->name('fake-ezone.pay');
+    }
 
     Route::prefix('auth')->name('auth.')->group(function (): void {
         // Throttled: unauthenticated and worth brute-forcing.
+        //
+        // **Every limit in this file has its own counter** (the third argument). Laravel keys
+        // `throttle:N,1` by the user — or, signed out, the IP — and not by the route, so two
+        // limits without one share a count: sixty realtime sign-ins a minute used up the six
+        // announcements, and an office behind one IP shared its logins with its registrations.
         Route::post('register', [AuthController::class, 'register'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,staff-register')
             ->name('register');
 
         Route::post('login', [AuthController::class, 'login'])
-            ->middleware('throttle:6,1')
+            ->middleware('throttle:6,1,staff-login')
             ->name('login');
 
         Route::middleware('auth:sanctum')->group(function (): void {
@@ -127,7 +151,7 @@ Route::prefix('v1')->group(function (): void {
         // قصد**: الإذن يختلف باختلاف القناة، فمكانه القناةُ نفسها في routes/channels.php — قناةُ
         // المكتب تسأل `support.view`. ومُقيَّد، لأن كل عودةٍ للاتصال تطرق هذا الباب من جديد.
         Route::post('broadcasting/auth', RealtimeAuthController::class)
-            ->middleware('throttle:60,1')->name('broadcasting.auth');
+            ->middleware('throttle:60,1,staff-realtime')->name('broadcasting.auth');
 
         // ── access management ───────────────────────────────────────────────────────────
         Route::get('permissions', [PermissionController::class, 'index'])
@@ -200,6 +224,19 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:customers.wallet.view')->name('wallet-entries.index');
         Route::post('wallet-entries/{entry}/reverse', [CustomerWalletController::class, 'reverse'])
             ->middleware('can:customers.wallet.reverse')->name('wallet-entries.reverse');
+
+        // «المدفوعات الإلكترونية» — CUSTOMER-WALLET §٥. «تحويل Ezone إلى المصرف» is a transfer like
+        // any other, behind `treasury.record`.
+        Route::get('online-payments', [OnlinePaymentController::class, 'index'])
+            ->middleware('can:payments.online.view')->name('online-payments.index');
+        Route::post('online-payments/{intent}/recheck', [OnlinePaymentController::class, 'recheck'])
+            ->middleware('can:payments.online.reconcile')->name('online-payments.recheck');
+        Route::get('online-payment-methods', [OnlinePaymentController::class, 'methods'])
+            ->middleware('can:payments.online.view')->name('online-payment-methods.index');
+        Route::patch('online-payment-methods/{method}', [OnlinePaymentController::class, 'updateMethod'])
+            ->middleware('can:payments.online.manage')->name('online-payment-methods.update');
+        Route::post('ezone-payouts', [OnlinePaymentController::class, 'payout'])
+            ->middleware('can:treasury.record')->name('ezone-payouts.store');
 
         // A customer's artwork. `scoped()` makes {design} resolve *within* {customer}, so
         // another customer's design id is a 404 by construction rather than by a check somebody
@@ -1013,7 +1050,7 @@ Route::prefix('v1')->group(function (): void {
         // the permission decides who may interrupt everybody, the throttle stops a
         // double-tapped send button doing it twice.
         Route::post('notifications/announcements', [NotificationController::class, 'sendAnnouncement'])
-            ->middleware(['can:notifications.broadcast', 'throttle:6,1'])
+            ->middleware(['can:notifications.broadcast', 'throttle:6,1,announcements'])
             ->name('notifications.announcements.store');
 
         Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])

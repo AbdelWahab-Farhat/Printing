@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Domain\Wallet;
 
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\MovementDirection;
+use App\Domain\Treasury\Enums\MovementKind;
+use App\Domain\Treasury\TreasuryService;
 use App\Domain\Wallet\Actions\AdjustWallet;
 use App\Domain\Wallet\Actions\ReverseWalletEntry;
 use App\Domain\Wallet\Actions\TopUpWallet;
 use App\Domain\Wallet\DTOs\TopUpData;
+use App\Domain\Wallet\Enums\TopUpMethod;
 use App\Domain\Wallet\Enums\WalletEntryType;
 use App\Domain\Wallet\Exceptions\WalletBalanceTooLow;
 use App\Domain\Wallet\Models\CustomerWalletEntry;
@@ -38,6 +43,7 @@ final class WalletService
         private readonly TopUpWallet $topUp,
         private readonly AdjustWallet $adjust,
         private readonly ReverseWalletEntry $reverse,
+        private readonly TreasuryService $treasury,
     ) {}
 
     public function balanceOf(int $customerId): string
@@ -164,6 +170,72 @@ final class WalletService
         Customer::query()->whereKey($customerId)->lockForUpdate()->firstOrFail();
 
         return $this->writeOrderEntry(WalletEntryType::OrderRefund, $customerId, $orderId, $orderPaymentId, $amount, $occurredAt, $actorId, $notes);
+    }
+
+    /**
+     * A top-up the payment provider confirmed. CUSTOMER-WALLET §٥.
+     *
+     * The wallet receives `net`, exactly what the customer was quoted. The provider's account
+     * receives `gross` — what it charged — and what it kept leaves it at once as an expense, so its
+     * balance is what it will pay out. «أرصدة محافظ الزبائن» owes `net` more. Locks the customer;
+     * call inside the transaction that marks the attempt settled.
+     */
+    public function creditOnlineTopUp(
+        int $customerId,
+        string $net,
+        string $gross,
+        string $fee,
+        int $providerAccountId,
+        string $reference,
+        DateTimeInterface $occurredAt,
+    ): CustomerWalletEntry {
+        $customer = Customer::query()->whereKey($customerId)->lockForUpdate()->firstOrFail();
+
+        $entry = new CustomerWalletEntry([
+            'amount' => $net,
+            'reference' => $reference,
+            'occurred_at' => $occurredAt,
+            'notes' => null,
+        ]);
+
+        $entry->customer_id = $customerId;
+        $entry->type = WalletEntryType::Topup;
+        $entry->method = TopUpMethod::Online;
+        $entry->treasury_account_id = $providerAccountId;
+        $entry->save();
+
+        $payable = $this->treasury->customerWalletsPayable();
+        $notes = "شحن إلكتروني — {$customer->name}";
+
+        $this->treasury->post(new MovementData(
+            accountId: $providerAccountId,
+            direction: MovementDirection::In,
+            kind: MovementKind::WalletTopup,
+            amount: $gross,
+            occurredAt: $occurredAt,
+            sourceType: $entry->getMorphClass(),
+            sourceId: (int) $entry->getKey(),
+            notes: $notes,
+            counterpartAccountId: (int) $payable->getKey(),
+        ));
+
+        $this->treasury->post(new MovementData(
+            accountId: (int) $payable->getKey(),
+            direction: MovementDirection::Out,
+            kind: MovementKind::WalletTopup,
+            amount: $net,
+            occurredAt: $occurredAt,
+            sourceType: $entry->getMorphClass(),
+            sourceId: (int) $entry->getKey(),
+            notes: $notes,
+            counterpartAccountId: $providerAccountId,
+        ));
+
+        if (Money::isPositive($fee)) {
+            $this->treasury->recordGatewayFee($providerAccountId, $fee, $occurredAt, "عمولة شحن إلكتروني {$reference}");
+        }
+
+        return $entry;
     }
 
     /** The money of a reversed payment from the wallet comes back. Null: it never touched one. */

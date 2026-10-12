@@ -44,6 +44,8 @@ use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Marketing\Models\Billboard;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\OnlinePayment\Models\OnlinePaymentMethod;
+use App\Domain\OnlinePayment\Models\PaymentIntent;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -204,6 +206,10 @@ enum AuditSubject: string
     // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md.
     case CustomerWalletEntry = 'customer_wallet_entry';
 
+    // الشحن الإلكتروني — CUSTOMER-WALLET §٥. `gateway_webhook_event` is absent, like Nawris's.
+    case PaymentIntent = 'payment_intent';
+    case OnlinePaymentMethod = 'online_payment_method';
+
     /**
      * @return class-string<Model>
      */
@@ -275,6 +281,8 @@ enum AuditSubject: string
             self::VendorPayment => VendorPayment::class,
             self::TreasurySetting => TreasurySetting::class,
             self::CustomerWalletEntry => CustomerWalletEntry::class,
+            self::PaymentIntent => PaymentIntent::class,
+            self::OnlinePaymentMethod => OnlinePaymentMethod::class,
         };
     }
 
@@ -349,6 +357,8 @@ enum AuditSubject: string
             self::VendorPayment => 'دفعة مورد',
             self::TreasurySetting => 'إعدادات المالية',
             self::CustomerWalletEntry => 'حركة محفظة عميل',
+            self::PaymentIntent => 'محاولة دفع إلكتروني',
+            self::OnlinePaymentMethod => 'طريقة دفع إلكتروني',
         };
     }
 

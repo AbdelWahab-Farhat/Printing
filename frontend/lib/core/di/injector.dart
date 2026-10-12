@@ -145,6 +145,11 @@ import 'package:dayaa/features/notifications/usecases/mark_notification_read.dar
 import 'package:dayaa/features/notifications/usecases/register_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/release_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
+import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payment_methods_cubit.dart';
+import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payments_cubit.dart';
+import 'package:dayaa/features/online_payments/repositories/online_payment_repository.dart';
+import 'package:dayaa/features/online_payments/repositories/online_payment_repository_impl.dart';
+import 'package:dayaa/features/online_payments/usecases/online_payment_usecases.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
@@ -402,6 +407,7 @@ abstract final class Injector {
     _registerInvestmentFund();
     _registerTreasury();
     _registerWallet();
+    _registerOnlinePayments();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -736,6 +742,31 @@ abstract final class Injector {
           customerId: customerId,
           getEntries: sl<GetCustomerWalletEntries>(),
           reverseEntry: sl<ReverseCustomerWalletEntry>(),
+        ),
+      );
+  }
+
+  /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، وطرقه، و«تحويل Ezone إلى المصرف».
+  /// Docs/payments/CUSTOMER-WALLET.md §٥.
+  static void _registerOnlinePayments() {
+    sl
+      ..registerLazySingleton<OnlinePaymentRepository>(() => OnlinePaymentRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetPaymentIntents>(() => GetPaymentIntents(sl<OnlinePaymentRepository>()))
+      ..registerLazySingleton<RecheckPaymentIntent>(() => RecheckPaymentIntent(sl<OnlinePaymentRepository>()))
+      ..registerLazySingleton<GetOnlinePaymentMethods>(
+        () => GetOnlinePaymentMethods(sl<OnlinePaymentRepository>()),
+      )
+      ..registerLazySingleton<UpdateOnlinePaymentMethod>(
+        () => UpdateOnlinePaymentMethod(sl<OnlinePaymentRepository>()),
+      )
+      ..registerLazySingleton<RecordEzonePayout>(() => RecordEzonePayout(sl<OnlinePaymentRepository>()))
+      ..registerFactory<OnlinePaymentsCubit>(
+        () => OnlinePaymentsCubit(getIntents: sl<GetPaymentIntents>(), recheck: sl<RecheckPaymentIntent>()),
+      )
+      ..registerFactory<OnlinePaymentMethodsCubit>(
+        () => OnlinePaymentMethodsCubit(
+          getMethods: sl<GetOnlinePaymentMethods>(),
+          updateMethod: sl<UpdateOnlinePaymentMethod>(),
         ),
       );
   }

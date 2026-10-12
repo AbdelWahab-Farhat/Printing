@@ -91,7 +91,7 @@ final class RecordOperation
                 [$from, $to] = [$to, null];
             }
 
-            $this->guardAccounts($data->type, $from, $to);
+            $this->guardAccounts($data->type, $from, $to, $data->ezonePayout);
             $this->guardCheckpoints($data, $from, $to);
 
             $category = $this->category($data);
@@ -167,14 +167,28 @@ final class RecordOperation
      * - Any other payable takes its opening, an expense bought on credit, a transfer (borrowing
      *   from it or repaying into it) and a count — not a deposit or a withdrawal, which say
      *   money arrived or left when none did.
+     * - «Ezone» takes its opening and a count; money leaves it by «تحويل Ezone إلى المصرف» alone
+     *   (its transfer and what EzonePay kept), and nothing arrives in it by hand.
      */
-    private function guardAccounts(OperationType $type, ?TreasuryAccount $from, ?TreasuryAccount $to): void
+    private function guardAccounts(OperationType $type, ?TreasuryAccount $from, ?TreasuryAccount $to, bool $ezonePayout): void
     {
         foreach (array_filter([$from, $to]) as $account) {
             $field = $account === $from && $type !== OperationType::Opening ? 'from_account_id' : 'to_account_id';
 
             if (! $account->is_active) {
                 throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+            }
+
+            if ($account->isEzone()) {
+                $counted = $type === OperationType::Opening || $type === OperationType::Adjustment;
+                $paidOut = $ezonePayout && $account === $from
+                    && ($type === OperationType::Transfer || $type === OperationType::Expense);
+
+                if (! $counted && ! $paidOut) {
+                    throw AccountDoesNotFitMethod::ezone((string) $account->name, $field);
+                }
+
+                continue;
             }
 
             if ($account->isVendorPayable()) {

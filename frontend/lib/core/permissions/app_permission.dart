@@ -350,6 +350,12 @@ enum AppPermission {
   adjustCustomerWallets('customers.wallet.adjust', 'تعديل رصيد محفظة عميل'),
   reverseCustomerWalletEntries('customers.wallet.reverse', 'عكس حركة على محفظة عميل'),
 
+  // الدفع الإلكتروني عبر EzonePay — CUSTOMER-WALLET §٥. تحويلُ Ezone إلى المصرف تحت
+  // `treasury.record` كأيّ تحويل.
+  viewOnlinePayments('payments.online.view', 'عرض المدفوعات الإلكترونية'),
+  reconcileOnlinePayments('payments.online.reconcile', 'إعادة التحقق من دفعة إلكترونية'),
+  manageOnlinePaymentMethods('payments.online.manage', 'إدارة طرق الدفع الإلكتروني وحدودها'),
+
   // دفعات الموردين — قسمةُ `orders.payments.*` نفسها، في الاتجاه الآخر.
   viewVendorPayments('vendors.payments.view', 'عرض دفعات الموردين'),
   recordVendorPayments('vendors.payments.record', 'تسجيل دفعة لمورد'),

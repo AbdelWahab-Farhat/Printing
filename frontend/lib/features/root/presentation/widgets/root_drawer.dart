@@ -206,6 +206,13 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.walletTransactions,
           permission: AppPermission.viewCustomerWallets,
         ),
+        // «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، ورصيد «Ezone». CUSTOMER-WALLET §٥.
+        _Link(
+          icon: _LinkIcon.onlinePayments,
+          label: 'المدفوعات الإلكترونية',
+          route: Routes.onlinePayments,
+          permission: AppPermission.viewOnlinePayments,
+        ),
         // «تسوية الدفعات» خرجت من هنا — صارت «مراجعة وتسوية الدفعات» تحت «حالات الدفع» في
         // الرئيسية، قرار صاحب العمل ٢٠٢٦-١٠-٠٨.
         // الافتراضيات والقواعد وتاريخ القفل ووجهة العهدة — للمالك. التصنيفاتُ صفٌّ وحدها أدناه.
@@ -516,11 +523,13 @@ enum _LinkIcon {
   orderArchive,
   treasury,
   wallet,
+  onlinePayments,
   expense;
 
   IconData get data => switch (this) {
     _LinkIcon.treasury => AppIcons.treasury,
     _LinkIcon.wallet => AppIcons.wallet,
+    _LinkIcon.onlinePayments => AppIcons.mobileWallet,
     _LinkIcon.expense => AppIcons.expense,
     _LinkIcon.products => AppIcons.products,
     _LinkIcon.productCategory => AppIcons.productCategory,
