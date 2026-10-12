@@ -46,4 +46,20 @@ void main() {
           'this.',
     );
   });
+
+  test('القراءة من التخزين التي يفترضها الدمج تُنزع', () {
+    // Arrange — `file_saver` يطلب `WRITE_EXTERNAL_STORAGE` حتى أندرويد ٩ ليحفظ التصميم، ودامجُ
+    // البيان يفترض معه `READ_EXTERNAL_STORAGE` **بلا حدٍّ أعلى** — إذنٌ يسأل عنه متجر Play ولا
+    // يحتاجه شيءٌ هنا. لا يظهر إلا في البيان المدموج، فيُحرس من المصدر.
+    final xml = manifest.readAsStringSync();
+
+    // Act
+    final removes = RegExp(
+      r'<uses-permission\s+android:name\s*=\s*"android\.permission\.READ_EXTERNAL_STORAGE"'
+      r'\s+tools:node\s*=\s*"remove"\s*/?>',
+    ).hasMatch(xml);
+
+    // Assert
+    expect(removes, isTrue);
+  });
 }

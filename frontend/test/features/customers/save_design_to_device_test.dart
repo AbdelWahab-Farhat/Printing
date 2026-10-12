@@ -1,23 +1,29 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/device_saver.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// «تحميل» — what the file is called when it lands on the phone, and what happens when it
-/// cannot be fetched at all.
+/// «تحميل» — ما اسم الملف حين يصل الهاتف، وأين يذهب، وما يحدث حين لا يُجلب أصلاً.
 ///
-/// The write itself is not tested here: it is `File.writeAsBytes` into a directory the OS
-/// chooses, and a test that mocks `path_provider` to assert Dart can write a file proves
-/// nothing about this app. What *is* ours is the name and the refusals.
+/// الحفظ نفسه خلف [DeviceSaver] (اختباره في `core/files`)؛ ما لهذا الصنف هو الاسم، والنوع،
+/// واختيار المكان: الصورة إلى «الصور» وما سواها إلى «التنزيلات» / «الملفات».
 ///
-/// Arrange - Act - Assert throughout.
+/// Arrange - Act - Assert في كل اختبار.
 class _MockDesignRepository extends Mock implements CustomerDesignRepository {}
+
+class _MockDeviceSaver extends Mock implements DeviceSaver {}
 
 void main() {
   late _MockDesignRepository repository;
+  late _MockDeviceSaver saver;
+  late Directory temp;
   late SaveDesignToDevice save;
 
   CustomerDesign design({
@@ -41,8 +47,27 @@ void main() {
 
   setUp(() {
     repository = _MockDesignRepository();
-    save = SaveDesignToDevice(repository);
+    saver = _MockDeviceSaver();
+    temp = Directory.systemTemp.createTempSync('save-design-test-');
+    save = SaveDesignToDevice(repository, saver, temporaryDirectory: () async => temp);
   });
+
+  tearDown(() {
+    temp.deleteSync(recursive: true);
+  });
+
+  // البايتات تصل، والهاتف يقبل المكان الذي يُطلب منه — ما يختلف بين الاختبارات هو التصميم.
+  void fileArrives() {
+    when(() => repository.fileBytes(any())).thenAnswer(
+      (_) async => Right(Uint8List.fromList([1, 2, 3])),
+    );
+    when(
+      () => saver.toPhotos(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+    ).thenAnswer((_) async => const Right(SavePlace.photos));
+    when(
+      () => saver.toFiles(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+    ).thenAnswer((_) async => const Right(SavePlace.downloads));
+  }
 
   group('what the saved file is called', () {
     test('the label is the name, so it is findable afterwards', () {
@@ -147,9 +172,7 @@ void main() {
 
     test('the URL the screen is holding now is the one fetched', () async {
       // Arrange — links are signed per request, so a stored address is a 403 waiting to happen.
-      // The fetch is made to fail on purpose: what this asserts is the *address*, and letting
-      // it succeed would take the test into `path_provider`, which has no binding here and
-      // would be testing that Dart can write a file.
+      // The fetch is made to fail on purpose: what this asserts is the *address*.
       when(() => repository.fileBytes(any())).thenAnswer(
         (_) async => const Left(Failure.network(message: 'لا يوجد اتصال')),
       );
@@ -160,6 +183,117 @@ void main() {
 
       // Assert
       verify(() => repository.fileBytes('https://files.example/x.png?signature=fresh')).called(1);
+    });
+  });
+
+  group('where it goes', () {
+    test('an image goes to «الصور», named and typed', () async {
+      // Arrange
+      fileArrives();
+
+      // Act
+      final result = await save(design(mimeType: 'image/png'));
+
+      // Assert — الصورة تُحفظ حيث تُحفظ الصور، لا ورقة مشاركة.
+      expect(result.getOrElse(() => null), SavePlace.photos);
+      verify(
+        () => saver.toPhotos(path: '${temp.path}/شعار المخبز.png', mimeType: 'image/png'),
+      ).called(1);
+    });
+
+    test('a PDF goes to «التنزيلات» / «الملفات», not to «الصور»', () async {
+      // Arrange — مكتبة الصور لا تقبل PDF على المنصّتين.
+      fileArrives();
+
+      // Act
+      final result = await save(design(kind: DesignKind.pdf, mimeType: 'application/pdf'));
+
+      // Assert
+      expect(result.getOrElse(() => null), SavePlace.downloads);
+      verify(
+        () => saver.toFiles(path: '${temp.path}/شعار المخبز.pdf', mimeType: 'application/pdf'),
+      ).called(1);
+      verifyNever(
+        () => saver.toPhotos(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+      );
+    });
+
+    test('the type follows the extension the file is saved with', () async {
+      // Arrange — ملفٌّ اسمه .jpg بنوع image/png يقرؤه المعرض بغير ما هو؛ الامتداد هو ما يبقى.
+      fileArrives();
+
+      // Act
+      await save(design(originalFilename: 'logo.JPG', mimeType: 'image/png'));
+
+      // Assert
+      verify(
+        () => saver.toPhotos(path: '${temp.path}/شعار المخبز.jpg', mimeType: 'image/jpeg'),
+      ).called(1);
+    });
+
+    test('a webp is still a picture', () async {
+      // Arrange
+      fileArrives();
+
+      // Act
+      await save(design(originalFilename: 'logo.webp'));
+
+      // Assert
+      verify(
+        () => saver.toPhotos(path: '${temp.path}/شعار المخبز.webp', mimeType: 'image/webp'),
+      ).called(1);
+    });
+
+    test('the phone\'s refusal is what comes back', () async {
+      // Arrange
+      fileArrives();
+      when(
+        () => saver.toPhotos(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+      ).thenAnswer((_) async => const Left(Failure.unexpected(message: 'تعذّر حفظ التصميم')));
+
+      // Act
+      final result = await save(design(mimeType: 'image/png'));
+
+      // Assert
+      expect(result.fold((failure) => failure.message, (_) => null), 'تعذّر حفظ التصميم');
+    });
+
+    test('a design that could not be fetched never reaches the phone\'s storage', () async {
+      // Arrange
+      fileArrives();
+      when(() => repository.fileBytes(any())).thenAnswer(
+        (_) async => const Left(Failure.network(message: 'لا يوجد اتصال')),
+      );
+
+      // Act
+      final result = await save(design());
+
+      // Assert
+      expect(result.isLeft(), isTrue);
+      verifyNever(
+        () => saver.toPhotos(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+      );
+      verifyNever(
+        () => saver.toFiles(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+      );
+    });
+  });
+
+  group('fetching for the bag preview', () {
+    test('the file is written to the temp directory and its path returned', () async {
+      // Arrange — المعاينة ترسم الملف، فتحتاج مساره لا مكاناً في «الصور».
+      fileArrives();
+
+      // Act
+      final result = await save.fetch(design(mimeType: 'image/png'));
+
+      // Assert
+      final path = result.getOrElse(() => '');
+      expect(path, '${temp.path}/شعار المخبز.png');
+      expect(File(path).readAsBytesSync(), [1, 2, 3]);
+      verifyNever(
+        () => saver.toPhotos(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
+      );
     });
   });
 }

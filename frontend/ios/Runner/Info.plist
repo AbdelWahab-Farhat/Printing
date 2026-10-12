@@ -45,8 +45,20 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<!--
+		«تحميل» يحفظ ملف PDF في مجلد «المستندات» للتطبيق، وهذان المفتاحان يُظهرانه في تطبيق
+		«الملفات»: «على الـiPhone» ← مجلد التطبيق. بدونهما يُحفظ الملف حيث لا يراه أحد. آيفون لا
+		«تنزيلات» مشتركة فيه يكتب إليها تطبيق، وهذا ما يفعله كل تطبيقٍ يحفظ ملفاً بلا نافذة.
+		والمجلد لا يحمل غير ما حُفظ هكذا: الذاكرة المؤقتة وقاعدة صور الشبكة في مجلداتٍ أخرى.
+	-->
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<true/>
+		<!--
 		Why this app asks for the camera, the photo library and location, in the words iOS shows
 		the user in the permission alert.
+
+		NSPhotoLibraryAddUsageDescription أضيقُها: إضافةٌ إلى «الصور» بلا قراءتها. يُسأل مرةً عند
+		أول «تحميل» لصورة، ومن رفضه ذهبت صورته إلى «الملفات» بدلها. و«حفظ الصورة» في ورقة
+		المشاركة (رمز QR، معاينة الكيس) يحتاجه أيضاً، وبدونه يُغلق التطبيق عند الحفظ.
 
 		In Arabic, and deliberately: this app has one language and its users are the staff of a
 		printing business in Libya. An English sentence in the one system alert they cannot skip
@@ -70,6 +82,8 @@
 		<string>لتصوير تصميم أو عيّنة مطبوعة وإضافتها مباشرةً إلى تصاميم العميل.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>لا يتتبّع التطبيق موقعك ولا يطلبه. تظهر هذه الرسالة لأن منتقي الصور قادر على قراءة مكان التقاط الصورة المحفوظ داخلها، ولا نقرأه.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>لحفظ تصاميم العملاء ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>لاختيار تصاميم العميل من صورك — كالتي تصلك عبر واتساب — ورفعها إلى ملفه.</string>
 		<key>UIApplicationSceneManifest</key>
@@ -94,6 +108,9 @@
 			</dict>
 		</dict>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
+		<true/>
+		<!-- مع `LSSupportsOpeningDocumentsInPlace` أعلاه: مجلد التطبيق في «الملفات». -->
+		<key>UIFileSharingEnabled</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>
 		<string>LaunchScreen</string>

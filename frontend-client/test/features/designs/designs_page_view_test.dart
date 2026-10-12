@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/files/device_saver.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/dismiss_keyboard.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
@@ -29,6 +30,8 @@ import 'package:mocktail/mocktail.dart';
 ///
 /// Arrange - Act - Assert throughout.
 class _MockDesignRepository extends Mock implements DesignRepository {}
+
+class _MockDeviceSaver extends Mock implements DeviceSaver {}
 
 void main() {
   late _MockDesignRepository repository;
@@ -66,13 +69,15 @@ void main() {
     repository = _MockDesignRepository();
     when(() => repository.list()).thenAnswer((_) async => const Right([logo, brief]));
     // الجلب يفشل عمداً: ما يُختبر هو أن التحميل طلبه، ونجاحه كان سيأخذ الاختبار إلى
-    // `path_provider` وورقة المشاركة، ولا ربط لهما هنا.
+    // `path_provider` وحفظ الهاتف، ولا ربط لهما هنا.
     when(
       () => repository.fileBytes(any()),
     ).thenAnswer((_) async => const Left(NetworkFailure(message: 'لا يوجد اتصال')));
 
     sl
-      ..registerLazySingleton<SaveDesignToDevice>(() => SaveDesignToDevice(repository))
+      ..registerLazySingleton<SaveDesignToDevice>(
+        () => SaveDesignToDevice(repository, _MockDeviceSaver()),
+      )
       ..registerFactory<DesignsCubit>(
         () => DesignsCubit(
           list: ListDesigns(repository),

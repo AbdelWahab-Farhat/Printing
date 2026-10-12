@@ -91,11 +91,16 @@ dependencies:
   # ولا حاجة لنا بها. `open_file` يدعم Swift Package Manager على iOS، ولا يضيف إلا FileProvider.
   open_file: ^4.0.0
   # Handing a generated file to the system's own share sheet, where «حفظ الصورة» and «حفظ في
-  # الملفات» are rows the OS provides. Deliberately not a gallery-writing package (gal,
-  # image_gallery_saver): those need the photo-library permission on both platforms, and a
-  # customer who only wanted to send their QR code to the printer should not meet a permission
-  # prompt to do it.
+  # الملفات» are rows the OS provides — رمز QR ومعاينة الكيس وملفات محادثة الدعم: ما يُرسَل.
   share_plus: ^12.0.2
+  # «تحميل» التصميم يحفظ ولا يشارك (طُلب ٢٠٢٦-١٠-١٢: كان يفتح ورقة المشاركة). الصورة إلى
+  # «الصور»، والـPDF إلى «التنزيلات» على أندرويد و«الملفات» على آيفون — بلا نافذة.
+  #
+  # **`file_saver` لا `gal`**: `gal` يحفظ الصور وحدها، والتصاميم فيها PDF. وهذه تحفظ الاثنين،
+  # وتدعم Swift Package Manager، ولا تضيف إلى أندرويد إلا `WRITE_EXTERNAL_STORAGE` حتى أندرويد ٩
+  # (`maxSdkVersion=28`). على آيفون تسأل مرةً إذنَ **الإضافة** إلى الصور وحده، لا قراءتها.
+  # منقولٌ عن تطبيق الموظفين، ومعه `dependency_overrides` أسفل هذا الملف.
+  file_saver: ^0.7.0
   # Where that temporary file goes. Declared because our own code names it, which is what
   # `depend_on_referenced_packages` is for.
   path_provider: ^2.1.6
@@ -142,6 +147,12 @@ dev_dependencies:
   bloc_test: ^10.0.0
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.4
+
+# `file_saver` ≥0.5 يطلب `meta ^1.19.0`، وFlutter 3.44 يثبّت `meta 1.18.0` في `flutter_test`.
+# والفرق بينهما لا يمسّ شيئاً: 1.19.0 يُخرج `@RecordUse` و`@mustBeConst` من «التجريبي» لا غير.
+# **يُحذف هذا السطر** يوم يثبّت Flutter نفسه 1.19 أو أحدث — عندها لا عمل له.
+dependency_overrides:
+  meta: 1.19.0
 
 # The launcher icon, generated from the one logo.
 #

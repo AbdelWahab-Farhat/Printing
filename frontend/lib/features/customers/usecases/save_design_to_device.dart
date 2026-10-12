@@ -2,32 +2,57 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/device_saver.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Fetches a design and writes it somewhere the phone can hand to its own share sheet.
+/// «تحميل»: يجلب التصميم ويحفظه على الهاتف حيث يجده صاحبه — **بلا ورقة مشاركة**.
 ///
-/// **The temp directory, not Documents.** The file is a courier, not a copy: it exists for the
-/// two seconds between «تحميل» and the OS sheet where the person picks Photos, Files or
-/// WhatsApp. Keeping our own second library of every design anybody ever looked at would fill
-/// the phone with duplicates of files the server already holds.
+/// الصورة إلى «الصور»، والـPDF إلى «التنزيلات» على أندرويد و«الملفات» على آيفون. كان الزرّ
+/// يسلّم الملف لورقة المشاركة، ورُفض ذلك (٢٠٢٦-١٠-١٢): من يضغط «تحميل» يريد الملف على هاتفه.
 ///
-/// The filename is what the person will see in that sheet and in whatever they save it to, so
-/// it is built from the design's label rather than from the id — «شعار المخبز.png» is findable
-/// afterwards and `design-41` is not.
+/// **يُكتب أولاً في المجلد المؤقت** ثم يُنسخ منه إلى مكانه: معاينة الكيس تحتاج الملف نفسه بلا
+/// حفظ ([fetch])، و[DeviceSaver] يأخذ مساراً لا بايتات فلا يُحمل الملف في الذاكرة مرتين.
+///
+/// واسم الملف هو ما سيراه صاحبه في «الصور» و«الملفات»، فيُبنى من اسم التصميم لا من رقمه —
+/// «شعار المخبز.png» يُعثر عليه بعد أسبوع و`design-41` لا.
 class SaveDesignToDevice {
-  const SaveDesignToDevice(this._repository);
+  SaveDesignToDevice(
+    this._repository,
+    this._saver, {
+    Future<Directory> Function()? temporaryDirectory,
+  }) : _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
 
   final CustomerDesignRepository _repository;
+  final DeviceSaver _saver;
+  final Future<Directory> Function() _temporaryDirectory;
 
-  /// The written file's path, ready to be shared.
-  Future<Either<Failure, String>> call(CustomerDesign design) async {
+  /// أين حُفظ — أو `null` حين أغلق صاحبه نافذة «حفظ باسم».
+  Future<Either<Failure, SavePlace?>> call(CustomerDesign design) async {
+    final fetched = await fetch(design);
+
+    return fetched.fold<Future<Either<Failure, SavePlace?>>>(
+      (failure) async => Left(failure),
+      (path) {
+        final mimeType = mimeTypeFor(design);
+
+        return mimeType.startsWith('image/')
+            ? _saver.toPhotos(path: path, mimeType: mimeType)
+            : _saver.toFiles(path: path, mimeType: mimeType);
+      },
+    );
+  }
+
+  /// الملف في المجلد المؤقت ومساره — لمعاينة الكيس، التي ترسمه ولا تحفظه.
+  ///
+  /// والرابط الموقَّع تنتهي صلاحيته، فيُجلب بما تحمله الشاشة **الآن** — ولذلك يُمرَّر التصميم لا
+  /// عنوانٌ محفوظ.
+  Future<Either<Failure, String>> fetch(CustomerDesign design) async {
     final url = design.fileUrl;
 
     if (url == null || url.isEmpty) {
-      // Not a network failure and not our bug: the row simply came without a link, which
-      // happens on an endpoint that did not load it.
+      // لا فشل شبكةٍ ولا خطأ منّا: الصف وصل بلا رابط، وهذا ما يحدث في ردٍّ لم يحمّله.
       return const Left(Failure.unexpected(message: 'لا يوجد رابط لهذا الملف'));
     }
 
@@ -36,7 +61,7 @@ class SaveDesignToDevice {
     return result.fold<Future<Either<Failure, String>>>(
       (failure) async => Left(failure),
       (bytes) async {
-        final directory = await getTemporaryDirectory();
+        final directory = await _temporaryDirectory();
         final file = File('${directory.path}/${fileNameFor(design)}');
         await file.writeAsBytes(bytes);
 
@@ -45,13 +70,13 @@ class SaveDesignToDevice {
     );
   }
 
-  /// `شعار المخبز.png` — the label, made safe for a filesystem, with the right extension.
+  /// `شعار المخبز.png` — اسم التصميم صالحاً لنظام الملفات، بامتداده الصحيح.
   ///
-  /// Public and static because it is pure and it is the one rule about what a saved design is
-  /// called; a test asserts on it directly rather than through a file write.
+  /// عامٌّ وثابت لأنه صافٍ، ولأنه القاعدة الوحيدة في اسم التصميم المحفوظ؛ فيختبره الاختبار
+  /// مباشرةً لا عبر كتابة ملف.
   static String fileNameFor(CustomerDesign design) {
-    // `/` and `\` end a path segment, and a name that is only punctuation leaves an empty
-    // filename — both are how a write fails with an error nobody can act on.
+    // `/` و`\` تُنهيان جزءاً من المسار، واسمٌ كلّه علامات يترك اسم ملفٍ فارغاً — وكلاهما كتابةٌ
+    // تفشل بخطأٍ لا يستطيع أحدٌ أن يفعل به شيئاً.
     final safe = design.label
         .replaceAll(RegExp(r'[/\\:*?"<>|]'), '-')
         .trim();
@@ -62,10 +87,26 @@ class SaveDesignToDevice {
     return base.toLowerCase().endsWith(extension) ? base : '$base$extension';
   }
 
-  /// The original file's extension when the server sent one, then the MIME type, then the kind.
+  /// النوع الذي يُحفظ به الملف، **من امتداد اسمه** لا مما قاله الخادم.
   ///
-  /// Order matters: the extension the customer's own file had is what the printer expects to
-  /// receive, and guessing `.png` for a `.jpg` produces a file some tools refuse to open.
+  /// «الصور» والمعرض يقرآن الملف بنوعه، ويعرضه «الملفات» بامتداده؛ فإن اختلفا كان ملفاً `.jpg`
+  /// يُعامَل كـPNG. والامتداد هو ما يبقى مع الملف، فهو الحَكَم. وهو أيضاً ما يقرّر «الصور» أم
+  /// «التنزيلات»: كل `image/*` صورة.
+  static String mimeTypeFor(CustomerDesign design) {
+    final name = fileNameFor(design).toLowerCase();
+
+    if (name.endsWith('.png')) return 'image/png';
+    if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+    if (name.endsWith('.webp')) return 'image/webp';
+    if (name.endsWith('.pdf')) return 'application/pdf';
+
+    return design.mimeType ?? 'application/octet-stream';
+  }
+
+  /// امتداد الملف الأصلي إن أرسله الخادم، ثم نوعه، ثم صنفه.
+  ///
+  /// والترتيب مقصود: الامتداد الذي كان لملف العميل هو ما تنتظره المطبعة، وتخمينُ `.png` لملف
+  /// `.jpg` ينتج ملفاً ترفض بعضُ الأدوات فتحه.
   static String _extensionFor(CustomerDesign design) {
     final original = design.originalFilename;
 

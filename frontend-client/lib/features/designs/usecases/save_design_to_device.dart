@@ -2,27 +2,55 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/files/device_saver.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// يجلب التصميم ويكتبه حيث يستطيع الهاتف أن يسلّمه لورقة المشاركة.
+/// «تحميل»: يجلب التصميم ويحفظه على الهاتف حيث يجده صاحبه — **بلا ورقة مشاركة**.
 ///
-/// **المجلد المؤقت لا «المستندات».** الملف ساعٍ لا نسخة: يعيش الثانيتين بين «تحميل» وورقة
-/// النظام التي يختار فيها صاحبه الصور أو «الملفات» أو واتساب. ومكتبةٌ ثانية من كل تصميمٍ فُتح
-/// تملأ الهاتف بنسخٍ من ملفاتٍ يحملها الخادم أصلاً.
+/// الصورة إلى «الصور»، والـPDF إلى «التنزيلات» على أندرويد و«الملفات» على آيفون. كان الزرّ
+/// يسلّم الملف لورقة المشاركة، ورُفض ذلك (٢٠٢٦-١٠-١٢): من يضغط «تحميل» يريد الملف على هاتفه.
 ///
-/// واسم الملف هو ما سيراه صاحبه في تلك الورقة وفيما يحفظ إليه، فيُبنى من اسم التصميم لا من
-/// رقمه — «شعار المخبز.png» يُعثر عليه بعدها و`design-41` لا.
+/// **يُكتب أولاً في المجلد المؤقت** ثم يُنسخ منه إلى مكانه: [DeviceSaver] يأخذ مساراً لا
+/// بايتات، فلا يُحمل الملف في الذاكرة مرتين.
+///
+/// واسم الملف هو ما سيراه صاحبه في «الصور» و«الملفات»، فيُبنى من اسم التصميم لا من رقمه —
+/// «شعار المخبز.png» يُعثر عليه بعدها و`design-41` لا.
 ///
 /// منقولٌ عن الصنف نفسه في تطبيق الموظفين.
 class SaveDesignToDevice {
-  const SaveDesignToDevice(this._repository);
+  SaveDesignToDevice(
+    this._repository,
+    this._saver, {
+    Future<Directory> Function()? temporaryDirectory,
+  }) : _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
 
   final DesignRepository _repository;
+  final DeviceSaver _saver;
+  final Future<Directory> Function() _temporaryDirectory;
 
-  /// مسار الملف المكتوب، جاهزاً للمشاركة.
-  Future<Either<Failure, String>> call(CustomerDesign design) async {
+  /// أين حُفظ — أو `null` حين أغلق صاحبه نافذة «حفظ باسم».
+  Future<Either<Failure, SavePlace?>> call(CustomerDesign design) async {
+    final fetched = await _fetch(design);
+
+    return fetched.fold<Future<Either<Failure, SavePlace?>>>(
+      (failure) async => Left(failure),
+      (path) {
+        final mimeType = mimeTypeFor(design);
+
+        return mimeType.startsWith('image/')
+            ? _saver.toPhotos(path: path, mimeType: mimeType)
+            : _saver.toFiles(path: path, mimeType: mimeType);
+      },
+    );
+  }
+
+  /// الملف في المجلد المؤقت ومساره.
+  ///
+  /// والرابط الموقَّع تنتهي صلاحيته، فيُجلب بما تحمله الشاشة **الآن** — ولذلك يُمرَّر التصميم لا
+  /// عنوانٌ محفوظ.
+  Future<Either<Failure, String>> _fetch(CustomerDesign design) async {
     final url = design.fileUrl;
 
     if (url == null || url.isEmpty) {
@@ -35,7 +63,7 @@ class SaveDesignToDevice {
     return result.fold<Future<Either<Failure, String>>>(
       (failure) async => Left(failure),
       (bytes) async {
-        final directory = await getTemporaryDirectory();
+        final directory = await _temporaryDirectory();
         final file = File('${directory.path}/${fileNameFor(design)}');
         await file.writeAsBytes(bytes);
 
@@ -59,6 +87,22 @@ class SaveDesignToDevice {
     final extension = _extensionFor(design);
 
     return base.toLowerCase().endsWith(extension) ? base : '$base$extension';
+  }
+
+  /// النوع الذي يُحفظ به الملف، **من امتداد اسمه** لا مما قاله الخادم.
+  ///
+  /// «الصور» والمعرض يقرآن الملف بنوعه، ويعرضه «الملفات» بامتداده؛ فإن اختلفا كان ملفاً `.jpg`
+  /// يُعامَل كـPNG. والامتداد هو ما يبقى مع الملف، فهو الحَكَم. وهو أيضاً ما يقرّر «الصور» أم
+  /// «التنزيلات»: كل `image/*` صورة.
+  static String mimeTypeFor(CustomerDesign design) {
+    final name = fileNameFor(design).toLowerCase();
+
+    if (name.endsWith('.png')) return 'image/png';
+    if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+    if (name.endsWith('.webp')) return 'image/webp';
+    if (name.endsWith('.pdf')) return 'application/pdf';
+
+    return design.mimeType ?? 'application/octet-stream';
   }
 
   /// امتداد الملف الأصلي إن أرسله الخادم، ثم نوعه، ثم صنفه.

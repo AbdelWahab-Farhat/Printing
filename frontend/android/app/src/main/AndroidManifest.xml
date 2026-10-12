@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!--
         Every screen in this app reads from the API, so without this a release build is an app
         that cannot do anything at all.
@@ -8,6 +9,13 @@
         build that fails is the signed one handed to somebody.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!--
+        «تحميل» التصميم يحفظه عبر `file_saver`، وهي تطلب WRITE_EXTERNAL_STORAGE حتى أندرويد ٩
+        (`maxSdkVersion=28`) لتكتب في «الصور» و«التنزيلات». ودامجُ البيان يفترض معها
+        READ_EXTERNAL_STORAGE بلا حدٍّ أعلى — إذنٌ يسأل عنه متجر Play ولا يقرأ به شيءٌ هنا شيئاً.
+        فيُنزع. يحرسه `test/android/manifest_test.dart`.
+    -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
 
     <!--
         The back gesture, and the animation that comes with it.

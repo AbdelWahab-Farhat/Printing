@@ -591,12 +591,12 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
 
 enum _DesignAction { open, save, preview, rename, delete }
 
-/// Opens the bag preview with this design already on it.
+/// يفتح معاينة الكيس وعليها هذا التصميم.
 ///
-/// **The file is fetched before the screen opens, not by it.** The preview tool knows how to
-/// draw a design and nothing about signed URLs or customers; keeping it that way is what lets
-/// the same screen serve a fresh upload from the drawer and a design out of this library.
-/// [SaveDesignToDevice] is the same call «تحميل» makes one row above.
+/// **يُجلب الملف قبل أن تُفتح الشاشة، لا بها.** أداة المعاينة تعرف كيف ترسم تصميماً ولا تعرف
+/// شيئاً عن الروابط الموقَّعة ولا العملاء؛ وبقاؤها كذلك هو ما يجعل الشاشة نفسها تخدم ملفاً رُفع
+/// للتوّ من القائمة وتصميماً من هذه المكتبة. و[SaveDesignToDevice.fetch] هو نصف ما يفعله
+/// «تحميل» في الصف فوقه — بلا الحفظ.
 Future<void> _previewOnBag(BuildContext context, CustomerDesign design) async {
   if (design.kind == DesignKind.pdf) {
     // Said before a request rather than after one: the preview cannot draw a PDF, and the
@@ -608,7 +608,7 @@ Future<void> _previewOnBag(BuildContext context, CustomerDesign design) async {
 
   context.showInfo('جارٍ تجهيز المعاينة…');
 
-  final result = await sl<SaveDesignToDevice>()(design);
+  final result = await sl<SaveDesignToDevice>().fetch(design);
 
   if (!context.mounted) return;
 

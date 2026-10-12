@@ -3,6 +3,8 @@ import 'package:dayaa_client/core/files/attachment_picker.dart';
 import 'package:dayaa_client/core/files/attachment_picker_impl.dart';
 import 'package:dayaa_client/core/files/attachment_store.dart';
 import 'package:dayaa_client/core/files/attachment_store_impl.dart';
+import 'package:dayaa_client/core/files/device_saver.dart';
+import 'package:dayaa_client/core/files/device_saver_impl.dart';
 import 'package:dayaa_client/core/network/api_endpoints.dart';
 import 'package:dayaa_client/core/network/dio_client.dart';
 import 'package:dayaa_client/core/push/push_service.dart';
@@ -165,6 +167,8 @@ abstract final class Injector {
       // one — both packages answer through a platform channel that does not exist under
       // `flutter_test`, so the real one would hang there.
       ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
+      // والعكس: وضعُ ملفٍّ على الهاتف حيث يجده صاحبه — «الصور» أو «التنزيلات» أو «الملفات».
+      ..registerLazySingleton<DeviceSaver>(DeviceSaverImpl.new)
       // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
       // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول مستمعٍ ويغلقه مع آخرهم.
       ..registerLazySingleton<RealtimeClient>(
@@ -254,7 +258,7 @@ abstract final class Injector {
       ..registerLazySingleton(() => UploadDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => RenameDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => RemoveDesign(sl<DesignRepository>()))
-      ..registerLazySingleton(() => SaveDesignToDevice(sl<DesignRepository>()))
+      ..registerLazySingleton(() => SaveDesignToDevice(sl<DesignRepository>(), sl<DeviceSaver>()))
       ..registerFactory(
         () => DesignsCubit(
           list: sl<ListDesigns>(),

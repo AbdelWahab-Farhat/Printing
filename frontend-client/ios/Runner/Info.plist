@@ -32,6 +32,17 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- «تحميل» تصميمٍ PDF يحفظه في مجلد «المستندات» للتطبيق، وهذان المفتاحان (مع
+	     UIFileSharingEnabled أسفل) يُظهرانه في «الملفات»: «على الـiPhone» ← مجلد التطبيق. آيفون
+	     لا «تنزيلات» مشتركة فيه يكتب إليها تطبيق. والمجلد لا يحمل غير ما حُفظ هكذا: ملفات
+	     المحادثة والذاكرة المؤقتة في مجلداتٍ أخرى. -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<!-- إضافةٌ إلى «الصور» بلا قراءتها: يُسأل مرةً عند أول «تحميل» لتصميمٍ صورة، ومن رفضه
+	     ذهبت صورته إلى «الملفات» بدلها. و«حفظ الصورة» في ورقة المشاركة (رمز QR، معاينة الكيس)
+	     يحتاجه أيضاً، وبدونه يُغلق التطبيق عند الحفظ. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>يحفظ FlyerX تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -54,6 +65,8 @@
 		</dict>
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

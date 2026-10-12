@@ -134,6 +134,11 @@ Future<Either<Failure, Uint8List>> safeDownload(
   });
 }
 
+/// نداءٌ إلى إضافةٍ أصليّة قد ترمي من طبقةٍ لا نملكها — حفظُ ملفٍّ رفض الهاتف مكانه، أو إذنٌ مُنع.
+///
+/// **الحارسُ نفسه**، ليبقى `try`/`catch` في هذا الملف وحده (RULES §5). منقولٌ عن تطبيق العملاء.
+Future<Either<Failure, T>> safePlatformCall<T>(Future<T> Function() run) => _guard(run);
+
 /// A call whose answer is the *message*, not a body — logout, delete.
 Future<Either<Failure, String>> safeCommand(Future<Response<dynamic>> Function() send) async {
   return _guard(() async {

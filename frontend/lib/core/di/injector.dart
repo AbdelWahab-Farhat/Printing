@@ -1,6 +1,8 @@
 import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/attachment_picker_impl.dart';
+import 'package:dayaa/core/files/device_saver.dart';
+import 'package:dayaa/core/files/device_saver_impl.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/dio_client.dart';
 import 'package:dayaa/core/push/push_service.dart';
@@ -377,6 +379,8 @@ abstract final class Injector {
       // — both packages answer through a platform channel that does not exist under
       // `flutter_test`, so the real one would hang there.
       ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
+      // والعكس: وضعُ ملفٍّ على الهاتف حيث يجده صاحبه — «الصور» أو «التنزيلات» أو «الملفات».
+      ..registerLazySingleton<DeviceSaver>(DeviceSaverImpl.new)
       // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
       // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول شاشةٍ تستمع ويغلقه مع آخرها.
       ..registerLazySingleton<RealtimeClient>(
@@ -2031,10 +2035,10 @@ abstract final class Injector {
       ..registerLazySingleton<RenameCustomerDesign>(
         () => RenameCustomerDesign(sl<CustomerDesignRepository>()),
       )
-      // Not owned by a Cubit: saving a file is a one-shot action with no state to hold — the
-      // sheet the OS opens is the state — so the viewer calls it directly.
+      // لا Cubit له: الحفظ فعلٌ واحد لا حالة تُمسك — الإشعار بعده هو كل ما يُرى — فيناديه
+      // العارض مباشرةً.
       ..registerLazySingleton<SaveDesignToDevice>(
-        () => SaveDesignToDevice(sl<CustomerDesignRepository>()),
+        () => SaveDesignToDevice(sl<CustomerDesignRepository>(), sl<DeviceSaver>()),
       )
       ..registerLazySingleton<DeleteCustomerDesign>(
         () => DeleteCustomerDesign(sl<CustomerDesignRepository>()),

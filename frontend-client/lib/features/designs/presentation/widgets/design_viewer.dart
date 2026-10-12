@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/files/device_saver.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/usecases/save_design_to_device.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ما يُفعل بملف التصميم نفسه: أن يُرى، وأن يُحمَّل. منقولٌ عن `design_viewer.dart` في تطبيق
@@ -56,11 +56,10 @@ Future<void> openDesign(BuildContext context, CustomerDesign design) async {
   context.showError('لا يوجد تطبيق على هذا الجهاز يفتح هذا الملف');
 }
 
-/// ينزّل الملف ويعرضه على ورقة الحفظ في الهاتف نفسه.
+/// «تحميل»: يحفظ الملف على الهاتف ويقول أين — **بلا ورقة مشاركة**.
 ///
-/// **«تحميل» على الهاتف ليس مجلداً.** أين ينتهي الملف — الصور، أو «الملفات»، أو واتساب إلى
-/// المطبعة — سؤالٌ لا يجيبه إلا النظام، وهو يسأله أصلاً. فتُجلب البايتات وتُكتب ملفاً مؤقتاً
-/// وتُسلَّم، و«حفظ الصورة» و«حفظ في الملفات» صفوفٌ يضعها النظام.
+/// كان يسلّم الملف لورقة المشاركة، ورُفض ذلك (٢٠٢٦-١٠-١٢): من يضغط «تحميل» يريد الملف على
+/// هاتفه، لا أن يختار تطبيقاً. أين يذهب: [SaveDesignToDevice].
 ///
 /// والرابط الموقَّع تنتهي صلاحيته، فيُجلب بما تحمله الشاشة **الآن** — ولذلك يُمرَّر التصميم لا
 /// عنوانٌ محفوظ.
@@ -69,22 +68,17 @@ Future<void> saveDesign(BuildContext context, CustomerDesign design) async {
 
   if (!context.mounted) return;
 
-  await result.fold(
-    (failure) async => context.showFailure(failure),
-    (path) async {
-      // `sharePositionOrigin` مطلوبٌ على آيباد، حيث ورقة المشاركة نافذةٌ منبثقة لا بدّ أن
-      // تُعلَّق بشيء — وبدونه يرمي النداء على ذلك الجهاز وحده.
-      final box = context.findRenderObject() as RenderBox?;
+  result.fold(context.showFailure, (place) {
+    // `null`: أغلق نافذة «حفظ باسم» — لم يُحفظ شيء، ولا شيء يُقال.
+    if (place == null) return;
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(path)],
-          fileNameOverrides: [SaveDesignToDevice.fileNameFor(design)],
-          sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
-        ),
-      );
-    },
-  );
+    context.showSuccess(switch (place) {
+      SavePlace.photos => 'حُفظ التصميم في الصور',
+      SavePlace.downloads => 'حُفظ التصميم في التنزيلات',
+      SavePlace.files => 'حُفظ التصميم في «الملفات»',
+      SavePlace.chosen => 'حُفظ التصميم',
+    });
+  });
 }
 
 /// صورةٌ واحدة بأكبر ما تتّسع له الشاشة، تُقرَّب.
