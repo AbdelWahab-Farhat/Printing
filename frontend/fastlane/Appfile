@@ -1,0 +1,7 @@
+# معرّف التطبيق — يأتي من scripts/asc_env.sh حتى لا تتفرّع القيم بين fastlane والسكربتات،
+# ولا يُكتب أي سرّ هنا.
+#
+# المصادقة عبر App Store Connect API Key (لا Apple ID ولا كلمة مرور خاصة بالتطبيق)،
+# لذا لا حاجة لـ apple_id / team_id.
+
+app_identifier(ENV["ASC_APP_IDENTIFIER"])

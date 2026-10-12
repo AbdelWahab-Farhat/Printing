@@ -1,0 +1,229 @@
+# =====================================================================
+# Fastlane — رفع نسخ «دعاية» (تطبيق الموظفين) إلى App Store Connect
+# =====================================================================
+# منقولٌ عن تطبيق بريمولا (primula_client/fastlane) — الحساب نفسه والمفتاح نفسه.
+#
+# لا تُشغَّل هذه الـ lanes يدوياً — استعمل السكربت:
+#   ./scripts/release_ios.sh                  بناء ثم إرسال للمراجعة
+#   ./scripts/release_ios.sh --upload-only    بناء ثم رفع إلى TestFlight فقط
+#
+# كل القيم تأتي من متغيّرات بيئة يضبطها scripts/asc_env.sh، ولا تُكتب هنا:
+#   ASC_KEY_ID · ASC_ISSUER_ID · ASC_KEY_PATH · ASC_APP_IDENTIFIER
+# =====================================================================
+
+default_platform(:ios)
+
+# جذر المستودع — fastlane يشتغل من داخل مجلد fastlane/، فأي مسار نسبي يصله
+# (build/app/... أو build/ios/...) يجب أن يُحلّ نسبةً إلى الجذر لا إلى هنا.
+def repo_path(path)
+  File.absolute_path?(path) ? path : File.expand_path(path, File.expand_path("..", __dir__))
+end
+
+
+# ─────────────────────────────────────────────────────────────────────
+# iOS — App Store Connect
+# ─────────────────────────────────────────────────────────────────────
+platform :ios do
+  # مفتاح App Store Connect API — دور المفتاح يجب أن يكون App Manager
+  # (دور Developer لا يملك صلاحية الإرسال للمراجعة).
+  private_lane :asc_api_key do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: File.expand_path(ENV.fetch("ASC_KEY_PATH")),
+      duration: 1200,
+      in_house: false,
+    )
+  end
+
+  def asc_app_identifier
+    id = ENV["ASC_APP_IDENTIFIER"].to_s
+    UI.user_error!("ASC_APP_IDENTIFIER غير مضبوط — عدّل scripts/asc_env.sh") if id.empty?
+    id
+  end
+
+  desc "رفع IPA + إنشاء النسخة وإرسالها للمراجعة"
+  lane :submit do |options|
+    ipa = options[:ipa] or UI.user_error!("ينقص المعامل ipa:")
+    ipa = repo_path(ipa)
+    UI.user_error!("ملف IPA غير موجود: #{ipa}") unless File.exist?(ipa)
+    version = options[:version] or UI.user_error!("ينقص المعامل version:")
+
+    automatic_release = ENV["ASC_AUTOMATIC_RELEASE"] != "false"
+    run_precheck = ENV["ASC_SKIP_PRECHECK"] != "true"
+
+    UI.message("📦 IPA: #{ipa}")
+    UI.message("🔖 النسخة: #{version}")
+    UI.message("🚀 النشر بعد الموافقة: #{automatic_release ? 'تلقائي' : 'يدوي'}")
+
+    upload_to_app_store(
+      api_key: asc_api_key,
+      app_identifier: asc_app_identifier,
+      ipa: ipa,
+      app_version: version,
+
+      # ← هذا ما يجعلها تذهب للمراجعة بدل أن تبقى Build مرفوعاً فقط
+      submit_for_review: true,
+      automatic_release: automatic_release,
+
+      # بدون تفاعل: يتخطى معاينة HTML وسؤال التأكيد
+      force: true,
+
+      # الميتاداتا: "ما الجديد" فقط من fastlane/metadata، بدون لقطات شاشة
+      skip_metadata: false,
+      skip_screenshots: true,
+      overwrite_screenshots: false,
+
+      # فحص Apple التحضيري قبل الإرسال (يكشف مخالفات الميتاداتا مبكراً)
+      run_precheck_before_submit: run_precheck,
+      precheck_include_in_app_purchases: false,
+
+      # إجابات نموذج الإرسال — تُملأ تلقائياً بدل السؤال في كل إصدار.
+      # التطبيق لا يستعمل SDK إعلانية/تتبّع، ويستعمل HTTPS فقط (معفى من قيود التصدير).
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+        content_rights_contains_third_party_content: false,
+      },
+    )
+
+    UI.success("✅ تم إرسال النسخة #{version} للمراجعة")
+  end
+
+  desc "رفع IPA كـ Build فقط (TestFlight) بلا إنشاء نسخة ولا إرسال للمراجعة"
+  lane :upload_build do |options|
+    ipa = options[:ipa] or UI.user_error!("ينقص المعامل ipa:")
+    ipa = repo_path(ipa)
+    UI.user_error!("ملف IPA غير موجود: #{ipa}") unless File.exist?(ipa)
+    upload_to_testflight(
+      api_key: asc_api_key,
+      app_identifier: asc_app_identifier,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+    )
+    UI.success("✅ رُفع الـ Build — أنشئ النسخة يدوياً من App Store Connect")
+  end
+
+  desc "فحص مبكر لنسخة تجريبية: هل مسار (train) هذه النسخة ما زال مفتوحاً في TestFlight؟"
+  # بعد موافقة Apple على نسخة يُغلق مسارها، فيرفض الرفع أي Build جديد برقمها
+  # أو بأقل منه (ITMS-90186 / ITMS-90062) — لكن فقط بعد بناء ورفع كاملين.
+  lane :check_test_version do |options|
+    version = options[:version] or UI.user_error!("ينقص المعامل version:")
+    asc_api_key
+    app = Spaceship::ConnectAPI::App.find(asc_app_identifier)
+    UI.user_error!("لم يُعثر على التطبيق #{asc_app_identifier} في App Store Connect") if app.nil?
+
+    [app.get_live_app_store_version(platform: "IOS"),
+     app.get_pending_release_app_store_version(platform: "IOS")].compact.each do |v|
+      next if Gem::Version.new(version) > Gem::Version.new(v.version_string)
+      UI.user_error!("النسخة #{v.version_string} معتمدة (#{v.app_store_state}) فمسار #{version} مغلق — " \
+                     "مرّر رقم نسخة أعلى بـ --version")
+    end
+    UI.success("✓ مسار النسخة #{version} مفتوح للرفع إلى TestFlight")
+  end
+
+  desc "فحص مبكر: هل يمكن أصلاً إنشاء/تعديل هذه النسخة الآن؟"
+  # Apple تسمح بنسخة واحدة فقط "قيد الطريق" إضافةً للمنشورة. لو كانت السابقة
+  # WAITING_FOR_REVIEW أو IN_REVIEW أو PENDING_DEVELOPER_RELEASE فلا يمكن إنشاء
+  # نسخة جديدة — و deliver يكتشف ذلك متأخراً (بعد رفع الـ IPA كاملاً).
+  lane :check_version do |options|
+    version = options[:version] or UI.user_error!("ينقص المعامل version:")
+    asc_api_key
+    app = Spaceship::ConnectAPI::App.find(asc_app_identifier)
+    UI.user_error!("لم يُعثر على التطبيق #{asc_app_identifier} في App Store Connect") if app.nil?
+
+    blocking = app.get_in_review_app_store_version(platform: "IOS") ||
+               app.get_pending_release_app_store_version(platform: "IOS")
+    if blocking
+      UI.user_error!("النسخة #{blocking.version_string} حالتها #{blocking.app_store_state} — " \
+                     "لا يمكن إنشاء نسخة جديدة قبل أن تُنشر أو تُسحب من المراجعة")
+    end
+
+    edit = app.get_edit_app_store_version(platform: "IOS")
+    if edit.nil?
+      UI.success("✓ لا توجد نسخة قيد الطريق — ستُنشأ #{version} جديدة")
+    elsif edit.app_store_state == "WAITING_FOR_REVIEW"
+      UI.user_error!("النسخة #{edit.version_string} في انتظار المراجعة (WAITING_FOR_REVIEW) — " \
+                     "انتظر الموافقة أو اسحبها بـ --cancel-pending ثم أعد الإرسال")
+    elsif edit.version_string == version
+      UI.success("✓ النسخة #{version} موجودة وقابلة للتعديل (#{edit.app_store_state})")
+    else
+      UI.important("⚠ النسخة القابلة للتعديل حالياً هي #{edit.version_string} " \
+                   "(#{edit.app_store_state}) وسيُغيَّر رقمها إلى #{version}")
+    end
+  end
+
+  desc "سحب النسخة الحالية من المراجعة وانتظار عودتها قابلة للتعديل"
+  lane :cancel_pending_review do |options|
+    allow_in_review = options[:allow_in_review].to_s == "true"
+    asc_api_key
+    app = Spaceship::ConnectAPI::App.find(asc_app_identifier)
+
+    submission = app.get_in_progress_review_submission(platform: "IOS")
+    if submission.nil?
+      UI.success("✓ لا يوجد طلب مراجعة قيد التنفيذ — لا شيء لسحبه")
+      next
+    end
+
+    version = submission.app_store_version_for_review&.version_string || "?"
+    UI.message("طلب المراجعة الحالي: النسخة #{version} — الحالة #{submission.state}")
+
+    # IN_REVIEW يعني أن Apple بدأت الفحص فعلاً؛ سحبها يعيدك لآخر الطابور
+    if submission.state == Spaceship::ConnectAPI::ReviewSubmission::ReviewSubmissionState::IN_REVIEW && !allow_in_review
+      UI.user_error!("المراجعة جارية فعلاً (IN_REVIEW) — سحبها الآن يعيدك لآخر الطابور. " \
+                     "أعد التشغيل مع --force-cancel لو كنت متأكداً")
+    end
+
+    UI.important("⏳ سحب النسخة #{version} من المراجعة...")
+    submission.cancel_submission
+
+    # السحب غير فوري: الحالة تمر بـ CANCELING ثم تعود النسخة قابلة للتعديل
+    editable = nil
+    30.times do
+      v = app.get_edit_app_store_version(platform: "IOS")
+      if v && v.app_store_state != "WAITING_FOR_REVIEW"
+        editable = v
+        break
+      end
+      sleep(10)
+    end
+
+    UI.user_error!("انتهت مهلة الانتظار (5 دقائق) ولم تعد النسخة قابلة للتعديل — " \
+                   "راجع حالتها في App Store Connect") if editable.nil?
+    UI.success("✓ النسخة #{editable.version_string} أصبحت #{editable.app_store_state}")
+  end
+
+  desc "طباعة حالة آخر النسخ في App Store Connect (للتشخيص)"
+  lane :status do
+    asc_api_key
+    app = Spaceship::ConnectAPI::App.find(asc_app_identifier)
+    if app.nil?
+      # المعرّف غير موجود في الحساب — نعرض ما هو موجود فعلاً بدل رسالة غامضة
+      UI.error("لا يوجد تطبيق بالمعرّف #{asc_app_identifier} في هذا الحساب")
+      UI.message("التطبيقات المتاحة:")
+      Spaceship::ConnectAPI::App.all.each do |a|
+        UI.message("  #{a.bundle_id.ljust(32)} — #{a.name}")
+      end
+      UI.user_error!("عدّل ASC_APP_IDENTIFIER في scripts/asc_env.sh ليطابق أحد المعرّفات أعلاه")
+    end
+    UI.message("التطبيق: #{app.name} (#{app.id})")
+    versions = app.get_app_store_versions(filter: { platform: "IOS" })
+    versions.first(5).each do |v|
+      UI.message("  #{v.version_string} — #{v.app_store_state}")
+    end
+
+    # لغات المتجر المفعّلة — يجب أن يوجد مجلد يطابق كل لغة تحت fastlane/metadata
+    # وإلا فشل deliver *بعد* رفع الـ IPA كاملاً.
+    locales = versions.first&.get_app_store_version_localizations&.map(&:locale) || []
+    UI.message("لغات المتجر المفعّلة: #{locales.empty? ? '—' : locales.join(', ')}")
+    locales.each do |loc|
+      dir = File.join(File.dirname(__FILE__), "metadata", loc)
+      if File.exist?(File.join(dir, "release_notes.txt"))
+        UI.success("  ✓ metadata/#{loc}/release_notes.txt موجود")
+      else
+        UI.important("  ⚠ ينقص metadata/#{loc}/release_notes.txt")
+      end
+    end
+  end
+end

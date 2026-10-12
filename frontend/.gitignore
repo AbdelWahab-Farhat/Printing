@@ -47,3 +47,11 @@ app.*.map.json
 # Environment — secrets and per-machine hosts. .env.example documents the keys.
 .env
 .env.dev
+
+# fastlane — نُبقي Fastfile/Appfile/metadata والسكربتات في git، ونتجاهل مخرجات التشغيل والمفاتيح
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+scripts/asc_env.local.sh
+*.p8
