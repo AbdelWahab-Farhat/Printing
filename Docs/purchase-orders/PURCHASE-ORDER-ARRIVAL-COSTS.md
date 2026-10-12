@@ -129,11 +129,12 @@ order and in «المصاريف».
       749 green in one run. The full suite was not run.
 - [x] Flutter: model fields, `AdditionalCostRow` shared by the form and the receive sheet,
       «تكاليف الوصول» on the receive sheet, detail page sections
-- [x] **«من دفعها» is not offered in the app — the owner's call, 2026-10-11.** Every cost the app
-      sends is on the vendor's bill (`treasury_account_id` null). The server keeps the whole §3
-      path. To offer it later: a `TreasuryAccountPicker` in `AdditionalCostRow` writing
-      `AdditionalCostDraft.treasuryAccountId` — with drawers and manual payables listed (not the
-      vendor's or system payables), and an empty choice reading «على فاتورة المورد», not «تلقائي».
+- [x] **«الحساب» is back on every cost row — the owner's call, 2026-10-12** (reversing 2026-10-11's
+      «vendor's bill only», after a cost on a funded line was refused with nothing to pick). A
+      `TreasuryAccountPicker` in `AdditionalCostRow` (`unsetLabel: «على فاتورة المورد»`,
+      `payables: true`): drawers and hand-opened «علينا», not a vendor's or a system payable, and
+      no «تلقائي». Shown only with `treasury.record` (`CostAccountGrant`); without it a cost stays
+      on the vendor's bill. On the receive sheet and the order form alike.
 - [x] Flutter tests: `arrival_costs_test.dart` (8); purchase-order and treasury tests green
       except `treasury_settings_page_test` «التسوية إلى حساب المسوّي», which fails on main too
       (it looks for a sentence the page no longer has)

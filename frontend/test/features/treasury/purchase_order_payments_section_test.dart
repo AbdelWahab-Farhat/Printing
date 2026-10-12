@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -340,6 +341,38 @@ void main() {
     expect(find.text('−100 د.ل'), findsNothing);
     expect(find.text('500 د.ل'), findsOneWidget);
     verify(() => repository.purchaseOrderPayments(4)).called(1);
+  });
+
+  testWidgets('«دفعة للمورد» and «خصم من المورد» share one row, half the width each', (
+    tester,
+  ) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(current));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    final pay = tester.getRect(find.widgetWithText(AppButton, 'دفعة للمورد'));
+    final credit = tester.getRect(find.widgetWithText(AppButton, 'خصم من المورد'));
+    expect(pay.center.dy, credit.center.dy);
+    expect(pay.width, closeTo(credit.width, 0.5));
+    expect(pay.overlaps(credit), isFalse);
+  });
+
+  testWidgets('a payment with no credit beside it takes the whole row', (tester) async {
+    // Arrange
+    when(() => repository.purchaseOrderPayments(4)).thenAnswer((_) async => const Right(old));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    final pay = tester.getRect(find.widgetWithText(AppButton, 'دفعة للمورد'));
+    final debt = tester.getRect(find.widgetWithText(AppButton, 'يُحسب عليه دين للمورد'));
+    expect(pay.width, closeTo(debt.width, 0.5));
   });
 
   testWidgets('no credit is offered on an order from before the treasury', (tester) async {

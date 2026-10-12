@@ -1,3 +1,6 @@
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -5,15 +8,16 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// One purchase-order cost as a form holds it — delivery, porters, customs.
+/// تكلفةٌ واحدة على أمر شراء كما يحملها النموذج — توصيل، تفريغ، جمارك.
 ///
-/// **Shared by the order form and the receive sheet**, because a cost planned on the order and
-/// one paid when the lorry arrives are the same three questions: what it was for, how much, and
-/// who was paid (Docs/purchase-orders/PURCHASE-ORDER-ARRIVAL-COSTS.md).
+/// **يتقاسمها نموذج الأمر وشاشة الاستلام**، لأن التكلفة المخطّطة على الأمر والمدفوعة عند وصول
+/// الشاحنة يُسأل عنهما الأسئلة الثلاثة نفسها: على ماذا، وكم، ومن قُبض
+/// (Docs/purchase-orders/PURCHASE-ORDER-ARRIVAL-COSTS.md).
 class AdditionalCostDraft {
   AdditionalCostDraft({
     required String name,
@@ -24,7 +28,7 @@ class AdditionalCostDraft {
   }) : name = TextEditingController(text: name),
        amount = TextEditingController(text: amount);
 
-  /// A cost the server already has, opened for correcting.
+  /// تكلفةٌ عند الخادم، فُتحت للتصحيح.
   factory AdditionalCostDraft.of(PurchaseOrderAdditionalCost cost) => AdditionalCostDraft(
     id: cost.id,
     name: cost.name,
@@ -33,23 +37,22 @@ class AdditionalCostDraft {
     paidByLabel: cost.paidByLabel,
   );
 
-  /// Carried through so an existing cost is corrected rather than deleted and recreated.
+  /// يُحمل معها لتُصحَّح التكلفة القائمة بدل أن تُحذف وتُنشأ من جديد.
   final int? id;
 
   final TextEditingController name;
   final TextEditingController amount;
 
-  /// Who was paid — null is the vendor's bill.
+  /// من قُبض — فارغٌ يعني فاتورة المورد.
   int? treasuryAccountId;
 
-  /// What the server said about who was paid, for somebody who may not change it.
+  /// ما قاله الخادم عمّن قُبض، لمن لا يملك تغييره.
   final String? paidByLabel;
 
-  /// Whether anything has been typed into either box.
+  /// هل كُتب شيءٌ في أيٍّ من الخانتين.
   ///
-  /// **A row nobody filled in is dropped rather than refused.** Tapping «إضافة تكلفة» and
-  /// changing your mind is not an error worth blocking a save over, and the same test runs again
-  /// in [DraftAdditionalCost.isBlank] before anything reaches the wire.
+  /// **الصفّ الذي لم يُملأ يُسقط ولا يُرفض.** الضغط على «إضافة تكلفة» ثم العدول عنها ليس خطأً
+  /// يستحق أن يمنع الحفظ، والاختبار نفسه يُعاد في [DraftAdditionalCost.isBlank] قبل أن يُرسل شيء.
   bool get isBlank => name.text.trim().isEmpty && amount.text.trim().isEmpty;
 
   DraftAdditionalCost toDraft() => DraftAdditionalCost(
@@ -65,12 +68,14 @@ class AdditionalCostDraft {
   }
 }
 
-/// A cost being typed: what it was for, and how much.
+/// تكلفةٌ تُكتب: على ماذا، وكم، ومن أيّ حساب.
 ///
-/// **Always on the vendor's bill, for now.** The server also takes a drawer or a «التزام» as
-/// who was paid (`treasury_account_id`, PURCHASE-ORDER-ARRIVAL-COSTS.md §3), but the owner chose
-/// not to offer it yet (2026-10-11). Adding it back is one `TreasuryAccountPicker` here, writing
-/// [AdditionalCostDraft.treasuryAccountId].
+/// **«الحساب» متروكاً يعني «على فاتورة المورد»** — تزيد ما عليك للمورد. أو درجٌ دُفعت منه الآن
+/// (كاش، مصرف)، أو «علينا» مفتوحٌ باليد بقيت ديناً له (PURCHASE-ORDER-ARRIVAL-COSTS.md §3).
+/// والبضاعة الممولة من المستثمرين لا تقبل غير الدرج: نصيبها مصروفٌ على الصفقة، والمصروف مالٌ خرج.
+///
+/// **يُعرض لمن يملك «إيداع وسحب ومصروف وتحويل» وحده** — تسمية الحساب صرفٌ منه، والخادم يرفضها
+/// بدون الصلاحية (`CostAccountGrant`). ومن لا يملكها يرى ما قاله الخادم عن التكلفة القائمة.
 class AdditionalCostRow extends StatelessWidget {
   const AdditionalCostRow({
     required this.cost,
@@ -84,9 +89,12 @@ class AdditionalCostRow extends StatelessWidget {
   final VoidCallback onRemove;
   final ValueChanged<String>? onChanged;
 
-  /// A cost paid on arrival is something that was paid — zero is refused. A planned one may be
-  /// zero: a listed charge that was waived is still worth keeping on the order.
+  /// تكلفةٌ عند الوصول شيءٌ دُفع — فالصفر يُرفض. والمخطّطة قد تكون صفراً: رسمٌ أُعفي منه يستحق
+  /// أن يبقى على الأمر.
   final bool requirePositive;
+
+  bool get _mayNameAnAccount =>
+      sl.isRegistered<Session>() && sl<Session>().can(AppPermission.recordTreasuryOperations);
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +118,8 @@ class AdditionalCostRow extends StatelessWidget {
                   controller: cost.name,
                   label: 'البيان',
                   hint: 'توصيل، تفريغ، جمارك…',
-                  // Only when the row has something in it: an untouched row is dropped before
-                  // sending, so refusing to save because of one is a wall with nothing behind it.
+                  // حين يكون في الصفّ شيءٌ فقط: الصفّ المتروك يُسقط قبل الإرسال، فرفضُ الحفظ
+                  // بسببه جدارٌ لا شيء خلفه.
                   validator: (value) =>
                       cost.isBlank || (value ?? '').trim().isNotEmpty
                       ? null
@@ -153,9 +161,23 @@ class AdditionalCostRow extends StatelessWidget {
             },
             onChanged: onChanged,
           ),
-          // A cost the server already holds as paid elsewhere keeps saying so, and its account
-          // travels back untouched on save.
-          if (cost.treasuryAccountId != null) ...[
+          if (_mayNameAnAccount) ...[
+            SizedBox(height: 10.h),
+            // الصفّ بلا حالة، والاختيار يُكتب في المسودّة — فيُعاد رسم المنتقي وحده.
+            StatefulBuilder(
+              builder: (context, setState) => TreasuryAccountPicker(
+                method: null,
+                incoming: false,
+                payables: true,
+                label: 'الحساب',
+                unsetLabel: 'على فاتورة المورد',
+                value: cost.treasuryAccountId,
+                onChanged: (id) => setState(() => cost.treasuryAccountId = id),
+              ),
+            ),
+          ]
+          // تكلفةٌ يقول الخادم إنها دُفعت من حساب تبقى تقول ذلك، وحسابها يعود كما هو عند الحفظ.
+          else if (cost.treasuryAccountId != null) ...[
             SizedBox(height: 10.h),
             Text(
               cost.paidByLabel ?? 'دُفعت من حساب',

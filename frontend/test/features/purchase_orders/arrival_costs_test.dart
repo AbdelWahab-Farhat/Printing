@@ -1,12 +1,22 @@
+import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/widgets/app_dropdown.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository_impl.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart';
+import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../treasury/treasury_fixtures.dart';
 
 /// «مصاريف عند وصول البضاعة» — what the app sends and reads for a purchase order's costs now that
 /// they can be typed on the receive screen and say who was paid.
@@ -227,6 +237,84 @@ void main() {
       expect(result!.additionalCosts.single.name, 'نقل');
       expect(result!.additionalCosts.single.amount, '30');
       expect(result!.additionalCosts.single.treasuryAccountId, isNull);
+    });
+
+    group('with the treasury on the device', () {
+      late MockTreasuryRepository treasury;
+
+      /// A storeman, with or without the grant that spends from a drawer.
+      void signIn({required bool mayRecordTreasury}) {
+        treasury = MockTreasuryRepository();
+        when(() => treasury.accounts(activeOnly: true)).thenAnswer(
+          (_) async => const Right(
+            TreasuryAccounts(accounts: [cashBox, alisBank], total: '400.00', canViewAll: true),
+          ),
+        );
+        sl
+          ..registerSingleton<Session>(
+            Session()..adopt(
+              AuthUser(
+                id: 1,
+                name: 'عبدالوهاب',
+                phone: '0911234567',
+                permissions: [if (mayRecordTreasury) 'treasury.record'],
+              ),
+            ),
+          )
+          ..registerLazySingleton(() => GetAccountOptions(treasury))
+          ..registerLazySingleton(() => GetTreasuryAccounts(treasury));
+      }
+
+      setUp(() => sl.reset());
+      tearDown(() => sl.reset());
+
+      testWidgets('a cost names the drawer it was paid from', (tester) async {
+        // Arrange
+        signIn(mayRecordTreasury: true);
+        ReceivedShipment? result;
+        await tester.pumpWidget(host((shipment) => result = shipment));
+        await tester.tap(find.text('افتح'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextFormField).at(0), '10');
+        await tester.ensureVisible(find.text('إضافة تكلفة'));
+        await tester.tap(find.text('إضافة تكلفة'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextFormField).at(1), 'نقل');
+        await tester.enterText(find.byType(TextFormField).at(2), '30');
+        await tester.pump();
+
+        // Act
+        final picker = find.byType(AppDropdown<AccountOption>);
+        await tester.ensureVisible(picker);
+        await tester.pumpAndSettle();
+        await tester.tap(picker);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('مصرف علي').last);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('تسجيل الشحنة'));
+        await tester.tap(find.text('تسجيل الشحنة'));
+        await tester.pumpAndSettle();
+
+        // Assert
+        expect(result!.additionalCosts.single.treasuryAccountId, alisBank.id);
+      });
+
+      testWidgets('without the grant to spend, no account is asked', (tester) async {
+        // Arrange
+        signIn(mayRecordTreasury: false);
+        await tester.pumpWidget(host((_) {}));
+        await tester.tap(find.text('افتح'));
+        await tester.pumpAndSettle();
+
+        // Act
+        await tester.ensureVisible(find.text('إضافة تكلفة'));
+        await tester.tap(find.text('إضافة تكلفة'));
+        await tester.pumpAndSettle();
+
+        // Assert
+        expect(find.byType(AppDropdown<AccountOption>), findsNothing);
+        verifyNever(() => treasury.accounts(activeOnly: any(named: 'activeOnly')));
+      });
     });
 
     testWidgets('a cost of nothing paid on arrival is refused before sending', (tester) async {

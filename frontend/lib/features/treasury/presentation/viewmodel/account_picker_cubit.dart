@@ -28,8 +28,23 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
   ///
   /// **فارغٌ لنموذجٍ يسأل أيّ درجٍ دفع لا كيف** — مصروف الصندوق أو الصفقة: يُعرض كل حسابٍ مفعّل
   /// يُصرف منه، و«تلقائي» ما يختاره الخادم للنقد الخارج (حساب المسجّل النقدي، وإلا الخزنة).
-  Future<void> load({required String? method, required bool incoming, int? orderId}) {
-    _last = _Question(method: method, incoming: incoming, orderId: orderId);
+  ///
+  /// ومعه، للطريقة الفارغة وحدها: [payables] يضيف «علينا» المفتوح باليد — تكلفةٌ بقيت ديناً لطرفٍ
+  /// غير المورد — و[suggest] كاذباً لا يسأل عن «تلقائي»، حين لا يعني المتروكُ درجاً يختاره الخادم.
+  Future<void> load({
+    required String? method,
+    required bool incoming,
+    int? orderId,
+    bool payables = false,
+    bool suggest = true,
+  }) {
+    _last = _Question(
+      method: method,
+      incoming: incoming,
+      orderId: orderId,
+      payables: payables,
+      suggest: suggest,
+    );
 
     return _ask(_last!);
   }
@@ -46,7 +61,7 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
 
     final method = question.method;
     final result = method == null
-        ? await _spendable()
+        ? await _spendable(payables: question.payables, suggest: question.suggest)
         : await _getOptions(
             method: method,
             incoming: question.incoming,
@@ -65,10 +80,22 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
   }
 
   /// كل حسابٍ مفعّل يُصرف منه، واسمُ ما يختاره الخادم لكاشٍ خارج.
-  Future<Either<Failure, AccountOptions>> _spendable() async {
+  ///
+  /// و«علينا» حين [payables] — المفتوح باليد وحده: «علينا» المورد تحرّكه أوامره ودفعاته، و«مبالغ
+  /// زائدة للزبائن» تحرّكه الطلبيات، والخادم يرفض الاثنين (`expenseAccount`).
+  Future<Either<Failure, AccountOptions>> _spendable({
+    required bool payables,
+    required bool suggest,
+  }) async {
     final (accounts, cash) = await (
       _getAccounts(activeOnly: true),
-      _getOptions(method: 'cash', incoming: false),
+      suggest
+          ? _getOptions(method: 'cash', incoming: false)
+          : Future.value(
+              const Right<Failure, AccountOptions>(
+                AccountOptions(accounts: [], suggestedId: null),
+              ),
+            ),
     ).wait;
 
     return accounts.flatMap(
@@ -76,12 +103,18 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
         (suggestion) => AccountOptions(
           accounts: [
             for (final account in list.accounts)
-              if (account.isSpendable && account.isActive)
+              if (account.isActive &&
+                  (account.isSpendable ||
+                      (payables &&
+                          account.isPayable &&
+                          !account.isVendorPayable &&
+                          !account.isSystem)))
                 AccountOption(
                   id: account.id,
                   name: account.name,
                   kindLabel: account.kindLabel,
                   isDefault: account.isDefault,
+                  isPayable: account.isPayable,
                 ),
           ],
           suggestedId: suggestion.suggestedId,
@@ -94,11 +127,19 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
 
 /// ما سُئل الخادم عنه آخر مرة — لـ«إعادة المحاولة».
 class _Question {
-  const _Question({required this.method, required this.incoming, required this.orderId});
+  const _Question({
+    required this.method,
+    required this.incoming,
+    required this.orderId,
+    required this.payables,
+    required this.suggest,
+  });
 
   final String? method;
   final bool incoming;
   final int? orderId;
+  final bool payables;
+  final bool suggest;
 }
 
 sealed class AccountPickerState {

@@ -31,6 +31,8 @@ class TreasuryAccountPicker extends StatelessWidget {
     this.label,
     this.orderId,
     this.errorText,
+    this.unsetLabel,
+    this.payables = false,
     super.key,
   });
 
@@ -53,6 +55,13 @@ class TreasuryAccountPicker extends StatelessWidget {
   /// رفضُ الخادم لهذا الحقل (`treasury_account_id` وأخواته).
   final String? errorText;
 
+  /// **اسمُ المتروك حين لا يعني «تلقائي»** — «على فاتورة المورد» لتكلفة أمر شراء: المتروك هناك ليس
+  /// درجاً يختاره الخادم، بل لا درج أصلاً. معه لا يُسأل الخادم عمّا كان سيختار.
+  final String? unsetLabel;
+
+  /// يُعرض معه «علينا» المفتوح باليد (للطريقة الفارغة وحدها) — تكلفةٌ بقيت ديناً لطرفٍ غير المورد.
+  final bool payables;
+
   @override
   Widget build(BuildContext context) {
     if (!sl.isRegistered<GetAccountOptions>() || !sl.isRegistered<GetTreasuryAccounts>()) {
@@ -61,7 +70,13 @@ class TreasuryAccountPicker extends StatelessWidget {
 
     return BlocProvider(
       create: (_) => AccountPickerCubit(getOptions: sl(), getAccounts: sl())
-        ..load(method: method, incoming: incoming, orderId: orderId),
+        ..load(
+          method: method,
+          incoming: incoming,
+          orderId: orderId,
+          payables: payables,
+          suggest: unsetLabel == null,
+        ),
       child: _Picker(
         method: method,
         incoming: incoming,
@@ -70,6 +85,8 @@ class TreasuryAccountPicker extends StatelessWidget {
         value: value,
         onChanged: onChanged,
         errorText: errorText,
+        unsetLabel: unsetLabel,
+        payables: payables,
       ),
     );
   }
@@ -89,6 +106,8 @@ class _Picker extends StatefulWidget {
     required this.value,
     required this.onChanged,
     required this.errorText,
+    required this.unsetLabel,
+    required this.payables,
   });
 
   final String? method;
@@ -98,6 +117,8 @@ class _Picker extends StatefulWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
   final String? errorText;
+  final String? unsetLabel;
+  final bool payables;
 
   @override
   State<_Picker> createState() => _PickerState();
@@ -110,32 +131,39 @@ class _PickerState extends State<_Picker> {
 
     if (old.method != widget.method ||
         old.incoming != widget.incoming ||
-        old.orderId != widget.orderId) {
+        old.orderId != widget.orderId ||
+        old.payables != widget.payables ||
+        (old.unsetLabel == null) != (widget.unsetLabel == null)) {
       unawaited(
         context.read<AccountPickerCubit>().load(
           method: widget.method,
           incoming: widget.incoming,
           orderId: widget.orderId,
+          payables: widget.payables,
+          suggest: widget.unsetLabel == null,
         ),
       );
     }
   }
+
+  /// المتروك ما دام السؤال في الطريق أو فشل — ولا اسم بعدُ لما سيختاره الخادم.
+  String get _unset => widget.unsetLabel ?? 'تلقائي';
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AccountPickerCubit, AccountPickerState>(
       builder: (context, state) => switch (state) {
         // ما دام السؤال في الطريق: «تلقائي» وحده، معطّلاً — الحقل في مكانه، لا يقفز حين يصل.
-        AccountPickerLoading() => _dropdown(const [], automatic: 'تلقائي', enabled: false),
+        AccountPickerLoading() => _dropdown(const [], automatic: _unset, enabled: false),
         AccountPickerLoaded(:final options) => _dropdown(
           options.accounts,
-          automatic: automaticLabel(options.suggestedName),
+          automatic: widget.unsetLabel ?? automaticLabel(options.suggestedName),
           suggestedId: options.suggestedId,
         ),
         AccountPickerFailed(:final failure) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _dropdown(const [], automatic: 'تلقائي', enabled: false, error: failure.message),
+            _dropdown(const [], automatic: _unset, enabled: false, error: failure.message),
             SizedBox(height: 8.h),
             AppButton.tonal(
               label: 'إعادة المحاولة',
@@ -166,7 +194,7 @@ class _PickerState extends State<_Picker> {
       value: chosen,
       items: rows,
       keyOf: (account) => account.id,
-      labelOf: (account) => account.name,
+      labelOf: (account) => account.isPayable ? 'علينا لـ${account.name}' : account.name,
       label: widget.label,
       prefixIcon: AppIcons.treasury,
       placeholder: automatic,

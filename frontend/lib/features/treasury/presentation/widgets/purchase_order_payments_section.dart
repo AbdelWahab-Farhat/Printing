@@ -134,20 +134,32 @@ class _Loaded extends StatelessWidget {
                 ],
                 if (session.can(AppPermission.recordVendorPayments)) ...[
                   SizedBox(height: 8.h),
-                  AppButton.tonal(
-                    label: 'دفعة للمورد',
-                    icon: AppIcons.payment,
-                    onPressed: () => _pay(context, payments.payableUpTo ?? payments.remaining),
+                  // الدفعة والخصم في صفٍّ واحد، نصفاً لكلٍّ — وحدها حين لا خصم تأخذ الصفّ كله.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton.tonal(
+                          label: 'دفعة للمورد',
+                          icon: AppIcons.payment,
+                          height: 46.h,
+                          onPressed: () =>
+                              _pay(context, payments.payableUpTo ?? payments.remaining),
+                        ),
+                      ),
+                      // لا يُخصم مقدّماً (§٢٠): أمرٌ لم يبقَ عليه شيء لا يُعرض عليه خصم — والخادم يرفضه.
+                      if (payments.remaining case final left? when left != '0.00') ...[
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: AppButton.tonal(
+                            label: 'خصم من المورد',
+                            icon: AppIcons.expense,
+                            height: 46.h,
+                            onPressed: () => _credit(context),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  // لا يُخصم مقدّماً (§٢٠): أمرٌ لم يبقَ عليه شيء لا يُعرض عليه خصم — والخادم يرفضه.
-                  if (payments.remaining case final left? when left != '0.00') ...[
-                    SizedBox(height: 8.h),
-                    AppButton.tonal(
-                      label: 'خصم من المورد',
-                      icon: AppIcons.expense,
-                      onPressed: () => _credit(context),
-                    ),
-                  ],
                   // أمرٌ قديم ما زال مستحقاً يدخل «علينا» باليد — النظام لا يعرف ما دُفع قبله (§٢٠).
                   if (payments.predatesTreasury && payments.total != null) ...[
                     SizedBox(height: 8.h),

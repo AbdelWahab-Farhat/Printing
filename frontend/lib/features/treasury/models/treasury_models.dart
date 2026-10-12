@@ -595,12 +595,16 @@ class AccountOption {
     required this.name,
     required this.kindLabel,
     required this.isDefault,
+    this.isPayable = false,
   });
 
   final int id;
   final String name;
   final String kindLabel;
   final bool isDefault;
+
+  /// «علينا» — لا درجٌ خرج منه المال، بل دينٌ بقي لصاحبه. يُعرض «علينا لـX» لا «X» وحده.
+  final bool isPayable;
 
   factory AccountOption.fromJson(Map<String, dynamic> json) => AccountOption(
     id: (json['id'] as num).toInt(),

@@ -197,6 +197,89 @@ void main() {
     expect(find.text('من أين خرج المال'), findsNothing);
   });
 
+  testWidgets('a purchase cost lists drawers and a hand-opened «علينا», unset is the vendor\'s bill', (
+    tester,
+  ) async {
+    // Arrange — «علينا» المورد و«مبالغ زائدة للزبائن» يرفضهما الخادم، فلا يُعرضان.
+    const broker = TreasuryAccount(
+      id: 11,
+      name: 'المخلّص',
+      kind: AccountKind.payable,
+      kindLabel: 'علينا',
+      isDefault: false,
+      isActive: true,
+      isSystem: false,
+      isSpendable: false,
+      isPayable: true,
+    );
+    const vendorsDebt = TreasuryAccount(
+      id: 12,
+      name: 'مصنع مصر',
+      kind: AccountKind.payable,
+      kindLabel: 'علينا',
+      isDefault: false,
+      isActive: true,
+      isSystem: false,
+      isSpendable: false,
+      isPayable: true,
+      vendorId: 3,
+    );
+    const customersExcess = TreasuryAccount(
+      id: 13,
+      name: 'مبالغ زائدة للزبائن',
+      kind: AccountKind.payable,
+      kindLabel: 'علينا',
+      isDefault: false,
+      isActive: true,
+      isSystem: true,
+      isSpendable: false,
+      isPayable: true,
+    );
+    when(() => repository.accounts(activeOnly: true)).thenAnswer(
+      (_) async => const Right(
+        TreasuryAccounts(
+          accounts: [cashBox, alisBank, nawris, broker, vendorsDebt, customersExcess],
+          total: '400.00',
+          canViewAll: true,
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      host(
+        TreasuryAccountPicker(
+          method: null,
+          incoming: false,
+          label: 'الحساب',
+          unsetLabel: 'على فاتورة المورد',
+          payables: true,
+          value: null,
+          onChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byType(DropdownButton<AccountOption>));
+    await tester.pumpAndSettle();
+
+    // Assert — لا «تلقائي»: المتروك ليس درجاً يختاره الخادم، بل فاتورة المورد.
+    expect(find.text('على فاتورة المورد'), findsWidgets);
+    expect(find.textContaining('تلقائي'), findsNothing);
+    expect(find.text('الكاش الرئيسي'), findsWidgets);
+    expect(find.text('مصرف علي'), findsWidgets);
+    expect(find.text('علينا لـالمخلّص'), findsWidgets);
+    expect(find.textContaining('مصنع مصر'), findsNothing);
+    expect(find.textContaining('مبالغ زائدة للزبائن'), findsNothing);
+    expect(find.textContaining('النورس'), findsNothing);
+    verifyNever(
+      () => repository.accountOptions(
+        method: any(named: 'method'),
+        incoming: any(named: 'incoming'),
+      ),
+    );
+  });
+
   testWidgets('a treasury refusal on the status screen is drawn under its account field', (
     tester,
   ) async {
