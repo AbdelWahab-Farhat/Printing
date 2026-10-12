@@ -224,7 +224,7 @@ void main() {
   testWidgets('goods paid for and not arrived are shown beside the value, not added to it', (
     tester,
   ) async {
-    // Arrange — قرارُ المالك: «عرض لأن المال استُعمل بالفعل».
+    // Arrange — بندٌ في القيمة منذ قرار المالك 2026-10-13؛ والخادمُ هو من يجمعه فيها.
     await register(const FundStanding(valuation: _valuation, goodsOnOrder: '12500.00'));
 
     // Act

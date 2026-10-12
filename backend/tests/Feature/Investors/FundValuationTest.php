@@ -323,7 +323,8 @@ class FundValuationTest extends TestCase
 
         // Assert
         $this->assertSame(
-            ['cash', 'stock_on_shelf', 'goods_in_flight', 'receivables_at_cost', 'profit_owed', 'total'],
+            // `goods_on_order` بندٌ منذ قرار المالك 2026-10-13 — كان رقماً بجانب القيمة لا فيها.
+            ['cash', 'stock_on_shelf', 'goods_in_flight', 'receivables_at_cost', 'goods_on_order', 'profit_owed', 'total'],
             array_keys($value),
         );
     }

@@ -20,6 +20,7 @@ use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Queries\FundGoodsOnOrder;
 use App\Domain\Investor\Queries\FundValuation;
+use App\Domain\Investor\Queries\UnitPrice;
 use App\Domain\Investor\Support\Money;
 use App\Domain\PurchaseOrder\Actions\CancelPurchaseOrder;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
@@ -198,9 +199,10 @@ class FundGoodsOnOrderTest extends TestCase
         $this->assertSame('12500.00', $this->onOrder());
     }
 
-    public function test_the_fund_value_leaves_it_out_because_the_money_is_already_spent(): void
+    public function test_the_fund_value_counts_it_because_the_money_became_goods_not_a_loss(): void
     {
-        // Arrange — قرارُ المالك: «عرض لأن المال استُعمل بالفعل».
+        // Arrange — قرارُ المالك 2026-10-13، ينقض قرارَ 2026-09-24 («عرض لأن المال استُعمل بالفعل»):
+        // المالُ لم يضِع، صار بضاعةً يملكها الصندوق في الطريق — فتُعدّ بتكلفتها كبضاعة الرفّ.
         $headers = $this->manager();
         $this->fundHolding('20000.00');
         [$order, $bags] = $this->purchaseOrder();
@@ -208,16 +210,32 @@ class FundGoodsOnOrderTest extends TestCase
         // Act
         $this->fundBuys($headers, $order, $bags);
 
-        // Assert — القيمةُ بنودُها الخمسة كما كانت، واللوحةُ تقول الرقمَ بجانبها لا داخلها.
+        // Assert — النقدُ نقص بثمن اللوري، والقيمةُ لم تنقص: صار بنداً سادساً فيها.
         $value = app(FundValuation::class)();
         $this->assertSame('7500.00', $value['cash']);
-        $this->assertSame('7500.00', $value['total']);
-        $this->assertArrayNotHasKey('goods_on_order', $value);
+        $this->assertSame('12500.00', $value['goods_on_order']);
+        $this->assertSame('20000.00', $value['total']);
 
         $dashboard = $this->withHeaders($headers)->getJson('/api/v1/investment/fund');
         $dashboard->assertOk()
             ->assertJsonPath('data.goods_on_order', '12500.00')
-            ->assertJsonPath('data.valuation.total', '7500.00');
+            ->assertJsonPath('data.valuation.goods_on_order', '12500.00')
+            ->assertJsonPath('data.valuation.total', '20000.00');
+    }
+
+    public function test_a_partner_who_joins_while_the_lorry_is_on_its_way_pays_the_full_price(): void
+    {
+        // Arrange — العيبُ الذي كشفته بياناتُ المالك التجريبية: داخلٌ يكتتب والبضاعةُ في الطريق
+        // كان يشتري الوحدةَ بأقلّ من قيمتها، ثم يقاسم البضاعةَ حين تصل.
+        $headers = $this->manager();
+        $this->fundHolding('20000.00');
+        [$order, $bags] = $this->purchaseOrder();
+
+        // Act
+        $this->fundBuys($headers, $order, $bags);
+
+        // Assert — عشرون ألفاً في وحداتٍ ما زالت تساوي عشرين ألفاً: السعرُ واحد.
+        $this->assertSame('1.000000', app(UnitPrice::class)());
     }
 
     public function test_a_short_delivery_ends_the_order_so_nothing_is_left_on_order(): void

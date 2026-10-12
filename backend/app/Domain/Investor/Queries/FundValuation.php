@@ -53,6 +53,7 @@ final class FundValuation
         private readonly FundShelfStock $shelf,
         private readonly FundDraws $draws,
         private readonly FundProfitOwed $profit,
+        private readonly FundGoodsOnOrder $onOrder,
     ) {}
 
     /**
@@ -65,6 +66,7 @@ final class FundValuation
      *     stock_on_shelf: string,
      *     goods_in_flight: string,
      *     receivables_at_cost: string,
+     *     goods_on_order: string,
      *     profit_owed: string,
      *     total: string
      * }
@@ -75,10 +77,15 @@ final class FundValuation
         $shelf = $this->shelf->value($dealId);
         $inFlight = (string) ($this->draws->inFlight($dealId)->sum('c.total_cost') ?? '0');
         $receivable = (string) ($this->draws->uncollected($dealId)->sum('c.total_cost') ?? '0');
+        // **بضاعةٌ دُفع ثمنُها ولم تصل** — قرارُ المالك 2026-10-13، ينقض «عرض لأن المال استُعمل
+        // بالفعل» (2026-09-24): المالُ لم يضِع، صار بضاعةً في الطريق يملكها الصندوق، فتُعدّ بتكلفتها
+        // كبضاعة الرفّ. بدونه كان من يكتتب واللوري في الطريق يشتري الوحدةَ بأقلّ من قيمتها ثم يقاسم
+        // البضاعةَ حين تصل، ومن يسحب يخرج بأقلّ من حقّه.
+        $onOrder = $this->onOrder->value($dealId);
         $owed = $this->profit->total($dealId);
 
         $total = bcsub(
-            bcadd(bcadd(bcadd($cash, $shelf, 8), $inFlight, 8), $receivable, 8),
+            bcadd(bcadd(bcadd(bcadd($cash, $shelf, 8), $inFlight, 8), $receivable, 8), $onOrder, 8),
             $owed,
             8,
         );
@@ -88,6 +95,7 @@ final class FundValuation
             'stock_on_shelf' => Money::round($shelf),
             'goods_in_flight' => Money::round($inFlight),
             'receivables_at_cost' => Money::round($receivable),
+            'goods_on_order' => Money::round($onOrder),
             'profit_owed' => Money::round($owed),
             'total' => Money::round($total),
         ];
