@@ -114,7 +114,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [INVESTOR-DEALS-HOW-IT-WORKS.md](investor-deals/INVESTOR-DEALS-HOW-IT-WORKS.md) | كيف يعمل النظام: حياة صفقة، وكيف يُحسب كل رقم. **مُنفَّذ.** ابدأ من هنا. |
 | [INVESTOR-DEALS-DESIGN.md](investor-deals/INVESTOR-DEALS-DESIGN.md) | المواصفة والقرارات وأسئلة §١١ وأجوبتها؛ الفرع `investor_deals`. |
 | [INVESTOR-PROFIT-FIELDS.md](investor-deals/INVESTOR-PROFIT-FIELDS.md) | **مرجع:** حقول ربح المستثمر — الشروط، الطريقان، القيود، الأرصدة، والإقفال. |
-| [FUND-EXPENSE-ON-GOODS.md](investor-deals/FUND-EXPENSE-ON-GOODS.md) | مصروفُ الصندوق على البضاعة: مربوطٌ بأمر شراء يتوزّع على كل وحداته — الرفُّ في التكلفة، والمباعُ على فترة بيعه. **مُنفَّذ** على الفرع `fund-expense-on-goods`. |
+| [FUND-EXPENSE-ON-GOODS.md](investor-deals/FUND-EXPENSE-ON-GOODS.md) | مصروفُ الصندوق على البضاعة: مربوطٌ بأمر شراء يتوزّع على كل وحداته — الرفُّ في التكلفة، والمباعُ على فترة بيعه. **مُنفَّذ** على `main`. |
 | [CONTINUOUS-FUND-DESIGN.md](investor-deals/CONTINUOUS-FUND-DESIGN.md) | الصندوق المستمرّ بفترات أرباح ووحدات: المواصفة، وأجوبة المالك في §٠، وخطة الشرائح في §٨. **مُنفَّذ** على الفرع `v2_investors`. |
 
 ## [nawris/](nawris/)

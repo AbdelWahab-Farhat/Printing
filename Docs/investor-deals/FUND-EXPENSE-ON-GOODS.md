@@ -1,6 +1,6 @@
 # مصروفُ الصندوق على البضاعة — يتبع البضاعةَ لا تاريخَه
 
-> **الحالة:** مُنفَّذ 2026-10-12 على الفرع `fund-expense-on-goods` — انظر §٧ «ما بُني». لم يُنشر على أيّ خادم.
+> **الحالة:** مُنفَّذ 2026-10-12 على `main` — انظر §٧ «ما بُني». لم يُنشر على أيّ خادم.
 > يبني على [CONTINUOUS-FUND-DESIGN.md](CONTINUOUS-FUND-DESIGN.md) و
 > [PURCHASE-ORDER-ARRIVAL-COSTS.md](../purchase-orders/PURCHASE-ORDER-ARRIVAL-COSTS.md).
 
@@ -169,8 +169,8 @@ PURCHASE-ORDER-ARRIVAL-COSTS §٢)، فتصيبها المشكلةُ نفسها.
 
 **الهدف:** §٢ كما هو، للصندوق وحده.
 
-**البيئة:** محلية — `APP_ENV=local`، قاعدة `printing_bags` على localhost. الفرع الجديد
-`fund-expense-on-goods` من `main`. لا نشر في هذه الخطة.
+**البيئة:** محلية — `APP_ENV=local`، قاعدة `printing_bags` على localhost، على `main` مباشرةً. لا نشر في
+هذه الخطة.
 
 **ملفات تُنشأ — الخادم:**
 - `database/migrations/2026_10_12_100000_land_fund_expenses_on_goods.php` — العمودان + الجدول.
@@ -237,7 +237,7 @@ PURCHASE-ORDER-ARRIVAL-COSTS.
 
 ثم اختباراتُ المستثمرين كاملةً، واختباراتُ الشاشتين، و`flutter analyze`.
 
-**الرجوع:** الفرعُ لا يُدمج إلا بعد موافقتك؛ والهجرةُ تُعكس بـ`migrate:rollback --step=1` محلياً.
+**الرجوع:** `git revert` للالتزام، والهجرةُ تُعكس بـ`migrate:rollback --step=1` محلياً.
 
 **المخاطر:**
 - **مالٌ يتحرّك بين فترات.** أخطرُ ما في الخطة الخطافُ في `CreditBackStockBatches`: لو فات، حُسب
