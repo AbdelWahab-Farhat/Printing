@@ -5,11 +5,10 @@ import 'package:dayaa/features/products/models/production_mode.dart';
 ///
 /// **The server's rule, mirrored rather than invented.** `ResolveOrderFlow` puts an order on the
 /// وسيط road when **every** line is outsourced, and `CreateOrder` then refuses one without a
-/// vendor — «الطلبية الوسيطة تحتاج مورداً». A printed line beside four وسيط ones is a printed
-/// order: the press really does have to run, the road is the standard one, and a vendor is
-/// merely accepted. So the form *requires* the picker only where the server would, and *offers*
-/// it wherever a vendor is plausibly involved — requiring it on a mixed order would refuse an
-/// order the server would have taken.
+/// vendor — «الطلبية الوسيطة تحتاج مورداً». A وسيط line beside one of ours is refused outright
+/// (see `one_bench.dart`), so [VendorRequirement.optional] only ever describes a form mid-edit,
+/// on its way to one bench or the other; the row stays drawn then so a vendor already chosen is
+/// not thrown away while the clerk removes the line that does not belong.
 ///
 /// Read off the products the lines were picked from: `product_category.production_mode` on a
 /// product is the *effective* mode, a parent's answer already applied. See
@@ -18,7 +17,7 @@ enum VendorRequirement {
   /// No line is a vendor's work — the row is not drawn at all.
   notOffered,
 
-  /// Some lines are, some are not. Drawn, and left open: the server accepts an id on any order.
+  /// Some lines are, some are not — a mix the form refuses to submit. Drawn, and left open.
   optional,
 
   /// Every line is — the road is the vendor's, and the server refuses the order without one.

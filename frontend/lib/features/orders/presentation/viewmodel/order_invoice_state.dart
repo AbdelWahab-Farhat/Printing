@@ -38,6 +38,11 @@ abstract class InvoiceLine with _$InvoiceLine {
 
     /// What should now leave the shelf, as typed. Only asked for — see [needsWeight].
     @Default('') String warehouseQuantity,
+
+    /// Whether this line's product goes in an order of its own — a وسيط one. Read off the
+    /// order's road for a line already on it, and off the product for one added here. See
+    /// [OrderInvoiceState.mixesBenches].
+    @Default(false) bool isOrderedAlone,
   }) = _InvoiceLine;
 
   const InvoiceLine._();
@@ -146,6 +151,21 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
     /// immediately would be a third way this screen saves, and this one is a field of the order
     /// like the discount beside it, not a conversation with the customer.
     @Default(false) bool isUrgent,
+
+    /// Whether the lines must stay on the bench the order is on. See `Order.benchIsFixed`.
+    @Default(false) bool benchIsFixed,
+
+    /// Whether the order was a وسيط one when the screen opened — the bench [benchIsFixed]
+    /// holds the picker to, and the reason a vendor is let go when no وسيط line is left.
+    @Default(false) bool wasOrderedAlone,
+
+    /// Who is making it, as it stands on screen. Seeded from the order; changed only by the
+    /// «المورد» row, which is drawn when every line is a vendor's work. See [vendorIsRequired].
+    int? vendorId,
+    String? vendorName,
+
+    /// The vendor the order opened with, so a save that did not change it says nothing about it.
+    int? originalVendorId,
     @Default(false) bool isSaving,
     @Default(false) bool isSaved,
     @Default(false) bool isDirty,
@@ -162,6 +182,8 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
   bool get isValid =>
       !linesAreEditable ||
       (lines.isNotEmpty &&
+          !mixesBenches &&
+          (!vendorIsRequired || vendorId != null) &&
           lines.every(
             (line) =>
                 line.hasValidQuantity &&
@@ -169,10 +191,48 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
                 (!line.needsWeight(movesStock: linesMoveStock) || line.hasValidWeight),
           ));
 
+  /// Whether the lines now hold a وسيط product beside one of ours — refused by the server, so
+  /// the save stays shut and [itemsError] says why. Allowed to exist on screen, because swapping
+  /// an order's only product for one from the other bench passes through it. See `one_bench.dart`.
+  bool get mixesBenches =>
+      linesAreEditable && linesMixBenches(lines.map((line) => line.isOrderedAlone));
+
   /// The server's complaint about the lines as a whole — «لا يوجد رصيد كافٍ…», «لا يمكن أن
   /// يغيّر التعديل مسار الطلبية…». Painted at the top of «البنود» rather than lost in a snackbar.
-  String? get itemsError => switch (failure) {
-    ServerFailure(:final fieldErrors) => fieldErrors?['items']?.firstOrNull,
+  ///
+  /// **Or the same complaint the server would make about mixed benches, before the save.**
+  String? get itemsError =>
+      switch (failure) {
+        ServerFailure(:final fieldErrors) => fieldErrors?['items']?.firstOrNull,
+        _ => null,
+      } ??
+      (mixesBenches ? mixedBenchesMessage : null);
+
+  /// Whether the lines, as they stand, are all a vendor's work — so the order is a وسيط one and
+  /// the server refuses it without a vendor: «الطلبية الوسيطة تحتاج مورداً». The «المورد» row is
+  /// drawn exactly then — the case being a «جديدة» order whose own products were removed until
+  /// only the وسيط one was left.
+  bool get vendorIsRequired =>
+      linesAreEditable && lines.isNotEmpty && lines.every((line) => line.isOrderedAlone);
+
+  /// Which vendor the save should carry.
+  ///
+  /// **Let go when the last وسيط line is.** An order swapped back onto our own products would
+  /// otherwise keep a vendor's name on its header for goods nobody outside is making. Kept in
+  /// every other case — including an order of ours that happened to carry one, which this
+  /// screen has no business clearing behind the clerk's back.
+  int? get vendorToSend =>
+      linesAreEditable && wasOrderedAlone && !lines.any((line) => line.isOrderedAlone)
+      ? null
+      : vendorId;
+
+  /// Which bench «إضافة منتج» holds the picker to: the order's own once [benchIsFixed], and
+  /// none before that, when a swap across is still a legitimate edit.
+  bool? get pickerBench => benchIsFixed ? wasOrderedAlone : null;
+
+  /// The server's complaint about the vendor, under the «المورد» row.
+  String? get vendorError => switch (failure) {
+    ServerFailure(:final fieldErrors) => fieldErrors?['vendor_id']?.firstOrNull,
     _ => null,
   };
 

@@ -76,6 +76,7 @@ class UpdateOrderInvoice {
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
     bool? isUrgent,
+    ({int? id})? vendor,
   }) {
     // **An amount of nothing takes its reason with it.** The chips can be tapped before the box
     // is filled, and a reason on its own would be a category for money nobody is charging —
@@ -94,6 +95,7 @@ class UpdateOrderInvoice {
       additionalCostReason: isCharging ? additionalCostReason : null,
       additionalCostNote: isCharging ? _text(additionalCostNote) : null,
       isUrgent: isUrgent,
+      vendor: vendor,
     );
   }
 

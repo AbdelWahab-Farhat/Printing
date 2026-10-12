@@ -45,4 +45,12 @@ enum ProductionMode {
 
   /// Whether an order made only of these goods must name the vendor executing it.
   bool get needsAVendor => this == ProductionMode.outsourced;
+
+  /// Whether goods under this heading go in an order of their own.
+  ///
+  /// Mirrors `ProductionMode::orderGroup()` on the server: «مطبوعة» and «سادة» are both ours and
+  /// share an order freely, «وسيط» is somebody else's bench and shares with nothing of ours.
+  /// [unknown] shares, the same answer the server gives a product with no heading. See
+  /// `mixesBenches`.
+  bool get isOrderedAlone => this == ProductionMode.outsourced;
 }

@@ -1,11 +1,15 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/one_bench.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -86,6 +90,7 @@ void main() {
         regionId: any(named: 'regionId'),
         recipientPhone: any(named: 'recipientPhone'),
         isUrgent: any(named: 'isUrgent'),
+        vendor: any(named: 'vendor'),
       ),
     ).thenAnswer(
       (_) async => failure != null ? Left(failure) : Right(orderWith()),
@@ -648,18 +653,22 @@ void main() {
 
   // ─────────────────── adding and removing products (ORDER-LINES-ADD-REMOVE) ───────────────────
 
-  Product productWith({bool listed = true, String unit = 'piece'}) => Product(
-    id: 30,
-    code: 'P30',
-    slug: 'box',
-    name: 'علبة',
-    pricingUnit: unit,
-    pricingUnitLabel: unit == 'piece' ? 'قطعة' : 'كيلوغرام',
-    pricingMode: listed ? 'tiered' : 'quote_on_request',
-    pricingModeLabel: listed ? 'حسب الكمية' : 'حسب الطلب',
-    hasListedPrices: listed,
-    minOrderQuantity: '1.000',
-  );
+  Product productWith({bool listed = true, String unit = 'piece', ProductionMode? mode}) =>
+      Product(
+        id: 30,
+        code: 'P30',
+        slug: 'box',
+        name: 'علبة',
+        pricingUnit: unit,
+        pricingUnitLabel: unit == 'piece' ? 'قطعة' : 'كيلوغرام',
+        pricingMode: listed ? 'tiered' : 'quote_on_request',
+        pricingModeLabel: listed ? 'حسب الكمية' : 'حسب الطلب',
+        hasListedPrices: listed,
+        minOrderQuantity: '1.000',
+        productCategory: mode == null
+            ? null
+            : ProductCategory(id: 60, name: 'تصنيف', productionMode: mode),
+      );
 
   ProductVariant sizeWith({String? shelfUnit}) => ProductVariant(
     id: 40,
@@ -816,5 +825,250 @@ void main() {
 
     // Assert
     expect(cubit.state.dropsBelowPaid, isTrue);
+  });
+
+  // ─────────────────────────── one order, one bench ───────────────────────────
+
+  test('a وسيط product added to an order of ours shuts the save and says why', () async {
+    // Arrange — a printed order, on the standard road.
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+    stubSave();
+
+    // Act
+    cubit.add(product: productWith(mode: ProductionMode.outsourced), variant: sizeWith());
+    cubit.setQuantity(cubit.state.lines.last.id, '100');
+    await cubit.save();
+
+    // Assert — the server's own sentence, before the server is asked.
+    expect(cubit.state.mixesBenches, isTrue);
+    expect(cubit.state.isValid, isFalse);
+    expect(cubit.state.itemsError, mixedBenchesMessage);
+    verifyNever(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: any(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
+      ),
+    );
+  });
+
+  test('a وسيط product added to a plain order is refused the same way', () {
+    // Arrange — «سادة» skips the press but is still ours.
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.noProduction));
+
+    // Act
+    cubit.add(product: productWith(mode: ProductionMode.outsourced), variant: sizeWith());
+
+    // Assert
+    expect(cubit.state.mixesBenches, isTrue);
+  });
+
+  test('a product of ours added to a وسيط order is refused too', () {
+    // Arrange
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.outsourced));
+
+    // Act
+    cubit.add(product: productWith(mode: ProductionMode.inHouse), variant: sizeWith());
+
+    // Assert
+    expect(cubit.state.mixesBenches, isTrue);
+    expect(cubit.state.itemsError, mixedBenchesMessage);
+  });
+
+  test('swapping a وسيط order onto one of our products passes through the mix', () {
+    // Arrange — the reason this is checked on the form and not in the picker: the last line
+    // can never be removed, so the new product has to be added before the old one goes.
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.outsourced));
+    cubit.add(product: productWith(mode: ProductionMode.inHouse), variant: sizeWith());
+    cubit.setQuantity(cubit.state.lines.last.id, '100');
+
+    // Act
+    cubit.remove(1);
+
+    // Assert
+    expect(cubit.state.mixesBenches, isFalse);
+    expect(cubit.state.itemsError, isNull);
+    expect(cubit.state.isValid, isTrue);
+  });
+
+  test('a plain product beside a printed one is not a mix', () {
+    // Arrange
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+
+    // Act
+    cubit.add(product: productWith(mode: ProductionMode.none), variant: sizeWith());
+    cubit.setQuantity(cubit.state.lines.last.id, '100');
+
+    // Assert
+    expect(cubit.state.mixesBenches, isFalse);
+    expect(cubit.state.isValid, isTrue);
+  });
+
+  test('a product whose heading did not come with it shares, as the server assumes', () {
+    // Arrange
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+
+    // Act
+    cubit.add(product: productWith(), variant: sizeWith());
+
+    // Assert
+    expect(cubit.state.mixesBenches, isFalse);
+  });
+
+  test('the road is read off the wire, and an unheard-of one does not break the order', () {
+    // Arrange
+    Map<String, dynamic> json(String flow) => {
+      'id': 52,
+      'code': '52',
+      'customer_id': 3,
+      'status': 'new',
+      'status_label': 'جديدة',
+      'is_final': false,
+      'design_source': 'none',
+      'design_source_label': 'بدون تصميم',
+      'city_id': 1,
+      'city_name': 'طرابلس',
+      'fulfilment_type_label': 'توصيل',
+      'is_office_pickup': false,
+      'items_total': '330.00',
+      'design_fee': '0.00',
+      'delivery_price': '20.00',
+      'discount': '0.00',
+      'grand_total': '350.00',
+      'production_flow': flow,
+    };
+
+    // Act
+    final outsourced = Order.fromJson(json('outsourced'));
+    final future = Order.fromJson(json('some_new_road'));
+
+    // Assert
+    expect(outsourced.productionFlow, OrderFlow.outsourced);
+    expect(future.productionFlow, OrderFlow.unknown);
+    expect(future.productionFlow.isOrderedAlone, isFalse);
+    expect(outsourced.benchIsFixed, isFalse);
+    expect(Order.fromJson({...json('standard'), 'bench_is_fixed': true}).benchIsFixed, isTrue);
+  });
+
+  // ──────────────────────── the bench, once work has started ────────────────────────
+
+  test('once work has started, the picker is held to the order’s own bench', () {
+    // Arrange - Act
+    final ours = cubitFor(
+      orderWith().copyWith(productionFlow: OrderFlow.standard, benchIsFixed: true),
+    );
+    final vendors = cubitFor(
+      orderWith().copyWith(productionFlow: OrderFlow.outsourced, benchIsFixed: true),
+    );
+    final fresh = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+
+    // Assert — «جديدة» holds it to nothing: the swap across is still a legitimate edit.
+    expect(ours.state.pickerBench, isFalse);
+    expect(vendors.state.pickerBench, isTrue);
+    expect(fresh.state.pickerBench, isNull);
+  });
+
+  // ─────────────────────────── who is making it ───────────────────────────
+
+  ({int? id})? sentVendor() => verify(
+    () => repository.updateInvoice(
+      any(),
+      lines: any(named: 'lines'),
+      discount: any(named: 'discount'),
+      cityId: any(named: 'cityId'),
+      regionId: any(named: 'regionId'),
+      recipientPhone: any(named: 'recipientPhone'),
+      isUrgent: any(named: 'isUrgent'),
+      vendor: captureAny(named: 'vendor'),
+    ),
+  ).captured.last as ({int? id})?;
+
+  test('an order left with only its وسيط product asks who is making it', () async {
+    // Arrange — «جديدة», ours, no vendor: the clerk adds a وسيط product and removes their own.
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+    stubSave();
+    cubit.add(product: productWith(mode: ProductionMode.outsourced), variant: sizeWith());
+    cubit.setQuantity(cubit.state.lines.last.id, '100');
+
+    // Act
+    cubit.remove(1);
+
+    // Assert — the row is drawn and the save waits for it.
+    expect(cubit.state.vendorIsRequired, isTrue);
+    expect(cubit.state.isValid, isFalse);
+
+    // Act
+    cubit.setVendor(id: 4, name: 'مطبعة الأمل');
+    await cubit.save();
+
+    // Assert
+    expect(cubit.state.vendorName, 'مطبعة الأمل');
+    expect(sentVendor(), (id: 4));
+  });
+
+  test('an order of ours asks for no vendor', () {
+    // Arrange - Act
+    final cubit = cubitFor(orderWith().copyWith(productionFlow: OrderFlow.standard));
+
+    // Assert
+    expect(cubit.state.vendorIsRequired, isFalse);
+    expect(cubit.state.isValid, isTrue);
+  });
+
+  test('a وسيط order swapped back onto ours lets its vendor go', () async {
+    // Arrange
+    final cubit = cubitFor(
+      orderWith().copyWith(productionFlow: OrderFlow.outsourced, vendorId: 4, vendorName: 'م'),
+    );
+    stubSave();
+    cubit.add(product: productWith(mode: ProductionMode.inHouse), variant: sizeWith());
+    cubit.setQuantity(cubit.state.lines.last.id, '300');
+    cubit.remove(1);
+
+    // Act
+    await cubit.save();
+
+    // Assert — present and empty: absent would echo the vendor back.
+    expect(sentVendor(), (id: null));
+  });
+
+  test('an edit that leaves the vendor alone says nothing about it', () async {
+    // Arrange — a وسيط order whose quantity changes, nothing more.
+    final cubit = cubitFor(
+      orderWith().copyWith(productionFlow: OrderFlow.outsourced, vendorId: 4, vendorName: 'م'),
+    );
+    stubSave();
+    cubit.setQuantity(1, '500');
+
+    // Act
+    await cubit.save();
+
+    // Assert — the vendor already named is on the order and needs no repeating.
+    expect(cubit.state.vendorIsRequired, isTrue);
+    expect(sentVendor(), isNull);
+  });
+
+  test('the server’s refusal of the vendor lands under its row', () async {
+    // Arrange
+    const refusal = Failure.server(
+      message: 'الطلبية الوسيطة تحتاج مورداً — اختر المورد الذي سينفّذها',
+      statusCode: 422,
+      fieldErrors: {
+        'vendor_id': ['الطلبية الوسيطة تحتاج مورداً — اختر المورد الذي سينفّذها'],
+      },
+    );
+    stubSave(failure: refusal);
+    final cubit = cubitFor(orderWith());
+    cubit.setQuantity(1, '500');
+
+    // Act
+    await cubit.save();
+
+    // Assert
+    expect(cubit.state.vendorError, refusal.message);
   });
 }

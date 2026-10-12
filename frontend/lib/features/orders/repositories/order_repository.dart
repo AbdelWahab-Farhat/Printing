@@ -144,6 +144,9 @@ abstract interface class OrderRepository {
   /// with no reason is a 422, and so is sending an unchanged amount back on an edit that was
   /// only about the address if its reason is dropped on the way. Absent means «leave the charge
   /// as it is», and the implementation echoes the order's own three fields back.
+  ///
+  /// [vendor] is a record for the reason [recipientPhone] is: **absent** echoes the order's own
+  /// vendor back, while `(id: null)` lets it go — an order swapped back onto our own products.
   Future<Either<Failure, Order>> updateInvoice(
     int orderId, {
     List<InvoiceLineUpdate>? lines,
@@ -155,6 +158,7 @@ abstract interface class OrderRepository {
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
     bool? isUrgent,
+    ({int? id})? vendor,
   });
 
   /// Undoes a cancellation made by mistake, and answers with the order as the server left it.

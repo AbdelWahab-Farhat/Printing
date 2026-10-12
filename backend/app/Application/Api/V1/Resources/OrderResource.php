@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
@@ -499,6 +500,12 @@ class OrderResource extends JsonResource
             // move before offering the lines, and asks for a weight on a line stocked by the
             // kilo. Docs/orders/ORDER-LINES-ADD-REMOVE.md §6.
             'item_edits_move_stock' => $this->itemsAreEditable() && $this->stock_deducted_at !== null,
+
+            // **Whether the lines must stay on the bench they are on** — true once work has
+            // started, when a وسيط product can no longer join an order of ours nor the other way
+            // round. The app greys the other bench out of the picker rather than letting an
+            // edit be built that `UpdateOrder` refuses. See `ResolveOrderFlow::benchIsFixed()`.
+            'bench_is_fixed' => app(ResolveOrderFlow::class)->benchIsFixed($this->resource),
             'designs_are_editable' => $this->designsAreEditable(),
             'destination_is_editable' => $this->destinationIsEditable(),
         ];

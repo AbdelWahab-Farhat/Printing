@@ -3,6 +3,8 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/products/models/product.dart';
+import 'package:dayaa/features/products/models/product_category.dart';
+import 'package:dayaa/features/products/models/production_mode.dart';
 import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:dayaa/features/products/repositories/product_repository.dart';
 import 'package:dayaa/features/products/usecases/get_products.dart';
@@ -40,8 +42,12 @@ void main() {
     String name = 'أكياس الشحن',
     List<ProductImage> images = const <ProductImage>[],
     List<ProductVariant> variants = const <ProductVariant>[],
+    ProductionMode? mode,
   }) {
     return Product(
+      productCategory: mode == null
+          ? null
+          : ProductCategory(id: 60, name: 'تصنيف', productionMode: mode),
       id: id,
       code: 'P$id',
       slug: 'bag-$id',
@@ -98,7 +104,7 @@ void main() {
 
   /// The app's own frame — ScreenUtil at the reference size, Arabic, right to left — with a
   /// button that opens the sheet the way the order form does.
-  Widget host({Set<int> addedVariantIds = const {}}) => ScreenUtilInit(
+  Widget host({Set<int> addedVariantIds = const {}, bool? bench}) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
       locale: const Locale('ar'),
@@ -115,6 +121,7 @@ void main() {
               picked = await showProductPicker(
                 context: context,
                 addedVariantIds: addedVariantIds,
+                bench: bench,
               );
             },
             child: const Text('افتح'),
@@ -127,6 +134,7 @@ void main() {
   Future<void> openThePicker(
     WidgetTester tester, {
     Set<int> addedVariantIds = const {},
+    bool? bench,
   }) async {
     // A real phone, not the 800×600 the binding defaults to: every size below is a claim about
     // the widget, and at 800 wide against a 430 design ScreenUtil scales everything by 1.86.
@@ -135,7 +143,7 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(host(addedVariantIds: addedVariantIds));
+    await tester.pumpWidget(host(addedVariantIds: addedVariantIds, bench: bench));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
   }
@@ -297,6 +305,79 @@ void main() {
       // nothing.
       expect(picked, isNull);
       expect(find.text('مضاف — عدّل كميته من البنود'), findsOneWidget);
+    });
+  });
+
+  /// **Once work has started, the other bench is shown and refused.** An order of ours past
+  /// «جديدة» can no longer become a وسيط one, so a وسيط product added there could never be
+  /// saved — `Order.benchIsFixed`. Greyed out rather than hidden, for the reason a size already
+  /// on the order is.
+  group('an order held to its bench', () {
+    final printed = product(
+      id: 1,
+      name: 'أكياس الشحن',
+      mode: ProductionMode.inHouse,
+      variants: const [ProductVariant(id: 11, label: '25*35')],
+    );
+    final boxes = product(
+      id: 2,
+      name: 'علب كرتون',
+      mode: ProductionMode.outsourced,
+      variants: const [ProductVariant(id: 21, label: 'صغيرة')],
+    );
+
+    testWidgets('greys out the other bench and refuses the tap', (tester) async {
+      // Arrange — an order of ours.
+      answerWith([printed, boxes]);
+      await openThePicker(tester, bench: false);
+
+      // Act
+      await tester.tap(find.text('علب كرتون'));
+      await tester.pumpAndSettle();
+
+      // Assert — nothing handed back, and the row says why.
+      expect(picked, isNull);
+      expect(find.text('يُطلب في طلبية مستقلة'), findsOneWidget);
+    });
+
+    testWidgets('still lets its own bench through', (tester) async {
+      // Arrange
+      answerWith([printed, boxes]);
+      await openThePicker(tester, bench: false);
+
+      // Act
+      await tester.tap(find.text('أكياس الشحن'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(picked?.variant.id, 11);
+    });
+
+    testWidgets('holds a وسيط order to وسيط products', (tester) async {
+      // Arrange
+      answerWith([printed, boxes]);
+      await openThePicker(tester, bench: true);
+
+      // Act
+      await tester.tap(find.text('علب كرتون'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(picked?.variant.id, 21);
+      expect(find.text('يُطلب في طلبية مستقلة'), findsNothing);
+    });
+
+    testWidgets('refuses nothing before work has started', (tester) async {
+      // Arrange — «جديدة»: the swap across is legitimate, so no bench is given.
+      answerWith([printed, boxes]);
+      await openThePicker(tester);
+
+      // Act
+      await tester.tap(find.text('علب كرتون'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(picked?.variant.id, 21);
     });
   });
 }

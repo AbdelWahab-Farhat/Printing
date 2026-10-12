@@ -36,10 +36,16 @@ typedef PickedProduct = ({Product product, ProductVariant variant});
 /// tap that would create it rather than explained afterwards. Left empty by a caller for which
 /// repeating a size is ordinary.
 ///
+/// **[bench] holds the picker to one bench** — `true` for وسيط products only, `false` for ours
+/// only, null for any. Given by «تعديل الطلبية» once work has started on the order, when the
+/// other bench's products could never be saved there; the rest are shown greyed out, for the
+/// reason a size already on the form is. See `Order.benchIsFixed`.
+///
 /// Returns null when the user backs out — an ordinary ending, reported nowhere.
 Future<PickedProduct?> showProductPicker({
   required BuildContext context,
   Set<int> addedVariantIds = const {},
+  bool? bench,
 }) {
   return showModalBottomSheet<PickedProduct>(
     context: context,
@@ -52,15 +58,16 @@ Future<PickedProduct?> showProductPicker({
       // Constructed here rather than resolved from the injector: this list asks a narrower
       // question than the catalogue tab does — only what is still made.
       create: (_) => ProductsCubit(getProducts: sl<GetProducts>(), onlyOrderable: true)..load(),
-      child: _ProductPicker(addedVariantIds: addedVariantIds),
+      child: _ProductPicker(addedVariantIds: addedVariantIds, bench: bench),
     ),
   );
 }
 
 class _ProductPicker extends StatefulWidget {
-  const _ProductPicker({required this.addedVariantIds});
+  const _ProductPicker({required this.addedVariantIds, this.bench});
 
   final Set<int> addedVariantIds;
+  final bool? bench;
 
   @override
   State<_ProductPicker> createState() => _ProductPickerState();
@@ -71,6 +78,15 @@ class _ProductPickerState extends State<_ProductPicker> {
   Product? _product;
 
   bool _isAdded(ProductVariant variant) => widget.addedVariantIds.contains(variant.id);
+
+  /// Whether this product is on the other bench from the one the picker is held to. A product
+  /// whose heading did not come with it is ours, the server's own default.
+  bool _isOtherBench(Product product) {
+    final bench = widget.bench;
+    if (bench == null) return false;
+
+    return (product.productCategory?.productionMode.isOrderedAlone ?? false) != bench;
+  }
 
   void _choose(Product product) {
     final sizes = product.activeVariants;
@@ -112,10 +128,17 @@ class _ProductPickerState extends State<_ProductPicker> {
           // The picture's square plus the padding around it — the placeholder rows are the
           // same height as the real ones, so nothing shifts when the page lands.
           skeletonHeight: 72.h,
-          itemBuilder: (context, product, index) => _ProductRow(
-            product: product,
-            onTap: () => _choose(product),
-          ),
+          itemBuilder: (context, product, index) {
+            // Shown and refused rather than dropped, like a size already on the form: a product
+            // that vanished from the list would read as «غير متوفر», which is not the reason.
+            final refused = _isOtherBench(product);
+
+            return _ProductRow(
+              product: product,
+              refusal: refused ? 'يُطلب في طلبية مستقلة' : null,
+              onTap: refused ? null : () => _choose(product),
+            );
+          },
         ),
       ),
     );
@@ -210,57 +233,70 @@ String _priceLine(Product product, ProductVariant variant) {
 /// photograph is squashed into a rectangle. A picture that changes shape with the device is
 /// worse than none.
 class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.product, required this.onTap});
+  const _ProductRow({required this.product, required this.onTap, this.refusal});
 
   final Product product;
-  final VoidCallback onTap;
+
+  /// Null when the row may not be picked — see [refusal].
+  final VoidCallback? onTap;
+
+  /// Why the row may not be picked, printed in place of its sizes. Null on a row that may be.
+  final String? refusal;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final sizes = product.activeVariants.length;
+    final refusal = this.refusal;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12.r),
-      child: Padding(
-        // No horizontal inset: the list already carries the sheet's 16, so the picture's edge
-        // sits under the search box's edge — the line everything else here starts from.
-        padding: EdgeInsets.symmetric(vertical: 8.h),
-        child: Row(
-          children: [
-            ProductThumbnail(image: product.primaryImage, side: 48.w),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+      // Greyed as a whole — picture and all — the way a disabled ListTile greys, so the row
+      // reads as unavailable before its second line is read.
+      child: Opacity(
+        opacity: refusal == null ? 1 : 0.45,
+        child: Padding(
+          // No horizontal inset: the list already carries the sheet's 16, so the picture's edge
+          // sits under the search box's edge — the line everything else here starts from.
+          padding: EdgeInsets.symmetric(vertical: 8.h),
+          child: Row(
+            children: [
+              ProductThumbnail(image: product.primaryImage, side: 48.w),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    product.hasListedPrices
-                        ? 'بال${product.pricingUnitLabel} · $sizes مقاس'
-                        : 'بال${product.pricingUnitLabel} · السعر حسب الطلب',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
+                    SizedBox(height: 2.h),
+                    Text(
+                      refusal ??
+                          (product.hasListedPrices
+                              ? 'بال${product.pricingUnitLabel} · $sizes مقاس'
+                              : 'بال${product.pricingUnitLabel} · السعر حسب الطلب'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            SizedBox(width: 8.w),
-            Icon(Icons.chevron_left_rounded, size: 22.r, color: scheme.onSurfaceVariant),
-          ],
+              SizedBox(width: 8.w),
+              if (refusal == null)
+                Icon(Icons.chevron_left_rounded, size: 22.r, color: scheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );

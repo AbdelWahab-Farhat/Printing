@@ -3,6 +3,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/models/stock_effect.dart';
@@ -48,6 +49,13 @@ abstract class Order with _$Order {
     /// The label rather than the wire value, for the reason [statusLabel] gives: a road this
     /// build has never heard of still reads correctly.
     @JsonKey(name: 'production_flow_label') @Default('') String productionFlowLabel,
+
+    /// The road itself, beside its label — read for one thing only: which bench the lines
+    /// already on the order belong to, so «تعديل الطلبية» can refuse a وسيط product added
+    /// beside ours before the server does. See [OrderFlow.isOrderedAlone].
+    @JsonKey(name: 'production_flow', unknownEnumValue: OrderFlow.unknown)
+    @Default(OrderFlow.unknown)
+    OrderFlow productionFlow,
 
     /// Whether the order is finished — no move of any kind is left.
     ///
@@ -324,6 +332,13 @@ abstract class Order with _$Order {
     /// an added one comes off it, so the screen asks the grant for that move and a weight for a
     /// line stocked by the kilo. See Docs/orders/ORDER-LINES-ADD-REMOVE.md.
     @JsonKey(name: 'item_edits_move_stock') @Default(false) bool itemEditsMoveStock,
+
+    /// Whether the lines must stay on the bench they are on — ours, or a vendor's. True once
+    /// work has started, when the order can no longer change road, so «إضافة منتج» greys the
+    /// other bench out rather than letting the clerk build an edit the server refuses. False in
+    /// «جديدة», where swapping every product for the other bench's is a legitimate edit. The
+    /// server's answer — see `ResolveOrderFlow::benchIsFixed()`.
+    @JsonKey(name: 'bench_is_fixed') @Default(false) bool benchIsFixed,
 
     /// Whether another version of the artwork may be attached.
     ///
