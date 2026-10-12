@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Enums\CashEntryType;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Exceptions\PurchaseOrderBroughtTheFundNothing;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Support\FundDeal;
@@ -37,11 +38,22 @@ final class RecordFundExpense
         private readonly FundDeal $fund,
         private readonly RecordDealExpense $record,
         private readonly RecordCashEntry $cash,
+        private readonly LandFundExpenseOnGoods $onGoods,
     ) {}
 
+    /**
+     * @throws PurchaseOrderBroughtTheFundNothing
+     */
     public function __invoke(DealExpenseData $data, ?int $actorId): InvestorDealExpense
     {
         return DB::transaction(function () use ($data, $actorId): InvestorDealExpense {
+            // **مربوطٌ بطلب شراء: البضاعةُ تحمله** — FUND-EXPENSE-ON-GOODS. يُرفض قبل أن يُكتب شيء،
+            // وأرصدةُ الرفوف تُقفل قبل الصندوق: الترتيبُ الذي يأخذ به السحبُ من الرفّ أقفالَه.
+            if ($data->purchaseOrderId !== null) {
+                $this->onGoods->guard($data->purchaseOrderId);
+                $this->onGoods->lockShelves($data->purchaseOrderId);
+            }
+
             $expense = ($this->record)(($this->fund)(), $data, $actorId);
 
             ($this->cash)(
@@ -53,7 +65,11 @@ final class RecordFundExpense
                 occurredAt: InvestorDealExpense::momentFor($expense->incurred_on, $expense->created_at),
             );
 
-            $this->coverTheCompanysShare($expense, $actorId);
+            if ($expense->purchase_order_id !== null) {
+                ($this->onGoods)($expense, $actorId);
+            } else {
+                $this->coverTheCompanysShare($expense, $actorId);
+            }
 
             return $expense;
         });

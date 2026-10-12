@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
@@ -93,6 +94,7 @@ class RecordFundExpense {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   }) => _repository.recordExpense(
     kind: kind,
     name: name,
@@ -100,7 +102,17 @@ class RecordFundExpense {
     incurredOn: incurredOn,
     notes: notes,
     treasuryAccountId: treasuryAccountId,
+    purchaseOrderId: purchaseOrderId,
   );
+}
+
+/// أوامرُ الشراء التي يُربط بها مصروفٌ على البضاعة.
+class GetFundPurchaseOrders {
+  const GetFundPurchaseOrders(this._repository);
+
+  final InvestmentFundRepository _repository;
+
+  Future<Either<Failure, List<FundPurchaseOrderOption>>> call() => _repository.purchaseOrders();
 }
 
 /// ما يُطلب من الصندوق مع أمر شراء: أيَّ الرفوف يأخذ، وبكم تشتري المطبعةُ سادةَ كلٍّ منها.

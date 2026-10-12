@@ -49,6 +49,7 @@ class StockMovement extends Model
             'movement_type' => MovementType::class,
             'adjustment_reason' => StockAdjustmentReason::class,
             'quantity' => 'decimal:3',
+            'purchased_layers_to_company' => 'boolean',
         ];
     }
 

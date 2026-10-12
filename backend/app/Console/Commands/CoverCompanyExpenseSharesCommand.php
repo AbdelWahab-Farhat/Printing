@@ -49,6 +49,8 @@ class CoverCompanyExpenseSharesCommand extends Command
             ->where('investor_deal_id', $fundId)
             ->where('is_landed', false)
             ->whereNull('reverses_expense_id')
+            // مصروفٌ على البضاعة يُغطّى نصيبُ الشركة منه صفّاً صفّاً — PostFundExpenseCharge.
+            ->whereNull('purchase_order_id')
             ->whereNotIn('id', $covered)
             ->orderBy('id')
             ->get()

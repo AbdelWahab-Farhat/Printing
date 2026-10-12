@@ -943,6 +943,9 @@ Route::prefix('v1')->group(function (): void {
         // المصروفُ يأكل من ربح الشهر، فصلاحيتُه صلاحيةُ مصروف الصفقة نفسُها.
         Route::post('investment/expenses', [InvestmentFundController::class, 'storeExpense'])
             ->middleware('can:investor_deals.expenses.record')->name('investment.expenses.store');
+        // حقلُ «طلب الشراء» في الورقة نفسها — بصلاحيتها.
+        Route::get('investment/purchase-orders', [InvestmentFundController::class, 'purchaseOrders'])
+            ->middleware('can:investor_deals.expenses.record')->name('investment.purchase-orders.index');
 
         Route::post(
             'investment/expenses/{expense}/reverse',
@@ -1383,6 +1386,10 @@ Route::prefix('v1')->group(function (): void {
             Route::get('investors/{investor}/logs', [InvestorController::class, 'logs'])->name('investors.logs');
             Route::get('investor-deals/{deal}/logs', [InvestorDealController::class, 'logs'])
                 ->name('investor-deals.logs');
+            // حصةُ مصروفٍ على البضاعة — Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md.
+            Route::get('investment/expense-charges/{charge}/logs', [InvestmentFundController::class, 'chargeLogs'])
+                ->whereNumber('charge')
+                ->name('investment.expense-charges.logs');
 
             // Scoped like the rest of the nested region routes: another city's region id is a
             // 404 here too, not a history leaked from the wrong place.

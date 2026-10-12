@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 
@@ -47,6 +48,8 @@ abstract interface class InvestmentFundRepository {
   });
 
   /// مصروفٌ على الصندوق: يأكل من ربح فترته ويخرج من خزينته.
+  /// مصروفٌ على الصندوق. [purchaseOrderId]: أمرُ الشراء الذي تحمله بضاعتُه — يتوزّع على
+  /// وحداته بدل أن يُحمَّل على فترة يومه (FUND-EXPENSE-ON-GOODS).
   Future<Either<Failure, Unit>> recordExpense({
     required String kind,
     required String name,
@@ -54,5 +57,9 @@ abstract interface class InvestmentFundRepository {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   });
+
+  /// أوامرُ الشراء التي أدخلت للصندوق بضاعةً — ما يقبله [recordExpense] وحده.
+  Future<Either<Failure, List<FundPurchaseOrderOption>>> purchaseOrders();
 }

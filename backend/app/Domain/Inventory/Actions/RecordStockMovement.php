@@ -8,6 +8,7 @@ use App\Domain\Catalog\Enums\PricingUnit;
 use App\Domain\Inventory\DTOs\StockMovementData;
 use App\Domain\Inventory\Enums\MovementType;
 use App\Domain\Inventory\Enums\StockBatchSourceType;
+use App\Domain\Inventory\Events\StockCreditedBack;
 use App\Domain\Inventory\Exceptions\FractionalQuantityNotAllowed;
 use App\Domain\Inventory\Exceptions\TransferRequiresTwoDifferentWarehouses;
 use App\Domain\Inventory\Models\StockItem;
@@ -77,6 +78,9 @@ final class RecordStockMovement
             // the same movement into a database error rather than a silently doubled shelf.
             $movement->reverses_movement_id = $data->reversedMovementId;
             $movement->adjustment_reason = $data->adjustmentReason;
+            // وما كان يضيع بعد `creditBack()` أيضاً: أنّ ما اشترته المطبعةُ لم يرجع إلى طبقته.
+            // مصروفٌ على البضاعة يُوزَّع بعدها يحتاج أن يعرف أنّ تلك الأكياس ما زالت مَبيعة.
+            $movement->purchased_layers_to_company = $data->purchasedLayersBelongToTheCompany;
 
             // Saved before the balances move — not after, as before batch costing landed —
             // because consuming a cost layer needs this row's own id to attach the
@@ -128,6 +132,11 @@ final class RecordStockMovement
         if ($data->toWarehouseId !== null && $data->movementType === MovementType::OrderReversal) {
             $this->applyStockChange->creditBack(
                 $data->toWarehouseId, $data->stockItemId, $unit, $data->reversedMovementId,
+                $data->purchasedLayersBelongToTheCompany,
+            );
+
+            StockCreditedBack::dispatch(
+                (int) $data->reversedMovementId,
                 $data->purchasedLayersBelongToTheCompany,
             );
 

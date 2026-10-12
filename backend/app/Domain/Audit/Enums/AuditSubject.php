@@ -31,6 +31,7 @@ use App\Domain\Inventory\Models\StockItemGroup;
 use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
+use App\Domain\Investor\Models\FundExpenseCharge;
 use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\InvestmentPeriodShare;
@@ -155,6 +156,7 @@ enum AuditSubject: string
     case InvestorDealShare = 'investor_deal_share';
     case InvestorDealSupply = 'investor_deal_supply';
     case InvestorDealExpense = 'investor_deal_expense';
+    case FundExpenseCharge = 'fund_expense_charge';
     case InvestorWalletEntry = 'investor_wallet_entry';
     case InvestmentPeriod = 'investment_period';
     case InvestmentCashEntry = 'investment_cash_entry';
@@ -254,6 +256,7 @@ enum AuditSubject: string
             self::InvestorDealShare => InvestorDealShare::class,
             self::InvestorDealSupply => InvestorDealSupply::class,
             self::InvestorDealExpense => InvestorDealExpense::class,
+            self::FundExpenseCharge => FundExpenseCharge::class,
             self::InvestorWalletEntry => InvestorWalletEntry::class,
             self::Shortage => Shortage::class,
             self::DesignTicket => DesignTicket::class,
@@ -327,6 +330,7 @@ enum AuditSubject: string
             self::InvestorDealShare => 'حصة مستثمر',
             self::InvestorDealSupply => 'إقرار تمويل',
             self::InvestorDealExpense => 'مصروف صفقة',
+            self::FundExpenseCharge => 'حصة من مصروف على البضاعة',
             self::InvestorWalletEntry => 'حركة محفظة مستثمر',
             self::Shortage => 'نقص',
             self::DesignTicket => 'تذكرة تصميم',

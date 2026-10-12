@@ -441,6 +441,7 @@ final class AuditAttributeLabels
             'employee_id' => 'الموظف',
             'reverses_movement_id' => 'تعكس الحركة',
             'adjustment_reason' => 'نوع النقص',
+            'purchased_layers_to_company' => 'ما اشترته المطبعة ذهب للشركة',
         ],
         'stock_batch' => [
             'source_type' => 'مصدر الدفعة',
@@ -583,6 +584,19 @@ final class AuditAttributeLabels
             'source_type' => 'نوع المستند',
             'source_id' => 'رقم المستند',
             'reverses_expense_id' => 'يعكس المصروف',
+            'purchase_order_id' => 'أمر الشراء',
+            'landed_through_consumption_id' => 'آخر سحب قبل التوزيع',
+        ],
+        // حصةُ مصروفٍ على البضاعة — Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md.
+        'fund_expense_charge' => [
+            'investor_deal_expense_id' => 'المصروف',
+            'kind' => 'على ماذا وقع',
+            'stock_batch_id' => 'دفعة المخزون',
+            'stock_movement_id' => 'الحركة',
+            'unit_amount' => 'الفرق في تكلفة الوحدة',
+            'charged_on' => 'يوم الحصة',
+            'investment_period_id' => 'الفترة',
+            'reverses_charge_id' => 'تعكس الحصة',
         ],
         'investor_wallet_entry' => [
             'investor_id' => 'المستثمر',

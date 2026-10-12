@@ -73,10 +73,12 @@ use Illuminate\Support\Facades\DB;
  * of the arrival costs. A short shipment no longer leaves part of a delivery fee outside the stock
  * — the owner's decision 3.
  *
- * **A funded line's layer opens at `final_unit_cost`, as it always has** — the deal agreed its cost
- * when it was funded (decision 2). Its share of an arrival cost is charged to the deal instead, as
- * the deal's expense, through {@see InvestorService::recordSupplyExpense()}. A deal expense is money
- * that left a drawer, so such a cost must name one ({@see ArrivalCostOnFundedLineNeedsADrawer}).
+ * **A funded line's layer opens at `final_unit_cost`, as it always has.** Its share of an arrival
+ * cost is the deal's expense, through {@see InvestorService::recordSupplyExpense()} — and on a
+ * **fund** line that expense names this order, so it lands on the layers that just opened
+ * (Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md, decision 5): nothing has sold yet, so all of it
+ * goes into their cost. An old deal keeps decision 2 — its cost was agreed once. A deal expense is
+ * money that left a drawer, so such a cost must name one ({@see ArrivalCostOnFundedLineNeedsADrawer}).
  *
  * **Who was paid** decides the money: on the vendor's bill it joins `vendor_amount`; from a drawer
  * or owed to a manual payable it is an `expense` on that account ({@see SyncAdditionalCostExpense}),
@@ -390,6 +392,7 @@ final class ReceivePurchaseOrder
                 treasuryAccountId: $cost->treasury_account_id,
                 sourceType: $cost->getMorphClass(),
                 sourceId: (int) $cost->getKey(),
+                purchaseOrderId: (int) $order->getKey(),
             ), $actorId);
 
             $dealsCents = bcadd($dealsCents, $cents, 0);

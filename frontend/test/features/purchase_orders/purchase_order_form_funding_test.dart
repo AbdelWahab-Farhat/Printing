@@ -3,6 +3,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
@@ -118,7 +119,11 @@ class _FakeFundRepository implements InvestmentFundRepository {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
+
+  @override
+  Future<Either<Failure, List<FundPurchaseOrderOption>>> purchaseOrders() async => const Right([]);
 }
 
 void main() {

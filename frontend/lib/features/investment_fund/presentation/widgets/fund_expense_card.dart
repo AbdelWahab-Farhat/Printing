@@ -95,6 +95,13 @@ class FundExpenseCard extends StatelessWidget {
                   style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
+              if (_onGoods case final onGoods?) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  onGoods,
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
               if (expense.notes case final notes? when notes.isNotEmpty) ...[
                 SizedBox(height: 4.h),
                 Text(notes, style: context.textTheme.bodyMedium),
@@ -125,6 +132,21 @@ class FundExpenseCard extends StatelessWidget {
     ];
 
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  /// مصروفٌ على البضاعة: أمرُ شرائه، وكيف انقسم — ما رفع تكلفةَ الرفّ وما كُتب على المبيعات.
+  String? get _onGoods {
+    final order = expense.purchaseOrder;
+
+    if (order == null) return null;
+
+    return [
+      'أمر الشراء ${order.id}',
+      if (expense.split case final split?) ...[
+        'على البضاعة ${split.onGoods.grouped}',
+        'على المبيعات ${split.onSales.grouped}',
+      ],
+    ].join(' · ');
   }
 
   /// لماذا لا يُعدّ، أو لماذا يُعدّ وقد عُكس — بلفظه لا بلونٍ يُخمَّن.

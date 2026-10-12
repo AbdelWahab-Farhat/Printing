@@ -258,6 +258,7 @@ final class FundProfitOwed
 
         $orderOf = $sourced === [] ? [] : $this->periodOrders->ordersBehind($sourced);
         $expenseNames = $this->expenseNames($sourced);
+        $chargeExpenses = $this->chargeExpenses($sourced);
 
         $perOrder = [];
         $adjustments = [];
@@ -282,6 +283,12 @@ final class FundProfitOwed
                     'expense',
                     'expense:'.$line['id'],
                     'مصروف: '.$expenseNames[$line['id']],
+                ],
+                // حصةُ مصروفٍ على البضاعة — سطرُ مصروفها نفسُه، لا «تسويات أخرى».
+                $line['type'] === AuditSubject::FundExpenseCharge->value && isset($chargeExpenses[$line['id']]) => [
+                    'expense',
+                    'expense:'.$chargeExpenses[$line['id']]['id'],
+                    'مصروف: '.$chargeExpenses[$line['id']]['name'],
                 ],
                 $line['kind'] === 'carried_loss' => ['carried_loss', 'carried_loss', WalletEntryType::LossCarriedIn->label()],
                 default => ['other', 'other', 'تسويات أخرى'],
@@ -345,6 +352,40 @@ final class FundProfitOwed
         }
 
         return $perOrder === [] ? [] : $this->periodOrders->rows($perOrder)['orders'];
+    }
+
+    /**
+     * حصصُ المصاريف على البضاعة ← مصروفُها واسمُه.
+     *
+     * @param  list<array{investor_id: int, kind: string, type: ?string, id: ?int, amount: string}>  $sourced
+     * @return array<int, array{id: int, name: string}>
+     */
+    private function chargeExpenses(array $sourced): array
+    {
+        $ids = [];
+
+        foreach ($sourced as $line) {
+            if ($line['type'] === AuditSubject::FundExpenseCharge->value) {
+                $ids[(int) $line['id']] = (int) $line['id'];
+            }
+        }
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = DB::table('fund_expense_charges as f')
+            ->join('investor_deal_expenses as x', 'x.id', '=', 'f.investor_deal_expense_id')
+            ->whereIn('f.id', array_values($ids))
+            ->get(['f.id', 'x.id as expense_id', 'x.name']);
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            $map[(int) $row->id] = ['id' => (int) $row->expense_id, 'name' => (string) $row->name];
+        }
+
+        return $map;
     }
 
     /**

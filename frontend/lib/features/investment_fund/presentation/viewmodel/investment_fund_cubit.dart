@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,12 +18,14 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
     required DepositCapital deposit,
     required WithdrawCapital withdraw,
     required RecordFundExpense recordExpense,
+    required GetFundPurchaseOrders purchaseOrders,
   }) : _getStanding = getStanding,
        _openPeriod = openPeriod,
        _closePeriod = closePeriod,
        _deposit = deposit,
        _withdraw = withdraw,
        _recordExpense = recordExpense,
+       _purchaseOrders = purchaseOrders,
        super(const InvestmentFundState.loading());
 
   final GetFundStanding _getStanding;
@@ -31,6 +34,7 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
   final DepositCapital _deposit;
   final WithdrawCapital _withdraw;
   final RecordFundExpense _recordExpense;
+  final GetFundPurchaseOrders _purchaseOrders;
 
   Future<void> load() async {
     emit(const InvestmentFundState.loading());
@@ -135,6 +139,7 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   }) async {
     final result = await _recordExpense(
       kind: kind,
@@ -143,6 +148,7 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
       incurredOn: incurredOn,
       notes: notes,
       treasuryAccountId: treasuryAccountId,
+      purchaseOrderId: purchaseOrderId,
     );
 
     if (isClosed) return null;
@@ -152,6 +158,13 @@ class InvestmentFundCubit extends Cubit<InvestmentFundState> {
 
       return null;
     });
+  }
+
+  /// خياراتُ حقل «أمر الشراء» — فارغةً إن تعذّرت، فالحقلُ اختياريّ والمصروفُ يُسجَّل بدونه.
+  Future<List<FundPurchaseOrderOption>> purchaseOrders() async {
+    final result = await _purchaseOrders();
+
+    return result.fold((_) => const [], (orders) => orders);
   }
 }
 

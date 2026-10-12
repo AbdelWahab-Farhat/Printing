@@ -353,7 +353,10 @@ class PurchaseOrderArrivalCostsTest extends TestCase
             ->where('source_type', AuditSubject::InvestorDealExpense->value)
             ->where('source_id', $expense->id)
             ->exists());
-        $this->assertSame('10.000', $this->layerCost($bags));
+        // …and it names this order and lands on the goods it paid to bring — nothing has sold
+        // yet, so all of it: 10.000 + 15 / 10 (FUND-EXPENSE-ON-GOODS, decision 5).
+        $this->assertSame((int) $order['id'], (int) $expense->purchase_order_id);
+        $this->assertSame('11.500', $this->layerCost($bags));
     }
 
     public function test_a_funded_lines_share_must_have_been_paid_from_a_drawer(): void

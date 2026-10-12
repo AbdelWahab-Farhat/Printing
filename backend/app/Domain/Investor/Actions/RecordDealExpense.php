@@ -56,6 +56,7 @@ final class RecordDealExpense
             $expense->recorded_by = $actorId;
             $expense->source_type = $data->sourceType;
             $expense->source_id = $data->sourceId;
+            $expense->purchase_order_id = $data->purchaseOrderId;
 
             // **Real money out** — shipping, customs, storage — from the drawer that paid. The
             // form carries no payment method, so an unnamed drawer is the cash box, or the
@@ -88,7 +89,11 @@ final class RecordDealExpense
                 recordedBy: $actorId,
             ));
 
-            $this->chargeInvestors($locked, $expense);
+            // **Linked to a purchase order, nobody is charged by the date** — the goods carry it,
+            // and {@see LandFundExpenseOnGoods} decides who bears which part.
+            if ($expense->purchase_order_id === null) {
+                $this->chargeInvestors($locked, $expense);
+            }
 
             return $expense;
         });

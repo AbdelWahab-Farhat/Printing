@@ -22,7 +22,26 @@ final readonly class DealExpenseData
         // from a request: a person's expense names nothing, and is reversed by hand.
         public ?string $sourceType = null,
         public ?int $sourceId = null,
+        // **The purchase order whose goods carry it** — the fund's alone
+        // (Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md). Set, the expense is spread over every
+        // unit that order brought in instead of being charged to the period of its date.
+        public ?int $purchaseOrderId = null,
     ) {}
+
+    /** The same expense with no purchase order — what an old deal takes, since it has no periods. */
+    public function withoutPurchaseOrder(): self
+    {
+        return new self(
+            kind: $this->kind,
+            name: $this->name,
+            amount: $this->amount,
+            incurredOn: $this->incurredOn,
+            notes: $this->notes,
+            treasuryAccountId: $this->treasuryAccountId,
+            sourceType: $this->sourceType,
+            sourceId: $this->sourceId,
+        );
+    }
 
     /**
      * @param  array<string, mixed>  $validated

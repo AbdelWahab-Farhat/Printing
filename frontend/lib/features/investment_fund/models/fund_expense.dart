@@ -18,6 +18,27 @@ abstract class FundExpensePeriod with _$FundExpensePeriod {
       _$FundExpensePeriodFromJson(json);
 }
 
+/// أمرُ الشراء الذي تحمله بضاعتُه مصروفاً — Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md.
+@freezed
+abstract class FundExpensePurchaseOrder with _$FundExpensePurchaseOrder {
+  const factory FundExpensePurchaseOrder({required int id}) = _FundExpensePurchaseOrder;
+
+  factory FundExpensePurchaseOrder.fromJson(Map<String, dynamic> json) =>
+      _$FundExpensePurchaseOrderFromJson(json);
+}
+
+/// كيف انقسم مصروفٌ على البضاعة يومَ سُجِّل: ما رفع تكلفةَ الرفّ، وما كُتب على المبيعات.
+@freezed
+abstract class FundExpenseSplit with _$FundExpenseSplit {
+  const factory FundExpenseSplit({
+    @JsonKey(name: 'on_goods') required String onGoods,
+    @JsonKey(name: 'on_sales') required String onSales,
+  }) = _FundExpenseSplit;
+
+  factory FundExpenseSplit.fromJson(Map<String, dynamic> json) =>
+      _$FundExpenseSplitFromJson(json);
+}
+
 /// مصروفٌ في «مصاريف الصندوق» — ما خرج، ولماذا، وفي أيّ فترة.
 ///
 /// **أخفُّ من [PeriodExpense] عن قصد**: لا نصيبَ لكلِّ مستثمر ولا زرَّ عكس. ذلك ما حُمِّل في
@@ -46,6 +67,11 @@ abstract class FundExpense with _$FundExpense {
     @JsonKey(name: 'recorded_after_close') @Default(false) bool recordedAfterClose,
     @JsonKey(name: 'is_reversed') @Default(false) bool isReversed,
     PeriodExpenseReversal? reversal,
+
+    /// مصروفٌ على البضاعة: `amount` ما وقع منه في الفترة المختارة، وكاملُه في [expenseAmount].
+    @JsonKey(name: 'expense_amount') String? expenseAmount,
+    @JsonKey(name: 'purchase_order') FundExpensePurchaseOrder? purchaseOrder,
+    FundExpenseSplit? split,
   }) = _FundExpense;
 
   factory FundExpense.fromJson(Map<String, dynamic> json) => _$FundExpenseFromJson(json);

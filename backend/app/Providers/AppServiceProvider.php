@@ -13,12 +13,14 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Events\StockCreditedBack;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostFundProceedsWhenPaymentsMove;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
 use App\Domain\Investor\Listeners\PostPurchaseWhenScrapIsDrawn;
 use App\Domain\Investor\Listeners\PostPurchaseWhenStockIsRedrawn;
 use App\Domain\Investor\Listeners\ReleaseProfitWhenBothGatesOpen;
+use App\Domain\Investor\Listeners\ReturnExpenseChargesWhenStockComesBack;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenDeliveryIsUndone;
 use App\Domain\Investor\Listeners\UnwindEarningsWhenOrderIsDeleted;
 use App\Domain\Notification\Channels\CustomerPushChannel;
@@ -178,6 +180,9 @@ class AppServiceProvider extends ServiceProvider
         // at what it paid, not back to the deal. See {@see OrderStockRedrawn}. Synchronous like
         // the ones above, and for the same reason.
         Event::listen(OrderStockRedrawn::class, PostPurchaseWhenStockIsRedrawn::class);
+        // وحداتٌ رجعت إلى طبقاتٍ رفع مصروفٌ على البضاعة تكلفتَها — حصتُها على الطلبية تُردّ
+        // (Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md §٤.٥). متزامنٌ داخل معاملة الحركة.
+        Event::listen(StockCreditedBack::class, ReturnExpenseChargesWhenStockComesBack::class);
 
         // **Orders announces, the notification centre listens** — the same one-way dependency,
         // for a different reason: Notification reads Orders to build its sentence, and Orders

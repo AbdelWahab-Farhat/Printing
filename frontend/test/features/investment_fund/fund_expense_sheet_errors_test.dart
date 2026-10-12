@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_expense_sheet.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
@@ -32,6 +33,12 @@ void main() {
       deposit: DepositCapital(repository),
       withdraw: WithdrawCapital(repository),
       recordExpense: RecordFundExpense(repository),
+      purchaseOrders: GetFundPurchaseOrders(repository),
+    );
+    when(() => repository.purchaseOrders()).thenAnswer(
+      (_) async => const Right([
+        FundPurchaseOrderOption(id: 12, vendor: 'مصنع الأكياس', items: ['كيس 25*35']),
+      ]),
     );
   });
 
@@ -68,6 +75,7 @@ void main() {
       incurredOn: any(named: 'incurredOn'),
       notes: any(named: 'notes'),
       treasuryAccountId: any(named: 'treasuryAccountId'),
+      purchaseOrderId: any(named: 'purchaseOrderId'),
     ),
   ).thenAnswer(
     (_) async => Left(
@@ -125,5 +133,83 @@ void main() {
 
     // Assert
     expect(box.errorText, 'الرصيد لا يكفي');
+  });
+
+  group('أمر الشراء — FUND-EXPENSE-ON-GOODS', () {
+    void accept() => when(
+      () => repository.recordExpense(
+        kind: any(named: 'kind'),
+        name: any(named: 'name'),
+        amount: any(named: 'amount'),
+        incurredOn: any(named: 'incurredOn'),
+        notes: any(named: 'notes'),
+        treasuryAccountId: any(named: 'treasuryAccountId'),
+        purchaseOrderId: any(named: 'purchaseOrderId'),
+      ),
+    ).thenAnswer((_) async => const Right(unit));
+
+    int? sentOrder() => verify(
+      () => repository.recordExpense(
+        kind: any(named: 'kind'),
+        name: any(named: 'name'),
+        amount: any(named: 'amount'),
+        incurredOn: any(named: 'incurredOn'),
+        notes: any(named: 'notes'),
+        treasuryAccountId: any(named: 'treasuryAccountId'),
+        purchaseOrderId: captureAny(named: 'purchaseOrderId'),
+      ),
+    ).captured.single as int?;
+
+    testWidgets('a chosen purchase order goes with the expense', (tester) async {
+      // Arrange
+      accept();
+      when(() => repository.standing()).thenAnswer(
+        (_) async => const Left(Failure.server(message: 'لا يهمّ هنا')),
+      );
+      await tester.pumpWidget(host());
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(AppTextField).at(0), 'شحن حاوية');
+      await tester.enterText(find.byType(AppTextField).at(1), '1000');
+      await tester.pump();
+
+      // Act
+      final field = find.byType(DropdownButtonFormField<FundPurchaseOrderOption>);
+      await tester.ensureVisible(field);
+      await tester.pumpAndSettle();
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('أمر الشراء 12 · مصنع الأكياس').last);
+      await tester.pumpAndSettle();
+      final button = find.text('تسجيل المصروف');
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      final sent = sentOrder();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(sent, 12);
+    });
+
+    testWidgets('left alone, the expense is the period\'s as before', (tester) async {
+      // Arrange
+      accept();
+      when(() => repository.standing()).thenAnswer(
+        (_) async => const Left(Failure.server(message: 'لا يهمّ هنا')),
+      );
+      await tester.pumpWidget(host());
+
+      // Act
+      await fillAndSubmit(tester);
+      final sent = sentOrder();
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(sent, isNull);
+    });
   });
 }

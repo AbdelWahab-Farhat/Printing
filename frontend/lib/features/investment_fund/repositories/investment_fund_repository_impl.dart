@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
@@ -120,6 +121,7 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   }) {
     return safeRequest<Unit>(
       () => _dio.post(
@@ -132,9 +134,21 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
           'notes': ?notes,
           // الدرج الذي دفع؛ غائباً يختاره الخادم (TREASURY-DESIGN §٧).
           'treasury_account_id': ?treasuryAccountId,
+          // غائباً: مصروفُ فترةٍ كما كان.
+          'purchase_order_id': ?purchaseOrderId,
         },
       ),
       parse: (_) => unit,
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<FundPurchaseOrderOption>>> purchaseOrders() {
+    return safeRequest<List<FundPurchaseOrderOption>>(
+      () => _dio.get(InvestmentEndpoints.purchaseOrders),
+      parse: (data) => (data as List<dynamic>)
+          .map((row) => FundPurchaseOrderOption.fromJson(row as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

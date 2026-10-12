@@ -66,6 +66,16 @@ final class ReversePurchaseOrderReceipt
             // figure computed from it would leave the line describing a shipment that never was.
             $items = $order->items()->lockForUpdate()->get()->keyBy('stock_item_id');
 
+            // **Every fund expense on these goods goes with them, first** (FUND-EXPENSE-ON-GOODS,
+            // decision 8) — before the layers are withdrawn, so the cost each raised comes off a
+            // shelf that is still there. Its arrival costs among them; `undoArrivalCosts` then finds
+            // them already reversed.
+            $this->investors->reverseGoodsExpensesOf(
+                (int) $order->getKey(),
+                "التراجع عن استلام أمر الشراء {$order->getKey()}: {$data->reason}",
+                $data->reversedBy,
+            );
+
             $arrival = $this->vendors->reverseStockArrival($arrival, $data->toArrivalData());
 
             foreach ($arrival->items as $line) {

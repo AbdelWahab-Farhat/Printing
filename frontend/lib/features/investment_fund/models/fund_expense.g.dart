@@ -22,6 +22,26 @@ Map<String, dynamic> _$FundExpensePeriodToJson(_FundExpensePeriod instance) =>
       'status_label': instance.statusLabel,
     };
 
+_FundExpensePurchaseOrder _$FundExpensePurchaseOrderFromJson(
+  Map<String, dynamic> json,
+) => _FundExpensePurchaseOrder(id: (json['id'] as num).toInt());
+
+Map<String, dynamic> _$FundExpensePurchaseOrderToJson(
+  _FundExpensePurchaseOrder instance,
+) => <String, dynamic>{'id': instance.id};
+
+_FundExpenseSplit _$FundExpenseSplitFromJson(Map<String, dynamic> json) =>
+    _FundExpenseSplit(
+      onGoods: json['on_goods'] as String,
+      onSales: json['on_sales'] as String,
+    );
+
+Map<String, dynamic> _$FundExpenseSplitToJson(_FundExpenseSplit instance) =>
+    <String, dynamic>{
+      'on_goods': instance.onGoods,
+      'on_sales': instance.onSales,
+    };
+
 _FundExpense _$FundExpenseFromJson(Map<String, dynamic> json) => _FundExpense(
   id: (json['id'] as num).toInt(),
   kind: json['kind'] as String,
@@ -49,6 +69,15 @@ _FundExpense _$FundExpenseFromJson(Map<String, dynamic> json) => _FundExpense(
       : PeriodExpenseReversal.fromJson(
           json['reversal'] as Map<String, dynamic>,
         ),
+  expenseAmount: json['expense_amount'] as String?,
+  purchaseOrder: json['purchase_order'] == null
+      ? null
+      : FundExpensePurchaseOrder.fromJson(
+          json['purchase_order'] as Map<String, dynamic>,
+        ),
+  split: json['split'] == null
+      ? null
+      : FundExpenseSplit.fromJson(json['split'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$FundExpenseToJson(_FundExpense instance) =>
@@ -67,4 +96,7 @@ Map<String, dynamic> _$FundExpenseToJson(_FundExpense instance) =>
       'recorded_after_close': instance.recordedAfterClose,
       'is_reversed': instance.isReversed,
       'reversal': instance.reversal?.toJson(),
+      'expense_amount': instance.expenseAmount,
+      'purchase_order': instance.purchaseOrder?.toJson(),
+      'split': instance.split?.toJson(),
     };

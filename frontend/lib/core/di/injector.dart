@@ -768,6 +768,9 @@ abstract final class Injector {
       ..registerLazySingleton<RecordFundExpense>(
         () => RecordFundExpense(sl<InvestmentFundRepository>()),
       )
+      ..registerLazySingleton<GetFundPurchaseOrders>(
+        () => GetFundPurchaseOrders(sl<InvestmentFundRepository>()),
+      )
       ..registerLazySingleton<CloseFundPeriod>(
         () => CloseFundPeriod(sl<InvestmentFundRepository>()),
       )

@@ -182,9 +182,34 @@ final class InvestorService
     {
         $deal = InvestorDeal::query()->findOrFail($dealId);
 
+        // **The fund's lands on the goods it paid to bring** (FUND-EXPENSE-ON-GOODS, decision 5);
+        // an old deal has no periods to charge by, and keeps its cost agreed once.
         return $this->fund->is($deal)
             ? ($this->recordFundExpense)($data, $actorId)
-            : ($this->recordExpense)($deal, $data, $actorId);
+            : ($this->recordExpense)($deal, $data->withoutPurchaseOrder(), $actorId);
+    }
+
+    /**
+     * Reverses every standing fund expense linked to a purchase order — its receipt taken back
+     * (FUND-EXPENSE-ON-GOODS, decision 8). Before the layers are withdrawn, so the cost each one
+     * raised comes off the shelf while the shelf is still there. Returns how many it reversed.
+     */
+    public function reverseGoodsExpensesOf(int $purchaseOrderId, string $reason, ?int $actorId): int
+    {
+        $standing = InvestorDealExpense::query()
+            ->where('purchase_order_id', $purchaseOrderId)
+            ->whereNull('reverses_expense_id')
+            ->whereNotIn('id', InvestorDealExpense::query()
+                ->whereNotNull('reverses_expense_id')
+                ->select('reverses_expense_id'))
+            ->orderBy('id')
+            ->get();
+
+        foreach ($standing as $expense) {
+            ($this->reverseExpense)($expense, $reason, $actorId, byHand: false);
+        }
+
+        return $standing->count();
     }
 
     /**

@@ -50,6 +50,16 @@ final class PeriodForEntry
         return $this->byDate($this->dateOf($sourceType, $sourceId));
     }
 
+    /**
+     * فترةُ حصةٍ من مصروفٍ على البضاعة قبل أن تُكتب — فيُكتب الصفُّ مختوماً مرّةً واحدة.
+     *
+     * اليومُ نفسُه الذي يقرؤه {@see bySource()} للصفّ بعد كتابته، فلا يختلفان.
+     */
+    public function forCharge(?int $orderId, ?string $chargedOn): ?int
+    {
+        return $this->byDate($this->chargeDate($orderId, $chargedOn));
+    }
+
     /** فترةُ يومٍ بعينه، بعد الأرضية. */
     public function byDate(?DateTimeInterface $date): ?int
     {
@@ -110,8 +120,28 @@ final class PeriodForEntry
             AuditSubject::InvestorDealExpense->value => DB::table('investor_deal_expenses')
                 ->where('id', $sourceId)
                 ->value('incurred_on'),
+            // **حصةُ مصروفٍ على البضاعة بيوم البيع الذي تخصّه** — فترةُ الطلبية بالعمود نفسه الذي
+            // خُتم به ربحُها، فتقع الحصةُ على من قبضه (FUND-EXPENSE-ON-GOODS §٢ القرار ٤). وما لا
+            // طلبيةَ له — تسويةٌ نازلة أو فرقُ تقريب — بيومه المكتوب على الصفّ.
+            AuditSubject::FundExpenseCharge->value => $this->chargeDate(
+                ...array_values((array) (DB::table('fund_expense_charges')
+                    ->where('id', $sourceId)
+                    ->first(['order_id', 'charged_on']) ?? ['order_id' => null, 'charged_on' => null])),
+            ),
             default => null,
         };
+
+        return $raw === null ? null : now()->parse($raw);
+    }
+
+    /**
+     * يومُ حصةِ مصروفٍ على البضاعة: يومُ طلبيتها بالعمود الذي خُتم به ربحُها، وإلا يومُها المكتوب.
+     */
+    private function chargeDate(int|string|null $orderId, ?string $chargedOn): ?DateTimeInterface
+    {
+        $raw = $orderId === null
+            ? $chargedOn
+            : (DB::table('orders')->where('id', $orderId)->value(DB::raw('coalesce(placed_at, created_at)')) ?? $chargedOn);
 
         return $raw === null ? null : now()->parse($raw);
     }

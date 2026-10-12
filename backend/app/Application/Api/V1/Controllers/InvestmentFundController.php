@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
+use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Investor\ReverseDealExpenseRequest;
 use App\Application\Api\V1\Resources\InvestorDealExpenseResource;
 use App\Application\Controller;
+use App\Domain\Audit\AuditService;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
 use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
@@ -17,11 +20,13 @@ use App\Domain\Investor\Actions\WithdrawFromFund;
 use App\Domain\Investor\DTOs\DealExpenseData;
 use App\Domain\Investor\Enums\DealExpenseKind;
 use App\Domain\Investor\Enums\PeriodStatus;
+use App\Domain\Investor\Models\FundExpenseCharge;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Queries\FundExpensesQuery;
 use App\Domain\Investor\Queries\FundGoodsOnOrder;
+use App\Domain\Investor\Queries\FundPurchaseOrdersQuery;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Queries\InvestorBalances;
@@ -48,7 +53,7 @@ use Illuminate\Validation\Rule;
  */
 class InvestmentFundController extends Controller
 {
-    use ResponseTrait;
+    use ReadsAuditTrail, ResponseTrait;
 
     public function __construct(
         private readonly FundValuation $valuation,
@@ -192,6 +197,13 @@ class InvestmentFundController extends Controller
                 'integer',
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
             ],
+            // **طلبُ الشراء الذي تحمله بضاعتُه** — Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md.
+            // فارغاً: مصروفُ فترةٍ كما كان. وطلبٌ لم يُدخل للصندوق شيئاً يُرفض 422 من النطاق.
+            'purchase_order_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('purchase_orders', 'id')->whereNull('deleted_at'),
+            ],
         ]);
 
         $expense = ($this->expense)(
@@ -202,6 +214,7 @@ class InvestmentFundController extends Controller
                 incurredOn: $validated['incurred_on'],
                 notes: $validated['notes'] ?? null,
                 treasuryAccountId: isset($validated['treasury_account_id']) ? (int) $validated['treasury_account_id'] : null,
+                purchaseOrderId: isset($validated['purchase_order_id']) ? (int) $validated['purchase_order_id'] : null,
             ),
             $request->user()?->id,
         );
@@ -211,6 +224,27 @@ class InvestmentFundController extends Controller
             new InvestorDealExpenseResource($expense->load('treasuryAccount')),
             'سُجِّل المصروف وخرج من الخزينة',
         );
+    }
+
+    /**
+     * Fund expense charge logs
+     *
+     * كلُّ ما جرى على حصةٍ من مصروفٍ على البضاعة — تُكتب ولا تُعدَّل، فسجلُّها إنشاؤها وحده عادةً.
+     * التصفية بـ`event` و`causer_id` و`from` و`to`.
+     */
+    public function chargeLogs(ActivityLogFilterRequest $request, FundExpenseCharge $charge, AuditService $audit): JsonResponse
+    {
+        return $this->auditTrailResponse($request, $charge, $audit);
+    }
+
+    /**
+     * Purchase orders that brought the fund goods
+     *
+     * حقلُ «طلب الشراء» في ورقة المصروف — ما يقبله التسجيل وحده. الأحدثُ استلاماً أولاً.
+     */
+    public function purchaseOrders(FundPurchaseOrdersQuery $query): JsonResponse
+    {
+        return $this->success($query());
     }
 
     /**

@@ -32,6 +32,7 @@ class InvestmentPartnersPage extends StatelessWidget {
         deposit: sl(),
         withdraw: sl(),
         recordExpense: sl(),
+        purchaseOrders: sl(),
       )..load(),
       child: DefaultTabController(
         length: 2,

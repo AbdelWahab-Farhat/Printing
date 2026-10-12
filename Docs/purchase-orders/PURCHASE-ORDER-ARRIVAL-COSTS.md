@@ -26,7 +26,7 @@ arrives**, and nothing could record them then:
 | # | Decision |
 |---|---|
 | 1 | Arrival costs are entered **on the receive screen**, in the same request. Repricing after the receipt is a later phase. |
-| 2 | On a **funded** line, its share of an arrival cost is a **deal expense** (`RecordDealExpense` / `RecordFundExpense`), not layer cost — «a deal's cost is agreed once». |
+| 2 | On a **funded** line, its share of an arrival cost is a **deal expense** (`RecordDealExpense` / `RecordFundExpense`), not layer cost — «a deal's cost is agreed once». **Amended 2026-10-12 for the fund:** a fund line's share names the order and lands in the layers' cost ([FUND-EXPENSE-ON-GOODS.md](../investor-deals/FUND-EXPENSE-ON-GOODS.md), decision 5). Old deals keep this rule. |
 | 3 | On a company line, the landed cost is worked out over the quantity **received**, so everything paid lands in the stock. |
 | 4 | Planned costs on the order form get the same «who was paid» choice. |
 | 5 | Three answers to «who was paid»: **on the vendor's bill** · **paid now from a drawer** · **owed to** a manual «التزام» account. |

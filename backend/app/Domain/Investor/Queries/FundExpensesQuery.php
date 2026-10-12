@@ -35,6 +35,7 @@ final class FundExpensesQuery
     public function __construct(
         private readonly FundDeal $fund,
         private readonly PeriodExpensesQuery $periodExpenses,
+        private readonly GoodsExpenseCharges $goods,
     ) {}
 
     /**
@@ -64,30 +65,53 @@ final class FundExpensesQuery
 
         $periods = InvestmentPeriod::query()->orderBy('starts_on')->get();
 
+        // مصروفٌ على البضاعة يظهر في فترةٍ بحصصه فيها — القاعدةُ نفسُها في شاشة الفترة.
+        $inPeriod = $period === null ? [] : $this->goods->amountsIn($period, $fundId);
+
         // **المجموعُ لكل الصفحات لا لهذه** — بأعمدةٍ خفيفة، فالسؤالُ «أيُعدّ؟» يحتاج عكسَ كلٍّ ولحظةَ كتابته.
-        $all = $this->originals($fundId, $period)->get(['id', 'amount', 'incurred_on', 'created_at']);
+        $all = $this->originals($fundId, $period, array_keys($inPeriod))
+            ->get(['id', 'amount', 'incurred_on', 'created_at', 'purchase_order_id']);
         $allReversals = $this->reversalsOf($all->pluck('id')->all());
 
         $total = '0';
 
         foreach ($all as $expense) {
-            if ($this->counted($expense, $this->covering($periods, $expense), $allReversals[(int) $expense->id] ?? null)) {
+            $reversal = $allReversals[(int) $expense->id] ?? null;
+
+            if ($expense->purchase_order_id !== null) {
+                $total = bcadd($total, $this->amountOf($expense, $period, $reversal, $inPeriod), 2);
+
+                continue;
+            }
+
+            if ($this->counted($expense, $this->covering($periods, $expense), $reversal)) {
                 $total = bcadd($total, (string) $expense->amount, 2);
             }
         }
 
-        $paginator = $this->originals($fundId, $period)
+        $paginator = $this->originals($fundId, $period, array_keys($inPeriod))
             ->with(['treasuryAccount:id,name', 'recordedBy:id,name'])
             ->paginate($perPage, ['*'], 'page', $page);
+
+        $splits = $this->goods->splitOf(array_map(
+            fn (InvestorDealExpense $expense): int => (int) $expense->id,
+            array_filter($paginator->items(), fn (InvestorDealExpense $expense): bool => $expense->purchase_order_id !== null),
+        ));
 
         $rows = [];
 
         foreach ($paginator->items() as $expense) {
-            $rows[] = $this->row(
-                $expense,
-                $this->covering($periods, $expense),
-                $allReversals[(int) $expense->id] ?? null,
-            );
+            $reversal = $allReversals[(int) $expense->id] ?? null;
+            $row = $this->row($expense, $this->covering($periods, $expense), $reversal);
+
+            if ($expense->purchase_order_id !== null) {
+                $row['amount'] = $this->amountOf($expense, $period, $reversal, $inPeriod);
+                $row['counted'] = $period === null ? $reversal === null : true;
+                $row['recorded_after_close'] = false;
+                $row['split'] = $splits[(int) $expense->id] ?? ['on_goods' => '0.00', 'on_sales' => '0.00'];
+            }
+
+            $rows[] = $row;
         }
 
         return [
@@ -103,20 +127,23 @@ final class FundExpensesQuery
     /**
      * أصولُ مصاريف الصندوق — لا عكوسُها، ولا ما دخل تكلفةَ البضاعة. الأحدثُ أولاً.
      *
-     * الشرطُ نفسُه في {@see PeriodExpensesQuery}، ونافذةُ الفترة حين يُفلتر بها.
+     * الشرطُ نفسُه في {@see PeriodExpensesQuery}، ونافذةُ الفترة حين يُفلتر بها — والمصاريفُ على
+     * البضاعة التي لها حصصٌ في تلك الفترة، أيّاً كان يومُها.
      *
+     * @param  list<int>  $onGoodsInPeriod
      * @return Builder<InvestorDealExpense>
      */
-    private function originals(int $fundId, ?InvestmentPeriod $period): Builder
+    private function originals(int $fundId, ?InvestmentPeriod $period, array $onGoodsInPeriod = []): Builder
     {
         return InvestorDealExpense::query()
             ->where('investor_deal_id', $fundId)
             ->where('is_landed', false)
             ->whereNull('reverses_expense_id')
-            ->when($period, fn (Builder $q, InvestmentPeriod $p) => $q->whereBetween(
-                'incurred_on',
-                [$p->starts_on->toDateString(), $p->ends_on->toDateString()],
-            ))
+            ->when($period, fn (Builder $q, InvestmentPeriod $p) => $q->where(fn (Builder $w) => $w
+                ->where(fn (Builder $byDay) => $byDay
+                    ->whereNull('purchase_order_id')
+                    ->whereBetween('incurred_on', [$p->starts_on->toDateString(), $p->ends_on->toDateString()]))
+                ->orWhereIn('id', $onGoodsInPeriod)))
             ->orderByDesc('incurred_on')
             ->orderByDesc('id');
     }
@@ -157,6 +184,20 @@ final class FundExpensesQuery
             && $period->ends_on->toDateString() >= $day);
     }
 
+    /**
+     * ما يُعدّ من مصروفٍ على البضاعة: في فترةٍ حصصُه فيها، وبلا فترةٍ كاملُه ما لم يُعكس.
+     *
+     * @param  array<int, string>  $inPeriod
+     */
+    private function amountOf(InvestorDealExpense $expense, ?InvestmentPeriod $period, ?InvestorDealExpense $reversal, array $inPeriod): string
+    {
+        if ($period !== null) {
+            return $inPeriod[(int) $expense->id] ?? '0.00';
+        }
+
+        return $reversal === null ? (string) $expense->amount : '0.00';
+    }
+
     /** أيُعدّ؟ — بقاعدة شاشة فترته، وبلا فترةٍ: ما لم يُعكس. */
     private function counted(InvestorDealExpense $expense, ?InvestmentPeriod $period, ?InvestorDealExpense $reversal): bool
     {
@@ -176,6 +217,9 @@ final class FundExpensesQuery
             'kind_label' => $expense->kind->label(),
             'name' => (string) $expense->name,
             'amount' => (string) $expense->amount,
+            'expense_amount' => (string) $expense->amount,
+            'purchase_order' => $expense->purchase_order_id === null ? null : ['id' => (int) $expense->purchase_order_id],
+            'split' => null,
             'incurred_on' => $expense->incurred_on?->toDateString(),
             'notes' => $expense->notes,
             'treasury_account' => $expense->treasuryAccount === null

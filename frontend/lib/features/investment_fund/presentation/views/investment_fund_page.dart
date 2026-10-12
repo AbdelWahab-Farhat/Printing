@@ -46,6 +46,7 @@ class InvestmentFundPage extends StatelessWidget {
         deposit: sl(),
         withdraw: sl(),
         recordExpense: sl(),
+        purchaseOrders: sl(),
       )..load(),
       child: _FundView(isEmbedded: isEmbedded),
     );

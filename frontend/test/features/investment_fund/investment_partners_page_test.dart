@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/investment_partners_page.dart';
@@ -71,7 +72,11 @@ class _FakeRepository implements InvestmentFundRepository {
     required String incurredOn,
     String? notes,
     int? treasuryAccountId,
+    int? purchaseOrderId,
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
+
+  @override
+  Future<Either<Failure, List<FundPurchaseOrderOption>>> purchaseOrders() async => const Right([]);
 }
 
 const _valuation = FundValuation(
@@ -136,7 +141,8 @@ void main() {
       ..registerLazySingleton<CloseFundPeriod>(() => CloseFundPeriod(repository))
       ..registerLazySingleton<DepositCapital>(() => DepositCapital(repository))
       ..registerLazySingleton<WithdrawCapital>(() => WithdrawCapital(repository))
-      ..registerLazySingleton<RecordFundExpense>(() => RecordFundExpense(repository));
+      ..registerLazySingleton<RecordFundExpense>(() => RecordFundExpense(repository))
+      ..registerLazySingleton<GetFundPurchaseOrders>(() => GetFundPurchaseOrders(repository));
   }
 
   Widget host() {

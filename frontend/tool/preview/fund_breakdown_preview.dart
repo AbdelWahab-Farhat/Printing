@@ -355,6 +355,7 @@ Future<void> main() async {
         ..registerLazySingleton<DepositCapital>(() => DepositCapital(fund))
         ..registerLazySingleton<WithdrawCapital>(() => WithdrawCapital(fund))
         ..registerLazySingleton<RecordFundExpense>(() => RecordFundExpense(fund))
+        ..registerLazySingleton<GetFundPurchaseOrders>(() => GetFundPurchaseOrders(fund))
         ..registerLazySingleton<GetFundCash>(() => GetFundCash(breakdown))
         ..registerLazySingleton<GetFundOnOrder>(() => GetFundOnOrder(breakdown))
         ..registerLazySingleton<GetFundShelf>(() => GetFundShelf(breakdown))

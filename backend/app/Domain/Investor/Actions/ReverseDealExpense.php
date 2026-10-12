@@ -48,6 +48,7 @@ final class ReverseDealExpense
         private readonly RecordCashEntry $cash,
         private readonly TreasuryService $treasury,
         private readonly ExpenseChargePeriod $chargePeriod,
+        private readonly LandFundExpenseOnGoods $onGoods,
     ) {}
 
     /**
@@ -60,6 +61,11 @@ final class ReverseDealExpense
         bool $byHand = true,
     ): InvestorDealExpense {
         return DB::transaction(function () use ($expense, $reason, $actorId, $byHand): InvestorDealExpense {
+            // مصروفٌ على البضاعة يعيد تكلفةَ رفوفٍ — فأرصدتُها تُقفل قبل الصفقة، كما عند تسجيله.
+            if ($expense->purchase_order_id !== null) {
+                $this->onGoods->lockShelves((int) $expense->purchase_order_id);
+            }
+
             // الصفقةُ أولاً ثم الصفّ — ترتيبُ الأقفال الواحد في هذا السياق.
             $deal = InvestorDeal::query()
                 ->whereKey($expense->investor_deal_id)
@@ -92,6 +98,7 @@ final class ReverseDealExpense
             $reversal->investor_deal_id = $deal->getKey();
             $reversal->is_landed = false;
             $reversal->reverses_expense_id = $original->getKey();
+            $reversal->purchase_order_id = $original->purchase_order_id;
             $reversal->recorded_by = $actorId;
             // الحسابُ الذي دفع، فالمالُ يعود إليه. ومصروفٌ من قبل الخزينة لا حسابَ له: احتُسب
             // مالُه في الرصيد الافتتاحي، فيعود إلى الخزنة (TREASURY-DESIGN §١١).
@@ -101,6 +108,14 @@ final class ReverseDealExpense
 
             $this->returnTheMoney($original, $reversal, $reason, $actorId);
             $this->returnTheFundCash($original, $reason, $actorId);
+
+            // **على البضاعة: بالمسار نفسه بإشارةٍ معاكسة** — حصصُ المبيعات تُردّ، والرفُّ يعود إلى
+            // تكلفته، وما بِيع بعد الهبوط يُردّ إليه ما حمله (FUND-EXPENSE-ON-GOODS §٤.٦).
+            if ($original->purchase_order_id !== null) {
+                $this->onGoods->unland($original, 'عكس مصروف: '.$reason, $actorId);
+
+                return $reversal;
+            }
 
             // ما حُمِّل للشركاء يرجع: الهدفُ صفر، و`PostDealShare` يعكس كلَّ صفٍّ قائمٍ لمصدره.
             ($this->postShare)(
@@ -145,7 +160,15 @@ final class ReverseDealExpense
         // **مصروفُ فترةٍ أُقفلت لا يُعكس** — قرارُ المالك 2026-10-05. أرقامُها أُعلنت ووُزّع بها
         // المال، وعكسُه كان يُنزل الردَّ على المفتوحة اليوم فيقرأ المستثمرون في فترتين قصّتين.
         // «قيد الإغلاق» تقبل القيد، فيُعكس فيها.
-        if ($deal->isTheFund()) {
+        if ($deal->isTheFund() && $original->purchase_order_id !== null) {
+            $period = $this->onGoods->closedPeriodTouchedBy($original);
+
+            if ($period !== null) {
+                throw EntryCannotBeReversed::make(
+                    "مسّ هذا المصروفُ الفترةَ {$period->code} وقد أُقفلت وأُعلنت أرقامها — لا يُعكس بعد الإقفال"
+                );
+            }
+        } elseif ($deal->isTheFund()) {
             $period = $this->chargePeriod->of($original);
 
             if ($period?->status === PeriodStatus::Closed) {

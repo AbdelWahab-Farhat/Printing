@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\Investor\Models\InvestorDealExpense;
+use App\Domain\Investor\Queries\GoodsExpenseCharges;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,6 +43,14 @@ class InvestorDealExpenseResource extends JsonResource
             // reversed from here — the screen hides the button rather than meeting the refusal.
             'source_type' => $this->source_type,
             'source_id' => $this->source_id,
+
+            // **مصروفٌ على البضاعة** — Docs/investor-deals/FUND-EXPENSE-ON-GOODS.md: طلبُ الشراء
+            // الذي تحمله بضاعتُه، وكيف انقسم يومَ سُجِّل.
+            'purchase_order' => $this->purchase_order_id === null ? null : ['id' => (int) $this->purchase_order_id],
+            'split' => $this->purchase_order_id === null
+                ? null
+                : (app(GoodsExpenseCharges::class)->splitOf([(int) $this->id])[(int) $this->id]
+                    ?? ['on_goods' => '0.00', 'on_sales' => '0.00']),
 
             'recorded_by' => $this->recorded_by,
             'created_at' => $this->created_at?->toIso8601String(),

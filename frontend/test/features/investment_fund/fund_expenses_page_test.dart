@@ -288,6 +288,33 @@ void main() {
     expect(tester.widget<InkWell>(card.first).onTap, isNull);
   });
 
+  testWidgets('an expense on goods names its purchase order and how it split', (tester) async {
+    // Arrange — FUND-EXPENSE-ON-GOODS: 400 دخلت تكلفةَ الرفّ و600 كُتبت على المبيعات.
+    await register({
+      null: _page([
+        const FundExpense(
+          id: 61,
+          kind: 'shipping',
+          kindLabel: 'شحن',
+          name: 'شحن الحاوية',
+          amount: '1000.00',
+          incurredOn: '2026-09-15',
+          period: FundExpensePeriod(id: 1, code: 'P1', status: 'closing', statusLabel: 'قيد الإغلاق'),
+          purchaseOrder: FundExpensePurchaseOrder(id: 12),
+          split: FundExpenseSplit(onGoods: '400.00', onSales: '600.00'),
+        ),
+      ], '1000.00'),
+    });
+    tall(tester);
+
+    // Act
+    await tester.pumpWidget(host((_, _) {}));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('أمر الشراء 12 · على البضاعة 400 · على المبيعات 600'), findsOneWidget);
+  });
+
   testWidgets('no expenses in a period says so', (tester) async {
     // Arrange
     await register({null: _page(const [], '0.00')});

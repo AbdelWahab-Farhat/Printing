@@ -14,6 +14,7 @@ use App\Domain\Investor\Exceptions\PeriodHasOrdersInFlight;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundValuation;
+use App\Domain\Investor\Queries\GoodsExpenseCharges;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PeriodForEntry;
@@ -73,6 +74,7 @@ final class CloseInvestmentPeriod
         private readonly RecordCashEntry $cash,
         private readonly PeriodForEntry $periodFor,
         private readonly OrderService $orders,
+        private readonly GoodsExpenseCharges $goodsExpenses,
     ) {}
 
     public function __invoke(?int $actorId, ?string $overrideReason = null): InvestmentPeriod
@@ -751,6 +753,8 @@ final class CloseInvestmentPeriod
         $total = DB::table('investor_deal_expenses')
             ->whereNull('deleted_at')
             ->where('is_landed', false)
+            // مصروفٌ على البضاعة يُعدّ بحصصه في فترتها لا بيومه — سطرُ الإرجاع أدناه.
+            ->whereNull('purchase_order_id')
             ->whereNull('reverses_expense_id')
             ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
                 ->from('investor_deal_expenses as r')
@@ -762,6 +766,8 @@ final class CloseInvestmentPeriod
             ])
             ->sum('amount');
 
-        return Money::round((string) ($total ?? '0'));
+        // **ومن المصاريف على البضاعة حصصُ مبيعات هذه الفترة وحدها** — ما رفع تكلفةَ الرفّ يُعدّ في
+        // «تكلفة البضاعة المباعة» يومَ يُباع، لا هنا (FUND-EXPENSE-ON-GOODS §٤.٨).
+        return Money::round(bcadd((string) ($total ?? '0'), $this->goodsExpenses->totalIn($period), 2));
     }
 }

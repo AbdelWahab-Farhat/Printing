@@ -6,8 +6,10 @@ namespace App\Domain\Investor\Queries;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\Actions\CloseInvestmentPeriod;
+use App\Domain\Investor\Actions\LandFundExpenseOnGoods;
 use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\WalletEntryType;
+use App\Domain\Investor\Models\FundExpenseCharge;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDealExpense;
@@ -54,6 +56,8 @@ final class PeriodExpensesQuery
     public function __construct(
         private readonly FundDeal $fund,
         private readonly ExpenseChargePeriod $chargePeriod,
+        private readonly GoodsExpenseCharges $goods,
+        private readonly LandFundExpenseOnGoods $onGoods,
     ) {}
 
     /**
@@ -82,16 +86,28 @@ final class PeriodExpensesQuery
         $charges = $this->chargesIn((int) $period->getKey(), $fundId);
 
         $inWindow = $this->originals($fundId)
+            ->whereNull('purchase_order_id')
             ->whereBetween('incurred_on', [$period->starts_on->toDateString(), $period->ends_on->toDateString()])
             ->get();
 
-        $outside = array_diff(array_keys($charges), $inWindow->pluck('id')->map(fn ($id): int => (int) $id)->all());
+        // **مصروفٌ على البضاعة بحصصه في هذه الفترة لا بيومه** (FUND-EXPENSE-ON-GOODS §٤.٨) — ما
+        // كُتب على مبيعاتها وما رُدّ إليها. وما رفع تكلفةَ الرفّ ليس مصروفَ فترة.
+        $goodsAmounts = $this->goods->amountsIn($period, $fundId);
+        $linked = $goodsAmounts === []
+            ? collect()
+            : $this->originals($fundId)->whereIn('id', array_keys($goodsAmounts))->get();
+
+        $outside = array_diff(
+            array_keys($charges),
+            $inWindow->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+            $linked->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+        );
 
         $corrections = $outside === []
             ? collect()
-            : $this->originals($fundId)->whereIn('id', $outside)->get();
+            : $this->originals($fundId)->whereNull('purchase_order_id')->whereIn('id', $outside)->get();
 
-        $all = $inWindow->concat($corrections);
+        $all = $inWindow->concat($linked)->concat($corrections);
         $reversals = $this->reversalsOf($all);
         $reversalPeriods = $this->periodsOfRefunds($reversals);
         $names = Investor::query()
@@ -99,6 +115,8 @@ final class PeriodExpensesQuery
             ->pluck('name', 'id');
 
         $expenseRows = $inWindow
+            ->concat($linked)
+            ->sortByDesc(fn (InvestorDealExpense $expense): string => $expense->incurred_on?->toDateString().sprintf('%012d', $expense->id))
             ->map(fn (InvestorDealExpense $expense): array => $this->row(
                 $expense,
                 $period,
@@ -106,6 +124,7 @@ final class PeriodExpensesQuery
                 $reversalPeriods,
                 $charges[(int) $expense->id] ?? [],
                 $names,
+                $goodsAmounts[(int) $expense->id] ?? null,
             ))
             ->all();
 
@@ -171,7 +190,20 @@ final class PeriodExpensesQuery
             ->whereRaw('coalesce(o.type, w.type) = ?', [WalletEntryType::Loss->value])
             ->sum(DB::raw("case when w.type = 'reversal' then -w.amount else w.amount end"));
 
-        return Money::round((string) ($total ?? '0'));
+        // وحصصُ المصاريف على البضاعة — مصدرُها الصفّ، ومصروفُها من خلفه. الخسارةُ تُحمَّل والربحُ
+        // ردٌّ لما حملته تكلفةُ بضاعةٍ بِيعت ثم عُكس مصروفُها، فيُطرح.
+        $onGoods = DB::table('investor_wallet_entries as w')
+            ->leftJoin('investor_wallet_entries as o', 'o.id', '=', 'w.reverses_entry_id')
+            ->join('fund_expense_charges as f', 'f.id', '=', DB::raw('coalesce(o.source_id, w.source_id)'))
+            ->join('investor_deal_expenses as x', 'x.id', '=', 'f.investor_deal_expense_id')
+            ->where('x.investor_deal_id', $fundId)
+            ->where('w.investment_period_id', $period->getKey())
+            ->whereNull('w.deleted_at')
+            ->whereRaw('coalesce(o.source_type, w.source_type) = ?', [AuditSubject::FundExpenseCharge->value])
+            ->sum(DB::raw("case coalesce(o.type, w.type) when 'loss' then 1 else -1 end
+                * case when w.type = 'reversal' then -w.amount else w.amount end"));
+
+        return Money::round(bcadd((string) ($total ?? '0'), (string) ($onGoods ?? '0'), 8));
     }
 
     /**
@@ -207,16 +239,32 @@ final class PeriodExpensesQuery
             ->where('investment_period_id', $periodId)
             ->get();
 
+        // حصصُ المصاريف على البضاعة مصدرُها الصفُّ لا المصروف — فتُردّ إلى مصروفها.
+        $chargeIds = $entries
+            ->map(fn (InvestorWalletEntry $entry) => $entry->type === WalletEntryType::Reversal ? $entry->reversedEntry : $entry)
+            ->filter(fn (?InvestorWalletEntry $origin): bool => $origin?->source_type === AuditSubject::FundExpenseCharge->value)
+            ->map(fn (InvestorWalletEntry $origin): int => (int) $origin->source_id)
+            ->unique()
+            ->all();
+        $expenseOfCharge = $chargeIds === []
+            ? []
+            : FundExpenseCharge::query()->whereIn('id', $chargeIds)->pluck('investor_deal_expense_id', 'id')->all();
+
         $charges = [];
 
         foreach ($entries as $entry) {
             $origin = $entry->type === WalletEntryType::Reversal ? $entry->reversedEntry : $entry;
 
-            if ($origin === null || $origin->source_type !== AuditSubject::InvestorDealExpense->value) {
+            $expenseId = match ($origin?->source_type) {
+                AuditSubject::InvestorDealExpense->value => (int) $origin->source_id,
+                AuditSubject::FundExpenseCharge->value => (int) ($expenseOfCharge[(int) $origin->source_id] ?? 0),
+                default => 0,
+            };
+
+            if ($expenseId === 0) {
                 continue;
             }
 
-            $expenseId = (int) $origin->source_id;
             $investorId = (int) $entry->investor_id;
 
             // `profit_deal` يهبط بالتحميل، فالتحميلُ عكسُ إشارته.
@@ -313,7 +361,9 @@ final class PeriodExpensesQuery
         array $reversalPeriods,
         array $charges,
         Collection $names,
+        ?string $amountInPeriod = null,
     ): array {
+        $onGoods = $expense->purchase_order_id !== null;
         $investors = [];
         $investorsTotal = '0';
 
@@ -337,7 +387,10 @@ final class PeriodExpensesQuery
             'kind' => $expense->kind->value,
             'kind_label' => $expense->kind->label(),
             'name' => (string) $expense->name,
-            'amount' => (string) $expense->amount,
+            // مصروفٌ على البضاعة: ما وقع منه في هذه الفترة؛ وكاملُه في `expense_amount`.
+            'amount' => $onGoods ? ($amountInPeriod ?? '0.00') : (string) $expense->amount,
+            'expense_amount' => (string) $expense->amount,
+            'purchase_order' => $onGoods ? ['id' => (int) $expense->purchase_order_id] : null,
             'incurred_on' => $expense->incurred_on?->toDateString(),
             'notes' => $expense->notes,
             'treasury_account' => $expense->treasuryAccount === null
@@ -346,7 +399,7 @@ final class PeriodExpensesQuery
             'recorded_by' => $expense->recordedBy === null
                 ? null
                 : ['id' => (int) $expense->recordedBy->id, 'name' => (string) $expense->recordedBy->name],
-            'counted' => $this->counts($expense, $period, $reversal),
+            'counted' => $onGoods ? $amountInPeriod !== null : $this->counts($expense, $period, $reversal),
             'recorded_after_close' => $this->recordedAfterClose($expense, $period),
             'reversal' => $reversal === null ? null : [
                 'id' => (int) $reversal->id,
@@ -359,7 +412,9 @@ final class PeriodExpensesQuery
             // **الخادمُ يقول أيُعكس** — الحارسُ نفسُه الذي يرفض العكس، لا نسخةٌ منه في التطبيق.
             // ولا تكاليفُ وصول أمر شراء: تتبع استلامَها، وتُعكس بالتراجع عنه.
             'can_reverse' => $reversal === null
-                && ! $this->chargePeriod->isClosed($expense)
+                && ($onGoods
+                    ? $this->onGoods->closedPeriodTouchedBy($expense) === null
+                    : ! $this->chargePeriod->isClosed($expense))
                 && $expense->source_type !== AuditSubject::PurchaseOrderAdditionalCost->value,
 
             // **ما تحمّله المستثمرون منه في هذه الفترة** — موجبٌ ما حُمِّلوه، وسالبٌ ما رُدّ إليهم.

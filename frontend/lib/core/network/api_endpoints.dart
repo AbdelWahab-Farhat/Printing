@@ -118,6 +118,9 @@ abstract final class InvestmentEndpoints {
   /// يُكتب فيها المصروف (POST)، وتُقرأ منها «مصاريف الصندوق» كلُّها بجانب فتراتها (GET).
   static const String expenses = '/investment/expenses';
 
+  /// أوامرُ الشراء التي أدخلت للصندوق بضاعةً — حقلُ «أمر الشراء» في ورقة المصروف.
+  static const String purchaseOrders = '/investment/purchase-orders';
+
   /// إبطالُ حركةٍ في محفظة — يبطل الخزينةَ والوحداتِ معها.
   static String walletReversal(int investorId, int entryId) =>
       '/investors/$investorId/wallet/$entryId/reversal';

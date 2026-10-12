@@ -193,6 +193,24 @@ final class FundCashLedger
             }
         }
 
+        // نصيبُ الشركة من حصة مصروفٍ على البضاعة: اسمُ المصروف، والطلبيةُ التي باعت بضاعته إن وُجدت.
+        if ($chargeIds = array_values($ids[AuditSubject::FundExpenseCharge->value] ?? [])) {
+            $rows = DB::table('fund_expense_charges as f')
+                ->join('investor_deal_expenses as x', 'x.id', '=', 'f.investor_deal_expense_id')
+                ->leftJoin('orders as o', 'o.id', '=', 'f.order_id')
+                ->whereIn('f.id', $chargeIds)
+                ->get(['f.id', 'x.name', 'o.id as order_id', 'o.code']);
+
+            foreach ($rows as $row) {
+                $described[AuditSubject::FundExpenseCharge->value][(int) $row->id] = array_filter([
+                    'description' => $row->code === null
+                        ? (string) $row->name
+                        : $row->name.' · طلبية '.$row->code,
+                    'order_id' => $row->order_id === null ? null : (int) $row->order_id,
+                ], fn ($value): bool => $value !== null);
+            }
+        }
+
         if ($periodIds = array_values($ids[AuditSubject::InvestmentPeriod->value] ?? [])) {
             foreach (DB::table('investment_periods')->whereIn('id', $periodIds)->pluck('code', 'id') as $id => $code) {
                 $described[AuditSubject::InvestmentPeriod->value][(int) $id] = ['description' => 'الفترة '.$code];

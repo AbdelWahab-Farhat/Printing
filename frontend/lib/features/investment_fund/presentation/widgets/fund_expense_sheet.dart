@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -5,6 +7,7 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/investment_fund/models/fund_purchase_order_option.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/investment_fund_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
@@ -60,6 +63,11 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
   /// الدرج الذي دفع؛ فارغاً يختاره الخادم — نقدُ المسجِّل، وإلا الخزنة.
   int? _accountId;
 
+  /// **أمرُ الشراء الذي تحمله بضاعتُه** (FUND-EXPENSE-ON-GOODS): يتوزّع على كل وحدةٍ أدخلها —
+  /// ما بقي على الرفّ تحمله تكلفتُه، وما بِيع يُكتب على فترة بيعه. فارغاً: مصروفُ فترةٍ بيومه.
+  FundPurchaseOrderOption? _order;
+  List<FundPurchaseOrderOption> _orders = const [];
+
   /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها، وما سواها يقوله توست (RULES §٥).
   Failure? _refusal;
 
@@ -69,8 +77,23 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
     'amount',
     'incurred_on',
     'treasury_account_id',
+    'purchase_order_id',
     'notes',
   };
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadOrders());
+  }
+
+  Future<void> _loadOrders() async {
+    final orders = await widget.cubit.purchaseOrders();
+
+    if (!mounted) return;
+
+    setState(() => _orders = orders);
+  }
 
   @override
   void dispose() {
@@ -124,6 +147,7 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
       incurredOn: _incurredOn.toIso8601String().substring(0, 10),
       notes: notes.isEmpty ? null : notes,
       treasuryAccountId: _accountId,
+      purchaseOrderId: _order?.id,
     );
 
     if (!mounted) return;
@@ -245,6 +269,23 @@ class _FundExpenseFormState extends State<_FundExpenseForm> {
                 ),
               ),
               if (_refusal?.fieldError('incurred_on') case final error?) TreasuryFieldError(error),
+              SizedBox(height: 16.h),
+
+              AppDropdown<FundPurchaseOrderOption>(
+                value: _order,
+                items: _orders,
+                keyOf: (order) => order.id,
+                labelOf: (order) => [
+                  'أمر الشراء ${order.id}',
+                  ?order.vendor,
+                ].join(' · '),
+                subtitleOf: (order) => order.items.join('، '),
+                label: 'أمر الشراء',
+                placeholder: 'لا يخصّ أمر شراء',
+                prefixIcon: AppIcons.purchaseOrders,
+                errorText: _refusal?.fieldError('purchase_order_id'),
+                onChanged: (order) => setState(() => _order = order),
+              ),
               SizedBox(height: 16.h),
 
               // أيُّ درجٍ دفع. النموذج لا يسأل عن طريقة، فيُعرض كل حسابٍ يُصرف منه، و«تلقائي»
