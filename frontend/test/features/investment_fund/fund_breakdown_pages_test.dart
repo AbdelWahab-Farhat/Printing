@@ -4,6 +4,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
+import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_goods_on_order_page.dart';
@@ -167,6 +168,64 @@ void main() {
       expect(find.text('أمر شراء #4 · مصنع الأكياس'), findsOneWidget);
       expect(find.text('−3,000 د.ل'), findsOneWidget);
       expect(find.text('الرصيد 2,000 د.ل'), findsOneWidget);
+    });
+
+    testWidgets('names the account money moved through, and says so when none did', (tester) async {
+      // Arrange — مصروفٌ من درج، وشراءٌ دُفع للمورد من ثلاثة حسابات، ونصيبُ الشركة على الورق،
+      // وتحصيلٌ دخل المصرف، واشتراكٌ من المحفظة وإرجاعٌ إليها، وصفٌّ مرّ بدرجٍ لا يُعرف اسمُه.
+      FundCashEntry row(int id, String type, {required bool inflow}) => FundCashEntry(
+        id: id,
+        type: type,
+        typeLabel: type,
+        isInflow: inflow,
+        signedAmount: inflow ? '10.00' : '-10.00',
+        balanceAfter: '0.00',
+      );
+
+      await register(
+        _FakeBreakdown(
+          cashPage: Paginated<FundCashEntry>(
+            items: [
+              row(4, 'expense_covered_by_company', inflow: true)
+                  .copyWith(movesThroughAnAccount: false),
+              row(3, 'expense', inflow: false).copyWith(
+                treasuryAccounts: const [PeriodExpenseRef(id: 1, name: 'الخزينة الرئيسية')],
+              ),
+              row(2, 'purchase', inflow: false).copyWith(
+                treasuryAccounts: const [
+                  PeriodExpenseRef(id: 1, name: 'الخزينة الرئيسية'),
+                  PeriodExpenseRef(id: 2, name: 'مصرف الوحدة'),
+                  PeriodExpenseRef(id: 3, name: 'درج المندوب'),
+                ],
+              ),
+              row(1, 'sale_proceeds', inflow: true).copyWith(
+                treasuryAccounts: const [PeriodExpenseRef(id: 2, name: 'مصرف الوحدة')],
+              ),
+              row(0, 'deposit', inflow: true)
+                  .copyWith(movesThroughAnAccount: false, movesThroughTheInvestorsWallet: true),
+              row(-1, 'capital_return', inflow: false)
+                  .copyWith(movesThroughAnAccount: false, movesThroughTheInvestorsWallet: true),
+              row(-2, 'legacy_transfer', inflow: true),
+            ],
+            meta: const PageMeta(currentPage: 1, perPage: 30, lastPage: 1, total: 7),
+            extraMeta: const {'current_page': 1, 'balance': '0.00'},
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host(const FundCashPage()));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('بلا حركة في الحسابات'), findsOneWidget);
+      expect(find.text('من: الخزينة الرئيسية'), findsOneWidget);
+      expect(find.text('من: الخزينة الرئيسية، مصرف الوحدة و1 أخرى'), findsOneWidget);
+      expect(find.text('إلى: مصرف الوحدة'), findsOneWidget);
+      expect(find.text('من: محفظة المستثمر'), findsOneWidget);
+      expect(find.text('إلى: محفظة المستثمر'), findsOneWidget);
+      // ودرجٌ لم يُكتب اسمُه لا يُدّعى له اسم: سبعةُ صفوفٍ، وستّةُ أسطرِ حساب.
+      expect(find.textContaining(RegExp(r'^(من|إلى): |^بلا حركة')), findsNWidgets(6));
     });
   });
 

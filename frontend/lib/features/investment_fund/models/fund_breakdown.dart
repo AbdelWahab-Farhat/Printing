@@ -1,3 +1,4 @@
+import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -34,6 +35,20 @@ abstract class FundCashEntry with _$FundCashEntry {
     @JsonKey(name: 'order_id') int? orderId,
     @JsonKey(name: 'purchase_order_id') int? purchaseOrderId,
     @JsonKey(name: 'investor_id') int? investorId,
+
+    /// أمرّ بدرجٍ أو مصرف، أم تحرّك على الورق وحده — نصيبُ الشركة، أو ما بين الصندوق والمحافظ.
+    /// `true` حين يغيب، فخادمٌ أقدمُ لا يُلصق «بلا حركة» بما لا يعرف عنه شيئاً.
+    @JsonKey(name: 'moves_through_an_account') @Default(true) bool movesThroughAnAccount,
+
+    /// الاشتراكُ من محفظة المستثمر وإرجاعُ رأس المال إليها — الدرجُ مرّ به إيداعُ المحفظة في يومه.
+    @JsonKey(name: 'moves_through_the_investors_wallet')
+    @Default(false)
+    bool movesThroughTheInvestorsWallet,
+
+    /// الحسابُ الذي دخل إليه المالُ أو خرج منه — وللشراء والتحصيل قد يكون أكثرَ من حساب.
+    @JsonKey(name: 'treasury_accounts')
+    @Default(<PeriodExpenseRef>[])
+    List<PeriodExpenseRef> treasuryAccounts,
 
     String? notes,
   }) = _FundCashEntry;

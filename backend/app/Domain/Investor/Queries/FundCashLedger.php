@@ -9,6 +9,8 @@ use App\Domain\Investor\Actions\PostFundProceedsForOrder;
 use App\Domain\Investor\Enums\CashEntryType;
 use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Support\Money;
+use App\Domain\Order\Enums\OrderPaymentType;
+use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +76,7 @@ final class FundCashLedger
         $slice = $standing->reverse()->values()->slice(($page - 1) * $perPage, $perPage)->values();
 
         $sources = $this->sourcesOf($slice);
+        $accounts = $this->accountsOf($slice);
 
         $rows = [];
 
@@ -93,6 +96,9 @@ final class FundCashLedger
                 'order_id' => $source['order_id'] ?? null,
                 'purchase_order_id' => $source['purchase_order_id'] ?? null,
                 'investor_id' => $source['investor_id'] ?? null,
+                'moves_through_an_account' => $entry->type->movesThroughAnAccount(),
+                'moves_through_the_investors_wallet' => $entry->type->movesThroughTheInvestorsWallet(),
+                'treasury_accounts' => $accounts[(int) $entry->getKey()] ?? [],
                 'notes' => $entry->notes,
             ];
         }
@@ -218,6 +224,132 @@ final class FundCashLedger
         }
 
         return $described;
+    }
+
+    /**
+     * الحسابُ الذي دخل إليه المالُ أو خرج منه — بطلب المالك 2026-10-13.
+     *
+     * **المصروفُ وصرفُ الأرباح يحملان حسابَهما على مصدرهما.** ونصيبُ الشركة من المصروف يسمّي
+     * المصدرَ نفسَه، فالبحثُ بنوع الصفّ لا بمصدره وحده: ذاك الصفُّ لم يمرّ بدرج.
+     *
+     * **والشراءُ والتحصيلُ بدفعاتهما** — دفعاتِ المورد على أمر الشراء، ودفعاتِ العميل على الطلبية —
+     * وقد تكون من أكثر من حساب: فكلُّ حسابٍ مرّةً، بترتيب أوّل دفعةٍ منه، والأسماءُ بلا مبالغ. دفعاتُ
+     * العميل تغطّي الطلبيةَ كلَّها والصفُّ حصّةُ الصندوق منها، فمبلغٌ بجانب الاسم لا يجمع إلى الصفّ.
+     * لا تُحسب الدفعةُ المعكوسة ولا عكسُها. وما لم يُدفع عليه شيءٌ يبقى بلا حساب: قد يكون المورّدُ
+     * دُفع على حسابه لا على الأمر، فـ«لم يُدفع» قد تكون كذباً.
+     *
+     * والحسابُ المؤرشف يُسمّى كما هو — هو ما مرّ به المال يومها.
+     *
+     * @param  Collection<int, InvestmentCashEntry>  $entries
+     * @return array<int, list<array{id: int, name: string}>>
+     */
+    private function accountsOf(Collection $entries): array
+    {
+        /** @var array<string, array<int, list<int>>> $wanted مصدرُ الحساب ← رقمُ المصدر ← صفوفُ الخزينة */
+        $wanted = [];
+
+        foreach ($entries as $entry) {
+            $from = match (true) {
+                $entry->type === CashEntryType::Expense
+                    && $entry->source_type === AuditSubject::InvestorDealExpense->value => 'expense',
+                $entry->type === CashEntryType::ProfitPayout
+                    && $entry->source_type === AuditSubject::InvestorWalletEntry->value => 'payout',
+                $entry->type === CashEntryType::Purchase
+                    && $entry->source_type === AuditSubject::PurchaseOrder->value => 'purchase',
+                $entry->type === CashEntryType::SaleProceeds
+                    && $entry->source_type === AuditSubject::Order->value => 'sale',
+                default => null,
+            };
+
+            if ($from !== null) {
+                $wanted[$from][(int) $entry->source_id][] = (int) $entry->getKey();
+            }
+        }
+
+        $named = [
+            'expense' => $this->onTheRow('investor_deal_expenses', array_keys($wanted['expense'] ?? [])),
+            'payout' => $this->onTheRow('investor_wallet_entries', array_keys($wanted['payout'] ?? [])),
+            'purchase' => $this->throughPayments('vendor_payments', 'purchase_order_id', VendorPaymentType::Payment->value, array_keys($wanted['purchase'] ?? [])),
+            'sale' => $this->throughPayments('order_payments', 'order_id', OrderPaymentType::Payment->value, array_keys($wanted['sale'] ?? [])),
+        ];
+
+        $out = [];
+
+        foreach ($wanted as $from => $sources) {
+            foreach ($sources as $sourceId => $entryIds) {
+                foreach ($entryIds as $entryId) {
+                    $out[$entryId] = $named[$from][$sourceId] ?? [];
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * الحسابُ المكتوبُ على صفّ المصدر نفسِه — مصروفٌ أو صفُّ محفظة.
+     *
+     * @param  list<int>  $ids
+     * @return array<int, list<array{id: int, name: string}>>
+     */
+    private function onTheRow(string $table, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = DB::table($table.' as s')
+            ->join('treasury_accounts as a', 'a.id', '=', 's.treasury_account_id')
+            ->whereIn('s.id', $ids)
+            ->get(['s.id', 'a.id as account_id', 'a.name']);
+
+        $out = [];
+
+        foreach ($rows as $row) {
+            $out[(int) $row->id] = [['id' => (int) $row->account_id, 'name' => (string) $row->name]];
+        }
+
+        return $out;
+    }
+
+    /**
+     * حساباتُ الدفعات القائمة على كلّ مصدر — كلُّ حسابٍ مرّةً، بترتيب أوّل دفعةٍ منه.
+     *
+     * `vendor_payments` و`order_payments` على شكلٍ واحد هنا: نوعٌ، و`reverses_payment_id` يسمّي
+     * المعكوسة، وحذفٌ ناعم.
+     *
+     * @param  list<int>  $ids
+     * @return array<int, list<array{id: int, name: string}>>
+     */
+    private function throughPayments(string $table, string $sourceColumn, string $paymentType, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = DB::table($table.' as p')
+            ->join('treasury_accounts as a', 'a.id', '=', 'p.treasury_account_id')
+            ->whereIn('p.'.$sourceColumn, $ids)
+            ->where('p.type', $paymentType)
+            ->whereNull('p.deleted_at')
+            ->whereNotExists(fn (Builder $reversal) => $reversal
+                ->from($table.' as r')
+                ->whereColumn('r.reverses_payment_id', 'p.id')
+                ->whereNull('r.deleted_at'))
+            ->orderBy('p.paid_at')
+            ->orderBy('p.id')
+            ->get(['p.'.$sourceColumn.' as source_id', 'a.id as account_id', 'a.name']);
+
+        $named = [];
+
+        foreach ($rows as $row) {
+            $named[(int) $row->source_id][(int) $row->account_id] ??= [
+                'id' => (int) $row->account_id,
+                'name' => (string) $row->name,
+            ];
+        }
+
+        return array_map(array_values(...), $named);
     }
 
     /**

@@ -61,6 +61,15 @@ class FundCashRow extends StatelessWidget {
                         style: quiet,
                       ),
                     ],
+                    if (_account case final account?) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        account,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: quiet,
+                      ),
+                    ],
                     if (entry.notes case final notes? when notes.isNotEmpty) ...[
                       SizedBox(height: 4.h),
                       Text(notes, style: quiet?.copyWith(fontStyle: FontStyle.italic)),
@@ -99,6 +108,27 @@ class FundCashRow extends StatelessWidget {
     );
 
     return onTap == null ? row : InkWell(onTap: onTap, child: row);
+  }
+
+  /// الحسابُ الذي مرّ به المال — «من: الخزينة الرئيسية»، «إلى: مصرف الوحدة»، «من: محفظة المستثمر».
+  /// والصفُّ الذي لم يمرّ بدرجٍ يقول ذلك صراحةً، فلا يُسأل «إلى أيّ درجٍ دخلت هذه الـ٥٧٥؟». والذي
+  /// مرّ بدرجٍ لا يُعرف اسمُه لا يُدّعى له اسم.
+  String? get _account {
+    if (entry.movesThroughTheInvestorsWallet) {
+      return '${entry.isInflow ? 'من' : 'إلى'}: محفظة المستثمر';
+    }
+
+    if (!entry.movesThroughAnAccount) return 'بلا حركة في الحسابات';
+
+    final names = entry.treasuryAccounts.map((account) => account.name).toList();
+
+    if (names.isEmpty) return null;
+
+    final shown = names.length <= 2
+        ? names.join('، ')
+        : '${names.take(2).join('، ')} و${names.length - 2} أخرى';
+
+    return '${entry.isInflow ? 'إلى' : 'من'}: $shown';
   }
 
   /// `+800` / `−3,000` — **الإشارةُ لا تسقط أبداً**، وبعلامة الناقص الطباعية كسطر المخزن.

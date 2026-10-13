@@ -21,9 +21,12 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Queries\FundCash;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Support\FundDeal;
+use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -176,7 +179,9 @@ class FundBreakdownTest extends TestCase
             ->assertJsonPath('data.2.signed_amount', '5000.00')
             ->assertJsonPath('data.2.balance_after', '5000.00')
             ->assertJsonPath('data.2.description', 'عبدالرحمن')
-            ->assertJsonPath('data.2.investor_id', $investor->id);
+            ->assertJsonPath('data.2.investor_id', $investor->id)
+            // الإيداعُ في الصندوق من المحفظة، لا من درج — الدرجُ مرّ به إيداعُ المحفظة قبله.
+            ->assertJsonPath('data.2.moves_through_an_account', false);
 
         // والرصيدُ هو نقدُ اللوحة بعينه.
         $response->assertJsonPath('meta.balance', '2800.00');
@@ -238,6 +243,237 @@ class FundBreakdownTest extends TestCase
             ->assertJsonPath('data.1.description', 'أجرة شاحنة')
             ->assertJsonPath('data.1.signed_amount', '-120.00')
             ->assertJsonPath('meta.balance', '-420.00');
+    }
+
+    /** مصروفٌ على الصندوق دُفع من [$account]، أو من غير حساب كما كُتب قبل الخزينة. */
+    private function fundExpense(string $name, string $amount, ?TreasuryAccount $account): int
+    {
+        return (int) DB::table('investor_deal_expenses')->insertGetId([
+            'investor_deal_id' => app(FundDeal::class)()->id,
+            'kind' => DealExpenseKind::Transport->value,
+            'name' => $name,
+            'amount' => $amount,
+            'incurred_on' => '2026-09-22',
+            'treasury_account_id' => $account?->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /** دفعةٌ للمورد على أمر الشراء من [$account]. */
+    private function vendorPayment(PurchaseOrder $purchase, TreasuryAccount $account, string $amount, string $at): int
+    {
+        return (int) DB::table('vendor_payments')->insertGetId([
+            'vendor_id' => $purchase->vendor_id,
+            'purchase_order_id' => $purchase->id,
+            'type' => VendorPaymentType::Payment->value,
+            'amount' => $amount,
+            'method' => 'cash',
+            'treasury_account_id' => $account->id,
+            'paid_at' => $at,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function reverseVendorPayment(PurchaseOrder $purchase, int $paymentId, string $amount): void
+    {
+        DB::table('vendor_payments')->insert([
+            'vendor_id' => $purchase->vendor_id,
+            'purchase_order_id' => $purchase->id,
+            'type' => VendorPaymentType::Reversal->value,
+            'amount' => $amount,
+            'reverses_payment_id' => $paymentId,
+            'paid_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    public function test_an_expense_names_the_account_it_was_paid_from_and_the_companys_share_names_none(): void
+    {
+        // Arrange — مصروفٌ من الدرج، ونصيبُ الشركة منه: الصفّان يسمّيان المصدرَ نفسَه، والثاني لم يمرّ بدرج.
+        $drawer = TreasuryAccount::factory()->create(['name' => 'الخزينة الرئيسية']);
+        $expense = $this->fundExpense('جلدونا', '1150.00', $drawer);
+
+        $this->cash(CashEntryType::Expense, '1150.00', 'investor_deal_expense', $expense, '2026-09-22 10:00:00');
+        $this->cash(CashEntryType::ExpenseCoveredByCompany, '575.00', 'investor_deal_expense', $expense, '2026-09-22 10:00:00', sequence: 2);
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.type', 'expense_covered_by_company')
+            ->assertJsonPath('data.0.moves_through_an_account', false)
+            ->assertJsonPath('data.0.treasury_accounts', [])
+            ->assertJsonPath('data.1.type', 'expense')
+            ->assertJsonPath('data.1.moves_through_an_account', true)
+            ->assertJsonPath('data.1.treasury_accounts', [['id' => $drawer->id, 'name' => 'الخزينة الرئيسية']]);
+    }
+
+    public function test_an_expense_from_before_the_treasury_names_no_account(): void
+    {
+        // Arrange
+        $expense = $this->fundExpense('أجرة شاحنة', '120.00', null);
+        $this->cash(CashEntryType::Expense, '120.00', 'investor_deal_expense', $expense, '2026-09-22 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert — يمرّ بحساب، لكنّ أحداً لم يكتب أيَّها.
+        $response->assertOk()
+            ->assertJsonPath('data.0.moves_through_an_account', true)
+            ->assertJsonPath('data.0.treasury_accounts', []);
+    }
+
+    public function test_a_purchase_names_every_account_the_vendor_was_paid_from_once_each(): void
+    {
+        // Arrange — ثلاث دفعاتٍ قائمة من حسابين، ودفعةٌ من ثالثٍ عُكست، ودفعةٌ على أمرٍ آخر.
+        $drawer = TreasuryAccount::factory()->create(['name' => 'الخزينة الرئيسية']);
+        $bank = TreasuryAccount::factory()->create(['name' => 'مصرف الوحدة']);
+        $mistake = TreasuryAccount::factory()->create(['name' => 'درج المندوب']);
+        $purchase = PurchaseOrder::factory()->create();
+        $other = PurchaseOrder::factory()->create();
+
+        $this->vendorPayment($purchase, $drawer, '1000.00', '2026-09-20 10:00:00');
+        $this->vendorPayment($purchase, $bank, '500.00', '2026-09-21 10:00:00');
+        $this->vendorPayment($purchase, $drawer, '520.00', '2026-09-22 10:00:00');
+        $this->reverseVendorPayment($purchase, $this->vendorPayment($purchase, $mistake, '300.00', '2026-09-19 10:00:00'), '300.00');
+        $this->vendorPayment($other, $mistake, '50.00', '2026-09-19 10:00:00');
+
+        $this->cash(CashEntryType::Purchase, '2020.00', 'purchase_order', (int) $purchase->id, '2026-09-22 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert — كلُّ حسابٍ مرّةً، بترتيب أوّل دفعةٍ منه.
+        $response->assertOk()
+            ->assertJsonPath('data.0.moves_through_an_account', true)
+            ->assertJsonPath('data.0.treasury_accounts', [
+                ['id' => $drawer->id, 'name' => 'الخزينة الرئيسية'],
+                ['id' => $bank->id, 'name' => 'مصرف الوحدة'],
+            ]);
+    }
+
+    /** دفعةٌ من العميل على الطلبية دخلت [$account]. */
+    private function orderPayment(Order $order, TreasuryAccount $account, string $amount, string $at): int
+    {
+        return (int) DB::table('order_payments')->insertGetId([
+            'order_id' => $order->id,
+            'type' => OrderPaymentType::Payment->value,
+            'amount' => $amount,
+            'method' => 'cash',
+            'treasury_account_id' => $account->id,
+            'paid_at' => $at,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function reverseOrderPayment(Order $order, int $paymentId, string $amount): void
+    {
+        DB::table('order_payments')->insert([
+            'order_id' => $order->id,
+            'type' => OrderPaymentType::Reversal->value,
+            'amount' => $amount,
+            'reverses_payment_id' => $paymentId,
+            'paid_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    public function test_a_collection_names_every_account_the_customer_paid_into(): void
+    {
+        // Arrange — العميلُ دفع نقداً في الدرج ثم حوالةً في المصرف، ودفعةٌ في درج المندوب عُكست.
+        $drawer = TreasuryAccount::factory()->create(['name' => 'الخزينة الرئيسية']);
+        $bank = TreasuryAccount::factory()->create(['name' => 'مصرف الوحدة']);
+        $mistake = TreasuryAccount::factory()->create(['name' => 'درج المندوب']);
+        $order = Order::factory()->create();
+
+        $this->orderPayment($order, $drawer, '1500.00', '2026-09-20 10:00:00');
+        $this->orderPayment($order, $bank, '1000.00', '2026-09-21 10:00:00');
+        $this->reverseOrderPayment($order, $this->orderPayment($order, $mistake, '200.00', '2026-09-19 10:00:00'), '200.00');
+
+        $this->cash(CashEntryType::SaleProceeds, '2000.00', 'order', (int) $order->id, '2026-09-21 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert — الأسماءُ وحدها: ٢٥٠٠ دفعها العميل للطلبية كلِّها، و٢٠٠٠ حصّةُ الصندوق منها.
+        $response->assertOk()
+            ->assertJsonPath('data.0.moves_through_an_account', true)
+            ->assertJsonPath('data.0.treasury_accounts', [
+                ['id' => $drawer->id, 'name' => 'الخزينة الرئيسية'],
+                ['id' => $bank->id, 'name' => 'مصرف الوحدة'],
+            ]);
+    }
+
+    public function test_a_profit_payout_names_the_account_it_was_paid_from(): void
+    {
+        // Arrange
+        $drawer = TreasuryAccount::factory()->create(['name' => 'الخزينة الرئيسية']);
+        $investor = Investor::factory()->create();
+        $withdrawal = (int) DB::table('investor_wallet_entries')->insertGetId([
+            'investor_id' => $investor->id,
+            'type' => WalletEntryType::ProfitWithdrawal->value,
+            'amount' => '300.00',
+            'method' => 'cash',
+            'treasury_account_id' => $drawer->id,
+            'occurred_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->cash(CashEntryType::ProfitPayout, '300.00', 'investor_wallet_entry', $withdrawal, '2026-09-22 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.treasury_accounts', [['id' => $drawer->id, 'name' => 'الخزينة الرئيسية']]);
+    }
+
+    public function test_a_deposit_and_a_capital_return_move_through_the_investors_wallet_not_an_account(): void
+    {
+        // Arrange — الاشتراكُ من المحفظة، والإرجاعُ إليها؛ ونصيبُ الشركة لا هذا ولا ذاك.
+        $investor = Investor::factory()->create();
+        $period = InvestmentPeriod::factory()->create(['code' => 'P1']);
+
+        $this->cash(CashEntryType::Deposit, '1000.00', 'investor_wallet_entry', $this->walletDeposit($investor, '1000.00'), '2026-09-20 10:00:00');
+        $this->cash(CashEntryType::CapitalReturn, '200.00', 'investor_wallet_entry', $this->walletDeposit($investor, '200.00'), '2026-09-21 10:00:00');
+        $this->cash(CashEntryType::CompanyPayout, '50.00', 'investment_period', (int) $period->id, '2026-09-22 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.type', 'company_payout')
+            ->assertJsonPath('data.0.moves_through_the_investors_wallet', false)
+            ->assertJsonPath('data.0.moves_through_an_account', false)
+            ->assertJsonPath('data.1.type', 'capital_return')
+            ->assertJsonPath('data.1.moves_through_the_investors_wallet', true)
+            ->assertJsonPath('data.1.moves_through_an_account', false)
+            ->assertJsonPath('data.1.treasury_accounts', [])
+            ->assertJsonPath('data.2.type', 'deposit')
+            ->assertJsonPath('data.2.moves_through_the_investors_wallet', true)
+            ->assertJsonPath('data.2.treasury_accounts', []);
+    }
+
+    public function test_a_purchase_the_vendor_was_not_paid_for_yet_names_no_account(): void
+    {
+        // Arrange
+        $purchase = PurchaseOrder::factory()->create();
+        $this->cash(CashEntryType::Purchase, '2020.00', 'purchase_order', (int) $purchase->id, '2026-09-22 10:00:00');
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/cash');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.0.treasury_accounts', []);
     }
 
     public function test_the_cash_log_pages_and_keeps_its_running_balance_across_pages(): void

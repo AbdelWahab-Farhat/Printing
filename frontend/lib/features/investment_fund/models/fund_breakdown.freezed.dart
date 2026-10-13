@@ -21,7 +21,11 @@ mixin _$FundCashEntry {
 /// تبدأ من صفر.
 @JsonKey(name: 'balance_after') String get balanceAfter;@JsonKey(name: 'occurred_at') DateTime? get occurredAt;/// «طلبية ORD-12 · محمد»، «أمر شراء #3 · مصنع الأكياس»، «عبدالرحمن» — يبنيه الخادم.
  String? get description;/// إلى أين تُفتح الحركة، إن كان لها بابٌ في التطبيق.
-@JsonKey(name: 'order_id') int? get orderId;@JsonKey(name: 'purchase_order_id') int? get purchaseOrderId;@JsonKey(name: 'investor_id') int? get investorId; String? get notes;
+@JsonKey(name: 'order_id') int? get orderId;@JsonKey(name: 'purchase_order_id') int? get purchaseOrderId;@JsonKey(name: 'investor_id') int? get investorId;/// أمرّ بدرجٍ أو مصرف، أم تحرّك على الورق وحده — نصيبُ الشركة، أو ما بين الصندوق والمحافظ.
+/// `true` حين يغيب، فخادمٌ أقدمُ لا يُلصق «بلا حركة» بما لا يعرف عنه شيئاً.
+@JsonKey(name: 'moves_through_an_account') bool get movesThroughAnAccount;/// الاشتراكُ من محفظة المستثمر وإرجاعُ رأس المال إليها — الدرجُ مرّ به إيداعُ المحفظة في يومه.
+@JsonKey(name: 'moves_through_the_investors_wallet') bool get movesThroughTheInvestorsWallet;/// الحسابُ الذي دخل إليه المالُ أو خرج منه — وللشراء والتحصيل قد يكون أكثرَ من حساب.
+@JsonKey(name: 'treasury_accounts') List<PeriodExpenseRef> get treasuryAccounts; String? get notes;
 /// Create a copy of FundCashEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +38,16 @@ $FundCashEntryCopyWith<FundCashEntry> get copyWith => _$FundCashEntryCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundCashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.isInflow, isInflow) || other.isInflow == isInflow)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundCashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.isInflow, isInflow) || other.isInflow == isInflow)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.movesThroughAnAccount, movesThroughAnAccount) || other.movesThroughAnAccount == movesThroughAnAccount)&&(identical(other.movesThroughTheInvestorsWallet, movesThroughTheInvestorsWallet) || other.movesThroughTheInvestorsWallet == movesThroughTheInvestorsWallet)&&const DeepCollectionEquality().equals(other.treasuryAccounts, treasuryAccounts)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,isInflow,signedAmount,balanceAfter,occurredAt,description,orderId,purchaseOrderId,investorId,notes);
+int get hashCode => Object.hash(runtimeType,id,type,typeLabel,isInflow,signedAmount,balanceAfter,occurredAt,description,orderId,purchaseOrderId,investorId,movesThroughAnAccount,movesThroughTheInvestorsWallet,const DeepCollectionEquality().hash(treasuryAccounts),notes);
 
 @override
 String toString() {
-  return 'FundCashEntry(id: $id, type: $type, typeLabel: $typeLabel, isInflow: $isInflow, signedAmount: $signedAmount, balanceAfter: $balanceAfter, occurredAt: $occurredAt, description: $description, orderId: $orderId, purchaseOrderId: $purchaseOrderId, investorId: $investorId, notes: $notes)';
+  return 'FundCashEntry(id: $id, type: $type, typeLabel: $typeLabel, isInflow: $isInflow, signedAmount: $signedAmount, balanceAfter: $balanceAfter, occurredAt: $occurredAt, description: $description, orderId: $orderId, purchaseOrderId: $purchaseOrderId, investorId: $investorId, movesThroughAnAccount: $movesThroughAnAccount, movesThroughTheInvestorsWallet: $movesThroughTheInvestorsWallet, treasuryAccounts: $treasuryAccounts, notes: $notes)';
 }
 
 
@@ -54,7 +58,7 @@ abstract mixin class $FundCashEntryCopyWith<$Res>  {
   factory $FundCashEntryCopyWith(FundCashEntry value, $Res Function(FundCashEntry) _then) = _$FundCashEntryCopyWithImpl;
 @useResult
 $Res call({
- int id, String type,@JsonKey(name: 'type_label') String typeLabel,@JsonKey(name: 'is_inflow') bool isInflow,@JsonKey(name: 'signed_amount') String signedAmount,@JsonKey(name: 'balance_after') String balanceAfter,@JsonKey(name: 'occurred_at') DateTime? occurredAt, String? description,@JsonKey(name: 'order_id') int? orderId,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'investor_id') int? investorId, String? notes
+ int id, String type,@JsonKey(name: 'type_label') String typeLabel,@JsonKey(name: 'is_inflow') bool isInflow,@JsonKey(name: 'signed_amount') String signedAmount,@JsonKey(name: 'balance_after') String balanceAfter,@JsonKey(name: 'occurred_at') DateTime? occurredAt, String? description,@JsonKey(name: 'order_id') int? orderId,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'investor_id') int? investorId,@JsonKey(name: 'moves_through_an_account') bool movesThroughAnAccount,@JsonKey(name: 'moves_through_the_investors_wallet') bool movesThroughTheInvestorsWallet,@JsonKey(name: 'treasury_accounts') List<PeriodExpenseRef> treasuryAccounts, String? notes
 });
 
 
@@ -71,7 +75,7 @@ class _$FundCashEntryCopyWithImpl<$Res>
 
 /// Create a copy of FundCashEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? isInflow = null,Object? signedAmount = null,Object? balanceAfter = null,Object? occurredAt = freezed,Object? description = freezed,Object? orderId = freezed,Object? purchaseOrderId = freezed,Object? investorId = freezed,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? isInflow = null,Object? signedAmount = null,Object? balanceAfter = null,Object? occurredAt = freezed,Object? description = freezed,Object? orderId = freezed,Object? purchaseOrderId = freezed,Object? investorId = freezed,Object? movesThroughAnAccount = null,Object? movesThroughTheInvestorsWallet = null,Object? treasuryAccounts = null,Object? notes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -84,7 +88,10 @@ as DateTime?,description: freezed == description ? _self.description : descripti
 as String?,orderId: freezed == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int?,purchaseOrderId: freezed == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
 as int?,investorId: freezed == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
-as int?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as int?,movesThroughAnAccount: null == movesThroughAnAccount ? _self.movesThroughAnAccount : movesThroughAnAccount // ignore: cast_nullable_to_non_nullable
+as bool,movesThroughTheInvestorsWallet: null == movesThroughTheInvestorsWallet ? _self.movesThroughTheInvestorsWallet : movesThroughTheInvestorsWallet // ignore: cast_nullable_to_non_nullable
+as bool,treasuryAccounts: null == treasuryAccounts ? _self.treasuryAccounts : treasuryAccounts // ignore: cast_nullable_to_non_nullable
+as List<PeriodExpenseRef>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -170,10 +177,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId, @JsonKey(name: 'moves_through_an_account')  bool movesThroughAnAccount, @JsonKey(name: 'moves_through_the_investors_wallet')  bool movesThroughTheInvestorsWallet, @JsonKey(name: 'treasury_accounts')  List<PeriodExpenseRef> treasuryAccounts,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundCashEntry() when $default != null:
-return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.notes);case _:
+return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.movesThroughAnAccount,_that.movesThroughTheInvestorsWallet,_that.treasuryAccounts,_that.notes);case _:
   return orElse();
 
 }
@@ -191,10 +198,10 @@ return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedA
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId, @JsonKey(name: 'moves_through_an_account')  bool movesThroughAnAccount, @JsonKey(name: 'moves_through_the_investors_wallet')  bool movesThroughTheInvestorsWallet, @JsonKey(name: 'treasury_accounts')  List<PeriodExpenseRef> treasuryAccounts,  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _FundCashEntry():
-return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.notes);case _:
+return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.movesThroughAnAccount,_that.movesThroughTheInvestorsWallet,_that.treasuryAccounts,_that.notes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +218,10 @@ return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedA
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String type, @JsonKey(name: 'type_label')  String typeLabel, @JsonKey(name: 'is_inflow')  bool isInflow, @JsonKey(name: 'signed_amount')  String signedAmount, @JsonKey(name: 'balance_after')  String balanceAfter, @JsonKey(name: 'occurred_at')  DateTime? occurredAt,  String? description, @JsonKey(name: 'order_id')  int? orderId, @JsonKey(name: 'purchase_order_id')  int? purchaseOrderId, @JsonKey(name: 'investor_id')  int? investorId, @JsonKey(name: 'moves_through_an_account')  bool movesThroughAnAccount, @JsonKey(name: 'moves_through_the_investors_wallet')  bool movesThroughTheInvestorsWallet, @JsonKey(name: 'treasury_accounts')  List<PeriodExpenseRef> treasuryAccounts,  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _FundCashEntry() when $default != null:
-return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.notes);case _:
+return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedAmount,_that.balanceAfter,_that.occurredAt,_that.description,_that.orderId,_that.purchaseOrderId,_that.investorId,_that.movesThroughAnAccount,_that.movesThroughTheInvestorsWallet,_that.treasuryAccounts,_that.notes);case _:
   return null;
 
 }
@@ -226,7 +233,7 @@ return $default(_that.id,_that.type,_that.typeLabel,_that.isInflow,_that.signedA
 @JsonSerializable()
 
 class _FundCashEntry implements FundCashEntry {
-  const _FundCashEntry({required this.id, required this.type, @JsonKey(name: 'type_label') required this.typeLabel, @JsonKey(name: 'is_inflow') required this.isInflow, @JsonKey(name: 'signed_amount') required this.signedAmount, @JsonKey(name: 'balance_after') required this.balanceAfter, @JsonKey(name: 'occurred_at') this.occurredAt, this.description, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'investor_id') this.investorId, this.notes});
+  const _FundCashEntry({required this.id, required this.type, @JsonKey(name: 'type_label') required this.typeLabel, @JsonKey(name: 'is_inflow') required this.isInflow, @JsonKey(name: 'signed_amount') required this.signedAmount, @JsonKey(name: 'balance_after') required this.balanceAfter, @JsonKey(name: 'occurred_at') this.occurredAt, this.description, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'investor_id') this.investorId, @JsonKey(name: 'moves_through_an_account') this.movesThroughAnAccount = true, @JsonKey(name: 'moves_through_the_investors_wallet') this.movesThroughTheInvestorsWallet = false, @JsonKey(name: 'treasury_accounts') final  List<PeriodExpenseRef> treasuryAccounts = const <PeriodExpenseRef>[], this.notes}): _treasuryAccounts = treasuryAccounts;
   factory _FundCashEntry.fromJson(Map<String, dynamic> json) => _$FundCashEntryFromJson(json);
 
 @override final  int id;
@@ -246,6 +253,20 @@ class _FundCashEntry implements FundCashEntry {
 @override@JsonKey(name: 'order_id') final  int? orderId;
 @override@JsonKey(name: 'purchase_order_id') final  int? purchaseOrderId;
 @override@JsonKey(name: 'investor_id') final  int? investorId;
+/// أمرّ بدرجٍ أو مصرف، أم تحرّك على الورق وحده — نصيبُ الشركة، أو ما بين الصندوق والمحافظ.
+/// `true` حين يغيب، فخادمٌ أقدمُ لا يُلصق «بلا حركة» بما لا يعرف عنه شيئاً.
+@override@JsonKey(name: 'moves_through_an_account') final  bool movesThroughAnAccount;
+/// الاشتراكُ من محفظة المستثمر وإرجاعُ رأس المال إليها — الدرجُ مرّ به إيداعُ المحفظة في يومه.
+@override@JsonKey(name: 'moves_through_the_investors_wallet') final  bool movesThroughTheInvestorsWallet;
+/// الحسابُ الذي دخل إليه المالُ أو خرج منه — وللشراء والتحصيل قد يكون أكثرَ من حساب.
+ final  List<PeriodExpenseRef> _treasuryAccounts;
+/// الحسابُ الذي دخل إليه المالُ أو خرج منه — وللشراء والتحصيل قد يكون أكثرَ من حساب.
+@override@JsonKey(name: 'treasury_accounts') List<PeriodExpenseRef> get treasuryAccounts {
+  if (_treasuryAccounts is EqualUnmodifiableListView) return _treasuryAccounts;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_treasuryAccounts);
+}
+
 @override final  String? notes;
 
 /// Create a copy of FundCashEntry
@@ -261,16 +282,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundCashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.isInflow, isInflow) || other.isInflow == isInflow)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundCashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.isInflow, isInflow) || other.isInflow == isInflow)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.balanceAfter, balanceAfter) || other.balanceAfter == balanceAfter)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.description, description) || other.description == description)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.movesThroughAnAccount, movesThroughAnAccount) || other.movesThroughAnAccount == movesThroughAnAccount)&&(identical(other.movesThroughTheInvestorsWallet, movesThroughTheInvestorsWallet) || other.movesThroughTheInvestorsWallet == movesThroughTheInvestorsWallet)&&const DeepCollectionEquality().equals(other._treasuryAccounts, _treasuryAccounts)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,isInflow,signedAmount,balanceAfter,occurredAt,description,orderId,purchaseOrderId,investorId,notes);
+int get hashCode => Object.hash(runtimeType,id,type,typeLabel,isInflow,signedAmount,balanceAfter,occurredAt,description,orderId,purchaseOrderId,investorId,movesThroughAnAccount,movesThroughTheInvestorsWallet,const DeepCollectionEquality().hash(_treasuryAccounts),notes);
 
 @override
 String toString() {
-  return 'FundCashEntry(id: $id, type: $type, typeLabel: $typeLabel, isInflow: $isInflow, signedAmount: $signedAmount, balanceAfter: $balanceAfter, occurredAt: $occurredAt, description: $description, orderId: $orderId, purchaseOrderId: $purchaseOrderId, investorId: $investorId, notes: $notes)';
+  return 'FundCashEntry(id: $id, type: $type, typeLabel: $typeLabel, isInflow: $isInflow, signedAmount: $signedAmount, balanceAfter: $balanceAfter, occurredAt: $occurredAt, description: $description, orderId: $orderId, purchaseOrderId: $purchaseOrderId, investorId: $investorId, movesThroughAnAccount: $movesThroughAnAccount, movesThroughTheInvestorsWallet: $movesThroughTheInvestorsWallet, treasuryAccounts: $treasuryAccounts, notes: $notes)';
 }
 
 
@@ -281,7 +302,7 @@ abstract mixin class _$FundCashEntryCopyWith<$Res> implements $FundCashEntryCopy
   factory _$FundCashEntryCopyWith(_FundCashEntry value, $Res Function(_FundCashEntry) _then) = __$FundCashEntryCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String type,@JsonKey(name: 'type_label') String typeLabel,@JsonKey(name: 'is_inflow') bool isInflow,@JsonKey(name: 'signed_amount') String signedAmount,@JsonKey(name: 'balance_after') String balanceAfter,@JsonKey(name: 'occurred_at') DateTime? occurredAt, String? description,@JsonKey(name: 'order_id') int? orderId,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'investor_id') int? investorId, String? notes
+ int id, String type,@JsonKey(name: 'type_label') String typeLabel,@JsonKey(name: 'is_inflow') bool isInflow,@JsonKey(name: 'signed_amount') String signedAmount,@JsonKey(name: 'balance_after') String balanceAfter,@JsonKey(name: 'occurred_at') DateTime? occurredAt, String? description,@JsonKey(name: 'order_id') int? orderId,@JsonKey(name: 'purchase_order_id') int? purchaseOrderId,@JsonKey(name: 'investor_id') int? investorId,@JsonKey(name: 'moves_through_an_account') bool movesThroughAnAccount,@JsonKey(name: 'moves_through_the_investors_wallet') bool movesThroughTheInvestorsWallet,@JsonKey(name: 'treasury_accounts') List<PeriodExpenseRef> treasuryAccounts, String? notes
 });
 
 
@@ -298,7 +319,7 @@ class __$FundCashEntryCopyWithImpl<$Res>
 
 /// Create a copy of FundCashEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? isInflow = null,Object? signedAmount = null,Object? balanceAfter = null,Object? occurredAt = freezed,Object? description = freezed,Object? orderId = freezed,Object? purchaseOrderId = freezed,Object? investorId = freezed,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? isInflow = null,Object? signedAmount = null,Object? balanceAfter = null,Object? occurredAt = freezed,Object? description = freezed,Object? orderId = freezed,Object? purchaseOrderId = freezed,Object? investorId = freezed,Object? movesThroughAnAccount = null,Object? movesThroughTheInvestorsWallet = null,Object? treasuryAccounts = null,Object? notes = freezed,}) {
   return _then(_FundCashEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -311,7 +332,10 @@ as DateTime?,description: freezed == description ? _self.description : descripti
 as String?,orderId: freezed == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int?,purchaseOrderId: freezed == purchaseOrderId ? _self.purchaseOrderId : purchaseOrderId // ignore: cast_nullable_to_non_nullable
 as int?,investorId: freezed == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
-as int?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as int?,movesThroughAnAccount: null == movesThroughAnAccount ? _self.movesThroughAnAccount : movesThroughAnAccount // ignore: cast_nullable_to_non_nullable
+as bool,movesThroughTheInvestorsWallet: null == movesThroughTheInvestorsWallet ? _self.movesThroughTheInvestorsWallet : movesThroughTheInvestorsWallet // ignore: cast_nullable_to_non_nullable
+as bool,treasuryAccounts: null == treasuryAccounts ? _self._treasuryAccounts : treasuryAccounts // ignore: cast_nullable_to_non_nullable
+as List<PeriodExpenseRef>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

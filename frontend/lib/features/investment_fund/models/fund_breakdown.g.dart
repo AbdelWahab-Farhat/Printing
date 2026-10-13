@@ -21,24 +21,38 @@ _FundCashEntry _$FundCashEntryFromJson(Map<String, dynamic> json) =>
       orderId: (json['order_id'] as num?)?.toInt(),
       purchaseOrderId: (json['purchase_order_id'] as num?)?.toInt(),
       investorId: (json['investor_id'] as num?)?.toInt(),
+      movesThroughAnAccount: json['moves_through_an_account'] as bool? ?? true,
+      movesThroughTheInvestorsWallet:
+          json['moves_through_the_investors_wallet'] as bool? ?? false,
+      treasuryAccounts:
+          (json['treasury_accounts'] as List<dynamic>?)
+              ?.map((e) => PeriodExpenseRef.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <PeriodExpenseRef>[],
       notes: json['notes'] as String?,
     );
 
-Map<String, dynamic> _$FundCashEntryToJson(_FundCashEntry instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'type': instance.type,
-      'type_label': instance.typeLabel,
-      'is_inflow': instance.isInflow,
-      'signed_amount': instance.signedAmount,
-      'balance_after': instance.balanceAfter,
-      'occurred_at': instance.occurredAt?.toIso8601String(),
-      'description': instance.description,
-      'order_id': instance.orderId,
-      'purchase_order_id': instance.purchaseOrderId,
-      'investor_id': instance.investorId,
-      'notes': instance.notes,
-    };
+Map<String, dynamic> _$FundCashEntryToJson(
+  _FundCashEntry instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'type': instance.type,
+  'type_label': instance.typeLabel,
+  'is_inflow': instance.isInflow,
+  'signed_amount': instance.signedAmount,
+  'balance_after': instance.balanceAfter,
+  'occurred_at': instance.occurredAt?.toIso8601String(),
+  'description': instance.description,
+  'order_id': instance.orderId,
+  'purchase_order_id': instance.purchaseOrderId,
+  'investor_id': instance.investorId,
+  'moves_through_an_account': instance.movesThroughAnAccount,
+  'moves_through_the_investors_wallet': instance.movesThroughTheInvestorsWallet,
+  'treasury_accounts': instance.treasuryAccounts
+      .map((e) => e.toJson())
+      .toList(),
+  'notes': instance.notes,
+};
 
 _FundShelfMaterial _$FundShelfMaterialFromJson(Map<String, dynamic> json) =>
     _FundShelfMaterial(
