@@ -29,7 +29,7 @@ import 'package:go_router/go_router.dart';
 /// Reached by tapping a row in the list — the slot was reserved for it: `CustomerCard.onTap`
 /// has existed and been passed `null` since the list was written.
 ///
-/// **The screen reads; the speed dial writes.** Editing opens the same form that registers a
+/// **The two commonest writes sit on the page; the rest are in the speed dial.** Editing opens the same form that registers a
 /// customer, because the expensive parts of that form — the shop rows, the map picker, the
 /// per-row error mapping — should exist once. Deactivating is its own endpoint and its own
 /// action, which is what makes it impossible for saving an edit to switch somebody back on by
@@ -43,7 +43,7 @@ class CustomerDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Not created at all without `orders.view`, rather than created and its 403 swallowed: a
     // request nobody may make is a request not worth sending, and the section it feeds is absent
-    // for the same reason «طلبية جديدة» is — see [_Actions].
+    // for the same reason «طلبية جديدة» is — see [_MainActions].
     final showsOrders = sl<Session>().can(AppPermission.viewOrders);
 
     return MultiBlocProvider(
@@ -143,7 +143,48 @@ class _CustomerDetailViewState extends State<_CustomerDetailView> {
   }
 }
 
-/// What this screen can do, as data.
+Future<void> _edit(BuildContext context, Customer customer) async {
+  final cubit = context.read<CustomerDetailCubit>();
+
+  final saved = await context.push<Customer>(Routes.editCustomer(customer.id), extra: customer);
+
+  // What the form hands back is the server's own reading of the customer it just stored —
+  // the same bytes a re-read would return, a request earlier. Null means it was left without
+  // saving, and nothing on this screen has to move.
+  if (saved != null) cubit.show(saved);
+}
+
+Future<void> _toggleActive(BuildContext context, Customer customer) async {
+  final cubit = context.read<CustomerDetailCubit>();
+
+  if (customer.isActive) {
+    final confirmed = await showCustomDialog(
+      context: context,
+      title: 'تعطيل العميل؟',
+      description:
+          'لن يظهر «${customer.name}» ضمن العملاء النشطين، ويمكن تنشيطه في أي وقت. '
+          'بياناته وطلبياته السابقة لا تُحذف.',
+      confirmLabel: 'تعطيل',
+      cancelLabel: 'إلغاء',
+    );
+
+    // Deliberately not `showDestructiveDialog`: that one paints the button in the error
+    // colour and stamps a bin on it. Nothing is being destroyed here — the whole reason this
+    // API has no delete route is that a customer's history must survive — and a bin over a
+    // reversible action is a lie.
+    if (confirmed != true) return;
+  }
+
+  // Turning somebody back on gets no dialog. A confirmation for an action that costs nothing
+  // is a tax on the common case.
+  await cubit.setActive(isActive: !customer.isActive);
+}
+
+/// What this screen can do besides the two buttons on it, as data.
+///
+/// «طلبية جديدة» and «تعديل العميل» sit on the page under the status band — see [_MainActions] —
+/// and switching the customer off or on sits inside the band itself — see [_StatusBand]. What is
+/// left here is everything that leads somewhere else.
 ///
 /// The button itself is [AppSpeedDial] in `core/widgets/` — it filters these by permission,
 /// collapses to a plain button when only one survives, and owns the right-to-left handling that
@@ -153,72 +194,17 @@ class _Actions extends StatelessWidget {
 
   final Customer customer;
 
-  Future<void> _edit(BuildContext context) async {
-    final cubit = context.read<CustomerDetailCubit>();
-
-    final saved = await context.push<Customer>(Routes.editCustomer(customer.id), extra: customer);
-
-    // What the form hands back is the server's own reading of the customer it just stored —
-    // the same bytes a re-read would return, a request earlier. Null means it was left without
-    // saving, and nothing on this screen has to move.
-    if (saved != null) cubit.show(saved);
-  }
-
-  Future<void> _toggleActive(BuildContext context) async {
-    final cubit = context.read<CustomerDetailCubit>();
-
-    if (customer.isActive) {
-      final confirmed = await showCustomDialog(
-        context: context,
-        title: 'تعطيل العميل؟',
-        description:
-            'لن يظهر «${customer.name}» ضمن العملاء النشطين، ويمكن تنشيطه في أي وقت. '
-            'بياناته وطلبياته السابقة لا تُحذف.',
-        confirmLabel: 'تعطيل',
-        cancelLabel: 'إلغاء',
-      );
-
-      // Deliberately not `showDestructiveDialog`: that one paints the button in the error
-      // colour and stamps a bin on it. Nothing is being destroyed here — the whole reason this
-      // API has no delete route is that a customer's history must survive — and a bin over a
-      // reversible action is a lie.
-      if (confirmed != true) return;
-    }
-
-    // Turning somebody back on gets no dialog. A confirmation for an action that costs nothing
-    // is a tax on the common case.
-    await cubit.setActive(isActive: !customer.isActive);
-  }
-
   @override
   Widget build(BuildContext context) {
     return AppSpeedDial(
       actions: [
-        // **First, and this is where taking an order begins.** The form it opens has no field
-        // for the customer: an order does not change hands — the server reads `customer_id` on
-        // create and ignores it afterwards — so the only correction for the wrong one is to
-        // cancel the order and take it again. Naming the customer by *which screen you are on*
-        // is what makes the wrong one unnameable. See NEW-ORDER-DESIGN.md §١.
-        //
-        // Absent for a deactivated customer: this is somebody the shop has stopped selling to,
-        // and turning them back on is one tap away on this same screen. `CreateOrder` refuses
-        // the request as well — a hidden button is a suggestion, a refused request is a rule.
-        if (customer.isActive)
-          AppAction(
-            label: 'طلبية جديدة',
-            icon: AppIcons.addOrder,
-            tone: AppActionTone.primary,
-            permission: AppPermission.manageOrders,
-            onTap: (context) =>
-                context.push(Routes.newCustomerOrder(customer.id), extra: customer),
-          ),
-        // **Beside «طلبية جديدة», and for the same reason it is here rather than on a list.** A
+        // **Here rather than on a list, for the reason «طلبية جديدة» is on this screen.** A
         // design request is always *for* somebody, and naming the customer by which screen you
         // are on is what makes the wrong one unnameable — the argument NEW-ORDER-DESIGN.md §١
         // makes for orders, applied to the other thing raised against a customer.
         //
-        // Absent for a deactivated customer, like the order button above: this is somebody the
-        // shop has stopped selling to.
+        // Absent for a deactivated customer, like the order button: this is somebody the shop
+        // has stopped selling to.
         if (customer.isActive)
           AppAction(
             label: 'طلب تصميم',
@@ -228,21 +214,6 @@ class _Actions extends StatelessWidget {
             onTap: (context) =>
                 context.push(Routes.designTicketForm, extra: customer),
           ),
-        AppAction(
-          label: 'تعديل العميل',
-          icon: AppIcons.edit,
-          tone: AppActionTone.primary,
-          permission: AppPermission.manageCustomers,
-          onTap: _edit,
-        ),
-        AppAction(
-          label: customer.isActive ? 'تعطيل العميل' : 'تنشيط العميل',
-          icon: customer.isActive ? AppIcons.deactivate : AppIcons.activate,
-          // Only the direction that takes something away wears the warning colour.
-          tone: customer.isActive ? AppActionTone.warning : AppActionTone.neutral,
-          permission: AppPermission.manageCustomers,
-          onTap: _toggleActive,
-        ),
         AppAction(
           label: 'التصاميم',
           icon: AppIcons.designs,
@@ -306,6 +277,11 @@ class _Body extends StatelessWidget {
 
         _StatusBand(customer: customer, isChanging: isChanging),
         SizedBox(height: 14.h),
+
+        if (_MainActions.showsAny(customer)) ...[
+          _MainActions(customer: customer),
+          SizedBox(height: 14.h),
+        ],
 
         // **The first thing under the identity, because it is why this screen is opened.**
         // A customer is looked up to answer «ماذا طلب؟» far more often than anything else — the
@@ -489,6 +465,7 @@ class _StatusBand extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final isActive = customer.isActive;
+    final canToggle = sl<Session>().can(AppPermission.manageCustomers);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
@@ -514,18 +491,101 @@ class _StatusBand extends StatelessWidget {
               ),
             ),
           ),
-          // The wait lives here rather than on the dial, which cannot hold a spinner. The band
-          // keeps its height: only the trailing slot changes.
-          if (isChanging) ...[
+          // **The switch lives on the fact it changes.** Last child of an RTL row, so it lands
+          // at the far end of the line it flips. While the request runs the spinner takes its
+          // slot, which is also what stops a second tap; the slot's height is fixed so the
+          // swap does not move the band.
+          if (isChanging || canToggle) ...[
             SizedBox(width: 10.w),
             SizedBox(
-              height: 18.h,
-              width: 18.h,
-              child: const CircularProgressIndicator(strokeWidth: 2.2),
+              height: 32.h,
+              child: isChanging
+                  ? Center(
+                      child: SizedBox(
+                        height: 18.h,
+                        width: 18.h,
+                        child: const CircularProgressIndicator(strokeWidth: 2.2),
+                      ),
+                    )
+                  : TextButton.icon(
+                      onPressed: () => _toggleActive(context, customer),
+                      icon: Icon(
+                        isActive ? AppIcons.deactivate : AppIcons.activate,
+                        size: 18.sp,
+                      ),
+                      label: Text(isActive ? 'تعطيل' : 'تنشيط'),
+                      style: TextButton.styleFrom(
+                        // Only the direction that takes something away wears the warning
+                        // colour; on the red band the way back reads in the band's own ink.
+                        foregroundColor: isActive ? scheme.error : scheme.onErrorContainer,
+                        textStyle: context.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The two things done *to* this customer most: take an order, correct their details.
+///
+/// **On the page rather than in the dial**, side by side under the status band, because they are
+/// why somebody opens a customer — a dial costs a tap and a search before every one of them.
+/// Each is as wide as half the screen, or the whole of it when the other is not allowed.
+class _MainActions extends StatelessWidget {
+  const _MainActions({required this.customer});
+
+  final Customer customer;
+
+  /// Absent for a deactivated customer: this is somebody the shop has stopped selling to, and
+  /// turning them back on is one tap away in the band above. `CreateOrder` refuses the request
+  /// as well — a hidden button is a suggestion, a refused request is a rule.
+  static bool _offersOrder(Customer customer) =>
+      customer.isActive && sl<Session>().can(AppPermission.manageOrders);
+
+  static bool _offersEdit() => sl<Session>().can(AppPermission.manageCustomers);
+
+  /// Whether the row has anything in it, so the page does not keep a gap for an empty one.
+  static bool showsAny(Customer customer) => _offersOrder(customer) || _offersEdit();
+
+  @override
+  Widget build(BuildContext context) {
+    final offersOrder = _offersOrder(customer);
+    final offersEdit = _offersEdit();
+
+    return Row(
+      children: [
+        // **First, so it is read first in RTL, and filled, because this is where taking an
+        // order begins.** The form it opens has no field for the customer: an order
+        // does not change hands — the server reads `customer_id` on create and ignores it
+        // afterwards — so the only correction for the wrong one is to cancel the order and take
+        // it again. Naming the customer by *which screen you are on* is what makes the wrong one
+        // unnameable. See NEW-ORDER-DESIGN.md §١.
+        if (offersOrder)
+          Expanded(
+            child: AppButton(
+              label: 'طلبية جديدة',
+              icon: AppIcons.addOrder,
+              onPressed: () =>
+                  context.push(Routes.newCustomerOrder(customer.id), extra: customer),
+            ),
+          ),
+        if (offersOrder && offersEdit) SizedBox(width: 10.w),
+        if (offersEdit)
+          Expanded(
+            child: AppButton.tonal(
+              label: 'تعديل العميل',
+              icon: AppIcons.edit,
+              onPressed: () => _edit(context, customer),
+            ),
+          ),
+      ],
     );
   }
 }
