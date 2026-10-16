@@ -39,6 +39,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-26-CUSTOMER-WALLET.md](changes/PR-26-CUSTOMER-WALLET.md) | محفظة العميل، والشحن الإلكتروني عبر EzonePay. |
 | [PR-25-ORDER-LINES-ADD-REMOVE.md](changes/PR-25-ORDER-LINES-ADD-REMOVE.md) | إضافة وحذف منتجات في الطلبية. |
 | [PR-24-PURCHASE-ARRIVAL-COSTS.md](changes/PR-24-PURCHASE-ARRIVAL-COSTS.md) | «تكاليف الوصول» في طلبيات الشراء. |
 | [PR-23-CUSTOMER-DEFAULT-ADDRESS.md](changes/PR-23-CUSTOMER-DEFAULT-ADDRESS.md) | العنوان الافتراضي للعميل. |
