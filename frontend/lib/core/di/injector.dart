@@ -147,6 +147,11 @@ import 'package:dayaa/features/notifications/usecases/mark_notification_read.dar
 import 'package:dayaa/features/notifications/usecases/register_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/release_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
+import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payment_methods_cubit.dart';
+import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payments_cubit.dart';
+import 'package:dayaa/features/online_payments/repositories/online_payment_repository.dart';
+import 'package:dayaa/features/online_payments/repositories/online_payment_repository_impl.dart';
+import 'package:dayaa/features/online_payments/usecases/online_payment_usecases.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
@@ -281,6 +286,11 @@ import 'package:dayaa/features/vendors/repositories/vendor_repository.dart';
 import 'package:dayaa/features/vendors/repositories/vendor_repository_impl.dart';
 import 'package:dayaa/features/vendors/usecases/get_vendors.dart';
 import 'package:dayaa/features/vendors/usecases/save_vendor.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
+import 'package:dayaa/features/wallet/repositories/wallet_repository.dart';
+import 'package:dayaa/features/wallet/repositories/wallet_repository_impl.dart';
+import 'package:dayaa/features/wallet/usecases/wallet_usecases.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/record_movement_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/save_warehouse_cubit.dart';
 import 'package:dayaa/features/warehouses/presentation/viewmodel/shelf_balance_cubit.dart';
@@ -400,6 +410,8 @@ abstract final class Injector {
     _registerInvestmentSettings();
     _registerInvestmentFund();
     _registerTreasury();
+    _registerWallet();
+    _registerOnlinePayments();
     _registerProducts();
     _registerCities();
     _registerBusinessFields();
@@ -704,6 +716,62 @@ abstract final class Injector {
       // Factory: the screen owns its Cubit and closes it on dispose.
       ..registerFactory<InvestorPortalCubit>(
         () => InvestorPortalCubit(getPortfolio: sl<GetInvestorPortfolio>()),
+      );
+  }
+
+  /// «محفظة العميل» — Docs/payments/CUSTOMER-WALLET.md. الـCubitان مقيّدان برقم العميل كبقية
+  /// الشاشات المقيّدة؛ وسجلّ المحافظ بلا رقمٍ هو «المعاملات المالية».
+  static void _registerWallet() {
+    sl
+      ..registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetCustomerWallet>(() => GetCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<GetCustomerWalletEntries>(
+        () => GetCustomerWalletEntries(sl<WalletRepository>()),
+      )
+      ..registerLazySingleton<TopUpCustomerWallet>(() => TopUpCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<AdjustCustomerWallet>(() => AdjustCustomerWallet(sl<WalletRepository>()))
+      ..registerLazySingleton<ReverseCustomerWalletEntry>(
+        () => ReverseCustomerWalletEntry(sl<WalletRepository>()),
+      )
+      ..registerFactoryParam<CustomerWalletCubit, int, void>(
+        (customerId, _) => CustomerWalletCubit(
+          customerId: customerId,
+          getWallet: sl<GetCustomerWallet>(),
+          topUp: sl<TopUpCustomerWallet>(),
+          adjust: sl<AdjustCustomerWallet>(),
+        ),
+      )
+      ..registerFactoryParam<WalletEntriesCubit, int?, void>(
+        (customerId, _) => WalletEntriesCubit(
+          customerId: customerId,
+          getEntries: sl<GetCustomerWalletEntries>(),
+          reverseEntry: sl<ReverseCustomerWalletEntry>(),
+        ),
+      );
+  }
+
+  /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، وطرقه، و«تحويل Ezone إلى المصرف».
+  /// Docs/payments/CUSTOMER-WALLET.md §٥.
+  static void _registerOnlinePayments() {
+    sl
+      ..registerLazySingleton<OnlinePaymentRepository>(() => OnlinePaymentRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton<GetPaymentIntents>(() => GetPaymentIntents(sl<OnlinePaymentRepository>()))
+      ..registerLazySingleton<RecheckPaymentIntent>(() => RecheckPaymentIntent(sl<OnlinePaymentRepository>()))
+      ..registerLazySingleton<GetOnlinePaymentMethods>(
+        () => GetOnlinePaymentMethods(sl<OnlinePaymentRepository>()),
+      )
+      ..registerLazySingleton<UpdateOnlinePaymentMethod>(
+        () => UpdateOnlinePaymentMethod(sl<OnlinePaymentRepository>()),
+      )
+      ..registerLazySingleton<RecordEzonePayout>(() => RecordEzonePayout(sl<OnlinePaymentRepository>()))
+      ..registerFactory<OnlinePaymentsCubit>(
+        () => OnlinePaymentsCubit(getIntents: sl<GetPaymentIntents>(), recheck: sl<RecheckPaymentIntent>()),
+      )
+      ..registerFactory<OnlinePaymentMethodsCubit>(
+        () => OnlinePaymentMethodsCubit(
+          getMethods: sl<GetOnlinePaymentMethods>(),
+          updateMethod: sl<UpdateOnlinePaymentMethod>(),
+        ),
       );
   }
 
@@ -1061,6 +1129,9 @@ abstract final class Injector {
       ..registerLazySingleton<WriteOffOrderBalance>(
         () => WriteOffOrderBalance(sl<OrderPaymentRepository>()),
       )
+      ..registerLazySingleton<PayOrderFromWallet>(
+        () => PayOrderFromWallet(sl<OrderPaymentRepository>()),
+      )
       ..registerLazySingleton<ReviewOrderPayment>(
         () => ReviewOrderPayment(sl<OrderPaymentRepository>()),
       )
@@ -1143,6 +1214,7 @@ abstract final class Injector {
           getSettlementAccounts: sl<GetSettlementAccounts>(),
           settlePayments: sl<SettleOrderPayments>(),
           unsettlePayment: sl<UnsettleOrderPayment>(),
+          payFromWallet: sl<PayOrderFromWallet>(),
         ),
       )
       ..registerFactoryParam<OrderDetailCubit, int, void>(

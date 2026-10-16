@@ -24,7 +24,8 @@ final class UpdateTreasurySettings
     public function __invoke(array $values, ?int $actorId): TreasurySetting
     {
         // A kind is collected into an active account of that kind — collecting the bank into a
-        // cash box would say the transfer money is sitting in a drawer.
+        // cash box would say the transfer money is sitting in a drawer. Never into a system
+        // account: «Ezone» is a wallet, and only EzonePay fills it (CUSTOMER-WALLET §٥).
         foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
             $field = "collect_{$kind->value}_into_id";
 
@@ -34,7 +35,7 @@ final class UpdateTreasurySettings
 
             $target = TreasuryAccount::query()->findOrFail((int) $values[$field]);
 
-            if (! $target->is_active || $target->kind !== $kind) {
+            if (! $target->is_active || $target->kind !== $kind || $target->isSystem()) {
                 throw AccountChangeRefused::cannotCollectInto((string) $target->name, $kind->label(), $field);
             }
         }

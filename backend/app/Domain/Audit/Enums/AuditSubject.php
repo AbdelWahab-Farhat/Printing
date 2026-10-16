@@ -45,6 +45,8 @@ use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Marketing\Models\Billboard;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\OnlinePayment\Models\OnlinePaymentMethod;
+use App\Domain\OnlinePayment\Models\PaymentIntent;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -69,6 +71,7 @@ use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\StockArrivalItem;
 use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Wallet\Models\CustomerWalletEntry;
 use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -202,6 +205,13 @@ enum AuditSubject: string
     case VendorPayment = 'vendor_payment';
     case TreasurySetting = 'treasury_setting';
 
+    // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md.
+    case CustomerWalletEntry = 'customer_wallet_entry';
+
+    // الشحن الإلكتروني — CUSTOMER-WALLET §٥. `gateway_webhook_event` is absent, like Nawris's.
+    case PaymentIntent = 'payment_intent';
+    case OnlinePaymentMethod = 'online_payment_method';
+
     /**
      * @return class-string<Model>
      */
@@ -273,6 +283,9 @@ enum AuditSubject: string
             self::ExpenseCategory => ExpenseCategory::class,
             self::VendorPayment => VendorPayment::class,
             self::TreasurySetting => TreasurySetting::class,
+            self::CustomerWalletEntry => CustomerWalletEntry::class,
+            self::PaymentIntent => PaymentIntent::class,
+            self::OnlinePaymentMethod => OnlinePaymentMethod::class,
         };
     }
 
@@ -347,6 +360,9 @@ enum AuditSubject: string
             self::ExpenseCategory => 'تصنيف مصروف',
             self::VendorPayment => 'دفعة مورد',
             self::TreasurySetting => 'إعدادات المالية',
+            self::CustomerWalletEntry => 'حركة محفظة عميل',
+            self::PaymentIntent => 'محاولة دفع إلكتروني',
+            self::OnlinePaymentMethod => 'طريقة دفع إلكتروني',
         };
     }
 

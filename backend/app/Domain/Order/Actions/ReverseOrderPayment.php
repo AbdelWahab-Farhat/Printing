@@ -7,6 +7,7 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Exceptions\EntryCannotBeReversed;
 use App\Domain\Order\Exceptions\PaymentAlreadyReversed;
 use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
@@ -16,6 +17,7 @@ use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\TreasuryService;
+use App\Domain\Wallet\WalletService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,6 +54,7 @@ final class ReverseOrderPayment
     public function __construct(
         private readonly RecalculateOrderPayments $recalculate,
         private readonly TreasuryService $treasury,
+        private readonly WalletService $wallet,
     ) {}
 
     public function __invoke(
@@ -157,6 +160,13 @@ final class ReverseOrderPayment
         }
 
         $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
+
+        // **A payment from the wallet returns to the wallet.** Its movement on «أرصدة محافظ
+        // الزبائن» is mirrored below like any payment's; this is the wallet's own row saying the
+        // money is the customer's again. CUSTOMER-WALLET §٤.
+        if ($payment->method === PaymentMethod::Wallet) {
+            $this->wallet->undoOrderPayment((int) $payment->getKey(), $reason, $actorId);
+        }
 
         // Only what carried this payment's own account onward: reversing Ali's transfer leaves
         // Omar's collection where it went. A payment from before the treasury names no account,

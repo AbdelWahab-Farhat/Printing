@@ -247,6 +247,7 @@ class TreasurySettings {
     this.collections = const {},
     this.settleIntoSettler = false,
     this.pickupOffices = const [],
+    this.onlineFeePayer,
   });
 
   /// الدفعة تنزل في حساب من يسجّلها قبل افتراضي الطريقة.
@@ -272,6 +273,10 @@ class TreasurySettings {
   /// «كاش كل مكتب استلام» — كل مكتب، وكاشه إن رُبط.
   final List<PickupOffice> pickupOffices;
 
+  /// «عمولة الدفع الإلكتروني على» — `customer` أو `shop`. CUSTOMER-WALLET §٥. غائبٌ عند خادمٍ
+  /// أقدم، فلا يُرسم القسم.
+  final String? onlineFeePayer;
+
   CollectionSetting collectionOf(AccountKind kind) =>
       collections[kind] ?? const CollectionSetting(on: false);
 
@@ -285,6 +290,7 @@ class TreasurySettings {
     collections: collections,
     settleIntoSettler: settleIntoSettler,
     pickupOffices: offices,
+    onlineFeePayer: onlineFeePayer,
   );
 
   factory TreasurySettings.fromJson(Map<String, dynamic> json) => TreasurySettings(
@@ -304,6 +310,7 @@ class TreasurySettings {
     pickupOffices: [
       for (final office in _maps(json['pickup_offices'])) PickupOffice.fromJson(office),
     ],
+    onlineFeePayer: _stringOrNull(json['online_fee_payer']),
   );
 }
 

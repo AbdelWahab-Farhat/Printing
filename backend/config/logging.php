@@ -71,6 +71,19 @@ return [
         ],
 
         /*
+         * Every request and response to and from EzonePay, for the reason the carrier has one —
+         * built from Primula's shapes before the sandbox was reachable. `EzonePayClient` masks the
+         * password, tokens, card numbers and OTPs before writing.
+         */
+        'ezone' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/ezone.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => (int) env('EZONE_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        /*
          * Push notifications. Its own channel for the same reason the carrier has one: when a
          * notification does not arrive on somebody's phone, the question is always «did we even
          * try?», and that answer should not have to be dug out of the application log.

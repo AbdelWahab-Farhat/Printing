@@ -85,6 +85,16 @@ abstract interface class OrderPaymentRepository {
     required String reason,
   });
 
+  /// «الدفع من المحفظة» — [amount] out of the order's customer's wallet, or, null, as much as the
+  /// wallet holds up to what the order owes. The server refuses beyond either.
+  ///
+  /// [clientToken] makes a retry safe: the same token again is answered with the first payment.
+  Future<Either<Failure, PaymentResult>> payFromWallet(
+    int orderId, {
+    String? amount,
+    String? clientToken,
+  });
+
   /// «مراجعة الدفعة» — somebody with the grant saying the entry is right, or ([reviewed] false)
   /// taking that back. Moves no money. Their own entries included; refused only on a reversed or
   /// exempt entry, which the entry's own `can_review` says before anybody asks.

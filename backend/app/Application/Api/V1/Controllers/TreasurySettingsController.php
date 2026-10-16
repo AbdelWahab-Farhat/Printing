@@ -73,6 +73,8 @@ class TreasurySettingsController extends Controller
             'collect_wallet_into_id' => $settings->collect_wallet_into_id,
             // «التسوية إلى حساب المسوّي» — each kind to the settler's own account of it (§٢٢).
             'settle_into_settler' => (bool) $settings->settle_into_settler,
+            // «عمولة الدفع الإلكتروني على» — `customer` (the default) or `shop`. CUSTOMER-WALLET §٥.
+            'online_fee_payer' => (string) ($settings->online_fee_payer ?? 'customer'),
             // «كاش كل مكتب استلام» — each branch customers collect from, and the cash box its
             // cash lands in (null: the usual rules). Linked on the account (§١٩).
             'pickup_offices' => $delivery->pickupOffices()->map(fn (City $city) => [

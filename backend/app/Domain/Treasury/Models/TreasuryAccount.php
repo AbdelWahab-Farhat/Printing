@@ -46,6 +46,21 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public const CUSTOMER_EXCESS = 'customer_excess';
 
     /**
+     * «أرصدة محافظ الزبائن» — the payable holding what the shop owes customers in their wallets.
+     * Its balance is always minus the sum of every wallet; `wallets:check` proves it. Opened the
+     * first time a wallet moves; moved by the wallet and the orders' ledger alone.
+     * CUSTOMER-WALLET §٤.
+     */
+    public const CUSTOMER_WALLETS = 'customer_wallets';
+
+    /**
+     * «Ezone» — what EzonePay collected for the shop and has not paid out to the bank yet. Every
+     * online top-up lands here, its fee leaves as an expense, and a payout carries the rest to the
+     * bank. Seeded by migration. CUSTOMER-WALLET §٥.
+     */
+    public const EZONE = 'ezone';
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -90,6 +105,24 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public function isCustomerExcessPayable(): bool
     {
         return $this->system_code === self::CUSTOMER_EXCESS;
+    }
+
+    /**
+     * «أرصدة محافظ الزبائن»: the same line as the excess payable — a hand transfer would part it
+     * from what the wallets say their customers hold.
+     */
+    public function isCustomerWalletsPayable(): bool
+    {
+        return $this->system_code === self::CUSTOMER_WALLETS;
+    }
+
+    /**
+     * «Ezone»: EzonePay fills it and «تحويل Ezone إلى المصرف» empties it — nothing is paid from it
+     * by hand (the owner, 2026-10-11). Its opening and its count stay, like custody's.
+     */
+    public function isEzone(): bool
+    {
+        return $this->system_code === self::EZONE;
     }
 
     /** Whether this person may read the account without `treasury.view` — it is in their name. */

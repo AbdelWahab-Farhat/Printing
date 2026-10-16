@@ -135,6 +135,7 @@ const _$PaymentMethodEnumMap = {
   PaymentMethod.bankTransfer: 'bank_transfer',
   PaymentMethod.bankCard: 'bank_card',
   PaymentMethod.libyana: 'libyana',
+  PaymentMethod.wallet: 'wallet',
   PaymentMethod.unknown: 'unknown',
 };
 
@@ -239,6 +240,7 @@ _PaymentSummary _$PaymentSummaryFromJson(Map<String, dynamic> json) =>
       ),
       paymentStatusLabel: json['payment_status_label'] as String,
       hasUnrecordedMoney: json['has_unrecorded_money'] as bool? ?? false,
+      walletBalance: json['wallet_balance'] as String? ?? '0.00',
     );
 
 Map<String, dynamic> _$PaymentSummaryToJson(_PaymentSummary instance) =>
@@ -251,6 +253,7 @@ Map<String, dynamic> _$PaymentSummaryToJson(_PaymentSummary instance) =>
       'payment_status': _$PaymentStatusEnumMap[instance.paymentStatus]!,
       'payment_status_label': instance.paymentStatusLabel,
       'has_unrecorded_money': instance.hasUnrecordedMoney,
+      'wallet_balance': instance.walletBalance,
     };
 
 const _$PaymentStatusEnumMap = {

@@ -116,6 +116,20 @@ class WriteOffOrderBalance {
   }) => _repository.writeOff(orderId, amount: normaliseAmount(amount), reason: reason.trim());
 }
 
+/// «الدفع من المحفظة» — the order paid out of its customer's wallet.
+class PayOrderFromWallet {
+  const PayOrderFromWallet(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, PaymentResult>> call(int orderId, {String? amount, String? clientToken}) =>
+      _repository.payFromWallet(
+        orderId,
+        amount: amount == null || amount.trim().isEmpty ? null : normaliseAmount(amount),
+        clientToken: clientToken,
+      );
+}
+
 /// «مراجعة الدفعة» — a check on an entry, or taking it back.
 class ReviewOrderPayment {
   const ReviewOrderPayment(this._repository);

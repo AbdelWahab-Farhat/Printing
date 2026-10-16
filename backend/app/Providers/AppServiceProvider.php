@@ -27,6 +27,7 @@ use App\Domain\Notification\Channels\CustomerPushChannel;
 use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenOrderStageChanges;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenSupportReplies;
+use App\Domain\Notification\Listeners\NotifyCustomerWhenWalletToppedUp;
 use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
@@ -37,6 +38,11 @@ use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
 use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
+use App\Domain\OnlinePayment\Events\WalletToppedUpOnline;
+use App\Domain\OnlinePayment\Gateway\EzonePay\EzonePayClient;
+use App\Domain\OnlinePayment\Gateway\EzonePay\EzonePayGateway;
+use App\Domain\OnlinePayment\Gateway\Fake\FakeEzonePayGateway;
+use App\Domain\OnlinePayment\Gateway\OnlinePaymentGateway;
 use App\Domain\Order\Events\OrderDeliveryUndone;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderPaymentsRecalculated;
@@ -78,6 +84,27 @@ class AppServiceProvider extends ServiceProvider
         // The three carrier classes that need configuration take it as one array, so nothing
         // inside them reaches for `config()` — which is what lets a test hand them a different
         // base URL, a different fallback phone or a dry-run flag without touching global state.
+        // EzonePay, behind the gateway interface — CUSTOMER-WALLET §٥. Read from config on each
+        // resolve, so a test that flips `ezone_pay.enabled` is seen.
+        $this->app->bind(
+            EzonePayClient::class,
+            fn ($app) => new EzonePayClient((array) $app['config']->get('ezone_pay', [])),
+        );
+        // `EZONE_PAY_DRIVER=fake` pretends to be EzonePay for an emulator — **never in production**,
+        // whatever `.env` says: there a forgotten setting must not fake real money.
+        // The real one by its own name as well: the `ezone:*` commands talk to EzonePay itself —
+        // the smoke test, the webhook subscription — whatever the driver says.
+        $this->app->bind(
+            EzonePayGateway::class,
+            fn ($app) => new EzonePayGateway($app->make(EzonePayClient::class), (array) $app['config']->get('ezone_pay', [])),
+        );
+        $this->app->bind(
+            OnlinePaymentGateway::class,
+            fn ($app) => $app['config']->get('ezone_pay.driver') === 'fake' && ! $app->isProduction()
+                ? new FakeEzonePayGateway((array) $app['config']->get('ezone_pay', []))
+                : $app->make(EzonePayGateway::class),
+        );
+
         $this->app->singleton(
             NawrisClient::class,
             fn ($app) => new NawrisClient((array) $app['config']->get('services.nawris', [])),
@@ -276,6 +303,9 @@ class AppServiceProvider extends ServiceProvider
         // وردُّ المحل يصل إلى هاتف العميل — المستمِعُ الثالث على الحدث نفسه، وهو الذي كان جرسُ
         // الموظفين يتركه له («ردُّ المحل خبرٌ للعميل»). انظر NotifyCustomerWhenSupportReplies.
         Event::listen(TicketChanged::class, NotifyCustomerWhenSupportReplies::class);
+
+        // «تم شحن محفظتك» — CUSTOMER-WALLET §٥.
+        Event::listen(WalletToppedUpOnline::class, NotifyCustomerWhenWalletToppedUp::class);
 
         // قنواتُ البثّ الحيّ ومن يدخلها. من هنا لا من `withRouting` — routes/channels.php يقول لماذا.
         require base_path('routes/channels.php');

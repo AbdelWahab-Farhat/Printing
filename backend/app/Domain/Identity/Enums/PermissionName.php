@@ -361,6 +361,21 @@ enum PermissionName: string
     case ReverseTreasuryOperations = 'treasury.reverse';
     case ManageTreasury = 'treasury.manage';
 
+    // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md. Seeing a balance, putting money in at the
+    // counter, correcting a balance by hand, and undoing a mistaken entry are four trusts. Paying
+    // an order *from* the wallet stays under `orders.payments.record`: the wallet guards itself.
+    case ViewCustomerWallets = 'customers.wallet.view';
+    case TopUpCustomerWallets = 'customers.wallet.topup';
+    case AdjustCustomerWallets = 'customers.wallet.adjust';
+    case ReverseCustomerWalletEntries = 'customers.wallet.reverse';
+
+    // الشحن الإلكتروني عبر EzonePay — CUSTOMER-WALLET §٥. Seeing the attempts, asking EzonePay
+    // about one again, and switching the methods and their limits. Recording EzonePay's payout to
+    // the bank stays `treasury.record`: it is a transfer like any other.
+    case ViewOnlinePayments = 'payments.online.view';
+    case ReconcileOnlinePayments = 'payments.online.reconcile';
+    case ManageOnlinePaymentMethods = 'payments.online.manage';
+
     // Paying vendors — the `orders.payments.*` split, pointed the other way: money going out to
     // a vendor is a decision apart from seeing what was paid.
     case ViewVendorPayments = 'vendors.payments.view';
@@ -502,6 +517,13 @@ enum PermissionName: string
             self::AdjustTreasuryBalances => 'جرد الحسابات',
             self::ReverseTreasuryOperations => 'عكس عملية على الحسابات',
             self::ManageTreasury => 'إدارة الحسابات والتصنيفات',
+            self::ViewCustomerWallets => 'عرض محافظ العملاء ومعاملاتها',
+            self::TopUpCustomerWallets => 'شحن محفظة عميل',
+            self::AdjustCustomerWallets => 'تعديل رصيد محفظة عميل',
+            self::ReverseCustomerWalletEntries => 'عكس حركة على محفظة عميل',
+            self::ViewOnlinePayments => 'عرض المدفوعات الإلكترونية',
+            self::ReconcileOnlinePayments => 'إعادة التحقق من دفعة إلكترونية',
+            self::ManageOnlinePaymentMethods => 'إدارة طرق الدفع الإلكتروني وحدودها',
             self::ViewVendorPayments => 'عرض دفعات الموردين',
             self::RecordVendorPayments => 'تسجيل دفعة لمورد',
             self::ReverseVendorPayments => 'عكس دفعة مورد',
@@ -584,6 +606,13 @@ enum PermissionName: string
             self::AdjustTreasuryBalances,
             self::ReverseTreasuryOperations,
             self::ManageTreasury => 'الحسابات والكاش',
+            self::ViewCustomerWallets,
+            self::TopUpCustomerWallets,
+            self::AdjustCustomerWallets,
+            self::ReverseCustomerWalletEntries => 'محافظ العملاء',
+            self::ViewOnlinePayments,
+            self::ReconcileOnlinePayments,
+            self::ManageOnlinePaymentMethods => 'الدفع الإلكتروني',
             self::ViewVendorPayments,
             self::RecordVendorPayments,
             self::ReverseVendorPayments => 'دفعات الموردين',

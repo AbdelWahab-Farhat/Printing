@@ -54,6 +54,12 @@ enum PaymentMethod {
   @JsonValue('libyana')
   libyana('libyana', 'ليبيانا'),
 
+  /// «المحفظة» — paid out of, or handed back into, the customer's wallet. **Never in the payment
+  /// form**: paying from the wallet is its own button, which the server checks against the
+  /// balance. Offered only for a refund — see [refundable]. Docs/payments/CUSTOMER-WALLET.md.
+  @JsonValue('wallet')
+  wallet('wallet', 'المحفظة'),
+
   /// A method this build has not been taught. Never offered in the form — see [selectable] —
   /// and never blocks an entry from being read: `method_label` is what gets drawn, so a method
   /// added after this release still renders correctly on an old phone.
@@ -64,9 +70,14 @@ enum PaymentMethod {
   final String wire;
   final String label;
 
-  /// The four a person may actually choose.
-  static List<PaymentMethod> get selectable =>
-      values.where((method) => method != PaymentMethod.unknown).toList(growable: false);
+  /// The four a person may actually choose when money comes in.
+  static List<PaymentMethod> get selectable => values
+      .where((method) => method != PaymentMethod.unknown && method != PaymentMethod.wallet)
+      .toList(growable: false);
+
+  /// What a refund may go back as: the four, and the wallet — money paid from it goes back only
+  /// into it, and anything else may go there too.
+  static List<PaymentMethod> get refundable => [...selectable, PaymentMethod.wallet];
 
   /// Whether an entry paid this way must carry its receipt (الواصل).
   ///
@@ -414,6 +425,10 @@ abstract class PaymentSummary with _$PaymentSummary {
     /// who took it — so this is how that gap is surfaced instead of being papered over with an
     /// entry nobody made. The screen shows a warning; somebody records what was collected.
     @JsonKey(name: 'has_unrecorded_money') @Default(false) bool hasUnrecordedMoney,
+
+    /// What the customer's wallet holds — what «الدفع من المحفظة» could take. Defaulted, so a
+    /// server from before the wallet reads as an empty one and the button stays away.
+    @JsonKey(name: 'wallet_balance') @Default('0.00') String walletBalance,
   }) = _PaymentSummary;
 
   const PaymentSummary._();
@@ -436,6 +451,10 @@ abstract class PaymentSummary with _$PaymentSummary {
 
   /// Whether the order holds money the customer paid beyond it.
   bool get hasExcess => excessAmount != '0.00' && excessAmount.isNotEmpty;
+
+  /// Whether the customer's wallet holds anything to pay with.
+  bool get hasWalletMoney =>
+      walletBalance.isNotEmpty && walletBalance != '0.00' && !walletBalance.startsWith('-');
 }
 
 /// What the ledger endpoint answers with: the entries, and where the order stands after them.

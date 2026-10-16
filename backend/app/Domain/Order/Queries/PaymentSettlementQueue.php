@@ -6,6 +6,7 @@ namespace App\Domain\Order\Queries;
 
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\BusinessDay;
 use App\Domain\Order\Support\Money;
@@ -86,6 +87,8 @@ final class PaymentSettlementQueue
         $query = OrderPayment::query()
             ->where('type', OrderPaymentType::Payment->value)
             ->whereNotNull('treasury_account_id')
+            // A payment from the wallet put no money in any account — CUSTOMER-WALLET §٤.
+            ->where('method', '<>', PaymentMethod::Wallet->value)
             ->whereDoesntHave('reversal')
             ->when($filters['account_id'] ?? null, fn ($q, $id) => $q->where('treasury_account_id', $id))
             ->when(trim((string) ($filters['q'] ?? '')), fn ($q, $term) => $q->whereHas('order', fn ($order) => $order

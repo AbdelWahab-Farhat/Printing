@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\Enums\CustomerOrderStage;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderStatusTransition;
 use Illuminate\Http\Request;
@@ -91,6 +92,13 @@ class ClientOrderDetailResource extends JsonResource
             'paid_amount' => $awaitingQuote ? null : (string) $this->paid_amount,
             'balance' => $awaitingQuote ? null : $this->remainingAmount(),
 
+            // «ادفع العربون» beside «ادفع المبلغ كاملاً»: the عربون the shop named when it moved the
+            // order to «انتظار العربون». Null in every other stage, when nobody named a figure,
+            // and when it is not less than what is owed (the whole amount is then the only choice)
+            // — the app offers the whole amount alone. Paying it from the wallet moves the order
+            // to «تم دفع العربون» by itself.
+            'deposit_due' => $this->depositDue(),
+
             // The decided answer, so the app draws «يُحدَّد بعد المراجعة» without having to work
             // out from a pile of nulls what they mean between them.
             'is_awaiting_quote' => $awaitingQuote,
@@ -138,5 +146,17 @@ class ClientOrderDetailResource extends JsonResource
         }
 
         return array_values($seen);
+    }
+
+    /** The عربون to offer beside the whole amount, or null — see `deposit_due` above. */
+    protected function depositDue(): ?string
+    {
+        if ($this->status !== OrderStatus::AwaitingDeposit || ! $this->asksForADeposit() || $this->hasUnpricedLines()) {
+            return null;
+        }
+
+        $expected = (string) $this->deposit_expected_amount;
+
+        return bccomp($expected, $this->remainingAmount(), 2) < 0 ? $expected : null;
     }
 }

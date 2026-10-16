@@ -216,6 +216,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     int? collectIntoId,
     bool clearCollectInto = false,
     bool? settleIntoSettler,
+    String? onlineFeePayer,
   }) {
     return safeRequest<TreasurySettings>(
       () => _dio.put(
@@ -223,6 +224,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
         data: <String, dynamic>{
           'own_account_first': ?ownAccountFirst,
           'settle_into_settler': ?settleIntoSettler,
+          'online_fee_payer': ?onlineFeePayer,
           'block_overdraft': ?blockOverdraft,
           'withdrawal_needs_reason': ?withdrawalNeedsReason,
           'ask_carrier_fee': ?askCarrierFee,

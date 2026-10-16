@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -54,6 +55,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // فتراتُ الصندوق: تُقفَل في موعدها وتُفتح التاليةُ — كلَّ ساعة، لأن نداءً فائتاً يُدركه
         // الذي بعده، والنداءُ الذي لا يجد ما يفعله لا يكتب شيئاً. انظر RollInvestmentPeriods.
         $schedule->command('investment:roll-periods')->hourly()->withoutOverlapping();
+
+        // الشحن الإلكتروني: كلُّ محاولةٍ معلّقة تُسأل عنها EzonePay — webhook ضاع لا يُضيّع مالاً.
+        // لا يفعل شيئاً والدفع الإلكتروني مطفأ. انظر ReconcileOnlinePayments.
+        $schedule->command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there
@@ -108,6 +113,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ModelNotFoundException|NotFoundHttpException $e, Request $request) {
             return $request->is('api/*')
                 ? ApiEnvelope::fail('العنصر المطلوب غير موجود', 404)
+                : null;
+        });
+
+        // An outside service that did not answer in time — EzonePay, Nawris. Nothing was wrong
+        // with what was sent, so it is a 503 that says to try again, not a 500 that says we broke.
+        $exceptions->render(function (ConnectionException $e, Request $request) {
+            return $request->is('api/*')
+                ? ApiEnvelope::fail('الخدمة الخارجية لا تستجيب الآن — حاول بعد قليل', 503)
                 : null;
         });
 

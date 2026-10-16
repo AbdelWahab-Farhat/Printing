@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/utils/uuid.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -36,7 +37,13 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     required GetSettlementAccounts getSettlementAccounts,
     required SettleOrderPayments settlePayments,
     required UnsettleOrderPayment unsettlePayment,
+    // Optional so a test about another write need not build it; the injector always passes it.
+    PayOrderFromWallet? payFromWallet,
+    // A fixed key for a test to assert on; the app leaves it and gets a random one.
+    String Function()? newToken,
   }) : _orderId = orderId,
+       _payFromWallet = payFromWallet,
+       _newToken = newToken ?? uuidV4,
        _getLedger = getLedger,
        _recordPayment = recordPayment,
        _refundPayment = refundPayment,
@@ -58,6 +65,8 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
   final GetSettlementAccounts _getSettlementAccounts;
   final SettleOrderPayments _settlePayments;
   final UnsettleOrderPayment _unsettlePayment;
+  final PayOrderFromWallet? _payFromWallet;
+  final String Function() _newToken;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh path, and blanking the
@@ -132,6 +141,27 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
       ),
     );
   }
+
+  /// «الدفع من المحفظة» — [amount], or (null) as much as the wallet and the debt both allow.
+  /// Re-read like every write: the summary carries the wallet's new balance.
+  ///
+  /// **One key until it succeeds.** A payment whose answer was lost — the connection dropped
+  /// after the server paid — is retried with the same key, and the server answers with the first
+  /// payment instead of paying twice. The key is dropped only once a payment went through.
+  Future<Failure?> payFromWallet({String? amount}) async {
+    final payFromWallet = _payFromWallet;
+    if (payFromWallet == null) return null;
+
+    final token = _walletToken ??= _newToken();
+    final failure = await _write(() => payFromWallet(_orderId, amount: amount, clientToken: token));
+
+    if (failure == null) _walletToken = null;
+
+    return failure;
+  }
+
+  /// The key of the wallet payment not yet known to have gone through.
+  String? _walletToken;
 
   /// Cancels an entry that should never have been written.
   Future<Failure?> reverse(int paymentId, {required String reason}) =>

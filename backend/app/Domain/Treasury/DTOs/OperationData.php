@@ -28,6 +28,8 @@ final readonly class OperationData
         public ?string $notes,
         // رمزُ الإرسال من التطبيق — الرمزُ نفسه مرّةً ثانية يُرجع العمليةَ الأولى.
         public ?string $clientToken = null,
+        // «تحويل Ezone إلى المصرف» وحده يُخرج المالَ من «Ezone» — لا يأتي من طلبٍ أبداً.
+        public bool $ezonePayout = false,
     ) {}
 
     /**

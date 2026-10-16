@@ -289,6 +289,10 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     @JsonKey(name: 'paid_amount') String? paidAmount,
     String? balance,
 
+    /// العربون الذي طلبه المتجر حين نقل الطلبية إلى «انتظار العربون» — يُعرض «ادفع العربون» بجانب
+    /// «ادفع المبلغ كاملاً». null في كل مرحلةٍ أخرى، وحين لم يُسمَّ مبلغ، وحين لا يقلّ عن المتبقي.
+    @JsonKey(name: 'deposit_due') String? depositDue,
+
     /// Whether any line is still waiting to be priced.
     ///
     /// **The decided answer, sent rather than inferred.** Working it out from a handful of

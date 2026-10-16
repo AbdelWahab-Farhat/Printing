@@ -5,11 +5,13 @@ import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
+import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/menu_card.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/presentation/widgets/sign_out_sheet.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/auth/usecases/logout.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,6 +50,9 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   CustomerAccount? _customer;
+
+  /// رصيد «محفظتي» بجانب صفّها — null حتى يصل، فلا يُرسم صفرٌ لم يقله الخادم.
+  String? _walletBalance;
   bool _isSigningOut = false;
 
   @override
@@ -64,6 +69,17 @@ class _ProfilePageState extends State<ProfilePage> {
     // قراءةٌ فشلت تُبقي ما كان معروضاً: البطاقة التي عرفت صاحبها لا تنساه لأن سحباً للتحديث لم
     // يصل إلى الخادم.
     result.fold((_) {}, (customer) => setState(() => _customer = customer));
+
+    await _readWallet();
+  }
+
+  /// الرصيد وحده — بعد العودة من «محفظتي» أو من طلبيةٍ دُفعت منها.
+  Future<void> _readWallet() async {
+    final result = await sl<GetWalletBalance>()();
+
+    if (!mounted) return;
+
+    result.fold((_) {}, (balance) => setState(() => _walletBalance = balance));
   }
 
   Future<void> _signOut() async {
@@ -101,6 +117,17 @@ class _ProfilePageState extends State<ProfilePage> {
               // الخروج آخرها.
               MenuCard(
                 rows: [
+                  // «محفظتي» أولاً، ورصيدها على الصف: أكثر ما يُفتح الصف ليُعرف جوابه.
+                  // Docs/payments/CUSTOMER-WALLET.md.
+                  MenuRow(
+                    icon: AppIcons.wallet,
+                    label: 'محفظتي',
+                    value: _walletBalance == null ? null : '${_walletBalance!.asMoney} د.ل',
+                    onTap: () async {
+                      await context.push(Routes.wallet);
+                      await _readWallet();
+                    },
+                  ),
                   // لا طريق آخر إلى «تصاميمي» في التطبيق، والأداتان على الرئيسية أيضاً. و`push`
                   // لا `go`، لتعود كلٌّ منها إلى هنا بزر الرجوع.
                   MenuRow(

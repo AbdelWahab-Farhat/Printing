@@ -24,6 +24,7 @@ import 'package:dayaa_client/features/support/presentation/views/support_page.da
 import 'package:dayaa_client/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa_client/features/tools/presentation/views/bag_preview_page.dart';
 import 'package:dayaa_client/features/tools/presentation/views/qr_tool_page.dart';
+import 'package:dayaa_client/features/wallet/presentation/views/wallet_page.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
@@ -64,6 +65,9 @@ abstract final class Routes {
 
   /// «الإعدادات». تُفتح من «حسابي» فوق الشاشة، ولها زر رجوع إليها.
   static const String settings = '/settings';
+
+  /// «محفظتي». تُفتح من «حسابي». Docs/payments/CUSTOMER-WALLET.md.
+  static const String wallet = '/wallet';
 
   /// «متاجري». تُفتح من «حسابي».
   static const String shops = '/shops';
@@ -161,6 +165,7 @@ abstract final class AppRouter {
       GoRoute(path: Routes.designs, builder: (context, state) => const DesignsPage()),
       GoRoute(path: Routes.support, builder: (context, state) => const SupportPage()),
       GoRoute(path: Routes.settings, builder: (context, state) => const SettingsPage()),
+      GoRoute(path: Routes.wallet, builder: (context, state) => const WalletPage()),
       GoRoute(path: Routes.shops, builder: (context, state) => const ShopsPage()),
       GoRoute(
         path: Routes.shopForm,

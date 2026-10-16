@@ -82,6 +82,12 @@ dependencies:
   # to *show a file*, not to annotate one. The link is the signed URL the API mints per request,
   # so it expires — which is the point.
   url_launcher: ^6.3.2
+  # «بوابة الدفع» — صفحة البطاقة المصرفية من EzonePay داخل التطبيق لا في المتصفح، كما في بريمولا:
+  # الزبون لا يغادر، والتطبيق يرى وصول المال فيُغلقها بنفسه. CUSTOMER-WALLET §٥.
+  #
+  # **حزمة فريق Flutter نفسه** (BSD-3)، وما يعمل عليه تطبيق بريمولا. لا أذونات تُضاف: الإنترنت
+  # مُعلَن أصلاً، ولا شيء على iOS.
+  webview_flutter: ^4.10.0
   # يسلّم ملفاً **على الهاتف** لعارضه: ملفُّ PDF نُزّل من محادثة الدعم يُفتح في معاينة iOS نفسها
   # داخل التطبيق، وفي عارض PDF على أندرويد. `url_launcher` يفتح روابط لا ملفات: iOS لا يفتح
   # مسار ملفٍّ من صندوق التطبيق، وأندرويد يمنع `file://` بلا FileProvider.
@@ -146,6 +152,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   bloc_test: ^10.0.0
   mocktail: ^1.0.4
+  # «بوابة الدفع» تُختبر بمتصفحٍ بديل: الاختبار لا يشغّل متصفحاً حقيقياً.
+  webview_flutter_platform_interface: ^2.15.1
   flutter_launcher_icons: ^0.14.4
 
 # `file_saver` ≥0.5 يطلب `meta ^1.19.0`، وFlutter 3.44 يثبّت `meta 1.18.0` في `flutter_test`.
@@ -215,6 +223,9 @@ flutter:
     # إعلانات التطبيق الثلاثة: تملأ شريط الرئيسية ما دام المتجر لا يعرض إعلاناً حقيقياً. محزومةٌ
     # لا مجلوبة، لأنها تظهر بالضبط حين لم يصل من الخادم شيء.
     - assets/billboards/
+    # شعارات طرق الشحن التسع، من تطبيق بريمولا — `top_up_catalog.dart`. محزومةٌ لأن قائمة الطرق
+    # تُرسم قبل أن يجيب الخادم.
+    - assets/payment/
     # رخصة Cairo (SIL OFL 1.1) تُرفق بالخط حيث يُوزَّع، وتُسجَّل في `main.dart`.
     - assets/fonts/OFL.txt
 

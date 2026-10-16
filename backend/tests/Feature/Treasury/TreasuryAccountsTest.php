@@ -66,7 +66,7 @@ class TreasuryAccountsTest extends TestCase
 
         // Assert
         $response->assertOk()
-            ->assertJsonCount(5, 'data.accounts')
+            ->assertJsonCount(6, 'data.accounts') // the four defaults, Nawris and Ezone
             ->assertJsonPath('data.total', '21300.00')
             ->assertJsonPath('data.can_view_all', true);
 

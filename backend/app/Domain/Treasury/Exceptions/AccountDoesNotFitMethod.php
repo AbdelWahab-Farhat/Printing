@@ -59,6 +59,16 @@ final class AccountDoesNotFitMethod extends DomainException
         return new self("«{$account}» يتحرك من دفعات الطلبيات وحدها — يُردّ الزائد أو يُعتبر إيراداً من شاشة دفعات الطلبية", $field);
     }
 
+    public static function customerWalletsPayable(string $account, string $field): self
+    {
+        return new self("«{$account}» يتحرك من محافظ العملاء وحدها — تُشحن المحفظة أو تُعدَّل من شاشة العميل", $field);
+    }
+
+    public static function ezone(string $account, string $field): self
+    {
+        return new self("«{$account}» يملؤه الدفع الإلكتروني ويُفرَّغ بـ«تحويل Ezone إلى المصرف» من «المدفوعات الإلكترونية» — لا يُدفع منه ولا إليه باليد", $field);
+    }
+
     public static function unknownMethod(string $method): self
     {
         return new self("طريقة الدفع «{$method}» غير معروفة للحسابات");

@@ -65,7 +65,8 @@ class RecordShortageSupplyRequest extends FormRequest
         return [
             'quantity' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
             'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
-            'method' => ['required', Rule::in(PaymentMethod::values())],
+            // A supply is never paid out of a customer's wallet.
+            'method' => ['required', Rule::enum(PaymentMethod::class)->except(PaymentMethod::Wallet)],
             'reference' => ['nullable', 'string', 'max:100'],
             // Not in the future: goods that have not been bought yet are not a supply, and a
             // fat-fingered year would sit at the top of every ledger forever.
@@ -129,7 +130,7 @@ class RecordShortageSupplyRequest extends FormRequest
             'amount.gt' => 'القيمة يجب أن تكون أكبر من صفر',
             'amount.decimal' => 'القيمة تقبل خانتين عشريتين على الأكثر',
             'method.required' => 'طريقة الدفع مطلوبة',
-            'method.in' => 'طريقة الدفع غير معروفة',
+            'method.enum' => 'طريقة الدفع غير معروفة',
             'occurred_on.before_or_equal' => 'لا يمكن تسجيل عملية بتاريخ مستقبلي',
             'warehouse_id.exists' => 'المخزن غير موجود',
             'receipt.file' => 'الواصل يجب أن يكون ملفاً',

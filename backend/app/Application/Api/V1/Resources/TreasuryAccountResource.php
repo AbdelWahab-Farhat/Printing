@@ -36,9 +36,10 @@ class TreasuryAccountResource extends JsonResource
             'is_active' => (bool) $this->is_active,
             // The Nawris account: the webhook writes to it, and it cannot be switched off.
             'is_system' => $this->isSystem(),
-            // Custody fills from customers and empties by settlement — the app hides the hand
-            // operations that would be refused on it.
-            'is_spendable' => $this->kind->spendable(),
+            // Custody fills from customers and empties by settlement, «Ezone» from EzonePay and by
+            // its payout — the app hides the hand operations that would be refused on them, and
+            // leaves them out of every account picker.
+            'is_spendable' => $this->kind->spendable() && ! $this->isEzone(),
             // «علينا»: the balance is a debt below zero (§٢٠). A vendor's is moved by its purchase
             // orders and payments alone, so the app offers no hand operation on it.
             'is_payable' => $this->kind === AccountKind::Payable,

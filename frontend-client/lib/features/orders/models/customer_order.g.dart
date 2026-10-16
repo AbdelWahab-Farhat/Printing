@@ -148,6 +148,7 @@ _CustomerOrderDetail _$CustomerOrderDetailFromJson(Map<String, dynamic> json) =>
       total: json['total'] as String?,
       paidAmount: json['paid_amount'] as String?,
       balance: json['balance'] as String?,
+      depositDue: json['deposit_due'] as String?,
       isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
       timeline:
           (json['timeline'] as List<dynamic>?)
@@ -186,6 +187,7 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'total': instance.total,
   'paid_amount': instance.paidAmount,
   'balance': instance.balance,
+  'deposit_due': instance.depositDue,
   'is_awaiting_quote': instance.isAwaitingQuote,
   'timeline': instance.timeline.map((e) => e.toJson()).toList(),
   'placed_at': instance.placedAt?.toIso8601String(),

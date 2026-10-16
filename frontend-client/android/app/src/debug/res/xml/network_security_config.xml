@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only. Plain http to the developer's own server, for «بوابة الدفع» in the app
+     (webview_flutter): Android's WebView obeys the cleartext policy, unlike Dio, which goes
+     through dart:io and never asked. With EZONE_PAY_DRIVER=fake the card page is
+     http://10.0.2.2:8000/api/v1/fake-ezone/… and was refused with ERR_CLEARTEXT_NOT_PERMITTED.
+
+     Release builds keep Android's default — https only — and the real EzonePay page is https. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- The emulator's name for the host machine. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- Herd's local site, for a phone pointed at the developer's machine. -->
+        <domain includeSubdomains="true">backend.test</domain>
+    </domain-config>
+</network-security-config>

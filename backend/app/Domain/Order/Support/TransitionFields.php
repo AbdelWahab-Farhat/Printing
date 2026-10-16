@@ -622,7 +622,7 @@ final class TransitionFields
                 // All four, and no receipt beside them: nothing has been paid yet, so there is
                 // no slip to attach. The proof is asked for when the money actually arrives —
                 // see {@see money()}, where «حوالة» obliges «الواصل».
-                methods: PaymentMethod::cases(),
+                methods: PaymentMethod::handPicked(),
                 requiredWith: self::DEPOSIT_AMOUNT,
                 hint: 'الطريقة المتوقَّعة — وتُفتح عليها خانة «طريقة الدفع» يوم يُقبض العربون',
                 value: ($order->deposit_expected_method ?? PaymentMethod::Cash)->value,
@@ -833,7 +833,8 @@ final class TransitionFields
             TransitionField::paymentMethod(
                 key: self::PAYMENT_METHOD,
                 label: 'طريقة الدفع',
-                methods: PaymentMethod::cases(),
+                // Not the wallet: paying from it has its own door, which checks the balance.
+                methods: PaymentMethod::handPicked(),
                 // Meaningless without an amount and mandatory with one — the ledger takes no
                 // entry lacking it.
                 requiredWith: self::PAYMENT_AMOUNT,

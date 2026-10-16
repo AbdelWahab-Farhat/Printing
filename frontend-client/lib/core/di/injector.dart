@@ -101,6 +101,12 @@ import 'package:dayaa_client/features/tools/usecases/load_bag_mockup.dart';
 import 'package:dayaa_client/features/tools/usecases/load_design_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_bag_preview_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_qr_code_image.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
+import 'package:dayaa_client/features/wallet/repositories/top_up_repository.dart';
+import 'package:dayaa_client/features/wallet/repositories/wallet_repository.dart';
+import 'package:dayaa_client/features/wallet/repositories/wallet_repository_impl.dart';
+import 'package:dayaa_client/features/wallet/usecases/top_up_usecases.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -190,6 +196,7 @@ abstract final class Injector {
     _registerHome();
     _registerSupport();
     _registerTools();
+    _registerWallet();
 
     _isInitialized = true;
   }
@@ -475,6 +482,24 @@ abstract final class Injector {
       ..registerLazySingleton(() => const GenerateQrCode())
       ..registerLazySingleton(() => const SaveQrCodeImage())
       ..registerFactory(() => QrToolCubit(generate: sl<GenerateQrCode>()));
+  }
+
+  /// «محفظتي» — Docs/payments/CUSTOMER-WALLET.md. الرصيد والدفع حالتا استخدامٍ يقرؤهما «حسابي»
+  /// وشاشة الطلبية بلا Cubit، والمعاملاتُ Cubitٌ للشاشة.
+  static void _registerWallet() {
+    sl
+      ..registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton(() => GetWalletBalance(sl<WalletRepository>()))
+      ..registerLazySingleton(() => GetWalletEntries(sl<WalletRepository>()))
+      ..registerLazySingleton(() => PayOrderFromWallet(sl<WalletRepository>()))
+      ..registerFactory(() => WalletEntriesCubit(getEntries: sl<GetWalletEntries>()))
+      // «اشحن محفظتك» عبر EzonePay — CUSTOMER-WALLET §٥. الـCubit تبنيه الصفحة بطلبيتها ومبلغها.
+      ..registerLazySingleton<TopUpRepository>(() => TopUpRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton(() => GetTopUpMethods(sl<TopUpRepository>()))
+      ..registerLazySingleton(() => QuoteTopUp(sl<TopUpRepository>()))
+      ..registerLazySingleton(() => StartTopUp(sl<TopUpRepository>()))
+      ..registerLazySingleton(() => ConfirmTopUpOtp(sl<TopUpRepository>()))
+      ..registerLazySingleton(() => GetTopUpAttempt(sl<TopUpRepository>()));
   }
 
   /// Tests only. Never called by the running app.

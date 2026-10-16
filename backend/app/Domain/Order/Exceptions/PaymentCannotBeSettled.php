@@ -26,6 +26,11 @@ final class PaymentCannotBeSettled extends DomainException
         return new self('هذه الدفعة ملغاة — لا مال فيها يُسوّى');
     }
 
+    public static function fromWallet(): self
+    {
+        return new self('دفعة من محفظة الزبون — لا مال نزل في حسابٍ يُسوّى منه');
+    }
+
     public static function predatesTreasury(): self
     {
         return new self('دفعة من قبل الحسابات — لا يُعرف أين نزلت');

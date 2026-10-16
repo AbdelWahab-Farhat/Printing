@@ -156,9 +156,10 @@ class _Loaded extends StatelessWidget {
                   ].firstOrNull ??
                   '—',
               onTap: () async {
+                // حسابُ النظام — «Ezone» محفظةٌ أيضاً — لا يكون افتراضياً: يملؤه EzonePay وحده.
                 final choices = [
                   for (final a in active)
-                    if (a.kind == kind) a,
+                    if (a.kind == kind && !a.isSystem) a,
                 ];
                 final picked = await _pick<TreasuryAccount>(
                   context,
@@ -261,9 +262,33 @@ class _Loaded extends StatelessWidget {
               setting: settings.collectionOf(kind),
               accounts: [
                 for (final a in active)
-                  if (a.kind == kind) a,
+                  if (a.kind == kind && !a.isSystem) a,
               ],
             ),
+
+          if (settings.onlineFeePayer case final payer?) ...[
+            const _Heading('الدفع الإلكتروني'),
+            const _Hint(
+              'عمولة EzonePay تُسجَّل مصروفاً «عمولة الدفع الإلكتروني» في الحالتين. على الزبون: '
+              'يُخصم منه المبلغ والعمولة ويصل المحفظةَ ما طلبه. على المحلّ: يُخصم منه ما طلبه وحده',
+            ),
+            _ChoiceTile(
+              key: const ValueKey('online-fee-payer'),
+              title: 'العمولة على',
+              value: payer == 'shop' ? 'المحلّ' : 'الزبون',
+              onTap: () async {
+                final picked = await _pick<String>(
+                  context,
+                  title: 'عمولة الدفع الإلكتروني على',
+                  options: const [('customer', 'الزبون'), ('shop', 'المحلّ')],
+                );
+
+                if (picked != null && context.mounted && picked != payer) {
+                  await _run(context, () => cubit.saveSettings(onlineFeePayer: picked));
+                }
+              },
+            ),
+          ],
         ],
       ),
     );

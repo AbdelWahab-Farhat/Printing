@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderPaymentType;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\Enums\MovementDirection;
@@ -216,10 +217,15 @@ class OrderPaymentResource extends JsonResource
         ] + $none;
     }
 
-    /** A payment whose money landed in a known account — the only entries «تسوية دفعة» touches. */
+    /**
+     * A payment whose money landed in a known account — the only entries «تسوية دفعة» touches. A
+     * payment from the wallet landed in none: it took the amount off «أرصدة محافظ الزبائن».
+     */
     private function settleable(): bool
     {
-        return $this->type === OrderPaymentType::Payment && $this->treasury_account_id !== null;
+        return $this->type === OrderPaymentType::Payment
+            && $this->treasury_account_id !== null
+            && $this->method !== PaymentMethod::Wallet;
     }
 
     /**

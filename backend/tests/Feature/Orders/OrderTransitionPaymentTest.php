@@ -239,9 +239,14 @@ class OrderTransitionPaymentTest extends TestCase
         // Assert — all four, «حوالة» included. It was left off while this screen could take no
         // files, which made the counter a poorer place to record a payment than the payments
         // screen for no reason a person could see. The file field below it is what let it back.
+        // **Not «المحفظة»**: paying from the wallet has its own door, which checks the balance.
         $offered = array_column($method['options'], 'value');
 
-        $this->assertSame(PaymentMethod::values(), $offered);
+        $this->assertSame(
+            array_map(fn (PaymentMethod $m) => $m->value, PaymentMethod::handPicked()),
+            $offered,
+        );
+        $this->assertNotContains(PaymentMethod::Wallet->value, $offered);
         $this->assertSame('كاش', $method['options'][0]['label']);
         $this->assertSame('حوالة', $method['options'][1]['label']);
     }

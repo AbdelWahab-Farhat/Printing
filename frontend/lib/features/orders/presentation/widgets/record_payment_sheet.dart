@@ -259,11 +259,16 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                   value: _method,
                   // `selectable` rather than `values`: the unknown case exists so an entry
                   // written by a newer server still renders, and it is never a person's choice.
-                  items: PaymentMethod.selectable,
+                  // A refund may also go back into the wallet — and what came from it, only there.
+                  items: _isIncoming ? PaymentMethod.selectable : PaymentMethod.refundable,
                   labelOf: (method) => method.label,
                   label: _isIncoming ? 'طريقة الدفع' : 'طريقة الردّ',
                   prefixIcon: AppIcons.payment,
-                  helperText: _method.requiresReceipt ? 'الحوالة تتطلب إرفاق الواصل' : null,
+                  helperText: switch (_method) {
+                    final m when m.requiresReceipt => 'الحوالة تتطلب إرفاق الواصل',
+                    PaymentMethod.wallet => 'يعود المبلغ إلى محفظة العميل، ولا يخرج من أي حساب',
+                    _ => null,
+                  },
                   onChanged: (method) {
                     if (method == null) return;
 
@@ -276,14 +281,17 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                   },
                 ),
 
-                SizedBox(height: 16.h),
-                TreasuryAccountPicker(
-                  method: _method.wire,
-                  incoming: _isIncoming,
-                  orderId: widget.orderId,
-                  value: _accountId,
-                  onChanged: (id) => setState(() => _accountId = id),
-                ),
+                // No account for the wallet: the money goes back into it, out of no drawer.
+                if (_method != PaymentMethod.wallet) ...[
+                  SizedBox(height: 16.h),
+                  TreasuryAccountPicker(
+                    method: _method.wire,
+                    incoming: _isIncoming,
+                    orderId: widget.orderId,
+                    value: _accountId,
+                    onChanged: (id) => setState(() => _accountId = id),
+                  ),
+                ],
 
                 // Only for the method that demands it. The server refuses a transfer without a
                 // receipt and so does a database CHECK; this is the copy that asks *before* the
@@ -519,6 +527,6 @@ extension on PaymentMethod {
     PaymentMethod.bankTransfer => 'رقم الحوالة',
     PaymentMethod.bankCard => 'رقم العملية',
     PaymentMethod.libyana => 'رقم العملية',
-    PaymentMethod.cash || PaymentMethod.unknown => 'رقم الإيصال، إن وُجد',
+    PaymentMethod.cash || PaymentMethod.wallet || PaymentMethod.unknown => 'رقم الإيصال، إن وُجد',
   };
 }
