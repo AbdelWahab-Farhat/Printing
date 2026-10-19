@@ -124,6 +124,10 @@ class _Orders implements OrderRepository {
   @override
   Future<Either<Failure, BasketQuote>> quote({required List<NewOrderLine> items, int? cityId}) =>
       throw UnimplementedError();
+
+  @override
+  Future<Either<Failure, CustomerOrderDetail>> chooseDeposit(int orderId, CheckoutDeposit deposit) =>
+      throw UnimplementedError();
 }
 
 Future<void> _load(String family, List<String> paths) async {

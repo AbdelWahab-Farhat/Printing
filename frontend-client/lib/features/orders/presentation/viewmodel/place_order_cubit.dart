@@ -11,6 +11,7 @@ import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/orders/models/deposit_rules.dart' as rules;
 import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/usecases/place_order.dart';

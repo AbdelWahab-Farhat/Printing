@@ -68,4 +68,13 @@ class OrderRepositoryImpl implements OrderRepository {
       parse: (data) => BasketQuote.fromJson(data as Map<String, dynamic>),
     );
   }
+
+  @override
+  Future<Either<Failure, CustomerOrderDetail>> chooseDeposit(int orderId, CheckoutDeposit deposit) {
+    return safeRequest<CustomerOrderDetail>(
+      // الحقول نفسها التي في `deposit` السلة، في أعلى الجسم هنا.
+      () => _dio.post(OrderEndpoints.deposit(orderId), data: deposit.toJson()),
+      parse: (data) => CustomerOrderDetail.fromJson(data as Map<String, dynamic>),
+    );
+  }
 }

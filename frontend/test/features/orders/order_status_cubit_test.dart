@@ -12,6 +12,7 @@ import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 import 'package:dayaa/features/shipping_companies/repositories/shipping_company_repository.dart';
 import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/repositories/warehouse_repository.dart';
 import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
@@ -640,6 +641,49 @@ void main() {
     ).captured.last;
 
     expect(sent, {'design_ids': [12, 13]});
+  });
+
+  test('the vendor picked for a request travels as its id', () async {
+    // Arrange — accepting a request whose maker nobody has named yet.
+    const maker = TransitionField(
+      key: 'vendor_id',
+      type: TransitionFieldType.vendor,
+      label: 'الوسيط',
+      isRequired: true,
+    );
+    const toNew = OrderTransition(status: OrderStatus.taken, label: 'جديدة', fields: [maker]);
+
+    when(() => repository.order(7))
+        .thenAnswer((_) async => Right(orderWith(transitions: [toNew])));
+    await cubit.load();
+    cubit.setValue(
+      'vendor_id',
+      const Vendor(id: 4, name: 'باب بن غشير', phone: '0912345678', isActive: true),
+    );
+
+    when(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: any(named: 'fields'),
+      ),
+    ).thenAnswer((_) async => Right(orderWith()));
+
+    // Act
+    await cubit.submit();
+
+    // Assert — the server validates an integer; the whole vendor was refused as «not one».
+    final sent = verify(
+      () => repository.changeStatus(
+        7,
+        status: any(named: 'status'),
+        reason: any(named: 'reason'),
+        fields: captureAny(named: 'fields'),
+      ),
+    ).captured.last;
+
+    expect(sent, {'vendor_id': 4});
   });
 
   test('a sentence of spaces is not sent at all', () async {

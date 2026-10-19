@@ -9,6 +9,7 @@ use App\Domain\Notification\NotificationService;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
@@ -76,6 +77,12 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
             return;
         }
 
+        // **لا يُخبَر العميل بما فعله هو.** «انتظار العربون» بلا فاعلٍ من الموظفين هو العميلُ نفسه
+        // اختار العربون في المكتب من التطبيق (`ChooseOrderDeposit`).
+        if ($to === CustomerOrderStage::AwaitingDeposit && $event->actorId === null) {
+            return;
+        }
+
         $order = Order::query()->find($event->orderId);
 
         // قد تكون حُذفت بين الإيداع وتنفيذ المهمّة، ولا صاحبَ لطلبيةٍ بلا عميل.
@@ -84,7 +91,11 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
         }
 
         $code = (string) $order->code;
-        $hint = $to->hint();
+
+        // قُبلت والعربون له يختاره: السطرُ يقول ذلك، لا «نجهّزها الآن».
+        $hint = $to === CustomerOrderStage::Preparing && CheckoutDeposit::isOfferedAfterReview($order)
+            ? 'اختر العربون لنبدأ العمل'
+            : $to->hint();
 
         $this->notifications->pushToCustomer(new CustomerPush(
             customerId: (int) $order->customer_id,

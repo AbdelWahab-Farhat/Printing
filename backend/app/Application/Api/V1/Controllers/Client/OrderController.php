@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers\Client;
 
+use App\Application\Api\V1\Requests\Client\Order\ChooseOrderDepositRequest;
 use App\Application\Api\V1\Requests\Client\Order\QuoteBasketRequest;
 use App\Application\Api\V1\Requests\Client\Order\RequestOrderRequest;
 use App\Application\Api\V1\Resources\Client\ClientBasketQuoteResource;
@@ -12,6 +13,7 @@ use App\Application\Api\V1\Resources\Client\ClientOrderNoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Order\Actions\ChooseOrderDeposit;
 use App\Domain\Order\Actions\PlaceOrderWithDeposit;
 use App\Domain\Order\Actions\QuoteBasket;
 use App\Domain\Order\Actions\RequestOrder;
@@ -51,6 +53,7 @@ class OrderController extends Controller
         private readonly OrderService $orders,
         private readonly RequestOrder $requestOrder,
         private readonly PlaceOrderWithDeposit $placeWithDeposit,
+        private readonly ChooseOrderDeposit $chooseDeposit,
         private readonly QuoteBasket $quoteBasket,
     ) {}
 
@@ -85,6 +88,13 @@ class OrderController extends Controller
             customerId: (int) $this->customer($request)->getKey(),
             perPage: $perPage,
             onlyStatuses: $this->statusesFor($request),
+            // «جديدة» waiting on the customer's عربون is «بانتظار العربون» to them, not «قيد
+            // التجهيز» — see `CustomerOrderStage::of()`.
+            depositOffered: match (CustomerOrderStage::tryFrom($request->string('stage')->toString())) {
+                CustomerOrderStage::AwaitingDeposit => true,
+                CustomerOrderStage::Preparing => false,
+                default => null,
+            },
         );
 
         return $this->successWithPagination(ClientOrderResource::collection($orders));
@@ -212,6 +222,36 @@ class OrderController extends Controller
         );
 
         return $this->success(new ClientOrderDetailResource($owned));
+    }
+
+    /**
+     * Choose the deposit of an accepted order
+     *
+     * For an order the shop accepted after review — one the basket could not offer a deposit for
+     * (`deposit_offer` on the order says when). At least a quarter of the goods in whole dinars:
+     * `office` moves it to «انتظار العربون»; `wallet` pays it now and moves it to «عربون مدفوع».
+     * An online payment is a top-up the app completes first, then this with `wallet`. See
+     * {@see ChooseOrderDeposit}.
+     */
+    public function chooseDeposit(ChooseOrderDepositRequest $request, int $order): JsonResponse
+    {
+        $owned = $this->orders->findForCustomer((int) $this->customer($request)->getKey(), $order);
+        $validated = $request->validated();
+        $payment = CheckoutPayment::from((string) $validated['payment']);
+
+        $chosen = ($this->chooseDeposit)(
+            $owned,
+            $payment,
+            (string) $validated['amount'],
+            $validated['client_token'] ?? null,
+        );
+
+        return $this->success(
+            new ClientOrderDetailResource($chosen->load(['items.product.images', 'transitions'])),
+            $payment === CheckoutPayment::Office
+                ? 'ادفع العربون في المكتب لنبدأ العمل على طلبيتك'
+                : 'دُفع العربون من محفظتك، ونبدأ العمل على طلبيتك',
+        );
     }
 
     /**

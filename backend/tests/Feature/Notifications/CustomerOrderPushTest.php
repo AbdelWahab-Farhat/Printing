@@ -60,8 +60,24 @@ class CustomerOrderPushTest extends TestCase
     private function move(Order $order, OrderStatus $from, OrderStatus $to): void
     {
         app(NotifyCustomerWhenOrderStageChanges::class)->handle(
-            new OrderStatusChanged((int) $order->getKey(), $from, $to),
+            // A member of staff made the move — the ordinary case. The customer's own move is
+            // the one test below that says so.
+            new OrderStatusChanged((int) $order->getKey(), $from, $to, actorId: 1),
         );
+    }
+
+    public function test_the_customers_own_deposit_choice_is_not_pushed_back_to_them(): void
+    {
+        // Arrange — «في المكتب» chosen from the app moves the order with nobody from the staff.
+        $order = $this->orderWithADevice();
+
+        // Act
+        app(NotifyCustomerWhenOrderStageChanges::class)->handle(
+            new OrderStatusChanged((int) $order->getKey(), OrderStatus::New, OrderStatus::AwaitingDeposit),
+        );
+
+        // Assert
+        Queue::assertNothingPushed();
     }
 
     /**

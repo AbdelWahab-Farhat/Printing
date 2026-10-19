@@ -123,6 +123,9 @@ abstract final class OrderEndpoints {
 
   /// ملاحظات المراجعة والرفض. **لا مسار «قرأتها»**: فتحها هو ما يعلّمها مقروءة، كالدعم.
   static String notes(int id) => '/client/orders/$id/notes';
+
+  /// عربون طلبيةٍ قُبلت بعد المراجعة — في المكتب أو من المحفظة (2026-10-19).
+  static String deposit(int id) => '/client/orders/$id/deposit';
 }
 
 /// Reaching a person.

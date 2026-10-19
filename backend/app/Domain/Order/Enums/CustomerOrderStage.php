@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Enums;
 
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\CheckoutDeposit;
+
 /**
  * Where an order is, said in words a customer can act on.
  *
@@ -131,6 +134,22 @@ enum CustomerOrderStage: string
 
             OrderStatus::RequestRejected => self::Rejected,
         };
+    }
+
+    /**
+     * The stage **this order** reads as — {@see forStatus()}, with one exception.
+     *
+     * **An app order the shop has just accepted, whose عربون the customer has yet to choose, is
+     * «بانتظار العربون»** (owner, 2026-10-19), though the workshop still has it in «جديدة»: the next
+     * move is the customer's, and «قيد التجهيز — نجهّزها الآن» would tell them otherwise. See
+     * {@see CheckoutDeposit::isOfferedAfterReview()}. Read by the list and the order alike, so a
+     * card and the order it opens never disagree; the stage filter asks the same question in SQL.
+     */
+    public static function of(Order $order): self
+    {
+        return CheckoutDeposit::isOfferedAfterReview($order)
+            ? self::AwaitingDeposit
+            : self::forStatus($order->status);
     }
 
     public function label(): string

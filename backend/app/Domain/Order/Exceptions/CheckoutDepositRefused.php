@@ -29,15 +29,25 @@ final class CheckoutDepositRefused extends DomainException
         return new self('لا يمكن دفع عربون على هذه الطلبية الآن — أرسلها للمراجعة وسنحدّد المبلغ معك', 'deposit');
     }
 
-    public static function belowMinimum(string $minimum): self
+    /**
+     * An accepted order whose عربون can no longer be chosen from the app — staff moved it on, or it
+     * already names one, or money is already on it. See `ChooseOrderDeposit`.
+     */
+    public static function noLongerOffered(): self
     {
-        return new self('أقل عربون '.bcadd($minimum, '0', 0).' د.ل (ربع قيمة الطلبية)', 'deposit.amount');
+        return new self('لم يعد اختيار العربون متاحاً لهذه الطلبية — حدّث الصفحة', 'deposit');
+    }
+
+    /** [$field] is where the request carried the amount — `deposit.amount` in the basket. */
+    public static function belowMinimum(string $minimum, string $field = 'deposit.amount'): self
+    {
+        return new self('أقل عربون '.bcadd($minimum, '0', 0).' د.ل (ربع قيمة الطلبية)', $field);
     }
 
     /** [$maximum] is the goods rounded down to the dinar — see `CheckoutDeposit::maximum()`. */
-    public static function aboveTotal(string $maximum): self
+    public static function aboveTotal(string $maximum, string $field = 'deposit.amount'): self
     {
-        return new self('أكثر عربون '.bcadd($maximum, '0', 0).' د.ل (قيمة الطلبية)', 'deposit.amount');
+        return new self('أكثر عربون '.bcadd($maximum, '0', 0).' د.ل (قيمة الطلبية)', $field);
     }
 
     /**

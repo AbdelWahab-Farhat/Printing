@@ -141,53 +141,29 @@ extension PlaceOrderStateX on PlaceOrderState {
     _ => true,
   };
 
-  /// رفض المبلغ قبل الإرسال: أقلّ من الربع أو أكثر من البضاعة. `null` حين يصلح أو لا خطوة.
-  String? get depositAmountError {
-    final offer = depositOffer;
-    final amount = switch (this) {
-      PlaceOrderReady(:final depositAmount) => depositAmount,
-      _ => null,
-    };
-
-    if (offer == null) return null;
-    if (amount == null || amount.isEmpty) return 'اكتب قيمة العربون';
-
-    // **بالدينار الكامل** (صاحب العمل، 2026-10-19): لا كسور في العربون.
-    if (int.tryParse(amount) == null) return 'العربون بالدينار الكامل، بلا كسور';
-
-    final value = thousandths(amount);
-
-    if (value < thousandths(offer.minAmount!)) {
-      return 'أقل عربون ${offer.minAmount!.asMoney} د.ل (${offer.minPercent}٪ من قيمة الطلبية)';
-    }
-
-    if (value > thousandths(offer.maxAmount!)) {
-      return 'العربون لا يتجاوز قيمة الطلبية (${offer.maxAmount!.asMoney} د.ل)';
-    }
-
-    return null;
-  }
+  /// رفض المبلغ قبل الإرسال — [depositAmountError] في `deposit_rules.dart`. `null` حين يصلح أو لا خطوة.
+  String? get depositAmountError => switch ((this, depositOffer)) {
+    (PlaceOrderReady(:final depositAmount), final offer?) => rules.depositAmountError(offer, depositAmount),
+    _ => null,
+  };
 
   /// المحفظة تكفي العربون المختار.
   bool get walletCovers => switch (this) {
-    PlaceOrderReady(:final walletBalance?, :final depositAmount?) when depositAmount.isNotEmpty =>
-      thousandths(walletBalance) >= thousandths(depositAmount),
+    PlaceOrderReady(:final walletBalance, :final depositAmount) =>
+      rules.walletCoversDeposit(walletBalance, depositAmount),
     _ => false,
   };
 
-  /// اختير طريقُ الدفع، والمبلغ بين الحدّين، والمحفظة تكفي إن كانت هي الطريق، والطريقة الإلكترونية
-  /// تستطيع المبلغ إن كانت هي.
-  bool get depositIsReady => switch (this) {
-    PlaceOrderReady(:final payment?, :final depositAmount) =>
-      depositAmountError == null &&
-          switch (payment) {
-            CheckoutPayment.office => true,
-            CheckoutPayment.wallet => walletCovers,
-            CheckoutPayment.online => switch (selectedOnlineMethod) {
-              final method? => method.canFund(depositAmount!),
-              null => false,
-            },
-          },
+  /// اختير طريقُ الدفع وصلح كلُّ ما يتعلّق به — [depositChoiceIsReady] في `deposit_rules.dart`.
+  bool get depositIsReady => switch ((this, depositOffer)) {
+    (PlaceOrderReady(:final payment, :final depositAmount, :final walletBalance), final offer?) =>
+      rules.depositChoiceIsReady(
+        offer: offer,
+        payment: payment,
+        amount: depositAmount,
+        walletBalance: walletBalance,
+        onlineMethod: selectedOnlineMethod,
+      ),
     _ => false,
   };
 

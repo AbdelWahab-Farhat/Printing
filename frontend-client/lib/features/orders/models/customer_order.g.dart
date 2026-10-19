@@ -116,55 +116,57 @@ Map<String, dynamic> _$OrderTimelineEntryToJson(_OrderTimelineEntry instance) =>
       'reached_at': instance.reachedAt?.toIso8601String(),
     };
 
-_CustomerOrderDetail _$CustomerOrderDetailFromJson(Map<String, dynamic> json) =>
-    _CustomerOrderDetail(
-      id: (json['id'] as num).toInt(),
-      code: json['code'] as String,
-      stage:
-          $enumDecodeNullable(
-            _$OrderStageEnumMap,
-            json['stage'],
-            unknownValue: OrderStage.unknown,
-          ) ??
-          OrderStage.unknown,
-      stageLabel: json['stage_label'] as String,
-      isOpen: json['is_open'] as bool? ?? true,
-      stageHint: json['stage_hint'] as String?,
-      rejectionReason: json['rejection_reason'] as String?,
-      cityName: json['city_name'] as String?,
-      regionName: json['region_name'] as String?,
-      addressDetails: json['address_details'] as String?,
-      recipientName: json['recipient_name'] as String?,
-      recipientPhone: json['recipient_phone'] as String?,
-      fulfilmentTypeLabel: json['fulfilment_type_label'] as String?,
-      items:
-          (json['items'] as List<dynamic>?)
-              ?.map((e) => OrderLine.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <OrderLine>[],
-      itemsTotal: json['items_total'] as String?,
-      deliveryPrice: json['delivery_price'] as String?,
-      designFee: json['design_fee'] as String?,
-      discount: json['discount'] as String?,
-      total: json['total'] as String?,
-      paidAmount: json['paid_amount'] as String?,
-      balance: json['balance'] as String?,
-      depositDue: json['deposit_due'] as String?,
-      depositExpected: json['deposit_expected'] as String?,
-      depositAtOffice: json['deposit_at_office'] as bool? ?? false,
-      isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
-      timeline:
-          (json['timeline'] as List<dynamic>?)
-              ?.map(
-                (e) => OrderTimelineEntry.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const <OrderTimelineEntry>[],
-      placedAt: json['placed_at'] == null
-          ? null
-          : DateTime.parse(json['placed_at'] as String),
-      unreadNotesCount: (json['unread_notes_count'] as num?)?.toInt() ?? 0,
-    );
+_CustomerOrderDetail _$CustomerOrderDetailFromJson(
+  Map<String, dynamic> json,
+) => _CustomerOrderDetail(
+  id: (json['id'] as num).toInt(),
+  code: json['code'] as String,
+  stage:
+      $enumDecodeNullable(
+        _$OrderStageEnumMap,
+        json['stage'],
+        unknownValue: OrderStage.unknown,
+      ) ??
+      OrderStage.unknown,
+  stageLabel: json['stage_label'] as String,
+  isOpen: json['is_open'] as bool? ?? true,
+  stageHint: json['stage_hint'] as String?,
+  rejectionReason: json['rejection_reason'] as String?,
+  cityName: json['city_name'] as String?,
+  regionName: json['region_name'] as String?,
+  addressDetails: json['address_details'] as String?,
+  recipientName: json['recipient_name'] as String?,
+  recipientPhone: json['recipient_phone'] as String?,
+  fulfilmentTypeLabel: json['fulfilment_type_label'] as String?,
+  items:
+      (json['items'] as List<dynamic>?)
+          ?.map((e) => OrderLine.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <OrderLine>[],
+  itemsTotal: json['items_total'] as String?,
+  deliveryPrice: json['delivery_price'] as String?,
+  designFee: json['design_fee'] as String?,
+  discount: json['discount'] as String?,
+  total: json['total'] as String?,
+  paidAmount: json['paid_amount'] as String?,
+  balance: json['balance'] as String?,
+  depositDue: json['deposit_due'] as String?,
+  depositExpected: json['deposit_expected'] as String?,
+  depositAtOffice: json['deposit_at_office'] as bool? ?? false,
+  depositOffer: json['deposit_offer'] == null
+      ? null
+      : DepositOffer.fromJson(json['deposit_offer'] as Map<String, dynamic>),
+  isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
+  timeline:
+      (json['timeline'] as List<dynamic>?)
+          ?.map((e) => OrderTimelineEntry.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <OrderTimelineEntry>[],
+  placedAt: json['placed_at'] == null
+      ? null
+      : DateTime.parse(json['placed_at'] as String),
+  unreadNotesCount: (json['unread_notes_count'] as num?)?.toInt() ?? 0,
+);
 
 Map<String, dynamic> _$CustomerOrderDetailToJson(
   _CustomerOrderDetail instance,
@@ -193,6 +195,7 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'deposit_due': instance.depositDue,
   'deposit_expected': instance.depositExpected,
   'deposit_at_office': instance.depositAtOffice,
+  'deposit_offer': instance.depositOffer?.toJson(),
   'is_awaiting_quote': instance.isAwaitingQuote,
   'timeline': instance.timeline.map((e) => e.toJson()).toList(),
   'placed_at': instance.placedAt?.toIso8601String(),

@@ -6,6 +6,7 @@ import 'package:dayaa/features/orders/usecases/change_order_status.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 import 'package:dayaa/features/shipping_companies/usecases/get_shipping_companies.dart';
+import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
 import 'package:dayaa/features/warehouses/usecases/get_warehouses.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -321,6 +322,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
             // Same again for the shelf the run comes off: the picker hands over the whole
             // warehouse so the button can name it, and only the id is the server's business.
             final Warehouse store => store.id,
+            // And for the وسيط who makes a request: the server validates an integer, and the
+            // whole vendor falling through to the default below was refused as one.
+            final Vendor vendor => vendor.id,
             final String text => text.trim(),
             _ => value,
           },

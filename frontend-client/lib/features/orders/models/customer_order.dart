@@ -1,3 +1,4 @@
+import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'customer_order.freezed.dart';
@@ -306,6 +307,10 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
 
     /// العربون يُدفع في المكتب — اختاره العميل كذلك في السلة، أو سمّاه الموظف نقداً.
     @JsonKey(name: 'deposit_at_office') @Default(false) bool depositAtOffice,
+
+    /// **العربون يختاره العميل الآن** — طلبيةٌ قبلها المتجر بعد المراجعة وما زالت «جديدة» بلا
+    /// عربون (2026-10-19). الحدّان كما في السلة. null في كل حالٍ أخرى.
+    @JsonKey(name: 'deposit_offer') DepositOffer? depositOffer,
 
     /// Whether any line is still waiting to be priced.
     ///
