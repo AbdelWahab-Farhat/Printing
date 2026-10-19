@@ -3,10 +3,10 @@ import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
-import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/support_cubit.dart';
+import 'package:dayaa_client/features/support/presentation/widgets/ticket_compose_sheet.dart';
 import 'package:dayaa_client/features/support/presentation/widgets/ticket_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,24 +76,12 @@ class _SupportPageState extends State<SupportPage> with SingleTickerProviderStat
     _closedCubit?.absorb(updated);
   }
 
+  /// A ticket about nothing in particular. One about an order starts on the order itself
+  /// («اسأل عن الطلبية»), which is where the customer is when they have that question.
   Future<void> _compose() async {
-    // The order this thread is about, when the customer came here from one — read from the
-    // location so it survives the branch switch, so they do not have to describe which order
-    // they mean. A malformed value is simply no order, never a crash.
-    final orderId = int.tryParse(
-      GoRouterState.of(context).uri.queryParameters['order'] ?? '',
-    );
-
-    final ticket = await showModalBottomSheet<SupportTicket>(
-      context: context,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-      ),
-      builder: (sheetContext) => BlocProvider<SupportCubit>.value(
-        value: _open,
-        child: _ComposeSheet(orderId: orderId),
-      ),
+    final ticket = await TicketComposeSheet.show(
+      context,
+      submit: ({required subject, required body}) => _open.submit(subject: subject, body: body),
     );
 
     if (ticket == null || !mounted) return;
@@ -215,100 +203,6 @@ class _TicketsTabState extends State<_TicketsTab> with AutomaticKeepAliveClientM
         ),
         itemBuilder: (context, ticket, _) =>
             TicketRow(ticket: ticket, onOpen: () => widget.onOpen(ticket)),
-      ),
-    );
-  }
-}
-
-class _ComposeSheet extends StatefulWidget {
-  const _ComposeSheet({this.orderId});
-
-  final int? orderId;
-
-  @override
-  State<_ComposeSheet> createState() => _ComposeSheetState();
-}
-
-class _ComposeSheetState extends State<_ComposeSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _subject = TextEditingController();
-  final _body = TextEditingController();
-
-  bool _isSending = false;
-
-  @override
-  void dispose() {
-    _subject.dispose();
-    _body.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    FocusScope.of(context).unfocus();
-
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSending = true);
-
-    final result = await context.read<SupportCubit>().submit(
-      subject: _subject.text.trim(),
-      body: _body.text.trim(),
-      orderId: widget.orderId,
-    );
-
-    if (!mounted) return;
-
-    setState(() => _isSending = false);
-
-    result.fold(
-      context.showFailure,
-      (ticket) => Navigator.of(context).pop(ticket),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Lifted above the keyboard, so the send button is never behind it.
-      padding: EdgeInsets.only(bottom: context.keyboardInset),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.orderId == null ? 'تذكرة جديدة' : 'تذكرة عن الطلبية',
-                  style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 16.h),
-
-                AppTextField(
-                  controller: _subject,
-                  label: 'الموضوع',
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? 'اكتب موضوعاً' : null,
-                ),
-                SizedBox(height: 12.h),
-                AppTextField(
-                  controller: _body,
-                  label: 'اشرح لنا',
-                  maxLines: 5,
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? 'اكتب رسالتك' : null,
-                ),
-                SizedBox(height: 20.h),
-
-                AppButton(label: 'أرسل', isLoading: _isSending, onPressed: _send),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

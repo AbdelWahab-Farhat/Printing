@@ -83,13 +83,6 @@ abstract final class Routes {
 
   static const String support = '/support';
 
-  /// «الدعم»، ومعه محادثة جديدة موجّهة مسبقاً إلى طلبية.
-  ///
-  /// **معامل في الرابط (query) لا `extra`.** يسافر داخل الموقع نفسه، فيبقى مهما فعل الموجّه
-  /// بالمسار، ويُقرأ في السجل حين يسأل أحدهم لماذا وصلت تذكرة مربوطة بالطلبية الخطأ.
-  /// و`int.tryParse` في الطرف الآخر يعني أن القيمة المشوّهة تصير «بلا طلبية» ببساطة، لا انهياراً.
-  static String supportAbout(int orderId) => '/support?order=$orderId';
-
   static String ticket(int id) => '/support/$id';
 
   /// أداة QR، تُفتح للاستعمال.

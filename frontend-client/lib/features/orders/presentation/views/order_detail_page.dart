@@ -14,6 +14,9 @@ import 'package:dayaa_client/features/orders/presentation/widgets/order_money_ca
 import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_button.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
+import 'package:dayaa_client/features/support/models/support_ticket.dart';
+import 'package:dayaa_client/features/support/presentation/widgets/ticket_compose_sheet.dart';
+import 'package:dayaa_client/features/support/usecases/open_ticket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,6 +99,25 @@ class _Loaded extends StatelessWidget {
   /// تُسلَّم لشاشة «الملاحظات» فتطفئ الشارة هنا حين تُعرض الملاحظات هناك.
   final VoidCallback onNotesRead;
 
+  /// «اسأل عن الطلبية»: **ورقة التذكرة هنا مباشرةً**، والطلبية مربوطةٌ بها — لا قائمة «الدعم»
+  /// ثم «تذكرة جديدة». بعد الإرسال تُفتح المحادثة فوق الطلبية، فالرجوع منها يعود إلى هنا،
+  /// وإغلاق الورقة بلا إرسال يُبقي العميل حيث كان.
+  ///
+  /// **`OpenTicket` وحده، لا Cubit القائمة**: لا قائمة هنا تستقبل الصفّ الجديد، و«الدعم» حين
+  /// يُفتح يقرأ صفحته الأولى وهي فيها.
+  Future<void> _ask(BuildContext context) async {
+    final ticket = await TicketComposeSheet.show(
+      context,
+      order: TicketOrderRef(id: order.id, code: order.code),
+      submit: ({required subject, required body}) =>
+          sl<OpenTicket>()(subject: subject, body: body, orderId: order.id),
+    );
+
+    if (ticket == null || !context.mounted) return;
+
+    await context.push(Routes.ticket(ticket.id));
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
@@ -132,8 +154,7 @@ class _Loaded extends StatelessWidget {
             label: 'اسأل عن الطلبية',
             icon: AppIcons.comments,
             tone: AppActionTone.primary,
-            // الخيط يُفتح والطلبية مرفقةٌ به، و`push` لا `go`: إغلاقه يعود إلى هنا.
-            onTap: (context) => context.push(Routes.supportAbout(order.id)),
+            onTap: _ask,
           ),
         ],
       ),

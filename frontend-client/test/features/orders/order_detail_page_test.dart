@@ -12,6 +12,9 @@ import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_ca
 import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
+import 'package:dayaa_client/features/support/models/support_ticket.dart';
+import 'package:dayaa_client/features/support/repositories/support_repository.dart';
+import 'package:dayaa_client/features/support/usecases/open_ticket.dart';
 import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +27,8 @@ import 'package:mocktail/mocktail.dart';
 import '../wallet/fake_wallet.dart';
 
 class _MockOrderRepository extends Mock implements OrderRepository {}
+
+class _MockSupportRepository extends Mock implements SupportRepository {}
 
 /// الطلبية المفتوحة على شكل «أ · بطاقة الحالة» الذي اختاره صاحب العمل (٢٠٢٦-٠٩-٢٥): بطاقةٌ بلون
 /// المرحلة فيها الخطوات الخمس، ثم المال، ثم البنود، ثم التسليم — والسؤال زرٌّ عائم.
@@ -106,6 +111,7 @@ void main() {
     CustomerOrderDetail order, {
     FakeWallet? wallet,
     _MockOrderRepository? repository,
+    _MockSupportRepository? support,
   }) async {
     tester.view
       ..physicalSize = const Size(430, 932)
@@ -122,6 +128,7 @@ void main() {
     sl.registerFactoryParam<OrderDetailCubit, int, void>(
       (orderId, _) => OrderDetailCubit(orderId: orderId, get: GetOrder(orders)),
     );
+    sl.registerLazySingleton(() => OpenTicket(support ?? _MockSupportRepository()));
 
     final router = GoRouter(
       initialLocation: '/orders/${order.id}',
@@ -142,10 +149,12 @@ void main() {
             return Scaffold(appBar: AppBar(), body: const Text('ملاحظات الطلبية'));
           },
         ),
+        // المحادثة التي تُفتح بعد إرسال التذكرة.
         GoRoute(
-          path: '/support',
+          path: '/support/:id',
           builder: (context, state) => Scaffold(
-            body: Center(child: Text('الدعم عن ${state.uri.queryParameters['order']}')),
+            appBar: AppBar(),
+            body: Text('المحادثة ${state.pathParameters['id']}'),
           ),
         ),
       ],
@@ -182,16 +191,93 @@ void main() {
       expect(find.text('لديك سؤال عن هذه الطلبية؟'), findsNothing);
     });
 
-    testWidgets('opens support about this very order', (tester) async {
+    // ورقة التذكرة تُفتح هنا مباشرةً — لا قائمة «الدعم» ثم «تذكرة جديدة».
+    Finder inSheet(Finder matching) =>
+        find.descendant(of: find.byType(BottomSheet), matching: matching);
+
+    Future<void> ask(WidgetTester tester) async {
+      await tester.tap(find.widgetWithText(FloatingActionButton, 'اسأل عن الطلبية'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens a new ticket about this very order, right here', (tester) async {
       // Arrange
       await open(tester, order1304());
 
       // Act
-      await tester.tap(find.widgetWithText(FloatingActionButton, 'اسأل عن الطلبية'));
+      await ask(tester);
+
+      // Assert — the order fixed above, the subject written for them and still theirs.
+      expect(inSheet(find.text('تذكرة عن الطلبية')), findsOneWidget);
+      expect(inSheet(find.text('بخصوص الطلبية')), findsOneWidget);
+      expect(inSheet(find.text('1304')), findsOneWidget);
+      expect(inSheet(find.text('استفسار عن الطلبية 1304')), findsOneWidget);
+    });
+
+    testWidgets('sends it tied to the order, then opens the thread over the order', (
+      tester,
+    ) async {
+      // Arrange
+      final support = _MockSupportRepository();
+      when(
+        () => support.open(
+          subject: any(named: 'subject'),
+          body: any(named: 'body'),
+          orderId: any(named: 'orderId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Right(
+          SupportTicket(
+            id: 57,
+            subject: 'استفسار عن الطلبية 1304',
+            statusLabel: 'مفتوحة',
+            order: TicketOrderRef(id: 1304, code: '1304'),
+          ),
+        ),
+      );
+      await open(tester, order1304(), support: support);
+      await ask(tester);
+
+      // Act
+      await tester.enterText(inSheet(find.byType(EditableText)).last, 'متى تصل؟');
+      await tester.tap(inSheet(find.text('أرسل')));
+      await tester.pumpAndSettle();
+
+      // Assert — one ticket, about 1304; its thread is open, and back returns to the order.
+      verify(
+        () => support.open(
+          subject: 'استفسار عن الطلبية 1304',
+          body: 'متى تصل؟',
+          orderId: 1304,
+        ),
+      ).called(1);
+      expect(find.text('المحادثة 57'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FloatingActionButton, 'اسأل عن الطلبية'), findsOneWidget);
+    });
+
+    testWidgets('closed without sending, it leaves the customer on the order', (tester) async {
+      // Arrange
+      final support = _MockSupportRepository();
+      await open(tester, order1304(), support: support);
+      await ask(tester);
+
+      // Act — a tap above the sheet dismisses it.
+      await tester.tapAt(const Offset(215, 40));
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('الدعم عن 1304'), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.widgetWithText(FloatingActionButton, 'اسأل عن الطلبية'), findsOneWidget);
+      verifyNever(
+        () => support.open(
+          subject: any(named: 'subject'),
+          body: any(named: 'body'),
+          orderId: any(named: 'orderId'),
+        ),
+      );
     });
   });
 
