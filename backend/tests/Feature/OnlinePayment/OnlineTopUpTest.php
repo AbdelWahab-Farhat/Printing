@@ -8,6 +8,7 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\OnlinePayment\Enums\IntentStatus;
+use App\Domain\OnlinePayment\Enums\OnlineMethod;
 use App\Domain\OnlinePayment\Models\GatewayWebhookEvent;
 use App\Domain\OnlinePayment\Models\OnlinePaymentMethod;
 use App\Domain\OnlinePayment\Models\PaymentIntent;
@@ -315,6 +316,27 @@ class OnlineTopUpTest extends TestCase
             && $r['serviceMobileNumber'] === $customer->phone
             && $r['amount'] === 102.57
             && $r['shopId'] === 42);
+    }
+
+    /**
+     * «محفظتي» puts the method's own logo and name on an online top-up — «رصيد ليبيانا», not
+     * the bare «دفع إلكتروني» every online row would otherwise share.
+     */
+    public function test_the_customers_list_names_the_method_an_online_top_up_came_through(): void
+    {
+        // Arrange — a Libyana top-up, credited by its code.
+        $customer = Customer::factory()->registered()->create();
+        $intent = $this->start($customer)->assertCreated()->json('data.intent.id');
+        $this->otp($customer, $intent)->assertOk();
+
+        // Act
+        $response = $this->withHeaders($this->app($customer))->getJson('/api/v1/client/wallet/entries');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.method', 'online')
+            ->assertJsonPath('data.0.online_method', OnlineMethod::Libyana->value)
+            ->assertJsonPath('data.0.method_label', OnlineMethod::Libyana->label());
     }
 
     // ── the ezone:* commands ──────────────────────────────────────────────────────────────

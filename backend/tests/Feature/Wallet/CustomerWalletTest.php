@@ -618,6 +618,33 @@ class CustomerWalletTest extends TestCase
         $this->assertNull(OrderPayment::query()->firstOrFail()->recorded_by);
     }
 
+    /**
+     * «محفظتي» draws each row by how it was made — the counter's cash as banknotes — and an
+     * order's row by the order's own code, not its id.
+     */
+    public function test_the_customers_list_says_how_a_counter_top_up_was_made_and_which_order_was_paid(): void
+    {
+        // Arrange
+        $customer = Customer::factory()->registered()->create();
+        $this->topUp($this->cashier(), $customer, ['amount' => '120'])->assertCreated();
+        $order = $this->order($customer, '90.00');
+        $app = $this->customerHeaders($customer);
+        $this->withHeaders($app)->postJson("/api/v1/client/orders/{$order->id}/pay-from-wallet")->assertCreated();
+
+        // Act
+        $response = $this->withHeaders($app)->getJson('/api/v1/client/wallet/entries');
+
+        // Assert — the payment first, newest first, then the top-up.
+        $response->assertOk()
+            ->assertJsonPath('data.0.order_code', $order->code)
+            ->assertJsonPath('data.0.method', null)
+            ->assertJsonPath('data.0.online_method', null)
+            ->assertJsonPath('data.1.method', 'cash')
+            ->assertJsonPath('data.1.method_label', 'كاش')
+            ->assertJsonPath('data.1.online_method', null)
+            ->assertJsonPath('data.1.order_code', null);
+    }
+
     public function test_the_customer_is_offered_the_deposit_beside_the_whole_amount_and_may_pay_just_it(): void
     {
         // Arrange — the shop asked for 50 of 200.

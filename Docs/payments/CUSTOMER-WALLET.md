@@ -373,3 +373,9 @@
 
 - `php artisan migrate` — الجدول والصلاحيات الأربع.
 - لا تطبيق جديد مطلوب: التطبيق القديم يقرأ طريقة «wallet» `unknown` ويرسم `method_label`.
+
+### «محفظتي» بتصميم «بطاقة FlyerX» — ٢٠٢٦-١٠-١٧
+
+- **تطبيق الزبون:** بطاقةٌ كحلية بـ X العلامة (الرصيد والاسم والرمز وحدها)، و«شحن المحفظة» بطاقةٌ تحتها بشعارات الطرق كلها، والمعاملات أسطرٌ تحت أيامها. اختاره صاحب العمل من لوحة تصميم بثلاث اتجاهات.
+- **الخادم:** سطر `client/wallet/entries` يحمل `method` و`online_method` (رقم طريقة EzonePay) و`order_code`، و`method_label` اسمُ الطريقة («ون باي») لا «دفع إلكتروني». **يُسأل عنها من خارج المحفظة**: `WalletController::attachNames` يسأل `OrderService::codesOf` و`OnlinePaymentService::methodsOfWalletEntries`، سؤالٌ واحد لكلٍّ منهما للصفحة — المحفظة لا تعرف الطلبيات ولا الدفع الإلكتروني.
+- `test_the_transactions_page_lists_every_wallet_and_finds_a_customer` يفشل محلياً قبل هذا التعديل وبعده (`SQLSTATE[22021]` على `?q=المصراتي`) — لم يُمسّ.

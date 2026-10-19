@@ -185,6 +185,13 @@ abstract final class AppIcons {
   static IconData get wallet =>
       _pick(Icons.account_balance_wallet_rounded, CupertinoIcons.creditcard_fill);
 
+  /// شحنٌ بحوالة في المكتب — مبنى المصرف، لا ورقة: ما تحرّك مالٌ من مصرفٍ إلى مصرف.
+  static IconData get bankTransfer =>
+      _pick(Icons.account_balance_rounded, CupertinoIcons.building_2_fill);
+
+  /// شحنٌ ببطاقة مصرفية في المكتب. ليست [wallet]: على iOS تلك بطاقةٌ ممتلئة، وهذه بطاقةٌ بحدّها.
+  static IconData get bankCard => _pick(Icons.credit_card_rounded, CupertinoIcons.creditcard);
+
   /// Money going back to the customer. An arrow turning back on itself, which is the one shape
   /// that reads as "the other direction" without a minus sign somebody could misread as a
   /// delete.

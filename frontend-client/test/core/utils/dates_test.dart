@@ -92,4 +92,25 @@ void main() {
       expect(lastNight.relativeDayLabel, 'أمس');
     });
   });
+
+  group('the relative short day', () {
+    test('calls today today and yesterday yesterday', () {
+      // Arrange
+      final now = DateTime.now();
+
+      // Act - Assert
+      expect(now.relativeShortDayLabel, 'اليوم');
+      expect(now.subtract(const Duration(days: 1)).relativeShortDayLabel, 'أمس');
+    });
+
+    test('names an older day of this year without the year', () {
+      // Arrange — the heading over a day in «محفظتي»: the year is the same on every one.
+      final now = DateTime.now();
+      final older = DateTime(now.year, now.month, now.day - 3);
+
+      // Act - Assert
+      expect(older.relativeShortDayLabel, older.shortDayLabel);
+      expect(older.relativeShortDayLabel, isNot(contains('${now.year}')));
+    });
+  });
 }

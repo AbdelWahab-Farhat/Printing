@@ -82,17 +82,27 @@ abstract final class AppDates {
   ///
   /// The two words are worth their special case on any screen somebody opens right after doing
   /// the thing they are looking for.
-  static String relativeDay(DateTime at) {
+  static String relativeDay(DateTime at) => switch (_daysAgo(at)) {
+    0 => 'اليوم',
+    1 => 'أمس',
+    _ => day(at),
+  };
+
+  /// «اليوم», «أمس», or [shortDay] — the heading over a day in a list of recent things.
+  static String relativeShortDay(DateTime at) => switch (_daysAgo(at)) {
+    0 => 'اليوم',
+    1 => 'أمس',
+    _ => shortDay(at),
+  };
+
+  /// Calendar days between [at] and today — by the day, not by the twenty-four hours.
+  static int _daysAgo(DateTime at) {
     final local = at.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final that = DateTime(local.year, local.month, local.day);
 
-    return switch (today.difference(that).inDays) {
-      0 => 'اليوم',
-      1 => 'أمس',
-      _ => day(local),
-    };
+    return today.difference(that).inDays;
   }
 
   /// Whether the clock on this value says nothing — see [stamp].
@@ -116,4 +126,7 @@ extension AppDateFormatting on DateTime {
 
   /// «اليوم», «أمس», or the date.
   String get relativeDayLabel => AppDates.relativeDay(this);
+
+  /// «اليوم», «أمس», or «14 أغسطس».
+  String get relativeShortDayLabel => AppDates.relativeShortDay(this);
 }

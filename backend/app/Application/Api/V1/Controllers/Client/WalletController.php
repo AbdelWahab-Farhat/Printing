@@ -9,13 +9,17 @@ use App\Application\Api\V1\Resources\Client\ClientOrderDetailResource;
 use App\Application\Api\V1\Resources\Client\ClientWalletEntryResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\OnlinePayment\OnlinePaymentService;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Support\Money;
+use App\Domain\Wallet\Enums\TopUpMethod;
 use App\Domain\Wallet\Enums\WalletEntryType;
+use App\Domain\Wallet\Models\CustomerWalletEntry;
 use App\Domain\Wallet\WalletService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 /**
@@ -48,7 +52,7 @@ class WalletController extends Controller
      *
      * Newest first, paginated. `balance` in `meta` is the wallet as it stands.
      */
-    public function entries(Request $request): JsonResponse
+    public function entries(Request $request, OnlinePaymentService $online): JsonResponse
     {
         $filters = $request->validate([
             'type' => ['nullable', Rule::enum(WalletEntryType::class)],
@@ -58,11 +62,41 @@ class WalletController extends Controller
 
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
         $customerId = $this->customerId($request);
+        $page = $this->wallet->entriesOf($customerId, $filters, $perPage);
+
+        $this->attachNames($page->getCollection(), $online);
 
         return $this->successWithPagination(
-            ClientWalletEntryResource::collection($this->wallet->entriesOf($customerId, $filters, $perPage)),
+            ClientWalletEntryResource::collection($page),
             extraMeta: ['balance' => $this->wallet->balanceOf($customerId)],
         );
+    }
+
+    /**
+     * The order's code and the EzonePay method on each row, as `orderCode` and `onlineMethod`.
+     *
+     * **Asked of the orders and of online payments here, not by the wallet**, which knows
+     * neither — one query each for the page.
+     *
+     * @param  Collection<int, CustomerWalletEntry>  $entries
+     */
+    private function attachNames(Collection $entries, OnlinePaymentService $online): void
+    {
+        $codes = $this->orders->codesOf(
+            $entries->pluck('order_id')->filter()->map(fn ($id): int => (int) $id)->unique()->values()->all(),
+        );
+        $methods = $online->methodsOfWalletEntries(
+            $entries
+                ->filter(fn (CustomerWalletEntry $entry): bool => $entry->method === TopUpMethod::Online)
+                ->map(fn (CustomerWalletEntry $entry): int => (int) $entry->getKey())
+                ->values()
+                ->all(),
+        );
+
+        foreach ($entries as $entry) {
+            $entry->setRelation('orderCode', $codes[(int) $entry->order_id] ?? null);
+            $entry->setRelation('onlineMethod', $methods[(int) $entry->getKey()] ?? null);
+        }
     }
 
     /**

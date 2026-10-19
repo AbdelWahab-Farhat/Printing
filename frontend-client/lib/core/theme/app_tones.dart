@@ -88,6 +88,10 @@ extension StageTone on ColorScheme {
 /// يتبدّل `primary` نفسه. `app_tones_test.dart` يثبّت التباين والدرجة، لا القيمة.
 extension BrandTone on ColorScheme {
   Color get primaryDeep => const Color(0xffcf410b);
+
+  /// الورقة تحت شعار طريقة دفع (ون باي، ليبيانا…) — **بيضاء في الوضعين**: الشعارات مرسومةٌ
+  /// للأبيض، وعلى كحليّ الليل يختفي نصُّ «موبي كاش» و«يسر باي» الداكن.
+  Color get logoPlate => const Color(0xffffffff);
 }
 
 /// الترويسة الكحلية فوق شاشتي الدخول وإنشاء الحساب، والنصّ الذي يُكتب عليها.

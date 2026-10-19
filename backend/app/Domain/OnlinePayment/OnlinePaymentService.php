@@ -180,6 +180,27 @@ final class OnlinePaymentService
     }
 
     /**
+     * The EzonePay method each of these wallet rows came through, keyed by the row's id — for
+     * «محفظتي», which draws the method's own logo and name on an online top-up. A row no attempt
+     * credited is left out.
+     *
+     * @param  list<int>  $entryIds
+     * @return array<int, OnlineMethod>
+     */
+    public function methodsOfWalletEntries(array $entryIds): array
+    {
+        if ($entryIds === []) {
+            return [];
+        }
+
+        return PaymentIntent::query()
+            ->whereIn('wallet_entry_id', $entryIds)
+            ->get(['id', 'wallet_entry_id', 'method'])
+            ->mapWithKeys(fn (PaymentIntent $intent): array => [(int) $intent->wallet_entry_id => $intent->method])
+            ->all();
+    }
+
+    /**
      * «المدفوعات الإلكترونية» — newest first.
      *
      * @param  array{status?: ?string, method?: ?int, customer_id?: ?int, q?: ?string}  $filters

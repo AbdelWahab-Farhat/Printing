@@ -345,6 +345,28 @@ class OrderService
     }
 
     /**
+     * The code each of these orders is written by, keyed by id — for «محفظتي», whose rows name
+     * the order they paid or refunded without the wallet reaching into orders. A deleted order
+     * keeps its code: the money it moved is still on the wallet's page.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, string>
+     */
+    public function codesOf(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        return Order::query()
+            ->withTrashed()
+            ->whereKey($orderIds)
+            ->pluck('code', 'id')
+            ->mapWithKeys(fn ($code, $id): array => [(int) $id => (string) $code])
+            ->all();
+    }
+
+    /**
      * The branch an order is waiting at, or null — for the account picker's «تلقائي», which
      * names that branch's cash box (TREASURY-DESIGN §١٩).
      */
