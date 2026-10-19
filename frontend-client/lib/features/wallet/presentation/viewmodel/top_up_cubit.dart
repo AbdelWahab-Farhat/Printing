@@ -24,6 +24,8 @@ class TopUpCubit extends Cubit<TopUpState> {
     required ConfirmTopUpOtp confirmOtp,
     required GetTopUpAttempt getAttempt,
     this.orderId,
+    this.orderAmount,
+    this.preferredMethod,
     String? initialAmount,
     this.pollEvery = const Duration(seconds: 4),
     this.quoteDelay = const Duration(milliseconds: 450),
@@ -43,6 +45,12 @@ class TopUpCubit extends Cubit<TopUpState> {
 
   /// «اشحن وادفع»: تُدفع هذه الطلبية من المحفظة بعد الشحن، على الخادم.
   final int? orderId;
+
+  /// كم يُدفع لها بالضبط — العربون الذي اختاره الزبون. null: ما تستطيعه المحفظة.
+  final String? orderAmount;
+
+  /// الطريقة التي اختارها الزبون قبل الورقة — عربون السلة. تُختار عند التحميل إن كانت متاحة.
+  final int? preferredMethod;
 
   final Duration pollEvery;
   final Duration quoteDelay;
@@ -77,7 +85,9 @@ class TopUpCubit extends Cubit<TopUpState> {
         return;
       }
 
-      emit(TopUpForm(methods: methods, usable: usable, selected: usable.first));
+      final preferred = usable.where((m) => m.id == preferredMethod).firstOrNull;
+
+      emit(TopUpForm(methods: methods, usable: usable, selected: preferred ?? usable.first));
       _scheduleQuote(immediately: true);
     });
   }
@@ -159,6 +169,7 @@ class TopUpCubit extends Cubit<TopUpState> {
         amount: topUpAmount(_amount),
         clientToken: token,
         orderId: orderId,
+        orderAmount: orderAmount,
         cardNumber: cardNumber,
         serviceMobileNumber: serviceMobileNumber,
         birthYear: birthYear,

@@ -85,6 +85,7 @@ final class StartTopUp
                 'gateway' => $this->gateway->key(),
                 'customer_id' => $customer->getKey(),
                 'order_id' => $data->orderId,
+                'order_amount' => $data->orderAmount,
                 'method' => $data->method,
                 'flow' => $data->method->flow(),
                 'net_amount' => $data->net,

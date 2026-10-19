@@ -7,8 +7,8 @@ part 'customer_order.g.dart';
 ///
 /// **Eight stages where the workshop has nineteen statuses, and the collapsing happens on the
 /// server.** «قيد التصنيع» would tell a customer we did not make their bags ourselves; «نواقص»
-/// that our shelf was empty; «انتظار العربون» is the shop arguing about money through a status
-/// label. None of it reaches this app — see `CustomerOrderStage` in the backend.
+/// that our shelf was empty. None of it reaches this app — see `CustomerOrderStage` in the
+/// backend. «بانتظار العربون» does, because it waits on the customer.
 ///
 /// So this enum is reading a decision, not making one, and it carries no mapping of its own.
 /// `unknown` exists only so a stage added after this build shipped cannot crash the list.
@@ -25,6 +25,11 @@ part 'customer_order.g.dart';
 enum OrderStage {
   @JsonValue('under_review')
   underReview,
+
+  /// The shop is waiting for the customer's عربون — the one workshop status that waits on them,
+  /// and so a stage of its own since 2026-10-19.
+  @JsonValue('awaiting_deposit')
+  awaitingDeposit,
   @JsonValue('preparing')
   preparing,
   @JsonValue('designing')
@@ -69,6 +74,7 @@ enum OrderStage {
 enum OrdersFilter {
   all(label: 'كل الحالات'),
   underReview(label: 'بانتظار المراجعة', stage: OrderStage.underReview),
+  awaitingDeposit(label: 'بانتظار العربون', stage: OrderStage.awaitingDeposit),
   preparing(label: 'قيد التجهيز', stage: OrderStage.preparing),
   designing(label: 'قيد التصميم', stage: OrderStage.designing),
   producing(label: 'قيد الإنتاج', stage: OrderStage.producing),
@@ -93,6 +99,7 @@ enum OrdersFilter {
   String? get stageParameter => switch (stage) {
     null => null,
     OrderStage.underReview => 'under_review',
+    OrderStage.awaitingDeposit => 'awaiting_deposit',
     OrderStage.preparing => 'preparing',
     OrderStage.designing => 'designing',
     OrderStage.producing => 'producing',
@@ -293,6 +300,13 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     /// «ادفع المبلغ كاملاً». null في كل مرحلةٍ أخرى، وحين لم يُسمَّ مبلغ، وحين لا يقلّ عن المتبقي.
     @JsonKey(name: 'deposit_due') String? depositDue,
 
+    /// العربون المنتظَر في «بانتظار العربون» أيّاً كان حجمه — [depositDue] فارغٌ حين يساوي المتبقي،
+    /// وبطاقة العربون تسمّيه في الحالين. null في كل مرحلةٍ أخرى.
+    @JsonKey(name: 'deposit_expected') String? depositExpected,
+
+    /// العربون يُدفع في المكتب — اختاره العميل كذلك في السلة، أو سمّاه الموظف نقداً.
+    @JsonKey(name: 'deposit_at_office') @Default(false) bool depositAtOffice,
+
     /// Whether any line is still waiting to be priced.
     ///
     /// **The decided answer, sent rather than inferred.** Working it out from a handful of
@@ -345,7 +359,42 @@ abstract class NewOrder with _$NewOrder {
     /// What the customer wants to say about the order. It lands in the order's note prefixed
     /// «ملاحظة العميل:», so whoever reviews it can see at a glance whose words they are.
     @JsonKey(name: 'customer_note') String? customerNote,
+
+    /// العربون الذي اختاره العميل في السلة. **بلا عربون تُرسل للمراجعة** كما كانت دائماً.
+    @JsonKey(includeIfNull: false) CheckoutDeposit? deposit,
   }) = _NewOrder;
 
   factory NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);
+}
+
+/// كيف يدفع العميل العربون الذي اختاره في السلة.
+///
+/// **ثلاثة اختيارات على الشاشة، واثنان على السلك.** الدفع الإلكتروني يمرّ بالمحفظة دائماً، و**ينجح
+/// قبل أن تُكتب الطلبية** (صاحب العمل، 2026-10-19): تُشحن المحفظة بالعربون، ثم تُرسل الطلبية
+/// «من المحفظة». فـ[online] اختيارٌ في السلة لا يُرسل أبداً، والخادم لا يعرفه.
+enum CheckoutPayment {
+  @JsonValue('office')
+  office('في المكتب'),
+  @JsonValue('wallet')
+  wallet('من المحفظة'),
+  @JsonValue('online')
+  online('دفع إلكتروني');
+
+  const CheckoutPayment(this.label);
+
+  final String label;
+}
+
+/// العربون في جسم الطلبية: كيف يُدفع وكم — والحدّان (ربع البضاعة وكلّها) يفحصهما الخادم أيضاً.
+@freezed
+abstract class CheckoutDeposit with _$CheckoutDeposit {
+  const factory CheckoutDeposit({
+    required CheckoutPayment payment,
+    required String amount,
+
+    /// مفتاح دفعة المحفظة: الإرسال نفسه مرةً ثانية — اتصالٌ انقطع بعد أن دفع الخادم — لا يدفع شيئاً.
+    @JsonKey(name: 'client_token', includeIfNull: false) String? clientToken,
+  }) = _CheckoutDeposit;
+
+  factory CheckoutDeposit.fromJson(Map<String, dynamic> json) => _$CheckoutDepositFromJson(json);
 }

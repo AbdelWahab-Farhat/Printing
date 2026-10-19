@@ -22,6 +22,7 @@ void main() {
     expect(labels, [
       'كل الحالات',
       'بانتظار المراجعة',
+      'بانتظار العربون',
       'قيد التجهيز',
       'قيد التصميم',
       'قيد الإنتاج',
@@ -58,6 +59,7 @@ void main() {
     expect(parameters, {
       OrdersFilter.all: null,
       OrdersFilter.underReview: 'under_review',
+      OrdersFilter.awaitingDeposit: 'awaiting_deposit',
       OrdersFilter.preparing: 'preparing',
       OrdersFilter.designing: 'designing',
       OrdersFilter.producing: 'producing',

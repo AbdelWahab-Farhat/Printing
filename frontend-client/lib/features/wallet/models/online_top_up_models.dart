@@ -4,6 +4,8 @@
 /// والتطبيق يرسم ما قاله.
 library;
 
+import 'package:dayaa_client/core/utils/fixed_point.dart';
+
 String _string(Object? value, [String fallback = '']) => value?.toString() ?? fallback;
 
 String? _stringOrNull(Object? value) => value?.toString();
@@ -46,6 +48,21 @@ class TopUpMethod {
 
   /// QR يحتاج ماسحاً في التطبيق — لم يُبنَ بعد، فلا تُعرض طرقه.
   bool get isSupported => flow == 'otp' || flow == 'link';
+
+  /// أصغر ما بقي من حدود المحلّ وحدّ EzonePay — أكثر ما يُشحن بها الآن. null: بلا حد.
+  String? get cap {
+    final caps = [?maxAmount, ...remaining];
+
+    if (caps.isEmpty) return null;
+
+    return caps.reduce((a, b) => thousandths(a) <= thousandths(b) ? a : b);
+  }
+
+  /// تستطيع أن تشحن [amount] كاملاً — عربون السلة يُشحن بمبلغه لا بأقل.
+  bool canFund(String amount) => switch (cap) {
+    final limit? => thousandths(limit) >= thousandths(amount),
+    null => true,
+  };
 
   factory TopUpMethod.fromJson(Map<String, dynamic> json) {
     final limits = json['limits'];
@@ -201,6 +218,7 @@ class TopUpRequest {
     required this.amount,
     required this.clientToken,
     this.orderId,
+    this.orderAmount,
     this.cardNumber,
     this.serviceMobileNumber,
     this.birthYear,
@@ -210,6 +228,9 @@ class TopUpRequest {
   final String amount;
   final String clientToken;
   final int? orderId;
+
+  /// كم يُدفع للطلبية من المحفظة بعد الشحن — العربون الذي اختاره الزبون. بدونه: ما تستطيعه المحفظة.
+  final String? orderAmount;
   final String? cardNumber;
   final String? serviceMobileNumber;
   final String? birthYear;
@@ -219,6 +240,7 @@ class TopUpRequest {
     'amount': amount,
     'client_token': clientToken,
     'order_id': ?orderId,
+    if (orderId != null) 'order_amount': ?orderAmount,
     if (cardNumber case final v? when v.trim().isNotEmpty) 'card_number': v.trim(),
     if (serviceMobileNumber case final v? when v.trim().isNotEmpty) 'service_mobile_number': v.trim(),
     if (birthYear case final v? when v.trim().isNotEmpty) 'birth_year': v.trim(),

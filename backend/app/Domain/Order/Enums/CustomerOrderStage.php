@@ -11,8 +11,8 @@ namespace App\Domain\Order\Enums;
  * app.** {@see OrderStatus} is the workshop's vocabulary: «جاهزة للطباعة» is the moment
  * inventory hands a job to the press, «نواقص» is a shelf that came up short. Those are true and
  * they are none of the customer's business — telling somebody their order is «قيد التصنيع»
- * announces that we did not make it ourselves, and «انتظار العربون» on their screen is the shop
- * arguing about money through a status label.
+ * announces that we did not make it ourselves. «انتظار العربون» is the one exception, because it
+ * is the one status waiting on the customer — see {@see self::AwaitingDeposit}.
  *
  * What a customer wants from a status is one of two answers: *is anything required of me?* and
  * *roughly how far along is it?* Eight stages answer both; nineteen answer neither.
@@ -28,6 +28,17 @@ enum CustomerOrderStage: string
 {
     /** Sent from the app, nobody has looked at it yet. The only stage that is the customer's move to make — by waiting. */
     case UnderReview = 'under_review';
+
+    /**
+     * The shop is waiting for the customer's عربون before it starts.
+     *
+     * **Its own stage since 2026-10-19, at the owner's request.** It used to read as «قيد التجهيز»
+     * — «طلبيتك مؤكّدة، ونجهّزها الآن» — while nothing was being got ready at all: the order was
+     * parked until the customer paid. Now that the customer chooses the deposit in the basket
+     * (see `PlaceOrderWithDeposit`), the money is their move to make, and a stage that hid it
+     * would leave them waiting on a shop that is waiting on them.
+     */
+    case AwaitingDeposit = 'awaiting_deposit';
 
     /** Accepted, and being got ready. Everything the workshop does before the artwork or the press. */
     case Preparing = 'preparing';
@@ -76,13 +87,14 @@ enum CustomerOrderStage: string
         return match ($status) {
             OrderStatus::Requested => self::UnderReview,
 
-            // **Five statuses, one stage, and the deposit pair is why it is worth explaining.**
-            // «انتظار العربون» and «عربون مدفوع» are a conversation about money that belongs on
-            // an invoice, not in a progress bar; «نواقص» is our shelf being short, which is our
-            // problem to solve rather than news to break by status label. All five mean the same
-            // thing to the person waiting: taken, not yet being made.
+            // The one workshop status that waits on the customer — see the case's own docblock.
+            OrderStatus::AwaitingDeposit => self::AwaitingDeposit,
+
+            // **Four statuses, one stage.** «عربون مدفوع» is the deposit settled, which to the
+            // customer is simply the order going ahead; «نواقص» is our shelf being short, which
+            // is our problem to solve rather than news to break by status label. All four mean
+            // the same thing to the person waiting: taken, not yet being made.
             OrderStatus::New,
-            OrderStatus::AwaitingDeposit,
             OrderStatus::DepositPaid,
             OrderStatus::ReadyToPrint,
             OrderStatus::Shortage => self::Preparing,
@@ -125,6 +137,7 @@ enum CustomerOrderStage: string
     {
         return match ($this) {
             self::UnderReview => 'بانتظار المراجعة',
+            self::AwaitingDeposit => 'بانتظار العربون',
             self::Preparing => 'قيد التجهيز',
             self::Designing => 'قيد التصميم',
             self::Producing => 'قيد الإنتاج',
@@ -157,6 +170,7 @@ enum CustomerOrderStage: string
     {
         return match ($this) {
             self::UnderReview => 'نراجع طلبيتك ونؤكّدها خلال ساعات العمل',
+            self::AwaitingDeposit => 'نبدأ العمل حين يصلنا العربون — في المكتب أو من محفظتك',
             self::Preparing => 'طلبيتك مؤكّدة، ونجهّزها الآن',
             self::Designing => 'نعمل على التصميم، وسنعرضه عليك قبل الطباعة',
             self::Producing => 'طلبيتك في الإنتاج',

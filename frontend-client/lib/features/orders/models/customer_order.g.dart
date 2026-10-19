@@ -64,6 +64,7 @@ Map<String, dynamic> _$CustomerOrderToJson(_CustomerOrder instance) =>
 
 const _$OrderStageEnumMap = {
   OrderStage.underReview: 'under_review',
+  OrderStage.awaitingDeposit: 'awaiting_deposit',
   OrderStage.preparing: 'preparing',
   OrderStage.designing: 'designing',
   OrderStage.producing: 'producing',
@@ -149,6 +150,8 @@ _CustomerOrderDetail _$CustomerOrderDetailFromJson(Map<String, dynamic> json) =>
       paidAmount: json['paid_amount'] as String?,
       balance: json['balance'] as String?,
       depositDue: json['deposit_due'] as String?,
+      depositExpected: json['deposit_expected'] as String?,
+      depositAtOffice: json['deposit_at_office'] as bool? ?? false,
       isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
       timeline:
           (json['timeline'] as List<dynamic>?)
@@ -188,6 +191,8 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'paid_amount': instance.paidAmount,
   'balance': instance.balance,
   'deposit_due': instance.depositDue,
+  'deposit_expected': instance.depositExpected,
+  'deposit_at_office': instance.depositAtOffice,
   'is_awaiting_quote': instance.isAwaitingQuote,
   'timeline': instance.timeline.map((e) => e.toJson()).toList(),
   'placed_at': instance.placedAt?.toIso8601String(),
@@ -222,6 +227,9 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
           .toList() ??
       const <int>[],
   customerNote: json['customer_note'] as String?,
+  deposit: json['deposit'] == null
+      ? null
+      : CheckoutDeposit.fromJson(json['deposit'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
@@ -232,4 +240,25 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'recipient_phone': instance.recipientPhone,
   'design_ids': instance.designIds,
   'customer_note': instance.customerNote,
+  'deposit': ?instance.deposit?.toJson(),
+};
+
+_CheckoutDeposit _$CheckoutDepositFromJson(Map<String, dynamic> json) =>
+    _CheckoutDeposit(
+      payment: $enumDecode(_$CheckoutPaymentEnumMap, json['payment']),
+      amount: json['amount'] as String,
+      clientToken: json['client_token'] as String?,
+    );
+
+Map<String, dynamic> _$CheckoutDepositToJson(_CheckoutDeposit instance) =>
+    <String, dynamic>{
+      'payment': _$CheckoutPaymentEnumMap[instance.payment]!,
+      'amount': instance.amount,
+      'client_token': ?instance.clientToken,
+    };
+
+const _$CheckoutPaymentEnumMap = {
+  CheckoutPayment.office: 'office',
+  CheckoutPayment.wallet: 'wallet',
+  CheckoutPayment.online: 'online',
 };

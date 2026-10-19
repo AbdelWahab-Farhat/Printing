@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/utils/fixed_point.dart';
+import 'package:dayaa_client/core/utils/uuid.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/delivery/models/city.dart';
@@ -15,6 +17,9 @@ import 'package:dayaa_client/features/orders/usecases/place_order.dart';
 import 'package:dayaa_client/features/orders/usecases/quote_basket.dart';
 import 'package:dayaa_client/features/shops/models/shop.dart';
 import 'package:dayaa_client/features/shops/usecases/list_shops.dart';
+import 'package:dayaa_client/features/wallet/models/online_top_up_models.dart';
+import 'package:dayaa_client/features/wallet/usecases/top_up_usecases.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -35,6 +40,9 @@ part 'place_order_state.dart';
 ///
 /// **والتكلفة النهائية من الخادم لا من هنا.** كلما تغيّرت السطور أو المدينة سُئل الخادم عن سعر السلة
 /// — بالطريق الذي يسعّر به الطلبية حين تُرسل — وهذا الـ Cubit لا يضرب سعراً في كمية ولا يجمع مبلغين.
+///
+/// **والخطوة الثالثة «العربون»** (صاحب العمل، 2026-10-19) حين يعرضها التسعير: ربعُ البضاعة على
+/// الأقل، في المكتب أو من المحفظة أو إلكترونياً. الحدّان من الخادم، والخادم يفحصهما ثانيةً.
 class PlaceOrderCubit extends Cubit<PlaceOrderState> {
   PlaceOrderCubit({
     required ListCities cities,
@@ -44,6 +52,8 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
     required QuoteBasket quote,
     required PlaceOrder place,
     required CartCubit cart,
+    GetWalletBalance? walletBalance,
+    GetTopUpMethods? topUpMethods,
   }) : _cities = cities,
        _designs = designs,
        _shops = shops,
@@ -51,6 +61,8 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
        _quote = quote,
        _place = place,
        _cart = cart,
+       _walletBalance = walletBalance,
+       _topUpMethods = topUpMethods,
        super(const PlaceOrderState.loading()) {
     // **السلة تتغيّر من خارج هذه الشاشة أيضاً**: العميل يلمس سطراً، فتُفتح صفحة منتجه، فيغيّر الكمية
     // ويعود. لقطةٌ أُخذت عند الفتح كانت ستعرض الكمية القديمة وتسعّرها.
@@ -63,6 +75,13 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
   final GetCurrentCustomer _customer;
   final QuoteBasket _quote;
   final PlaceOrder _place;
+
+  /// خيارا «من المحفظة» و«دفع إلكتروني» في خطوة العربون. **بدونهما لا يُعرضان**، ويبقى المكتب.
+  final GetWalletBalance? _walletBalance;
+  final GetTopUpMethods? _topUpMethods;
+
+  /// مفتاح دفعة المحفظة حتى تنجح: إرسالٌ انقطع بعد أن دفع الخادم يُعاد بالمفتاح نفسه فلا يدفع ثانية.
+  String? _depositToken;
 
   late final StreamSubscription<CartState> _cartChanges;
 
@@ -84,6 +103,7 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
     final designsResult = _designs();
     final shopsResult = _shops();
     final customerResult = _customer();
+    final onlineResult = _onlineMethods();
 
     final cities = await citiesResult;
     final shops = await shopsResult;
@@ -95,6 +115,7 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
       (list) => list,
     );
     final account = (await customerResult).fold((_) => null, (CustomerAccount me) => me);
+    final onlineMethods = await onlineResult;
 
     if (isClosed) return;
 
@@ -112,6 +133,7 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
       shops: shops.getOrElse(() => const []),
       lines: List<OrderDraftLine>.unmodifiable(_lines),
       customerPhone: account?.phone,
+      onlineMethods: onlineMethods,
     );
 
     // أول المتاجر مختارٌ سلفاً، فيصل العميل إلى خطوة البيانات وهي ممتلئة. وبلا متجر، فعنوانُ الحساب
@@ -131,17 +153,127 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
   /// «إتمام الطلب». سلةٌ فارغة لا خطوة بعدها.
   void proceed() {
     final ready = _ready;
-    if (ready == null || !ready.canProceed || ready.step == CheckoutStep.details) return;
+    if (ready == null || !ready.canProceed || ready.step != CheckoutStep.products) return;
 
     emit(ready.copyWith(step: CheckoutStep.details, lastFailure: null));
   }
 
-  /// «السابق» — إلى المنتجات، وكلُّ ما اختير باقٍ.
+  /// «التالي» من «بيانات الطلب» إلى «العربون» — حين يعرضه التسعير. يبدأ المبلغ بأقلّه، ويُقرأ رصيد
+  /// المحفظة من جديد: ربما شُحنت منذ فُتحت السلة.
+  void toDeposit() {
+    final ready = _ready;
+    final offer = ready?.depositOffer;
+    if (ready == null || offer == null || ready.step != CheckoutStep.details || !ready.canSubmit) {
+      return;
+    }
+
+    emit(
+      ready.copyWith(
+        step: CheckoutStep.deposit,
+        // بالدينار الكامل: «125.00» من الخادم يُكتب «125».
+        depositAmount: ready.depositAmount ?? offer.minAmount!.asPlainNumber,
+        lastFailure: null,
+      ),
+    );
+
+    unawaited(_readWallet());
+  }
+
+  /// «السابق» — خطوةً إلى الوراء، وكلُّ ما اختير باقٍ.
   void back() {
     final ready = _ready;
     if (ready == null || ready.step == CheckoutStep.products || ready.isSubmitting) return;
 
-    emit(ready.copyWith(step: CheckoutStep.products, lastFailure: null));
+    emit(
+      ready.copyWith(
+        step: ready.step == CheckoutStep.deposit ? CheckoutStep.details : CheckoutStep.products,
+        lastFailure: null,
+      ),
+    );
+  }
+
+  /// يختار كيف يُدفع العربون: في المكتب أو من المحفظة. الإلكتروني بطريقته — [chooseOnline].
+  void choosePayment(CheckoutPayment payment) {
+    final ready = _ready;
+    if (ready == null || ready.payment == payment) return;
+
+    emit(ready.copyWith(payment: payment, onlineMethodId: null, lastFailure: null));
+  }
+
+  /// يختار طريقة شحنٍ إلكترونية — صفّها في «أو عبّئ محفظتك وادفع مباشرة».
+  void chooseOnline(int methodId) {
+    final ready = _ready;
+    if (ready == null) return;
+
+    emit(
+      ready.copyWith(
+        payment: CheckoutPayment.online,
+        onlineMethodId: methodId,
+        lastFailure: null,
+      ),
+    );
+  }
+
+  /// يختار مبلغ العربون مكتوباً بأرقامٍ عربية أو غربية — **بالدينار الكامل**.
+  void chooseDepositAmount(String amount) {
+    final ready = _ready;
+    if (ready == null) return;
+
+    final normalized = topUpAmount(amount);
+
+    // مبلغٌ آخر دفعةٌ أخرى، لا إعادةٌ للأولى.
+    if (normalized != ready.depositAmount) _depositToken = null;
+
+    emit(ready.copyWith(depositAmount: normalized, lastFailure: null));
+  }
+
+  /// «ادفع كامل القيمة»: العربون أعلى ما يقبله الخادم — البضاعة كلّها بالدينار الكامل.
+  void payFull() {
+    final max = _ready?.depositOffer?.maxAmount;
+    if (max != null) chooseDepositAmount(max.asPlainNumber);
+  }
+
+  /// **الشحن الإلكتروني تمّ** — والآن فقط تُرسل الطلبية (صاحب العمل، 2026-10-19). العربون صار في
+  /// المحفظة، فيُدفع منها: يُقرأ الرصيد من جديد ويصير الطريقُ المحفظة. فإن رُفض الإرسال بعدها بقي المال
+  /// في المحفظة واختيارُها جاهزٌ لإعادة المحاولة — لا شحنٌ ثانٍ.
+  Future<void> toppedUp() async {
+    await _readWallet();
+
+    if (_ready case final now?) {
+      emit(now.copyWith(payment: CheckoutPayment.wallet, onlineMethodId: null));
+    }
+  }
+
+  /// زرّ التحديث بجانب الرصيد في صفّ المحفظة.
+  Future<void> refreshWallet() => _readWallet();
+
+  Future<void> _readWallet() async {
+    final read = _walletBalance;
+    if (read == null) return;
+
+    final result = await read();
+
+    if (isClosed) return;
+
+    result.fold((_) {}, (balance) {
+      if (_ready case final now?) emit(now.copyWith(walletBalance: balance));
+    });
+  }
+
+  /// طرق الشحن التي يدعمها التطبيق — كما تقرّرها ورقة الشحن نفسها. شحنٌ مطفأ أو سؤالٌ فشل: لا شيء.
+  Future<List<TopUpMethod>> _onlineMethods() async {
+    final ask = _topUpMethods;
+    if (ask == null) return const [];
+
+    return (await ask()).fold(
+      (_) => const [],
+      (methods) => methods.enabled
+          ? [
+              for (final method in methods.methods)
+                if (method.isSupported) method,
+            ]
+          : const [],
+    );
   }
 
   /// يختار متجراً، فتذهب الطلبية إلى مدينته ومنطقته.
@@ -250,25 +382,46 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
     final current = _ready;
     if (current == null) return;
 
-    emit(
-      current.copyWith(
-        pricing: result.fold(
-          (failure) => BasketPricing.failed(failure),
-          (quote) => BasketPricing.priced(quote),
-        ),
+    final priced = current.copyWith(
+      pricing: result.fold(
+        (failure) => BasketPricing.failed(failure),
+        (quote) => BasketPricing.priced(quote),
       ),
+    );
+
+    // سلةٌ تغيّرت وهي على خطوة العربون — صار فيها «حسب الطلب» — لا عربون لها بعد الآن، فتعود
+    // إلى «بيانات الطلب» حيث تُرسل للمراجعة.
+    emit(
+      priced.step == CheckoutStep.deposit && !priced.hasDepositStep
+          ? priced.copyWith(step: CheckoutStep.details)
+          : priced,
     );
   }
 
   /// يرسلها.
   ///
-  /// يعيد الطلبية التي أنشأها المتجر لتعرضها الشاشة — **«بانتظار المراجعة»، والشاشة التالية يجب أن
-  /// تقول ذلك.** لا شيء أُكِّد ولا شيء سُعِّر من المخزن؛ يقرأها أحدٌ أولاً.
+  /// يعيد الطلبية التي أنشأها المتجر لتعرضها الشاشة. **من «بيانات الطلب» تُرسل للمراجعة** — لا شيء
+  /// أُكِّد ولا شيء سُعِّر من المخزن؛ يقرأها أحدٌ أولاً. **ومن «العربون» تُرسل معه**، فتولد «بانتظار
+  /// العربون» — أو مدفوعاً عربونها حين دفعته المحفظة.
   ///
   /// `null` يعني أنها لم تُرسل، و`lastFailure` يقول لماذا.
   Future<CustomerOrderDetail?> submit({String? recipientPhone, String? note}) async {
     final ready = _ready;
     if (ready == null || ready.isSubmitting || !ready.canSubmit) return null;
+
+    final payment = ready.payment;
+
+    // **الإلكتروني لا يُرسل طلبيةً قبل أن ينجح الشحن** — الشاشة تشحن أولاً ثم تنادي [toppedUp]،
+    // فيصير الطريقُ المحفظة. طلبيةٌ وصلت هنا وطريقها ما زال إلكترونياً لم يُدفع عربونها بعد.
+    if (ready.step == CheckoutStep.deposit && payment == CheckoutPayment.online) return null;
+
+    final deposit = ready.step == CheckoutStep.deposit && payment != null
+        ? CheckoutDeposit(
+            payment: payment,
+            amount: ready.depositAmount!,
+            clientToken: payment == CheckoutPayment.wallet ? (_depositToken ??= uuidV4()) : null,
+          )
+        : null;
 
     emit(ready.copyWith(isSubmitting: true, lastFailure: null));
 
@@ -283,6 +436,7 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
         designIds: ready.designIds,
         recipientPhone: _orNull(recipientPhone),
         customerNote: _orNull(note),
+        deposit: deposit,
       ),
     );
 
@@ -293,6 +447,9 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
 
     return result.fold(
       (failure) {
+        // لم يُجب الخادم: لعلّه دفع، فالإعادة بالمفتاح نفسه. أجاب بالرفض: المحاولة التالية جديدة.
+        if (failure is! NetworkFailure) _depositToken = null;
+
         emit(current.copyWith(isSubmitting: false, lastFailure: failure));
 
         return null;

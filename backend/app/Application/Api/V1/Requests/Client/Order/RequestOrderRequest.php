@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\Client\Order;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Order\Enums\CheckoutPayment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -91,6 +92,16 @@ class RequestOrderRequest extends FormRequest
             // What the customer wants to say about the order. A separate field from the order's
             // `notes`, which is staff-written — see `prepareForValidation()`.
             'customer_note' => ['nullable', 'string', 'max:1000'],
+
+            // **The عربون chosen in the basket** (2026-10-19) — absent, the order goes to review as
+            // it always did, which is also what an app older than the step sends. Its floor and
+            // ceiling need the priced order, so they are the domain's — see `CheckoutDeposit`.
+            'deposit' => ['sometimes', 'nullable', 'array'],
+            'deposit.payment' => ['required_with:deposit', Rule::enum(CheckoutPayment::class)],
+            // **بالدينار الكامل** (صاحب العمل، 2026-10-19): لا كسور في العربون.
+            'deposit.amount' => ['required_with:deposit', 'integer', 'min:1', 'max:999999999'],
+            // The app's key for the wallet payment — the same key again pays nothing.
+            'deposit.client_token' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -167,6 +178,11 @@ class RequestOrderRequest extends FormRequest
             'items.*.quantity.decimal' => 'الكمية يجب أن تكون رقماً بثلاث خانات عشرية على الأكثر',
             'items.*.quantity.min' => 'الكمية يجب أن تكون أكبر من صفر',
             'design_ids.*.exists' => 'التصميم غير موجود',
+            'deposit.payment.required_with' => 'اختر طريقة دفع العربون',
+            'deposit.payment.enum' => 'طريقة دفع العربون غير معروفة',
+            'deposit.amount.required_with' => 'قيمة العربون مطلوبة',
+            'deposit.amount.integer' => 'العربون بالدينار الكامل، بلا كسور',
+            'deposit.amount.min' => 'قيمة العربون يجب أن تكون أكبر من صفر',
         ];
     }
 

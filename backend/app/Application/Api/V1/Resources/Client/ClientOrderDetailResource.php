@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderStatusTransition;
 use Illuminate\Http\Request;
@@ -99,6 +100,13 @@ class ClientOrderDetailResource extends JsonResource
             // to «تم دفع العربون» by itself.
             'deposit_due' => $this->depositDue(),
 
+            // **The عربون waited on, whatever its size** — `deposit_due` above is null when it is the
+            // whole amount, and the «بانتظار العربون» card still has to name it. With whether it is
+            // expected at the counter, so the card can say where to bring it.
+            'deposit_expected' => $this->depositExpected(),
+            'deposit_at_office' => $this->depositExpected() !== null
+                && $this->deposit_expected_method === PaymentMethod::Cash,
+
             // The decided answer, so the app draws «يُحدَّد بعد المراجعة» without having to work
             // out from a pile of nulls what they mean between them.
             'is_awaiting_quote' => $awaitingQuote,
@@ -148,15 +156,21 @@ class ClientOrderDetailResource extends JsonResource
         return array_values($seen);
     }
 
-    /** The عربون to offer beside the whole amount, or null — see `deposit_due` above. */
-    protected function depositDue(): ?string
+    /** The agreed عربون while the order waits on it, or null — see `deposit_expected` above. */
+    protected function depositExpected(): ?string
     {
         if ($this->status !== OrderStatus::AwaitingDeposit || ! $this->asksForADeposit() || $this->hasUnpricedLines()) {
             return null;
         }
 
-        $expected = (string) $this->deposit_expected_amount;
+        return (string) $this->deposit_expected_amount;
+    }
 
-        return bccomp($expected, $this->remainingAmount(), 2) < 0 ? $expected : null;
+    /** The عربون to offer beside the whole amount, or null — see `deposit_due` above. */
+    protected function depositDue(): ?string
+    {
+        $expected = $this->depositExpected();
+
+        return $expected !== null && bccomp($expected, $this->remainingAmount(), 2) < 0 ? $expected : null;
     }
 }

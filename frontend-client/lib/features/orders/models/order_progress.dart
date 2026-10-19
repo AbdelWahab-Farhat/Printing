@@ -28,7 +28,10 @@ extension OrderStageStep on OrderStage {
   /// **بلا `default`**: مرحلةٌ تُضاف إلى [OrderStage] توقف البناء هنا حتى يُقال أين تقف.
   OrderStep? get step => switch (this) {
     OrderStage.underReview => OrderStep.review,
-    OrderStage.preparing || OrderStage.designing => OrderStep.preparing,
+    // مقبولةٌ ولم يبدأ العمل عليها: بعد المراجعة وقبل التجهيز، فتقف على بابه.
+    OrderStage.awaitingDeposit ||
+    OrderStage.preparing ||
+    OrderStage.designing => OrderStep.preparing,
     OrderStage.producing => OrderStep.producing,
     OrderStage.ready => OrderStep.ready,
     OrderStage.onTheWay => OrderStep.delivering,

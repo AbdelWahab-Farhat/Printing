@@ -26,5 +26,10 @@ final readonly class BasketQuote
         public ?string $deliveryPrice,
         /** البضاعة مع رسم المندوب — ما يدفعه العميل في النهاية — أو `null` إن جُهل أحدهما. */
         public ?string $totalWithDelivery,
+        /**
+         * أقلّ عربونٍ يُدفع في السلة — ربع البضاعة — أو `null` حين لا يُعرض العربون فيها: سطرٌ بلا
+         * سعر، أو سطرٌ لوسيط، أو بضاعةٌ بلا قيمة. انظر `CheckoutDeposit`.
+         */
+        public ?string $depositMinimum = null,
     ) {}
 }

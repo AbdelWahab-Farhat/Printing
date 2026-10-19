@@ -500,11 +500,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  CheckoutPayment? payment,  String? depositAmount,  String? walletBalance,  List<TopUpMethod> onlineMethods,  int? onlineMethodId,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading() when loading != null:
 return loading();case PlaceOrderReady() when ready != null:
-return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.payment,_that.depositAmount,_that.walletBalance,_that.onlineMethods,_that.onlineMethodId,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -523,11 +523,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)  ready,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  CheckoutPayment? payment,  String? depositAmount,  String? walletBalance,  List<TopUpMethod> onlineMethods,  int? onlineMethodId,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)  ready,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading():
 return loading();case PlaceOrderReady():
-return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure():
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.payment,_that.depositAmount,_that.walletBalance,_that.onlineMethods,_that.onlineMethodId,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -542,11 +542,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<City> cities,  List<CustomerDesign> designs,  List<Shop> shops,  List<OrderDraftLine> lines,  CheckoutStep step,  int? shopId,  int? cityId,  int? regionId,  List<int> designIds,  String? customerPhone,  BasketPricing pricing,  CheckoutPayment? payment,  String? depositAmount,  String? walletBalance,  List<TopUpMethod> onlineMethods,  int? onlineMethodId,  bool isSubmitting,  CustomerOrderDetail? placed,  Failure? lastFailure)?  ready,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case PlaceOrderLoading() when loading != null:
 return loading();case PlaceOrderReady() when ready != null:
-return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
+return ready(_that.cities,_that.designs,_that.shops,_that.lines,_that.step,_that.shopId,_that.cityId,_that.regionId,_that.designIds,_that.customerPhone,_that.pricing,_that.payment,_that.depositAmount,_that.walletBalance,_that.onlineMethods,_that.onlineMethodId,_that.isSubmitting,_that.placed,_that.lastFailure);case PlaceOrderFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -597,7 +597,7 @@ String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
 
 
 class PlaceOrderReady with DiagnosticableTreeMixin implements PlaceOrderState {
-  const PlaceOrderReady({required final  List<City> cities, final  List<CustomerDesign> designs = const <CustomerDesign>[], final  List<Shop> shops = const <Shop>[], final  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.step = CheckoutStep.products, this.shopId, this.cityId, this.regionId, final  List<int> designIds = const <int>[], this.customerPhone, this.pricing = const BasketPricing.pending(), this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_shops = shops,_lines = lines,_designIds = designIds;
+  const PlaceOrderReady({required final  List<City> cities, final  List<CustomerDesign> designs = const <CustomerDesign>[], final  List<Shop> shops = const <Shop>[], final  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.step = CheckoutStep.products, this.shopId, this.cityId, this.regionId, final  List<int> designIds = const <int>[], this.customerPhone, this.pricing = const BasketPricing.pending(), this.payment, this.depositAmount, this.walletBalance, final  List<TopUpMethod> onlineMethods = const <TopUpMethod>[], this.onlineMethodId, this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_shops = shops,_lines = lines,_designIds = designIds,_onlineMethods = onlineMethods;
   
 
 /// كل الوجهات بمناطقها، مرةً واحدة — المنتقي لا يُقلَّب صفحات.
@@ -653,6 +653,25 @@ class PlaceOrderReady with DiagnosticableTreeMixin implements PlaceOrderState {
  final  String? customerPhone;
 /// سعر كل سطرٍ والتكلفة النهائية، كما حسبها الخادم للسطور والمدينة الحاليّتين.
 @JsonKey() final  BasketPricing pricing;
+/// كيف يُدفع العربون. **لا اختيارَ مسبقاً**: مالٌ يُدفع يختاره صاحبه بيده.
+ final  CheckoutPayment? payment;
+/// العربون المختار، كما يُرسل — يبدأ بأقلّه (ربع البضاعة) حين تُفتح الخطوة.
+ final  String? depositAmount;
+/// رصيد المحفظة، لخيار «من المحفظة». `null` حين لم يصل — فلا يُعرض خيارٌ لا يُعرف أيكفي.
+ final  String? walletBalance;
+/// طرق الشحن الإلكتروني التي يدعمها التطبيق، كلٌّ صفٌّ في «أو عبّئ محفظتك وادفع مباشرة» (كبريمولا).
+/// فارغةٌ حين الشحن مطفأ أو تعذّر السؤال.
+ final  List<TopUpMethod> _onlineMethods;
+/// طرق الشحن الإلكتروني التي يدعمها التطبيق، كلٌّ صفٌّ في «أو عبّئ محفظتك وادفع مباشرة» (كبريمولا).
+/// فارغةٌ حين الشحن مطفأ أو تعذّر السؤال.
+@JsonKey() List<TopUpMethod> get onlineMethods {
+  if (_onlineMethods is EqualUnmodifiableListView) return _onlineMethods;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_onlineMethods);
+}
+
+/// الطريقة الإلكترونية المختارة حين [payment] إلكتروني.
+ final  int? onlineMethodId;
 @JsonKey() final  bool isSubmitting;
 /// الطلبية التي أنشأها المتجر. **«بانتظار المراجعة»** — لا شيء مؤكَّد ولا شيء مُسعَّر من المخزن
 /// قبل أن يقرأها أحد.
@@ -670,21 +689,21 @@ $PlaceOrderReadyCopyWith<PlaceOrderReady> get copyWith => _$PlaceOrderReadyCopyW
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
     ..add(DiagnosticsProperty('type', 'PlaceOrderState.ready'))
-    ..add(DiagnosticsProperty('cities', cities))..add(DiagnosticsProperty('designs', designs))..add(DiagnosticsProperty('shops', shops))..add(DiagnosticsProperty('lines', lines))..add(DiagnosticsProperty('step', step))..add(DiagnosticsProperty('shopId', shopId))..add(DiagnosticsProperty('cityId', cityId))..add(DiagnosticsProperty('regionId', regionId))..add(DiagnosticsProperty('designIds', designIds))..add(DiagnosticsProperty('customerPhone', customerPhone))..add(DiagnosticsProperty('pricing', pricing))..add(DiagnosticsProperty('isSubmitting', isSubmitting))..add(DiagnosticsProperty('placed', placed))..add(DiagnosticsProperty('lastFailure', lastFailure));
+    ..add(DiagnosticsProperty('cities', cities))..add(DiagnosticsProperty('designs', designs))..add(DiagnosticsProperty('shops', shops))..add(DiagnosticsProperty('lines', lines))..add(DiagnosticsProperty('step', step))..add(DiagnosticsProperty('shopId', shopId))..add(DiagnosticsProperty('cityId', cityId))..add(DiagnosticsProperty('regionId', regionId))..add(DiagnosticsProperty('designIds', designIds))..add(DiagnosticsProperty('customerPhone', customerPhone))..add(DiagnosticsProperty('pricing', pricing))..add(DiagnosticsProperty('payment', payment))..add(DiagnosticsProperty('depositAmount', depositAmount))..add(DiagnosticsProperty('walletBalance', walletBalance))..add(DiagnosticsProperty('onlineMethods', onlineMethods))..add(DiagnosticsProperty('onlineMethodId', onlineMethodId))..add(DiagnosticsProperty('isSubmitting', isSubmitting))..add(DiagnosticsProperty('placed', placed))..add(DiagnosticsProperty('lastFailure', lastFailure));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._shops, _shops)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.step, step) || other.step == step)&&(identical(other.shopId, shopId) || other.shopId == shopId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._shops, _shops)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.step, step) || other.step == step)&&(identical(other.shopId, shopId) || other.shopId == shopId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&const DeepCollectionEquality().equals(other._onlineMethods, _onlineMethods)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_lines),step,shopId,cityId,regionId,const DeepCollectionEquality().hash(_designIds),customerPhone,pricing,isSubmitting,placed,lastFailure);
+int get hashCode => Object.hashAll([runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_lines),step,shopId,cityId,regionId,const DeepCollectionEquality().hash(_designIds),customerPhone,pricing,payment,depositAmount,walletBalance,const DeepCollectionEquality().hash(_onlineMethods),onlineMethodId,isSubmitting,placed,lastFailure]);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'PlaceOrderState.ready(cities: $cities, designs: $designs, shops: $shops, lines: $lines, step: $step, shopId: $shopId, cityId: $cityId, regionId: $regionId, designIds: $designIds, customerPhone: $customerPhone, pricing: $pricing, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
+  return 'PlaceOrderState.ready(cities: $cities, designs: $designs, shops: $shops, lines: $lines, step: $step, shopId: $shopId, cityId: $cityId, regionId: $regionId, designIds: $designIds, customerPhone: $customerPhone, pricing: $pricing, payment: $payment, depositAmount: $depositAmount, walletBalance: $walletBalance, onlineMethods: $onlineMethods, onlineMethodId: $onlineMethodId, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
 }
 
 
@@ -695,7 +714,7 @@ abstract mixin class $PlaceOrderReadyCopyWith<$Res> implements $PlaceOrderStateC
   factory $PlaceOrderReadyCopyWith(PlaceOrderReady value, $Res Function(PlaceOrderReady) _then) = _$PlaceOrderReadyCopyWithImpl;
 @useResult
 $Res call({
- List<City> cities, List<CustomerDesign> designs, List<Shop> shops, List<OrderDraftLine> lines, CheckoutStep step, int? shopId, int? cityId, int? regionId, List<int> designIds, String? customerPhone, BasketPricing pricing, bool isSubmitting, CustomerOrderDetail? placed, Failure? lastFailure
+ List<City> cities, List<CustomerDesign> designs, List<Shop> shops, List<OrderDraftLine> lines, CheckoutStep step, int? shopId, int? cityId, int? regionId, List<int> designIds, String? customerPhone, BasketPricing pricing, CheckoutPayment? payment, String? depositAmount, String? walletBalance, List<TopUpMethod> onlineMethods, int? onlineMethodId, bool isSubmitting, CustomerOrderDetail? placed, Failure? lastFailure
 });
 
 
@@ -712,7 +731,7 @@ class _$PlaceOrderReadyCopyWithImpl<$Res>
 
 /// Create a copy of PlaceOrderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? cities = null,Object? designs = null,Object? shops = null,Object? lines = null,Object? step = null,Object? shopId = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? designIds = null,Object? customerPhone = freezed,Object? pricing = null,Object? isSubmitting = null,Object? placed = freezed,Object? lastFailure = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? cities = null,Object? designs = null,Object? shops = null,Object? lines = null,Object? step = null,Object? shopId = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? designIds = null,Object? customerPhone = freezed,Object? pricing = null,Object? payment = freezed,Object? depositAmount = freezed,Object? walletBalance = freezed,Object? onlineMethods = null,Object? onlineMethodId = freezed,Object? isSubmitting = null,Object? placed = freezed,Object? lastFailure = freezed,}) {
   return _then(PlaceOrderReady(
 cities: null == cities ? _self._cities : cities // ignore: cast_nullable_to_non_nullable
 as List<City>,designs: null == designs ? _self._designs : designs // ignore: cast_nullable_to_non_nullable
@@ -725,7 +744,12 @@ as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cas
 as int?,designIds: null == designIds ? _self._designIds : designIds // ignore: cast_nullable_to_non_nullable
 as List<int>,customerPhone: freezed == customerPhone ? _self.customerPhone : customerPhone // ignore: cast_nullable_to_non_nullable
 as String?,pricing: null == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
-as BasketPricing,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
+as BasketPricing,payment: freezed == payment ? _self.payment : payment // ignore: cast_nullable_to_non_nullable
+as CheckoutPayment?,depositAmount: freezed == depositAmount ? _self.depositAmount : depositAmount // ignore: cast_nullable_to_non_nullable
+as String?,walletBalance: freezed == walletBalance ? _self.walletBalance : walletBalance // ignore: cast_nullable_to_non_nullable
+as String?,onlineMethods: null == onlineMethods ? _self._onlineMethods : onlineMethods // ignore: cast_nullable_to_non_nullable
+as List<TopUpMethod>,onlineMethodId: freezed == onlineMethodId ? _self.onlineMethodId : onlineMethodId // ignore: cast_nullable_to_non_nullable
+as int?,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,placed: freezed == placed ? _self.placed : placed // ignore: cast_nullable_to_non_nullable
 as CustomerOrderDetail?,lastFailure: freezed == lastFailure ? _self.lastFailure : lastFailure // ignore: cast_nullable_to_non_nullable
 as Failure?,

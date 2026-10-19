@@ -22,6 +22,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
   return switch (stage) {
     // Something is waiting on us, or on you.
     OrderStage.underReview ||
+    OrderStage.awaitingDeposit ||
     OrderStage.designing => (
       background: scheme.attentionContainer,
       foreground: scheme.onAttentionContainer,
@@ -71,6 +72,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// تُعطى شكلها.
 IconData stageIcon(OrderStage stage) => switch (stage) {
   OrderStage.underReview => AppIcons.comments,
+  OrderStage.awaitingDeposit => AppIcons.awaitingDeposit,
   OrderStage.preparing => AppIcons.statusNew,
   OrderStage.designing => AppIcons.designs,
   OrderStage.producing => AppIcons.printedProduct,

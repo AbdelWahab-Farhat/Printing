@@ -639,6 +639,7 @@ final class AuditAttributeLabels
             'gateway' => 'مزوّد الدفع',
             'customer_id' => 'العميل',
             'order_id' => 'الطلبية',
+            'order_amount' => 'المدفوع للطلبية',
             'method' => 'طريقة الدفع',
             'flow' => 'نوع العملية',
             'net_amount' => 'المبلغ المشحون',

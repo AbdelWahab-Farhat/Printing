@@ -382,6 +382,9 @@ abstract final class Injector {
           quote: sl<QuoteBasket>(),
           place: sl<PlaceOrder>(),
           cart: sl<CartCubit>(),
+          // خطوة «العربون»: رصيد المحفظة، وهل الشحن الإلكتروني مفعّل.
+          walletBalance: sl<GetWalletBalance>(),
+          topUpMethods: sl<GetTopUpMethods>(),
         ),
       );
   }

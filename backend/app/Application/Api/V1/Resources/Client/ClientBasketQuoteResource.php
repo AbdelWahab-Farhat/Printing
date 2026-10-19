@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\DTOs\BasketLineQuote;
 use App\Domain\Order\DTOs\BasketQuote;
+use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,18 @@ class ClientBasketQuoteResource extends JsonResource
             'items_total' => $quote->itemsTotal,
             'delivery_price' => $quote->deliveryPrice,
             'total_with_delivery' => $quote->totalWithDelivery,
+
+            // **خطوة «العربون» في السلة** (2026-10-19): تُرسم حين `offered`، والمبلغ بين الحدّين —
+            // ربع البضاعة مقرَّباً لأعلى وكلّها مقرَّبةً لأسفل، بالدينار الكامل وبلا توصيل. حين لا
+            // تُعرض تُرسل الطلبية للمراجعة كما كانت.
+            'deposit' => [
+                'offered' => $quote->depositMinimum !== null,
+                'min_percent' => (int) CheckoutDeposit::MIN_PERCENT,
+                'min_amount' => $quote->depositMinimum,
+                'max_amount' => $quote->depositMinimum === null || $quote->itemsTotal === null
+                    ? null
+                    : CheckoutDeposit::maximum($quote->itemsTotal),
+            ],
         ];
     }
 }

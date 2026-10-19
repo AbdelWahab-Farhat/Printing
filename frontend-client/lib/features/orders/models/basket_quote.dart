@@ -24,9 +24,28 @@ abstract class BasketQuote with _$BasketQuote {
 
     /// البضاعة مع التوصيل: ما يدفعه العميل في النهاية.
     @JsonKey(name: 'total_with_delivery') String? totalWithDelivery,
+
+    /// خطوة «العربون»: هل تُرسم، وحدّا المبلغ. **خادمٌ أقدم لا يرسلها**، فلا خطوة.
+    @Default(DepositOffer()) DepositOffer deposit,
   }) = _BasketQuote;
 
   factory BasketQuote.fromJson(Map<String, dynamic> json) => _$BasketQuoteFromJson(json);
+}
+
+/// العربون الذي تعرضه السلة: بين ربع البضاعة وكلّها، بلا توصيل.
+///
+/// **`offered` قرار الخادم**: سلةٌ فيها سطرٌ «حسب الطلب» لا مجموع لها يؤخذ ربعه، وسلةٌ يصنعها وسيط
+/// تحتاج مراجعةً يُسمّى فيها — وكلتاهما تُرسل للمراجعة بلا خطوة عربون.
+@freezed
+abstract class DepositOffer with _$DepositOffer {
+  const factory DepositOffer({
+    @Default(false) bool offered,
+    @JsonKey(name: 'min_percent') @Default(25) int minPercent,
+    @JsonKey(name: 'min_amount') String? minAmount,
+    @JsonKey(name: 'max_amount') String? maxAmount,
+  }) = _DepositOffer;
+
+  factory DepositOffer.fromJson(Map<String, dynamic> json) => _$DepositOfferFromJson(json);
 }
 
 /// سطرٌ من السلة مسعّراً.

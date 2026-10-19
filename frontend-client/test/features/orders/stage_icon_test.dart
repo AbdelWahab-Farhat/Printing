@@ -15,6 +15,8 @@ void main() {
     final expected = <OrderStage, IconData>{
       // requested
       OrderStage.underReview: AppIcons.comments,
+      // awaitingDeposit — the workshop status of the same name
+      OrderStage.awaitingDeposit: AppIcons.awaitingDeposit,
       // taken — «جديدة»، أول ما في «قيد التجهيز»
       OrderStage.preparing: AppIcons.statusNew,
       OrderStage.designing: AppIcons.designs,

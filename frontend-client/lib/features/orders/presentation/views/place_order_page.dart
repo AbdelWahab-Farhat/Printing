@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
+import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
@@ -10,11 +14,16 @@ import 'package:dayaa_client/core/widgets/app_dropdown.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/features/delivery/models/city.dart';
+import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/place_order_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/empty_basket.dart';
 import 'package:dayaa_client/features/shops/presentation/widgets/shop_card.dart';
+import 'package:dayaa_client/features/wallet/models/online_top_up_models.dart';
+import 'package:dayaa_client/features/wallet/models/top_up_catalog.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
+import 'package:dayaa_client/features/wallet/presentation/views/top_up_sheet.dart';
 import 'package:easy_stepper/easy_stepper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,15 +31,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// السلة — معالجٌ من خطوتين يرسمهما شريطٌ أفقيٌّ أعلاها: «المنتجات» ثم «بيانات الطلب».
+/// السلة — معالجٌ يرسمه شريطٌ أفقيٌّ أعلاها: «المنتجات» ثم «بيانات الطلب»، ثم **«العربون»** حين
+/// يعرضه الخادم (صاحب العمل، 2026-10-19): كم يُدفع الآن — ربعُ البضاعة على الأقل — وكيف: في المكتب،
+/// أو من المحفظة، أو إلكترونياً بشحن المحفظة ثم الدفع منها. سلةٌ بلا عربون تُرسل للمراجعة كما كانت.
 ///
 /// **الخطوة الأولى ما في السلة وحده**، و«إتمام الطلب» تحتها. **والثانية تُملأ من الحساب:** أول متاجر
 /// العميل مختارٌ ومدينته ومنطقته معه، ورقم هاتفه في «هاتف الاستلام». لا اسمَ مستلمٍ — المستلم هو
 /// العميل نفسه — ولا «تفاصيل عنوان»: الوجهة مدينةٌ ومنطقةٌ ومتجر. **والمتاجر تُضاف من «حسابي» ←
 /// «متاجري» لا من هنا** (طلب صاحب العمل): السلة تختار مما هناك، وتُخفي القسم لحسابٍ بلا متاجر.
 ///
-/// **ولا مجموع يُرسم هنا، عمداً.** المتجر يسعّر كل سطرٍ ويراجع الطلبية قبل قبولها، ورقمٌ على هذه
-/// الشاشة وعدٌ يقطعه التطبيق عن المتجر. ما يُقال للعميل هو ما سيحدث فعلاً: «نراجعها ونؤكّد السعر».
+/// **والأرقام من الخادم**: سعر كل سطرٍ والتوصيل والإجمالي وحدّا العربون — الشاشة لا تحسب إلا نصف
+/// البضاعة لزرّ «النصف».
 class PlaceOrderPage extends StatelessWidget {
   const PlaceOrderPage({super.key});
 
@@ -61,13 +72,44 @@ class _PlaceOrderViewState extends State<_PlaceOrderView> {
   final _phone = TextEditingController();
   final _note = TextEditingController();
 
+  /// العربون مكتوباً. أزرار «الحد الأدنى» و«النصف» و«كاملاً» تكتب فيه أيضاً.
+  final _deposit = TextEditingController();
+
   bool _phoneSeeded = false;
 
   @override
   void dispose() {
     _phone.dispose();
     _note.dispose();
+    _deposit.dispose();
     super.dispose();
+  }
+
+  /// «التالي» إلى «العربون»: حقول «بيانات الطلب» تُفحص هنا، لأنها لا تُرسم في الخطوة التالية.
+  void _toDeposit() {
+    FocusScope.of(context).unfocus();
+
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final cubit = context.read<PlaceOrderCubit>()..toDeposit();
+
+    // المبلغ الذي بدأت به الخطوة، في الحقل — مرةً، وما يكتبه العميل بعدها له.
+    if (_deposit.text.isNotEmpty) return;
+
+    if (cubit.state case PlaceOrderReady(:final depositAmount?)) {
+      _deposit.text = depositAmount.asPlainNumber;
+    }
+  }
+
+  /// «ادفع كامل القيمة»: العربون كلُّ البضاعة، في الحقل وفي الـ Cubit.
+  void _payFull() {
+    final cubit = context.read<PlaceOrderCubit>()..payFull();
+
+    if (cubit.state case PlaceOrderReady(:final depositAmount?)) {
+      _deposit
+        ..text = depositAmount
+        ..selection = TextSelection.collapsed(offset: depositAmount.length);
+    }
   }
 
   /// رقم الحساب في «هاتف الاستلام»، مرةً واحدة: ما يكتبه العميل بعدها له، ولا تمسحه إعادةُ تحميل.
@@ -84,15 +126,62 @@ class _PlaceOrderViewState extends State<_PlaceOrderView> {
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final order = await context.read<PlaceOrderCubit>().submit(
-      recipientPhone: _phone.text,
-      note: _note.text,
-    );
+    final cubit = context.read<PlaceOrderCubit>();
+
+    // **الدفع الإلكتروني أولاً، ثم الطلبية** (صاحب العمل، 2026-10-19): تُشحن المحفظة بالعربون
+    // بالطريقة التي اختارها الزبون وبمبلغه — لا يُغيَّر في الورقة — ولا تُكتب الطلبية إلا حين تقول
+    // الورقة إن المال وصل. ورقةٌ أُغلقت قبل ذلك لا تكتب شيئاً ولا تقول شيئاً. ثم تُرسل الطلبية
+    // من المحفظة؛ فإن رُفض الإرسال بقي المال فيها و«من المحفظة» مختارةٌ للمحاولة التالية.
+    if (cubit.state case PlaceOrderReady(
+      step: CheckoutStep.deposit,
+      payment: CheckoutPayment.online,
+      :final onlineMethodId?,
+      :final depositAmount?,
+      :final customerPhone,
+    )) {
+      final paid = await showTopUpSheet(
+        context,
+        args: TopUpArgs(
+          methodId: onlineMethodId,
+          amount: depositAmount,
+          lockAmount: true,
+          phone: customerPhone,
+        ),
+      );
+
+      if (paid != true || !mounted) return;
+
+      await cubit.toppedUp();
+
+      if (!mounted) return;
+    }
+
+    final chosen = switch (cubit.state) {
+      PlaceOrderReady(step: CheckoutStep.deposit, :final payment?, :final depositAmount?) => (
+        payment: payment,
+        amount: depositAmount,
+      ),
+      _ => null,
+    };
+
+    final order = await cubit.submit(recipientPhone: _phone.text, note: _note.text);
 
     if (!mounted || order == null) return;
 
-    // **لا «تم بنجاح».** لم يُقبل شيءٌ بعد، ورسالةٌ تقول غير ذلك وعدٌ من التطبيق بما لم يَعِد به المتجر.
-    context.showSuccess('وصلتنا طلبيتك — سنراجعها ونتواصل معك');
+    switch (chosen) {
+      // **لا «تم بنجاح».** لم يُقبل شيءٌ بعد، ورسالةٌ تقول غير ذلك وعدٌ من التطبيق بما لم يَعِد به
+      // المتجر.
+      case null:
+        context.showSuccess('وصلتنا طلبيتك — سنراجعها ونتواصل معك');
+      case (payment: CheckoutPayment.office, :final amount):
+        context.showSuccess('وصلتنا طلبيتك — ادفع العربون $amount د.ل في المكتب لنبدأ العمل');
+      case (payment: CheckoutPayment.wallet || CheckoutPayment.online, amount: _):
+        // الشريط العلوي يرسم الرصيد الجديد بعد الرجوع.
+        if (sl.isRegistered<WalletBalanceCubit>()) unawaited(sl<WalletBalanceCubit>().refresh());
+        context.showSuccess('تم حجز طلبيتك ودُفع العربون من محفظتك');
+    }
+
+    if (!mounted) return;
 
     // `pushReplacement` كي لا يعيد زرّ الرجوع إلى سلةٍ ترسل الطلبية نفسها مرةً ثانية.
     context.pushReplacement(Routes.order(order.id));
@@ -113,8 +202,9 @@ class _PlaceOrderViewState extends State<_PlaceOrderView> {
 
         _seedPhone(state);
 
-        // رفض الرقم يُعلَّق تحت حقله، وما عداه رسالة.
-        if (state.lastFailure case final failure? when state.phoneError == null) {
+        // رفض الرقم ورفض العربون يُعلَّقان في مكانهما، وما عداهما رسالة.
+        if (state.lastFailure case final failure?
+            when state.phoneError == null && state.depositServerError == null) {
           context.showFailure(failure);
         }
       },
@@ -151,7 +241,10 @@ class _PlaceOrderViewState extends State<_PlaceOrderView> {
           formKey: _formKey,
           phone: _phone,
           note: _note,
+          deposit: _deposit,
           onSubmit: _submit,
+          onToDeposit: _toDeposit,
+          onPayFull: _payFull,
         ),
       },
     );
@@ -164,24 +257,30 @@ class _Checkout extends StatelessWidget {
     required this.formKey,
     required this.phone,
     required this.note,
+    required this.deposit,
     required this.onSubmit,
+    required this.onToDeposit,
+    required this.onPayFull,
   });
 
   final PlaceOrderReady state;
   final GlobalKey<FormState> formKey;
   final TextEditingController phone;
   final TextEditingController note;
+  final TextEditingController deposit;
   final Future<void> Function() onSubmit;
+  final VoidCallback onToDeposit;
+  final VoidCallback onPayFull;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PlaceOrderCubit>();
-    final onDetails = state.step == CheckoutStep.details;
+    final step = state.step;
 
-    // الرجوع من «بيانات الطلب» يعود إلى المنتجات ولا يغادر السلة — للإيماءة ولسهم الشريط معاً، فكلاهما
+    // الرجوع من خطوةٍ بعد الأولى يعود خطوةً ولا يغادر السلة — للإيماءة ولسهم الشريط معاً، فكلاهما
     // يمرّ بـ `maybePop`.
     return PopScope(
-      canPop: !onDetails,
+      canPop: step == CheckoutStep.products,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) cubit.back();
       },
@@ -196,27 +295,44 @@ class _Checkout extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
                   child: _CheckoutStepper(
-                    step: state.step,
+                    step: step,
                     canProceed: state.canProceed,
-                    onStepReached: (index) => index == CheckoutStep.products.index
-                        ? cubit.back()
-                        : cubit.proceed(),
+                    hasDeposit: state.hasDepositStep || step == CheckoutStep.deposit,
+                    onStepReached: (index) {
+                      if (index < step.index) {
+                        // إلى الوراء: خطوةٌ أو خطوتان، وكلُّ ما اختير باقٍ.
+                        for (var i = step.index; i > index; i--) {
+                          cubit.back();
+                        }
+                      } else if (index == CheckoutStep.details.index) {
+                        cubit.proceed();
+                      } else if (index == CheckoutStep.deposit.index && step == CheckoutStep.details) {
+                        onToDeposit();
+                      }
+                    },
                   ),
                 ),
                 Expanded(
                   child: _StepSwitcher(
-                    step: state.step,
-                    child: onDetails
-                        ? _DetailsStep(
-                            key: const ValueKey(CheckoutStep.details),
-                            state: state,
-                            phone: phone,
-                            note: note,
-                          )
-                        : _ProductsStep(
-                            key: const ValueKey(CheckoutStep.products),
-                            state: state,
-                          ),
+                    step: step,
+                    child: switch (step) {
+                      CheckoutStep.products => _ProductsStep(
+                        key: const ValueKey(CheckoutStep.products),
+                        state: state,
+                      ),
+                      CheckoutStep.details => _DetailsStep(
+                        key: const ValueKey(CheckoutStep.details),
+                        state: state,
+                        phone: phone,
+                        note: note,
+                      ),
+                      CheckoutStep.deposit => _DepositStep(
+                        key: const ValueKey(CheckoutStep.deposit),
+                        state: state,
+                        amount: deposit,
+                        onPayFull: onPayFull,
+                      ),
+                    },
                   ),
                 ),
               ],
@@ -234,16 +350,30 @@ class _Checkout extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // الرقم بجانب الزرّ كما في تطبيقات التسوّق: البضاعة في الخطوة الأولى، ومعها التوصيل
-                      // في الثانية حين عُرفت المدينة.
-                      _TotalRow(
-                        label: onDetails ? 'الإجمالي' : 'المجموع',
-                        value: _amountText(
-                          state.pricing,
-                          onDetails ? state.quote?.totalWithDelivery : state.quote?.itemsTotal,
+                      // في الثانية حين عُرفت المدينة، والعربون في الثالثة.
+                      switch (step) {
+                        CheckoutStep.products => _TotalRow(
+                          label: 'المجموع',
+                          value: _amountText(state.pricing, state.quote?.itemsTotal),
                         ),
-                      ),
+                        CheckoutStep.details => _TotalRow(
+                          label: 'الإجمالي',
+                          value: _amountText(state.pricing, state.quote?.totalWithDelivery),
+                        ),
+                        CheckoutStep.deposit => _TotalRow(
+                          label: 'العربون',
+                          value: state.depositAmountError == null && state.depositAmount != null
+                              ? _money(state.depositAmount!)
+                              : '—',
+                        ),
+                      },
                       SizedBox(height: 10.h),
-                      if (onDetails)
+                      if (step == CheckoutStep.products)
+                        AppButton(
+                          label: 'إتمام الطلب',
+                          onPressed: state.canProceed ? cubit.proceed : null,
+                        )
+                      else
                         Row(
                           children: [
                             Expanded(
@@ -255,18 +385,25 @@ class _Checkout extends StatelessWidget {
                             SizedBox(width: 12.w),
                             Expanded(
                               flex: 2,
-                              child: AppButton(
-                                label: 'أرسل الطلبية',
-                                isLoading: state.isSubmitting,
-                                onPressed: state.canSubmit ? onSubmit : null,
-                              ),
+                              child: step == CheckoutStep.details && state.hasDepositStep
+                                  // سلةٌ يُعرض عليها العربون لا تُرسل من هنا: الخطوة التالية هي.
+                                  ? AppButton(
+                                      label: 'التالي',
+                                      onPressed: state.canSubmit && state.detailsCanGoOn
+                                          ? onToDeposit
+                                          : null,
+                                    )
+                                  : AppButton(
+                                      label: step == CheckoutStep.deposit
+                                          ? _submitLabel(state.payment)
+                                          : 'أرسل الطلبية',
+                                      isLoading: state.isSubmitting,
+                                      onPressed: state.canSubmit && state.detailsCanGoOn
+                                          ? onSubmit
+                                          : null,
+                                    ),
                             ),
                           ],
-                        )
-                      else
-                        AppButton(
-                          label: 'إتمام الطلب',
-                          onPressed: state.canProceed ? cubit.proceed : null,
                         ),
                     ],
                   ),
@@ -275,6 +412,14 @@ class _Checkout extends StatelessWidget {
       ),
     );
   }
+
+  /// الزرّ يقول ما سيحدث حين يُضغط.
+  static String _submitLabel(CheckoutPayment? payment) => switch (payment) {
+    CheckoutPayment.wallet => 'ادفع وأرسل الطلبية',
+    // الدفع أولاً، والطلبية حين ينجح.
+    CheckoutPayment.online => 'ادفع ثم أرسل الطلبية',
+    CheckoutPayment.office || null => 'أرسل الطلبية',
+  };
 }
 
 /// الشريط أعلى السلة: دائرتان وخطٌّ بينهما، والخطوة الحالية بلون العلامة.
@@ -288,11 +433,15 @@ class _CheckoutStepper extends StatelessWidget {
   const _CheckoutStepper({
     required this.step,
     required this.canProceed,
+    required this.hasDeposit,
     required this.onStepReached,
   });
 
   final CheckoutStep step;
   final bool canProceed;
+
+  /// «العربون» دائرةٌ ثالثة — حين يعرضه التسعير. سلةٌ تُرسل للمراجعة تبقى بخطوتين.
+  final bool hasDeposit;
   final ValueChanged<int> onStepReached;
 
   @override
@@ -311,7 +460,10 @@ class _CheckoutStepper extends StatelessWidget {
         // الخطّ يملأ ما تتركه الدائرتان، فيمتدّ الشريط على عرض الشاشة كما في بريمولا — **ناقصاً
         // ما يكفي لعنوانَي الطرفين.** كلُّ عنوانٍ يتوسّط دائرته فيتجاوزها إلى الخارج، وبخصم بريمولا
         // (٧٨) كان «بيانات الطلب» يلامس حافة الهاتف على عرض ٣٩٠.
-        final lineLength = (constraints.maxWidth - 120.w).clamp(120.w, 300.w).toDouble();
+        // بثلاث دوائر يُقسم ما بقي على خطّين.
+        final lineLength = hasDeposit
+            ? ((constraints.maxWidth - 150.w) / 2).clamp(60.w, 150.w).toDouble()
+            : (constraints.maxWidth - 120.w).clamp(120.w, 300.w).toDouble();
 
         return EasyStepper(
           activeStep: active,
@@ -360,6 +512,17 @@ class _CheckoutStepper extends StatelessWidget {
                 style: titleStyle(CheckoutStep.details.index),
               ),
             ),
+            if (hasDeposit)
+              EasyStep(
+                // تُلمس من «بيانات الطلب» وحدها: الحقول هناك تُفحص قبل الوصول إليها.
+                enabled: step.index >= CheckoutStep.details.index,
+                icon: Icon(AppIcons.wallet),
+                customTitle: Text(
+                  'العربون',
+                  textAlign: TextAlign.center,
+                  style: titleStyle(CheckoutStep.deposit.index),
+                ),
+              ),
           ],
         );
       },
@@ -367,23 +530,41 @@ class _CheckoutStepper extends StatelessWidget {
   }
 }
 
-/// الانتقال بين الخطوتين: الخطوة تنزلق قليلاً وتتلاشى، ولا شيء يكبر أو يصغر.
+/// الانتقال بين الخطوات: الخطوة تنزلق قليلاً وتتلاشى، ولا شيء يكبر أو يصغر.
 ///
-/// **الجهة جهة القراءة.** في العربية ما بعدُ إلى اليسار: «بيانات الطلب» تدخل من اليسار والمنتجات
+/// **الجهة جهة القراءة.** في العربية ما بعدُ إلى اليسار: الخطوة التالية تدخل من اليسار والسابقة
 /// تخرج إلى اليمين، والرجوع عكس ذلك. ومع «تقليل الحركة» تتبدّل الخطوة في إطارٍ واحد.
-class _StepSwitcher extends StatelessWidget {
+///
+/// **ذات حالةٍ لتعرف من أين جاءت:** بثلاث خطوات لا تقول الخطوة الحالية وحدها أهذا تقدّمٌ أم رجوع.
+class _StepSwitcher extends StatefulWidget {
   const _StepSwitcher({required this.step, required this.child});
 
   final CheckoutStep step;
   final Widget child;
 
+  @override
+  State<_StepSwitcher> createState() => _StepSwitcherState();
+}
+
+class _StepSwitcherState extends State<_StepSwitcher> {
   /// كم تنزلق الخطوة من عرضها.
   static const double _shift = 0.14;
 
+  bool _forward = true;
+
+  @override
+  void didUpdateWidget(_StepSwitcher oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.step != widget.step) _forward = widget.step.index > oldWidget.step.index;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final step = widget.step;
+    final child = widget.child;
     final still = MediaQuery.disableAnimationsOf(context);
-    final forward = step == CheckoutStep.details;
+    final forward = _forward;
     final nextSide = Directionality.of(context) == TextDirection.rtl ? -1.0 : 1.0;
 
     return ClipRect(
@@ -600,11 +781,352 @@ class _DetailsStep extends StatelessWidget {
             borderRadius: BorderRadius.circular(12.r),
           ),
           child: Text(
-            'بعد الإرسال نراجع الطلبية ونؤكّد التفاصيل والسعر قبل البدء.',
+            switch (state.depositOffer) {
+              final offer? =>
+                'في الخطوة التالية تختار العربون — ${offer.minPercent}٪ من قيمة الطلبية على الأقل — '
+                    'ونبدأ العمل حين يصلنا.',
+              null => 'بعد الإرسال نراجع الطلبية ونؤكّد التفاصيل والسعر قبل البدء.',
+            },
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSecondaryContainer),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// الخطوة الثالثة: كم يُدفع الآن، وكيف (صاحب العمل، 2026-10-19) — **على نسق بريمولا**
+/// (`order_info_page.dart` و`payment_method_page.dart` هناك).
+///
+/// **المبلغ أولاً، بالدينار الكامل**: حقلٌ واحد يبدأ بأقلّ عربون — ربع البضاعة مقرَّباً لأعلى —
+/// وتحته «ادفع كامل القيمة» يصير تأكيداً أخضر حين يساويها. ثم **«حدد طريقة الدفع»** صفوفاً بدائرة
+/// اختيار، بلا اختيارٍ مسبق — مالٌ يُدفع يختاره صاحبه:
+///
+/// - **في المكتب** — تولد الطلبية «بانتظار العربون»، ويُدفع نقداً عند المكتب.
+/// - **من المحفظة** — رصيدها داخل الصفّ بزرّ تحديث؛ معطّلٌ حين لا يكفي، ويدلّ على ما تحته.
+/// - **«أو عبّئ محفظتك وادفع مباشرة»** — كلُّ طريقة شحنٍ صفٌّ بشعارها، معطّلةً حين لا يتّسع حدّها
+///   للعربون. **تُشحن المحفظة بالعربون نفسه أولاً، ولا تُكتب الطلبية إلا حين ينجح الشحن.**
+class _DepositStep extends StatelessWidget {
+  const _DepositStep({
+    required this.state,
+    required this.amount,
+    required this.onPayFull,
+    super.key,
+  });
+
+  final PlaceOrderReady state;
+  final TextEditingController amount;
+  final VoidCallback onPayFull;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<PlaceOrderCubit>();
+    final scheme = context.colorScheme;
+    final offer = state.depositOffer;
+
+    // الخطوة لا تُفتح بلا عرض، لكن التسعير قد يُعاد وهي مفتوحة — فتنتظره بدل أن ترسم حدوداً قديمة.
+    if (offer == null) return const Center(child: CircularProgressIndicator());
+
+    final full = offer.maxAmount!.asPlainNumber;
+    final chosen = state.depositAmount;
+    final isFull = chosen != null && chosen == full;
+    final balance = state.walletBalance;
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
+      children: [
+        AppTextField(
+          key: const ValueKey('deposit-amount'),
+          controller: amount,
+          label: 'العربون',
+          hint: 'قيمة العربون ضرورية',
+          keyboardType: TextInputType.number,
+          textDirection: TextDirection.ltr,
+          // بالدينار الكامل: لا فاصلة ولا كسور.
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9٠-٩]'))],
+          helperText:
+              'أقل عربون ${offer.minAmount!.asPlainNumber} د.ل (${offer.minPercent}٪ من قيمة الطلبية)',
+          errorText: state.depositAmountError ?? _amountServerError(state),
+          onChanged: cubit.chooseDepositAmount,
+        ),
+        SizedBox(height: 10.h),
+        _PayFullAction(fullAmount: full, isFull: isFull, onPressed: onPayFull),
+
+        SizedBox(height: 24.h),
+        Text(
+          'حدد طريقة الدفع',
+          style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: 12.h),
+        _PaymentRow(
+          key: const ValueKey('pay-office'),
+          leading: _IconBox(icon: AppIcons.officePickup, color: scheme.primary),
+          title: 'نقداً في المكتب',
+          subtitle: 'ادفع قيمة العربون في المكتب، ونبدأ العمل حين يصلنا',
+          selected: state.payment == CheckoutPayment.office,
+          onTap: () => cubit.choosePayment(CheckoutPayment.office),
+        ),
+        SizedBox(height: 10.h),
+        _PaymentRow(
+          key: const ValueKey('pay-wallet'),
+          leading: _IconBox(icon: AppIcons.wallet, color: scheme.primary),
+          title: 'الدفع من المحفظة',
+          belowTitle: _InlineBalance(balance: balance, onRefresh: cubit.refreshWallet),
+          subtitle: switch (balance) {
+            null => null,
+            _ when state.walletCovers => 'رصيدك يكفي لدفع العربون',
+            _ => state.onlineMethods.isEmpty
+                ? 'رصيدك لا يكفي هذا العربون'
+                : 'رصيدك لا يكفي — اختر طريقة تعبئة بالأسفل',
+          },
+          selected: state.payment == CheckoutPayment.wallet,
+          // رصيدٌ لا يكفي لا يُختار: الخادم سيرفضه، والطلبية معه.
+          onTap: state.walletCovers ? () => cubit.choosePayment(CheckoutPayment.wallet) : null,
+        ),
+
+        if (state.onlineMethods.isNotEmpty) ...[
+          SizedBox(height: 20.h),
+          Text(
+            'أو عبّئ محفظتك وادفع مباشرة',
+            style: context.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface.withValues(alpha: .6),
+            ),
+          ),
+          SizedBox(height: 10.h),
+          for (final method in state.onlineMethods) ...[
+            _onlineRow(context, cubit, method, chosen),
+            SizedBox(height: 10.h),
+          ],
+        ],
+
+        if (_otherServerError(state) case final error?) ...[
+          SizedBox(height: 12.h),
+          Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+        ],
+      ],
+    );
+  }
+
+  /// صفُّ طريقة شحن. **المبلغ ثابت** — العربون — فالطريقة تُختار حين يتّسع حدّها له وحده.
+  Widget _onlineRow(BuildContext context, PlaceOrderCubit cubit, TopUpMethod method, String? chosen) {
+    final brand = brandOf(method.id);
+    final cap = method.cap;
+    final fits = chosen == null || chosen.isEmpty || method.canFund(chosen);
+
+    return _PaymentRow(
+      key: ValueKey('pay-online-${method.id}'),
+      leading: TopUpLogo(brand: brand, box: 46.w, image: 30.w, radius: 12.r),
+      title: method.label,
+      subtitle: fits
+          ? (brand.subtitle ?? 'تعبئة ودفع عبر ${method.label}')
+          : 'المتبقّي لا يكفي (${cap!.asMoney} د.ل)',
+      selected: state.payment == CheckoutPayment.online && state.onlineMethodId == method.id,
+      onTap: fits ? () => cubit.chooseOnline(method.id) : null,
+    );
+  }
+
+  /// رفض الخادم للمبلغ، تحت حقله.
+  static String? _amountServerError(PlaceOrderReady state) => switch (state.lastFailure) {
+    ServerFailure(:final fieldErrors?) => fieldErrors['deposit.amount']?.firstOrNull,
+    _ => null,
+  };
+
+  /// رفض الخادم للطريق أو للعربون كلّه — «لا عربون على هذه الطلبية الآن» — تحت الطرق.
+  static String? _otherServerError(PlaceOrderReady state) => switch (state.lastFailure) {
+    ServerFailure(:final fieldErrors?) =>
+      fieldErrors['deposit.payment']?.firstOrNull ?? fieldErrors['deposit']?.firstOrNull,
+    _ => null,
+  };
+}
+
+/// «ادفع كامل القيمة» — اختصارٌ يملأ العربون بكامل البضاعة، ويصير تأكيداً أخضر هادئاً متى ساواها
+/// (كـ`_PayFullDepositAction` في بريمولا).
+class _PayFullAction extends StatelessWidget {
+  const _PayFullAction({required this.fullAmount, required this.isFull, required this.onPressed});
+
+  final String fullAmount;
+  final bool isFull;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final tone = isFull ? scheme.paid : scheme.primary;
+
+    return AppCard(
+      key: const ValueKey('deposit-pay-full'),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      onTap: isFull ? null : onPressed,
+      child: Row(
+        children: [
+          Icon(isFull ? AppIcons.check : AppIcons.wallet, size: 22.sp, color: tone),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isFull ? 'أنت تدفع كامل قيمة الطلبية' : 'ادفع كامل القيمة ($fullAmount د.ل)',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: tone,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  isFull ? 'لا يتبقى عليك شيء عند الاستلام' : 'بدل العربون — ولا يتبقى عليك شيء',
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// صفٌّ من صفوف «حدد طريقة الدفع»: مربّع الأيقونة أو الشعار، والاسم وما تحته، ودائرة الاختيار —
+/// كـ`PaymentRow` في بريمولا. **معطّلٌ بلا [onTap]**، باهتاً.
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({
+    required this.leading,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.belowTitle,
+    super.key,
+  });
+
+  final Widget leading;
+  final String title;
+  final String? subtitle;
+  final Widget? belowTitle;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final enabled = onTap != null;
+
+    return Opacity(
+      opacity: enabled ? 1 : .5,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16.r),
+        onTap: onTap,
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+          decoration: BoxDecoration(
+            color: selected
+                ? scheme.primary.withValues(alpha: .08)
+                : scheme.surfaceContainerHighest.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: selected ? scheme.primary.withValues(alpha: .7) : scheme.outlineVariant.withValues(alpha: .35),
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              leading,
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    ?belowTitle,
+                    if (subtitle case final text?) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        text,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurface.withValues(alpha: .55),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                color: selected ? scheme.primary : scheme.onSurface.withValues(alpha: .35),
+                size: 22.sp,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// مربّع أيقونةٍ ملوّنٌ باهت لصفوف المكتب والمحفظة.
+class _IconBox extends StatelessWidget {
+  const _IconBox({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 46.w,
+    height: 46.w,
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .12),
+      borderRadius: BorderRadius.circular(12.r),
+    ),
+    child: Icon(icon, color: color, size: 24.sp),
+  );
+}
+
+/// رصيد المحفظة داخل صفّها، بزرّ تحديثٍ صغير — **لا صفرَ حين لم يصل**: «تعذّر تحميل الرصيد».
+class _InlineBalance extends StatelessWidget {
+  const _InlineBalance({required this.balance, required this.onRefresh});
+
+  final String? balance;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final color = balance == null ? scheme.error : scheme.primary;
+
+    return Padding(
+      padding: EdgeInsets.only(top: 4.h, bottom: 1.h),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.wallet, size: 15.sp, color: color),
+          SizedBox(width: 5.w),
+          Flexible(
+            child: Text(
+              balance == null ? 'تعذّر تحميل الرصيد' : 'الرصيد: ${balance!.asMoney} د.ل',
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800, color: color),
+            ),
+          ),
+          SizedBox(width: 4.w),
+          InkWell(
+            key: const ValueKey('wallet-refresh'),
+            onTap: onRefresh,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.all(3.w),
+              child: Icon(Icons.refresh_rounded, size: 16.sp, color: color),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

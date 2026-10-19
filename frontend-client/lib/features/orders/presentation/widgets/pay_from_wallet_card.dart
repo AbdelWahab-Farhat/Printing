@@ -84,10 +84,15 @@ class _PayFromWalletCardState extends State<PayFromWalletCard> {
   String _shortfallFor(String target) => subtractDecimals(target, _balance!);
 
   /// تُشحن المحفظة بما ينقصها لـ[target]، فيدفع الخادمُ منها — ما فيها ساعتَها، وهو [target].
-  Future<void> _topUpAndPay(String target) async {
+  /// والعربونُ بمبلغه ([deposit]): شحنٌ زاد عمّا نقص لا يُدفع منه أكثرُ من العربون.
+  Future<void> _topUpAndPay(String target, {bool deposit = false}) async {
     final toppedUp = await showTopUpSheet(
       context,
-      args: TopUpArgs(orderId: widget.order.id, amount: _shortfallFor(target)),
+      args: TopUpArgs(
+        orderId: widget.order.id,
+        orderAmount: deposit ? target : null,
+        amount: _shortfallFor(target),
+      ),
     );
 
     if (toppedUp != true || !mounted) return;
@@ -282,7 +287,7 @@ class _PayFromWalletCardState extends State<PayFromWalletCard> {
   VoidCallback? _tapFor(String target, {bool deposit = false}) {
     if (_covers(target)) return () => _pay(deposit: deposit ? target : null);
 
-    if (_canTopUp) return () => _topUpAndPay(target);
+    if (_canTopUp) return () => _topUpAndPay(target, deposit: deposit);
 
     return !deposit && thousandths(_balance!) > BigInt.zero ? _pay : null;
   }

@@ -12,10 +12,12 @@ use App\Application\Api\V1\Resources\Client\ClientOrderNoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Order\Actions\PlaceOrderWithDeposit;
 use App\Domain\Order\Actions\QuoteBasket;
 use App\Domain\Order\Actions\RequestOrder;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderItemData;
+use App\Domain\Order\Enums\CheckoutPayment;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\OrderService;
@@ -48,6 +50,7 @@ class OrderController extends Controller
     public function __construct(
         private readonly OrderService $orders,
         private readonly RequestOrder $requestOrder,
+        private readonly PlaceOrderWithDeposit $placeWithDeposit,
         private readonly QuoteBasket $quoteBasket,
     ) {}
 
@@ -95,6 +98,12 @@ class OrderController extends Controller
      * move takes goods off the shelf. Nothing checked this one, so it waits for somebody to read
      * it — see {@see RequestOrder}.
      *
+     * **Unless `deposit` is sent** — the عربون the customer chose in the basket, at least a
+     * quarter of the goods in whole dinars, paid at the office or from the wallet (an online
+     * payment is a top-up the app completes first, then this, from the wallet). The basket's quote
+     * says when that is offered (`deposit.offered`); the order is then born «انتظار العربون», or
+     * «عربون مدفوع» when the wallet paid it. See {@see PlaceOrderWithDeposit}.
+     *
      * Every line is priced by the server from the same code the quote endpoint uses, so the
      * total here is the total the app showed. A client cannot send a price, a discount, or a
      * vendor; see {@see RequestOrderRequest} for the whole list of what is refused by absence.
@@ -104,7 +113,7 @@ class OrderController extends Controller
         $customer = $this->customer($request);
         $validated = $request->validated();
 
-        $order = ($this->requestOrder)(new OrderData(
+        $data = new OrderData(
             // **From the token, never from the body.** A customer who could name a customer id
             // could order in somebody else's name and then read the order back.
             customerId: (int) $customer->getKey(),
@@ -138,11 +147,32 @@ class OrderController extends Controller
                 array_keys($validated['items']),
             ),
             designIds: array_map('intval', $validated['design_ids'] ?? []),
-        ));
+        );
+
+        // **With the عربون chosen in the basket, the order skips review** — see
+        // {@see PlaceOrderWithDeposit}. Without one it is a request, as it always was.
+        $deposit = $validated['deposit'] ?? null;
+
+        if ($deposit === null) {
+            $order = ($this->requestOrder)($data);
+            $message = 'تم إرسال طلبك، وسنراجعه ونؤكده قريباً';
+        } else {
+            $payment = CheckoutPayment::from((string) $deposit['payment']);
+            $order = ($this->placeWithDeposit)(
+                $data,
+                $payment,
+                (string) $deposit['amount'],
+                $deposit['client_token'] ?? null,
+            );
+            $message = match ($payment) {
+                CheckoutPayment::Office => 'تم إرسال طلبك — ادفع العربون في المكتب لنبدأ العمل',
+                CheckoutPayment::Wallet => 'تم إرسال طلبك ودُفع العربون من محفظتك',
+            };
+        }
 
         return $this->created(
             new ClientOrderDetailResource($order->load(['items.product.images', 'transitions'])),
-            'تم إرسال طلبك، وسنراجعه ونؤكده قريباً',
+            $message,
         );
     }
 

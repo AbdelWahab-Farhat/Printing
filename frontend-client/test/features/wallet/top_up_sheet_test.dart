@@ -110,7 +110,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   }
 
-  Future<void> openSheet(WidgetTester tester) async {
+  Future<void> openSheet(WidgetTester tester, {TopUpArgs? args}) async {
     tester.view
       ..physicalSize = const Size(430, 932)
       ..devicePixelRatio = 1;
@@ -139,7 +139,7 @@ void main() {
           home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
-                onPressed: () async => result = await showTopUpSheet(context),
+                onPressed: () async => result = await showTopUpSheet(context, args: args),
                 child: const Text('open'),
               ),
             ),
@@ -163,6 +163,37 @@ void main() {
     expect(find.text('المتبقّي: 300 د.ل'), findsOneWidget);
     expect(find.text('خاصة بشركة المدار'), findsOneWidget);
     expect(find.byType(Image), findsNWidgets(3));
+  });
+
+  testWidgets('the basket deposit opens on the chosen method, with its amount locked, and tops up exactly it', (
+    tester,
+  ) async {
+    // Arrange & Act — عربون السلة (2026-10-19): الطريقة والمبلغ اختيرا هناك.
+    await openSheet(tester, args: const TopUpArgs(methodId: 111, amount: '125', lockAmount: true));
+
+    // Assert — straight to the details, no list of methods.
+    expect(find.text('حدد طريقة الشحن'), findsNothing);
+    expect(find.text('تأكيد البيانات'), findsOneWidget);
+    final field = tester.widget<EditableText>(
+      find.descendant(of: find.byKey(const ValueKey('top-up-amount')), matching: find.byType(EditableText)),
+    );
+    expect(field.controller.text, '125');
+    expect(field.readOnly, isTrue);
+
+    // Act — the code, and the money lands.
+    await tester.tap(find.text('تأكيد البيانات'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await settle(tester);
+    await tester.enterText(find.byKey(const Key('otp-field')), '123456');
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+
+    // Assert — the deposit, on no order: the order is placed only after this.
+    expect(fake.started.single.amount, '125');
+    expect(fake.started.single.toJson().keys, isNot(contains('order_id')));
+    expect(result, isTrue);
   });
 
   testWidgets('a method whose limit is used up says so and cannot be picked', (tester) async {

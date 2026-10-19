@@ -15,6 +15,9 @@ _BasketQuote _$BasketQuoteFromJson(Map<String, dynamic> json) => _BasketQuote(
   itemsTotal: json['items_total'] as String?,
   deliveryPrice: json['delivery_price'] as String?,
   totalWithDelivery: json['total_with_delivery'] as String?,
+  deposit: json['deposit'] == null
+      ? const DepositOffer()
+      : DepositOffer.fromJson(json['deposit'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$BasketQuoteToJson(_BasketQuote instance) =>
@@ -23,6 +26,23 @@ Map<String, dynamic> _$BasketQuoteToJson(_BasketQuote instance) =>
       'items_total': instance.itemsTotal,
       'delivery_price': instance.deliveryPrice,
       'total_with_delivery': instance.totalWithDelivery,
+      'deposit': instance.deposit.toJson(),
+    };
+
+_DepositOffer _$DepositOfferFromJson(Map<String, dynamic> json) =>
+    _DepositOffer(
+      offered: json['offered'] as bool? ?? false,
+      minPercent: (json['min_percent'] as num?)?.toInt() ?? 25,
+      minAmount: json['min_amount'] as String?,
+      maxAmount: json['max_amount'] as String?,
+    );
+
+Map<String, dynamic> _$DepositOfferToJson(_DepositOffer instance) =>
+    <String, dynamic>{
+      'offered': instance.offered,
+      'min_percent': instance.minPercent,
+      'min_amount': instance.minAmount,
+      'max_amount': instance.maxAmount,
     };
 
 _BasketLineQuote _$BasketLineQuoteFromJson(Map<String, dynamic> json) =>

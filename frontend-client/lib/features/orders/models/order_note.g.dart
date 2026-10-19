@@ -33,6 +33,7 @@ Map<String, dynamic> _$OrderNoteToJson(_OrderNote instance) =>
 
 const _$OrderStageEnumMap = {
   OrderStage.underReview: 'under_review',
+  OrderStage.awaitingDeposit: 'awaiting_deposit',
   OrderStage.preparing: 'preparing',
   OrderStage.designing: 'designing',
   OrderStage.producing: 'producing',

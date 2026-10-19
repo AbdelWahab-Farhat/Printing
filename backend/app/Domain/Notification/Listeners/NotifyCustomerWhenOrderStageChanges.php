@@ -28,6 +28,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
  * - **قبلنا طلبيتك** — من «بانتظار المراجعة» إلى «قيد التجهيز» وحدها. هو الجواب الذي ينتظره منذ
  *   أرسل الطلب. أما العودةُ إلى «قيد التجهيز» من طريقٍ آخر (من التصميم إلى الطباعة) فتقدّمٌ داخليٌّ
  *   صامت، و«قبلنا» فيها كذب.
+ * - **طلبيتك بانتظار العربون** — طلبت المطبعة عربوناً، والخطوة التالية خطوتُه.
  * - **طلبيتك جاهزة** — قد يُطلب منه أن يأتي، أو أن ينتظر اتصالنا.
  * - **طلبيتك في الطريق إليك** — ليكون حيث يصل المندوب ومعه المبلغ.
  * - **رجعت طلبيتك إلينا** — شيءٌ لم يسر كما يجب، وسنتواصل معه.
@@ -100,6 +101,9 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
     {
         return match ($to) {
             CustomerOrderStage::Preparing => $from === CustomerOrderStage::UnderReview ? 'قبلنا طلبيتك' : null,
+            // Something is now asked of them. An order the customer placed with its deposit is
+            // born here rather than moved here, so they are not told what they just chose.
+            CustomerOrderStage::AwaitingDeposit => 'طلبيتك بانتظار العربون',
             CustomerOrderStage::Ready => 'طلبيتك جاهزة',
             CustomerOrderStage::OnTheWay => 'طلبيتك في الطريق إليك',
             CustomerOrderStage::Returned => 'رجعت طلبيتك إلينا',

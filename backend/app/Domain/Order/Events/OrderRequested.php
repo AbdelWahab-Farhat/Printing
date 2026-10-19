@@ -17,10 +17,14 @@ use Illuminate\Foundation\Events\Dispatchable;
  * مذكورٌ هنا نصّاً لا استيراداً، لأن استيراداً في هذا الاتجاه هو التبعيّة التي وُجدت الأحداث لتمنعها.
  *
  * بلا فاعل: لم يصنعها أحدٌ من الموظفين، وهذه هي الحقيقة التي يقولها `RequestOrder` نفسه.
+ *
+ * **و`skippedReview`** لطلبيةٍ اختار العميلُ عربونَها في السلة فولدت «انتظار العربون» أو دُفع
+ * عربونُها فوراً — `PlaceOrderWithDeposit` (2026-10-19). لا مراجعةَ تنتظرها، لكنها جديدةٌ على
+ * الموظفين كغيرها، فتُعلَن بالحدث نفسه وتقول الجملةُ أين وقفت.
  */
 final readonly class OrderRequested
 {
     use Dispatchable;
 
-    public function __construct(public int $orderId) {}
+    public function __construct(public int $orderId, public bool $skippedReview = false) {}
 }
