@@ -3,6 +3,7 @@ import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/network/paginated.dart';
 import 'package:dayaa_client/features/wallet/models/wallet_models.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
 import 'package:dayaa_client/features/wallet/repositories/wallet_repository.dart';
 import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 
@@ -54,10 +55,12 @@ class FakeWallet implements WalletRepository {
     return Right(held);
   }
 
-  /// يسجّل حالتي الاستخدام اللتين تقرؤهما «حسابي» وشاشة الطلبية.
+  /// يسجّل حالتي الاستخدام اللتين تقرؤهما «حسابي» وشاشة الطلبية، ورصيد الشريط العلوي الذي
+  /// تحدّثه شاشة الطلبية.
   void register() {
     sl
       ..registerLazySingleton<GetWalletBalance>(() => GetWalletBalance(this))
-      ..registerLazySingleton<PayOrderFromWallet>(() => PayOrderFromWallet(this));
+      ..registerLazySingleton<PayOrderFromWallet>(() => PayOrderFromWallet(this))
+      ..registerLazySingleton(() => WalletBalanceCubit(getBalance: sl<GetWalletBalance>()));
   }
 }

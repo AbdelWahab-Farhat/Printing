@@ -9,6 +9,8 @@ import 'package:dayaa_client/features/badges/usecases/get_badges.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
 import 'package:dayaa_client/features/home/presentation/widgets/home_app_bar.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -16,6 +18,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+
+import '../wallet/fake_wallet.dart';
 
 class _StubBadges implements BadgeRepository {
   @override
@@ -73,8 +77,12 @@ void main() {
   Finder inTabBar(Finder finder) => find.descendant(of: find.byType(GNav), matching: finder);
 
   setUp(() {
-    // السلة في الشريط العلوي تقرأ المفرَد من `sl` مباشرة.
-    sl.registerLazySingleton<CartCubit>(CartCubit.new);
+    // السلة ورصيد المحفظة في الشريط العلوي يقرآن المفرَدين من `sl` مباشرة.
+    sl
+      ..registerLazySingleton<CartCubit>(CartCubit.new)
+      ..registerLazySingleton(
+        () => WalletBalanceCubit(getBalance: GetWalletBalance(FakeWallet(held: '200.00'))),
+      );
 
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
     view.physicalSize = const Size(430, 932);

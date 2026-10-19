@@ -26,11 +26,15 @@ import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.d
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../features/wallet/fake_wallet.dart';
 
 /// أقسام الشريط السفلي في التطبيق الحقيقي تنتقل بالتلاشي.
 ///
@@ -131,8 +135,12 @@ void main() {
       ..registerFactory<ActiveOrdersCubit>(
         () => ActiveOrdersCubit(list: ListActiveOrders(_StubOrders())),
       )
-      // الشريط العلوي المشترك فوق الأقسام يحمل السلة، وهي تقرأ المفرَد من `sl` كما في `injector`.
-      ..registerLazySingleton<CartCubit>(CartCubit.new);
+      // الشريط العلوي المشترك فوق الأقسام يحمل السلة ورصيد المحفظة، وهما يقرآن المفرَدين من `sl`
+      // كما في `injector`.
+      ..registerLazySingleton<CartCubit>(CartCubit.new)
+      ..registerLazySingleton(
+        () => WalletBalanceCubit(getBalance: GetWalletBalance(FakeWallet(held: '200.00'))),
+      );
   });
 
   tearDown(() => sl.reset());

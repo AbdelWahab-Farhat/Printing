@@ -10,11 +10,15 @@ import 'package:dayaa_client/features/catalog/usecases/list_categories.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../wallet/fake_wallet.dart';
 
 class _MockCatalogRepository extends Mock implements CatalogRepository {}
 
@@ -50,7 +54,10 @@ void main() {
           categories: ListCategories(repository),
         ),
       )
-      ..registerLazySingleton<CartCubit>(CartCubit.new);
+      ..registerLazySingleton<CartCubit>(CartCubit.new)
+      ..registerLazySingleton(
+        () => WalletBalanceCubit(getBalance: GetWalletBalance(FakeWallet(held: '200.00'))),
+      );
 
     final view = TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
     view.physicalSize = const Size(430, 932);

@@ -6,6 +6,7 @@ import 'package:dayaa_client/core/utils/uuid.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
 import 'package:dayaa_client/features/wallet/presentation/views/top_up_sheet.dart';
 import 'package:dayaa_client/features/wallet/usecases/top_up_usecases.dart';
 import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
@@ -63,7 +64,11 @@ class _PayFromWalletCardState extends State<PayFromWalletCard> {
 
     if (!mounted) return;
 
-    result.fold((_) {}, (balance) => setState(() => _balance = balance));
+    result.fold((_) {}, (balance) {
+      setState(() => _balance = balance);
+      // والشريط العلوي يرسم الرقم نفسه بعد الرجوع، بلا سؤالٍ ثانٍ.
+      sl<WalletBalanceCubit>().patch(balance);
+    });
 
     // يُسأل مرّةً، وحين تقبل الطلبية دفعاً وحده.
     if (_canTopUp || !_orderTakesPayment || !sl.isRegistered<GetTopUpMethods>()) return;
@@ -160,6 +165,7 @@ class _PayFromWalletCardState extends State<PayFromWalletCard> {
           _balance = balance;
           _token = null;
         });
+        sl<WalletBalanceCubit>().patch(balance);
         context.showSuccess('تم الدفع من المحفظة');
         await widget.onPaid();
       },

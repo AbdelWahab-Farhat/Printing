@@ -101,6 +101,7 @@ import 'package:dayaa_client/features/tools/usecases/load_bag_mockup.dart';
 import 'package:dayaa_client/features/tools/usecases/load_design_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_bag_preview_image.dart';
 import 'package:dayaa_client/features/tools/usecases/save_qr_code_image.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
 import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
 import 'package:dayaa_client/features/wallet/repositories/top_up_repository.dart';
 import 'package:dayaa_client/features/wallet/repositories/wallet_repository.dart';
@@ -493,6 +494,8 @@ abstract final class Injector {
       ..registerLazySingleton(() => GetWalletEntries(sl<WalletRepository>()))
       ..registerLazySingleton(() => PayOrderFromWallet(sl<WalletRepository>()))
       ..registerFactory(() => WalletEntriesCubit(getEntries: sl<GetWalletEntries>()))
+      // الرصيد في الشريط العلوي: مفرَدٌ كالسلة والشارات، تقرؤه الحبّة وتحدّثه الشاشات التي تعرفه.
+      ..registerLazySingleton(() => WalletBalanceCubit(getBalance: sl<GetWalletBalance>()))
       // «اشحن محفظتك» عبر EzonePay — CUSTOMER-WALLET §٥. الـCubit تبنيه الصفحة بطلبيتها ومبلغها.
       ..registerLazySingleton<TopUpRepository>(() => TopUpRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton(() => GetTopUpMethods(sl<TopUpRepository>()))

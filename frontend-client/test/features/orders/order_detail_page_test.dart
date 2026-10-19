@@ -12,6 +12,7 @@ import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_ca
 import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -497,6 +498,26 @@ void main() {
       expect(find.text('تم الدفع من المحفظة'), findsOneWidget);
 
       // The toast's own timer, so the test ends with nothing pending.
+      resetSnackBars();
+      await tester.pump();
+    });
+
+    /// الرصيد الذي أعاده الخادم بعد الدفع هو ما ترسمه حبّة الشريط العلوي بعد الرجوع.
+    testWidgets('the balance left after paying reaches the bar', (tester) async {
+      // Arrange
+      final wallet = FakeWallet(held: '500.00', owedAfterPay: '0.00');
+      await open(tester, order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز'), wallet: wallet);
+      expect(sl<WalletBalanceCubit>().state, '500.00');
+
+      // Act
+      await tester.tap(find.text('ادفع 500'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ادفع'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(sl<WalletBalanceCubit>().state, '0.00');
+
       resetSnackBars();
       await tester.pump();
     });

@@ -13,7 +13,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// **Wrapped once around the router**, so it is a property of the app rather than something
 /// every screen has to remember. The first `WidgetsBindingObserver` in this codebase, and it
 /// stays the only one unless something else earns one: an observer per feature is four places
-/// to look when the app does something odd on resume.
+/// to look when the app does something odd on resume. **والثاني `WalletBalanceChip`**: رصيدٌ
+/// لا يُسأل عنه والعميل خارج، وهذا ملفوفٌ حول شاشة الدخول أيضاً.
 ///
 /// **It refetches, it does not clear.** A resume is a reason to ask, never a reason to assume —
 /// see [BadgesCubit.refresh], which keeps the last counts when the request fails.

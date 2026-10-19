@@ -32,8 +32,13 @@ import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/home/presentation/views/home_shell.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/orders/presentation/viewmodel/cart_cubit.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
+import 'package:dayaa_client/features/wallet/models/wallet_models.dart';
+import 'package:dayaa_client/features/wallet/presentation/viewmodel/wallet_balance_cubit.dart';
+import 'package:dayaa_client/features/wallet/repositories/wallet_repository.dart';
+import 'package:dayaa_client/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -51,6 +56,22 @@ Paginated<T> _page<T>(List<T> items) => Paginated<T>(
 class _Billboards implements BillboardRepository {
   @override
   Future<Either<Failure, List<Billboard>>> showing() async => const Right(<Billboard>[]);
+}
+
+/// «200 د.ل» في حبّة الشريط العلوي.
+class _Wallet implements WalletRepository {
+  @override
+  Future<Either<Failure, String>> balance() async => const Right('200.00');
+
+  @override
+  Future<Either<Failure, Paginated<MyWalletEntry>>> entries({
+    required int page,
+    MyWalletFilter filter = MyWalletFilter.all,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Either<Failure, String>> payOrder(int orderId, {String? amount, String? clientToken}) =>
+      throw UnimplementedError();
 }
 
 class _Badges implements BadgeRepository {
@@ -140,7 +161,10 @@ Future<void> main() async {
       ..registerFactory<BillboardCubit>(() => BillboardCubit(get: GetBillboards(_Billboards())))
       ..registerFactory<ActiveOrdersCubit>(
         () => ActiveOrdersCubit(list: ListActiveOrders(_Orders())),
-      );
+      )
+      // الشريط العلوي يقرأ السلة والرصيد من `sl` مباشرة.
+      ..registerLazySingleton<CartCubit>(CartCubit.new)
+      ..registerLazySingleton(() => WalletBalanceCubit(getBalance: GetWalletBalance(_Wallet())));
 
     // آيفون بجزيرة: ٣٩٠×٨٤٤، شريط الحالة ٥٩، والمؤشر السفلي ٣٤.
     tester.view.physicalSize = const Size(780, 1688);

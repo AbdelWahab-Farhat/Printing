@@ -4,12 +4,13 @@ import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart';
 import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
+import 'package:dayaa_client/features/wallet/presentation/views/wallet_balance_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم في طرفه، كشريط تطبيق
-/// بريمولا.
+/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم في طرفه الأيمن، ورصيد
+/// المحفظة في الأيسر، كشريط تطبيق بريمولا.
 ///
 /// **و«حسابي» ليست هنا** (طلب المستخدم، 2026-09-25: «حط بروفايل تحت»): كانت أيقونةً في الطرف
 /// بجانب الدعم، ونزلت إلى الشريط السفلي تبويباً رابعاً.
@@ -21,11 +22,16 @@ import 'package:go_router/go_router.dart';
 /// **بلا ترحيبٍ ولا رقم العميل ولا جرس** (طلب المستخدم، 2026-09-25). الرقم ما زال في «حسابي»
 /// لمن يحتاج أن يقرأه في مكالمة. والجرس أُزيل من التطبيق كله: لا خادم للإشعارات بعد.
 ///
-/// **`actions` تُرتَّب من الداخل إلى الحافة**، والتطبيق من اليمين، فآخرها أقربها إلى حافة الشاشة
-/// اليسرى: الدعم في الطرف، والسلة بجانبه.
+/// **رصيد المحفظة في أقصى اليسار، والدعم انتقل إلى أقصى اليمين** (طلب المستخدم، 2026-10-16).
+/// كان الدعم في الطرف الأيسر والسلة بجانبه؛ ولمّا أخذ الرصيد الطرف، صارت ثلاثتها أعرض من نصف
+/// الشريط فدفعت الاسم عن الوسط كلما امتلأت السلة. اختار المستخدم نقل الدعم إلى الطرف الفارغ على
+/// أن يُزاح الاسم.
 ///
-/// وكلاهما يُدفع (`push`) ولا يُنتقل إليه (`go`): كلٌّ منهما مكانٌ يُذهب إليه ويُرجع منه إلى القسم
-/// الذي كان فيه العميل، ولا تبويب لأيٍّ منهما.
+/// **`actions` تُرتَّب من الداخل إلى الحافة**، والتطبيق من اليمين، فآخرها أقربها إلى حافة الشاشة
+/// اليسرى: الرصيد في الطرف، والسلة بجانبه.
+///
+/// والثلاثة تُدفع (`push`) ولا يُنتقل إليها (`go`): كلٌّ منها مكانٌ يُذهب إليه ويُرجع منه إلى القسم
+/// الذي كان فيه العميل، ولا تبويب لأيٍّ منها.
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   const HomeAppBar({super.key});
 
@@ -37,19 +43,22 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       centerTitle: true,
+      // الأيقونة نفسها التي كانت على مربع «الدعم»، وعليها ما لم يُقرأ من ردود المتجر. وفي خانة
+      // الـ`leading` بعرضها المعتاد يقع رسمها على بُعد هامش الصفحة من الحافة.
+      leading: IconButton(
+        icon: BadgedIcon(icon: AppIcons.comments, badge: CustomerBadge.support),
+        tooltip: 'الدعم',
+        onPressed: () => context.push(Routes.support),
+      ),
       title: const _Wordmark(),
       actions: [
-        // **السلة في الداخل لا في الطرف.** لا تُرسم وهي فارغة، فلو كانت في الطرف لدفعت الدعم
+        // **السلة في الداخل لا في الطرف.** لا تُرسم وهي فارغة، فلو كانت في الطرف لدفعت الرصيد
         // إلى الداخل كلّما امتلأت. هنا تظهر بجانبه ولا يتحرّك شيء.
         const CartButton(),
-        // الأيقونة نفسها التي كانت على مربع «الدعم»، وعليها ما لم يُقرأ من ردود المتجر.
+        // حافة الحبّة على حافة بطاقات الصفحة تحتها.
         Padding(
-          padding: EdgeInsetsDirectional.only(end: 4.w),
-          child: IconButton(
-            icon: BadgedIcon(icon: AppIcons.comments, badge: CustomerBadge.support),
-            tooltip: 'الدعم',
-            onPressed: () => context.push(Routes.support),
-          ),
+          padding: EdgeInsetsDirectional.only(start: 2.w, end: 16.w),
+          child: const Center(child: WalletBalanceChip()),
         ),
       ],
     );
