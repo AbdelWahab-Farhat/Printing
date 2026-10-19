@@ -140,14 +140,12 @@ class CustomerWalletEntryRow extends StatelessWidget {
   /// `+100` / `−80` — **الإشارةُ لا تسقط أبداً**، وبعلامة الناقص الطباعية.
   String get _amount => entry.isIn ? '+${entry.amount.grouped}' : '−${entry.amount.grouped}';
 
-  /// لمن وكيف وأين: العميلُ في الصفحة الجامعة، وطريقةُ الشحن وحسابُه، والطلبية، والمرجع.
+  /// لمن وكيف: العميلُ في الصفحة الجامعة، ثم **طريقةُ الدفع وحدها** — الحسابُ والطلبيةُ والمرجعُ
+  /// سقطت بطلب صاحب العمل (٢٠٢٦-١٠-١٧): «وسيلة الدفع فقط التي تهم». الطلبيةُ تُفتح بلمس السطر.
   String? get _where {
     final parts = <String>[
       if (showCustomer && entry.customerName != null) entry.customerName!,
       ?entry.methodLabel,
-      if (entry.accountName case final account?) 'في $account',
-      if (entry.orderId case final order?) 'الطلبية #$order',
-      if (entry.reference case final reference? when reference.isNotEmpty) 'مرجع $reference',
     ];
 
     return parts.isEmpty ? null : parts.join(' · ');

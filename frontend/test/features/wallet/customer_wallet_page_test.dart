@@ -20,7 +20,8 @@ import 'package:mocktail/mocktail.dart';
 class _MockWalletRepository extends Mock implements WalletRepository {}
 
 /// محفظة العميل في تطبيق الموظفين — **على شكل محفظة المستثمر** (طلب صاحب العمل، ٢٠٢٦-١٠-١١):
-/// الرصيدُ في البطاقة الكبيرة، والفعلُ شريطٌ في الأسفل بصلاحياته، و«إلغاء الحركة» على السطر نفسه.
+/// الرصيدُ في البطاقة الكبيرة والزرّان فيها بصلاحياتهما (٢٠٢٦-١٠-١٧)، و«إلغاء الحركة» على السطر
+/// نفسه.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -35,6 +36,7 @@ void main() {
     amount: '100.00',
     methodLabel: 'كاش',
     accountName: 'الخزنة',
+    reference: 'TOPUP-01M537R0RWATZK0JMKJ5GCWM67',
     recorderName: 'عبدالوهاب',
     canReverse: true,
   );
@@ -134,7 +136,16 @@ void main() {
     expect(find.text('علي'), findsOneWidget);
   });
 
-  testWidgets('the actions are a bar across the bottom, each behind its grant', (tester) async {
+  testWidgets('the balance card carries no sentence under the number', (tester) async {
+    // Arrange & Act
+    await open(tester, permissions: const ['customers.wallet.view']);
+
+    // Assert — «تُشحن ولا يُسحب منها» was a note nobody needed (٢٠٢٦-١٠-١٧).
+    expect(tester.widget<InvestorMoneyTile>(find.byType(InvestorMoneyTile)).caption, isNull);
+    expect(find.textContaining('يُسحب'), findsNothing);
+  });
+
+  testWidgets('the actions sit inside the balance card, each behind its grant', (tester) async {
     // Arrange & Act
     await open(
       tester,
@@ -142,11 +153,74 @@ void main() {
     );
 
     // Assert
-    expect(find.widgetWithText(AppButton, 'شحن المحفظة'), findsOneWidget);
+    final inCard = find.descendant(
+      of: find.byType(InvestorMoneyTile),
+      matching: find.widgetWithText(AppButton, 'شحن المحفظة'),
+    );
+    expect(inCard, findsOneWidget);
     expect(find.widgetWithText(AppButton, 'تعديل الرصيد'), findsNothing);
   });
 
-  testWidgets('a reader with no grant to move money sees no bar', (tester) async {
+  testWidgets('both actions, side by side in the card', (tester) async {
+    // Arrange & Act
+    await open(
+      tester,
+      permissions: const [
+        'customers.wallet.view',
+        'customers.wallet.topup',
+        'customers.wallet.adjust',
+      ],
+    );
+
+    // Assert
+    Finder inCard(String label) => find.descendant(
+      of: find.byType(InvestorMoneyTile),
+      matching: find.widgetWithText(AppButton, label),
+    );
+    expect(inCard('شحن المحفظة'), findsOneWidget);
+    expect(inCard('تعديل الرصيد'), findsOneWidget);
+    expect(
+      tester.getCenter(inCard('شحن المحفظة')).dy,
+      closeTo(tester.getCenter(inCard('تعديل الرصيد')).dy, 1),
+    );
+  });
+
+  testWidgets('the top-up sheet opens on its fields, with no note under the title', (
+    tester,
+  ) async {
+    // Arrange
+    await open(
+      tester,
+      permissions: const ['customers.wallet.view', 'customers.wallet.topup'],
+    );
+
+    // Act
+    await tester.tap(find.widgetWithText(AppButton, 'شحن المحفظة'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.textContaining('يُسحب'), findsNothing);
+    expect(find.textContaining('محفظة علي'), findsNothing);
+  });
+
+  testWidgets('«تعديل الرصيد» opens a sheet, not a dialog', (tester) async {
+    // Arrange
+    await open(
+      tester,
+      permissions: const ['customers.wallet.view', 'customers.wallet.adjust'],
+    );
+
+    // Act
+    await tester.tap(find.widgetWithText(AppButton, 'تعديل الرصيد'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('a reader with no grant to move money sees no buttons', (tester) async {
     // Arrange & Act
     await open(tester, permissions: const ['customers.wallet.view']);
 
@@ -166,5 +240,16 @@ void main() {
     expect(find.text('+100 د.ل'), findsOneWidget);
     expect(find.text('−40 د.ل'), findsOneWidget);
     expect(find.textContaining('عبدالوهاب'), findsOneWidget);
+  });
+
+  testWidgets('a row names how the money came in, and nothing more', (tester) async {
+    // Arrange & Act
+    await open(tester, permissions: const ['customers.wallet.view']);
+
+    // Assert — no account, no reference, no order number: only the method.
+    expect(find.text('كاش'), findsOneWidget);
+    expect(find.textContaining('الخزنة'), findsNothing);
+    expect(find.textContaining('TOPUP-'), findsNothing);
+    expect(find.textContaining('1304'), findsNothing);
   });
 }

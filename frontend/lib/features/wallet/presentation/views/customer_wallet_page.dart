@@ -7,7 +7,6 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
-import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -19,7 +18,7 @@ import 'package:dayaa/features/treasury/presentation/widgets/treasury_dialogs.da
 import 'package:dayaa/features/wallet/models/wallet_models.dart';
 import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
 import 'package:dayaa/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
-import 'package:dayaa/features/wallet/presentation/widgets/adjust_wallet_dialog.dart';
+import 'package:dayaa/features/wallet/presentation/widgets/adjust_wallet_sheet.dart';
 import 'package:dayaa/features/wallet/presentation/widgets/top_up_sheet.dart';
 import 'package:dayaa/features/wallet/presentation/widgets/wallet_entry_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
@@ -32,8 +31,11 @@ import 'package:go_router/go_router.dart';
 /// Docs/payments/CUSTOMER-WALLET.md.
 ///
 /// **على شكل محفظة المستثمر** بطلب صاحب العمل (٢٠٢٦-١٠-١١): الرصيدُ في البطاقة الكبيرة بصورة
-/// المحفظة ([InvestorMoneyTile.hero])، والفعلُ شريطٌ بعرض الشاشة في أسفلها لا زرٌّ عائم، والسجلُّ
-/// بأيامه وسطورِ محفظة المستثمر، ورقائقُ الأنواع تلتفّ ولا تُمرَّر، ومدى الأيام في الشريط.
+/// المحفظة ([InvestorMoneyTile.hero])، والسجلُّ بأيامه وسطورِ محفظة المستثمر، ورقائقُ الأنواع تلتفّ
+/// ولا تُمرَّر، ومدى الأيام في الشريط.
+///
+/// **والزرّان داخل بطاقة الرصيد، ولا سطرَ تحت الرقم** (٢٠٢٦-١٠-١٧): كانا شريطاً في أسفل الشاشة
+/// بعيداً عن الرقم الذي يغيّرانه.
 ///
 /// **تُشحن ولا يُسحب منها**: لا زرّ سحب. الدفعُ منها على طلبيةٍ من دفعات الطلبية.
 ///
@@ -99,11 +101,6 @@ class _WalletView extends StatelessWidget {
             ),
           ],
         ),
-        // **الفعلُ شريطٌ في الأسفل** كصفحة المستثمر: إبهامٌ واحد، وزرٌّ بعرض الهاتف لا يُخفي آخر
-        // سطرٍ في السجل.
-        bottomNavigationBar: state is CustomerWalletLoaded
-            ? _ActionBar(customerName: customerName)
-            : null,
         body: switch (state) {
           CustomerWalletLoading() => const Center(child: CircularProgressIndicator()),
           CustomerWalletFailed(:final failure) => _Failed(
@@ -118,7 +115,7 @@ class _WalletView extends StatelessWidget {
                   label: 'رصيد المحفظة',
                   amount: balance,
                   artwork: 'assets/images/wallet.png',
-                  caption: 'تُشحن ولا يُسحب منها — تُدفع منها الطلبيات',
+                  footer: _Actions.showsAny ? _Actions(balance: balance) : null,
                 ),
               ),
               _TypeBar(selected: entries.filter, onSelect: entries.narrowTo),
@@ -266,50 +263,53 @@ class _History extends StatelessWidget {
   }
 }
 
-/// «شحن المحفظة» و«تعديل الرصيد» على شريطٍ بعرض الشاشة — كلٌّ بصلاحيته، **وغائبٌ لا معطّل**:
-/// من يقرأ المحفظة ولا يحرّكها يرى الشاشة تنتهي حيث ينتهي سجلّها.
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.customerName});
+/// «شحن المحفظة» و«تعديل الرصيد» داخل بطاقة الرصيد، جنباً إلى جنب — كلٌّ بصلاحيته، **وغائبٌ لا
+/// معطّل**: من يقرأ المحفظة ولا يحرّكها يرى البطاقة رقماً وحده.
+///
+/// **الاثنان ليسا شيئاً واحداً.** الشحنُ مالٌ دخل فعلاً — كاشٌ أو حوالة — فيُسأل عن الطريقة والحساب
+/// الذي نزل فيه ويظهر في الخزينة. والتعديلُ تصحيحٌ للرصيد بسببٍ إجباري ولا مالَ يتحرّك: لا طريقة
+/// ولا حساب، ويكون نقصاً كما يكون زيادة.
+///
+/// `tonal` لا `primary`: الملءُ الأساسي هو لونُ البطاقة نفسها، فزرٌّ به يذوب فيها. وبلا أيقونة،
+/// لأن نصفَ عرض البطاقة لا يتّسع لأيقونةٍ و«تعديل الرصيد» كاملةً.
+class _Actions extends StatelessWidget {
+  const _Actions({required this.balance});
 
-  final String customerName;
+  /// الرصيدُ الذي تبدأ منه ورقةُ التعديل حسابَ ما بعده.
+  final String balance;
+
+  static bool get _mayTopUp => sl<Session>().can(AppPermission.topUpCustomerWallets);
+
+  static bool get _mayAdjust => sl<Session>().can(AppPermission.adjustCustomerWallets);
+
+  /// هل في البطاقة زرٌّ أصلاً — فلا تُترك فيها فسحةٌ لصفٍّ فارغ.
+  static bool get showsAny => _mayTopUp || _mayAdjust;
 
   @override
   Widget build(BuildContext context) {
-    final session = sl<Session>();
-    final mayTopUp = session.can(AppPermission.topUpCustomerWallets);
-    final mayAdjust = session.can(AppPermission.adjustCustomerWallets);
+    final mayTopUp = _mayTopUp;
+    final mayAdjust = _mayAdjust;
 
-    if (!mayTopUp && !mayAdjust) return const SizedBox.shrink();
-
-    return Container(
-      color: context.colorScheme.surface,
-      child: SafeArea(
-        top: false,
-        minimum: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-        child: Row(
-          children: [
-            if (mayTopUp)
-              Expanded(
-                flex: 3,
-                child: AppButton(
-                  label: 'شحن المحفظة',
-                  icon: AppIcons.walletTopUp,
-                  onPressed: () => _topUp(context),
-                ),
-              ),
-            if (mayTopUp && mayAdjust) SizedBox(width: 10.w),
-            if (mayAdjust)
-              Expanded(
-                flex: 2,
-                child: AppButton.outlined(
-                  label: 'تعديل الرصيد',
-                  icon: AppIcons.edit,
-                  onPressed: () => _adjust(context),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return Row(
+      children: [
+        if (mayTopUp)
+          Expanded(
+            child: AppButton.tonal(
+              label: 'شحن المحفظة',
+              height: 48.h,
+              onPressed: () => _topUp(context),
+            ),
+          ),
+        if (mayTopUp && mayAdjust) SizedBox(width: 10.w),
+        if (mayAdjust)
+          Expanded(
+            child: AppButton.tonal(
+              label: 'تعديل الرصيد',
+              height: 48.h,
+              onPressed: () => _adjust(context),
+            ),
+          ),
+      ],
     );
   }
 
@@ -319,7 +319,6 @@ class _ActionBar extends StatelessWidget {
 
     final saved = await showTopUpSheet(
       context: context,
-      customerName: customerName,
       onSubmit:
           ({
             required amount,
@@ -354,8 +353,9 @@ class _ActionBar extends StatelessWidget {
     final header = context.read<CustomerWalletCubit>();
     final entries = context.read<WalletEntriesCubit>();
 
-    final saved = await showAdjustWalletDialog(
+    final saved = await showAdjustWalletSheet(
       context: context,
+      balance: balance,
       onSubmit: ({required amount, required credit, required reason}) async {
         final result = await header.adjust(amount: amount, credit: credit, reason: reason);
 

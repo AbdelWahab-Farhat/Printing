@@ -9,6 +9,7 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
@@ -18,7 +19,6 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_orders_section.dart';
-import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
 import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +38,10 @@ import 'package:go_router/go_router.dart';
 /// accident.
 class CustomerDetailPage extends StatelessWidget {
   const CustomerDetailPage({required this.customerId, super.key});
+
+  /// البطاقةُ أعلى الصفحة — العميلُ ومحفظتُه — ليجدها الاختبار.
+  @visibleForTesting
+  static const Key headerKey = Key('customer_header');
 
   final int customerId;
 
@@ -286,7 +290,7 @@ class _Body extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
-        _Identity(customer: customer),
+        _HeaderCard(customer: customer, showsWallet: showsWallet),
         SizedBox(height: 14.h),
 
         _StatusBand(customer: customer, isChanging: isChanging),
@@ -320,13 +324,6 @@ class _Body extends StatelessWidget {
           SizedBox(height: 14.h),
         ],
 
-        // «المحفظة» — right under the orders: what the customer holds is asked about with what
-        // they ordered. Docs/payments/CUSTOMER-WALLET.md.
-        if (showsWallet) ...[
-          _WalletCard(customerId: customer.id, customerName: customer.name),
-          SizedBox(height: 14.h),
-        ],
-
         // Only when there is one: every customer recorded before the address existed has none,
         // and «لا يوجد عنوان» on all of them would be a screen full of a sentence nobody acts on.
         if (customer.addressLabel case final address?) ...[
@@ -350,6 +347,45 @@ class _Body extends StatelessWidget {
         SizedBox(height: 14.h),
         _Meta(customer: customer),
       ],
+    );
+  }
+}
+
+/// العميلُ ومحفظتُه في بطاقةٍ واحدة أعلى الصفحة — بطلب صاحب العمل (٢٠٢٦-١٠-١٧): «خلّي رصيد
+/// المحفظة وكود العميل ومعلوماته في بطاقة واحدة وهي بالأعلى».
+///
+/// من هو فوق، وما في محفظته تحته بعد خطٍّ رفيع. **ورصيدُ المحفظة غائبٌ لا صفر** لمن لا يملك قراءتها:
+/// البطاقةُ عندئذٍ العميلُ وحده.
+class _HeaderCard extends StatelessWidget {
+  const _HeaderCard({required this.customer, required this.showsWallet});
+
+  final Customer customer;
+  final bool showsWallet;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final hairline = scheme.outlineVariant.withValues(alpha: 0.6);
+
+    return Material(
+      key: CustomerDetailPage.headerKey,
+      color: scheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.r),
+        side: BorderSide(color: hairline),
+      ),
+      // يقصّ حبرَ لمسة سطر المحفظة على حوافّ البطاقة.
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(padding: EdgeInsets.all(14.w), child: _Identity(customer: customer)),
+          if (showsWallet) ...[
+            Divider(height: 1, thickness: 1, color: hairline),
+            _WalletRow(customerId: customer.id, customerName: customer.name),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -782,20 +818,22 @@ class _CopyRow extends StatelessWidget {
   }
 }
 
-/// «المحفظة»: الرصيد، واللمسة تفتح المحفظة — سجلّها والشحن والتعديل. يُعاد الرصيد حين يعود منها
-/// وقد تحرّك فيها مال.
-class _WalletCard extends StatelessWidget {
-  const _WalletCard({required this.customerId, required this.customerName});
+/// «رصيد المحفظة» في أسفل بطاقة العميل، واللمسةُ تفتح المحفظة — سجلّها والشحن والتعديل. يُعاد
+/// الرصيد حين يعود منها وقد تحرّك فيها مال.
+///
+/// **الأيقونةُ في خانةٍ بعرض الصورة الرمزية فوقها**، فيبدأ «رصيد المحفظة» من حيث يبدأ الاسم: كتلةٌ
+/// واحدة لا سطران متجاوران. ولا جملةَ تحت الرقم — السهمُ يقول إنه يُفتح.
+class _WalletRow extends StatelessWidget {
+  const _WalletRow({required this.customerId, required this.customerName});
 
   final int customerId;
   final String customerName;
 
   @override
   Widget build(BuildContext context) {
-    // **بطاقةُ مال المستثمر نفسها** ([InvestorMoneyTile]) بطلب صاحب العمل (٢٠٢٦-١٠-١١): الرصيدُ
-    // أكبرُ ما فيها بوحدته، والأيقونةُ في طرفها، واللمسةُ تفتح المحفظة.
+    final scheme = context.colorScheme;
+
     return InkWell(
-      borderRadius: BorderRadius.circular(20.r),
       onTap: () async {
         final cubit = context.read<CustomerWalletCubit>();
         final moved = await context.push<bool>(
@@ -805,19 +843,65 @@ class _WalletCard extends StatelessWidget {
 
         if (moved == true) await cubit.load();
       },
-      child: BlocBuilder<CustomerWalletCubit, CustomerWalletState>(
-        builder: (context, state) => InvestorMoneyTile(
-          label: 'رصيد المحفظة',
-          amount: switch (state) {
-            CustomerWalletLoaded(:final balance) => balance,
-            _ => '0.00',
-          },
-          icon: AppIcons.wallet,
-          caption: switch (state) {
-            CustomerWalletFailed() => 'تعذّر تحميل الرصيد — اسحب للتحديث',
-            CustomerWalletLoading() => 'يُحمَّل…',
-            CustomerWalletLoaded() => 'السجل والشحن',
-          },
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 14.h),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 60.r,
+              child: Center(
+                child: Container(
+                  height: 44.w,
+                  width: 44.w,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: scheme.secondaryContainer,
+                  ),
+                  child: Icon(AppIcons.wallet, size: 20.sp, color: scheme.onSecondaryContainer),
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'رصيد المحفظة',
+                    style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                  SizedBox(height: 2.h),
+                  BlocBuilder<CustomerWalletCubit, CustomerWalletState>(
+                    builder: (context, state) => switch (state) {
+                      CustomerWalletLoaded(:final balance) => Text(
+                        '${balance.grouped} د.ل',
+                        // أرقامٌ لاتينية: تُقرأ من اليسار حتى في هذا السطر العربي.
+                        textDirection: TextDirection.ltr,
+                        maxLines: 1,
+                        style: context.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      CustomerWalletLoading() => Text(
+                        'يُحمَّل…',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      CustomerWalletFailed() => Text(
+                        'تعذّر تحميل الرصيد — اسحب للتحديث',
+                        style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+                      ),
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(AppIcons.forward, size: 20.sp, color: scheme.outline),
+          ],
         ),
       ),
     );

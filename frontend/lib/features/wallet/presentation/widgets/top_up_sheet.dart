@@ -4,6 +4,7 @@ import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -29,24 +30,23 @@ typedef TopUpSubmit =
 /// «شحن المحفظة» في المكتب — المبلغ، والطريقة، والحساب الذي نزل فيه المال، والواصل للحوالة.
 ///
 /// **على شكل ورقة «تسجيل دفعة»**: الحقول نفسها بالترتيب نفسه، والواصلُ يظهر لحظة تُختار «حوالة».
+/// ولا سطرَ تحت العنوان ولا تحت الحقول (٢٠٢٦-١٠-١٧): صفُّ الواصل يقول وحده إنه مطلوب.
 /// تبقى مفتوحةً على رفض الخادم وتُغلق على قبوله — فلا يُعاد ملء شيء. تعود `true` حين شُحنت.
 Future<bool?> showTopUpSheet({
   required BuildContext context,
-  required String customerName,
   required TopUpSubmit onSubmit,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => _TopUpSheet(customerName: customerName, onSubmit: onSubmit),
+    builder: (_) => _TopUpSheet(onSubmit: onSubmit),
   );
 }
 
 class _TopUpSheet extends StatefulWidget {
-  const _TopUpSheet({required this.customerName, required this.onSubmit});
+  const _TopUpSheet({required this.onSubmit});
 
-  final String customerName;
   final TopUpSubmit onSubmit;
 
   @override
@@ -103,11 +103,6 @@ class _TopUpSheetState extends State<_TopUpSheet> {
                   'شحن المحفظة',
                   style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  'محفظة ${widget.customerName} — تُشحن ولا يُسحب منها، وتُدفع منها الطلبيات',
-                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                ),
                 SizedBox(height: 20.h),
                 AppTextField(
                   controller: _amount,
@@ -125,7 +120,6 @@ class _TopUpSheetState extends State<_TopUpSheet> {
                   labelOf: (method) => method.label,
                   label: 'طريقة الشحن',
                   prefixIcon: AppIcons.payment,
-                  helperText: _method.requiresReceipt ? 'الحوالة تتطلب إرفاق الواصل' : null,
                   onChanged: (method) {
                     if (method == null) return;
 
@@ -192,24 +186,11 @@ class _TopUpSheetState extends State<_TopUpSheet> {
     final text = (value ?? '').trim();
     if (text.isEmpty) return 'المبلغ مطلوب';
 
-    final amount = double.tryParse(_western(text));
+    final amount = double.tryParse(Validators.toWesternDigits(text));
     if (amount == null) return 'المبلغ يجب أن يكون رقماً';
     if (amount <= 0) return 'المبلغ يجب أن يكون أكبر من صفر';
 
     return null;
-  }
-
-  static String _western(String input) {
-    const indic = '٠١٢٣٤٥٦٧٨٩';
-    final buffer = StringBuffer();
-
-    for (final rune in input.runes) {
-      final char = String.fromCharCode(rune);
-      final at = indic.indexOf(char);
-      buffer.write(at != -1 ? '$at' : (char == '٫' ? '.' : char));
-    }
-
-    return buffer.toString();
   }
 
   Future<void> _pickReceipt() async {
@@ -248,7 +229,7 @@ class _TopUpSheetState extends State<_TopUpSheet> {
     setState(() => _isSaving = true);
 
     final failure = await widget.onSubmit(
-      amount: _amount.text,
+      amount: Validators.toWesternDigits(_amount.text.trim()),
       method: _method,
       treasuryAccountId: _accountId,
       reference: _reference.text,
