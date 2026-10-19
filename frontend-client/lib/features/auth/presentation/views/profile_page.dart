@@ -21,8 +21,8 @@ import 'package:go_router/go_router.dart';
 ///
 /// **على شكل الملف الشخصي في المرجع الذي أرسله صاحب العمل:** بطاقةٌ بلون العلامة تحمل الصورة
 /// والاسم والهاتف وكود العميل وأين يعمل، وتحتها بطاقة صفوف. **والفرق الذي طلبه أن الكود واضحٌ بما
-/// يكفي ليعرفه العميل:** مسمّىً «كود العميل» في شارةٍ بيضاء، ويُنسخ بلمسة لأنه ما يرسله العميل إلى
-/// المتجر حين يسأل عن طلبية.
+/// يكفي ليعرفه العميل:** وحده في شارةٍ بيضاء، ويُنسخ بلمسة لأنه ما يرسله العميل إلى المتجر حين
+/// يسأل عن طلبية.
 ///
 /// **بطاقة صفوفٍ واحدة**، لا اثنتان: جُرّبت منفصلتين على الهاتف، وطلب صاحب العمل ضمّهما. فيها
 /// «تصاميمي» أولاً، ثم «رمز QR» و«معاينة على الكيس». **وهي الباب الوحيد إلى «تصاميمي»** منذ خرج
@@ -40,7 +40,7 @@ import 'package:go_router/go_router.dart';
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  /// شارة كود العميل، ليجد الاختبار الاسم والرقم داخلها معاً.
+  /// شارة كود العميل، ليجد الاختبار الرقم داخلها.
   @visibleForTesting
   static const Key codeChipKey = Key('profile_code_chip');
 
@@ -368,15 +368,15 @@ class _Phone extends StatelessWidget {
   }
 }
 
-/// «كود العميل B849»، في شارةٍ بيضاء على البطاقة البرتقالية.
+/// «B849» وحده، في شارةٍ بيضاء على البطاقة البرتقالية.
 ///
-/// **ما يجعله واضحاً ثلاثة أشياء:** اسمه مكتوبٌ بجانبه، فلا يُحزر من أيقونة؛ وهو الشيء الأبيض
-/// الوحيد على البطاقة، فتقع العين عليه أولاً؛ ورقمه أثقل ما في البطاقة بعد الاسم.
+/// **بلا مسمّى «كود العميل»:** حذفه صاحب العمل (2026-10-16)، فالرقم وحده يكفي. وما يجعله واضحاً
+/// أنه الشيء الأبيض الوحيد على البطاقة، فتقع العين عليه أولاً، ورقمه أثقل ما فيها بعد الاسم.
 ///
 /// **وتُنسخ بلمسة:** الكود هو ما يرسله العميل إلى المتجر في محادثة، ونسخه أسلم من إعادة كتابته.
 ///
-/// ليست `CopyText` من `core/widgets/`: تلك قيمةٌ بلا اسمٍ على سطح الصفحة، وألوانها ألوان الصفحة،
-/// وهنا اسمٌ ورقمٌ على أبيضٍ فوق البرتقالي.
+/// ليست `CopyText` من `core/widgets/`: تلك قيمةٌ على سطح الصفحة بألوانها، وهنا رقمٌ على أبيضٍ
+/// فوق البرتقالي.
 class _CodeChip extends StatelessWidget {
   const _CodeChip({required this.code});
 
@@ -399,18 +399,10 @@ class _CodeChip extends StatelessWidget {
           context.showSuccess('تم نسخ كود العميل');
         },
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'كود العميل',
-                style: context.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: ink,
-                ),
-              ),
-              SizedBox(width: 8.w),
               Text(
                 code,
                 textDirection: TextDirection.ltr,
@@ -420,7 +412,7 @@ class _CodeChip extends StatelessWidget {
                   color: ink,
                 ),
               ),
-              SizedBox(width: 6.w),
+              SizedBox(width: 8.w),
               Icon(AppIcons.copy, size: 14.sp, color: ink),
             ],
           ),

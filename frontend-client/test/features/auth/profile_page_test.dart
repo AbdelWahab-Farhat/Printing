@@ -23,7 +23,7 @@ import '../wallet/fake_wallet.dart';
 /// «حسابي»: بطاقةٌ تقول من أنت، وتحتها ثلاثة صفوف.
 ///
 /// **البطاقة تحمل الاسم والهاتف وكود العميل** كما في المرجع الذي أرسله صاحب العمل، وبفرقٍ واحد
-/// طلبه صراحة: الكود واضحٌ بما يكفي ليعرفه العميل — مسمّىً باسمه، في شارةٍ بيضاء تُنسخ بلمسة.
+/// طلبه صراحة: الكود واضحٌ بما يكفي ليعرفه العميل — وحده في شارةٍ بيضاء تُنسخ بلمسة، بلا مسمّى.
 ///
 /// **والصفوف في بطاقةٍ واحدة:** «رمز QR» و«معاينة على الكيس» و«تصاميمي» أولاً، ثم الإعدادات
 /// وسياسة الخصوصية (معطّلة إلى أن تُكتب) وتسجيل الخروج آخراً. «تواصل مع الدعم» خرج لأنه مكرّرٌ في
@@ -176,17 +176,15 @@ void main() {
       expect(find.text('B849'), findsOneWidget);
     });
 
-    testWidgets('names the code in the same chip, so the customer knows it is theirs', (
-      tester,
-    ) async {
+    testWidgets('shows the code alone in its chip, with no label beside it', (tester) async {
       // Arrange & Act
       await open(tester);
 
-      // Assert — الاسم والرقم في الشارة نفسها، لا الاسم في مكانٍ والرقم في آخر.
+      // Assert — طلب صاحب العمل (2026-10-16) حذف «كود العميل»: الرقم وحده في الشارة يكفي.
       final chip = find.byKey(ProfilePage.codeChipKey);
 
       expect(find.descendant(of: chip, matching: find.text('B849')), findsOneWidget);
-      expect(find.descendant(of: chip, matching: find.text('كود العميل')), findsOneWidget);
+      expect(find.text('كود العميل'), findsNothing);
     });
 
     testWidgets('copies the code when it is tapped', (tester) async {
