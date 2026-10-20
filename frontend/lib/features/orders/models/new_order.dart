@@ -118,6 +118,11 @@ abstract class NewOrderItem with _$NewOrderItem {
     /// undercutting an agreed price. Omitted when the app has no business naming one.
     @JsonKey(name: 'unit_price', includeIfNull: false) String? unitPrice,
 
+    /// What the vendor charges for one unit of a وسيط line, typed for this order. **Honoured
+    /// only on such a line**, and refused by the server from anybody without
+    /// `products.view_cost` — so it is omitted unless the form drew the box.
+    @JsonKey(name: 'unit_cost', includeIfNull: false) String? unitCost,
+
     @JsonKey(includeIfNull: false) String? notes,
 
     /// The order the clerk put the lines in, kept so the invoice reads the way it was written.

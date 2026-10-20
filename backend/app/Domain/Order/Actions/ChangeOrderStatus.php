@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
@@ -19,6 +20,7 @@ use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
 use App\Domain\Order\Exceptions\OrderLinesNeedAPrice;
+use App\Domain\Order\Exceptions\OutsourcedLinesNeedACost;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
@@ -203,6 +205,20 @@ final class ChangeOrderStatus
 
         if ($unpricedAfterFields !== []) {
             throw OrderLinesNeedAPrice::make($unpricedAfterFields);
+        }
+
+        // **And nothing made by a vendor is called ready without what the vendor charged.**
+        //
+        // The cost side of the guard above, at the move where that cost is recognised: the first
+        // «جاهزة» is the only time a وسيط line is costed, so a line arriving with no `unit_cost`
+        // stays uncosted — and the order's profit unknown — for good. `TransitionFields` asks for
+        // the figure on this move; this only has to know that every line now has one.
+        $uncostedAfterFields = $target === OrderStatus::Ready && $order->ready_at === null
+            ? self::outsourcedLinesLeftUncosted($order, $fields)
+            : [];
+
+        if ($uncostedAfterFields !== []) {
+            throw OutsourcedLinesNeedACost::make($uncostedAfterFields);
         }
 
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $namedVendor, $acceptingARequest): Order {
@@ -518,6 +534,10 @@ final class ChangeOrderStatus
             // warehouse hands the order over — and by the time it has, the figure the restatement
             // above just settled is the corrected one, which is the right basis to cost against.
             if ($costProduction) {
+                // The vendor's figures this move confirmed, on the lines before anything
+                // multiplies them out — `ApplyOutsourcingCosts` reads `unit_cost` off the line.
+                $this->applyVendorCosts($order, $fields);
+
                 $this->costProductionForOrder($order, $actor);
             }
 
@@ -1096,6 +1116,58 @@ final class ChangeOrderStatus
         $order->load('items');
 
         ($this->recalculateTotals)($order);
+    }
+
+    /**
+     * The وسيط lines that would still have no vendor cost after the fields on this move are
+     * applied.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return list<string> what to name in the refusal, one per line
+     */
+    private static function outsourcedLinesLeftUncosted(Order $order, array $fields): array
+    {
+        $missing = [];
+
+        foreach ($order->loadMissing('items.product.productCategory.parent')->items as $item) {
+            if ($item->productionMode() !== ProductionMode::Outsourced || $item->unit_cost !== null) {
+                continue;
+            }
+
+            $typed = $fields[TransitionFields::unitCostKey($item)] ?? null;
+
+            if ($typed === null || $typed === '') {
+                $missing[] = trim("{$item->product_name} {$item->variant_label}");
+            }
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Writes the vendor cost «جاهزة» confirmed onto each وسيط line it was asked for.
+     *
+     * **Force-filled, like the quoted price above** — `unit_cost` is not fillable, because a
+     * request that could post it freely could name its own margin. This one was asked for by
+     * {@see TransitionFields}, and the request accepted nothing it did not offer.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function applyVendorCosts(Order $order, array $fields): void
+    {
+        foreach ($order->loadMissing('items.product.productCategory.parent')->items as $item) {
+            if ($item->productionMode() !== ProductionMode::Outsourced) {
+                continue;
+            }
+
+            $typed = $fields[TransitionFields::unitCostKey($item)] ?? null;
+
+            if ($typed === null || $typed === '') {
+                continue;
+            }
+
+            $item->forceFill(['unit_cost' => (string) $typed])->save();
+        }
     }
 
     private static function vendorIdIn(array $fields): ?int

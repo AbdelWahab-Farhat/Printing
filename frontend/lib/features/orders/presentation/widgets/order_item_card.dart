@@ -35,6 +35,7 @@ class OrderItemCard extends StatelessWidget {
     this.artworkUrl,
     this.onOpenProduct,
     this.onScrap,
+    this.onVendorCost,
     super.key,
   });
 
@@ -63,6 +64,10 @@ class OrderItemCard extends StatelessWidget {
 
   /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
   final VoidCallback? onScrap;
+
+  /// Null unless this وسيط line went past «جاهزة» without a vendor cost and the reader holds
+  /// `products.view_cost` — the server names the lines, see `Order.linesAwaitingVendorCost`.
+  final VoidCallback? onVendorCost;
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +122,18 @@ class OrderItemCard extends StatelessWidget {
                       foregroundColor: scheme.error,
                       visualDensity: VisualDensity.compact,
                     ),
+                  ),
+                ),
+              // On the line for the same reason as the scrap button above: the missing figure
+              // belongs to one line, and the order's profit stays unknown until it is given.
+              if (onVendorCost case final record?)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: record,
+                    icon: Icon(AppIcons.edit, size: 16.sp),
+                    label: const Text('تسجيل تكلفة المورد'),
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                   ),
                 ),
             ],

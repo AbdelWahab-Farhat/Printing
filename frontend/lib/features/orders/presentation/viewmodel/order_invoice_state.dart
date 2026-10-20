@@ -43,6 +43,14 @@ abstract class InvoiceLine with _$InvoiceLine {
     /// order's road for a line already on it, and off the product for one added here. See
     /// [OrderInvoiceState.mixesBenches].
     @Default(false) bool isOrderedAlone,
+
+    /// What the vendor charges for one unit, as typed — on a وسيط line ([isOrderedAlone]), for
+    /// a holder of `products.view_cost`. Opens on the line's own figure; empty for anybody else,
+    /// whose payload never carries one.
+    @Default('') String unitCost,
+
+    /// The figure the line was opened with, so a save that did not change it says nothing.
+    String? originalUnitCost,
   }) = _InvoiceLine;
 
   const InvoiceLine._();
@@ -84,6 +92,26 @@ abstract class InvoiceLine with _$InvoiceLine {
     if (!isPricedByHand || !isNew) return true;
 
     final parsed = double.tryParse(_ascii(unitPrice));
+
+    return parsed != null && parsed >= 0;
+  }
+
+  /// Whether the vendor's figure was typed into and differs from what the line opened with.
+  /// Empty is never a change: the server reads an absent cost as «اتركها».
+  bool get costChanged {
+    if (!isOrderedAlone || unitCost.trim().isEmpty) return false;
+
+    final now = double.tryParse(_ascii(unitCost));
+    final was = double.tryParse(originalUnitCost ?? '');
+
+    return now == null || was == null || now != was;
+  }
+
+  /// A typed vendor cost has to be a number; leaving the box empty is always allowed.
+  bool get hasValidCost {
+    if (!costChanged) return true;
+
+    final parsed = double.tryParse(_ascii(unitCost));
 
     return parsed != null && parsed >= 0;
   }
@@ -188,6 +216,7 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
             (line) =>
                 line.hasValidQuantity &&
                 line.hasValidPrice &&
+                line.hasValidCost &&
                 (!line.needsWeight(movesStock: linesMoveStock) || line.hasValidWeight),
           ));
 
@@ -241,6 +270,12 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
   String? weightErrorAt(int index) => switch (failure) {
     ServerFailure(:final fieldErrors) =>
       fieldErrors?['items.$index.warehouse_quantity']?.firstOrNull,
+    _ => null,
+  };
+
+  /// The server's complaint about one line's vendor cost, keyed by position like the weight.
+  String? unitCostErrorAt(int index) => switch (failure) {
+    ServerFailure(:final fieldErrors) => fieldErrors?['items.$index.unit_cost']?.firstOrNull,
     _ => null,
   };
 

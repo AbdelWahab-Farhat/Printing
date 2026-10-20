@@ -60,6 +60,19 @@ final readonly class OrderItemData
          * figure «جاهزة للطباعة» asks for, asked again because the line changed after it.
          */
         public ?string $warehouseQuantity = null,
+
+        /**
+         * What the vendor charges for one unit of a وسيط line, typed for this order — see
+         * Docs/outsourced-products/OUTSOURCED-PRODUCTS.md §6.1.
+         *
+         * **Honoured only on a وسيط line**, exactly as {@see $unitPrice} is honoured only on a
+         * product priced «حسب الطلب»: everything we make ourselves is costed from what it
+         * consumed, and a typed number there would be a second answer to a question the shelf
+         * already answers. Null means «the catalogue's cost» on a new line and «leave it» on a
+         * kept one. Only a staff request carries it, and only from a holder of
+         * `products.view_cost`.
+         */
+        public ?string $unitCost = null,
     ) {}
 
     /**
@@ -72,6 +85,7 @@ final readonly class OrderItemData
     ): self {
         $price = $validated['unit_price'] ?? null;
         $weight = $validated['warehouse_quantity'] ?? null;
+        $cost = $validated['unit_cost'] ?? null;
 
         return new self(
             productId: (int) $validated['product_id'],
@@ -85,6 +99,7 @@ final readonly class OrderItemData
             allowsQuoteLater: $allowsQuoteLater,
             id: isset($validated['id']) ? (int) $validated['id'] : null,
             warehouseQuantity: $weight !== null && $weight !== '' ? (string) $weight : null,
+            unitCost: $cost !== null && $cost !== '' ? (string) $cost : null,
         );
     }
 }

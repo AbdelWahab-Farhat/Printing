@@ -340,9 +340,14 @@ class OutsourcedOrderTest extends TestCase
 
         // Assert — nothing of ours is on a shelf for this order, so the form asks for nothing it
         // could not use. A picker here would be a question with no honest answer. The optional
-        // note every move carries stays: that one is about the order, not about a warehouse.
+        // note every move carries stays: that one is about the order, not about a warehouse. And
+        // so does the vendor's cost, opening on the agreed figure — see OutsourcingCostEntryTest.
         $ready = collect($response->json('data.available_transitions'))->firstWhere('status', 'ready');
-        $this->assertSame(['reason'], array_column($ready['fields'] ?? [], 'key'));
+        $item = $order->items()->sole();
+        $this->assertEqualsCanonicalizing(
+            ["unit_cost_{$item->id}", 'reason'],
+            array_column($ready['fields'] ?? [], 'key'),
+        );
     }
 
     public function test_nothing_leaves_a_shelf_of_ours(): void

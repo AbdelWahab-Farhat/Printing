@@ -28,6 +28,7 @@ class InvoiceLineUpdate {
     this.id,
     this.unitPrice,
     this.warehouseQuantity,
+    this.unitCost,
   });
 
   final int? id;
@@ -37,6 +38,9 @@ class InvoiceLineUpdate {
   final String? unitPrice;
   final String? warehouseQuantity;
 
+  /// What the vendor charges for one unit of a وسيط line — only when this edit changed it.
+  final String? unitCost;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': ?id,
     'product_id': productId,
@@ -44,6 +48,7 @@ class InvoiceLineUpdate {
     'quantity': quantity,
     'unit_price': ?unitPrice,
     'warehouse_quantity': ?warehouseQuantity,
+    'unit_cost': ?unitCost,
   };
 }
 

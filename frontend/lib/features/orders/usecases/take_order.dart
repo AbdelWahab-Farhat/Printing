@@ -104,6 +104,7 @@ class TakeOrder {
               productVariantId: line.productVariantId,
               quantity: _number(line.quantity) ?? '',
               unitPrice: _number(line.unitPrice),
+              unitCost: _number(line.unitCost),
               notes: _text(line.notes),
               // The position on the form, so the invoice reads the way it was written.
               sortOrder: index,
@@ -149,6 +150,7 @@ class DraftOrderLine {
     required this.productVariantId,
     required this.quantity,
     this.unitPrice,
+    this.unitCost,
     this.notes,
   });
 
@@ -162,6 +164,10 @@ class DraftOrderLine {
   /// where naming a price would be an attempt to undercut the catalogue and the server ignores
   /// it anyway.
   final String? unitPrice;
+
+  /// What the vendor charges for one unit, on a وسيط line and from a holder of
+  /// `products.view_cost` only. Blank means «the catalogue's, or ask at «جاهزة»».
+  final String? unitCost;
 
   final String? notes;
 }

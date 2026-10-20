@@ -20,6 +20,7 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\DeleteOrder;
 use App\Domain\Order\Actions\RecalculateOrderPayments;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
+use App\Domain\Order\Actions\RecordLateVendorCost;
 use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
@@ -522,6 +523,37 @@ class Order extends Model implements HasAuditTrail
         }
 
         return Money::round(bcsub((string) $this->grand_total, (string) $this->total_cogs, 8));
+    }
+
+    /**
+     * The وسيط lines that went past «جاهزة» without a vendor cost, by id — the lines
+     * {@see RecordLateVendorCost} will take one for. See OUTSOURCED-PRODUCTS.md §6.2.
+     *
+     * **Only orders taken before «جاهزة» required the figure can have any.** Since then the move
+     * is refused without it, so this is a list of a fixed set of old orders — and of nothing,
+     * on every order taken after.
+     *
+     * Read off the road rather than per line, so a list screen asks no category of anybody: a
+     * وسيط order's lines are all a vendor's work. The action itself asks the line. Empty on an
+     * archived order, which has nothing to be recorded against, and when the lines were not
+     * loaded — a list row does not carry them.
+     *
+     * @return list<int>
+     */
+    public function linesAwaitingVendorCost(): array
+    {
+        if ($this->ready_at === null
+            || $this->production_flow !== OrderFlow::Outsourced
+            || $this->trashed()
+            || ! $this->relationLoaded('items')) {
+            return [];
+        }
+
+        return $this->items
+            ->filter(fn (OrderItem $item): bool => $item->outsourcing_cost === null)
+            ->map(fn (OrderItem $item): int => (int) $item->getKey())
+            ->values()
+            ->all();
     }
 
     /**

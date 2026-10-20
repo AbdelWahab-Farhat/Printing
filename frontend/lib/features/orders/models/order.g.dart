@@ -149,6 +149,11 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       .toList(),
   totalCogs: json['total_cogs'] as String?,
   grossProfit: json['gross_profit'] as String?,
+  linesAwaitingVendorCost:
+      (json['lines_awaiting_vendor_cost'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const <int>[],
   fulfillmentWarehouseId: (json['fulfillment_warehouse_id'] as num?)?.toInt(),
   stockDeductedAt: json['stock_deducted_at'] == null
       ? null
@@ -267,6 +272,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'transitions': instance.transitions?.map((e) => e.toJson()).toList(),
   'total_cogs': instance.totalCogs,
   'gross_profit': instance.grossProfit,
+  'lines_awaiting_vendor_cost': instance.linesAwaitingVendorCost,
   'fulfillment_warehouse_id': instance.fulfillmentWarehouseId,
   'stock_deducted_at': instance.stockDeductedAt?.toIso8601String(),
   'vendor_id': instance.vendorId,

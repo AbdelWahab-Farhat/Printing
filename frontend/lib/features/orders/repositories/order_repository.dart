@@ -241,6 +241,17 @@ abstract interface class OrderRepository {
     required String notes,
   });
 
+  /// Records what the vendor charged for one unit of a وسيط line that reached «جاهزة» without
+  /// a cost — [unitCost] already in ASCII.
+  ///
+  /// The order comes back: its `total_cogs` and `gross_profit` are what this changed, and the
+  /// screen redraws from them rather than working the arithmetic out itself.
+  Future<Either<Failure, Order>> recordVendorCost(
+    int orderId,
+    int itemId, {
+    required String unitCost,
+  });
+
   /// Puts the next version of the artwork in front of the customer.
   ///
   /// The design is *pointed at*, never uploaded here: it lives in the customer's library, which

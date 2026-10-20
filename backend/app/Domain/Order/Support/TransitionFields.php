@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Support;
 
 use App\Application\Api\V1\Resources\OrderResource;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -314,6 +315,51 @@ final class TransitionFields
                     // An answer, not a placeholder: a line weighed at «جاهزة للطباعة» opens here
                     // holding that figure, so an unchanged run is confirmed by leaving it be.
                     value: $item->warehouse_quantity !== null ? (string) $item->warehouse_quantity : null,
+                );
+            }
+        }
+
+        // **What the vendor actually charged, at the move where it is recognised.**
+        //
+        // The first «جاهزة» is the only time a وسيط line is costed — `ApplyOutsourcingCosts`
+        // multiplies `unit_cost` out then and never again — and it is the moment the goods came
+        // back with the vendor's bill. So it is asked here, per line, of whoever is receiving them.
+        // See OUTSOURCED-PRODUCTS.md §6.1.
+        //
+        // **Required where the line has no cost**, which is every «حسب الطلب» job whose size the
+        // catalogue cannot price: without it the order's profit stays unknown for good, and
+        // `ChangeOrderStatus` refuses the move. Asked of anybody making the move, grant or not —
+        // the person holding the vendor's bill is the one who knows the number, and refusing
+        // them would strand the order.
+        //
+        // **Optional where the line already has one**, and opening on it, so leaving it alone
+        // means «as agreed». Offered only to a holder of `products.view_cost`: pre-filling the
+        // vendor's figure for anybody else would be sending it to a reader the order resource
+        // withholds it from.
+        if ($target === OrderStatus::Ready && $order->ready_at === null) {
+            $order->loadMissing('items.product.productCategory.parent');
+
+            $seesCost = $actor?->can(PermissionName::ViewProductCost->value) === true;
+
+            foreach ($order->items as $item) {
+                if ($item->productionMode() !== ProductionMode::Outsourced) {
+                    continue;
+                }
+
+                $hasCost = $item->unit_cost !== null;
+
+                if ($hasCost && ! $seesCost) {
+                    continue;
+                }
+
+                $fields[] = TransitionField::number(
+                    key: self::unitCostKey($item),
+                    label: "تكلفة المورد لل{$item->pricing_unit->label()} — {$item->product_name} ({$item->variant_label})",
+                    required: ! $hasCost,
+                    hint: $hasCost
+                        ? 'المتفق عليه يوم الطلب — صحّحه إن اختلفت فاتورة المورد'
+                        : 'من فاتورة المورد — تُحتسب على '.DecimalText::trim($item->billableQuantity())." {$item->pricing_unit->label()}",
+                    value: $hasCost ? (string) $item->unit_cost : null,
                 );
             }
         }
@@ -1070,6 +1116,12 @@ final class TransitionFields
     public static function unitPriceKey(OrderItem $item): string
     {
         return "unit_price_{$item->getKey()}";
+    }
+
+    /** What the «what did the vendor charge for this» box for one وسيط line is called. */
+    public static function unitCostKey(OrderItem $item): string
+    {
+        return "unit_cost_{$item->getKey()}";
     }
 
     /**

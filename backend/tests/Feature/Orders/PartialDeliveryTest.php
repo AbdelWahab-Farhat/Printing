@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Catalog\Enums\PricingMode;
 use App\Domain\Catalog\Enums\PricingUnit;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductPriceTier;
@@ -174,6 +175,11 @@ class PartialDeliveryTest extends TestCase
                 'pricing_unit' => $size->product->pricing_unit,
                 'unit_price' => '1.100',
                 'line_total' => bcmul('1.100', $quantity, 2),
+                // A وسيط line cannot reach «جاهزة» without what the vendor charged — see
+                // OUTSOURCED-PRODUCTS.md §6.1. Null on every line we make ourselves.
+                'unit_cost' => $size->product->productCategory?->production_mode === ProductionMode::Outsourced
+                    ? '0.800'
+                    : null,
             ]);
         }
 

@@ -113,7 +113,7 @@ grand_total = الأساس − discount            ← ويُرفض خصمٌ أ�
 
 | الحقل | ما هو | من يكتبه | متى |
 |---|---|---|---|
-| `order_items.unit_cost` | سعر المورّد للوحدة، **مُلتقَط يوم الطلب** لا من الكتالوج اليوم | `AddOrderItem` | عند الطلب |
+| `order_items.unit_cost` | سعر المورّد للوحدة، **مُلتقَط يوم الطلب** لا من الكتالوج اليوم — أو مكتوبٌ لهذه الطلبية (بصلاحية `products.view_cost`)، ويُطلب إجبارياً عند «جاهزة» إن بقي فارغاً ([§6.1](../outsourced-products/OUTSOURCED-PRODUCTS.md#61-typing-the-vendors-cost-for-one-order-2026-10-20)) | `AddOrderItem` · `SyncOrderItems` · `ChangeOrderStatus` | عند الطلب/التعديل · أول «جاهزة» |
 | `order_items.outsourcing_cost` | `unit_cost × billableQuantity` | [`ApplyOutsourcingCosts`](../../backend/app/Domain/Order/Actions/ApplyOutsourcingCosts.php) | «جاهزة» |
 
 ### د. الجمع

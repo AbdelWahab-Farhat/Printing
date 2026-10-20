@@ -187,6 +187,67 @@ written off before «جاهزة» never had a cost recognised in the first place
 were copied from, because hiding a figure on one screen and sending it on another is a lock on one
 door of two.
 
+### 6.1 Typing the vendor's cost for one order (2026-10-20)
+
+**Why.** The catalogue can only hold a cost for a size with a fixed vendor price. A «حسب الطلب» job
+has none: the vendor quotes each job, so its size carries no `cost_price` and its line came in with
+`unit_cost` null. `ApplyOutsourcingCosts` then had nothing to multiply, `cogs` stayed null, and the
+order showed «لم تُحتسب» instead of a profit — permanently, because a line is costed only once.
+On the day this was built, 4 of the 5 وسيط lines in the database were in that state.
+
+**Two places to name it, one column.** Both write `order_items.unit_cost`. Everything downstream —
+`ApplyOutsourcingCosts`, `cogs`, `total_cogs`, «مجمل الربح», the P&L — is unchanged.
+
+| Where | Who | Rule |
+|---|---|---|
+| **Taking / editing the order** — `items.*.unit_cost` beside `unit_price` | a holder of `products.view_cost` only; anyone else gets **422**, not a silent drop | Optional. Honoured only on a وسيط line (`AddOrderItem::cost()`), ignored on our own lines like `unit_price` is on a listed product. Typed beats the catalogue; absent means the catalogue's on a new line and «leave it» on a kept one. A cost-only edit does not re-price the line (`SyncOrderItems::editLine`). |
+| **The first «جاهزة»** — `unit_cost_{item}` in `TransitionFields` | whoever makes the move | One box per وسيط line. **Required** where the line has no cost — asked even of a mover without the grant, because the person holding the vendor's bill knows the number. **Optional and pre-filled** where it has one — offered only to a holder of `products.view_cost`, since pre-filling it would leak the figure. `ChangeOrderStatus::applyVendorCosts()` writes it just before `costProductionForOrder()`. |
+
+**Guarded in the domain too.** `ChangeOrderStatus` refuses the first «جاهزة» with
+`OutsourcedLinesNeedACost` (422 on `items`) while any وسيط line would still have no cost after the
+fields are applied — the twin of `OrderLinesNeedAPrice` on the accept move, so a caller that skips
+the request (a console command, an importer) cannot cost a line at nothing.
+
+**No correction after «جاهزة».** Owner decision, 2026-10-20: the line's cost is recognised once.
+The order's lines are already shut from «قيد التصنيع» on (`Order::itemsAreEditable()`), so the
+«جاهزة» box is the last place it can change. Correcting a vendor's bill afterwards is a separate
+change if it is ever needed.
+
+**Not asked when a customer's request is accepted.** The accept dialog quotes the price; the cost
+is left to «جاهزة», which catches every line that still has none.
+
+Tests: `tests/Feature/Orders/OutsourcingCostEntryTest.php`; Flutter
+`test/features/orders/vendor_cost_entry_test.dart`.
+
+### 6.2 Orders that went past «جاهزة» without one (2026-10-20)
+
+**Why.** §6.1 closes the gap for every order from now on, but not for the ones already through
+«جاهزة» with no cost (order 1261 locally). Those were costed at nothing, permanently: the order
+shows «لم تُحتسب», and the P&L sums their `total_cogs` as zero — so once delivered, the whole sale
+reads as profit.
+
+**A one-time fill, not a correction** — decision 3 still holds.
+`POST /orders/{order}/items/{item}/vendor-cost` with `unit_cost`, behind `orders.manage` **and**
+`products.view_cost`. `RecordLateVendorCost` refuses (422 on `unit_cost`,
+`VendorCostCannotBeRecorded`) a line that is not وسيط, an order that has not reached «جاهزة»
+(the move asks), and a line that already has an `outsourcing_cost`. The line is locked while it is
+checked, so a double tap cannot record it twice. Returns the order.
+
+**Costed as «جاهزة» would have done it**: `unit_cost × (quantity − shortage)` through
+`ApplyOutsourcingCosts::costLine()`, then `RecalculateOrderCogs`. Not `billableQuantity()` — on a
+delivered order that has also lost what the customer left at the counter, which the vendor still
+made. The `delivery_loss` entry such a line would have got at «تم الاستلام» is not written back:
+the profit is right, the P&L just does not name that slice.
+
+**Nothing else to restate.** Deal earnings are split by the shelves an order drew from, and a وسيط
+order draws none, so no investor money moves. The P&L is computed on read, and the order joins
+«ربح بانتظار التسليم» once it has a `total_cogs`.
+
+**How the app knows where to offer it.** `OrderResource.lines_awaiting_vendor_cost` — the line ids
+of a وسيط order past «جاهزة» whose `outsourcing_cost` is null; `products.view_cost` only, empty on
+an archived order and on a list row. The order screen puts «تسجيل تكلفة المورد» under exactly those
+lines (`record_vendor_cost_sheet.dart`).
+
 ---
 
 ## 7. Are orders taken before this affected?

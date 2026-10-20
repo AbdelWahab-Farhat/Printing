@@ -27,7 +27,11 @@ mixin _$InvoiceLine {
  String get warehouseQuantity;/// Whether this line's product goes in an order of its own — a وسيط one. Read off the
 /// order's road for a line already on it, and off the product for one added here. See
 /// [OrderInvoiceState.mixesBenches].
- bool get isOrderedAlone;
+ bool get isOrderedAlone;/// What the vendor charges for one unit, as typed — on a وسيط line ([isOrderedAlone]), for
+/// a holder of `products.view_cost`. Opens on the line's own figure; empty for anybody else,
+/// whose payload never carries one.
+ String get unitCost;/// The figure the line was opened with, so a save that did not change it says nothing.
+ String? get originalUnitCost;
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -38,16 +42,16 @@ $InvoiceLineCopyWith<InvoiceLine> get copyWith => _$InvoiceLineCopyWithImpl<Invo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&(identical(other.originalQuantity, originalQuantity) || other.originalQuantity == originalQuantity)&&(identical(other.isPricedByHand, isPricedByHand) || other.isPricedByHand == isPricedByHand)&&(identical(other.isStockedInAnotherUnit, isStockedInAnotherUnit) || other.isStockedInAnotherUnit == isStockedInAnotherUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.isOrderedAlone, isOrderedAlone) || other.isOrderedAlone == isOrderedAlone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&(identical(other.originalQuantity, originalQuantity) || other.originalQuantity == originalQuantity)&&(identical(other.isPricedByHand, isPricedByHand) || other.isPricedByHand == isPricedByHand)&&(identical(other.isStockedInAnotherUnit, isStockedInAnotherUnit) || other.isStockedInAnotherUnit == isStockedInAnotherUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.isOrderedAlone, isOrderedAlone) || other.isOrderedAlone == isOrderedAlone)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.originalUnitCost, originalUnitCost) || other.originalUnitCost == originalUnitCost));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,isNew,originalQuantity,isPricedByHand,isStockedInAnotherUnit,stockUnitLabel,warehouseQuantity,isOrderedAlone);
+int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,isNew,originalQuantity,isPricedByHand,isStockedInAnotherUnit,stockUnitLabel,warehouseQuantity,isOrderedAlone,unitCost,originalUnitCost);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, isNew: $isNew, originalQuantity: $originalQuantity, isPricedByHand: $isPricedByHand, isStockedInAnotherUnit: $isStockedInAnotherUnit, stockUnitLabel: $stockUnitLabel, warehouseQuantity: $warehouseQuantity, isOrderedAlone: $isOrderedAlone)';
+  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, isNew: $isNew, originalQuantity: $originalQuantity, isPricedByHand: $isPricedByHand, isStockedInAnotherUnit: $isStockedInAnotherUnit, stockUnitLabel: $stockUnitLabel, warehouseQuantity: $warehouseQuantity, isOrderedAlone: $isOrderedAlone, unitCost: $unitCost, originalUnitCost: $originalUnitCost)';
 }
 
 
@@ -58,7 +62,7 @@ abstract mixin class $InvoiceLineCopyWith<$Res>  {
   factory $InvoiceLineCopyWith(InvoiceLine value, $Res Function(InvoiceLine) _then) = _$InvoiceLineCopyWithImpl;
 @useResult
 $Res call({
- int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, bool isNew, String? originalQuantity, bool isPricedByHand, bool isStockedInAnotherUnit, String? stockUnitLabel, String warehouseQuantity, bool isOrderedAlone
+ int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, bool isNew, String? originalQuantity, bool isPricedByHand, bool isStockedInAnotherUnit, String? stockUnitLabel, String warehouseQuantity, bool isOrderedAlone, String unitCost, String? originalUnitCost
 });
 
 
@@ -75,7 +79,7 @@ class _$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? isNew = null,Object? originalQuantity = freezed,Object? isPricedByHand = null,Object? isStockedInAnotherUnit = null,Object? stockUnitLabel = freezed,Object? warehouseQuantity = null,Object? isOrderedAlone = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? isNew = null,Object? originalQuantity = freezed,Object? isPricedByHand = null,Object? isStockedInAnotherUnit = null,Object? stockUnitLabel = freezed,Object? warehouseQuantity = null,Object? isOrderedAlone = null,Object? unitCost = null,Object? originalUnitCost = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -92,7 +96,9 @@ as bool,isStockedInAnotherUnit: null == isStockedInAnotherUnit ? _self.isStocked
 as bool,stockUnitLabel: freezed == stockUnitLabel ? _self.stockUnitLabel : stockUnitLabel // ignore: cast_nullable_to_non_nullable
 as String?,warehouseQuantity: null == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
 as String,isOrderedAlone: null == isOrderedAlone ? _self.isOrderedAlone : isOrderedAlone // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,unitCost: null == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String,originalUnitCost: freezed == originalUnitCost ? _self.originalUnitCost : originalUnitCost // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -177,10 +183,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone,  String unitCost,  String? originalUnitCost)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone,_that.unitCost,_that.originalUnitCost);case _:
   return orElse();
 
 }
@@ -198,10 +204,10 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone,  String unitCost,  String? originalUnitCost)  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine():
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone,_that.unitCost,_that.originalUnitCost);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +224,10 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int productId,  int variantId,  String productName,  String variantLabel,  String pricingUnitLabel,  String unitPrice,  String quantity,  bool isNew,  String? originalQuantity,  bool isPricedByHand,  bool isStockedInAnotherUnit,  String? stockUnitLabel,  String warehouseQuantity,  bool isOrderedAlone,  String unitCost,  String? originalUnitCost)?  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone);case _:
+return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that.variantLabel,_that.pricingUnitLabel,_that.unitPrice,_that.quantity,_that.isNew,_that.originalQuantity,_that.isPricedByHand,_that.isStockedInAnotherUnit,_that.stockUnitLabel,_that.warehouseQuantity,_that.isOrderedAlone,_that.unitCost,_that.originalUnitCost);case _:
   return null;
 
 }
@@ -233,7 +239,7 @@ return $default(_that.id,_that.productId,_that.variantId,_that.productName,_that
 
 
 class _InvoiceLine extends InvoiceLine {
-  const _InvoiceLine({required this.id, required this.productId, required this.variantId, required this.productName, required this.variantLabel, required this.pricingUnitLabel, required this.unitPrice, required this.quantity, this.isNew = false, this.originalQuantity, this.isPricedByHand = false, this.isStockedInAnotherUnit = false, this.stockUnitLabel, this.warehouseQuantity = '', this.isOrderedAlone = false}): super._();
+  const _InvoiceLine({required this.id, required this.productId, required this.variantId, required this.productName, required this.variantLabel, required this.pricingUnitLabel, required this.unitPrice, required this.quantity, this.isNew = false, this.originalQuantity, this.isPricedByHand = false, this.isStockedInAnotherUnit = false, this.stockUnitLabel, this.warehouseQuantity = '', this.isOrderedAlone = false, this.unitCost = '', this.originalUnitCost}): super._();
   
 
 /// The server's line id — or, for a line added on this screen, a negative stand-in that
@@ -264,6 +270,12 @@ class _InvoiceLine extends InvoiceLine {
 /// order's road for a line already on it, and off the product for one added here. See
 /// [OrderInvoiceState.mixesBenches].
 @override@JsonKey() final  bool isOrderedAlone;
+/// What the vendor charges for one unit, as typed — on a وسيط line ([isOrderedAlone]), for
+/// a holder of `products.view_cost`. Opens on the line's own figure; empty for anybody else,
+/// whose payload never carries one.
+@override@JsonKey() final  String unitCost;
+/// The figure the line was opened with, so a save that did not change it says nothing.
+@override final  String? originalUnitCost;
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
@@ -275,16 +287,16 @@ _$InvoiceLineCopyWith<_InvoiceLine> get copyWith => __$InvoiceLineCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&(identical(other.originalQuantity, originalQuantity) || other.originalQuantity == originalQuantity)&&(identical(other.isPricedByHand, isPricedByHand) || other.isPricedByHand == isPricedByHand)&&(identical(other.isStockedInAnotherUnit, isStockedInAnotherUnit) || other.isStockedInAnotherUnit == isStockedInAnotherUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.isOrderedAlone, isOrderedAlone) || other.isOrderedAlone == isOrderedAlone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.variantId, variantId) || other.variantId == variantId)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&(identical(other.originalQuantity, originalQuantity) || other.originalQuantity == originalQuantity)&&(identical(other.isPricedByHand, isPricedByHand) || other.isPricedByHand == isPricedByHand)&&(identical(other.isStockedInAnotherUnit, isStockedInAnotherUnit) || other.isStockedInAnotherUnit == isStockedInAnotherUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.warehouseQuantity, warehouseQuantity) || other.warehouseQuantity == warehouseQuantity)&&(identical(other.isOrderedAlone, isOrderedAlone) || other.isOrderedAlone == isOrderedAlone)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.originalUnitCost, originalUnitCost) || other.originalUnitCost == originalUnitCost));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,isNew,originalQuantity,isPricedByHand,isStockedInAnotherUnit,stockUnitLabel,warehouseQuantity,isOrderedAlone);
+int get hashCode => Object.hash(runtimeType,id,productId,variantId,productName,variantLabel,pricingUnitLabel,unitPrice,quantity,isNew,originalQuantity,isPricedByHand,isStockedInAnotherUnit,stockUnitLabel,warehouseQuantity,isOrderedAlone,unitCost,originalUnitCost);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, isNew: $isNew, originalQuantity: $originalQuantity, isPricedByHand: $isPricedByHand, isStockedInAnotherUnit: $isStockedInAnotherUnit, stockUnitLabel: $stockUnitLabel, warehouseQuantity: $warehouseQuantity, isOrderedAlone: $isOrderedAlone)';
+  return 'InvoiceLine(id: $id, productId: $productId, variantId: $variantId, productName: $productName, variantLabel: $variantLabel, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, quantity: $quantity, isNew: $isNew, originalQuantity: $originalQuantity, isPricedByHand: $isPricedByHand, isStockedInAnotherUnit: $isStockedInAnotherUnit, stockUnitLabel: $stockUnitLabel, warehouseQuantity: $warehouseQuantity, isOrderedAlone: $isOrderedAlone, unitCost: $unitCost, originalUnitCost: $originalUnitCost)';
 }
 
 
@@ -295,7 +307,7 @@ abstract mixin class _$InvoiceLineCopyWith<$Res> implements $InvoiceLineCopyWith
   factory _$InvoiceLineCopyWith(_InvoiceLine value, $Res Function(_InvoiceLine) _then) = __$InvoiceLineCopyWithImpl;
 @override @useResult
 $Res call({
- int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, bool isNew, String? originalQuantity, bool isPricedByHand, bool isStockedInAnotherUnit, String? stockUnitLabel, String warehouseQuantity, bool isOrderedAlone
+ int id, int productId, int variantId, String productName, String variantLabel, String pricingUnitLabel, String unitPrice, String quantity, bool isNew, String? originalQuantity, bool isPricedByHand, bool isStockedInAnotherUnit, String? stockUnitLabel, String warehouseQuantity, bool isOrderedAlone, String unitCost, String? originalUnitCost
 });
 
 
@@ -312,7 +324,7 @@ class __$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? isNew = null,Object? originalQuantity = freezed,Object? isPricedByHand = null,Object? isStockedInAnotherUnit = null,Object? stockUnitLabel = freezed,Object? warehouseQuantity = null,Object? isOrderedAlone = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? productId = null,Object? variantId = null,Object? productName = null,Object? variantLabel = null,Object? pricingUnitLabel = null,Object? unitPrice = null,Object? quantity = null,Object? isNew = null,Object? originalQuantity = freezed,Object? isPricedByHand = null,Object? isStockedInAnotherUnit = null,Object? stockUnitLabel = freezed,Object? warehouseQuantity = null,Object? isOrderedAlone = null,Object? unitCost = null,Object? originalUnitCost = freezed,}) {
   return _then(_InvoiceLine(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
@@ -329,7 +341,9 @@ as bool,isStockedInAnotherUnit: null == isStockedInAnotherUnit ? _self.isStocked
 as bool,stockUnitLabel: freezed == stockUnitLabel ? _self.stockUnitLabel : stockUnitLabel // ignore: cast_nullable_to_non_nullable
 as String?,warehouseQuantity: null == warehouseQuantity ? _self.warehouseQuantity : warehouseQuantity // ignore: cast_nullable_to_non_nullable
 as String,isOrderedAlone: null == isOrderedAlone ? _self.isOrderedAlone : isOrderedAlone // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,unitCost: null == unitCost ? _self.unitCost : unitCost // ignore: cast_nullable_to_non_nullable
+as String,originalUnitCost: freezed == originalUnitCost ? _self.originalUnitCost : originalUnitCost // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

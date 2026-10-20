@@ -10,6 +10,7 @@ use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
+use App\Application\Api\V1\Requests\Order\RecordVendorCostRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
@@ -667,6 +668,24 @@ class OrderController extends Controller
         );
 
         return $this->created(new ProductionCostEntryResource($entry), 'تم تسجيل التلف بنجاح');
+    }
+
+    /**
+     * Record a vendor cost after «جاهزة»
+     *
+     * For a وسيط line that went past «جاهزة» without a vendor cost — orders taken before that
+     * move required one. Costs the line exactly as «جاهزة» would have, once; a line that already
+     * has a cost is refused. Returns the order, whose `total_cogs` and `gross_profit` this moved.
+     * See OUTSOURCED-PRODUCTS.md §6.2.
+     */
+    public function storeVendorCost(RecordVendorCostRequest $request, Order $order, OrderItem $item): JsonResponse
+    {
+        $updated = $this->orders->recordLateVendorCost($order, $item, (string) $request->validated('unit_cost'));
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            'تم تسجيل تكلفة المورد',
+        );
     }
 
     /**

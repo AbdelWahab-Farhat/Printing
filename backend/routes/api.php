@@ -542,6 +542,13 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->middleware('can:inventory.manage')->name('orders.items.scrap');
 
+        // The vendor's cost for a وسيط line that went past «جاهزة» without one — once. Both
+        // grants: changing the order is `orders.manage`, and naming what the vendor charges is
+        // `products.view_cost`, the grant that guards every other copy of the figure.
+        Route::post('orders/{order}/items/{item}/vendor-cost', [OrderController::class, 'storeVendorCost'])
+            ->scopeBindings()
+            ->middleware(['can:orders.manage', 'can:products.view_cost'])->name('orders.items.vendor-cost');
+
         // ── the carrier ─────────────────────────────────────────────────────────────────
         // Two queues that exist because this integration can fail quietly: webhooks that arrived
         // and were never processed, and orders dispatched but never lodged. Reading is its own
