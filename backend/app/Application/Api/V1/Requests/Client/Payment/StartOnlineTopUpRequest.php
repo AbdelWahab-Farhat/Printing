@@ -31,6 +31,14 @@ class StartOnlineTopUpRequest extends FormRequest
             'amount' => ['required', 'decimal:0,2', 'min:1', 'max:100000'],
             /** «اشحن وادفع»: an order of the customer's, paid from the wallet once it is topped up. */
             'order_id' => ['nullable', 'integer'],
+            /** How much of the wallet that order is paid — the عربون chosen in the basket. Absent: as much as the wallet can. */
+            'order_amount' => [
+                'nullable',
+                Rule::prohibitedIf(fn (): bool => $this->input('order_id') === null),
+                'decimal:0,2',
+                'min:0.01',
+                'max:999999999',
+            ],
             'card_number' => ['nullable', 'string', 'regex:/^[0-9 ]{4,32}$/'],
             'service_mobile_number' => ['nullable', 'string', 'regex:/^[0-9+ ]{9,16}$/'],
             'birth_year' => ['nullable', 'digits:4'],
@@ -56,6 +64,8 @@ class StartOnlineTopUpRequest extends FormRequest
             'service_mobile_number.regex' => 'رقم الهاتف غير صحيح',
             'birth_year.digits' => 'سنة الميلاد أربعة أرقام',
             'qr_content.max' => 'رمز QR غير صالح',
+            'order_amount.prohibited' => 'مبلغ الطلبية يحتاج طلبية',
+            'order_amount.decimal' => 'مبلغ الطلبية بخانتين عشريتين على الأكثر',
         ];
     }
 }

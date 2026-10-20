@@ -8,6 +8,8 @@ import 'package:dayaa_client/core/widgets/app_button.dart';
 import 'package:dayaa_client/core/widgets/app_speed_dial.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/deposit_due_card.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/order_deposit_sheet.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_destination_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_lines_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/order_money_card.dart';
@@ -171,6 +173,10 @@ class _Loaded extends StatelessWidget {
           ),
           children: [
             OrderStageCard(order: order),
+            // «بانتظار العربون»: كم وأين، تحت المرحلة التي تنتظره.
+            DepositDueCard(order: order),
+            // قُبلت بعد المراجعة والعربون للعميل يختاره — خطوة السلة، مؤجَّلة (2026-10-19).
+            DepositOfferCard(order: order, onChosen: onRefresh),
             SizedBox(height: 12.h),
             // تحت بطاقة الحالة مباشرة (طلب المستخدم، 2026-09-25): ما كتبه المتجر عند المراجعة
             // والرفض كلامٌ عن المرحلة نفسها، فمكانه بجانبها.
@@ -180,8 +186,10 @@ class _Loaded extends StatelessWidget {
             ),
             SizedBox(height: 24.h),
             OrderMoneyCard(order: order),
-            // «ادفع من المحفظة» — يظهر وحده حين في المحفظة مالٌ وعلى الطلبية متبقٍّ.
-            PayFromWalletCard(order: order, onPaid: onRefresh),
+            // «ادفع من المحفظة» — يظهر وحده حين في المحفظة مالٌ وعلى الطلبية متبقٍّ. **ولا يظهر
+            // والعربون معروضٌ للاختيار**: الاختيار هو الطريق — ربعٌ على الأقل، وينقل الطلبية — أما
+            // دفعةٌ حرّة هنا فتترك الطلبية «جديدة» بلا عربون.
+            if (order.depositOffer == null) PayFromWalletCard(order: order, onPaid: onRefresh),
             SizedBox(height: 24.h),
             _SectionTitle('المنتجات', count: order.items.length),
             SizedBox(height: 10.h),

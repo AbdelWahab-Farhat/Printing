@@ -33,7 +33,9 @@ class ClientOrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $stage = CustomerOrderStage::forStatus($this->status);
+        // Of the order, not its status alone: «جديدة» waiting on the customer's عربون is
+        // «بانتظار العربون» to them — see `CustomerOrderStage::of()`.
+        $stage = CustomerOrderStage::of($this->resource);
 
         // يُسأل مرةً واحدة: ثلاثة حقولٍ من المال أدناه تتوقف على الجواب.
         $awaitingQuote = $this->hasUnpricedLines();

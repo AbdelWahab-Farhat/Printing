@@ -1,12 +1,16 @@
 part of 'place_order_cubit.dart';
 
-/// خطوتا السلة، بالترتيب الذي يرسمه الشريط أعلاها.
+/// خطوات السلة، بالترتيب الذي يرسمه الشريط أعلاها.
 enum CheckoutStep {
   /// «المنتجات» — ما في السلة، ويُحذف منه.
   products,
 
   /// «بيانات الطلب» — المتجر والوجهة وهاتف الاستلام والتصاميم والملاحظة.
   details,
+
+  /// «العربون» — كم يُدفع الآن وكيف (صاحب العمل، 2026-10-19). **تُرسم حين يعرضها الخادم وحده**:
+  /// سلةٌ فيها «حسب الطلب» أو بضاعة وسيط تُرسل للمراجعة من «بيانات الطلب» كما كانت.
+  deposit,
 }
 
 /// تسعير السلة من الخادم: لم يصل بعد، أو وصل، أو فشل.
@@ -55,6 +59,22 @@ sealed class PlaceOrderState with _$PlaceOrderState {
     /// سعر كل سطرٍ والتكلفة النهائية، كما حسبها الخادم للسطور والمدينة الحاليّتين.
     @Default(BasketPricing.pending()) BasketPricing pricing,
 
+    /// كيف يُدفع العربون. **لا اختيارَ مسبقاً**: مالٌ يُدفع يختاره صاحبه بيده.
+    CheckoutPayment? payment,
+
+    /// العربون المختار، كما يُرسل — يبدأ بأقلّه (ربع البضاعة) حين تُفتح الخطوة.
+    String? depositAmount,
+
+    /// رصيد المحفظة، لخيار «من المحفظة». `null` حين لم يصل — فلا يُعرض خيارٌ لا يُعرف أيكفي.
+    String? walletBalance,
+
+    /// طرق الشحن الإلكتروني التي يدعمها التطبيق، كلٌّ صفٌّ في «أو عبّئ محفظتك وادفع مباشرة» (كبريمولا).
+    /// فارغةٌ حين الشحن مطفأ أو تعذّر السؤال.
+    @Default(<TopUpMethod>[]) List<TopUpMethod> onlineMethods,
+
+    /// الطريقة الإلكترونية المختارة حين [payment] إلكتروني.
+    int? onlineMethodId,
+
     @Default(false) bool isSubmitting,
 
     /// الطلبية التي أنشأها المتجر. **«بانتظار المراجعة»** — لا شيء مؤكَّد ولا شيء مُسعَّر من المخزن
@@ -97,11 +117,61 @@ extension PlaceOrderStateX on PlaceOrderState {
   /// مطلوب، ومدينةٌ تطلب منطقةً يقبلها `RequestOrderRequest` بلا منطقة — فهذه وحدها أشدّ من الخادم،
   /// لأن طلبيةً بلا حيّها طلبيةٌ على أحدٍ أن يتصل بالعميل من أجلها.
   bool get canSubmit => switch (this) {
-    PlaceOrderReady(:final lines, :final cityId, :final regionId) =>
+    PlaceOrderReady(:final lines, :final cityId, :final regionId, :final step) =>
       lines.isNotEmpty &&
           cityId != null &&
-          (!(selectedCity?.needsRegion ?? false) || regionId != null),
+          (!(selectedCity?.needsRegion ?? false) || regionId != null) &&
+          (step != CheckoutStep.deposit || depositIsReady),
     _ => false,
+  };
+
+  /// العربون الذي يعرضه الخادم لهذه السلة، أو `null` حين لا خطوة عربون.
+  DepositOffer? get depositOffer => switch (quote?.deposit) {
+    final offer? when offer.offered && offer.minAmount != null && offer.maxAmount != null => offer,
+    _ => null,
+  };
+
+  /// هل في السلة خطوةٌ ثالثة.
+  bool get hasDepositStep => depositOffer != null;
+
+  /// هل يُضغط زرّ «بيانات الطلب»: التسعير وصل، فيُعرف أيُرسَل للمراجعة أم يُختار العربون أولاً.
+  /// زرٌّ يُضغط قبله كان سيرسل للمراجعة سلةً كانت ستُعرض عليها خطوة العربون بعد لحظة.
+  bool get detailsCanGoOn => switch (this) {
+    PlaceOrderReady(pricing: BasketPricingPending()) => false,
+    _ => true,
+  };
+
+  /// رفض المبلغ قبل الإرسال — [depositAmountError] في `deposit_rules.dart`. `null` حين يصلح أو لا خطوة.
+  String? get depositAmountError => switch ((this, depositOffer)) {
+    (PlaceOrderReady(:final depositAmount), final offer?) => rules.depositAmountError(offer, depositAmount),
+    _ => null,
+  };
+
+  /// المحفظة تكفي العربون المختار.
+  bool get walletCovers => switch (this) {
+    PlaceOrderReady(:final walletBalance, :final depositAmount) =>
+      rules.walletCoversDeposit(walletBalance, depositAmount),
+    _ => false,
+  };
+
+  /// اختير طريقُ الدفع وصلح كلُّ ما يتعلّق به — [depositChoiceIsReady] في `deposit_rules.dart`.
+  bool get depositIsReady => switch ((this, depositOffer)) {
+    (PlaceOrderReady(:final payment, :final depositAmount, :final walletBalance), final offer?) =>
+      rules.depositChoiceIsReady(
+        offer: offer,
+        payment: payment,
+        amount: depositAmount,
+        walletBalance: walletBalance,
+        onlineMethod: selectedOnlineMethod,
+      ),
+    _ => false,
+  };
+
+  /// الطريقة الإلكترونية المختارة، من القائمة.
+  TopUpMethod? get selectedOnlineMethod => switch (this) {
+    PlaceOrderReady(:final onlineMethods, :final onlineMethodId?) =>
+      onlineMethods.where((method) => method.id == onlineMethodId).firstOrNull,
+    _ => null,
   };
 
   bool get isSubmitting => switch (this) {
@@ -140,6 +210,15 @@ extension PlaceOrderStateX on PlaceOrderState {
   String? get phoneError => switch (this) {
     PlaceOrderReady(lastFailure: ServerFailure(:final fieldErrors)) =>
       fieldErrors?['recipient_phone']?.firstOrNull,
+    _ => null,
+  };
+
+  /// رفض الخادم للعربون — مبلغاً أو طريقاً — ليُعلَّق في خطوته.
+  String? get depositServerError => switch (this) {
+    PlaceOrderReady(lastFailure: ServerFailure(:final fieldErrors?)) =>
+      fieldErrors['deposit.amount']?.firstOrNull ??
+          fieldErrors['deposit.payment']?.firstOrNull ??
+          fieldErrors['deposit']?.firstOrNull,
     _ => null,
   };
 }

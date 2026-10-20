@@ -606,6 +606,39 @@ class OnlineTopUpTest extends TestCase
         $this->artisan('wallets:check')->assertSuccessful();
     }
 
+    public function test_a_top_up_for_a_deposit_pays_the_deposit_and_no_more(): void
+    {
+        // Arrange — the عربون chosen in the basket (2026-10-19): 30 of an 80 order.
+        $customer = Customer::factory()->registered()->create();
+        $order = Order::factory()->create([
+            'customer_id' => $customer->id,
+            'items_total' => '80.00',
+            'delivery_price' => '0.00',
+            'grand_total' => '80.00',
+            'status' => OrderStatus::AwaitingDeposit,
+            'deposit_expected_amount' => '30.00',
+        ]);
+
+        // Act
+        $intent = $this->start($customer, extra: ['order_id' => $order->id, 'order_amount' => '30'])
+            ->assertCreated()
+            ->json('data.intent.id');
+        $this->otp($customer, $intent)->assertOk();
+
+        // Assert — 100 in, the 30 chosen to the order, the rest stays the customer's.
+        $this->assertSame('30.00', (string) $order->refresh()->paid_amount);
+        $this->assertSame(OrderStatus::DepositPaid, $order->status);
+        $this->assertSame('70.00', $this->balance($customer));
+        $this->artisan('wallets:check')->assertSuccessful();
+    }
+
+    public function test_an_order_amount_needs_an_order(): void
+    {
+        $this->start(Customer::factory()->registered()->create(), extra: ['order_amount' => '30'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('order_amount');
+    }
+
     public function test_another_customers_order_is_refused(): void
     {
         $theirs = Order::factory()->create();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Catalog\CatalogService;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Exceptions\QuantityBelowMinimum;
 use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Delivery\DeliveryService;
@@ -12,6 +13,7 @@ use App\Domain\Order\DTOs\BasketLineQuote;
 use App\Domain\Order\DTOs\BasketQuote;
 use App\Domain\Order\DTOs\OrderItemData;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\Order\Support\CheckoutDeposit;
 use App\Domain\Order\Support\Money;
 
 /**
@@ -54,7 +56,29 @@ final class QuoteBasket
             totalWithDelivery: $itemsTotal !== null && $deliveryPrice !== null
                 ? Money::sum($itemsTotal, $deliveryPrice)
                 : null,
+            depositMinimum: $this->depositMinimum($lines, $itemsTotal),
         );
+    }
+
+    /**
+     * أقلّ عربونٍ في السلة، أو `null` حين لا يُعرض — الشروطُ نفسها التي يسألها
+     * {@see CheckoutDeposit::isOfferedFor()} عن الطلبية بعد كتابتها، مسؤولةً عن السطور هنا.
+     *
+     * @param  list<BasketLineQuote>  $lines
+     */
+    private function depositMinimum(array $lines, ?string $itemsTotal): ?string
+    {
+        if ($itemsTotal === null || ! CheckoutDeposit::fits($itemsTotal)) {
+            return null;
+        }
+
+        foreach ($lines as $line) {
+            if ($line->outsourced) {
+                return null;
+            }
+        }
+
+        return CheckoutDeposit::minimum($itemsTotal);
     }
 
     /**
@@ -89,12 +113,17 @@ final class QuoteBasket
             'unit_price' => $unitPrice,
         ]);
 
+        // How `ResolveOrderFlow` reads a line: a product with no category is our own work.
+        $product->loadMissing('productCategory.parent');
+        $mode = $product->productCategory?->productionMode() ?? ProductionMode::InHouse;
+
         return new BasketLineQuote(
             productId: (int) $product->getKey(),
             productVariantId: (int) $variant->getKey(),
             unit: $product->pricing_unit,
             unitPrice: $unitPrice,
             lineTotal: $draft->deriveLineTotal(),
+            outsourced: $mode === ProductionMode::Outsourced,
         );
     }
 

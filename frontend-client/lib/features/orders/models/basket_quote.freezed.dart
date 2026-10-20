@@ -19,7 +19,8 @@ mixin _$BasketQuote {
  List<BasketLineQuote> get lines;/// مجموع البضاعة.
 @JsonKey(name: 'items_total') String? get itemsTotal;/// رسم المندوب إلى المدينة المختارة، يُدفع له عند الاستلام. `"0.00"` للاستلام من المكتب.
 @JsonKey(name: 'delivery_price') String? get deliveryPrice;/// البضاعة مع التوصيل: ما يدفعه العميل في النهاية.
-@JsonKey(name: 'total_with_delivery') String? get totalWithDelivery;
+@JsonKey(name: 'total_with_delivery') String? get totalWithDelivery;/// خطوة «العربون»: هل تُرسم، وحدّا المبلغ. **خادمٌ أقدم لا يرسلها**، فلا خطوة.
+ DepositOffer get deposit;
 /// Create a copy of BasketQuote
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,16 +33,16 @@ $BasketQuoteCopyWith<BasketQuote> get copyWith => _$BasketQuoteCopyWithImpl<Bask
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketQuote&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketQuote&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery)&&(identical(other.deposit, deposit) || other.deposit == deposit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(lines),itemsTotal,deliveryPrice,totalWithDelivery);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(lines),itemsTotal,deliveryPrice,totalWithDelivery,deposit);
 
 @override
 String toString() {
-  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery)';
+  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery, deposit: $deposit)';
 }
 
 
@@ -52,11 +53,11 @@ abstract mixin class $BasketQuoteCopyWith<$Res>  {
   factory $BasketQuoteCopyWith(BasketQuote value, $Res Function(BasketQuote) _then) = _$BasketQuoteCopyWithImpl;
 @useResult
 $Res call({
- List<BasketLineQuote> lines,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'total_with_delivery') String? totalWithDelivery
+ List<BasketLineQuote> lines,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'total_with_delivery') String? totalWithDelivery, DepositOffer deposit
 });
 
 
-
+$DepositOfferCopyWith<$Res> get deposit;
 
 }
 /// @nodoc
@@ -69,16 +70,26 @@ class _$BasketQuoteCopyWithImpl<$Res>
 
 /// Create a copy of BasketQuote
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? lines = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? totalWithDelivery = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? lines = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? totalWithDelivery = freezed,Object? deposit = null,}) {
   return _then(_self.copyWith(
 lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
 as List<BasketLineQuote>,itemsTotal: freezed == itemsTotal ? _self.itemsTotal : itemsTotal // ignore: cast_nullable_to_non_nullable
 as String?,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
 as String?,totalWithDelivery: freezed == totalWithDelivery ? _self.totalWithDelivery : totalWithDelivery // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,deposit: null == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as DepositOffer,
   ));
 }
-
+/// Create a copy of BasketQuote
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DepositOfferCopyWith<$Res> get deposit {
+  
+  return $DepositOfferCopyWith<$Res>(_self.deposit, (value) {
+    return _then(_self.copyWith(deposit: value));
+  });
+}
 }
 
 
@@ -160,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery,  DepositOffer deposit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BasketQuote() when $default != null:
-return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery);case _:
+return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery,_that.deposit);case _:
   return orElse();
 
 }
@@ -181,10 +192,10 @@ return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWith
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery,  DepositOffer deposit)  $default,) {final _that = this;
 switch (_that) {
 case _BasketQuote():
-return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery);case _:
+return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery,_that.deposit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +212,10 @@ return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWith
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<BasketLineQuote> lines, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'total_with_delivery')  String? totalWithDelivery,  DepositOffer deposit)?  $default,) {final _that = this;
 switch (_that) {
 case _BasketQuote() when $default != null:
-return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery);case _:
+return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWithDelivery,_that.deposit);case _:
   return null;
 
 }
@@ -216,7 +227,7 @@ return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWith
 @JsonSerializable()
 
 class _BasketQuote implements BasketQuote {
-  const _BasketQuote({final  List<BasketLineQuote> lines = const <BasketLineQuote>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'total_with_delivery') this.totalWithDelivery}): _lines = lines;
+  const _BasketQuote({final  List<BasketLineQuote> lines = const <BasketLineQuote>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'total_with_delivery') this.totalWithDelivery, this.deposit = const DepositOffer()}): _lines = lines;
   factory _BasketQuote.fromJson(Map<String, dynamic> json) => _$BasketQuoteFromJson(json);
 
 /// بترتيب السلة نفسه.
@@ -234,6 +245,8 @@ class _BasketQuote implements BasketQuote {
 @override@JsonKey(name: 'delivery_price') final  String? deliveryPrice;
 /// البضاعة مع التوصيل: ما يدفعه العميل في النهاية.
 @override@JsonKey(name: 'total_with_delivery') final  String? totalWithDelivery;
+/// خطوة «العربون»: هل تُرسم، وحدّا المبلغ. **خادمٌ أقدم لا يرسلها**، فلا خطوة.
+@override@JsonKey() final  DepositOffer deposit;
 
 /// Create a copy of BasketQuote
 /// with the given fields replaced by the non-null parameter values.
@@ -248,16 +261,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketQuote&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketQuote&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery)&&(identical(other.deposit, deposit) || other.deposit == deposit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_lines),itemsTotal,deliveryPrice,totalWithDelivery);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_lines),itemsTotal,deliveryPrice,totalWithDelivery,deposit);
 
 @override
 String toString() {
-  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery)';
+  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery, deposit: $deposit)';
 }
 
 
@@ -268,11 +281,11 @@ abstract mixin class _$BasketQuoteCopyWith<$Res> implements $BasketQuoteCopyWith
   factory _$BasketQuoteCopyWith(_BasketQuote value, $Res Function(_BasketQuote) _then) = __$BasketQuoteCopyWithImpl;
 @override @useResult
 $Res call({
- List<BasketLineQuote> lines,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'total_with_delivery') String? totalWithDelivery
+ List<BasketLineQuote> lines,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'total_with_delivery') String? totalWithDelivery, DepositOffer deposit
 });
 
 
-
+@override $DepositOfferCopyWith<$Res> get deposit;
 
 }
 /// @nodoc
@@ -285,12 +298,294 @@ class __$BasketQuoteCopyWithImpl<$Res>
 
 /// Create a copy of BasketQuote
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? lines = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? totalWithDelivery = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? lines = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? totalWithDelivery = freezed,Object? deposit = null,}) {
   return _then(_BasketQuote(
 lines: null == lines ? _self._lines : lines // ignore: cast_nullable_to_non_nullable
 as List<BasketLineQuote>,itemsTotal: freezed == itemsTotal ? _self.itemsTotal : itemsTotal // ignore: cast_nullable_to_non_nullable
 as String?,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
 as String?,totalWithDelivery: freezed == totalWithDelivery ? _self.totalWithDelivery : totalWithDelivery // ignore: cast_nullable_to_non_nullable
+as String?,deposit: null == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as DepositOffer,
+  ));
+}
+
+/// Create a copy of BasketQuote
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DepositOfferCopyWith<$Res> get deposit {
+  
+  return $DepositOfferCopyWith<$Res>(_self.deposit, (value) {
+    return _then(_self.copyWith(deposit: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$DepositOffer {
+
+ bool get offered;@JsonKey(name: 'min_percent') int get minPercent;@JsonKey(name: 'min_amount') String? get minAmount;@JsonKey(name: 'max_amount') String? get maxAmount;
+/// Create a copy of DepositOffer
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DepositOfferCopyWith<DepositOffer> get copyWith => _$DepositOfferCopyWithImpl<DepositOffer>(this as DepositOffer, _$identity);
+
+  /// Serializes this DepositOffer to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DepositOffer&&(identical(other.offered, offered) || other.offered == offered)&&(identical(other.minPercent, minPercent) || other.minPercent == minPercent)&&(identical(other.minAmount, minAmount) || other.minAmount == minAmount)&&(identical(other.maxAmount, maxAmount) || other.maxAmount == maxAmount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,offered,minPercent,minAmount,maxAmount);
+
+@override
+String toString() {
+  return 'DepositOffer(offered: $offered, minPercent: $minPercent, minAmount: $minAmount, maxAmount: $maxAmount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DepositOfferCopyWith<$Res>  {
+  factory $DepositOfferCopyWith(DepositOffer value, $Res Function(DepositOffer) _then) = _$DepositOfferCopyWithImpl;
+@useResult
+$Res call({
+ bool offered,@JsonKey(name: 'min_percent') int minPercent,@JsonKey(name: 'min_amount') String? minAmount,@JsonKey(name: 'max_amount') String? maxAmount
+});
+
+
+
+
+}
+/// @nodoc
+class _$DepositOfferCopyWithImpl<$Res>
+    implements $DepositOfferCopyWith<$Res> {
+  _$DepositOfferCopyWithImpl(this._self, this._then);
+
+  final DepositOffer _self;
+  final $Res Function(DepositOffer) _then;
+
+/// Create a copy of DepositOffer
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? offered = null,Object? minPercent = null,Object? minAmount = freezed,Object? maxAmount = freezed,}) {
+  return _then(_self.copyWith(
+offered: null == offered ? _self.offered : offered // ignore: cast_nullable_to_non_nullable
+as bool,minPercent: null == minPercent ? _self.minPercent : minPercent // ignore: cast_nullable_to_non_nullable
+as int,minAmount: freezed == minAmount ? _self.minAmount : minAmount // ignore: cast_nullable_to_non_nullable
+as String?,maxAmount: freezed == maxAmount ? _self.maxAmount : maxAmount // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DepositOffer].
+extension DepositOfferPatterns on DepositOffer {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DepositOffer value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DepositOffer() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DepositOffer value)  $default,){
+final _that = this;
+switch (_that) {
+case _DepositOffer():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DepositOffer value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DepositOffer() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool offered, @JsonKey(name: 'min_percent')  int minPercent, @JsonKey(name: 'min_amount')  String? minAmount, @JsonKey(name: 'max_amount')  String? maxAmount)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DepositOffer() when $default != null:
+return $default(_that.offered,_that.minPercent,_that.minAmount,_that.maxAmount);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool offered, @JsonKey(name: 'min_percent')  int minPercent, @JsonKey(name: 'min_amount')  String? minAmount, @JsonKey(name: 'max_amount')  String? maxAmount)  $default,) {final _that = this;
+switch (_that) {
+case _DepositOffer():
+return $default(_that.offered,_that.minPercent,_that.minAmount,_that.maxAmount);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool offered, @JsonKey(name: 'min_percent')  int minPercent, @JsonKey(name: 'min_amount')  String? minAmount, @JsonKey(name: 'max_amount')  String? maxAmount)?  $default,) {final _that = this;
+switch (_that) {
+case _DepositOffer() when $default != null:
+return $default(_that.offered,_that.minPercent,_that.minAmount,_that.maxAmount);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DepositOffer implements DepositOffer {
+  const _DepositOffer({this.offered = false, @JsonKey(name: 'min_percent') this.minPercent = 25, @JsonKey(name: 'min_amount') this.minAmount, @JsonKey(name: 'max_amount') this.maxAmount});
+  factory _DepositOffer.fromJson(Map<String, dynamic> json) => _$DepositOfferFromJson(json);
+
+@override@JsonKey() final  bool offered;
+@override@JsonKey(name: 'min_percent') final  int minPercent;
+@override@JsonKey(name: 'min_amount') final  String? minAmount;
+@override@JsonKey(name: 'max_amount') final  String? maxAmount;
+
+/// Create a copy of DepositOffer
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DepositOfferCopyWith<_DepositOffer> get copyWith => __$DepositOfferCopyWithImpl<_DepositOffer>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DepositOfferToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DepositOffer&&(identical(other.offered, offered) || other.offered == offered)&&(identical(other.minPercent, minPercent) || other.minPercent == minPercent)&&(identical(other.minAmount, minAmount) || other.minAmount == minAmount)&&(identical(other.maxAmount, maxAmount) || other.maxAmount == maxAmount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,offered,minPercent,minAmount,maxAmount);
+
+@override
+String toString() {
+  return 'DepositOffer(offered: $offered, minPercent: $minPercent, minAmount: $minAmount, maxAmount: $maxAmount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DepositOfferCopyWith<$Res> implements $DepositOfferCopyWith<$Res> {
+  factory _$DepositOfferCopyWith(_DepositOffer value, $Res Function(_DepositOffer) _then) = __$DepositOfferCopyWithImpl;
+@override @useResult
+$Res call({
+ bool offered,@JsonKey(name: 'min_percent') int minPercent,@JsonKey(name: 'min_amount') String? minAmount,@JsonKey(name: 'max_amount') String? maxAmount
+});
+
+
+
+
+}
+/// @nodoc
+class __$DepositOfferCopyWithImpl<$Res>
+    implements _$DepositOfferCopyWith<$Res> {
+  __$DepositOfferCopyWithImpl(this._self, this._then);
+
+  final _DepositOffer _self;
+  final $Res Function(_DepositOffer) _then;
+
+/// Create a copy of DepositOffer
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? offered = null,Object? minPercent = null,Object? minAmount = freezed,Object? maxAmount = freezed,}) {
+  return _then(_DepositOffer(
+offered: null == offered ? _self.offered : offered // ignore: cast_nullable_to_non_nullable
+as bool,minPercent: null == minPercent ? _self.minPercent : minPercent // ignore: cast_nullable_to_non_nullable
+as int,minAmount: freezed == minAmount ? _self.minAmount : minAmount // ignore: cast_nullable_to_non_nullable
+as String?,maxAmount: freezed == maxAmount ? _self.maxAmount : maxAmount // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

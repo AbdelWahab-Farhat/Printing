@@ -8,6 +8,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
 use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\DTOs\RenderedNotification;
+use App\Domain\Order\Enums\OrderStatus;
 
 /**
  * طلبيةٌ وصلت من تطبيق العميل، وتنتظر مَن يراجعها.
@@ -39,14 +40,33 @@ final readonly class OrderAwaitsReview implements NotificationDefinition
     {
         $code = (string) ($payload['order_code'] ?? '');
         $customer = (string) ($payload['customer_name'] ?? '');
+        $state = self::state($payload);
 
         return new RenderedNotification(
             title: "طلبية جديدة من التطبيق — {$code}",
             // مَن طلب أولاً: هو ما يقول للقارئ أهذه الطلبيةُ التي ينتظرها. وما تنتظره ثانياً،
             // لأن «من التطبيق» في العنوان لا تقول إن أحداً لم يقبلها بعد.
-            body: $customer !== '' ? "العميل: {$customer} · بانتظار المراجعة" : 'بانتظار المراجعة',
+            body: $customer !== '' ? "العميل: {$customer} · {$state}" : $state,
             route: '/orders/'.($payload['order_id'] ?? ''),
         );
+    }
+
+    /**
+     * أين وقفت حين وصلت. **بلا `status` في الحمولة** — كلُّ إشعارٍ كُتب قبل عربون السلة
+     * (2026-10-19) — فهي «بانتظار المراجعة»، الطريقُ الوحيد يومها.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private static function state(array $payload): string
+    {
+        // بالدينار الكامل كما اختاره العميل: «200» لا «200.00».
+        $amount = preg_replace('/\.00$/', '', (string) ($payload['deposit_amount'] ?? ''));
+
+        return match ($payload['status'] ?? OrderStatus::Requested->value) {
+            OrderStatus::AwaitingDeposit->value => "بانتظار عربون {$amount} د.ل",
+            OrderStatus::DepositPaid->value => "عربون {$amount} د.ل مدفوع من المحفظة",
+            default => 'بانتظار المراجعة',
+        };
     }
 
     /**

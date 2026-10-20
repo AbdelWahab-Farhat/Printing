@@ -3,6 +3,7 @@ import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_snackbar.dart';
 import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart';
+import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_detail_page.dart';
@@ -11,6 +12,7 @@ import 'package:dayaa_client/features/orders/presentation/widgets/order_notes_bu
 import 'package:dayaa_client/features/orders/presentation/widgets/order_stage_card.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/pay_from_wallet_card.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
+import 'package:dayaa_client/features/orders/usecases/choose_order_deposit.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
 import 'package:dayaa_client/features/support/models/support_ticket.dart';
 import 'package:dayaa_client/features/support/repositories/support_repository.dart';
@@ -68,8 +70,10 @@ void main() {
     String? rejectionReason,
     int unreadNotesCount = 0,
     String? depositDue,
+    DepositOffer? depositOffer,
   }) => CustomerOrderDetail(
     depositDue: depositDue,
+    depositOffer: depositOffer,
     id: 1304,
     code: '1304',
     stage: stage,
@@ -701,6 +705,57 @@ void main() {
         expect(find.byKey(const Key('pay-deposit')), findsNothing);
         expect(find.text('ادفع 200'), findsOneWidget);
       });
+    });
+  });
+
+  // العربون على طلبيةٍ قبلها المتجر بعد المراجعة — صاحب العمل، 2026-10-19.
+  group('the deposit after review', () {
+    const offer = DepositOffer(offered: true, minAmount: '125.00', maxAmount: '500.00');
+
+    setUpAll(() => registerFallbackValue(const CheckoutDeposit(payment: CheckoutPayment.office, amount: '0')));
+
+    testWidgets('an accepted order asks for its deposit, and the free wallet card gives way', (tester) async {
+      // Arrange & Act
+      await open(
+        tester,
+        order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز', depositOffer: offer),
+        wallet: FakeWallet(held: '500.00'),
+      );
+
+      // Assert
+      expect(find.text('قبلنا طلبيتك — ادفع العربون لنبدأ'), findsOneWidget);
+      expect(find.byKey(const ValueKey('deposit-offer-card')), findsOneWidget);
+      expect(find.byType(PayFromWalletCard), findsNothing);
+    });
+
+    testWidgets('at the office the choice is sent, and the order is read again', (tester) async {
+      // Arrange
+      final orders = _MockOrderRepository();
+      final offered = order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز', depositOffer: offer);
+      final waiting = order1304(stage: OrderStage.awaitingDeposit, stageLabel: 'بانتظار العربون');
+      var reads = 0;
+      when(() => orders.detail(any())).thenAnswer((_) async => Right(reads++ == 0 ? offered : waiting));
+      when(() => orders.chooseDeposit(any(), any())).thenAnswer((_) async => Right(waiting));
+      sl.registerLazySingleton(() => ChooseOrderDeposit(orders));
+      await open(tester, offered, repository: orders, wallet: FakeWallet(held: '500.00'));
+
+      // Act — the sheet, the counter, and confirm.
+      await tester.tap(find.text('اختر العربون'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('pay-office')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تأكيد العربون'));
+      await tester.pumpAndSettle();
+
+      // Assert — the least deposit, in whole dinars, at the office; then the page reads again.
+      final sent = verify(() => orders.chooseDeposit(1304, captureAny())).captured.single as CheckoutDeposit;
+      expect(sent.payment, CheckoutPayment.office);
+      expect(sent.amount, '125');
+      expect(find.byKey(const ValueKey('deposit-offer-card')), findsNothing);
+      expect(find.textContaining('في المكتب لنبدأ العمل'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
     });
   });
 }

@@ -6,6 +6,7 @@ namespace App\Domain\Notification\Enums;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\CustomerChoseDeposit;
 use App\Domain\Notification\Definitions\CustomerWroteToSupport;
 use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
@@ -57,6 +58,12 @@ enum NotificationType: string
      * The one type whose audience is a single named person rather than everybody holding a
      * permission — see {@see ShortageAssignedToYou}.
      */
+    /**
+     * The customer chose the عربون of an order the shop accepted after review — at the office,
+     * or paid from the wallet. {@see CustomerChoseDeposit}.
+     */
+    case OrderDepositChosen = 'order.deposit_chosen';
+
     case ShortageAssigned = 'shortage.assigned';
 
     /**
@@ -111,6 +118,7 @@ enum NotificationType: string
             self::OrderShortage => OrderReachedShortage::class,
             self::OrderStatusChanged => OrderReachedStatus::class,
             self::OrderRequested => OrderAwaitsReview::class,
+            self::OrderDepositChosen => CustomerChoseDeposit::class,
             self::ShortageAssigned => ShortageAssignedToYou::class,
             self::DesignTicketAssigned => DesignTicketAssignedToYou::class,
             self::DesignTicketStatus => DesignTicketReachedStatus::class,
@@ -134,6 +142,7 @@ enum NotificationType: string
             self::OrderStatusChanged => 'order',
             // المفتاحُ نفسه: طلبيةٌ هي الخبر، والتطبيقُ يعرف رسمها منذ أول نسخة.
             self::OrderRequested => 'order',
+            self::OrderDepositChosen => 'order',
             // Not 'warning': a shortage landing in somebody's queue is work arriving, not an
             // alarm — and the app falls back to a plain bell on a key it does not know, so a
             // build compiled last month degrades gracefully rather than drawing the wrong thing.
@@ -162,6 +171,7 @@ enum NotificationType: string
             self::OrderShortage => 'نواقص طلبية',
             self::OrderStatusChanged => 'حالة طلبية',
             self::OrderRequested => 'طلبية من التطبيق',
+            self::OrderDepositChosen => 'عربون اختاره العميل',
             self::ShortageAssigned => 'نقص مُسنَد',
             self::DesignTicketAssigned => 'طلب تصميم',
             self::DesignTicketStatus => 'حالة طلب تصميم',

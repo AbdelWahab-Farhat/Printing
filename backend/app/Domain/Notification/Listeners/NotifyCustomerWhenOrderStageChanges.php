@@ -9,6 +9,7 @@ use App\Domain\Notification\NotificationService;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
@@ -28,6 +29,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
  * - **قبلنا طلبيتك** — من «بانتظار المراجعة» إلى «قيد التجهيز» وحدها. هو الجواب الذي ينتظره منذ
  *   أرسل الطلب. أما العودةُ إلى «قيد التجهيز» من طريقٍ آخر (من التصميم إلى الطباعة) فتقدّمٌ داخليٌّ
  *   صامت، و«قبلنا» فيها كذب.
+ * - **طلبيتك بانتظار العربون** — طلبت المطبعة عربوناً، والخطوة التالية خطوتُه.
  * - **طلبيتك جاهزة** — قد يُطلب منه أن يأتي، أو أن ينتظر اتصالنا.
  * - **طلبيتك في الطريق إليك** — ليكون حيث يصل المندوب ومعه المبلغ.
  * - **رجعت طلبيتك إلينا** — شيءٌ لم يسر كما يجب، وسنتواصل معه.
@@ -75,6 +77,12 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
             return;
         }
 
+        // **لا يُخبَر العميل بما فعله هو.** «انتظار العربون» بلا فاعلٍ من الموظفين هو العميلُ نفسه
+        // اختار العربون في المكتب من التطبيق (`ChooseOrderDeposit`).
+        if ($to === CustomerOrderStage::AwaitingDeposit && $event->actorId === null) {
+            return;
+        }
+
         $order = Order::query()->find($event->orderId);
 
         // قد تكون حُذفت بين الإيداع وتنفيذ المهمّة، ولا صاحبَ لطلبيةٍ بلا عميل.
@@ -83,7 +91,11 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
         }
 
         $code = (string) $order->code;
-        $hint = $to->hint();
+
+        // قُبلت والعربون له يختاره: السطرُ يقول ذلك، لا «نجهّزها الآن».
+        $hint = $to === CustomerOrderStage::Preparing && CheckoutDeposit::isOfferedAfterReview($order)
+            ? 'اختر العربون لنبدأ العمل'
+            : $to->hint();
 
         $this->notifications->pushToCustomer(new CustomerPush(
             customerId: (int) $order->customer_id,
@@ -100,6 +112,9 @@ final class NotifyCustomerWhenOrderStageChanges implements ShouldQueue
     {
         return match ($to) {
             CustomerOrderStage::Preparing => $from === CustomerOrderStage::UnderReview ? 'قبلنا طلبيتك' : null,
+            // Something is now asked of them. An order the customer placed with its deposit is
+            // born here rather than moved here, so they are not told what they just chose.
+            CustomerOrderStage::AwaitingDeposit => 'طلبيتك بانتظار العربون',
             CustomerOrderStage::Ready => 'طلبيتك جاهزة',
             CustomerOrderStage::OnTheWay => 'طلبيتك في الطريق إليك',
             CustomerOrderStage::Returned => 'رجعت طلبيتك إلينا',

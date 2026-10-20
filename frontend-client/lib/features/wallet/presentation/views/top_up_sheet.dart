@@ -20,12 +20,28 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// ما يُفتح به الشحن من شاشة الطلبية: «اشحن وادفع».
 class TopUpArgs {
-  const TopUpArgs({this.orderId, this.amount, this.phone});
+  const TopUpArgs({
+    this.orderId,
+    this.orderAmount,
+    this.methodId,
+    this.lockAmount = false,
+    this.amount,
+    this.phone,
+  });
 
   /// تُدفع من المحفظة بعد الشحن، على الخادم.
   final int? orderId;
 
-  /// ما ينقص المحفظةَ لتغطي الطلبية — يُكتب في الخانة، ويُغيَّر.
+  /// كم يُدفع لها بالضبط — العربون. null: ما تستطيعه المحفظة.
+  final String? orderAmount;
+
+  /// الطريقة التي اختارها الزبون قبل فتح الورقة — عربون السلة. تُفتح على بياناتها مباشرة.
+  final int? methodId;
+
+  /// **المبلغ لا يُغيَّر** — عربون السلة: يُشحن ما اختاره الزبون هناك، لا غيره (كبريمولا).
+  final bool lockAmount;
+
+  /// ما ينقص المحفظةَ لتغطي الطلبية — يُكتب في الخانة، ويُغيَّر إلا مع [lockAmount].
   final String? amount;
 
   /// هاتف الحساب — يُملأ به رقم ليبيانا، كما في بريمولا.
@@ -59,6 +75,8 @@ Future<bool?> showTopUpSheet(BuildContext context, {TopUpArgs? args}) {
         confirmOtp: sl(),
         getAttempt: sl(),
         orderId: args?.orderId,
+        orderAmount: args?.orderAmount,
+        preferredMethod: args?.methodId,
         initialAmount: args?.amount?.asPlainNumber,
       )..load(),
       child: _TopUpSheet(height: (maxHeight * .78).clamp(460.0, maxHeight), args: args),
@@ -102,6 +120,10 @@ class _TopUpSheetState extends State<_TopUpSheet> {
 
   void _onState(BuildContext context, TopUpState state) {
     switch (state) {
+      // الطريقة اختيرت قبل الورقة — عربون السلة — فلا تُعرض الطرق ثانيةً: تُفتح على بياناتها.
+      case TopUpForm(:final selected) when _page == 0 && selected.id == widget.args?.methodId:
+        setState(() => _page = 1);
+        _pages.jumpToPage(1);
       case TopUpOtp():
         unawaited(_go(2));
       case TopUpWaiting(attempt: TopUpAttempt(:final paymentUrl?)):
@@ -206,6 +228,7 @@ class _TopUpSheetState extends State<_TopUpSheet> {
                             form: form,
                             phone: widget.args?.phone,
                             orderId: widget.args?.orderId,
+                            lockAmount: widget.args?.lockAmount ?? false,
                           )
                         else
                           const Center(child: CircularProgressIndicator()),
@@ -254,15 +277,6 @@ class _MethodsPage extends StatelessWidget {
   }
 }
 
-/// أصغر ما بقي من حدود المحلّ وحدّ EzonePay — null: بلا حد.
-String? _remainingOf(TopUpMethod method) {
-  final caps = [?method.maxAmount, ...method.remaining];
-
-  if (caps.isEmpty) return null;
-
-  return caps.reduce((a, b) => thousandths(a) <= thousandths(b) ? a : b);
-}
-
 class _MethodTile extends StatelessWidget {
   const _MethodTile({required this.method, required this.onTap, super.key});
 
@@ -273,7 +287,7 @@ class _MethodTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final brand = brandOf(method.id);
-    final left = method.remaining.isEmpty ? null : _remainingOf(method);
+    final left = method.remaining.isEmpty ? null : method.cap;
     final exhausted = left != null && thousandths(left) < thousandths('1');
 
     return Opacity(
@@ -290,7 +304,7 @@ class _MethodTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _Logo(brand: brand, box: 54.w, image: 40.w, radius: 12.r),
+              TopUpLogo(brand: brand, box: 54.w, image: 40.w, radius: 12.r),
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
@@ -348,9 +362,10 @@ class _Chip extends StatelessWidget {
   );
 }
 
-/// شعار الطريقة في مربّعٍ بلون العلامة الباهت — أو أيقونة البطاقة لطريقةٍ بلا شعار.
-class _Logo extends StatelessWidget {
-  const _Logo({required this.brand, required this.box, required this.image, required this.radius});
+/// شعار الطريقة في مربّعٍ بلون العلامة الباهت — أو أيقونة البطاقة لطريقةٍ بلا شعار. عامٌّ لأن صفوف
+/// «أو عبّئ محفظتك وادفع مباشرة» في عربون السلة ترسمه أيضاً.
+class TopUpLogo extends StatelessWidget {
+  const TopUpLogo({required this.brand, required this.box, required this.image, required this.radius, super.key});
 
   final TopUpBrand brand;
   final double box;
@@ -410,13 +425,16 @@ class _Unavailable extends StatelessWidget {
 // ── الصفحة الثانية: البيانات والعمولة ───────────────────────────────────────────────────────
 
 class _DetailsPage extends StatefulWidget {
-  const _DetailsPage({required this.form, this.phone, this.orderId, super.key});
+  const _DetailsPage({required this.form, this.phone, this.orderId, this.lockAmount = false, super.key});
 
   final TopUpForm form;
   final String? phone;
 
   /// «اشحن وادفع» — يقال تحت العمولة أين يذهب المال.
   final int? orderId;
+
+  /// عربون السلة: المبلغ يُعرض ولا يُعدَّل.
+  final bool lockAmount;
 
   @override
   State<_DetailsPage> createState() => _DetailsPageState();
@@ -452,7 +470,7 @@ class _DetailsPageState extends State<_DetailsPage> {
     final method = form.selected;
     final brand = brandOf(method.id);
     final scheme = context.colorScheme;
-    final cap = _remainingOf(method);
+    final cap = method.cap;
     final digitsOnly = [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩]'))];
 
     return Form(
@@ -463,7 +481,7 @@ class _DetailsPageState extends State<_DetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(height: 12.h),
-            Center(child: _Logo(brand: brand, box: 72.w, image: 44.w, radius: 20.r)),
+            Center(child: TopUpLogo(brand: brand, box: 72.w, image: 44.w, radius: 20.r)),
             SizedBox(height: 16.h),
             if (method.needsCardNumber) ...[
               AppTextField(
@@ -505,10 +523,14 @@ class _DetailsPageState extends State<_DetailsPage> {
               SizedBox(height: 16.h),
             ],
             AppTextField(
+              key: const ValueKey('top-up-amount'),
               controller: _amount,
               hint: 'قيمة الشحن (د.ل)',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textDirection: TextDirection.ltr,
+              // عربون السلة: ما اختاره الزبون هناك، لا يُغيَّر هنا.
+              readOnly: widget.lockAmount,
+              suffix: widget.lockAmount ? Icon(Icons.lock_outline_rounded, size: 18.sp) : null,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.,٫]'))],
               errorText: _errorOf('amount'),
               validator: (v) {
@@ -533,10 +555,21 @@ class _DetailsPageState extends State<_DetailsPage> {
               ),
             ],
             _FeeBox(form: form),
+            if (widget.lockAmount && widget.orderId == null) ...[
+              SizedBox(height: 8.h),
+              Text(
+                'هذا العربون الذي اخترته — تُشحن به محفظتك، ثم تُرسل طلبيتك ويُدفع منها.',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: scheme.onSurface.withValues(alpha: .5)),
+              ),
+            ],
             if (widget.orderId case final order?) ...[
               SizedBox(height: 8.h),
               Text(
-                'تُشحن محفظتك أولاً، ثم يُدفع منها ما على الطلبية #$order — وما زاد يبقى فيها.',
+                switch (context.read<TopUpCubit>().orderAmount) {
+                  final deposit? =>
+                    'تُشحن محفظتك أولاً، ثم يُدفع منها العربون ${deposit.asMoney} د.ل للطلبية #$order — وما زاد يبقى فيها.',
+                  null => 'تُشحن محفظتك أولاً، ثم يُدفع منها ما على الطلبية #$order — وما زاد يبقى فيها.',
+                },
                 style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: scheme.onSurface.withValues(alpha: .5)),
               ),
             ],

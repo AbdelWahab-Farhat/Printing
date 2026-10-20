@@ -60,8 +60,24 @@ class CustomerOrderPushTest extends TestCase
     private function move(Order $order, OrderStatus $from, OrderStatus $to): void
     {
         app(NotifyCustomerWhenOrderStageChanges::class)->handle(
-            new OrderStatusChanged((int) $order->getKey(), $from, $to),
+            // A member of staff made the move — the ordinary case. The customer's own move is
+            // the one test below that says so.
+            new OrderStatusChanged((int) $order->getKey(), $from, $to, actorId: 1),
         );
+    }
+
+    public function test_the_customers_own_deposit_choice_is_not_pushed_back_to_them(): void
+    {
+        // Arrange — «في المكتب» chosen from the app moves the order with nobody from the staff.
+        $order = $this->orderWithADevice();
+
+        // Act
+        app(NotifyCustomerWhenOrderStageChanges::class)->handle(
+            new OrderStatusChanged((int) $order->getKey(), OrderStatus::New, OrderStatus::AwaitingDeposit),
+        );
+
+        // Assert
+        Queue::assertNothingPushed();
     }
 
     /**
@@ -72,6 +88,8 @@ class CustomerOrderPushTest extends TestCase
         return [
             'the request is accepted' => [OrderStatus::Requested, OrderStatus::New, 'قبلنا طلبيتك'],
             'the request is refused' => [OrderStatus::Requested, OrderStatus::RequestRejected, 'تعذّر قبول طلبيتك'],
+            // «بانتظار العربون» مرحلةٌ منذ 2026-10-19 — الخطوة التالية خطوةُ العميل.
+            'the shop asks for a deposit' => [OrderStatus::New, OrderStatus::AwaitingDeposit, 'طلبيتك بانتظار العربون'],
             'made at our press' => [OrderStatus::Printing, OrderStatus::Ready, 'طلبيتك جاهزة'],
             'made at a vendor, waiting at the counter' => [OrderStatus::Manufacturing, OrderStatus::OfficePickup, 'طلبيتك جاهزة'],
             'out with the courier' => [OrderStatus::Ready, OrderStatus::OutForDelivery, 'طلبيتك في الطريق إليك'],
@@ -107,7 +125,8 @@ class CustomerOrderPushTest extends TestCase
             'ready to the counter, both ready' => [OrderStatus::Ready, OrderStatus::OfficePickup],
             'delivered to settled, both delivered' => [OrderStatus::Delivered, OrderStatus::Settled],
             'returned to resend, both returned' => [OrderStatus::ReturnedCourier, OrderStatus::Resend],
-            'new to deposit, both preparing' => [OrderStatus::New, OrderStatus::AwaitingDeposit],
+            // العربون وصل والطلبية تمضي: هو الذي دفع، فلا يُخبَر بما فعله.
+            'deposit paid, back to preparing' => [OrderStatus::AwaitingDeposit, OrderStatus::DepositPaid],
 
             // «قيد التجهيز» خبرٌ مرةً واحدة — حين يُقبل الطلب — لا كلما رجعت إليه الورشة.
             'back from the artwork to the press queue' => [OrderStatus::Designing, OrderStatus::ReadyToPrint],
@@ -190,10 +209,10 @@ class CustomerOrderPushTest extends TestCase
             $this->move($order, OrderStatus::Cancelled, $to);
         }
 
-        // Assert — من المراجعة: خمسُ حالاتٍ إلى «قيد التجهيز» + جاهزتان + التوصيل + أربعُ مرتجعات
-        // + الإلغاء + الرفض = ١٤. ومن «ملغاة»: التجهيزُ صامتٌ لأنه ليس من المراجعة، فجاهزتان + التوصيل
-        // + أربعُ مرتجعات + الرفض = ٨.
-        Queue::assertPushed(DeliverCustomerPush::class, 22);
+        // Assert — من المراجعة: أربعُ حالاتٍ إلى «قيد التجهيز» + «بانتظار العربون» + جاهزتان + التوصيل
+        // + أربعُ مرتجعات + الإلغاء + الرفض = ١٤. ومن «ملغاة»: التجهيزُ صامتٌ لأنه ليس من المراجعة،
+        // فالعربون + جاهزتان + التوصيل + أربعُ مرتجعات + الرفض = ٩.
+        Queue::assertPushed(DeliverCustomerPush::class, 23);
     }
 
     public function test_only_the_customer_who_owns_the_order_is_pushed(): void

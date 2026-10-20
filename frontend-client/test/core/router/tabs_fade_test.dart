@@ -106,6 +106,10 @@ class _StubOrders implements OrderRepository {
   @override
   Future<Either<Failure, BasketQuote>> quote({required List<NewOrderLine> items, int? cityId}) =>
       throw UnimplementedError();
+
+  @override
+  Future<Either<Failure, CustomerOrderDetail>> chooseDeposit(int orderId, CheckoutDeposit deposit) =>
+      throw UnimplementedError();
 }
 
 /// إقلاعٌ عاديّ: لم يُضغط إشعار.

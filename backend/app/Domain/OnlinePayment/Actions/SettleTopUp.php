@@ -118,8 +118,17 @@ final class SettleTopUp
             return;
         }
 
+        // **The عربون the customer chose, and no more** — the rest of their balance is theirs. An
+        // amount the order no longer owes (staff took part of it meanwhile) falls back to what
+        // the wallet can pay, which is then never more than what is owed.
+        $amount = $intent->order_amount === null ? null : (string) $intent->order_amount;
+
+        if ($amount !== null && bccomp($amount, $order->remainingAmount(), 2) > 0) {
+            $amount = null;
+        }
+
         rescue(
-            fn () => app(OrderService::class)->payFromWallet($order, null, null, "intent-{$intent->uuid}"),
+            fn () => app(OrderService::class)->payFromWallet($order, $amount, null, "intent-{$intent->uuid}"),
             null,
             report: false,
         );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers\Client;
 
+use App\Application\Api\V1\Requests\Client\Order\ChooseOrderDepositRequest;
 use App\Application\Api\V1\Requests\Client\Order\QuoteBasketRequest;
 use App\Application\Api\V1\Requests\Client\Order\RequestOrderRequest;
 use App\Application\Api\V1\Resources\Client\ClientBasketQuoteResource;
@@ -12,10 +13,13 @@ use App\Application\Api\V1\Resources\Client\ClientOrderNoteResource;
 use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Order\Actions\ChooseOrderDeposit;
+use App\Domain\Order\Actions\PlaceOrderWithDeposit;
 use App\Domain\Order\Actions\QuoteBasket;
 use App\Domain\Order\Actions\RequestOrder;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderItemData;
+use App\Domain\Order\Enums\CheckoutPayment;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\OrderService;
@@ -48,6 +52,8 @@ class OrderController extends Controller
     public function __construct(
         private readonly OrderService $orders,
         private readonly RequestOrder $requestOrder,
+        private readonly PlaceOrderWithDeposit $placeWithDeposit,
+        private readonly ChooseOrderDeposit $chooseDeposit,
         private readonly QuoteBasket $quoteBasket,
     ) {}
 
@@ -82,6 +88,13 @@ class OrderController extends Controller
             customerId: (int) $this->customer($request)->getKey(),
             perPage: $perPage,
             onlyStatuses: $this->statusesFor($request),
+            // «جديدة» waiting on the customer's عربون is «بانتظار العربون» to them, not «قيد
+            // التجهيز» — see `CustomerOrderStage::of()`.
+            depositOffered: match (CustomerOrderStage::tryFrom($request->string('stage')->toString())) {
+                CustomerOrderStage::AwaitingDeposit => true,
+                CustomerOrderStage::Preparing => false,
+                default => null,
+            },
         );
 
         return $this->successWithPagination(ClientOrderResource::collection($orders));
@@ -95,6 +108,12 @@ class OrderController extends Controller
      * move takes goods off the shelf. Nothing checked this one, so it waits for somebody to read
      * it — see {@see RequestOrder}.
      *
+     * **Unless `deposit` is sent** — the عربون the customer chose in the basket, at least a
+     * quarter of the goods in whole dinars, paid at the office or from the wallet (an online
+     * payment is a top-up the app completes first, then this, from the wallet). The basket's quote
+     * says when that is offered (`deposit.offered`); the order is then born «انتظار العربون», or
+     * «عربون مدفوع» when the wallet paid it. See {@see PlaceOrderWithDeposit}.
+     *
      * Every line is priced by the server from the same code the quote endpoint uses, so the
      * total here is the total the app showed. A client cannot send a price, a discount, or a
      * vendor; see {@see RequestOrderRequest} for the whole list of what is refused by absence.
@@ -104,7 +123,7 @@ class OrderController extends Controller
         $customer = $this->customer($request);
         $validated = $request->validated();
 
-        $order = ($this->requestOrder)(new OrderData(
+        $data = new OrderData(
             // **From the token, never from the body.** A customer who could name a customer id
             // could order in somebody else's name and then read the order back.
             customerId: (int) $customer->getKey(),
@@ -138,11 +157,32 @@ class OrderController extends Controller
                 array_keys($validated['items']),
             ),
             designIds: array_map('intval', $validated['design_ids'] ?? []),
-        ));
+        );
+
+        // **With the عربون chosen in the basket, the order skips review** — see
+        // {@see PlaceOrderWithDeposit}. Without one it is a request, as it always was.
+        $deposit = $validated['deposit'] ?? null;
+
+        if ($deposit === null) {
+            $order = ($this->requestOrder)($data);
+            $message = 'تم إرسال طلبك، وسنراجعه ونؤكده قريباً';
+        } else {
+            $payment = CheckoutPayment::from((string) $deposit['payment']);
+            $order = ($this->placeWithDeposit)(
+                $data,
+                $payment,
+                (string) $deposit['amount'],
+                $deposit['client_token'] ?? null,
+            );
+            $message = match ($payment) {
+                CheckoutPayment::Office => 'تم إرسال طلبك — ادفع العربون في المكتب لنبدأ العمل',
+                CheckoutPayment::Wallet => 'تم إرسال طلبك ودُفع العربون من محفظتك',
+            };
+        }
 
         return $this->created(
             new ClientOrderDetailResource($order->load(['items.product.images', 'transitions'])),
-            'تم إرسال طلبك، وسنراجعه ونؤكده قريباً',
+            $message,
         );
     }
 
@@ -182,6 +222,36 @@ class OrderController extends Controller
         );
 
         return $this->success(new ClientOrderDetailResource($owned));
+    }
+
+    /**
+     * Choose the deposit of an accepted order
+     *
+     * For an order the shop accepted after review — one the basket could not offer a deposit for
+     * (`deposit_offer` on the order says when). At least a quarter of the goods in whole dinars:
+     * `office` moves it to «انتظار العربون»; `wallet` pays it now and moves it to «عربون مدفوع».
+     * An online payment is a top-up the app completes first, then this with `wallet`. See
+     * {@see ChooseOrderDeposit}.
+     */
+    public function chooseDeposit(ChooseOrderDepositRequest $request, int $order): JsonResponse
+    {
+        $owned = $this->orders->findForCustomer((int) $this->customer($request)->getKey(), $order);
+        $validated = $request->validated();
+        $payment = CheckoutPayment::from((string) $validated['payment']);
+
+        $chosen = ($this->chooseDeposit)(
+            $owned,
+            $payment,
+            (string) $validated['amount'],
+            $validated['client_token'] ?? null,
+        );
+
+        return $this->success(
+            new ClientOrderDetailResource($chosen->load(['items.product.images', 'transitions'])),
+            $payment === CheckoutPayment::Office
+                ? 'ادفع العربون في المكتب لنبدأ العمل على طلبيتك'
+                : 'دُفع العربون من محفظتك، ونبدأ العمل على طلبيتك',
+        );
     }
 
     /**

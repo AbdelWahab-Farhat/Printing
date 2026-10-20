@@ -35,4 +35,8 @@ abstract interface class OrderRepository {
   ///
   /// [cityId] يضيف رسم التوصيل إليها حين تُختار المدينة.
   Future<Either<Failure, BasketQuote>> quote({required List<NewOrderLine> items, int? cityId});
+
+  /// يختار عربون طلبيةٍ قبلها المتجر بعد المراجعة — حين يعرضه [CustomerOrderDetail.depositOffer].
+  /// المكتب يتركها «بانتظار العربون»، والمحفظة تدفعه فتمضي. يعيد الطلبية كما صارت.
+  Future<Either<Failure, CustomerOrderDetail>> chooseDeposit(int orderId, CheckoutDeposit deposit);
 }

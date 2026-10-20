@@ -191,6 +191,10 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('orders/{order}/notes', [Client\OrderController::class, 'notes'])
             ->whereNumber('order')->name('orders.notes');
 
+        // عربون طلبيةٍ قُبلت بعد المراجعة — في المكتب أو من المحفظة (2026-10-19). مقيَّدٌ كالدفع.
+        Route::post('orders/{order}/deposit', [Client\OrderController::class, 'chooseDeposit'])
+            ->whereNumber('order')->middleware('throttle:20,1,order-deposit')->name('orders.deposit');
+
         // ── wallet ──────────────────────────────────────────────────────────────────────
         // «محفظتي» — Docs/payments/CUSTOMER-WALLET.md. Always the signed-in customer's own.
         // Paying is throttled like placing an order: a double tap on a slow line must not pay

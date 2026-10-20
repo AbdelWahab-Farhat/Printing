@@ -34,7 +34,9 @@ final class NotifyWhenOrderIsRequested implements ShouldQueue
 
         // ذهبت بين الإيداع وتشغيل المهمّة، أو راجعها أحدٌ قبل أن تصل المهمّة إليها: لا شيء
         // ينتظر أحداً بعد، وجرسٌ عن طلبيةٍ قُبلت للتوّ يرسل المراجِعَ إلى عملٍ انتهى.
-        if ($order === null || $order->status !== OrderStatus::Requested) {
+        //
+        // طلبيةُ العربون لا مراجعةَ لها فلا يُسأل عن حالها: تُعلَن أينما وقفت.
+        if ($order === null || (! $event->skippedReview && $order->status !== OrderStatus::Requested)) {
             return;
         }
 
@@ -46,6 +48,11 @@ final class NotifyWhenOrderIsRequested implements ShouldQueue
                 'order_id' => (int) $order->getKey(),
                 'order_code' => (string) $order->code,
                 'customer_name' => (string) ($order->customer?->name ?? ''),
+                // أين وقفت حين وصلت — «بانتظار المراجعة» أو العربون الذي اختاره العميل.
+                'status' => $order->status->value,
+                'deposit_amount' => $order->deposit_expected_amount === null
+                    ? null
+                    : (string) $order->deposit_expected_amount,
             ],
             dedupeKey: 'order.requested:'.$order->getKey(),
         ));

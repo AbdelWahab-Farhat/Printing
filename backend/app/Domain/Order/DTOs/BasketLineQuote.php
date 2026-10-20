@@ -19,5 +19,7 @@ final readonly class BasketLineQuote
         /** `null` لمنتجٍ «حسب الطلب»: يُسعّره المتجر حين يقبل الطلبية. */
         public ?string $unitPrice,
         public ?string $lineTotal,
+        /** يصنعه وسيط — فالطلبية تحتاج مراجعةً يُسمّى فيها، ولا عربونَ في السلة. لا يغادر الخادم. */
+        public bool $outsourced = false,
     ) {}
 }

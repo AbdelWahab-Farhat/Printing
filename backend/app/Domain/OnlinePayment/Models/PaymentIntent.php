@@ -41,6 +41,7 @@ class PaymentIntent extends Model
             'status' => IntentStatus::class,
             'fee_payer' => FeePayer::class,
             'net_amount' => 'decimal:2',
+            'order_amount' => 'decimal:2',
             'gross_amount' => 'decimal:2',
             'provider_fee' => 'decimal:2',
             'fee_rate' => 'decimal:6',

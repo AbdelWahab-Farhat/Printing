@@ -60,6 +60,7 @@ use App\Domain\Order\Queries\PaymentReviewQueue;
 use App\Domain\Order\Queries\PaymentSettlementQueue;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
 use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
+use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -142,12 +143,29 @@ class OrderService
         int $customerId,
         int $perPage = 15,
         ?array $onlyStatuses = null,
+        ?bool $depositOffered = null,
     ): LengthAwarePaginator {
         return Order::query()
             ->where('customer_id', $customerId)
-            ->when($onlyStatuses !== null, fn ($q) => $q->whereIn('status', $onlyStatuses))
+            // **[$depositOffered] is «بانتظار العربون» before the deposit is chosen** — an accepted
+            // app order still «جديدة» to the shop (`CustomerOrderStage::of()`). `true` adds those
+            // to the statuses asked for, `false` takes them out: the stage filter and the stage a
+            // card draws must agree, or «قيد التجهيز» would list an order wearing «بانتظار العربون».
+            ->when($onlyStatuses !== null, fn ($q) => $q->where(function ($q) use ($onlyStatuses, $depositOffered): void {
+                $q->whereIn('status', $onlyStatuses);
+
+                if ($depositOffered === true) {
+                    $q->orWhere(fn ($offered) => CheckoutDeposit::whereOfferedAfterReview($offered));
+                }
+            }))
+            ->when($depositOffered === false, fn ($q) => $q->whereNot(
+                fn ($offered) => CheckoutDeposit::whereOfferedAfterReview($offered),
+            ))
             ->with('items')
             ->withCount('items')
+            // The acceptance row, eager — each card asks `CustomerOrderStage::of()` without a
+            // query of its own.
+            ->withExists(['transitions as came_through_review' => fn ($t) => CheckoutDeposit::acceptance($t)])
             ->latest('id')
             ->paginate($perPage);
     }

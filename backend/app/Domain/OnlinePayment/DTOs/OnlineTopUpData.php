@@ -18,6 +18,8 @@ final readonly class OnlineTopUpData
         public string $net,
         /** «اشحن وادفع»: the order paid from the wallet once it is topped up. */
         public ?int $orderId = null,
+        /** How much of it goes to that order — the عربون chosen in the basket. Null pays what it can. */
+        public ?string $orderAmount = null,
         public ?string $cardNumber = null,
         public ?string $serviceMobileNumber = null,
         public ?string $birthYear = null,
@@ -34,6 +36,7 @@ final readonly class OnlineTopUpData
             method: OnlineMethod::from((int) $validated['method']),
             net: Money::normalize($validated['amount']),
             orderId: isset($validated['order_id']) ? (int) $validated['order_id'] : null,
+            orderAmount: isset($validated['order_amount']) ? Money::normalize($validated['order_amount']) : null,
             cardNumber: self::text($validated['card_number'] ?? null),
             serviceMobileNumber: self::text($validated['service_mobile_number'] ?? null),
             birthYear: self::text($validated['birth_year'] ?? null),

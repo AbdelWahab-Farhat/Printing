@@ -32,6 +32,7 @@ use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
+use App\Domain\Notification\Listeners\NotifyWhenOrderDepositIsChosen;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderIsRequested;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
@@ -44,6 +45,7 @@ use App\Domain\OnlinePayment\Gateway\EzonePay\EzonePayGateway;
 use App\Domain\OnlinePayment\Gateway\Fake\FakeEzonePayGateway;
 use App\Domain\OnlinePayment\Gateway\OnlinePaymentGateway;
 use App\Domain\Order\Events\OrderDeliveryUndone;
+use App\Domain\Order\Events\OrderDepositChosen;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Events\OrderProfitFinalised;
@@ -230,6 +232,9 @@ class AppServiceProvider extends ServiceProvider
         // وولادةُ الطلبية من التطبيق ليست انتقالاً يسمعه السطرُ أعلاه — تولد «بانتظار المراجعة»
         // ولا تنتقل إليها — فلها حدثُها. البرنامجُ نفسه: مُدرَجٌ وبعد الإيداع.
         Event::listen(OrderRequested::class, NotifyWhenOrderIsRequested::class);
+
+        // واختيارُ العميل عربونَ طلبيةٍ قُبلت بعد المراجعة — حركتُه هو، والانتقالان صامتان أعلاه.
+        Event::listen(OrderDepositChosen::class, NotifyWhenOrderDepositIsChosen::class);
 
         // **والحدثُ نفسه يسمعه العميلُ أيضاً**، بمستمِعٍ ثانٍ لا بتعديلٍ في الطلبيات — وهذا ما
         // يعنيه «المستمِعُ صاحبُ الرأي»: يريد مجموعةً أخرى من الانتقالات، بلغة المراحل لا الحالات.

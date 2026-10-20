@@ -6,8 +6,10 @@ namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderStatusTransition;
+use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,13 +34,17 @@ class ClientOrderDetailResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $stage = CustomerOrderStage::forStatus($this->status);
+        // Of the order, not its status alone — see `CustomerOrderStage::of()`.
+        $stage = CustomerOrderStage::of($this->resource);
 
         // **Asked once, at the top, because six fields below depend on the answer.** True only
         // while the order sits in «بانتظار المراجعة» carrying a line priced «حسب الطلب» that
         // nobody has quoted yet — `ChangeOrderStatus` refuses to let it leave that status in
         // that condition.
         $awaitingQuote = $this->hasUnpricedLines();
+
+        // **قُبلت بعد المراجعة، والعربون للعميل يختاره** (2026-10-19) — انظر `deposit_offer` أدناه.
+        $depositOffered = CheckoutDeposit::isOfferedAfterReview($this->resource);
 
         return [
             'id' => $this->id,
@@ -47,7 +53,8 @@ class ClientOrderDetailResource extends JsonResource
             'stage' => $stage->value,
             'stage_label' => $stage->label(),
             'is_open' => $stage->isOpen(),
-            'stage_hint' => $stage->hint(),
+            // «قيد التجهيز — نجهّزها الآن» كذبٌ على طلبيةٍ تنتظر أن يختار صاحبها عربونها.
+            'stage_hint' => $depositOffered ? 'قبلنا طلبيتك — اختر العربون لنبدأ العمل' : $stage->hint(),
 
             // **Why we would not take it — and `cancellation_reason` is deliberately not here.**
             // The two are different sentences with different audiences: one is written for the
@@ -99,6 +106,22 @@ class ClientOrderDetailResource extends JsonResource
             // to «تم دفع العربون» by itself.
             'deposit_due' => $this->depositDue(),
 
+            // **The عربون waited on, whatever its size** — `deposit_due` above is null when it is the
+            // whole amount, and the «بانتظار العربون» card still has to name it. With whether it is
+            // expected at the counter, so the card can say where to bring it.
+            'deposit_expected' => $this->depositExpected(),
+            'deposit_at_office' => $this->depositExpected() !== null
+                && $this->deposit_expected_method === PaymentMethod::Cash,
+
+            // **العربون يختاره العميل الآن** — طلبيةٌ قُبلت بعد المراجعة وما زالت «جديدة» بلا عربون
+            // ولا دفعة (`CheckoutDeposit::isOfferedAfterReview`). الحدّان كما في السلة: ربعُ البضاعة
+            // مقرَّباً لأعلى وكلُّها مقرَّبةً لأسفل، بالدينار الكامل. يُدفع بـ`POST orders/{id}/deposit`.
+            'deposit_offer' => $depositOffered ? [
+                'min_percent' => (int) CheckoutDeposit::MIN_PERCENT,
+                'min_amount' => CheckoutDeposit::minimum((string) $this->grand_total),
+                'max_amount' => CheckoutDeposit::maximum((string) $this->grand_total),
+            ] : null,
+
             // The decided answer, so the app draws «يُحدَّد بعد المراجعة» without having to work
             // out from a pile of nulls what they mean between them.
             'is_awaiting_quote' => $awaitingQuote,
@@ -130,9 +153,17 @@ class ClientOrderDetailResource extends JsonResource
     {
         $seen = [];
 
+        // **Accepted, and waiting on the customer's عربون**: the acceptance reads as «بانتظار
+        // العربون» here as it does on the stage above it — see `CustomerOrderStage::of()`.
+        $offered = CheckoutDeposit::isOfferedAfterReview($this->resource);
+
         foreach ($this->transitions as $transition) {
             /** @var OrderStatusTransition $transition */
             $stage = CustomerOrderStage::forStatus($transition->to_status);
+
+            if ($offered && $stage === CustomerOrderStage::Preparing) {
+                $stage = CustomerOrderStage::AwaitingDeposit;
+            }
 
             if (isset($seen[$stage->value])) {
                 continue;
@@ -148,15 +179,21 @@ class ClientOrderDetailResource extends JsonResource
         return array_values($seen);
     }
 
-    /** The عربون to offer beside the whole amount, or null — see `deposit_due` above. */
-    protected function depositDue(): ?string
+    /** The agreed عربون while the order waits on it, or null — see `deposit_expected` above. */
+    protected function depositExpected(): ?string
     {
         if ($this->status !== OrderStatus::AwaitingDeposit || ! $this->asksForADeposit() || $this->hasUnpricedLines()) {
             return null;
         }
 
-        $expected = (string) $this->deposit_expected_amount;
+        return (string) $this->deposit_expected_amount;
+    }
 
-        return bccomp($expected, $this->remainingAmount(), 2) < 0 ? $expected : null;
+    /** The عربون to offer beside the whole amount, or null — see `deposit_due` above. */
+    protected function depositDue(): ?string
+    {
+        $expected = $this->depositExpected();
+
+        return $expected !== null && bccomp($expected, $this->remainingAmount(), 2) < 0 ? $expected : null;
     }
 }

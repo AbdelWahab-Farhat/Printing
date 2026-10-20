@@ -64,6 +64,7 @@ import 'package:dayaa_client/features/orders/repositories/order_notes_repository
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa_client/features/orders/usecases/browse_orders.dart';
+import 'package:dayaa_client/features/orders/usecases/choose_order_deposit.dart';
 import 'package:dayaa_client/features/orders/usecases/get_order.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:dayaa_client/features/orders/usecases/place_order.dart';
@@ -346,6 +347,8 @@ abstract final class Injector {
       ..registerLazySingleton(() => GetOrder(sl<OrderRepository>()))
       ..registerLazySingleton(() => PlaceOrder(sl<OrderRepository>()))
       ..registerLazySingleton(() => QuoteBasket(sl<OrderRepository>()))
+      // عربون طلبيةٍ قُبلت بعد المراجعة — ورقته تبني الـ Cubit الخاص بها.
+      ..registerLazySingleton(() => ChooseOrderDeposit(sl<OrderRepository>()))
       ..registerLazySingleton<OrderNotesRepository>(() => OrderNotesRepositoryImpl(sl<Dio>()))
       ..registerLazySingleton(() => ReadOrderNotes(sl<OrderNotesRepository>()))
       // **The one Cubit in this app that is a singleton, and the reason is that it outlives
@@ -382,6 +385,9 @@ abstract final class Injector {
           quote: sl<QuoteBasket>(),
           place: sl<PlaceOrder>(),
           cart: sl<CartCubit>(),
+          // خطوة «العربون»: رصيد المحفظة، وهل الشحن الإلكتروني مفعّل.
+          walletBalance: sl<GetWalletBalance>(),
+          topUpMethods: sl<GetTopUpMethods>(),
         ),
       );
   }
