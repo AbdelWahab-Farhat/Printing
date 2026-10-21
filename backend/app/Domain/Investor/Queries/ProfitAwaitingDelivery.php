@@ -113,6 +113,27 @@ final class ProfitAwaitingDelivery
     }
 
     /**
+     * نصيبُ كلِّ شريكٍ من طلبيةٍ واحدة في الطريق — و`null` ما لم تبلغ «جاهزة».
+     *
+     * بابُ «قيد التسليم» في شاشة الفترة ({@see PeriodOrdersByState}): الطلبيةُ تُعدّ هناك ما دامت
+     * في الطريق، ويُعرض رقمُها من هنا وحده — **و`null` غيرُ الصفر**: الأوّلُ «لم يُسعَّر بعد»،
+     * والثاني طلبيةٌ سُعِّرت ولا يصل المستثمرين منها شيءٌ عند التسليم (كلُّ سحبها اشترته المكينة).
+     *
+     * @return array<int, string>|null المستثمر ← نصيبُه، بلا تقريب
+     */
+    public function ofOrder(int $orderId): ?array
+    {
+        $priced = DB::table('orders')
+            ->where('id', $orderId)
+            ->whereNull('deleted_at')
+            ->whereNotNull('ready_at')
+            ->whereNotNull('total_cogs')
+            ->exists();
+
+        return $priced ? $this->sharesOf($orderId) : null;
+    }
+
+    /**
      * طلبياتٌ خرجت بضاعتُها من رفّ صفقةٍ وبلغت «جاهزة» ولم تبلغ خاتمتَها.
      *
      * **والطريقُ إلى الصفقة سحبُ المخزون نفسه**، كما يقرؤه {@see DealOrdersInFlightQuery}: الطلبيةُ

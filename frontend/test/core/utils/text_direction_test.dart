@@ -100,4 +100,17 @@ void main() {
     // Assert
     expect(direction, TextDirection.rtl);
   });
+
+  test('معزولاً، لا يجرّ اسمٌ لاتينيّ رقمَ اليوم الذي بعده', () {
+    // Arrange — «taha shebani · 18 أكتوبر 2026» كانت الـ18 تُرسم ملتصقةً بالاسم.
+    const name = 'taha shebani';
+
+    // Act
+    final isolated = name.isolated;
+
+    // Assert — بين FSI (U+2068) وPDI (U+2069)، والنصُّ نفسُه بينهما.
+    expect(isolated.codeUnits.first, 0x2068);
+    expect(isolated.codeUnits.last, 0x2069);
+    expect(isolated.substring(1, isolated.length - 1), name);
+  });
 }

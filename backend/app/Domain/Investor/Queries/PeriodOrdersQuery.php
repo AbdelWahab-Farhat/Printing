@@ -61,29 +61,7 @@ final class PeriodOrdersQuery
      */
     public function __invoke(int $periodId): array
     {
-        $entries = InvestorWalletEntry::query()
-            ->with('reversedEntry')
-            ->where('investment_period_id', $periodId)
-            ->get();
-
-        $sourced = [];
-
-        foreach ($entries as $entry) {
-            $origin = $entry->type === WalletEntryType::Reversal
-                ? $entry->reversedEntry
-                : $entry;
-
-            if ($origin === null || $origin->source_type === null || $origin->source_id === null) {
-                continue;
-            }
-
-            $sourced[] = [
-                'type' => (string) $origin->source_type,
-                'id' => (int) $origin->source_id,
-                'investor_id' => (int) $entry->investor_id,
-                'amount' => $entry->deltas()['profit_deal'],
-            ];
-        }
+        $sourced = $this->sourced($periodId);
 
         if ($sourced === []) {
             return $this->nothing();
@@ -111,6 +89,44 @@ final class PeriodOrdersQuery
         }
 
         return $this->rows($perOrder);
+    }
+
+    /**
+     * صفوفُ الفترة التي لها مصدر، كلٌّ بمصدر أصله ومبلغِه بإشارته — والصفُّ نفسُه معها.
+     *
+     * **عامّةٌ لأن {@see PeriodOrdersByState} يمشي المشيةَ نفسَها** ثم يسأل عن كلِّ صفٍّ أيَّ
+     * بوّابةٍ اجتازه؛ ومشيةٌ ثانيةٌ هناك كانت تفترق عن هذه أوّلَ ما يُضاف مصدر.
+     *
+     * @return list<array{type: string, id: int, investor_id: int, amount: string, entry: InvestorWalletEntry}>
+     */
+    public function sourced(int $periodId): array
+    {
+        $entries = InvestorWalletEntry::query()
+            ->with('reversedEntry')
+            ->where('investment_period_id', $periodId)
+            ->get();
+
+        $sourced = [];
+
+        foreach ($entries as $entry) {
+            $origin = $entry->type === WalletEntryType::Reversal
+                ? $entry->reversedEntry
+                : $entry;
+
+            if ($origin === null || $origin->source_type === null || $origin->source_id === null) {
+                continue;
+            }
+
+            $sourced[] = [
+                'type' => (string) $origin->source_type,
+                'id' => (int) $origin->source_id,
+                'investor_id' => (int) $entry->investor_id,
+                'amount' => $entry->deltas()['profit_deal'],
+                'entry' => $entry,
+            ];
+        }
+
+        return $sourced;
     }
 
     /**
@@ -176,15 +192,25 @@ final class PeriodOrdersQuery
      *
      * وتبني بها {@see FundProfitOwed} صفوفَ «الأرباح المستحقّة»، فتُرسم الشاشتان بالبطاقة نفسها.
      *
+     * **إلا ما في `$alwaysShown`**: طلبيةٌ في الطريق لم يُقيَّد لها شيءٌ بعد، وسؤالُ
+     * {@see PeriodOrdersByState} عنها هو وجودُها لا مبلغُها.
+     *
      * @param  array<int, array<int, string>>  $perOrder
+     * @param  list<int>  $alwaysShown
      * @return array{
      *     orders: list<array<string, mixed>>,
      *     investors: list<array{investor_id: int, name: string, amount: string}>,
      *     totals: array{orders: int, investors_total: string}
      * }
      */
-    public function rows(array $perOrder): array
+    public function rows(array $perOrder, array $alwaysShown = []): array
     {
+        foreach ($alwaysShown as $orderId) {
+            $perOrder[$orderId] ??= [];
+        }
+
+        $kept = array_flip($alwaysShown);
+
         $orders = DB::table('orders as o')
             ->leftJoin('customers as cu', 'cu.id', '=', 'o.customer_id')
             ->whereIn('o.id', array_keys($perOrder))
@@ -234,7 +260,7 @@ final class PeriodOrdersQuery
                 $periodTotals[$investorId] = bcadd($periodTotals[$investorId] ?? '0', $rounded, 8);
             }
 
-            if ($investors === []) {
+            if ($investors === [] && ! isset($kept[$orderId])) {
                 continue;
             }
 

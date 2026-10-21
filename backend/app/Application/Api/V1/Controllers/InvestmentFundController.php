@@ -31,6 +31,7 @@ use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\FundValuation;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\PeriodExpensesQuery;
+use App\Domain\Investor\Queries\PeriodOrdersByState;
 use App\Domain\Investor\Queries\PeriodOrdersQuery;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Queries\UnitPrice;
@@ -69,7 +70,7 @@ class InvestmentFundController extends Controller
         private readonly RecordFundExpense $expense,
         private readonly ReverseDealExpense $reverseExpense,
         private readonly PurchaseFromFund $purchase,
-        private readonly PeriodOrdersQuery $periodOrders,
+        private readonly PeriodOrdersByState $periodOrders,
         private readonly PeriodExpensesQuery $periodExpenses,
         private readonly FundExpensesQuery $fundExpenses,
         private readonly FundDeal $fund,
@@ -337,13 +338,16 @@ class InvestmentFundController extends Controller
      * وجوابُه الصفوفُ التي قُبض بها؛ وإعادةُ اشتقاقه من الـFIFO بعد سنةٍ كانت تُظهر رقماً غير
      * الذي دخل الجيوب — انظر {@see PeriodOrdersQuery}.
      *
+     * **ومعها أين ربحُ كلِّ طلبية** — استُلم، أو ينتظر التحصيلَ أو نهايةَ الفترة، أو ما زالت في
+     * الطريق — بالبوّابتين اللتين يُفرج بهما الإقفال. انظر {@see PeriodOrdersByState} و§١١.
+     *
      * والفترةُ تسافر مع قائمتها فترسم الشاشةُ ترويستَها وجسمَها بنداءٍ واحد.
      */
     public function periodOrders(InvestmentPeriod $period): JsonResponse
     {
         return $this->success([
             'period' => $this->periodPayload($period),
-            ...($this->periodOrders)((int) $period->getKey()),
+            ...($this->periodOrders)($period),
         ]);
     }
 

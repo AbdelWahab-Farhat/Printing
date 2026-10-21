@@ -122,11 +122,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( PeriodOrders held)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( PeriodOrders held,  PeriodOrdersFilter? filter,  String query,  PeriodOrdersSort sort)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case PeriodOrdersLoading() when loading != null:
 return loading();case PeriodOrdersLoaded() when loaded != null:
-return loaded(_that.held);case PeriodOrdersFailure() when failure != null:
+return loaded(_that.held,_that.filter,_that.query,_that.sort);case PeriodOrdersFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( PeriodOrders held)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( PeriodOrders held,  PeriodOrdersFilter? filter,  String query,  PeriodOrdersSort sort)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case PeriodOrdersLoading():
 return loading();case PeriodOrdersLoaded():
-return loaded(_that.held);case PeriodOrdersFailure():
+return loaded(_that.held,_that.filter,_that.query,_that.sort);case PeriodOrdersFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( PeriodOrders held)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( PeriodOrders held,  PeriodOrdersFilter? filter,  String query,  PeriodOrdersSort sort)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case PeriodOrdersLoading() when loading != null:
 return loading();case PeriodOrdersLoaded() when loaded != null:
-return loaded(_that.held);case PeriodOrdersFailure() when failure != null:
+return loaded(_that.held,_that.filter,_that.query,_that.sort);case PeriodOrdersFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -213,10 +213,13 @@ String toString() {
 
 
 class PeriodOrdersLoaded implements PeriodOrdersState {
-  const PeriodOrdersLoaded(this.held);
+  const PeriodOrdersLoaded(this.held, {this.filter, this.query = '', this.sort = PeriodOrdersSort.newest});
   
 
  final  PeriodOrders held;
+ final  PeriodOrdersFilter? filter;
+@JsonKey() final  String query;
+@JsonKey() final  PeriodOrdersSort sort;
 
 /// Create a copy of PeriodOrdersState
 /// with the given fields replaced by the non-null parameter values.
@@ -228,16 +231,16 @@ $PeriodOrdersLoadedCopyWith<PeriodOrdersLoaded> get copyWith => _$PeriodOrdersLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoaded&&(identical(other.held, held) || other.held == held));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoaded&&(identical(other.held, held) || other.held == held)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.query, query) || other.query == query)&&(identical(other.sort, sort) || other.sort == sort));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,held);
+int get hashCode => Object.hash(runtimeType,held,filter,query,sort);
 
 @override
 String toString() {
-  return 'PeriodOrdersState.loaded(held: $held)';
+  return 'PeriodOrdersState.loaded(held: $held, filter: $filter, query: $query, sort: $sort)';
 }
 
 
@@ -248,7 +251,7 @@ abstract mixin class $PeriodOrdersLoadedCopyWith<$Res> implements $PeriodOrdersS
   factory $PeriodOrdersLoadedCopyWith(PeriodOrdersLoaded value, $Res Function(PeriodOrdersLoaded) _then) = _$PeriodOrdersLoadedCopyWithImpl;
 @useResult
 $Res call({
- PeriodOrders held
+ PeriodOrders held, PeriodOrdersFilter? filter, String query, PeriodOrdersSort sort
 });
 
 
@@ -265,10 +268,13 @@ class _$PeriodOrdersLoadedCopyWithImpl<$Res>
 
 /// Create a copy of PeriodOrdersState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? held = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? held = null,Object? filter = freezed,Object? query = null,Object? sort = null,}) {
   return _then(PeriodOrdersLoaded(
 null == held ? _self.held : held // ignore: cast_nullable_to_non_nullable
-as PeriodOrders,
+as PeriodOrders,filter: freezed == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
+as PeriodOrdersFilter?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,sort: null == sort ? _self.sort : sort // ignore: cast_nullable_to_non_nullable
+as PeriodOrdersSort,
   ));
 }
 

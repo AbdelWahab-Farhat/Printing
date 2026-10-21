@@ -41,4 +41,15 @@ extension ReadingDirection on String {
 
     return _readsRightToLeft.hasMatch(letter) ? TextDirection.rtl : TextDirection.ltr;
   }
+
+  /// هذا النصُّ معزولاً عمّا حوله — بين FSI وPDI من يونيكود.
+  ///
+  /// **لسطرٍ يجمع أجزاءً بـ« · »**: «taha shebani · 18 أكتوبر 2026» كان يُرسم والـ18 ملتصقةٌ
+  /// بالاسم اللاتيني، لأن الأرقام تتبع أقربَ حرفٍ ذي اتجاه قبلها، فينقطع اليومُ عن شهره. معزولاً،
+  /// يأخذ كلُّ جزءٍ اتجاهَ أوّل حروفه ولا يمدّه إلى جاره.
+  String get isolated => '$_firstStrongIsolate$this$_popDirectionalIsolate';
 }
+
+/// U+2068 FIRST STRONG ISOLATE و U+2069 POP DIRECTIONAL ISOLATE — لا يُرسمان.
+final String _firstStrongIsolate = String.fromCharCode(0x2068);
+final String _popDirectionalIsolate = String.fromCharCode(0x2069);

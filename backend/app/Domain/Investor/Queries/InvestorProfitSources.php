@@ -6,7 +6,6 @@ namespace App\Domain\Investor\Queries;
 
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Investor\Enums\DealStatus;
-use App\Domain\Investor\Enums\PeriodStatus;
 use App\Domain\Investor\Enums\ProfitSourceState;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Models\InvestorWalletEntry;
@@ -378,11 +377,7 @@ final class InvestorProfitSources
         $period = $entry->period;
 
         if ($period !== null) {
-            return match ($period->status) {
-                PeriodStatus::Open => ProfitSourceState::AwaitingPeriodEnd,
-                PeriodStatus::Closing => $unpaid ? ProfitSourceState::AwaitingPayment : ProfitSourceState::Released,
-                PeriodStatus::Closed => ProfitSourceState::Released,
-            };
+            return ProfitSourceState::ofLedgerRow($period->status, $unpaid);
         }
 
         $deal = $entry->deal;
