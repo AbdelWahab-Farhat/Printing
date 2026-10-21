@@ -23,6 +23,10 @@ use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\InternalTicket\Models\InternalTicket;
+use App\Domain\InternalTicket\Models\InternalTicketAttachment;
+use App\Domain\InternalTicket\Models\InternalTicketCategory;
+use App\Domain\InternalTicket\Models\InternalTicketMessage;
 use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBatchConsumption;
 use App\Domain\Inventory\Models\StockBatchRevaluation;
@@ -183,6 +187,13 @@ enum AuditSubject: string
     case SupportTicket = 'support_ticket';
     case TicketMessage = 'ticket_message';
 
+    // What staff say to each other — INTERNAL-TICKETS-DESIGN. The message and its file are both
+    // here for the reason the design ticket's file is: «من قال هذا، ومتى عدّله؟» lives on them.
+    case InternalTicket = 'internal_ticket';
+    case InternalTicketMessage = 'internal_ticket_message';
+    case InternalTicketAttachment = 'internal_ticket_attachment';
+    case InternalTicketCategory = 'internal_ticket_category';
+
     // Company-wide settings
     case CompanySetting = 'company_setting';
 
@@ -275,6 +286,10 @@ enum AuditSubject: string
             self::Billboard => Billboard::class,
             self::SupportTicket => SupportTicket::class,
             self::TicketMessage => TicketMessage::class,
+            self::InternalTicket => InternalTicket::class,
+            self::InternalTicketMessage => InternalTicketMessage::class,
+            self::InternalTicketAttachment => InternalTicketAttachment::class,
+            self::InternalTicketCategory => InternalTicketCategory::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
             self::TreasuryAccount => TreasuryAccount::class,
@@ -352,6 +367,10 @@ enum AuditSubject: string
             self::Billboard => 'لوحة إعلانات',
             self::SupportTicket => 'تذكرة دعم',
             self::TicketMessage => 'رسالة تذكرة',
+            self::InternalTicket => 'تذكرة داخلية',
+            self::InternalTicketMessage => 'رسالة تذكرة داخلية',
+            self::InternalTicketAttachment => 'مرفق تذكرة داخلية',
+            self::InternalTicketCategory => 'نوع تذكرة داخلية',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',
             self::TreasuryAccount => 'حساب',

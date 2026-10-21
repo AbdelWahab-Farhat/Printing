@@ -1,6 +1,8 @@
+import 'package:dayaa/core/chat/voice_composer_row.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/text_direction.dart';
+import 'package:dayaa/core/voice/voice_recorder.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,12 +18,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// يُرسل وينتظر جوابه، والضغطةُ الثانية يرفضها الـCubit.
 ///
 /// **الحقل يجري في اتجاه ما يُكتب فيه**: جملةٌ لاتينية تبدأ من اليسار وهي تُكتب، لا بعد إرسالها.
+///
+/// **وما زادته التذاكر الداخلية، كبريمولا** — وكلاهما اختياريّ، فمحادثةُ الدعم لا تمرّرهما ولا
+/// يتغيّر شكلها: [onRecorded] يجعل الزرَّ ميكروفوناً ما دام الحقلُ فارغاً (انظر
+/// [VoiceComposerRow])، و[banner] سطرٌ فوق الحقل — الرسالةُ التي يُردّ عليها.
 class ChatComposer extends StatefulWidget {
   const ChatComposer({
     required this.controller,
     required this.onSend,
     required this.onAttach,
     this.isSending = false,
+    this.onRecorded,
+    this.banner,
+    this.hint = 'اكتب ردّك…',
     super.key,
   });
 
@@ -29,6 +38,14 @@ class ChatComposer extends StatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onAttach;
   final bool isSending;
+
+  /// رسالةٌ صوتية سُجّلت وتنتظر الإرسال. بلا هذا لا ميكروفون.
+  final Future<void> Function(VoiceRecording recording)? onRecorded;
+
+  /// فوق الحقل — `ReplyQuote` بزرّ إلغاء.
+  final Widget? banner;
+
+  final String hint;
 
   @override
   State<ChatComposer> createState() => _ChatComposerState();
@@ -66,6 +83,48 @@ class _ChatComposerState extends State<ChatComposer> {
     final text = widget.controller.text;
     final canSend = text.trim().isNotEmpty && !widget.isSending;
 
+    final field = AppTextField(
+      controller: widget.controller,
+      hint: widget.hint,
+      // يبدأ سطراً ويكبر مع الكلام: صندوقٌ بخمسة أسطرٍ فارغة فوق لوحة المفاتيح يأكل
+      // الخيطَ الذي يُردّ عليه.
+      minLines: 1,
+      maxLines: 5,
+      keyboardType: TextInputType.multiline,
+      textInputAction: TextInputAction.newline,
+      textDirection: text.readingDirection,
+      suffix: IconButton(
+        onPressed: widget.isSending ? null : widget.onAttach,
+        tooltip: 'إرفاق صورة أو ملف',
+        icon: Icon(AppIcons.attach, size: 24.sp, color: scheme.onSurfaceVariant),
+      ),
+    );
+
+    final sendKey = _SendKey(
+      active: canSend,
+      busy: widget.isSending,
+      onTap: canSend ? widget.onSend : null,
+    );
+
+    final onRecorded = widget.onRecorded;
+
+    final row = onRecorded == null
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: field),
+              SizedBox(width: 8.w),
+              sendKey,
+            ],
+          )
+        : VoiceComposerRow(
+            field: field,
+            sendButton: sendKey,
+            // الميكروفونُ ما دام الحقلُ فارغاً ولا شيء في الطريق، كبريمولا وواتساب.
+            showMic: text.trim().isEmpty && !widget.isSending,
+            onRecorded: onRecorded,
+          );
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
@@ -75,35 +134,16 @@ class _ChatComposerState extends State<ChatComposer> {
         top: false,
         child: Padding(
           padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 8.h),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: AppTextField(
-                  controller: widget.controller,
-                  hint: 'اكتب ردّك…',
-                  // يبدأ سطراً ويكبر مع الكلام: صندوقٌ بخمسة أسطرٍ فارغة فوق لوحة المفاتيح يأكل
-                  // الخيطَ الذي يُردّ عليه.
-                  minLines: 1,
-                  maxLines: 5,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  textDirection: text.readingDirection,
-                  suffix: IconButton(
-                    onPressed: widget.isSending ? null : widget.onAttach,
-                    tooltip: 'إرفاق صورة أو ملف',
-                    icon: Icon(AppIcons.attach, size: 24.sp, color: scheme.onSurfaceVariant),
-                  ),
+          child: widget.banner == null
+              ? row
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    widget.banner!,
+                    SizedBox(height: 6.h),
+                    row,
+                  ],
                 ),
-              ),
-              SizedBox(width: 8.w),
-              _SendKey(
-                active: canSend,
-                busy: widget.isSending,
-                onTap: canSend ? widget.onSend : null,
-              ),
-            ],
-          ),
         ),
       ),
     );

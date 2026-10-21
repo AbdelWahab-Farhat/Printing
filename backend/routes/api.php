@@ -19,6 +19,7 @@ use App\Application\Api\V1\Controllers\FakeEzonePayController;
 use App\Application\Api\V1\Controllers\FundBreakdownController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\InternalTicketController;
 use App\Application\Api\V1\Controllers\InvestmentFundController;
 use App\Application\Api\V1\Controllers\InvestorController;
 use App\Application\Api\V1\Controllers\InvestorDealController;
@@ -304,6 +305,30 @@ Route::prefix('v1')->group(function (): void {
         // الموظفُ لا يكتب في تذكرةٍ مغلقة، فهذا طريقُه إليها: يفتحها عن قصد ثم يكتب.
         Route::post('support/tickets/{ticket}/reopen', [SupportTicketController::class, 'reopen'])
             ->whereNumber('ticket')->middleware('can:support.manage')->name('support.tickets.reopen');
+
+        // ── التذاكر الداخلية ─────────────────────────────────────────────────────────────
+        // موظفٌ يكتب إلى زميل، كما في بريمولا — INTERNAL-TICKETS-DESIGN. **بلا `can:` على أيٍّ منها**:
+        // كلُّ موظفٍ يفتح تذكرةً ويكتب فيما هو طرفٌ فيه، والحكمُ على الصف في السياق — تذكرةٌ لا يراها
+        // القارئ ٤٠٤، وما يراها ولا يكتب فيها ٤٠٣.
+        Route::prefix('internal-tickets')->name('internal-tickets.')->group(function (): void {
+            Route::get('/', [InternalTicketController::class, 'index'])->name('index');
+            Route::post('/', [InternalTicketController::class, 'store'])->name('store');
+            Route::get('home', [InternalTicketController::class, 'home'])->name('home');
+            Route::get('colleagues', [InternalTicketController::class, 'colleagues'])->name('colleagues');
+            Route::get('categories', [InternalTicketController::class, 'categories'])->name('categories');
+
+            Route::get('{ticket}', [InternalTicketController::class, 'show'])->whereNumber('ticket')->name('show');
+            Route::post('{ticket}/messages', [InternalTicketController::class, 'reply'])
+                ->whereNumber('ticket')->name('messages.store');
+            Route::patch('{ticket}/messages/{message}', [InternalTicketController::class, 'editMessage'])
+                ->whereNumber(['ticket', 'message'])->name('messages.update');
+            Route::delete('{ticket}/messages/{message}', [InternalTicketController::class, 'retractMessage'])
+                ->whereNumber(['ticket', 'message'])->name('messages.destroy');
+            Route::post('{ticket}/read', [InternalTicketController::class, 'read'])->whereNumber('ticket')->name('read');
+            Route::post('{ticket}/close', [InternalTicketController::class, 'close'])->whereNumber('ticket')->name('close');
+            Route::patch('{ticket}/transfer', [InternalTicketController::class, 'transfer'])
+                ->whereNumber('ticket')->name('transfer');
+        });
 
         // ── مجالات العمل ────────────────────────────────────────────────────────────────
         // What a customer's shop sells. Reading is granted to every role — the customer form
@@ -1393,6 +1418,11 @@ Route::prefix('v1')->group(function (): void {
             // the archive guard closes two routes up.
             Route::get('design-tickets/{ticket}/logs', [DesignTicketController::class, 'logs'])
                 ->name('design-tickets.logs');
+
+            // والتذكرةُ الداخلية بالشرط نفسه: يُضيّقها المتحكّم ثانيةً بالرؤية، فلا يقرأ `logs.view`
+            // وحده محادثةً بين زميلين.
+            Route::get('internal-tickets/{ticket}/logs', [InternalTicketController::class, 'logs'])
+                ->whereNumber('ticket')->name('internal-tickets.logs');
 
             // The warehouse and the alert thresholds set on its shelves. Not the movements —
             // those are a ledger rather than a change log, and `/stock-movements?warehouse_id=`

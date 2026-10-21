@@ -1,9 +1,9 @@
+import 'package:dayaa/core/chat/chat_bubble_border.dart';
+import 'package:dayaa/core/chat/delivery_ticks.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/text_direction.dart';
-import 'package:dayaa/features/support/presentation/widgets/chat_bubble_border.dart';
-import 'package:dayaa/features/support/presentation/widgets/delivery_ticks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -27,6 +27,10 @@ double get chatAvatarSize => 30.w;
 ///
 /// **الوقت على آخر سطرٍ من الكلام حين يتّسع له**، وإلا نزل إلى سطرٍ وحده — حيلةُ تيليغرام: نسخةٌ
 /// شفّافة من الوقت في آخر النص تحجز مكانه، والوقت الظاهر فوقها في الزاوية.
+///
+/// **وما زادته التذاكر الداخلية، كبريمولا** — وكلُّه اختياريّ، فمحادثةُ الدعم لا تمرّره ولا يتغيّر
+/// شكلها: الاقتباسُ فوق الكلام ([quote])، و«معدّلة» بجانب الوقت ([isEdited])، والرسالةُ المسحوبة
+/// بخطٍّ مائلٍ باهت ([isDeleted]).
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     required this.fromDesk,
@@ -39,6 +43,10 @@ class MessageBubble extends StatelessWidget {
     this.avatar,
     this.attachment,
     this.imageOnly = false,
+    this.quote,
+    this.isEdited = false,
+    this.isDeleted = false,
+    this.readLabel = 'قرأها العميل',
     this.onLongPress,
     this.detached = false,
     super.key,
@@ -67,6 +75,18 @@ class MessageBubble extends StatelessWidget {
   /// صورةٌ بلا تعليق: الوقت يطفو فوق الصورة نفسها في زاويتها.
   final bool imageOnly;
 
+  /// الرسالةُ التي يردّ عليها هذا الكلام، مرسومةً فوقه — انظر `ReplyQuote`.
+  final Widget? quote;
+
+  /// غيّر صاحبُها نصّها: «معدّلة» قبل الوقت.
+  final bool isEdited;
+
+  /// سحبها صاحبها: «تم حذف هذه الرسالة» بخطٍّ مائلٍ بلون الوقت، لا بلون الكلام.
+  final bool isDeleted;
+
+  /// ما يقوله قارئُ الشاشة عن ✓✓ — انظر [DeliveryTicks.readLabel].
+  final String readLabel;
+
   /// الضغطة المطوّلة — تُمرَّر سياقُ الفقاعة نفسها، كي تُرفع القائمة فوقها في مكانها.
   final void Function(BuildContext bubbleContext)? onLongPress;
 
@@ -78,14 +98,20 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final fill = fromDesk ? scheme.outgoingBubble : scheme.incomingBubble;
-    final ink = fromDesk ? scheme.onOutgoingBubble : scheme.onIncomingBubble;
     final metaInk = fromDesk ? scheme.outgoingMeta : scheme.incomingMeta;
+    final ink = isDeleted ? metaInk : (fromDesk ? scheme.onOutgoingBubble : scheme.onIncomingBubble);
     final edge = fromDesk ? scheme.outgoingBubbleEdge : scheme.incomingBubbleEdge;
     final hasText = text.trim().isNotEmpty;
     final name = startsRun ? author?.trim() : null;
     final hasName = name != null && name.isNotEmpty;
 
-    final meta = _Meta(sentAt: sentAt, delivery: delivery, color: metaInk);
+    final meta = _Meta(
+      sentAt: sentAt,
+      delivery: delivery,
+      color: metaInk,
+      isEdited: isEdited,
+      readLabel: readLabel,
+    );
 
     final body = switch ((attachment, hasText)) {
       // صورةٌ بلا تعليق: إطارٌ رفيع حولها، والوقت فوقها في شريطٍ داكن.
@@ -95,7 +121,7 @@ class MessageBubble extends StatelessWidget {
           PositionedDirectional(
             end: 6.w,
             bottom: 6.w,
-            child: _MetaOnImage(sentAt: sentAt, delivery: delivery),
+            child: _MetaOnImage(sentAt: sentAt, delivery: delivery, readLabel: readLabel),
           ),
         ],
       ),
@@ -111,32 +137,35 @@ class MessageBubble extends StatelessWidget {
           file,
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(imageOnly ? 8.w : 0, 6.h, imageOnly ? 8.w : 0, 0),
-            child: _TextWithMeta(text: text, ink: ink, meta: meta),
+            child: _TextWithMeta(text: text, ink: ink, meta: meta, italic: isDeleted),
           ),
         ],
       ),
-      (null, _) => _TextWithMeta(text: text, ink: ink, meta: meta),
+      (null, _) => _TextWithMeta(text: text, ink: ink, meta: meta, italic: isDeleted),
     };
 
-    final content = hasName
+    final content = hasName || quote != null
         ? Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: imageOnly
-                    ? EdgeInsetsDirectional.fromSTEB(8.w, 4.h, 8.w, 4.h)
-                    : EdgeInsets.only(bottom: 2.h),
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelLarge?.copyWith(
-                    color: scheme.outgoingAuthor,
-                    fontWeight: FontWeight.w800,
+              if (hasName)
+                Padding(
+                  padding: imageOnly
+                      ? EdgeInsetsDirectional.fromSTEB(8.w, 4.h, 8.w, 4.h)
+                      : EdgeInsets.only(bottom: 2.h),
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelLarge?.copyWith(
+                      color: scheme.outgoingAuthor,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
+              if (quote case final quoted?)
+                Padding(padding: EdgeInsets.only(bottom: 6.h), child: quoted),
               body,
             ],
           )
@@ -208,15 +237,25 @@ class MessageBubble extends StatelessWidget {
 
 /// النصّ، والوقتُ في زاوية سطره الأخير حين يتّسع.
 class _TextWithMeta extends StatelessWidget {
-  const _TextWithMeta({required this.text, required this.ink, required this.meta});
+  const _TextWithMeta({
+    required this.text,
+    required this.ink,
+    required this.meta,
+    this.italic = false,
+  });
 
   final String text;
   final Color ink;
   final Widget meta;
+  final bool italic;
 
   @override
   Widget build(BuildContext context) {
-    final style = context.textTheme.bodyLarge?.copyWith(color: ink, height: 1.45);
+    final style = context.textTheme.bodyLarge?.copyWith(
+      color: ink,
+      height: 1.45,
+      fontStyle: italic ? FontStyle.italic : null,
+    );
     final own = text.readingDirection;
     final bubbleDirection = Directionality.of(context);
 
@@ -260,26 +299,36 @@ class _TextWithMeta extends StatelessWidget {
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta({required this.sentAt, required this.delivery, required this.color});
+  const _Meta({
+    required this.sentAt,
+    required this.delivery,
+    required this.color,
+    required this.readLabel,
+    this.isEdited = false,
+  });
 
   final DateTime? sentAt;
   final Delivery? delivery;
   final Color color;
+  final String readLabel;
+  final bool isEdited;
 
   @override
   Widget build(BuildContext context) {
+    final style = context.textTheme.labelSmall?.copyWith(color: color, height: 1.2);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (isEdited) ...[
+          Text('معدّلة', style: style),
+          SizedBox(width: 4.w),
+        ],
         if (sentAt case final at?)
-          Text(
-            at.timeLabel,
-            textDirection: TextDirection.rtl,
-            style: context.textTheme.labelSmall?.copyWith(color: color, height: 1.2),
-          ),
+          Text(at.timeLabel, textDirection: TextDirection.rtl, style: style),
         if (delivery case final state?) ...[
           SizedBox(width: 4.w),
-          DeliveryTicks(delivery: state, color: color),
+          DeliveryTicks(delivery: state, color: color, readLabel: readLabel),
         ],
       ],
     );
@@ -288,10 +337,11 @@ class _Meta extends StatelessWidget {
 
 /// الوقت فوق صورةٍ بلا تعليق: شريطٌ داكن نصف شفّاف، أبيضُ عليه — يُقرأ على أيّ صورة.
 class _MetaOnImage extends StatelessWidget {
-  const _MetaOnImage({required this.sentAt, required this.delivery});
+  const _MetaOnImage({required this.sentAt, required this.delivery, required this.readLabel});
 
   final DateTime? sentAt;
   final Delivery? delivery;
+  final String readLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +349,12 @@ class _MetaOnImage extends StatelessWidget {
       decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(10.r)),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
-        child: _Meta(sentAt: sentAt, delivery: delivery, color: Colors.white),
+        child: _Meta(
+          sentAt: sentAt,
+          delivery: delivery,
+          color: Colors.white,
+          readLabel: readLabel,
+        ),
       ),
     );
   }

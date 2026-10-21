@@ -11,6 +11,8 @@ import 'package:dayaa/core/realtime/pusher_realtime_client.dart';
 import 'package:dayaa/core/realtime/realtime_client.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/core/voice/voice_note_cache.dart';
+import 'package:dayaa/core/voice/voice_playback.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_form_cubit.dart';
@@ -101,6 +103,14 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
+import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_thread_cubit.dart';
+import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_cubit.dart';
+import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_home_cubit.dart';
+import 'package:dayaa/features/internal_tickets/presentation/viewmodel/new_internal_ticket_cubit.dart';
+import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository.dart';
+import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository_impl.dart';
+import 'package:dayaa/features/internal_tickets/usecases/internal_tickets_usecases.dart';
 import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repository.dart';
 import 'package:dayaa/features/investment_fund/repositories/fund_breakdown_repository_impl.dart';
 import 'package:dayaa/features/investment_fund/repositories/investment_fund_repository.dart';
@@ -426,6 +436,7 @@ abstract final class Injector {
     _registerShortages();
     _registerDesignTickets();
     _registerSupport();
+    _registerInternalTickets();
     _registerCustomers();
     _registerSettings();
     _registerOrders();
@@ -1491,6 +1502,97 @@ abstract final class Injector {
           close: sl<CloseTicket>(),
           reopen: sl<ReopenTicket>(),
           watch: sl<WatchTicketChanges>(),
+        ),
+      );
+  }
+
+  /// التذاكر الداخلية بين الموظفين، ومعها الصوت.
+  ///
+  /// **المشغّلُ واحدٌ للتطبيق كلّه** (`registerLazySingleton`): رسالةٌ واحدة تُسمع في وقتٍ واحد،
+  /// ومحادثتان تفتحان مشغّلين كانتا ستتكلّمان معاً. ويُبنى عند أوّل طلبٍ لا عند الإقلاع.
+  ///
+  /// **و«مَن أنا» يُقرأ ساعةَ يُبنى الـCubit** لا عند التسجيل: الجلسةُ تتبدّل بتسجيل الدخول والخروج.
+  static void _registerInternalTickets() {
+    sl
+      ..registerLazySingleton<VoiceNoteCache>(VoiceNoteCache.new)
+      ..registerLazySingleton<VoicePlayback>(() => VoicePlayback(cache: sl<VoiceNoteCache>()))
+      ..registerLazySingleton<InternalTicketsRepository>(
+        () => InternalTicketsRepositoryImpl(sl<Dio>(), sl<RealtimeClient>()),
+      )
+      ..registerLazySingleton<BrowseInternalTickets>(
+        () => BrowseInternalTickets(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<GetInternalTicketsHome>(
+        () => GetInternalTicketsHome(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<GetColleagues>(() => GetColleagues(sl<InternalTicketsRepository>()))
+      ..registerLazySingleton<GetInternalCategories>(
+        () => GetInternalCategories(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<OpenInternalTicket>(
+        () => OpenInternalTicket(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<GetInternalTicket>(
+        () => GetInternalTicket(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<SendInternalMessage>(
+        () => SendInternalMessage(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<EditInternalMessage>(
+        () => EditInternalMessage(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<RetractInternalMessage>(
+        () => RetractInternalMessage(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<MarkInternalTicketRead>(
+        () => MarkInternalTicketRead(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<CloseInternalTicket>(
+        () => CloseInternalTicket(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<TransferInternalTicket>(
+        () => TransferInternalTicket(sl<InternalTicketsRepository>()),
+      )
+      ..registerLazySingleton<WatchInternalTickets>(
+        () => WatchInternalTickets(sl<InternalTicketsRepository>()),
+      )
+      ..registerFactoryParam<InternalTicketsCubit, InternalTicketQuery, void>(
+        (query, _) => InternalTicketsCubit(
+          browse: sl<BrowseInternalTickets>(),
+          watch: sl<WatchInternalTickets>(),
+          me: sl<Session>().user?.id,
+          query: query,
+        ),
+      )
+      ..registerFactory<InternalTicketsHomeCubit>(
+        () => InternalTicketsHomeCubit(
+          get: sl<GetInternalTicketsHome>(),
+          send: sl<SendInternalMessage>(),
+          watch: sl<WatchInternalTickets>(),
+          me: sl<Session>().user?.id,
+        ),
+      )
+      ..registerFactory<NewInternalTicketCubit>(
+        () => NewInternalTicketCubit(
+          colleagues: sl<GetColleagues>(),
+          categories: sl<GetInternalCategories>(),
+          open: sl<OpenInternalTicket>(),
+        ),
+      )
+      ..registerFactoryParam<InternalThreadCubit, int, void>(
+        (ticketId, _) => InternalThreadCubit(
+          ticketId: ticketId,
+          me: sl<Session>().user?.id,
+          get: sl<GetInternalTicket>(),
+          send: sl<SendInternalMessage>(),
+          edit: sl<EditInternalMessage>(),
+          retract: sl<RetractInternalMessage>(),
+          markRead: sl<MarkInternalTicketRead>(),
+          close: sl<CloseInternalTicket>(),
+          transfer: sl<TransferInternalTicket>(),
+          colleagues: sl<GetColleagues>(),
+          watch: sl<WatchInternalTickets>(),
+          voiceCache: sl<VoiceNoteCache>(),
         ),
       );
   }

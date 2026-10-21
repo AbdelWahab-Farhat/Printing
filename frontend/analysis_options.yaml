@@ -25,6 +25,8 @@ analyzer:
     # the same fixes after every export, so they are left exactly as the tool emits them.
     - "lib/core/theme/theme.dart"
     - "lib/core/theme/text_theme.dart"
+    - android/**
+    - ios/**
 
 linter:
   rules:

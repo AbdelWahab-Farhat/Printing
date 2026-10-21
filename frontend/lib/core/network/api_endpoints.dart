@@ -803,6 +803,49 @@ abstract final class SupportEndpoints {
   static const String changedEvent = 'support.ticket.changed';
 }
 
+/// التذاكر الداخلية بين الموظفين — INTERNAL-TICKETS-DESIGN §٥.
+///
+/// **بلا صلاحيةٍ على أيٍّ منها**: كلُّ موظفٍ يفتح تذكرةً ويكتب فيما هو طرفٌ فيه، والخادمُ يحكم على
+/// الصف — تذكرةٌ لا يراها القارئ ٤٠٤.
+abstract final class InternalTicketEndpoints {
+  /// القائمة — `scope=mine|all` (الثانيةُ للمدير)، `status`، `search`، `category_id`، `user_id`،
+  /// `unread`، `order_id`، `customer_id`، `sort`. وPOST يفتح تذكرة.
+  static const String tickets = '/internal-tickets';
+
+  /// بطاقةُ الرئيسية: ما ينتظر ردّي.
+  static const String home = '/internal-tickets/home';
+
+  /// ورقةُ «مع مَن؟».
+  static const String colleagues = '/internal-tickets/colleagues';
+
+  /// «نوع المشكلة».
+  static const String categories = '/internal-tickets/categories';
+
+  /// المحادثةُ كاملة. **فتحُها يعلّمها مقروءةً** — GET بأثر، كخيط الدعم.
+  static String ticket(int id) => '/internal-tickets/$id';
+
+  static String messages(int id) => '/internal-tickets/$id/messages';
+
+  /// PATCH يعدّل النص، وDELETE يسحبها — لصاحبها خلال عشرين دقيقة.
+  static String message(int id, int messageId) => '/internal-tickets/$id/messages/$messageId';
+
+  static String read(int id) => '/internal-tickets/$id/read';
+
+  static String close(int id) => '/internal-tickets/$id/close';
+
+  static String transfer(int id) => '/internal-tickets/$id/transfer';
+
+  /// قناةُ المحادثة الحيّة — طرفاها والمدير.
+  static String channel(int id) => 'private-internal-tickets.$id';
+
+  static const String changedEvent = 'internal_ticket.changed';
+
+  /// قناةُ الموظف نفسه: إشارةٌ بأن تذكرةً هو طرفٌ فيها تغيّرت.
+  static String staffChannel(int userId) => 'private-staff.$userId';
+
+  static const String homeChangedEvent = 'internal_ticket.home.changed';
+}
+
 /// البثّ الحيّ.
 abstract final class RealtimeEndpoints {
   /// حيث تُوقَّع القنوات الخاصة. **جوابُه خارج المغلّف** — `{"auth": "…"}` كما يقرؤه Pusher.

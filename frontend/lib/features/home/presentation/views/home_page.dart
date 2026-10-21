@@ -12,6 +12,7 @@ import 'package:dayaa/features/home/presentation/widgets/quick_actions.dart';
 import 'package:dayaa/features/home/presentation/widgets/ready_message_box.dart';
 import 'package:dayaa/features/home/presentation/widgets/status_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/summary_tiles.dart';
+import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_home_card.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,6 +77,9 @@ class _HomeView extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 24.h),
+              // «تذاكر الموظفين — تنتظر ردّك»، كبطاقة بريمولا: ما ينتظر هذا الموظفَ بعينه، فهو
+              // أعلى ما في الرئيسية بعد أرقامها. وتغيب كلُّها — بمسافتها — حين لا شيء مفتوحاً.
+              const InternalTicketsHomeCard(),
               // **أعلى من لوحتي الحالات والدفع، وهو الصندوق الوحيد الذي يخصّ شخصاً بعينه.**
               // اللوحتان تحته تقسمان طلبيات الورشة كلّها على محاورها ويقرؤهما الجميع؛ هذا طابور
               // عملٍ يُفتح ليُفرَغ، ومن يملك صلاحيته يفتح التطبيق لأجله. وغائبٌ تماماً لمن لا

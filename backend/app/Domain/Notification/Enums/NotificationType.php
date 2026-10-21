@@ -11,6 +11,9 @@ use App\Domain\Notification\Definitions\CustomerWroteToSupport;
 use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
+use App\Domain\Notification\Definitions\InternalTicketAwaitsYourReply;
+use App\Domain\Notification\Definitions\InternalTicketMessagePosted;
+use App\Domain\Notification\Definitions\InternalTicketOpenedForYou;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderAwaitsReview;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
@@ -100,6 +103,20 @@ enum NotificationType: string
      */
     case SupportCustomerMessage = 'support.customer_message';
 
+    /** زميلٌ فتح تذكرةً داخلية إليك — {@see InternalTicketOpenedForYou}. */
+    case InternalTicketOpened = 'internal_ticket.opened';
+
+    /**
+     * رسالةٌ جديدة في تذكرةٍ داخلية، إلى الطرف الآخر وحده — {@see InternalTicketMessagePosted}.
+     * تعديلُ الرسالة وسحبُها لا جرس عليهما، كبريمولا: بثٌّ حيٌّ فقط.
+     */
+    case InternalTicketMessage = 'internal_ticket.message';
+
+    /**
+     * تذكيرٌ كل ساعة لمن يُنتظر ردّه، حتى ٢٤ مرة — {@see InternalTicketAwaitsYourReply}.
+     */
+    case InternalTicketReminder = 'internal_ticket.reminder';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -124,6 +141,9 @@ enum NotificationType: string
             self::DesignTicketStatus => DesignTicketReachedStatus::class,
             self::DesignTicketComment => DesignTicketCommentPosted::class,
             self::SupportCustomerMessage => CustomerWroteToSupport::class,
+            self::InternalTicketOpened => InternalTicketOpenedForYou::class,
+            self::InternalTicketMessage => InternalTicketMessagePosted::class,
+            self::InternalTicketReminder => InternalTicketAwaitsYourReply::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -158,6 +178,10 @@ enum NotificationType: string
             // مفتاحٌ يعرفه التطبيقُ أصلاً — فقاعةُ كلام — فيظهر النوعُ الجديد في نسخةٍ جُمّعت
             // قبله بلا تعديل.
             self::SupportCustomerMessage => 'comment',
+            // مفاتيحُ يعرفها التطبيق أصلاً: التذكرةُ الجديدة عملٌ وصل، والرسالةُ والتذكيرُ كلام.
+            self::InternalTicketOpened => 'task',
+            self::InternalTicketMessage => 'comment',
+            self::InternalTicketReminder => 'comment',
             self::Announcement => 'announcement',
         };
     }
@@ -177,6 +201,9 @@ enum NotificationType: string
             self::DesignTicketStatus => 'حالة طلب تصميم',
             self::DesignTicketComment => 'تعليق على طلب تصميم',
             self::SupportCustomerMessage => 'رسالة دعم من عميل',
+            self::InternalTicketOpened => 'تذكرة داخلية جديدة',
+            self::InternalTicketMessage => 'رسالة في تذكرة داخلية',
+            self::InternalTicketReminder => 'تذكير بتذكرة داخلية',
             self::Announcement => 'إشعار عام',
         };
     }

@@ -6,10 +6,13 @@ namespace Tests\Feature\Api\V1;
 
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
+use App\Domain\InternalTicket\Models\InternalTicket;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -269,5 +272,80 @@ class RealtimeChannelAuthTest extends TestCase
 
         // Assert
         $response->assertForbidden();
+    }
+
+    // ─────────────────────────── التذاكر الداخلية ───────────────────────────
+
+    /**
+     * @return array{0: User, 1: array<string, string>}
+     */
+    private function employee(): array
+    {
+        $user = User::factory()->create();
+
+        return [$user, ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken]];
+    }
+
+    public function test_both_parties_may_listen_to_an_internal_thread_and_a_third_colleague_may_not(): void
+    {
+        // Arrange
+        [$opener, $openerHeaders] = $this->employee();
+        [$assignee, $assigneeHeaders] = $this->employee();
+        [, $strangerHeaders] = $this->employee();
+        $ticket = InternalTicket::factory()->between($opener, $assignee)->create();
+        $channel = "private-internal-tickets.{$ticket->id}";
+
+        // Act
+        $asOpener = $this->withHeaders($openerHeaders)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => $channel,
+        ]);
+        $asAssignee = $this->withHeaders($assigneeHeaders)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => $channel,
+        ]);
+        $asStranger = $this->withHeaders($strangerHeaders)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => $channel,
+        ]);
+
+        // Assert
+        $asOpener->assertOk()->assertExactJson(['auth' => $this->signatureFor($channel)]);
+        $asAssignee->assertOk();
+        $asStranger->assertForbidden();
+    }
+
+    public function test_an_admin_may_listen_to_any_internal_thread(): void
+    {
+        // Arrange
+        [$admin, $headers] = $this->employee();
+        Role::findOrCreate(RoleName::Admin->value, 'web');
+        $admin->syncRoles([RoleName::Admin->value]);
+        $ticket = InternalTicket::factory()->create();
+        $channel = "private-internal-tickets.{$ticket->id}";
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => $channel,
+        ]);
+
+        // Assert
+        $response->assertOk();
+    }
+
+    public function test_an_employee_listens_to_their_own_staff_channel_only(): void
+    {
+        // Arrange
+        [$me, $headers] = $this->employee();
+        [$someone] = $this->employee();
+
+        // Act
+        $mine = $this->withHeaders($headers)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => "private-staff.{$me->id}",
+        ]);
+        $theirs = $this->withHeaders($headers)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => "private-staff.{$someone->id}",
+        ]);
+
+        // Assert
+        $mine->assertOk();
+        $theirs->assertForbidden();
     }
 }

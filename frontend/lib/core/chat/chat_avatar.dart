@@ -1,6 +1,6 @@
+import 'package:dayaa/core/chat/message_bubble.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
-import 'package:dayaa/features/support/presentation/widgets/message_bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 

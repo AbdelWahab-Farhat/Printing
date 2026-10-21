@@ -19,6 +19,7 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_orders_section.dart';
+import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -239,6 +240,15 @@ class _Actions extends StatelessWidget {
           permission: AppPermission.viewCustomers,
           onTap: (context) =>
               context.push(Routes.customerDesigns(customer.id), extra: customer.name),
+        ),
+        // ما قاله الموظفون بينهم عن هذا العميل، كبريمولا — بلا صلاحية: التذاكرُ الداخلية لكل موظف.
+        AppAction(
+          label: 'تذاكر الموظفين',
+          icon: AppIcons.internalTickets,
+          onTap: (context) => context.push(
+            Routes.internalTicketsFiltered,
+            extra: InternalTicketSubject(customerId: customer.id, customerName: customer.name),
+          ),
         ),
         AppAction(
           label: 'الملاحظات',
