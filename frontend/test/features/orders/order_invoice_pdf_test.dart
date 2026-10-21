@@ -4,8 +4,9 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_invoice_pdf.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 /// The invoice as a document — the thing that gets printed, kept and attached to a mail.
@@ -79,11 +80,8 @@ void main() {
       );
 
   setUpAll(() async {
-    assets = InvoiceAssets(
-      base: pw.Font.ttf(await rootBundle.load('assets/fonts/Almarai-Regular.ttf')),
-      bold: pw.Font.ttf(await rootBundle.load('assets/fonts/Almarai-Bold.ttf')),
-      logo: (await rootBundle.load('assets/images/logo.png')).buffer.asUint8List(),
-    );
+    // من المحمِّل الذي يستعمله الهاتف، لا خطوطاً تُبنى هنا بطريقة أخرى.
+    assets = await SaveOrderInvoicePdf.loadAssets();
   });
 
   test('the Arabic faces really are in the bundle, both weights', () {
@@ -172,6 +170,25 @@ void main() {
 
     // Assert
     expect(String.fromCharCodes(bytes.sublist(0, 4)), '%PDF');
+  });
+
+  test('خطّا الفاتورة يرسمان الياء المنفردة، كياء «الهادي»', () {
+    // Arrange — نص عادي تماماً: المكتبة نفسها تجعل الياء بعد الدال `U+FEF1`، وAlmarai بلا رسم
+    // لها. في الفاتورة كاملة لا ترمي دائماً — أحياناً ترسم حرفاً آخر مكانها بصمت — فالذي يُفحص
+    // هنا هو الخط نفسه. انظر arabic_pdf_font_test.dart للصفحة التي ترمي.
+    final faces = [assets.base, assets.bold];
+
+    // Act
+    final glyphs = [
+      for (final face in faces)
+        (face.getFont(pw.Context(document: PdfDocument())) as PdfTtfFont).font.charToGlyphIndexMap,
+    ];
+
+    // Assert
+    for (final map in glyphs) {
+      expect(map[0xFEF1], isNotNull);
+      expect(map[0xFEF1], map[0x064A]);
+    }
   });
 
   test('the file is named for the order, so it is findable after it is saved', () {
