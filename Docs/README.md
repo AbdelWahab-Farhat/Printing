@@ -39,6 +39,8 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-30-PROFIT-CAPITALISATION-CASH.md](changes/PR-30-PROFIT-CAPITALISATION-CASH.md) | «تحويل أرباح إلى رأس مال» يخرج من نقد الصندوق. |
+| [PR-28-OUTSOURCED-VENDOR-COST.md](changes/PR-28-OUTSOURCED-VENDOR-COST.md) | «تكلفة المورد» على بنود الوسيط. |
 | [PR-27-CHECKOUT-DEPOSIT.md](changes/PR-27-CHECKOUT-DEPOSIT.md) | العربون في سلة الزبون، وبعد المراجعة. |
 | [PR-26-CUSTOMER-WALLET.md](changes/PR-26-CUSTOMER-WALLET.md) | محفظة العميل، والشحن الإلكتروني عبر EzonePay. |
 | [PR-25-ORDER-LINES-ADD-REMOVE.md](changes/PR-25-ORDER-LINES-ADD-REMOVE.md) | إضافة وحذف منتجات في الطلبية. |
