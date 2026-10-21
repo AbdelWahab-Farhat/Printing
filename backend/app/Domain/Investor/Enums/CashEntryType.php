@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Enums;
 
+use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\PostFundProceedsForOrder;
+use App\Domain\Investor\Queries\FundValuation;
 
 /**
  * كلُّ طريقٍ يتحرّك به نقدُ الصندوق — والاتجاهُ لا يسكن إشارةً أبداً.
@@ -46,6 +48,16 @@ enum CashEntryType: string
 
     /** أرباحٌ خرجت إلى مستثمر — مصدرُه صفُّ السحب في دفتر محفظته. */
     case ProfitPayout = 'profit_payout';
+
+    /**
+     * أرباحٌ صارت رأسَ مالٍ في محفظة صاحبها — مصدرُه صفُّ `profit_capitalisation` في دفتر محفظته.
+     *
+     * **يخرج من الصندوق كما يخرج صرفُ الأرباح، ولا يمرّ بدرج.** الربحُ الذي لم يُسحب نقدُه هنا،
+     * دَينٌ تطرحه {@see FundValuation}. فإن صار رأسَ مالٍ في المحفظة ولم يخرج، خرج من الدَّين وبقي
+     * في النقد: رفع سعرَ الوحدة لكلِّ الشركاء، ثم دخل مرّةً ثانية حين يُكتتب به
+     * ({@see DepositToFund} يكتب `deposit`). بهذا الصفّ يخرج مرّة ويعود مرّة.
+     */
+    case ProfitCapitalised = 'profit_capitalised';
 
     /** نصيبُ الشركة من ربح فترةٍ أُغلقت — مصدرُه صفُّ الفترة. */
     case CompanyPayout = 'company_payout';
@@ -101,6 +113,7 @@ enum CashEntryType: string
             self::Expense => 'مصروف',
             self::SaleProceeds => 'تحصيل مبيعات',
             self::ProfitPayout => 'صرف أرباح',
+            self::ProfitCapitalised => 'أرباح صارت رأس مال',
             self::CompanyPayout => 'نصيب الشركة',
             self::CapitalReturn => 'إرجاع رأس مال',
             self::StockSoldToPress => 'بيع سادة للمطبعة',
@@ -142,14 +155,17 @@ enum CashEntryType: string
     }
 
     /**
-     * أينتقل هذا الصفُّ بين الصندوق ومحفظة المستثمر — الاشتراكُ منها، وإرجاعُ رأس المال إليها.
+     * أينتقل هذا الصفُّ بين الصندوق ومحفظة المستثمر — الاشتراكُ منها، وإرجاعُ رأس المال إليها،
+     * والأرباحُ التي صارت رأسَ مالٍ فيها.
      *
      * قرارُ المالك 2026-10-13: يُقال «من محفظة المستثمر» لا اسمُ درج. الدرجُ مرّ به إيداعُ المحفظة
      * في يومه، والمحفظةُ قد تجمع إيداعاتٍ من أكثر من حساب — فتسميةُ أحدها هنا تخمين.
      */
     public function movesThroughTheInvestorsWallet(): bool
     {
-        return $this === self::Deposit || $this === self::CapitalReturn;
+        return $this === self::Deposit
+            || $this === self::CapitalReturn
+            || $this === self::ProfitCapitalised;
     }
 
     /** أيجوز أن يكتبه إنسانٌ بيده؟ */

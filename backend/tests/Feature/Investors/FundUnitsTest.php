@@ -12,16 +12,21 @@ use App\Domain\Investor\Actions\DepositToFund;
 use App\Domain\Investor\Actions\OpenInvestmentPeriod;
 use App\Domain\Investor\Actions\PostDealShare;
 use App\Domain\Investor\Actions\RecordWalletEntry;
+use App\Domain\Investor\Actions\ReverseWalletEntry;
 use App\Domain\Investor\Actions\WithdrawFromFund;
 use App\Domain\Investor\DTOs\WalletEntryData;
+use App\Domain\Investor\Enums\CashEntryType;
 use App\Domain\Investor\Enums\WalletEntryType;
 use App\Domain\Investor\Exceptions\CapitalIsStillLocked;
 use App\Domain\Investor\Exceptions\NoPeriodIsOpen;
 use App\Domain\Investor\Exceptions\SubscriptionWindowIsClosed;
 use App\Domain\Investor\Exceptions\WithdrawalExceedsBalance;
+use App\Domain\Investor\Models\InvestmentCashEntry;
 use App\Domain\Investor\Models\InvestmentPeriod;
 use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
+use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Investor\Queries\FundCash;
 use App\Domain\Investor\Queries\FundUnits;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\PeriodShares;
@@ -456,10 +461,128 @@ class FundUnitsTest extends TestCase
         $this->assertSame('0.00', $after['wallet']['profit']);
         $this->assertSame('2500.00', $after['wallet']['capital']);
         $this->assertDatabaseMissing('investment_cash_entries', ['type' => 'profit_payout']);
+        $this->assertDatabaseMissing('treasury_movements', ['source_type' => 'investor_wallet_entry']);
 
         // ثم يشترك به كأيّ رأس مال.
         app(DepositToFund::class)(investorId: (int) $investor->id, amount: '2500.00', actorId: null);
         $this->assertSame('2500.000000', app(FundUnits::class)->heldBy((int) $investor->id));
+    }
+
+    public function test_capitalised_profit_leaves_the_fund_cash_once_and_comes_back_once(): void
+    {
+        // Arrange — ربحٌ حقيقيّ: نقدُ بيعه في الصندوق، ودَينُه في محفظة صاحبه. كان التحويلُ يُنقص
+        // الدَّين ويُبقي النقد، فيرفع سعرَ الوحدة، ثم يدخل النقدَ مرّةً ثانية بالاكتتاب.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $investor = Investor::factory()->create();
+        $this->deposit($investor, '10000.00');
+        $this->releaseProfitFromTheFund($investor, '1000.00');
+
+        $this->assertSame('11000.00', app(FundCash::class)());
+        $this->assertSame('1.000000', app(UnitPrice::class)());
+
+        // Act
+        $entry = $this->capitalise($investor, '1000.00');
+
+        // Assert — خرج من النقد بلا درج، فلم يتحرّك السعر.
+        $this->assertDatabaseHas('investment_cash_entries', [
+            'type' => CashEntryType::ProfitCapitalised->value,
+            'source_type' => 'investor_wallet_entry',
+            'source_id' => $entry->id,
+            'amount' => '1000.00',
+        ]);
+        $this->assertSame('10000.00', app(FundCash::class)());
+        $this->assertSame('1.000000', app(UnitPrice::class)());
+
+        // والاكتتابُ به يُعيده مرّةً واحدة، بسعر الوحدة نفسه.
+        app(DepositToFund::class)(investorId: (int) $investor->id, amount: '1000.00', actorId: null);
+        $this->assertSame('11000.00', app(FundCash::class)());
+        $this->assertSame('11000.000000', app(FundUnits::class)->heldBy((int) $investor->id));
+        $this->assertSame('1.000000', app(UnitPrice::class)());
+    }
+
+    public function test_reversing_a_capitalisation_puts_the_profit_back_in_the_fund_cash(): void
+    {
+        // Arrange
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $investor = Investor::factory()->create();
+        $this->deposit($investor, '10000.00');
+        $this->releaseProfitFromTheFund($investor, '1000.00');
+        $entry = $this->capitalise($investor, '1000.00');
+
+        // Act
+        app(ReverseWalletEntry::class)($entry, null);
+
+        // Assert — الربحُ في محفظته متاحاً للسحب من جديد، ونقدُه في الصندوق.
+        $after = app(InvestorBalances::class)->forInvestor((int) $investor->id);
+        $this->assertSame('1000.00', $after['wallet']['profit']);
+        $this->assertSame('0.00', $after['wallet']['capital']);
+        $this->assertSame('11000.00', app(FundCash::class)());
+        $this->assertSame('1.000000', app(UnitPrice::class)());
+    }
+
+    public function test_the_correction_command_posts_old_capitalisations_once_and_only_when_applied(): void
+    {
+        // Arrange — تحويلٌ سُجِّل قبل الإصلاح: صفُّ المحفظة بلا صفّه في الخزينة.
+        Carbon::setTestNow('2026-09-01 09:00:00');
+        $this->openPeriod();
+        $investor = Investor::factory()->create();
+        $this->deposit($investor, '10000.00');
+        $this->releaseProfitFromTheFund($investor, '1000.00');
+        $old = $this->capitalise($investor, '600.00');
+        InvestmentCashEntry::query()->where('source_id', $old->id)
+            ->where('type', CashEntryType::ProfitCapitalised->value)->forceDelete();
+
+        // وتحويلٌ أُبطل قبل الإصلاح لا يُكتب له شيء: لم يبقَ ما يخرج.
+        $undone = $this->capitalise($investor, '400.00');
+        InvestmentCashEntry::query()->where('source_id', $undone->id)
+            ->where('type', CashEntryType::ProfitCapitalised->value)->forceDelete();
+        app(ReverseWalletEntry::class)($undone, null);
+
+        // Act / Assert — التجربةُ لا تكتب.
+        $this->artisan('investment:post-capitalised-profit')->assertSuccessful();
+        $this->assertSame('11000.00', app(FundCash::class)());
+
+        $this->artisan('investment:post-capitalised-profit', ['--apply' => true])->assertSuccessful();
+        $this->artisan('investment:post-capitalised-profit', ['--apply' => true])->assertSuccessful();
+
+        $this->assertSame(1, InvestmentCashEntry::query()
+            ->where('type', CashEntryType::ProfitCapitalised->value)->count());
+        $this->assertSame('10400.00', app(FundCash::class)());
+        $this->assertSame('1.000000', app(UnitPrice::class)());
+    }
+
+    /**
+     * ربحٌ من بيع بضاعة الصندوق أُفرج عنه في محفظته: نقدُ البيع في الخزينة ودَينُه في جيبه.
+     *
+     * صفّان بيد لا إقفالُ فترة — الإقفالُ يحتاج طلبياتٍ مسلَّمة، والذي يُفحص هنا ما يجري بعده.
+     */
+    private function releaseProfitFromTheFund(Investor $investor, string $amount): void
+    {
+        InvestmentCashEntry::factory()->create(['amount' => $amount]);
+
+        DB::table('investor_wallet_entries')->insert([
+            'investor_id' => $investor->id,
+            'investor_deal_id' => app(FundDeal::class)()->id,
+            'type' => WalletEntryType::ProfitRelease->value,
+            'amount' => $amount,
+            'occurred_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function capitalise(Investor $investor, string $amount): InvestorWalletEntry
+    {
+        return app(RecordWalletEntry::class)(
+            new WalletEntryData(
+                investorId: (int) $investor->id,
+                type: WalletEntryType::ProfitCapitalisation,
+                amount: $amount,
+            ),
+            null,
+        );
     }
 
     public function test_capitalising_more_profit_than_he_earned_is_refused(): void
