@@ -468,6 +468,21 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> recordVendorCost(
+    int orderId,
+    int itemId, {
+    required String unitCost,
+  }) {
+    return safeRequest<Order>(
+      () => _dio.post(
+        OrderEndpoints.vendorCost(orderId, itemId),
+        data: <String, dynamic>{'unit_cost': unitCost},
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, void>> addDesign(int orderId, {required int customerDesignId}) {
     // The response is the version, not the order — and the screen wants the order, whose
     // `available_transitions` may have changed with it. So nothing is parsed here and the

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Catalog\CatalogService;
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Catalog\Exceptions\QuantityBelowMinimum;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductVariant;
@@ -68,10 +69,11 @@ final class AddOrderItem
         // ourselves, which is costed from what it consumed rather than from a typed number.
         //
         // Force-filled beside `unit_price` rather than made fillable: a request that could post
-        // it could name its own margin.
+        // it could name its own margin. The one figure a request may name is the vendor's own,
+        // and only on a وسيط line — see {@see cost()}.
         $item->forceFill([
             'unit_price' => $unitPrice,
-            'unit_cost' => $variant->cost_price === null ? null : (string) $variant->cost_price,
+            'unit_cost' => $this->cost($product, $variant, $data),
         ]);
         $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
@@ -87,8 +89,9 @@ final class AddOrderItem
      * out at its old rate. A «حسب الطلب» line keeps the price it was given unless a new one is
      * sent — the clerk named it once, and changing the quantity is not a reason to ask again.
      *
-     * The snapshots and `unit_cost` are left alone: the line is still the size it was taken as,
-     * and the vendor's cost on a وسيط line was agreed when it was.
+     * The snapshots are left alone: the line is still the size it was taken as. So is
+     * `unit_cost`, unless a new one is sent for a وسيط line — the vendor's figure was agreed when
+     * the line was taken, and only somebody naming a different one changes it.
      *
      * @throws ManualPriceRequired
      * @throws QuantityBelowMinimum
@@ -113,6 +116,11 @@ final class AddOrderItem
         ]);
 
         $item->forceFill(['unit_price' => $unitPrice]);
+
+        if ($data->unitCost !== null && $this->isOutsourced($product)) {
+            $item->forceFill(['unit_cost' => $data->unitCost]);
+        }
+
         $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
 
         return $item;
@@ -156,6 +164,33 @@ final class AddOrderItem
         return $product->hasListedPrices()
             ? $this->catalog->quote($product, $variant, $data->quantity)->unitPrice
             : $this->manual($product, $data);
+    }
+
+    /**
+     * What one unit of this line costs us — the clerk's figure on a وسيط line when they named
+     * one, the catalogue's otherwise.
+     *
+     * **The typed figure is what a «حسب الطلب» job needs.** A made-to-order job has no fixed
+     * vendor price for the catalogue to hold, so its size carries no `cost_price`, the line came
+     * in uncosted, and the order showed no profit. See OUTSOURCED-PRODUCTS.md §6.1.
+     *
+     * **Ignored on everything we make ourselves**, the way `unit_price` is ignored on a listed
+     * product: that line is costed from the shelf and the rate table, and a typed number beside
+     * them would be a second answer to the same question.
+     */
+    private function cost(Product $product, ProductVariant $variant, OrderItemData $data): ?string
+    {
+        if ($data->unitCost !== null && $this->isOutsourced($product)) {
+            return $data->unitCost;
+        }
+
+        return $variant->cost_price === null ? null : (string) $variant->cost_price;
+    }
+
+    private function isOutsourced(Product $product): bool
+    {
+        return $product->loadMissing('productCategory.parent')->productCategory?->productionMode()
+            === ProductionMode::Outsourced;
     }
 
     /**

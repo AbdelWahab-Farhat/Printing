@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Actions;
 
+use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Inventory\InventoryService;
@@ -149,7 +150,8 @@ final class SyncOrderItems
     }
 
     /**
-     * A kept line's own edit — quantity, price, notes, position — without touching its stock.
+     * A kept line's own edit — quantity, price, vendor cost, notes, position — without touching
+     * its stock.
      *
      * **Priced again only when its quantity moved**, or when a «حسب الطلب» line was sent a new
      * price. A line nobody touched keeps the price it was taken at, even if the catalogue has
@@ -168,6 +170,7 @@ final class SyncOrderItems
             sortOrder: $data->sortOrder,
             id: $data->id,
             warehouseQuantity: $data->warehouseQuantity,
+            unitCost: $data->unitCost,
         );
 
         $quantityMoved = $this->quantityMoved($item, $data->quantity);
@@ -183,6 +186,17 @@ final class SyncOrderItems
         }
 
         $item->fill(['notes' => $data->notes, 'sort_order' => $data->sortOrder]);
+
+        // **A new vendor figure on its own is not a reason to price the line again** — the
+        // customer's price stays what they agreed. Only a وسيط line takes one; see
+        // {@see AddOrderItem}, which applies the same rule when the quantity moved too.
+        $costMoved = $data->unitCost !== null
+            && $item->productionMode() === ProductionMode::Outsourced
+            && ($item->unit_cost === null || bccomp($data->unitCost, (string) $item->unit_cost, 3) !== 0);
+
+        if ($costMoved) {
+            $item->forceFill(['unit_cost' => $data->unitCost]);
+        }
 
         if ($item->isDirty()) {
             $item->save();

@@ -409,6 +409,9 @@ class _Form extends StatelessWidget {
                           canRemove: mayEditItems && state.lines.length > 1,
                           movesStock: state.linesMoveStock,
                           weightError: state.weightErrorAt(index),
+                          unitCostError: state.unitCostErrorAt(index),
+                          showVendorCost: sl<Session>().can(AppPermission.viewProductCost),
+                          onUnitCost: (value) => cubit.setUnitCost(line.id, value),
                           onQuantity: (value) => cubit.setQuantity(line.id, value),
                           onQuoted: (price) => cubit.setUnitPrice(line.id, price),
                           onUnitPrice: (price) =>
@@ -694,8 +697,11 @@ class _LineRow extends StatefulWidget {
     required this.onQuoted,
     required this.onUnitPrice,
     required this.onWeight,
+    required this.onUnitCost,
     required this.onRemove,
     this.weightError,
+    this.unitCostError,
+    this.showVendorCost = false,
     super.key,
   });
 
@@ -713,8 +719,15 @@ class _LineRow extends StatefulWidget {
   /// The clerk's own rate, on a «حسب الطلب» product added here.
   final ValueChanged<String> onUnitPrice;
   final ValueChanged<String> onWeight;
+
+  /// What the vendor charges, on a وسيط line. See OUTSOURCED-PRODUCTS.md §6.1.
+  final ValueChanged<String> onUnitCost;
   final VoidCallback onRemove;
   final String? weightError;
+  final String? unitCostError;
+
+  /// Whether the reader holds `products.view_cost` — the box is drawn for nobody else.
+  final bool showVendorCost;
 
   @override
   State<_LineRow> createState() => _LineRowState();
@@ -728,6 +741,7 @@ class _LineRowState extends State<_LineRow> {
   );
   late final TextEditingController _weight =
       TextEditingController(text: widget.line.warehouseQuantity);
+  late final TextEditingController _cost = TextEditingController(text: widget.line.unitCost);
 
   /// Created on the first changed quantity, never for a line nobody touches.
   LineQuoteCubit? _quote;
@@ -743,6 +757,7 @@ class _LineRowState extends State<_LineRow> {
     _controller.dispose();
     _price.dispose();
     _weight.dispose();
+    _cost.dispose();
     super.dispose();
   }
 
@@ -867,6 +882,21 @@ class _LineRowState extends State<_LineRow> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
               ],
               onChanged: widget.onWeight,
+            ),
+          ],
+          // Editable while the lines are; past that, «جاهزة» asks for it with the vendor's bill.
+          if (widget.showVendorCost && widget.isEditable && line.isOrderedAlone) ...[
+            SizedBox(height: 8.h),
+            AppTextField(
+              controller: _cost,
+              label: 'تكلفة المورد لل${line.pricingUnitLabel}',
+              helperText: 'ما يتقاضاه المورد عن هذه الطلبية — يُطلب عند «جاهزة» إن تُرك فارغاً',
+              errorText: widget.unitCostError,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+              ],
+              onChanged: widget.onUnitCost,
             ),
           ],
         ],

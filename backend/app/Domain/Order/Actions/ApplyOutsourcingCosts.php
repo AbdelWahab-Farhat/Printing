@@ -40,18 +40,28 @@ final class ApplyOutsourcingCosts
                 continue;
             }
 
-            $item->forceFill([
-                // At six places before rounding once, exactly as `deriveLineTotal()` multiplies
-                // the price out — the two numbers are set against each other, so they cannot
-                // round differently.
-                'outsourcing_cost' => Money::round(
-                    bcmul((string) $item->unit_cost, $item->billableQuantity(), 6),
-                ),
-            ])->save();
-
-            // The line's own total, restated now that a fourth component exists on it — the same
-            // call `DeductOrderStock` makes the moment it knows a material cost.
-            ($this->recalculateItemCost)($item);
+            $this->costLine($item, $item->billableQuantity());
         }
+    }
+
+    /**
+     * Costs one line at its `unit_cost` × [$quantity].
+     *
+     * Public for {@see RecordLateVendorCost}, which costs a line that went past «جاهزة» without
+     * a figure and has to name the quantity «جاهزة» would have used — by then a partial delivery
+     * may have shrunk `billableQuantity()` below what the vendor actually made.
+     */
+    public function costLine(OrderItem $item, string $quantity): void
+    {
+        $item->forceFill([
+            // At six places before rounding once, exactly as `deriveLineTotal()` multiplies
+            // the price out — the two numbers are set against each other, so they cannot
+            // round differently.
+            'outsourcing_cost' => Money::round(bcmul((string) $item->unit_cost, $quantity, 6)),
+        ])->save();
+
+        // The line's own total, restated now that a fourth component exists on it — the same
+        // call `DeductOrderStock` makes the moment it knows a material cost.
+        ($this->recalculateItemCost)($item);
     }
 }

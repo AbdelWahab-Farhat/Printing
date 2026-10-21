@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use Illuminate\Validation\Rule;
@@ -82,6 +83,13 @@ class UpdateOrderRequest extends StoreOrderRequest
             'items.*.product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->withoutTrashed()],
             'items.*.quantity' => ['required', 'numeric', 'min:0.001', 'max:999999999'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
+
+            // On a kept line, a new figure for what the vendor charges; absent leaves it alone.
+            // See StoreOrderRequest for why it is refused rather than dropped.
+            'items.*.unit_cost' => [
+                Rule::prohibitedIf(fn (): bool => $this->user()?->can(PermissionName::ViewProductCost->value) !== true),
+                'nullable', 'numeric', 'min:0', 'max:9999999.999',
+            ],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 

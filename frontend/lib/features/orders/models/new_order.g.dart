@@ -71,6 +71,7 @@ _NewOrderItem _$NewOrderItemFromJson(Map<String, dynamic> json) =>
       productVariantId: (json['product_variant_id'] as num).toInt(),
       quantity: json['quantity'] as String,
       unitPrice: json['unit_price'] as String?,
+      unitCost: json['unit_cost'] as String?,
       notes: json['notes'] as String?,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
     );
@@ -81,6 +82,7 @@ Map<String, dynamic> _$NewOrderItemToJson(_NewOrderItem instance) =>
       'product_variant_id': instance.productVariantId,
       'quantity': instance.quantity,
       'unit_price': ?instance.unitPrice,
+      'unit_cost': ?instance.unitCost,
       'notes': ?instance.notes,
       'sort_order': instance.sortOrder,
     };

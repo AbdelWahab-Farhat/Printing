@@ -145,6 +145,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// is a rule.
   bool get _mayDiscount => sl<Session>().can(AppPermission.discountOrders);
 
+  /// What the vendor charges, on a وسيط line — read and written behind the same grant.
+  bool get _seesVendorCost => sl<Session>().can(AppPermission.viewProductCost);
+
   /// The charge going the other way, behind a grant of its own.
   ///
   /// **`orders.additional_cost`, not `orders.discount`.** The two are money moving in opposite
@@ -351,6 +354,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
             quantity: line.quantity.text,
             // Only for the category the API honours a typed price on; absent everywhere else.
             unitPrice: line.isPricedByHand ? line.unitPrice.text : null,
+            // The same rule for the vendor's figure: only where the server honours one, and only
+            // from a reader it would accept one from.
+            unitCost: _seesVendorCost && line.takesVendorCost ? line.unitCost.text : null,
           ),
       ],
     );
@@ -702,6 +708,8 @@ class _NewOrderViewState extends State<_NewOrderView> {
             line: line,
             quantityError: submission.quantityError(index),
             unitPriceError: submission.unitPriceError(index),
+            unitCostError: submission.unitCostError(index),
+            showVendorCost: _seesVendorCost,
             onChanged: () {
               context.read<TakeOrderCubit>().clearFailure();
               // The button's «is this complete» reads the controllers directly.

@@ -630,6 +630,11 @@ abstract final class OrderEndpoints {
   /// rather than a refusal somebody has to read.
   static String scrapItem(int orderId, int itemId) => '/orders/$orderId/items/$itemId/scrap';
 
+  /// The vendor's cost for a وسيط line that went past «جاهزة» without one — once, and only
+  /// then. Behind `orders.manage` and `products.view_cost`. See OUTSOURCED-PRODUCTS.md §6.2.
+  static String vendorCost(int orderId, int itemId) =>
+      '/orders/$orderId/items/$itemId/vendor-cost';
+
   /// An order's money ledger. A GET to read it, a POST to add to it — and **nothing that
   /// updates or deletes an entry**, because the API has no such route: a mistake is undone by
   /// [reversePayment] below, which writes a second entry beside the wrong one.

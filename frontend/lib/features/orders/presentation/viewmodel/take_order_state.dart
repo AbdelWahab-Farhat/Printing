@@ -32,6 +32,8 @@ extension TakeOrderStateX on TakeOrderState {
 
   String? unitPriceError(int index) => _fieldError('items.$index.unit_price');
 
+  String? unitCostError(int index) => _fieldError('items.$index.unit_cost');
+
   String? get cityError => _fieldError('city_id');
 
   String? get regionError => _fieldError('region_id');
@@ -112,6 +114,7 @@ final RegExp _renderedKey = RegExp(
   r'|customer_design_id|design_ids'
   r'|items\.\d+\.quantity'
   r'|items\.\d+\.unit_price'
+  r'|items\.\d+\.unit_cost'
   r'|items\.\d+\.warehouse_quantity'
   r'|design_ids\.\d+)$',
 );

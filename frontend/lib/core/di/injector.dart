@@ -181,6 +181,7 @@ import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
+import 'package:dayaa/features/orders/usecases/record_vendor_cost.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
@@ -1079,6 +1080,11 @@ abstract final class Injector {
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
       ..registerLazySingleton<RecordScrapLoss>(
         () => RecordScrapLoss(sl<OrderRepository>()),
+      )
+      // The vendor's cost for a line that went past «جاهزة» without one — asked once, sent, and
+      // the order redrawn from what came back.
+      ..registerLazySingleton<RecordVendorCost>(
+        () => RecordVendorCost(sl<OrderRepository>()),
       )
       ..registerLazySingleton<AddOrderDesign>(
         () => AddOrderDesign(sl<OrderRepository>()),

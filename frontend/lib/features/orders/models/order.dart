@@ -374,6 +374,11 @@ abstract class Order with _$Order {
     @JsonKey(name: 'total_cogs') String? totalCogs,
     @JsonKey(name: 'gross_profit') String? grossProfit,
 
+    /// The وسيط lines that went past «جاهزة» without a vendor cost — taken before that box was
+    /// required — and so leave [grossProfit] unknown until somebody records one. Only sent to a
+    /// holder of `products.view_cost`; empty for everybody else. See OUTSOURCED-PRODUCTS.md §6.2.
+    @JsonKey(name: 'lines_awaiting_vendor_cost') @Default(<int>[]) List<int> linesAwaitingVendorCost,
+
     /// Which shelf this run came off, and when — both null until the order reaches «جاهزة», and
     /// never rewritten after. That is later than it used to be, and deliberately: an order's
     /// lines are frozen by «جاهزة» but still editable through «قيد الطباعة», so stock now leaves

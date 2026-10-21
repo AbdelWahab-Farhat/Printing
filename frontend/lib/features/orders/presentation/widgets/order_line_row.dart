@@ -25,6 +25,10 @@ class OrderLineDraft {
     // A bag the catalogue prices «حسب الطلب» has no answer to fetch — asking would only ever
     // produce `ProductRequiresManualQuote`. The line says so from the moment it is added.
     if (isPricedByHand) quote.priceByHand();
+
+    // Opens on the catalogue's figure where there is one, so the clerk corrects a number rather
+    // than retyping it. Absent for anybody without `products.view_cost` — the key never arrives.
+    unitCost.text = variant.costPrice ?? '';
   }
 
   final Product product;
@@ -45,9 +49,18 @@ class OrderLineDraft {
   /// here from the pricing mode.
   bool get isPricedByHand => !product.hasListedPrices;
 
+  /// What the vendor charges for one unit of this job. Only ever drawn for [takesVendorCost],
+  /// and only for a holder of `products.view_cost`. See OUTSOURCED-PRODUCTS.md §6.1.
+  final TextEditingController unitCost = TextEditingController();
+
+  /// Whether this line is a vendor's work — the one kind whose cost is a typed number rather
+  /// than what the shelf and the rate table say.
+  bool get takesVendorCost => product.productCategory?.productionMode.hasCostPrice ?? false;
+
   void dispose() {
     quantity.dispose();
     unitPrice.dispose();
+    unitCost.dispose();
     unawaited(quote.close());
   }
 }
@@ -65,6 +78,8 @@ class OrderLineRow extends StatefulWidget {
     required this.onRemove,
     this.quantityError,
     this.unitPriceError,
+    this.unitCostError,
+    this.showVendorCost = false,
     super.key,
   });
 
@@ -79,6 +94,11 @@ class OrderLineRow extends StatefulWidget {
   /// The server's complaint about this line, if the last submit produced one.
   final String? quantityError;
   final String? unitPriceError;
+  final String? unitCostError;
+
+  /// Whether the reader holds `products.view_cost` — decided by the screen from the session.
+  /// The server refuses a cost from anybody else, so the box is never drawn for them.
+  final bool showVendorCost;
 
   @override
   State<OrderLineRow> createState() => _OrderLineRowState();
@@ -179,6 +199,20 @@ class _OrderLineRowState extends State<OrderLineRow> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
               errorText: widget.unitPriceError,
+              onChanged: (_) => widget.onChanged(),
+            ),
+          ],
+          // Optional: left empty, the order is asked for it on the way into «جاهزة», when the
+          // vendor's bill is in somebody's hand.
+          if (widget.showVendorCost && line.takesVendorCost) ...[
+            SizedBox(height: 8.h),
+            AppTextField(
+              controller: line.unitCost,
+              label: 'تكلفة المورد لل${line.product.pricingUnitLabel}',
+              helperText: 'ما يتقاضاه المورد عن هذه الطلبية — يُطلب عند «جاهزة» إن تُرك فارغاً',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
+              errorText: widget.unitCostError,
               onChanged: (_) => widget.onChanged(),
             ),
           ],

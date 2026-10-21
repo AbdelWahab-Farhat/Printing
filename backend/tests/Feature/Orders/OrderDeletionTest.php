@@ -308,6 +308,8 @@ class OrderDeletionTest extends TestCase
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->getKey(),
             'product_variant_id' => $variant->getKey(),
+            // What the vendor charged — «جاهزة» refuses a وسيط line without it (§6.1).
+            'unit_cost' => '0.800',
         ]);
         app(ResolveOrderFlow::class)($order->load('items'));
 

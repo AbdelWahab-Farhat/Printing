@@ -13,6 +13,7 @@ use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\PayOrderFromWallet;
+use App\Domain\Order\Actions\RecordLateVendorCost;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\Actions\RecordScrapLoss;
 use App\Domain\Order\Actions\RefundOrderPayment;
@@ -104,6 +105,7 @@ class OrderService
         private readonly CreateManufacturingCostRate $createManufacturingCostRate,
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
         private readonly RecordScrapLoss $recordScrapLoss,
+        private readonly RecordLateVendorCost $recordLateVendorCost,
         private readonly OrderListQuery $listQuery,
         private readonly ProfitAttributionQuery $profitAttribution,
         private readonly StockPurchaseAttributionQuery $stockPurchaseAttribution,
@@ -626,6 +628,15 @@ class OrderService
         }
 
         return ($this->recordScrapLoss)($order, $item, $quantity, $notes, (int) $actor->getKey());
+    }
+
+    /**
+     * The vendor's cost for a وسيط line that went past «جاهزة» without one — see
+     * {@see RecordLateVendorCost}. Once per line.
+     */
+    public function recordLateVendorCost(Order $order, OrderItem $item, string $unitCost): Order
+    {
+        return ($this->recordLateVendorCost)($order, $item, $unitCost);
     }
 
     /**

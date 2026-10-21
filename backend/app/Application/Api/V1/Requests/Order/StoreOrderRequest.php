@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use Illuminate\Foundation\Http\FormRequest;
@@ -106,6 +107,15 @@ class StoreOrderRequest extends FormRequest
             // Honoured only for a product the catalogue prices on request; ignored otherwise, so
             // a posted number can never undercut a listed rate.
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0', 'max:9999999.999'],
+
+            // What the vendor charges for one unit of a وسيط line, typed for this order. Ignored
+            // on every other line, like `unit_price` on a listed one. **Refused outright** to
+            // anybody without `products.view_cost`: a clerk who may not read the vendor's price
+            // may not write it either, and dropping it silently would teach the app it was kept.
+            'items.*.unit_cost' => [
+                Rule::prohibitedIf(fn (): bool => $this->user()?->can(PermissionName::ViewProductCost->value) !== true),
+                'nullable', 'numeric', 'min:0', 'max:9999999.999',
+            ],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
@@ -134,6 +144,8 @@ class StoreOrderRequest extends FormRequest
             'items.*.product_variant_id.required' => 'المقاس مطلوب',
             'items.*.quantity.required' => 'الكمية مطلوبة',
             'items.*.quantity.min' => 'الكمية يجب أن تكون أكبر من صفر',
+            'items.*.unit_cost.prohibited' => 'لا تملك صلاحية تحديد تكلفة المورد',
+            'items.*.unit_cost.min' => 'تكلفة المورد لا يمكن أن تكون سالبة',
             'discount.min' => 'الخصم لا يمكن أن يكون سالباً',
             'additional_cost.min' => 'التكلفة الإضافية لا يمكن أن تكون سالبة',
             'additional_cost_reason.required' => 'سبب التكلفة الإضافية مطلوب',

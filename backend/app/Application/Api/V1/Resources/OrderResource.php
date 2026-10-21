@@ -167,6 +167,14 @@ class OrderResource extends JsonResource
             'total_cogs' => $this->total_cogs === null ? null : (string) $this->total_cogs,
             'gross_profit' => $this->grossProfit(),
 
+            // The وسيط lines that went past «جاهزة» without a vendor cost — the lines the app
+            // offers «تسجيل تكلفة المورد» on (OUTSOURCED-PRODUCTS.md §6.2). Behind
+            // `products.view_cost`, like the cost it asks for; absent for anybody else.
+            'lines_awaiting_vendor_cost' => $this->when(
+                $request->user()?->can(PermissionName::ViewProductCost->value) === true,
+                fn () => $this->linesAwaitingVendorCost(),
+            ),
+
             // **The three numbers a screen puts side by side**, all three computed here. A
             // client subtracting `grand_total - paid_amount` itself would be a second answer to
             // one question, and its answer is the one made of doubles — and since a debt can

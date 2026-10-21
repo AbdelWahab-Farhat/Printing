@@ -34,10 +34,12 @@ import 'package:dayaa/features/orders/presentation/widgets/order_ready_message_s
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/record_vendor_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/reinstate_order_dialog.dart';
 import 'package:dayaa/features/orders/presentation/widgets/stock_effect_dialog.dart';
 import 'package:dayaa/features/orders/presentation/widgets/undo_order_step_dialog.dart';
 import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
+import 'package:dayaa/features/orders/usecases/record_vendor_cost.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/shortages/models/shortages_filter.dart';
 import 'package:flutter/material.dart';
@@ -171,6 +173,13 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // it is a movement on the ledger, exactly like booking a shipment in, and the
               // route is guarded by that same grant rather than by any `orders.*` one.
               onScrap: sl<Session>().can(AppPermission.manageInventory) ? _recordScrap : null,
+              // Both grants the route asks for. Which lines it is offered on is the server's
+              // answer — `linesAwaitingVendorCost` — and empty for anybody without the second.
+              onVendorCost:
+                  sl<Session>().can(AppPermission.manageOrders) &&
+                      sl<Session>().can(AppPermission.viewProductCost)
+                  ? _recordVendorCost
+                  : null,
               // Always offered, unlike a sheet that could only ever show the order's own
               // note: the page gathers what was written at every status too, and «لا توجد
               // ملاحظات» is an answer worth reaching rather than a button that vanished.
@@ -751,6 +760,34 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     );
   }
 
+  /// Records the vendor's cost for a line that went past «جاهزة» without one.
+  ///
+  /// **Unlike a scrap, this does move the totals** — the line's cost, the order's `total_cogs`
+  /// and the profit beside it — so the order that comes back replaces the one on screen and is
+  /// handed to the list behind.
+  Future<void> _recordVendorCost(BuildContext context, OrderItem item) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final cost = await showRecordVendorCostSheet(context: context, item: item);
+    if (cost == null || !context.mounted) return;
+
+    final result = await sl<RecordVendorCost>()(order.id, item.id, unitCost: cost);
+
+    if (!context.mounted) return;
+
+    result.fold(
+      (failure) => context.showFailure(failure),
+      (updated) {
+        cubit.replace(updated);
+        context
+          ..handBack(updated)
+          ..showSuccess('سُجّلت تكلفة المورد');
+      },
+    );
+  }
+
   /// Hands the money to its own screen, and re-reads whatever it changed.
   ///
   /// Re-read rather than trusting a result: `paid_amount`, `remaining_amount` and
@@ -864,6 +901,7 @@ class _Body extends StatelessWidget {
     required this.showCosts,
     required this.showOutsourcingCosts,
     required this.onScrap,
+    required this.onVendorCost,
     required this.onOpenNotes,
     required this.onOpenLog,
     required this.onOpenStock,
@@ -894,6 +932,9 @@ class _Body extends StatelessWidget {
 
   /// Null for anybody without `inventory.manage`.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
+
+  /// Null without both `orders.manage` and `products.view_cost`.
+  final Future<void> Function(BuildContext context, OrderItem item)? onVendorCost;
 
   /// Null on an order nobody wrote a note on.
   final VoidCallback? onOpenNotes;
@@ -1128,6 +1169,8 @@ class _Body extends StatelessWidget {
                     showCosts: showCosts,
                     showOutsourcingCosts: showOutsourcingCosts,
                     onScrap: _mayScrap ? onScrap : null,
+                    onVendorCost: onVendorCost,
+                    linesAwaitingVendorCost: order.linesAwaitingVendorCost,
                     onOpenProduct: onOpenProduct,
                   ),
                 ),
@@ -1540,6 +1583,8 @@ class _Items extends StatelessWidget {
     required this.showCosts,
     required this.showOutsourcingCosts,
     required this.onScrap,
+    required this.onVendorCost,
+    required this.linesAwaitingVendorCost,
     required this.onOpenProduct,
   });
 
@@ -1563,6 +1608,10 @@ class _Items extends StatelessWidget {
   /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
   final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
 
+  /// Offered only on the lines in [linesAwaitingVendorCost].
+  final Future<void> Function(BuildContext context, OrderItem item)? onVendorCost;
+  final List<int> linesAwaitingVendorCost;
+
   /// Null for anybody without `products.view` — see [OrderItemCard].
   final void Function(OrderItem item)? onOpenProduct;
 
@@ -1581,6 +1630,9 @@ class _Items extends StatelessWidget {
             // is the arrow onto a 403 in another costume.
             onOpenProduct: onOpenProduct == null ? null : () => onOpenProduct!(item),
             onScrap: onScrap == null ? null : () => onScrap!(context, item).ignore(),
+            onVendorCost: onVendorCost == null || !linesAwaitingVendorCost.contains(item.id)
+                ? null
+                : () => onVendorCost!(context, item).ignore(),
           ),
         ],
         if (weight case final label?) ...[

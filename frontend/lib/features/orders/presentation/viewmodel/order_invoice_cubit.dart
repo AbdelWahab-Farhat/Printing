@@ -42,6 +42,8 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 // A line does not carry its product's heading; the order's road says it for all
                 // of them, since the server keeps an order's lines on one bench.
                 isOrderedAlone: order.productionFlow.isOrderedAlone,
+                unitCost: item.unitCost ?? '',
+                originalUnitCost: item.unitCost,
               ),
           ],
           discount: order.discount,
@@ -99,6 +101,8 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
             stockUnitLabel: shelf?.unitLabel,
             // Unknown heading shares, the same default the server takes.
             isOrderedAlone: product.productCategory?.productionMode.isOrderedAlone ?? false,
+            // The catalogue's figure where there is one — what the server would copy anyway.
+            unitCost: variant.costPrice ?? '',
           ),
         ],
         isDirty: true,
@@ -121,6 +125,20 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
         ],
         isDirty: typed || state.isDirty,
         failure: typed ? null : state.failure,
+      ),
+    );
+  }
+
+  /// What the vendor charges for one unit of a وسيط line, as typed.
+  void setUnitCost(int lineId, String cost) {
+    emit(
+      state.copyWith(
+        lines: [
+          for (final line in state.lines)
+            if (line.id == lineId) line.copyWith(unitCost: cost) else line,
+        ],
+        isDirty: true,
+        failure: null,
       ),
     );
   }
@@ -258,6 +276,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                   // An existing one keeps the price it was given; every other line is the
                   // catalogue's on the server.
                   unitPrice: line.isPricedByHand && line.isNew ? _ascii(line.unitPrice) : null,
+                  // Only a figure somebody changed. Nobody without `products.view_cost` is ever
+                  // shown the box, so their lines never carry one — the server would refuse it.
+                  unitCost: line.costChanged ? _ascii(line.unitCost) : null,
                   warehouseQuantity: line.needsWeight(movesStock: state.linesMoveStock)
                       ? _ascii(line.warehouseQuantity)
                       : null,
