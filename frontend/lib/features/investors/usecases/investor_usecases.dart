@@ -6,6 +6,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/models/wallet_entry.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 
@@ -195,6 +196,16 @@ class GetInvestorStatement {
     DateTime? to,
     int page = 1,
   }) => _repository.statement(investorId, category: category, from: from, to: to, page: page);
+}
+
+/// One gate of his profit card, opened — the orders and movements behind its figure.
+class GetProfitSources {
+  const GetProfitSources(this._repository);
+
+  final InvestorRepository _repository;
+
+  Future<Either<Failure, ProfitSources>> call(int investorId, ProfitGate gate) =>
+      _repository.profitSources(investorId, gate);
 }
 
 class ReverseWalletEntry {

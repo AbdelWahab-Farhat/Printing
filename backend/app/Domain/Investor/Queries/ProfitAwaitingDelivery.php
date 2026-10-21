@@ -89,6 +89,30 @@ final class ProfitAwaitingDelivery
     }
 
     /**
+     * طلبياتُ رجلٍ واحد وراء رقمه — ما يجمعه {@see forInvestor()}، مفصَّلاً.
+     *
+     * **المشيُ نفسُه لا حسابٌ ثانٍ**: المرشّحاتُ نفسُها والقسمةُ نفسُها، فلا تفترق القائمةُ عن
+     * رقم البطاقة. والقسمةُ تُخرج كلَّ نصيبٍ مقرَّباً إلى قرشين ({@see Money::allocate()})، فمجموعُ
+     * الصفوف هو الرقمُ بلا فرق تقريب.
+     *
+     * @return array<int, string> الطلبية ← نصيبُه منها
+     */
+    public function ordersOf(int $investorId): array
+    {
+        $out = [];
+
+        foreach ($this->candidates() as $orderId) {
+            $shares = $this->sharesOf($orderId);
+
+            if (array_key_exists($investorId, $shares)) {
+                $out[$orderId] = Money::round($shares[$investorId]);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * طلبياتٌ خرجت بضاعتُها من رفّ صفقةٍ وبلغت «جاهزة» ولم تبلغ خاتمتَها.
      *
      * **والطريقُ إلى الصفقة سحبُ المخزون نفسه**، كما يقرؤه {@see DealOrdersInFlightQuery}: الطلبيةُ

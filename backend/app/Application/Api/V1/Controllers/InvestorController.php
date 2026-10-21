@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Investor\InvestorProfitSourcesRequest;
 use App\Application\Api\V1\Requests\Investor\InvestorStatementRequest;
 use App\Application\Api\V1\Requests\Investor\StoreInvestorRequest;
 use App\Application\Api\V1\Requests\Investor\StoreWalletEntryRequest;
@@ -23,6 +24,7 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Investor\Queries\FundStanding;
 use App\Domain\Investor\Queries\InvestorPeriods;
+use App\Domain\Investor\Queries\InvestorProfitSources;
 use App\Domain\Investor\Queries\InvestorStatementQuery;
 use App\Domain\Investor\Queries\ProfitAwaitingDelivery;
 use App\Domain\Investor\Support\FundDeal;
@@ -185,6 +187,26 @@ class InvestorController extends Controller
         $entries = $query((int) $investor->getKey(), $request->filters(), $request->perPage());
 
         return $this->successWithPagination(InvestorWalletEntryResource::collection($entries));
+    }
+
+    /**
+     * Where an investor's profit came from
+     *
+     * One of the three gates on his profit card, opened — and each list adds up to the figure
+     * `GET /investors/{investor}` shows for that gate.
+     *
+     * - `awaiting_delivery` — the orders that reached «جاهزة» and are not delivered, with his
+     *   share of each.
+     * - `pending` — his unreleased profit, period by period: each order with its state, what is
+     *   not an order (expenses, a carried loss) on its own line, and what a close has already
+     *   released taken off.
+     * - `available` — a reconciliation, not an order list: what each period released (opening
+     *   onto its orders), then every withdrawal and every conversion to capital. Money in the
+     *   wallet is not tied to any order once some of it has left.
+     */
+    public function profitSources(InvestorProfitSourcesRequest $request, Investor $investor, InvestorProfitSources $sources): JsonResponse
+    {
+        return $this->success($sources->forGate((int) $investor->getKey(), $request->gate()));
     }
 
     /**

@@ -5,6 +5,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/models/wallet_entry.dart';
 
 /// The staff side of investors: the people, their money, and their deals.
@@ -48,6 +49,9 @@ abstract class InvestorRepository {
     int page,
     int perPage,
   });
+
+  /// Where one gate of his profit card came from. The lines add up to the card's figure.
+  Future<Either<Failure, ProfitSources>> profitSources(int investorId, ProfitGate gate);
 
   /// Undoes one hand-recorded movement, and with it the fund units and treasury row it wrote.
   Future<Either<Failure, Unit>> reverseWalletEntry({

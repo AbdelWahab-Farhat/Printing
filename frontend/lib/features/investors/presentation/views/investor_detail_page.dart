@@ -11,8 +11,10 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
 import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
+import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
+import 'package:dayaa/features/investors/presentation/widgets/profit_sources_sheet.dart';
 import 'package:dayaa/features/investors/presentation/widgets/wallet_entry_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -165,7 +167,11 @@ class _Body extends StatelessWidget {
           // لمسة؛ كانت الأرقامُ خلف زرِّ قلبٍ وأربعةِ أزرار.
           _CapitalCard(wallet: balances.wallet.capital, fund: investor.fund),
           SizedBox(height: 12.h),
-          _ProfitCard(figures: investor.profitFigures, available: balances.wallet.profit),
+          _ProfitCard(
+            investorId: investor.id,
+            figures: investor.profitFigures,
+            available: balances.wallet.profit,
+          ),
 
           // **فتراتُه في مكان الصفقات، ولا صفقةَ بعدها** — قرارُ المالك 2026-09-25: «عرض الفترات
           // بدلا من الصفقات»، والقديمةُ «سوف تغلق وتضاف لربحه ومالناش علاقة بيها».
@@ -402,7 +408,9 @@ String _unlocking(FundDeposit deposit, {required bool lockSaysIt}) {
 /// ومن لا أرقامَ له منها — خادمٌ لا يرسل `profit_figures` — يرى ما يُسحب وحده، كما كانت الصفحة
 /// قبل الصندوق.
 class _ProfitCard extends StatelessWidget {
-  const _ProfitCard({required this.figures, required this.available});
+  const _ProfitCard({required this.investorId, required this.figures, required this.available});
+
+  final int investorId;
 
   final ProfitFigures? figures;
 
@@ -411,6 +419,15 @@ class _ProfitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // **كلُّ بوّابةٍ تُفتح على مصدرها** — «من أيّ طلبياتٍ جاء هذا الرقم؟». الورقةُ تقرأ قائمتَها
+    // حين تُفتح، والطلبيةُ تُفتح من الصفحة بعد أن تُغلق الورقة.
+    void open(ProfitGate gate) => showProfitSourcesSheet(
+      context: context,
+      investorId: investorId,
+      gate: gate,
+      onOrder: (orderId) => context.push(Routes.order(orderId)),
+    );
+
     if (figures case final figures?) {
       return InvestorMoneyTile(
         label: 'الأرباح',
@@ -418,11 +435,30 @@ class _ProfitCard extends StatelessWidget {
         footer: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _Gate(label: 'قيد التسليم', amount: figures.awaitingDelivery)),
+            Expanded(
+              child: _Gate(
+                label: 'قيد التسليم',
+                amount: figures.awaitingDelivery,
+                onTap: () => open(ProfitGate.awaitingDelivery),
+              ),
+            ),
             SizedBox(width: 8.w),
-            Expanded(child: _Gate(label: 'معلّقة', amount: figures.pending)),
+            Expanded(
+              child: _Gate(
+                label: 'معلّقة',
+                amount: figures.pending,
+                onTap: () => open(ProfitGate.pending),
+              ),
+            ),
             SizedBox(width: 8.w),
-            Expanded(child: _Gate(label: 'متاحة للسحب', amount: available, emphasis: true)),
+            Expanded(
+              child: _Gate(
+                label: 'متاحة للسحب',
+                amount: available,
+                emphasis: true,
+                onTap: () => open(ProfitGate.available),
+              ),
+            ),
           ],
         ),
       );
@@ -434,23 +470,57 @@ class _ProfitCard extends StatelessWidget {
 
 /// بوّابةٌ واحدة: اسمُها ومبلغُها. و«متاحة للسحب» على لون التطبيق — هي ما يُسأل عنه.
 class _Gate extends StatelessWidget {
-  const _Gate({required this.label, required this.amount, this.emphasis = false});
+  const _Gate({
+    required this.label,
+    required this.amount,
+    required this.onTap,
+    this.emphasis = false,
+  });
 
   final String label;
   final String amount;
   final bool emphasis;
 
+  /// يفتح مصدرَها.
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final ink = emphasis ? scheme.onPrimaryContainer : scheme.onSurface;
+    final corner = BorderRadius.circular(14.r);
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: emphasis ? scheme.primaryContainer : scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(14.r),
+    return Material(
+      color: emphasis ? scheme.primaryContainer : scheme.surfaceContainer,
+      borderRadius: corner,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: corner,
+        child: _GateFace(label: label, amount: amount, emphasis: emphasis, ink: ink),
       ),
+    );
+  }
+}
+
+class _GateFace extends StatelessWidget {
+  const _GateFace({
+    required this.label,
+    required this.amount,
+    required this.emphasis,
+    required this.ink,
+  });
+
+  final String label;
+  final String amount;
+  final bool emphasis;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
