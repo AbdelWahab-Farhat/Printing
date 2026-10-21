@@ -137,9 +137,15 @@ final class RecordWalletEntry
             // **صرفُ الأرباح نقدٌ يخرج من الخزينة.** رأسُ المال يخرج من {@see WithdrawFromFund}
             // لأنه يُلغي وحداتٍ معه؛ والأرباحُ لا وحداتِ لها — أُفرِج عنها بالفعل ولا تغيّر
             // نسبةَ أحد — فبابُها هنا. والإيداعُ كذلك في {@see DepositToFund} لأنه يشتري وحدات.
-            if ($data->type === WalletEntryType::ProfitWithdrawal) {
+            //
+            // **والتحويلُ إلى رأس مالٍ يخرج من الخزينة كذلك**، بلا درج: الربحُ صار مالَ صاحبه في
+            // محفظته، لا نقداً للصندوق يقاسمه الجميع. فإن اكتتب به عاد بـ`deposit` مرّةً واحدة.
+            if ($data->type === WalletEntryType::ProfitWithdrawal
+                || $data->type === WalletEntryType::ProfitCapitalisation) {
                 ($this->cash)(
-                    type: CashEntryType::ProfitPayout,
+                    type: $data->type === WalletEntryType::ProfitWithdrawal
+                        ? CashEntryType::ProfitPayout
+                        : CashEntryType::ProfitCapitalised,
                     amount: $entry->amount,
                     sourceType: AuditSubject::InvestorWalletEntry->value,
                     sourceId: (int) $entry->getKey(),
