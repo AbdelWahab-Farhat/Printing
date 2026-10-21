@@ -34,6 +34,19 @@ enum OrderStatus {
   @JsonValue('requested')
   requested('requested', 'بانتظار المراجعة'),
 
+  /// A request from the app the shop would not take — «مرفوض».
+  ///
+  /// **Second, beside «بانتظار المراجعة», though it is finished.** The two are the review's pair
+  /// on the home board — what waits at the door beside what was turned away there — and this
+  /// list reads down in the board's order (طلب المستخدم، 2026-10-21).
+  ///
+  /// **Not «إلغاء تام», and the server draws the line rather than this app.** Cancelling writes
+  /// off an order that was *accepted*; this refuses one at the door, before anything was
+  /// reserved or promised. It carries its own reason — the one the customer reads — and its own
+  /// grant, and unlike a cancellation it can be undone back to «بانتظار المراجعة».
+  @JsonValue('request_rejected')
+  requestRejected('request_rejected', 'مرفوض'),
+
   @JsonValue('new')
   taken('new', 'جديدة'),
   @JsonValue('shortage')
@@ -89,15 +102,6 @@ enum OrderStatus {
   @JsonValue('cancelled')
   cancelled('cancelled', 'إلغاء تام'),
 
-  /// A request from the app the shop would not take.
-  ///
-  /// **Not «إلغاء تام», and the server draws the line rather than this app.** Cancelling writes
-  /// off an order that was *accepted*; this refuses one at the door, before anything was
-  /// reserved or promised. It carries its own reason — the one the customer reads — and its own
-  /// grant, and unlike a cancellation it can be undone back to «بانتظار المراجعة».
-  @JsonValue('request_rejected')
-  requestRejected('request_rejected', 'رُفض الطلب'),
-
   // The two that are over, last — the same order `OrderStatus.php` declares, so the filter
   // sheet reads down in the order the home board does. What still needs doing comes first.
   @JsonValue('delivered')
@@ -139,7 +143,7 @@ enum OrderStatus {
   /// is the question this getter answers. [unknown] answers `false` for the honest reason — a
   /// status this build has never heard of is not one it may declare over.
   ///
-  /// **«رُفض الطلب» منتهٍ أيضاً** (طلب المستخدم، 2026-09-25): كان يُحسب في «الطلبات الجارية»
+  /// **«مرفوض» منتهٍ أيضاً** (طلب المستخدم، 2026-09-25): كان يُحسب في «الطلبات الجارية»
   /// وهو طلبٌ رُفض عند الباب ولا يعمل عليه أحد. والخادم يقول الشيء نفسه في `isClosed()`.
   bool get isFinished => switch (this) {
     OrderStatus.delivered ||
@@ -183,7 +187,7 @@ enum OrderStatus {
   /// of cancellation added later lands here instead of quietly falling out of all three groups.
   /// See VENDOR-PURCHASE-ORDERS-SECTION.md §١.
   ///
-  /// **وهو ما حدث: «رُفض الطلب» هنا** (2026-09-25). طلبٌ لم يُقبل لم يصل إلى أحد كالملغاة، وليس
+  /// **وهو ما حدث: «مرفوض» هنا** (2026-09-25). طلبٌ لم يُقبل لم يصل إلى أحد كالملغاة، وليس
   /// «إلغاءً تامّاً» في دفاتر المحل — لكن سؤال هذا الصندوق هو «ما الذي لن يصل؟»، وجوابه الاثنان.
   static List<OrderStatus> get cancellations =>
       filterable.where((status) => status._isCancellation).toList(growable: false);

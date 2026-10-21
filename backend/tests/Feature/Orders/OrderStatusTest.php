@@ -249,7 +249,7 @@ class OrderStatusTest extends TestCase
                 continue;
             }
 
-            // «رُفض الطلب» for the same reason, and it is the other half of the same pair: the
+            // «مرفوض» for the same reason, and it is the other half of the same pair: the
             // only way into it is from «بانتظار المراجعة», which is where the walk has not
             // started. Refusing a request is intake's work, not a road an order travels.
             if ($status === OrderStatus::RequestRejected) {
@@ -663,7 +663,7 @@ class OrderStatusTest extends TestCase
         // it is settled or it is disputed, not cancelled.
         //
         // **And the intake pair, which is a different rule wearing the same shape.** «بانتظار
-        // المراجعة» and «رُفض الطلب» reach no cancellation because an order nobody accepted has
+        // المراجعة» and «مرفوض» reach no cancellation because an order nobody accepted has
         // nothing to write off — it is *refused*, which is its own status and its own reason
         // column. See {@see OrderStatus::RequestRejected}.
         $this->assertEqualsCanonicalizing([
@@ -759,7 +759,7 @@ class OrderStatusTest extends TestCase
         // customer asked for. Everything else is ordinary work whose reason is the status
         // itself, and demanding a sentence for each would fill a column with "ok".
         //
-        // «رُفض الطلب» earns it more plainly than «إلغاء تام» does: the sentence is the shop's
+        // «مرفوض» earns it more plainly than «إلغاء تام» does: the sentence is the shop's
         // answer to the person who placed the order, and it travels to their phone. A refusal
         // with nothing attached reaches them as a door shut without a word.
         $this->assertSame([OrderStatus::Cancelled, OrderStatus::RequestRejected], $demanding);
@@ -811,7 +811,7 @@ class OrderStatusTest extends TestCase
         // holds no list of its own, so this sequence *is* the board.
         $opening = array_map(
             fn (OrderStatus $s) => $s->value,
-            array_slice(OrderStatus::cases(), 0, 9),
+            array_slice(OrderStatus::cases(), 0, 10),
         );
 
         // Assert — two cards to a row on the phone, and each row pairs the work with the thing
@@ -827,10 +827,12 @@ class OrderStatusTest extends TestCase
         // waiting on and «عربون مدفوع» is money that arrived and work nobody has started, but a
         // board opens on what the shop has, and most orders never walk that road at all.
         $this->assertSame([
-            // Alone at the head, and drawn full width rather than paired: it is the only card
-            // here that is not the workshop's work but a decision about whether work begins,
-            // and its reader is whoever reviews what the customer app sent.
-            'requested',
+            // The review pair at the head: what is waiting at the door beside what was turned
+            // away there. Neither is the workshop's work but the decision about whether work
+            // begins, and their reader is whoever reviews what the customer app sent. Without
+            // «مرفوض» beside it, «بانتظار المراجعة» paired with «جديدة» and pushed every pair
+            // below it one card out of step (طلب المستخدم، 2026-10-21).
+            'requested', 'request_rejected',
             'new', 'shortage',
             'awaiting_deposit', 'deposit_paid',
             'designing', 'ready_to_print',
@@ -940,7 +942,7 @@ class OrderStatusTest extends TestCase
         // This rule used to read "nothing leads here at all", and the reason it gave still
         // stands word for word: an order that could fall back into the review queue *after
         // being accepted* would make «هل نظر أحد في هذه؟» unanswerable. What changed is that
-        // «رُفض الطلب» is not an order that was accepted — it is one refused at the door, and
+        // «مرفوض» is not an order that was accepted — it is one refused at the door, and
         // undoing that refusal puts it back in the queue it never left. Nothing was reserved,
         // nothing was promised, and no acceptance is being walked back.
         //
@@ -1019,7 +1021,7 @@ class OrderStatusTest extends TestCase
     }
 
     /**
-     * «رُفض الطلب» انتهى ولم يُحسم نهائياً.
+     * «مرفوض» انتهى ولم يُحسم نهائياً.
      *
      * **مغلقٌ لأن أحداً لا يعمل عليه**: كان يُحسب في «الطلبات الجارية» على شاشة العميل في تطبيق
      * الموظفين، وهي قائمةُ ما يدين له أحدٌ بقرار (طلب المستخدم، 2026-09-25: «اصلحها»). **وغيرُ نهائيٍّ

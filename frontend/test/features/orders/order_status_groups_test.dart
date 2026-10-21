@@ -77,7 +77,7 @@ void main() {
       expect(cancellations, contains(OrderStatus.cancelled));
     });
 
-    /// كان «رُفض الطلب» يُحسب في «الطلبات الجارية» على شاشة العميل، وهو طلبٌ لا يعمل عليه أحد
+    /// كان «مرفوض» يُحسب في «الطلبات الجارية» على شاشة العميل، وهو طلبٌ لا يعمل عليه أحد
     /// (طلب المستخدم، 2026-09-25: «اصلحها»). مكانه «الملغاة»: لم يصل إلى أحد، ولا أحد يدين له
     /// بقرار.
     test('a refused request counts with the cancellations, not in progress', () {
@@ -87,7 +87,8 @@ void main() {
       // Assert
       expect(OrderStatus.inProgress, isNot(contains(OrderStatus.requestRejected)));
       expect(OrderStatus.received, isNot(contains(OrderStatus.requestRejected)));
-      expect(cancellations, [OrderStatus.cancelled, OrderStatus.requestRejected]);
+      // «مرفوض» first: it is declared beside «بانتظار المراجعة» now, the review pair on the board.
+      expect(cancellations, [OrderStatus.requestRejected, OrderStatus.cancelled]);
     });
 
     test('the three groups do not overlap, and together they are every status', () {

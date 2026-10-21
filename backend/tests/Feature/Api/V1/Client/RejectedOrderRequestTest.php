@@ -22,7 +22,7 @@ use Tests\TestCase;
 /**
  * Refusing a request, rather than writing it off.
  *
- * **«رُفض الطلب» exists because «إلغاء تام» was doing three wrong things at once.** Cancelling
+ * **«مرفوض» exists because «إلغاء تام» was doing three wrong things at once.** Cancelling
  * reverses stock, closes the shortages raised against an order and lands it in the write-off
  * reporting — none of which a request nobody accepted has behind it. It also cost
  * `orders.status.cancelled`, the grant for writing off real money, so whoever read the intake

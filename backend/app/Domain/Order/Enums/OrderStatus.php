@@ -37,12 +37,12 @@ use App\Domain\Order\Actions\RequestOrder;
 enum OrderStatus: string
 {
     // ── the ones the workshop lives in, in the order the board reads them ────────────────────
-    // **«بانتظار المراجعة» stands at the head, alone, in front of the pairs.** It is the only
-    // card on this board that is not a piece of the workshop's work but a decision about whether
-    // work begins at all, and its audience is whoever reviews what the app sent rather than
-    // whoever is at a bench. So it is drawn full width above the grid rather than paired with
-    // «جديدة» — pairing the two would say «هذا وذاك نوعان من العمل», and one of them is not
-    // work yet. The pairs below are unchanged.
+    // **«بانتظار المراجعة» and «مرفوض» open the board, as the first pair.** They are the only
+    // two cards here that are not a piece of the workshop's work but the decision about whether
+    // work begins at all — what is waiting at the door beside what was turned away there — and
+    // their reader is whoever reviews what the customer app sent rather than whoever is at a
+    // bench. Pairing «بانتظار المراجعة» with «جديدة» instead would say «هذا وذاك نوعان من
+    // العمل», and one of them is not work yet (طلب المستخدم، 2026-10-21).
     //
     // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
     // in beside what could not be started; «انتظار العربون»/«عربون مدفوع» is the money the job
@@ -74,6 +74,33 @@ enum OrderStatus: string
      * everything downstream is untouched; or refused, with a reason, like any other write-off.
      */
     case Requested = 'requested';
+
+    /**
+     * A request from the app that the shop would not take — «مرفوض».
+     *
+     * **Second, beside «بانتظار المراجعة», though it is closed.** Everything else that is over
+     * sits at the bottom of the board, but this one is the other half of the review: the reader
+     * of the intake queue looks for what they turned away next to what is still waiting, and
+     * it is the only way back into that queue. See the note at the top of the cases.
+     *
+     * **Not «إلغاء تام», and the difference is not a name.** Cancelling writes off an order the
+     * shop *accepted*: it reverses stock if any left, closes the shortages raised against it,
+     * carries a `cancellation_reason` and lands in the write-off reporting. A request refused at
+     * the door has none of that behind it — nothing was reserved, nothing was promised, and no
+     * money was ever owed. Sending it down the cancellation road made every one of those
+     * mechanisms run over an order they were not written for, and put refusals in the same
+     * column as genuine write-offs so that both counts were wrong.
+     *
+     * **And it cost the wrong authority.** «إلغاء تام» is `orders.status.cancelled`, the grant
+     * for writing off real money. Declining an order nobody has accepted is the reviewer's own
+     * work, so this carries `ManageOrders` — the same grant that let them see the request in
+     * the first place.
+     *
+     * **Reversible, unlike a cancellation.** It leads back to «بانتظار المراجعة» and nowhere
+     * else. A mis-tap on the intake queue should not be permanent, and there is nothing to
+     * unwind in going back: the order never left the door.
+     */
+    case RequestRejected = 'request_rejected';
 
     /**
      * Taken, not started.
@@ -177,28 +204,6 @@ enum OrderStatus: string
 
     case Cancelled = 'cancelled';
 
-    /**
-     * A request from the app that the shop would not take.
-     *
-     * **Not «إلغاء تام», and the difference is not a name.** Cancelling writes off an order the
-     * shop *accepted*: it reverses stock if any left, closes the shortages raised against it,
-     * carries a `cancellation_reason` and lands in the write-off reporting. A request refused at
-     * the door has none of that behind it — nothing was reserved, nothing was promised, and no
-     * money was ever owed. Sending it down the cancellation road made every one of those
-     * mechanisms run over an order they were not written for, and put refusals in the same
-     * column as genuine write-offs so that both counts were wrong.
-     *
-     * **And it cost the wrong authority.** «إلغاء تام» is `orders.status.cancelled`, the grant
-     * for writing off real money. Declining an order nobody has accepted is the reviewer's own
-     * work, so this carries `ManageOrders` — the same grant that let them see the request in
-     * the first place.
-     *
-     * **Reversible, unlike a cancellation.** It leads back to «بانتظار المراجعة» and nowhere
-     * else. A mis-tap on the intake queue should not be permanent, and there is nothing to
-     * unwind in going back: the order never left the door.
-     */
-    case RequestRejected = 'request_rejected';
-
     // ── the two that are over ────────────────────────────────────────────────────────────────
     // **Last, and last on purpose.** Everything above still needs somebody to do something; a
     // full board is skimmed past the finished work rather than through it. See the note at the
@@ -240,7 +245,9 @@ enum OrderStatus: string
             // the app prints on a chip, in a filter and on a timeline. One status, one word,
             // wherever it is drawn.
             self::Cancelled => 'إلغاء تام',
-            self::RequestRejected => 'رُفض الطلب',
+            // «مرفوض», not «رُفض الطلب» (طلب المستخدم، 2026-10-21): a card word beside
+            // «بانتظار المراجعة» on the board, the same length as the statuses around it.
+            self::RequestRejected => 'مرفوض',
         };
     }
 
@@ -551,7 +558,7 @@ enum OrderStatus: string
      * still has a move to make. One flag was asked to mean both and could only be right about
      * one of them.
      *
-     * **«رُفض الطلب» مغلقٌ أيضاً، وغيرُ نهائي** (طلب المستخدم، 2026-09-25). لا أحد يعمل على طلبٍ
+     * **«مرفوض» مغلقٌ أيضاً، وغيرُ نهائي** (طلب المستخدم، 2026-09-25). لا أحد يعمل على طلبٍ
      * رُفض عند الباب، فكان يُحسب في «الطلبات الجارية» على شاشة العميل في تطبيق الموظفين، وهي قائمةُ
      * ما يدين له أحدٌ بقرار. لكنه لا يدخل {@see isFinal()}: الرفض يُتراجع عنه إلى «بانتظار
      * المراجعة»، ومن هناك يُعدَّل إن لزم. و`isFinished` في تطبيق الموظفين يقرأ هذا التابع نفسه.
@@ -655,7 +662,7 @@ enum OrderStatus: string
     public function requiresReason(): bool
     {
         // Writing an order off, and refusing one. **The refusal is the customer's answer** —
-        // «رُفض الطلب» with no sentence attached reaches their phone as a door closed without a
+        // «مرفوض» with no sentence attached reaches their phone as a door closed without a
         // word, which is worse than the refusal itself.
         return $this === self::Cancelled || $this === self::RequestRejected;
     }

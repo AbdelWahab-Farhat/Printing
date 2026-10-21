@@ -131,7 +131,7 @@ void main() {
     // Assert — its own box, not something to be dug out of «الكل» by filtering. والطلب المرفوض
     // هنا لا في «الجارية» (طلب المستخدم، 2026-09-25): لم يصل إلى أحد، ولا يعمل عليه أحد.
     expect(opened.single.customerId, 7);
-    expect(opened.single.statuses, ['cancelled', 'request_rejected']);
+    expect(opened.single.statuses, ['request_rejected', 'cancelled']);
   });
 
   testWidgets('the screen each row opens says whose orders it is showing', (tester) async {
