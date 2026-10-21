@@ -120,6 +120,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [INVESTOR-PROFIT-FIELDS.md](investor-deals/INVESTOR-PROFIT-FIELDS.md) | **مرجع:** حقول ربح المستثمر — الشروط، الطريقان، القيود، الأرصدة، والإقفال. |
 | [FUND-EXPENSE-ON-GOODS.md](investor-deals/FUND-EXPENSE-ON-GOODS.md) | مصروفُ الصندوق على البضاعة: مربوطٌ بأمر شراء يتوزّع على كل وحداته — الرفُّ في التكلفة، والمباعُ على فترة بيعه. **مُنفَّذ** على `main`. |
 | [CONTINUOUS-FUND-DESIGN.md](investor-deals/CONTINUOUS-FUND-DESIGN.md) | الصندوق المستمرّ بفترات أرباح ووحدات: المواصفة، وأجوبة المالك في §٠، وخطة الشرائح في §٨. **مُنفَّذ** على الفرع `v2_investors`. |
+| [PROFIT-CAPITALISATION-CASH-FRONTEND-INTEGRATION.md](investor-deals/PROFIT-CAPITALISATION-CASH-FRONTEND-INTEGRATION.md) | «أرباح صارت رأس مال» في «سجل الخزينة» — صفٌّ جديد، سطرٌ واحد في التطبيق. **مُنفَّذ** (PR #30). |
 
 ## [nawris/](nawris/)
 
@@ -161,6 +162,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [OUTSOURCED-PRODUCTS.md](outsourced-products/OUTSOURCED-PRODUCTS.md) | وسيط — products a vendor makes for us. |
 | [OUTSOURCED-PRODUCTS-FRONTEND-INTEGRATION.md](outsourced-products/OUTSOURCED-PRODUCTS-FRONTEND-INTEGRATION.md) | Connecting the Flutter app to it. |
+| [VENDOR-COST-ENTRY-FRONTEND-INTEGRATION.md](outsourced-products/VENDOR-COST-ENTRY-FRONTEND-INTEGRATION.md) | «تكلفة المورد» في التطبيق: الطلبية، «جاهزة»، والتعبئة المتأخرة. **مُنفَّذ** (PR #28). |
 
 ## [payments/](payments/)
 
