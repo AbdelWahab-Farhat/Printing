@@ -116,8 +116,8 @@ class _VoiceComposerRowState extends State<VoiceComposerRow> {
 
     if (_phase != _Phase.holding || _settled) return;
 
-    // الحقلُ قبل الزرّ في السطر: يمينه بالعربية.
-    final toward = math.max(0.0, _rtl ? delta.dx : -delta.dx);
+    // الزرُّ أوّلُ السطر والحقلُ بعده: يساره بالعربية، ويمينه بالإنجليزية.
+    final toward = math.max(0.0, _rtl ? -delta.dx : delta.dx);
     final up = math.max(0.0, -delta.dy);
     _drag.value = Offset(toward, up);
 
@@ -258,29 +258,7 @@ class _VoiceComposerRowState extends State<VoiceComposerRow> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Expanded(
-          child: Stack(
-            children: [
-              // مخفيٌّ لا مُزال: المسوّدةُ والمؤشّرُ ولوحةُ المفاتيح تعود كما هي بعد التسجيل.
-              Opacity(
-                opacity: _recording ? 0 : 1,
-                child: IgnorePointer(ignoring: _recording, child: widget.field),
-              ),
-              if (_recording)
-                Positioned.fill(
-                  child: _RecordingBar(
-                    elapsed: _mic.elapsed,
-                    drag: _drag,
-                    locked: _phase == _Phase.locked,
-                    cancelDistance: _cancelDistance,
-                    rtl: _rtl,
-                    onCancel: () => unawaited(_cancel()),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(width: 8.w),
+        // الزرُّ أوّلُ السطر — يمينَ الحقل بالعربية ويسارَه بالإنجليزية، طلبُ المالك ٢٠٢٦-١٠-٢٣.
         SizedBox.square(
           dimension: size,
           child: Stack(
@@ -313,6 +291,29 @@ class _VoiceComposerRowState extends State<VoiceComposerRow> {
                     holding: _phase == _Phase.holding,
                     rtl: _rtl,
                     size: size,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Stack(
+            children: [
+              // مخفيٌّ لا مُزال: المسوّدةُ والمؤشّرُ ولوحةُ المفاتيح تعود كما هي بعد التسجيل.
+              Opacity(
+                opacity: _recording ? 0 : 1,
+                child: IgnorePointer(ignoring: _recording, child: widget.field),
+              ),
+              if (_recording)
+                Positioned.fill(
+                  child: _RecordingBar(
+                    elapsed: _mic.elapsed,
+                    drag: _drag,
+                    locked: _phase == _Phase.locked,
+                    cancelDistance: _cancelDistance,
+                    rtl: _rtl,
+                    onCancel: () => unawaited(_cancel()),
                   ),
                 ),
             ],
@@ -383,7 +384,7 @@ class _FollowingMic extends StatelessWidget {
       valueListenable: drag,
       child: button,
       builder: (context, offset, child) => Transform.translate(
-        offset: Offset((rtl ? offset.dx : -offset.dx) * 0.6, -math.min(offset.dy, 60) * 0.6),
+        offset: Offset((rtl ? -offset.dx : offset.dx) * 0.6, -math.min(offset.dy, 60) * 0.6),
         child: child,
       ),
     );
@@ -539,7 +540,7 @@ class _RecordingBar extends StatelessWidget {
                       final t = (offset.dx / cancelDistance).clamp(0.0, 1.0);
 
                       return Transform.translate(
-                        offset: Offset((rtl ? offset.dx : -offset.dx) * 0.5, 0),
+                        offset: Offset((rtl ? -offset.dx : offset.dx) * 0.5, 0),
                         child: Opacity(opacity: 1 - t * 0.8, child: child),
                       );
                     },

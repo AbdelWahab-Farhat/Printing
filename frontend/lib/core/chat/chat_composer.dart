@@ -10,6 +10,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// صندوق الكتابة أسفل المحادثة: الحقل ومشبكُ الورق فيه، وزرُّ الإرسال المستدير بجانبه — منقولٌ من
 /// تطبيق العميل.
 ///
+/// **الزرُّ أوّلُ السطر**: يمينَ الحقل بالعربية ويسارَه بالإنجليزية — طلبُ المالك ٢٠٢٦-١٠-٢٣.
+/// والميكروفونُ في مكانه نفسه.
+///
 /// **زرٌّ مستدير لا زرٌّ بعرض الشاشة** — الاستثناء الذي أُذن به لشاشة الملاحظات: زرٌّ بعرض الشاشة
 /// تحت صندوق رسالة يأكل سطراً من المحادثة. ومكانه ثابت: يخفت حين لا شيء يُرسل ويشتعل حين يُكتب
 /// شيء، ولا يظهر ولا يختفي فيقفز الحقل تحته.
@@ -112,9 +115,9 @@ class _ChatComposerState extends State<ChatComposer> {
         ? Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(child: field),
-              SizedBox(width: 8.w),
               sendKey,
+              SizedBox(width: 8.w),
+              Expanded(child: field),
             ],
           )
         : VoiceComposerRow(

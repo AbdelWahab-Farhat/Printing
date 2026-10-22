@@ -28,7 +28,7 @@ class InternalTicketFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => 'TR-F'.++self::$sequence,
+            'code' => 'TF'.++self::$sequence,
             'title' => 'سؤال عن '.fake()->word(),
             'status' => InternalTicketStatus::InProgress,
             'priority' => InternalTicketPriority::Medium,

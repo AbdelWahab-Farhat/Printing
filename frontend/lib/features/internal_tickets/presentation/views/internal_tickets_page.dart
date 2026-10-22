@@ -11,6 +11,7 @@ import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_cubit.dart';
 import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_ticket_card.dart';
+import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_filter_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,9 +19,11 @@ import 'package:go_router/go_router.dart';
 
 /// تذاكرُ الموظفين — تبويبُ «الموظفين» في «التذاكر»، كقائمة بريمولا الداخلية.
 ///
-/// * **للمدير وحده**: «تذاكري / الكل». غيرُه لا يرى إلا ما هو طرفٌ فيه — والخادمُ هو الحدّ.
-/// * **البحث** بكود التذكرة أو عنوانها أو اسم الموظف.
-/// * **الرقاقتان** «قيد المعالجة» (تُفتح عليها) و«مغلقة» — بلا «الكل»، كبريمولا — و«غير المقروءة».
+/// * **البحث** بكود التذكرة أو عنوانها أو اسم الموظف، وبجانبه زرُّ التصفية.
+/// * **الرقاقتان وحدهما على الصفحة**: «قيد المعالجة» (تُفتح عليها) و«مغلقة» — بلا «الكل»، كبريمولا.
+/// * **وفي ورقة التصفية الباقي** ([InternalTicketsFilterButton])، طلبُ المالك ٢٠٢٦-١٠-٢٣: «تذاكري /
+///   الكل» للمدير وحده وتُفتح على «تذاكري» — غيرُه لا يرى إلا ما هو طرفٌ فيه، والخادمُ هو الحدّ —
+///   و«غير المقروءة»، ونوعُ المشكلة، والترتيب.
 /// * **من صفحة طلبيةٍ أو عميل** ([subject]): مقصورةٌ عليها بعنوانها، و«تذكرة جديدة» تحملها.
 ///
 /// **بلا صلاحية**: كلُّ موظفٍ يفتح تذكرةً إلى زميل.
@@ -87,69 +90,46 @@ class _InternalTicketsView extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
-              child: SearchField(hint: 'كود التذكرة · عنوانها · الموظف', onChanged: cubit.search),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SearchField(
+                      hint: 'كود التذكرة · عنوانها · الموظف',
+                      onChanged: cubit.search,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // يُعاد رسمه مع القائمة، فما تقوله الورقةُ مختاراً لا يخالف ما على الشاشة.
+                  BlocBuilder<InternalTicketsCubit, InternalTicketsState>(
+                    builder: (context, state) => InternalTicketsFilterButton(
+                      query: cubit.query,
+                      offersAll: offersAll,
+                      onApplied: (next) => unawaited(cubit.narrow(next)),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            // الحالتان وحدهما على الصفحة — ما يُبدَّل بينه وهو يقرأ. والباقي في الورقة.
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 6.h),
               child: BlocBuilder<InternalTicketsCubit, InternalTicketsState>(
-                builder: (context, state) {
-                  final query = cubit.query;
-
-                  return SizedBox(
-                    height: 44.h,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        if (offersAll) ...[
-                          _Chip(
-                            label: 'تذاكري',
-                            selected: !query.allTickets,
-                            onTap: () => cubit.narrow(query.copyWith(allTickets: false)),
-                          ),
-                          _Chip(
-                            label: 'الكل',
-                            selected: query.allTickets,
-                            onTap: () => cubit.narrow(query.copyWith(allTickets: true)),
-                          ),
-                          const VerticalDivider(width: 16),
-                        ],
-                        for (final status in const [
-                          InternalTicketStatus.inProgress,
-                          InternalTicketStatus.closed,
-                        ])
-                          _Chip(
-                            label: status.label,
-                            selected: query.status == status,
-                            onTap: () => cubit.narrow(query.copyWith(status: status)),
-                          ),
-                        Padding(
-                          padding: EdgeInsetsDirectional.only(end: 8.w),
-                          child: Center(
-                            child: FilterOptionChip(
-                              label: 'غير المقروءة',
-                              isTicked: true,
-                              isSelected: query.unreadOnly,
-                              onTap: () =>
-                                  cubit.narrow(query.copyWith(unreadOnly: !query.unreadOnly)),
-                            ),
-                          ),
+                builder: (context, state) => Row(
+                  children: [
+                    for (final status in const [
+                      InternalTicketStatus.inProgress,
+                      InternalTicketStatus.closed,
+                    ])
+                      Padding(
+                        padding: EdgeInsetsDirectional.only(end: 8.w),
+                        child: FilterOptionChip(
+                          label: status.label,
+                          isSelected: cubit.query.status == status,
+                          onTap: () => cubit.narrow(cubit.query.copyWith(status: status)),
                         ),
-                        Padding(
-                          padding: EdgeInsetsDirectional.only(end: 8.w),
-                          child: Center(
-                            child: FilterOptionChip(
-                              label: 'الأقدم نشاطاً',
-                              isTicked: true,
-                              isSelected: query.oldestFirst,
-                              onTap: () =>
-                                  cubit.narrow(query.copyWith(oldestFirst: !query.oldestFirst)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -173,24 +153,6 @@ class _InternalTicketsView extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.only(end: 8.w),
-      child: Center(
-        child: FilterOptionChip(label: label, isSelected: selected, onTap: onTap),
       ),
     );
   }

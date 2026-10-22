@@ -46,7 +46,7 @@ return new class extends Migration
         Schema::create('internal_tickets', function (Blueprint $table) {
             $table->id();
 
-            // `TR-` ثم الرقم، كبريمولا. يُحجز من تسلسل الجدول قبل الإدراج — AllocateInternalTicketIdentifier.
+            // `T` ثم الرقم، كـ`D` لتذاكر التصميم. يُحجز من تسلسل الجدول قبل الإدراج — AllocateInternalTicketIdentifier.
             $table->string('code', 20);
             $table->string('title', 255);
 

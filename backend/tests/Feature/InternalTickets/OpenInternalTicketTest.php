@@ -54,7 +54,7 @@ class OpenInternalTicketTest extends InternalTicketTestCase
             ->assertJsonPath('data.messages.0.is_mine', true);
 
         $ticket = InternalTicket::query()->firstOrFail();
-        $this->assertSame('TR-'.$ticket->id, $ticket->code);
+        $this->assertSame('T'.$ticket->id, $ticket->code);
         $this->assertSame($me->id, $ticket->opened_by);
         // مَن كتب فقد قرأ ما كتب.
         $this->assertSame(InternalTicketMessage::query()->value('id'), $ticket->opener_read_message_id);
@@ -251,13 +251,13 @@ class OpenInternalTicketTest extends InternalTicketTestCase
 
         // Act
         $ticket = $this->open($headers, $colleague, [
-            'code' => 'TR-1',
+            'code' => 'T1',
             'status' => 'closed',
             'opened_by' => $third->id,
         ]);
 
         // Assert
-        $this->assertSame('TR-'.$ticket->id, $ticket->code);
+        $this->assertSame('T'.$ticket->id, $ticket->code);
         $this->assertSame('in_progress', $ticket->status->value);
         $this->assertSame($me->id, $ticket->opened_by);
     }

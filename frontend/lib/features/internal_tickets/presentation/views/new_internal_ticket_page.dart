@@ -5,7 +5,9 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -13,17 +15,23 @@ import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/features/customers/presentation/widgets/customer_picker_sheet.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/new_internal_ticket_cubit.dart';
 import 'package:dayaa/features/internal_tickets/presentation/widgets/colleague_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 /// «تذكرة جديدة» — حقولُ نموذج بريمولا بترتيبها: مع مَن، والعنوان، والتفاصيل، ونوعُ المشكلة،
-/// والأولوية، والطلبيةُ أو العميل حين تُفتح من صفحتهما، وحتى أربع صور. الصوتُ يُرسل من المحادثة.
+/// والأولوية، والعميلُ وبجانبه الطلبية، وحتى أربع صور. الصوتُ يُرسل من المحادثة.
+///
+/// **العميلُ والطلبيةُ يُختاران من النموذج نفسه** (طلبُ المالك ٢٠٢٦-١٠-٢٣)، وتملؤهما صفحتُهما حين
+/// تُفتح منها. كلٌّ منهما لمن يقرأ قائمته وحده — `customers.view` و`orders.view` — فلا يُعرض حقلٌ
+/// تُرفض ورقتُه. ومع العميل لا تُعرض إلا طلبياته، واختيارُ عميلٍ ليست الطلبيةُ له يُسقطها، كبريمولا.
 ///
 /// **بعد الفتح تُستبدل بالمحادثة نفسها**، فالرجوعُ منها يعود إلى حيث فُتحت لا إلى نموذجٍ فارغ.
 class NewInternalTicketPage extends StatelessWidget {
@@ -55,6 +63,8 @@ class _NewTicketViewState extends State<_NewTicketView> {
 
   /// اسمُ الزميل المختار في حقلٍ للقراءة — يُكتب فيه عند الاختيار، لا يُكتب فيه أحد.
   final _colleagueName = TextEditingController();
+  final _customerName = TextEditingController();
+  final _orderCode = TextEditingController();
   final _form = GlobalKey<FormState>();
 
   // ما يملؤه الموظف — حالةُ نموذجٍ بحتة، تُرسل كاملةً عند «فتح التذكرة».
@@ -63,12 +73,67 @@ class _NewTicketViewState extends State<_NewTicketView> {
   InternalTicketPriority _priority = InternalTicketPriority.medium;
   final List<PickedFile> _images = [];
 
+  /// ما تُربط به التذكرة — من صفحة الطلبية أو العميل، أو مختارٌ هنا.
+  ({int id, String name})? _customer;
+
+  /// وعميلُها إن عُرف، كي يُسقطها اختيارُ عميلٍ غيره. من صفحة الطلبية لا يُعرف، فلا تسقط.
+  ({int id, String code, int? customerId})? _order;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final subject = widget.subject;
+    if (subject?.customerId case final id?) _setCustomer((id: id, name: subject?.customerName ?? ''));
+    if (subject?.orderId case final id?) {
+      _setOrder((id: id, code: subject?.orderCode ?? '', customerId: null));
+    }
+  }
+
   @override
   void dispose() {
     _title.dispose();
     _details.dispose();
     _colleagueName.dispose();
+    _customerName.dispose();
+    _orderCode.dispose();
     super.dispose();
+  }
+
+  void _setCustomer(({int id, String name})? customer) {
+    _customer = customer;
+    _customerName.text = customer?.name ?? '';
+  }
+
+  void _setOrder(({int id, String code, int? customerId})? order) {
+    _order = order;
+    _orderCode.text = order?.code ?? '';
+  }
+
+  Future<void> _pickCustomer() async {
+    final chosen = await showCustomerPicker(context: context, title: 'عن أيّ عميل؟');
+
+    if (chosen == null || !mounted) return;
+
+    setState(() {
+      _setCustomer((id: chosen.id, name: chosen.name));
+
+      // طلبيةُ عميلٍ آخر لا تبقى مع هذا العميل.
+      final owner = _order?.customerId;
+      if (owner != null && owner != chosen.id) _setOrder(null);
+    });
+  }
+
+  Future<void> _pickOrder() async {
+    final chosen = await showOrderPicker(
+      context: context,
+      customerId: _customer?.id,
+      title: 'عن أيّ طلبية؟',
+    );
+
+    if (chosen == null || !mounted) return;
+
+    setState(() => _setOrder((id: chosen.id, code: chosen.code, customerId: chosen.customerId)));
   }
 
   Future<void> _pickColleague(List<Colleague> colleagues) async {
@@ -117,8 +182,8 @@ class _NewTicketViewState extends State<_NewTicketView> {
         description: _details.text,
         priority: _priority,
         categoryId: _category?.id,
-        orderId: widget.subject?.orderId,
-        customerId: widget.subject?.customerId,
+        orderId: _order?.id,
+        customerId: _customer?.id,
       ),
       images: List<PickedFile>.of(_images),
     );
@@ -166,9 +231,36 @@ class _NewTicketViewState extends State<_NewTicketView> {
   }
 
   Widget _fields(BuildContext context, NewInternalTicketReady state) {
-    final scheme = context.colorScheme;
     final failure = state.lastFailure;
-    final subject = widget.subject?.label;
+    final session = sl<Session>();
+    final mayPickCustomer = session.can(AppPermission.viewCustomers);
+    final mayPickOrder = session.can(AppPermission.viewOrders);
+
+    // ما لا يُقرأ لا يُعرض — إلا ما ملأته صفحةُ الطلبية أو العميل.
+    final customerField = mayPickCustomer || _customer != null
+        ? _SubjectField(
+            controller: _customerName,
+            label: 'العميل',
+            hint: 'بلا عميل',
+            icon: AppIcons.customers,
+            clearLabel: 'إزالة العميل',
+            errorText: failure?.fieldError('customer_id'),
+            onTap: mayPickCustomer ? () => unawaited(_pickCustomer()) : null,
+            onClear: _customer == null ? null : () => setState(() => _setCustomer(null)),
+          )
+        : null;
+    final orderField = mayPickOrder || _order != null
+        ? _SubjectField(
+            controller: _orderCode,
+            label: 'الطلبية',
+            hint: 'بلا طلبية',
+            icon: AppIcons.orders,
+            clearLabel: 'إزالة الطلبية',
+            errorText: failure?.fieldError('order_id'),
+            onTap: mayPickOrder ? () => unawaited(_pickOrder()) : null,
+            onClear: _order == null ? null : () => setState(() => _setOrder(null)),
+          )
+        : null;
 
     return Form(
       key: _form,
@@ -234,13 +326,15 @@ class _NewTicketViewState extends State<_NewTicketView> {
                 ),
             ],
           ),
-          if (subject != null) ...[
+          if (customerField != null || orderField != null) ...[
             SizedBox(height: 16.h),
+            // العميلُ وبجانبه الطلبية، كنموذج بريمولا — وأحدُهما وحده يأخذ السطر.
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(AppIcons.orders, size: 18.sp, color: scheme.onSurfaceVariant),
-                SizedBox(width: 6.w),
-                Text(subject, style: context.textTheme.bodyMedium),
+                if (customerField != null) Expanded(flex: 3, child: customerField),
+                if (customerField != null && orderField != null) SizedBox(width: 10.w),
+                if (orderField != null) Expanded(flex: 2, child: orderField),
               ],
             ),
           ],
@@ -269,6 +363,53 @@ class _NewTicketViewState extends State<_NewTicketView> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// حقلٌ للقراءة يفتح ورقةَ اختيار، وبزرٍّ يمسح ما اختير.
+class _SubjectField extends StatelessWidget {
+  const _SubjectField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.clearLabel,
+    this.errorText,
+    this.onTap,
+    this.onClear,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final String clearLabel;
+  final String? errorText;
+
+  /// `null` لمن لا يقرأ القائمة — الحقلُ يعرض ما ملأته الصفحةُ ولا يفتح ورقة.
+  final VoidCallback? onTap;
+
+  /// `null` حين لا شيء مختار.
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTextField(
+      readOnly: true,
+      label: label,
+      hint: hint,
+      prefixIcon: icon,
+      controller: controller,
+      errorText: errorText,
+      onTap: onTap,
+      suffix: onClear == null
+          ? null
+          : IconButton(
+              tooltip: clearLabel,
+              onPressed: onClear,
+              icon: Icon(AppIcons.close, size: 18.sp),
+            ),
     );
   }
 }

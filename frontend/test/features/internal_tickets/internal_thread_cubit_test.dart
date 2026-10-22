@@ -52,7 +52,7 @@ void main() {
   InternalTicket ticketWith(List<InternalMessage> messages, {bool isParty = true}) =>
       InternalTicket(
         id: 3,
-        code: 'TR-3',
+        code: 'T3',
         title: 'الطلبية متأخرة',
         status: InternalTicketStatus.inProgress,
         opener: self,

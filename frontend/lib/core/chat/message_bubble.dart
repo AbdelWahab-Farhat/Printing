@@ -175,7 +175,7 @@ class MessageBubble extends StatelessWidget {
         ? EdgeInsets.all(3.w)
         : attachment != null
         ? EdgeInsetsDirectional.fromSTEB(9.w, 9.w, 9.w, 6.h)
-        : EdgeInsetsDirectional.fromSTEB(11.w, 6.h, 11.w, 5.h);
+        : EdgeInsetsDirectional.fromSTEB(12.w, 8.h, 12.w, 6.h);
 
     final shape = DecoratedBox(
       decoration: ShapeDecoration(
@@ -251,9 +251,11 @@ class _TextWithMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ١٧ لا ١٦ الثيم: الكلامُ هو ما جاء الموظفُ ليقرأه — طلبُ المالك ٢٠٢٦-١٠-٢٣.
     final style = context.textTheme.bodyLarge?.copyWith(
       color: ink,
-      height: 1.45,
+      fontSize: 17.sp,
+      height: 1.4,
       fontStyle: italic ? FontStyle.italic : null,
     );
     final own = text.readingDirection;
@@ -315,7 +317,11 @@ class _Meta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = context.textTheme.labelSmall?.copyWith(color: color, height: 1.2);
+    final style = context.textTheme.labelSmall?.copyWith(
+      color: color,
+      fontSize: 12.sp,
+      height: 1.2,
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,

@@ -10,7 +10,7 @@ void main() {
   /// تذكرةٌ كما يرسلها `GET internal-tickets/{id}` لسالم، صاحبِها.
   Map<String, dynamic> serverTicket() => {
     'id': 3,
-    'code': 'TR-3',
+    'code': 'T3',
     'title': 'الطلبية متأخرة',
     'status': 'in_progress',
     'status_label': 'قيد المعالجة',
@@ -164,14 +164,14 @@ void main() {
     );
 
     // Act
-    final sent = query.toQuery(search: 'TR', page: 2);
+    final sent = query.toQuery(search: 'T', page: 2);
 
     // Assert
     expect(sent, {
       'page': 2,
       'scope': 'all',
       'status': 'closed',
-      'search': 'TR',
+      'search': 'T',
       'unread': 1,
       'order_id': 55,
       'sort': 'oldest_activity',

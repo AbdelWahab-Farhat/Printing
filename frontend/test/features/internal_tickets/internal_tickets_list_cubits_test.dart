@@ -40,7 +40,7 @@ void main() {
     DateTime? at,
   }) => InternalTicket(
     id: id,
-    code: 'TR-$id',
+    code: 'T$id',
     title: 'تذكرة $id',
     status: status,
     unreadCount: unread,
@@ -90,14 +90,14 @@ void main() {
       final cubit = build(query: const InternalTicketQuery(orderId: 55));
 
       // Act
-      await cubit.load(search: 'TR-1');
+      await cubit.load(search: 'T1');
 
       // Assert
       final captured =
           verify(
                 () => repository.tickets(
                   query: captureAny(named: 'query'),
-                  search: 'TR-1',
+                  search: 'T1',
                   page: 1,
                 ),
               ).captured.single
