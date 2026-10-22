@@ -18,18 +18,19 @@ import 'package:go_router/go_router.dart';
 /// basket is a thing you pass through on the way out. It sits where the thing being collected
 /// is, which is the catalogue and the product.
 ///
-/// **Nothing when the basket is empty.** A cart icon with no number is an invitation to tap it
-/// and find out it was empty; the affordance appears when there is something to see.
+/// **تظهر دائماً، وإن كانت فارغة** (طلب المستخدم، 2026-10-20: «يليت دوما تظهر السلة»). كانت لا
+/// تُرسم وهي فارغة؛ الآن الفارغة عربةٌ بلا شارة، ولمسها يفتح «سلتك فارغة» و«تصفّح المنتجات».
 ///
 /// Reads the singleton [CartCubit] directly rather than through a provider: the basket has no
 /// scope, and wrapping every screen that draws this in a `BlocProvider.value` would be
 /// ceremony around a thing that is already global.
 class CartButton extends StatelessWidget {
-  const CartButton({super.key, this.backdrop});
+  const CartButton({super.key, this.style});
 
-  /// مربّعٌ ملوّن خلف الأيقونة، لبارٍ يمرّ فوق صورة — صفحة المنتج — حيث أيقونةٌ عارية تضيع في
-  /// الصورة. بدونه يُرسم الزر كما يُرسم في أي `AppBar`.
-  final Color? backdrop;
+  /// شكل الزرّ من الشريط الذي يحمله، كما يقرّر موضعه: دائرةٌ خفيفة بجانب الدعم في الشريط
+  /// المشترك، ومربّعٌ ملوّن فوق صورة المنتج حيث أيقونةٌ عارية تضيع في الصورة. بدونه يُرسم كما
+  /// يُرسم في أي `AppBar`.
+  final ButtonStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +39,6 @@ class CartButton extends StatelessWidget {
     return BlocBuilder<CartCubit, CartState>(
       bloc: sl<CartCubit>(),
       builder: (context, state) {
-        if (state.isEmpty) return const SizedBox.shrink();
-
-        final backdrop = this.backdrop;
-
         return IconButton(
           icon: Stack(
             // الشارة تتدلّى خارج حدود الرسم، فلا يُقصّ ما تجاوزها.
@@ -50,29 +47,25 @@ class CartButton extends StatelessWidget {
               const SvgIcon(SvgIcon.cart),
               // **معلّقةٌ على الرسم نفسه لا على زاوية الزرّ**، كما يعلّق `BadgedIcon` شارة الدعم،
               // فتقع على كتف السلّة في الشريط وفوق صورة المنتج معاً. و`right` لا `start`: الرسم
-              // لا ينقلب مع اتجاه النص — مقبضه يساراً كما في المثال — فالشارة تتبعه هو.
-              Positioned(
-                top: -6.h,
-                right: -8.w,
-                child: _CountBadge(
-                  count: state.count,
-                  // أحمر كشارة الدعم وكالمثال الذي أرسله المستخدم، لا برتقالي العلامة.
-                  background: scheme.error,
-                  foreground: scheme.onError,
-                  // حلقةٌ بلون الشريط، لتُقرأ الشارةُ شارةً لا لطخةً حيث تغطّي الرسم.
-                  ring: scheme.surface,
+              // لا ينقلب مع اتجاه النص — مقبضه يساراً كما في المثال — فالشارة تتبعه هو. ولا
+              // «0» على الفارغة.
+              if (!state.isEmpty)
+                Positioned(
+                  top: -6.h,
+                  right: -8.w,
+                  child: _CountBadge(
+                    count: state.count,
+                    // أحمر كشارة الدعم وكالمثال الذي أرسله المستخدم، لا برتقالي العلامة.
+                    background: scheme.error,
+                    foreground: scheme.onError,
+                    // حلقةٌ بلون الشريط، لتُقرأ الشارةُ شارةً لا لطخةً حيث تغطّي الرسم.
+                    ring: scheme.surface,
+                  ),
                 ),
-              ),
             ],
           ),
           tooltip: 'سلتك',
-          style: backdrop == null
-              ? null
-              : IconButton.styleFrom(
-                  backgroundColor: backdrop,
-                  fixedSize: Size.square(44.w),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-                ),
+          style: style,
           onPressed: () => context.push(Routes.newOrder),
         );
       },

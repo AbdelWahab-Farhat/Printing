@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم في طرفه الأيمن، ورصيد
-/// المحفظة في الأيسر، كشريط تطبيق بريمولا.
+/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم والسلة في طرفه الأيمن،
+/// ورصيد المحفظة في الأيسر، كشريط تطبيق بريمولا.
 ///
 /// **و«حسابي» ليست هنا** (طلب المستخدم، 2026-09-25: «حط بروفايل تحت»): كانت أيقونةً في الطرف
 /// بجانب الدعم، ونزلت إلى الشريط السفلي تبويباً رابعاً.
@@ -27,8 +27,10 @@ import 'package:go_router/go_router.dart';
 /// الشريط فدفعت الاسم عن الوسط كلما امتلأت السلة. اختار المستخدم نقل الدعم إلى الطرف الفارغ على
 /// أن يُزاح الاسم.
 ///
-/// **`actions` تُرتَّب من الداخل إلى الحافة**، والتطبيق من اليمين، فآخرها أقربها إلى حافة الشاشة
-/// اليسرى: الرصيد في الطرف، والسلة بجانبه.
+/// **السلة انتقلت إلى جانب الدعم، وكلٌّ منهما في دائرة** (طلب المستخدم، 2026-10-20: «اقلب يمين
+/// وخليها واضحة بإنها ايقونة هي وتذاكر بداخل سيركل افتار»). الدائرة بالبرتقالي الخفيف نفسه الذي
+/// تلبسه حبّة الرصيد ودوائر الأدوات في الرئيسية، فتُقرأ الثلاثة أزراراً من عائلةٍ واحدة. والرصيد
+/// بقي وحده في الطرف الأيسر.
 ///
 /// والثلاثة تُدفع (`push`) ولا يُنتقل إليها (`go`): كلٌّ منها مكانٌ يُذهب إليه ويُرجع منه إلى القسم
 /// الذي كان فيه العميل، ولا تبويب لأيٍّ منها.
@@ -38,26 +40,52 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
+  /// قطر الدائرتين، والفراغ بينهما.
+  static double get _circle => 40.w;
+  static double get _gap => 8.w;
+
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final circle = IconButton.styleFrom(
+      backgroundColor: scheme.primary.withValues(alpha: 0.12),
+      foregroundColor: scheme.primary,
+      shape: const CircleBorder(),
+      fixedSize: Size.square(_circle),
+      minimumSize: Size.zero,
+      padding: EdgeInsets.zero,
+      iconSize: 22.sp,
+      // الدائرة هي الزرّ كلّه: هامش اللمس الخفيّ حولها كان سيجعل كلّاً منها ٤٨ عرضاً في الصف.
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+
     return AppBar(
       automaticallyImplyLeading: false,
       centerTitle: true,
-      // الأيقونة نفسها التي كانت على مربع «الدعم»، وعليها ما لم يُقرأ من ردود المتجر. وفي خانة
-      // الـ`leading` بعرضها المعتاد يقع رسمها على بُعد هامش الصفحة من الحافة.
-      leading: IconButton(
-        icon: BadgedIcon(icon: AppIcons.comments, badge: CustomerBadge.support),
-        tooltip: 'الدعم',
-        onPressed: () => context.push(Routes.support),
+      // هامش الصفحة، ثم الدعم في الطرف، ثم السلة في داخله. وحافة الدائرة الخارجية على حافة
+      // بطاقات الصفحة تحتها، كحبّة الرصيد في الطرف الآخر.
+      leadingWidth: 16.w + _circle + _gap + _circle,
+      leading: Padding(
+        padding: EdgeInsetsDirectional.only(start: 16.w),
+        child: Row(
+          children: [
+            // الأيقونة نفسها التي كانت على مربع «الدعم»، وعليها ما لم يُقرأ من ردود المتجر.
+            IconButton(
+              icon: BadgedIcon(icon: AppIcons.comments, badge: CustomerBadge.support),
+              tooltip: 'الدعم',
+              style: circle,
+              onPressed: () => context.push(Routes.support),
+            ),
+            SizedBox(width: _gap),
+            CartButton(style: circle),
+          ],
+        ),
       ),
       title: const _Wordmark(),
       actions: [
-        // **السلة في الداخل لا في الطرف.** لا تُرسم وهي فارغة، فلو كانت في الطرف لدفعت الرصيد
-        // إلى الداخل كلّما امتلأت. هنا تظهر بجانبه ولا يتحرّك شيء.
-        const CartButton(),
         // حافة الحبّة على حافة بطاقات الصفحة تحتها.
         Padding(
-          padding: EdgeInsetsDirectional.only(start: 2.w, end: 16.w),
+          padding: EdgeInsetsDirectional.only(end: 16.w),
           child: const Center(child: WalletBalanceChip()),
         ),
       ],

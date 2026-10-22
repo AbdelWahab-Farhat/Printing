@@ -31,8 +31,8 @@ class _StubBadges implements BadgeRepository {
   Future<Either<Failure, Map<CustomerBadge, int>>> badges() async => Right(_counts);
 }
 
-/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم في طرفه الأيمن، ورصيد
-/// المحفظة في الأيسر والسلة بجانبه حين يكون فيها شيء (طلب المستخدم، 2026-10-16). و«حسابي» نزلت
+/// الشريط العلوي الذي تلبسه الأقسام الأربعة: اسم المتجر في الوسط، والدعم في طرفه الأيمن والسلة
+/// بجانبه، كلٌّ في دائرة، ورصيد المحفظة وحده في الأيسر (طلب المستخدم، 2026-10-20). و«حسابي» نزلت
 /// إلى الشريط السفلي (طلب المستخدم، 2026-09-25).
 ///
 /// **«حسابي» تُدفع فوق الرئيسية ولا يُنتقل إليها.** لم تعد تبويباً، فالطريق إليها طريقٌ يُرجع
@@ -150,10 +150,9 @@ void main() {
     expect(find.byTooltip('الإشعارات'), findsNothing);
   });
 
-  /// الشريط نفسه على الأقسام الأربعة، فالسلة فيه أينما كان العميل. **وتظهر في الداخل، بجانب
-  /// الرصيد،** لا في الطرف: السلة الفارغة لا تُرسم أصلاً، ولو كانت في الطرف لدفعت الرصيد إلى
-  /// الداخل كلّما امتلأت.
-  testWidgets('a basket with something in it joins the bar inside the balance, moving nothing', (
+  /// «اقلب يمين وخليها واضحة بإنها ايقونة هي وتذاكر بداخل سيركل افتار» (طلب المستخدم،
+  /// 2026-10-20): السلة انتقلت من جانب الرصيد إلى جانب الدعم، وكلٌّ منهما في دائرة.
+  testWidgets('the cart sits beside support on the right, and filling it moves nothing', (
     tester,
   ) async {
     // Arrange
@@ -161,19 +160,23 @@ void main() {
     await tester.pumpAndSettle();
     final balance = tester.getRect(find.byTooltip('محفظتي'));
     final support = tester.getRect(find.byTooltip('الدعم'));
+    final cart = tester.getRect(find.byTooltip('سلتك'));
 
     // Act
     sl<CartCubit>().add(line);
     await tester.pumpAndSettle();
 
-    // Assert — في شريطٍ عربي الطرفُ يساراً، فالداخلُ يمينه.
-    expect(find.byTooltip('سلتك'), findsOneWidget);
-    expect(tester.getCenter(find.byTooltip('سلتك')).dx, greaterThan(balance.center.dx));
+    // Assert — الدعم في الطرف، والسلة في داخله، وكلاهما يمين الاسم.
+    final name = tester.getRect(find.text('FlyerX', findRichText: true));
+    expect(cart.left, greaterThan(name.right));
+    expect(cart.right, lessThan(support.left));
+    expect(tester.getRect(find.byTooltip('سلتك')), cart);
     expect(tester.getRect(find.byTooltip('محفظتي')), balance);
     expect(tester.getRect(find.byTooltip('الدعم')), support);
   });
 
-  testWidgets('an empty basket draws no cart in the bar', (tester) async {
+  /// «يليت دوما تظهر السلة» (طلب المستخدم، 2026-10-20).
+  testWidgets('an empty basket still shows the cart', (tester) async {
     // Arrange
     final app = await host();
 
@@ -182,12 +185,35 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.byTooltip('سلتك'), findsNothing);
+    expect(find.byTooltip('سلتك'), findsOneWidget);
   });
 
-  /// الرصيد والسلة في طرف، والدعم في الآخر: الاسم يجب أن يبقى في منتصف الشاشة لا أن يُزاح عنه،
-  /// على أضيق هاتفٍ شائع. **ولهذا انتقل الدعم إلى اليمين** (طلب المستخدم، 2026-10-16): ثلاثتها
-  /// في طرفٍ واحد كانت تزيح الاسم ستين نقطة.
+  testWidgets('support and the cart each sit in a light circle', (tester) async {
+    // Arrange — هاتفٌ بعرض ٣٩٠: في نافذة الاختبار الافتراضية (٨٠٠) تكبر `.w` حتى يقصّ الشريطُ
+    // الدائرةَ بارتفاعه.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final app = await host();
+
+    // Act
+    await tester.pumpWidget(app);
+    await tester.pumpAndSettle();
+
+    // Assert — دائرةٌ مرسومةٌ لا تموّج لمسةٍ وحسب: لها لونٌ وهي ساكنة.
+    for (final tooltip in ['الدعم', 'سلتك']) {
+      final button = find.ancestor(of: find.byTooltip(tooltip), matching: find.byType(IconButton));
+      final style = tester.widget<IconButton>(button).style!;
+      final rect = tester.getRect(button);
+
+      expect(style.shape!.resolve({}), isA<CircleBorder>(), reason: tooltip);
+      expect(style.backgroundColor!.resolve({})!.a, greaterThan(0), reason: tooltip);
+      expect(rect.width, closeTo(rect.height, 0.01), reason: tooltip);
+    }
+  });
+
+  /// الرصيد في طرف، والدعم والسلة في الآخر: الاسم يجب أن يبقى في منتصف الشاشة لا أن يُزاح عنه،
+  /// على أضيق هاتفٍ شائع.
   testWidgets('with the cart in, the name stays in the middle of a narrow phone', (
     tester,
   ) async {
@@ -204,13 +230,14 @@ void main() {
     // Assert
     final name = tester.getRect(find.text('FlyerX', findRichText: true));
     final cart = tester.getRect(find.byTooltip('سلتك'));
+    final balance = tester.getRect(find.byTooltip('محفظتي'));
     expect(name.center.dx, closeTo(180, 0.5));
-    expect(cart.right, lessThanOrEqualTo(name.left));
+    expect(cart.left, greaterThanOrEqualTo(name.right));
+    expect(balance.right, lessThanOrEqualTo(name.left));
   });
 
-  /// «200 د.ل» بحبّةٍ خفيفة في أقصى يسار الشريط، والدعم في أقصى يمينه (طلب المستخدم،
-  /// 2026-10-16).
-  testWidgets('the balance takes the far left, «200 د.ل», and support the far right', (
+  /// «200 د.ل» بحبّةٍ خفيفة وحدها في أقصى يسار الشريط، والدعم في أقصى يمينه.
+  testWidgets('the balance takes the far left alone, «200 د.ل», and support the far right', (
     tester,
   ) async {
     // Arrange
@@ -223,9 +250,10 @@ void main() {
     // Assert
     final chip = tester.getRect(find.byTooltip('محفظتي'));
     final name = tester.getRect(find.text('FlyerX', findRichText: true));
+    final support = tester.getRect(find.byTooltip('الدعم'));
     expect(find.text('200 د.ل'), findsOneWidget);
-    expect(chip.right, lessThan(tester.getRect(find.byTooltip('سلتك')).left));
-    expect(tester.getRect(find.byTooltip('الدعم')).left, greaterThan(name.right));
+    expect(chip.right, lessThan(name.left));
+    expect(support.left, greaterThan(tester.getRect(find.byTooltip('سلتك')).right));
   });
 
   testWidgets('the balance opens «محفظتي», with a way back', (tester) async {

@@ -64,7 +64,8 @@ void main() {
     );
   }
 
-  testWidgets('an empty basket draws nothing in the bar', (tester) async {
+  /// «يليت دوما تظهر السلة» (طلب المستخدم، 2026-10-20): كانت لا تُرسم وهي فارغة.
+  testWidgets('an empty basket still shows the cart, with no count on it', (tester) async {
     // Arrange
     final app = host();
 
@@ -72,8 +73,23 @@ void main() {
     await tester.pumpWidget(app);
     await tester.pumpAndSettle();
 
-    // Assert — أيقونة سلةٍ بلا رقم دعوةٌ للضغط لاكتشاف أنها فارغة.
-    expect(find.byTooltip('سلتك'), findsNothing);
+    // Assert — لا «0»: الشارة تغيب كلها لا أن تعدّ صفراً.
+    final basket = find.byTooltip('سلتك');
+    expect(basket, findsOneWidget);
+    expect(find.descendant(of: basket, matching: find.byType(Text)), findsNothing);
+  });
+
+  testWidgets('tapping an empty basket still opens the basket', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byTooltip('سلتك'));
+    await tester.pumpAndSettle();
+
+    // Assert — وهناك «سلتك فارغة» و«تصفّح المنتجات».
+    expect(find.text('شاشة السلة'), findsOneWidget);
   });
 
   testWidgets('it sits in the top bar, on its left side', (tester) async {

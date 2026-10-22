@@ -141,15 +141,21 @@ class _HeaderSpace extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 12.w),
-                // خانةٌ بمقاسٍ ثابت وإن كانت السلة فارغة فلا تُرسم: يبقى للصورة الطائرة مكانٌ
-                // تهبط فيه، ولا يقفز الاسم حين تظهر السلة أول مرة.
+                // خانةٌ بمقاسٍ ثابت: يبقى للصورة الطائرة مكانٌ تهبط فيه، ولا يقفز الاسم حين
+                // تظهر الشارة على السلة.
                 SizedBox.square(
                   key: cartKey,
                   dimension: 44.w,
                   child: OverflowBox(
                     maxWidth: 56.w,
                     maxHeight: 56.w,
-                    child: CartButton(backdrop: backdrop),
+                    child: CartButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: backdrop,
+                        fixedSize: Size.square(44.w),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                      ),
+                    ),
                   ),
                 ),
               ],
