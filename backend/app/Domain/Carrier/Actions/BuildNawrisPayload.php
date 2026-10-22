@@ -65,6 +65,7 @@ final class BuildNawrisPayload
      * between calls would be an edit nobody asked for.
      *
      * @param  list<Order>  $orders
+     * @param  int  $shipmentOnSender  In **their API's** numbering — see `NawrisParcelTerms::apiValueFor()`.
      * @return array<string, mixed>
      */
     public function forOrders(
@@ -72,6 +73,7 @@ final class BuildNawrisPayload
         string $government,
         ?string $area = null,
         ?string $code = null,
+        int $shipmentOnSender = 0,
     ): array {
         $defaults = (array) ($this->config['defaults'] ?? []);
 
@@ -97,10 +99,12 @@ final class BuildNawrisPayload
 
             'return_amount' => 0.0,
 
-            // **Who pays the courier's own fee. Always the customer, at the door.** Delivery is
-            // no longer part of what we bill — see {@see amountToCollect()} — so there is no
-            // case left in which the fee falls on us, and `0` is also their default.
-            'shipment_on_sender' => 0,
+            // **Who pays the courier's own fee.** We always create with `0`, the customer at the
+            // door — delivery is no longer part of what we bill, see {@see amountToCollect()} —
+            // and `0` is also their default. An edit replays whatever the parcel stands at now:
+            // someone at Nawris may have switched it to us, and every edit re-sends the whole
+            // payload, so sending `0` regardless would quietly put the fee back on the customer.
+            'shipment_on_sender' => $shipmentOnSender,
 
             'can_open' => (int) ($defaults['can_open'] ?? 0),
             'is_measurable' => (int) ($defaults['is_measurable'] ?? 0),

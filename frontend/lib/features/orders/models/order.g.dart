@@ -291,6 +291,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
 
 const _$OrderStatusEnumMap = {
   OrderStatus.requested: 'requested',
+  OrderStatus.requestRejected: 'request_rejected',
   OrderStatus.taken: 'new',
   OrderStatus.shortage: 'shortage',
   OrderStatus.awaitingDeposit: 'awaiting_deposit',
@@ -307,7 +308,6 @@ const _$OrderStatusEnumMap = {
   OrderStatus.returnedOffice: 'returned_office',
   OrderStatus.resend: 'resend',
   OrderStatus.cancelled: 'cancelled',
-  OrderStatus.requestRejected: 'request_rejected',
   OrderStatus.delivered: 'delivered',
   OrderStatus.settled: 'settled',
   OrderStatus.unknown: 'unknown',
@@ -350,6 +350,9 @@ _NawrisParcelRef _$NawrisParcelRefFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const <SharedParcelOrder>[],
+      moneyOutOfSync: json['money_out_of_sync'] as bool? ?? false,
+      nawrisAsks: json['nawris_asks'] as String?,
+      syncError: json['sync_error'] as String?,
     );
 
 Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
@@ -358,6 +361,9 @@ Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
       'bar_code': instance.barCode,
       'is_open': instance.isOpen,
       'shared_with': instance.sharedWith.map((e) => e.toJson()).toList(),
+      'money_out_of_sync': instance.moneyOutOfSync,
+      'nawris_asks': instance.nawrisAsks,
+      'sync_error': instance.syncError,
     };
 
 _SharedParcelOrder _$SharedParcelOrderFromJson(Map<String, dynamic> json) =>

@@ -35,6 +35,18 @@ class NawrisParcelResource extends JsonResource
             'delivery_price_deducted' => (string) $this->delivery_price_deducted,
             'collected_amount' => $this->collected_amount !== null ? (string) $this->collected_amount : null,
 
+            // Their fee and who pays it, as read from the webhook history — null until known.
+            // `shipment_on_sender` is in their webhook numbering: 1 the customer, 2 us.
+            'carrier_fee' => $this->carrier_fee !== null ? (string) $this->carrier_fee : null,
+            'shipment_on_sender' => $this->shipment_on_sender,
+
+            // Their latest door figure from any event, and whether our last change of money
+            // reached them — when it did not, the courier is still collecting the old amount.
+            'door_amount' => $this->door_amount !== null ? (string) $this->door_amount : null,
+            'money_out_of_sync' => $this->moneyOutOfSync(),
+            'sync_failed_at' => $this->sync_failed_at?->toIso8601String(),
+            'sync_error' => $this->sync_error,
+
             // Their integer and their prose, both — the mapping is written against the first and
             // support reads the second.
             'remote_status_code' => $this->remote_status_code,

@@ -25,7 +25,8 @@ use Tests\TestCase;
  * sat outside the books. Reimplementing the mapping without these is reimplementing the incidents.
  *
  * The arithmetic throughout: an order of 120 — 100 of bags and 20 of delivery. We ask Nawris for
- * 100 and they collect 118 at the door, the extra 18 being their own fee.
+ * 100 and they collect 118 at the door, the extra 18 being their own fee — which they told us in
+ * an earlier event, as they do for every parcel. See `NawrisCarrierFeeTest` for the fee itself.
  *
  * Arrange - Act - Assert throughout.
  */
@@ -93,7 +94,22 @@ class NawrisStatusMappingTest extends TestCase
             'amount_to_collect' => '100.00',
         ]);
 
+        // The parcel's earlier word from them, which is where its fee is read from: 118 at the
+        // door against our 100.
+        NawrisWebhookEvent::factory()->processed()->create([
+            'nawris_parcel_id' => $parcel->id,
+            'payload' => ['remote_order_id' => 'ref-1', 'order_code' => 'CODE-1', 'to_status_code' => 4, 'order_price' => 118],
+            'status_code' => 4,
+            'received_at' => now()->subDay(),
+        ]);
+
         return [$order, $parcel];
+    }
+
+    /** The event the test just sent — the parcel's earlier one is always there too. */
+    private function lastEvent(): NawrisWebhookEvent
+    {
+        return NawrisWebhookEvent::query()->latest('id')->firstOrFail();
     }
 
     // ── the happy path, and the money ────────────────────────────────────────────────────
@@ -233,7 +249,7 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertSame(OrderStatus::OutForDelivery, $order->status);
         $this->assertSame('0.00', (string) $order->paid_amount);
         $this->assertTrue($parcel->fresh()->hasOpenConflict());
-        $this->assertNotNull(NawrisWebhookEvent::query()->sole()->error);
+        $this->assertNotNull($this->lastEvent()->error);
     }
 
     public function test_a_different_code_with_a_matching_amount_is_let_through(): void
@@ -278,7 +294,7 @@ class NawrisStatusMappingTest extends TestCase
 
         // Assert — the order moved, and the alert is on the event.
         $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
-        $this->assertStringContainsString('نقص', (string) NawrisWebhookEvent::query()->sole()->error);
+        $this->assertStringContainsString('نقص', (string) $this->lastEvent()->error);
     }
 
     public function test_the_carrier_fee_on_top_is_not_a_discrepancy(): void
@@ -292,7 +308,7 @@ class NawrisStatusMappingTest extends TestCase
         $this->send($this->body(['order_price' => '118.00']));
 
         // Assert
-        $this->assertNull(NawrisWebhookEvent::query()->sole()->error);
+        $this->assertNull($this->lastEvent()->error);
         $this->assertSame('100.00', (string) $order->fresh()->paid_amount);
     }
 
@@ -310,7 +326,7 @@ class NawrisStatusMappingTest extends TestCase
 
         // Assert
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
-        $this->assertStringContainsString('غير مسموحة', (string) NawrisWebhookEvent::query()->sole()->error);
+        $this->assertStringContainsString('غير مسموحة', (string) $this->lastEvent()->error);
     }
 
     public function test_a_parked_event_still_keeps_everything_it_carried(): void
@@ -326,7 +342,7 @@ class NawrisStatusMappingTest extends TestCase
         $parcel->refresh();
         $this->assertSame(6, $parcel->remote_status_code);
         $this->assertSame('راجع', $parcel->remote_status_text);
-        $this->assertNotNull(NawrisWebhookEvent::query()->sole()->payload);
+        $this->assertNotNull($this->lastEvent()->payload);
     }
 
     public function test_the_return_chain_walks_one_link_at_a_time(): void
@@ -362,7 +378,7 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
         $this->assertSame(99, $parcel->fresh()->remote_status_code);
         $this->assertSame('شيء ما', $parcel->fresh()->remote_status_text);
-        $this->assertStringContainsString('غير معروف', (string) NawrisWebhookEvent::query()->sole()->error);
+        $this->assertStringContainsString('غير معروف', (string) $this->lastEvent()->error);
     }
 
     public function test_code_four_puts_a_lodged_order_on_the_road(): void
@@ -388,7 +404,7 @@ class NawrisStatusMappingTest extends TestCase
 
         // Assert
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
-        $this->assertNull(NawrisWebhookEvent::query()->sole()->error);
+        $this->assertNull($this->lastEvent()->error);
     }
 
     public function test_code_four_with_a_return_reason_is_still_not_a_return(): void
@@ -458,7 +474,7 @@ class NawrisStatusMappingTest extends TestCase
 
         // Assert
         $this->assertSame(OrderStatus::OutForDelivery, $order->fresh()->status);
-        $this->assertStringContainsString('نقلة غير مسموحة', (string) NawrisWebhookEvent::query()->sole()->error);
+        $this->assertStringContainsString('نقلة غير مسموحة', (string) $this->lastEvent()->error);
     }
 
     public function test_their_settlement_does_not_settle_our_order(): void
@@ -487,7 +503,7 @@ class NawrisStatusMappingTest extends TestCase
         // Assert
         $this->assertSame(8, $parcel->fresh()->remote_status_code);
         $this->assertSame('تم التسوية', $parcel->fresh()->remote_status_text);
-        $this->assertNull(NawrisWebhookEvent::query()->sole()->error);
+        $this->assertNull($this->lastEvent()->error);
     }
 
     public function test_a_write_off_cancels_even_though_the_webhook_carries_no_reason(): void

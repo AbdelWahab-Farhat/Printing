@@ -1304,7 +1304,11 @@ mixin _$NawrisParcelRef {
 /// What the screen reads to say «طرد مشترك مع …», and to warn that deleting, unlinking or
 /// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
 /// parcel as a whole, so every carrier action on it is an action on all of them.
-@JsonKey(name: 'shared_with') List<SharedParcelOrder> get sharedWith;
+@JsonKey(name: 'shared_with') List<SharedParcelOrder> get sharedWith;/// **The last change to the order's money never reached Nawris** — the courier is still
+/// collecting [nawrisAsks] (ours, without their fee). The red line on the order, until a
+/// retry they accept or a correction at their end puts it right.
+@JsonKey(name: 'money_out_of_sync') bool get moneyOutOfSync;@JsonKey(name: 'nawris_asks') String? get nawrisAsks;/// Their refusal, in their words.
+@JsonKey(name: 'sync_error') String? get syncError;
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1317,16 +1321,16 @@ $NawrisParcelRefCopyWith<NawrisParcelRef> get copyWith => _$NawrisParcelRefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other.sharedWith, sharedWith));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other.sharedWith, sharedWith)&&(identical(other.moneyOutOfSync, moneyOutOfSync) || other.moneyOutOfSync == moneyOutOfSync)&&(identical(other.nawrisAsks, nawrisAsks) || other.nawrisAsks == nawrisAsks)&&(identical(other.syncError, syncError) || other.syncError == syncError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(sharedWith));
+int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(sharedWith),moneyOutOfSync,nawrisAsks,syncError);
 
 @override
 String toString() {
-  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith)';
+  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith, moneyOutOfSync: $moneyOutOfSync, nawrisAsks: $nawrisAsks, syncError: $syncError)';
 }
 
 
@@ -1337,7 +1341,7 @@ abstract mixin class $NawrisParcelRefCopyWith<$Res>  {
   factory $NawrisParcelRefCopyWith(NawrisParcelRef value, $Res Function(NawrisParcelRef) _then) = _$NawrisParcelRefCopyWithImpl;
 @useResult
 $Res call({
- String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith
+ String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith,@JsonKey(name: 'money_out_of_sync') bool moneyOutOfSync,@JsonKey(name: 'nawris_asks') String? nawrisAsks,@JsonKey(name: 'sync_error') String? syncError
 });
 
 
@@ -1354,13 +1358,16 @@ class _$NawrisParcelRefCopyWithImpl<$Res>
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,Object? moneyOutOfSync = null,Object? nawrisAsks = freezed,Object? syncError = freezed,}) {
   return _then(_self.copyWith(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,barCode: freezed == barCode ? _self.barCode : barCode // ignore: cast_nullable_to_non_nullable
 as String?,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,sharedWith: null == sharedWith ? _self.sharedWith : sharedWith // ignore: cast_nullable_to_non_nullable
-as List<SharedParcelOrder>,
+as List<SharedParcelOrder>,moneyOutOfSync: null == moneyOutOfSync ? _self.moneyOutOfSync : moneyOutOfSync // ignore: cast_nullable_to_non_nullable
+as bool,nawrisAsks: freezed == nawrisAsks ? _self.nawrisAsks : nawrisAsks // ignore: cast_nullable_to_non_nullable
+as String?,syncError: freezed == syncError ? _self.syncError : syncError // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -1445,10 +1452,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith, @JsonKey(name: 'money_out_of_sync')  bool moneyOutOfSync, @JsonKey(name: 'nawris_asks')  String? nawrisAsks, @JsonKey(name: 'sync_error')  String? syncError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef() when $default != null:
-return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith,_that.moneyOutOfSync,_that.nawrisAsks,_that.syncError);case _:
   return orElse();
 
 }
@@ -1466,10 +1473,10 @@ return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith, @JsonKey(name: 'money_out_of_sync')  bool moneyOutOfSync, @JsonKey(name: 'nawris_asks')  String? nawrisAsks, @JsonKey(name: 'sync_error')  String? syncError)  $default,) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef():
-return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith,_that.moneyOutOfSync,_that.nawrisAsks,_that.syncError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1486,10 +1493,10 @@ return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code, @JsonKey(name: 'bar_code')  String? barCode, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'shared_with')  List<SharedParcelOrder> sharedWith, @JsonKey(name: 'money_out_of_sync')  bool moneyOutOfSync, @JsonKey(name: 'nawris_asks')  String? nawrisAsks, @JsonKey(name: 'sync_error')  String? syncError)?  $default,) {final _that = this;
 switch (_that) {
 case _NawrisParcelRef() when $default != null:
-return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
+return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith,_that.moneyOutOfSync,_that.nawrisAsks,_that.syncError);case _:
   return null;
 
 }
@@ -1501,7 +1508,7 @@ return $default(_that.code,_that.barCode,_that.isOpen,_that.sharedWith);case _:
 @JsonSerializable()
 
 class _NawrisParcelRef implements NawrisParcelRef {
-  const _NawrisParcelRef({required this.code, @JsonKey(name: 'bar_code') this.barCode, @JsonKey(name: 'is_open') this.isOpen = false, @JsonKey(name: 'shared_with') final  List<SharedParcelOrder> sharedWith = const <SharedParcelOrder>[]}): _sharedWith = sharedWith;
+  const _NawrisParcelRef({required this.code, @JsonKey(name: 'bar_code') this.barCode, @JsonKey(name: 'is_open') this.isOpen = false, @JsonKey(name: 'shared_with') final  List<SharedParcelOrder> sharedWith = const <SharedParcelOrder>[], @JsonKey(name: 'money_out_of_sync') this.moneyOutOfSync = false, @JsonKey(name: 'nawris_asks') this.nawrisAsks, @JsonKey(name: 'sync_error') this.syncError}): _sharedWith = sharedWith;
   factory _NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
 
 /// Their handle on the parcel, and what a customer is read over the phone.
@@ -1528,6 +1535,13 @@ class _NawrisParcelRef implements NawrisParcelRef {
   return EqualUnmodifiableListView(_sharedWith);
 }
 
+/// **The last change to the order's money never reached Nawris** — the courier is still
+/// collecting [nawrisAsks] (ours, without their fee). The red line on the order, until a
+/// retry they accept or a correction at their end puts it right.
+@override@JsonKey(name: 'money_out_of_sync') final  bool moneyOutOfSync;
+@override@JsonKey(name: 'nawris_asks') final  String? nawrisAsks;
+/// Their refusal, in their words.
+@override@JsonKey(name: 'sync_error') final  String? syncError;
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
@@ -1542,16 +1556,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other._sharedWith, _sharedWith));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcelRef&&(identical(other.code, code) || other.code == code)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&const DeepCollectionEquality().equals(other._sharedWith, _sharedWith)&&(identical(other.moneyOutOfSync, moneyOutOfSync) || other.moneyOutOfSync == moneyOutOfSync)&&(identical(other.nawrisAsks, nawrisAsks) || other.nawrisAsks == nawrisAsks)&&(identical(other.syncError, syncError) || other.syncError == syncError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(_sharedWith));
+int get hashCode => Object.hash(runtimeType,code,barCode,isOpen,const DeepCollectionEquality().hash(_sharedWith),moneyOutOfSync,nawrisAsks,syncError);
 
 @override
 String toString() {
-  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith)';
+  return 'NawrisParcelRef(code: $code, barCode: $barCode, isOpen: $isOpen, sharedWith: $sharedWith, moneyOutOfSync: $moneyOutOfSync, nawrisAsks: $nawrisAsks, syncError: $syncError)';
 }
 
 
@@ -1562,7 +1576,7 @@ abstract mixin class _$NawrisParcelRefCopyWith<$Res> implements $NawrisParcelRef
   factory _$NawrisParcelRefCopyWith(_NawrisParcelRef value, $Res Function(_NawrisParcelRef) _then) = __$NawrisParcelRefCopyWithImpl;
 @override @useResult
 $Res call({
- String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith
+ String code,@JsonKey(name: 'bar_code') String? barCode,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'shared_with') List<SharedParcelOrder> sharedWith,@JsonKey(name: 'money_out_of_sync') bool moneyOutOfSync,@JsonKey(name: 'nawris_asks') String? nawrisAsks,@JsonKey(name: 'sync_error') String? syncError
 });
 
 
@@ -1579,13 +1593,16 @@ class __$NawrisParcelRefCopyWithImpl<$Res>
 
 /// Create a copy of NawrisParcelRef
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? barCode = freezed,Object? isOpen = null,Object? sharedWith = null,Object? moneyOutOfSync = null,Object? nawrisAsks = freezed,Object? syncError = freezed,}) {
   return _then(_NawrisParcelRef(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,barCode: freezed == barCode ? _self.barCode : barCode // ignore: cast_nullable_to_non_nullable
 as String?,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,sharedWith: null == sharedWith ? _self._sharedWith : sharedWith // ignore: cast_nullable_to_non_nullable
-as List<SharedParcelOrder>,
+as List<SharedParcelOrder>,moneyOutOfSync: null == moneyOutOfSync ? _self.moneyOutOfSync : moneyOutOfSync // ignore: cast_nullable_to_non_nullable
+as bool,nawrisAsks: freezed == nawrisAsks ? _self.nawrisAsks : nawrisAsks // ignore: cast_nullable_to_non_nullable
+as String?,syncError: freezed == syncError ? _self.syncError : syncError // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

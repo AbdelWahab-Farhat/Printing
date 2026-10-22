@@ -270,10 +270,14 @@ _OrderLedger _$OrderLedgerFromJson(Map<String, dynamic> json) => _OrderLedger(
       .map((e) => OrderPayment.fromJson(e as Map<String, dynamic>))
       .toList(),
   summary: PaymentSummary.fromJson(json['summary'] as Map<String, dynamic>),
+  carrier: json['carrier'] == null
+      ? null
+      : CarrierMoneyNotice.fromJson(json['carrier'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$OrderLedgerToJson(_OrderLedger instance) =>
     <String, dynamic>{
       'payments': instance.payments.map((e) => e.toJson()).toList(),
       'summary': instance.summary.toJson(),
+      'carrier': instance.carrier?.toJson(),
     };

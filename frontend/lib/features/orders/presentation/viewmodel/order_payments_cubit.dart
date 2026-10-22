@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/uuid.dart';
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -223,6 +224,19 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     return result.fold((failure) => failure, (_) => null);
   }
 
+  /// What Nawris said about the last write, when it did not take it — handed to the page once.
+  ///
+  /// The money is saved either way; this is the courier still collecting the old amount, which
+  /// the person who just took the money has to hear about while they can still ring them.
+  CarrierMoneySync? takeCarrierWarning() {
+    final carrier = _carrier;
+    _carrier = null;
+
+    return carrier?.warning == null ? null : carrier;
+  }
+
+  CarrierMoneySync? _carrier;
+
   /// The shape every write shares: mark the screen busy, run it, re-read, report.
   ///
   /// **Re-read rather than appending what came back.** A payment could be appended safely; a
@@ -236,6 +250,8 @@ class OrderPaymentsCubit extends Cubit<OrderPaymentsState> {
     final result = await write();
 
     if (isClosed) return null;
+
+    _carrier = result.fold((_) => null, (written) => written.carrier);
 
     await load();
 

@@ -613,6 +613,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('carrier/parcels/{parcel}/resolve-conflict', [CarrierController::class, 'resolveConflict'])
             ->middleware('can:carrier.manage')->name('carrier.resolve-conflict');
 
+        // Sends the order's money to Nawris again, for a parcel whose last edit they refused.
+        Route::post('carrier/orders/{order}/sync-money', [CarrierController::class, 'syncMoney'])
+            ->middleware('can:carrier.manage')->name('carrier.sync-money');
+
         // ── an order's money ────────────────────────────────────────────────────────────
         // A ledger, not a balance. There is deliberately no PUT and no DELETE: an entry is
         // written once, and a mistake is undone by writing a second entry beside it — which is

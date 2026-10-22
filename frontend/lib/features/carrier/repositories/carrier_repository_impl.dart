@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
 import 'package:dio/dio.dart';
@@ -39,6 +40,17 @@ class CarrierRepositoryImpl implements CarrierRepository {
   @override
   Future<Either<Failure, NawrisParcel?>> unlink(int orderId) =>
       _letGo(CarrierEndpoints.unlink(orderId));
+
+  @override
+  Future<Either<Failure, CarrierMoneySync?>> syncMoney(int orderId) {
+    return safeRequest<CarrierMoneySync?>(
+      () => _dio.post(CarrierEndpoints.syncMoney(orderId)),
+      // `data: null` is «لا توجد شحنة مفتوحة» — an answer, like [_letGo]'s.
+      parse: (data) => data == null
+          ? null
+          : CarrierMoneySync.fromJson(data as Map<String, dynamic>),
+    );
+  }
 
   /// The three that answer with a parcel **or** with nothing.
   ///

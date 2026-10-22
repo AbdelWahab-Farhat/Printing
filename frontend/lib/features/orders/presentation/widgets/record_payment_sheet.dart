@@ -11,6 +11,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/receipt_rules.dart';
+import 'package:dayaa/features/orders/presentation/widgets/carrier_notice_box.dart';
 import 'package:dayaa/features/orders/presentation/widgets/overpayment_confirmation.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,7 @@ Future<PaymentDraft?> showRecordPaymentSheet({
   required String remainingAmount,
   required String paidAmount,
   int? orderId,
+  String? carrierNotice,
 }) {
   return showModalBottomSheet<PaymentDraft>(
     context: context,
@@ -111,6 +113,7 @@ Future<PaymentDraft?> showRecordPaymentSheet({
       remainingAmount: remainingAmount,
       paidAmount: paidAmount,
       orderId: orderId,
+      carrierNotice: carrierNotice,
     ),
   );
 }
@@ -121,11 +124,15 @@ class _RecordPaymentSheet extends StatefulWidget {
     required this.remainingAmount,
     required this.paidAmount,
     this.orderId,
+    this.carrierNotice,
   });
 
   final PaymentDirection direction;
   final String remainingAmount;
   final String paidAmount;
+
+  /// «الطلبية لدى نورس…» — while a parcel is out. See [CarrierNoticeBox].
+  final String? carrierNotice;
 
   /// به يسمّي «تلقائي» خزنةَ مكتب الاستلام ما دامت الطلبية تنتظر فيه (§١٩).
   final int? orderId;
@@ -232,6 +239,10 @@ class _RecordPaymentSheetState extends State<_RecordPaymentSheet> {
                       : 'الردّ حركة نقدية حقيقية — لتصحيح دفعة مسجّلة بالخطأ استعمل «إلغاء الدفعة»',
                   style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
+                if (widget.carrierNotice case final notice?) ...[
+                  SizedBox(height: 12.h),
+                  CarrierNoticeBox(message: notice),
+                ],
                 SizedBox(height: 20.h),
 
                 AppTextField(

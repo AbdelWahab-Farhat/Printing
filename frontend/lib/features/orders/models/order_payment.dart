@@ -1,3 +1,4 @@
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'order_payment.freezed.dart';
@@ -463,6 +464,10 @@ abstract class OrderLedger with _$OrderLedger {
   const factory OrderLedger({
     required List<OrderPayment> payments,
     required PaymentSummary summary,
+
+    /// The parcel out with Nawris, for the warning before money is taken — null when nothing
+    /// is out, which is most of the time.
+    CarrierMoneyNotice? carrier,
   }) = _OrderLedger;
 
   factory OrderLedger.fromJson(Map<String, dynamic> json) => _$OrderLedgerFromJson(json);
