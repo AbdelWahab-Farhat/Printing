@@ -93,6 +93,26 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
     super.dispose();
   }
 
+  /// **رصيدُ الجيب الذي تأخذ منه الحركة** — ما يضعه «الكل»، وهو نفسُه سقفُ الخادم
+  /// (`RecordWalletEntry::guardCeiling`). الإيداعُ لا سقفَ له، والجيبُ الفارغ لا «كلَّ» فيه.
+  String? get _ceiling {
+    final wallet = widget.investor.balances?.wallet;
+    if (wallet == null) return null;
+
+    final pot = switch (_action) {
+      WalletAction.withdrawal => wallet.capital,
+      WalletAction.profitWithdrawal || WalletAction.profitCapitalisation => wallet.profit,
+      WalletAction.deposit => null,
+    };
+
+    return pot != null && (double.tryParse(pot) ?? 0) > 0 ? pot : null;
+  }
+
+  /// رفضُ الخادم تحت المبلغ يخصّ الرقمَ الذي أُرسل؛ فإذا تغيّر الرقم سقط معه.
+  void _amountChanged() {
+    if (_refusal?.fieldError('amount') != null) setState(() => _refusal = null);
+  }
+
   /// **Whether the money is actually there is the server's answer**, because it depends on rows
   /// this screen may not have seen — a colleague recording a withdrawal at the same counter one
   /// second earlier. This checks the shape and nothing else.
@@ -260,6 +280,17 @@ class _WalletEntryFormState extends State<_WalletEntryForm> {
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
                 errorText: _refusal?.fieldError('amount'),
                 validator: _validateAmount,
+                onChanged: (_) => _amountChanged(),
+                suffix: switch (_ceiling) {
+                  final all? => TextButton(
+                    onPressed: () {
+                      _amount.text = all;
+                      _amountChanged();
+                    },
+                    child: const Text('الكل'),
+                  ),
+                  null => null,
+                },
               ),
               SizedBox(height: 16.h),
 
