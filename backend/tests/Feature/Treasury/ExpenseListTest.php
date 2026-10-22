@@ -7,6 +7,7 @@ namespace Tests\Feature\Treasury;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
+use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
@@ -338,6 +339,13 @@ class ExpenseListTest extends TestCase
             'nawris_parcel_id' => $parcel->id,
             'order_id' => $order->id,
             'amount_to_collect' => $collect,
+        ]);
+
+        // Their earlier event, which their fee is read from — none here, so the door amount is ours.
+        NawrisWebhookEvent::factory()->processed()->create([
+            'nawris_parcel_id' => $parcel->id,
+            'payload' => ['to_status_code' => 4, 'order_price' => $collect],
+            'status_code' => 4,
         ]);
 
         $this->withHeaders(['Authorization' => 'Bearer '.self::SECRET])->postJson('/api/v1/webhooks/nawris', [

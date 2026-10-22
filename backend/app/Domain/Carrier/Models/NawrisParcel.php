@@ -46,6 +46,10 @@ class NawrisParcel extends Model
             'amount_to_collect' => 'decimal:2',
             'delivery_price_deducted' => 'decimal:2',
             'collected_amount' => 'decimal:2',
+            'carrier_fee' => 'decimal:2',
+            'shipment_on_sender' => 'integer',
+            'sync_failed_at' => 'datetime',
+            'door_amount' => 'decimal:2',
             'remote_status_code' => 'integer',
             'conflict_raised_at' => 'datetime',
             'conflict_resolved_at' => 'datetime',
@@ -104,6 +108,15 @@ class NawrisParcel extends Model
     public function isOpen(): bool
     {
         return $this->closed_at === null;
+    }
+
+    /**
+     * The last change to this parcel's money never reached Nawris, and nothing has put it right
+     * since — the courier is still collecting the old amount.
+     */
+    public function moneyOutOfSync(): bool
+    {
+        return $this->sync_failed_at !== null;
     }
 
     /** A conflict was raised on this parcel and nobody has resolved it yet. */

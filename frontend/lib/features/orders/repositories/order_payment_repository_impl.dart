@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/repositories/order_payment_repository.dart';
@@ -302,6 +303,10 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     return PaymentResult(
       payment: OrderPayment.fromJson(body['payment'] as Map<String, dynamic>),
       summary: PaymentSummary.fromJson(body['summary'] as Map<String, dynamic>),
+      carrier: switch (body['carrier']) {
+        final Map<String, dynamic> carrier => CarrierMoneySync.fromJson(carrier),
+        _ => null,
+      },
     );
   }
 }

@@ -11,6 +11,7 @@ use App\Domain\Carrier\Exceptions\OrderCannotBeDispatchedToNawris;
 use App\Domain\Carrier\Exceptions\OrdersCannotShareAParcel;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
+use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Delivery\Models\City;
@@ -422,7 +423,13 @@ class NawrisSharedParcelTest extends TestCase
     public function test_a_delivery_pays_each_order_its_own_share(): void
     {
         // Arrange — the parcel's 160 paid to each would credit both orders with the whole parcel.
+        // Their earlier event says 175 at the door, so their fee is 15 and the parcel came back whole.
         [$first, $second, $parcel] = $this->sharedParcel();
+        NawrisWebhookEvent::factory()->processed()->create([
+            'nawris_parcel_id' => $parcel->id,
+            'payload' => ['remote_order_id' => 'ref-1', 'order_code' => 'CODE-1', 'to_status_code' => 4, 'order_price' => 175],
+            'status_code' => 4,
+        ]);
 
         // Act
         $this->withHeaders(['Authorization' => 'Bearer '.self::SECRET])->postJson('/api/v1/webhooks/nawris', [

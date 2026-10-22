@@ -58,6 +58,7 @@ import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
 import 'package:dayaa/features/carrier/repositories/carrier_repository_impl.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
+import 'package:dayaa/features/carrier/usecases/sync_carrier_money.dart';
 import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
 import 'package:dayaa/features/cities/presentation/viewmodel/city_regions_cubit.dart';
 import 'package:dayaa/features/cities/repositories/city_repository.dart';
@@ -1114,6 +1115,8 @@ abstract final class Injector {
       ..registerLazySingleton<UnlinkCarrierShipment>(
         () => UnlinkCarrierShipment(sl<CarrierRepository>()),
       )
+      // The red line's retry: the order's money to Nawris again, after they refused it.
+      ..registerLazySingleton<SyncCarrierMoney>(() => SyncCarrierMoney(sl<CarrierRepository>()))
       // An order's money. Its own repository rather than four more methods on the one above,
       // because it is guarded by its own permissions: a screen allowed to read an order is not
       // thereby allowed to read what the customer has paid.

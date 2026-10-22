@@ -17,6 +17,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
+import 'package:dayaa/features/carrier/usecases/sync_carrier_money.dart';
 import 'package:dayaa/features/investors/presentation/widgets/order_investors_section.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
@@ -206,6 +207,10 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               onUnlinkShipment: sl<Session>().can(AppPermission.manageCarrierParcels)
                   ? _unlinkShipment
                   : null,
+              // «إعادة إبلاغ نورس» on the red line — the same grant as every other carrier act.
+              onSyncCarrierMoney: sl<Session>().can(AppPermission.manageCarrierParcels)
+                  ? _syncCarrierMoney
+                  : null,
               // **Not gated here, and that is the point.** Whether the undo is on offer is
               // three conditions the server already answered — cancelled, granted, and a
               // timeline that records what it was cancelled from — and it sent the answer as
@@ -338,6 +343,46 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     done: 'فُكّ الربط — يمكن إرسالها من جديد',
     nothing: 'لا توجد شحنة مرتبطة بهذه الطلبية',
   );
+
+  /// «إعادة إبلاغ نورس» — the order's money to Nawris again, after they refused a change.
+  ///
+  /// **Not asked first**: it sends what the order already says, and sending it twice is
+  /// harmless. A second refusal is an answer, said in a dialog somebody has to dismiss — the
+  /// courier is still collecting the old amount, and the screen re-reads either way so the red
+  /// line goes or stays with the truth.
+  Future<void> _syncCarrierMoney() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final result = await sl<SyncCarrierMoney>()(order.id);
+
+    if (!mounted) return;
+
+    await result.fold(
+      (failure) async => context.showFailure(failure),
+      (sync) async {
+        if (sync == null) {
+          context.showSuccess('لا توجد شحنة مفتوحة لهذه الطلبية');
+        } else if (sync.told) {
+          context.showSuccess('أُبلغت نورس بالمبلغ — ${sync.shouldAsk.grouped}');
+        } else {
+          await showCustomDialog(
+            context: context,
+            title: 'لم تقبل نورس التعديل',
+            description: sync.warning ?? 'ما زال المندوب يحصّل المبلغ القديم.',
+            confirmLabel: 'حسناً',
+            cancelLabel: null,
+            severity: DialogSeverity.warning,
+          );
+        }
+      },
+    );
+
+    if (!mounted) return;
+
+    await cubit.load();
+  }
 
   /// The shape both releases share: ask, send, say which of the two things happened.
   ///
@@ -909,6 +954,7 @@ class _Body extends StatelessWidget {
     required this.onResendShipment,
     required this.onDeleteShipment,
     required this.onUnlinkShipment,
+    required this.onSyncCarrierMoney,
     required this.onReinstate,
     required this.onConfirmReadyMessage,
     required this.onConfirmDeposit,
@@ -949,6 +995,9 @@ class _Body extends StatelessWidget {
   /// The two ways of taking a hand-over back. Same grant, same three conditions.
   final Future<void> Function()? onDeleteShipment;
   final Future<void> Function()? onUnlinkShipment;
+
+  /// Null without `carrier.manage`. Offered only on the red line — see [_CarrierOutOfSync].
+  final Future<void> Function()? onSyncCarrierMoney;
 
   /// Null without `logs.view`.
   final VoidCallback? onOpenLog;
@@ -1130,7 +1179,7 @@ class _Body extends StatelessWidget {
               // «تراجع عن التسليم» و«تراجع عن التسوية» على الزر العائم، لا هنا — انظر [_Actions].
               if (_hasDestinationDetails) ...[
                 SizedBox(height: 16.h),
-                _Destination(order: order),
+                _Destination(order: order, onSyncCarrierMoney: onSyncCarrierMoney),
               ],
               // **The other half of the deep link.** A shortage names its order and taps
               // through to it; this is the way back — the النواقص list, already narrowed to
@@ -1533,9 +1582,12 @@ class _Actions extends StatelessWidget {
 /// has it. Nor is the note, which has its own button up there — a paragraph between the address
 /// and the tracking number was read by nobody and scrolled past by everybody.
 class _Destination extends StatelessWidget {
-  const _Destination({required this.order});
+  const _Destination({required this.order, this.onSyncCarrierMoney});
 
   final Order order;
+
+  /// «إعادة إبلاغ نورس» — null without `carrier.manage`.
+  final Future<void> Function()? onSyncCarrierMoney;
 
   @override
   Widget build(BuildContext context) {
@@ -1559,9 +1611,69 @@ class _Destination extends StatelessWidget {
           if (order.nawrisParcel case final parcel?) ...[
             _Row(icon: AppIcons.tag, label: 'كود النورس', value: parcel.code),
             if (parcel.sharedWith.isNotEmpty) _SharedParcel(orders: parcel.sharedWith),
+            if (parcel.moneyOutOfSync)
+              _CarrierOutOfSync(parcel: parcel, onRetry: onSyncCarrierMoney),
           ],
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
+        ],
+      ),
+    );
+  }
+}
+
+/// «لم تُبلَّغ نورس» — the red line under the parcel's code.
+///
+/// **The courier is still collecting the old amount.** A change to this order's money after the
+/// parcel left never reached Nawris, so the customer may be asked at the door for money they
+/// already paid. The line stays until a retry they accept, or a correction at their end that their
+/// webhook reports, puts it right — and it names the figure they hold, because that is what
+/// somebody has to say to the courier.
+class _CarrierOutOfSync extends StatelessWidget {
+  const _CarrierOutOfSync({required this.parcel, this.onRetry});
+
+  final NawrisParcelRef parcel;
+  final Future<void> Function()? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final asks = parcel.nawrisAsks;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 8.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            asks == null
+                ? 'لم تُبلَّغ نورس بآخر تغيير في مبلغ الطلبية — المندوب يحصّل المبلغ القديم'
+                : 'لم تُبلَّغ نورس بآخر تغيير في مبلغ الطلبية — ما زالت تطلب ${asks.grouped} (دون أجرتها)',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: scheme.onErrorContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (parcel.syncError case final reason?) ...[
+            SizedBox(height: 4.h),
+            Text(
+              'ردّ نورس: $reason',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
+            ),
+          ],
+          if (onRetry case final retry?) ...[
+            SizedBox(height: 8.h),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(onPressed: retry, child: const Text('إعادة إبلاغ نورس')),
+            ),
+          ],
         ],
       ),
     );

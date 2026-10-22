@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\Actions;
 
+use App\Domain\Carrier\DTOs\NawrisParcelTerms;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
@@ -55,6 +56,8 @@ final class EditNawrisParcel
             $parcel->government,
             $parcel->area,
             $parcel->code,
+            // Who pays their fee, as their webhooks last said — never reset by an edit of ours.
+            NawrisParcelTerms::apiValueFor($parcel->shipment_on_sender),
         );
 
         // The reference never changes: changing it detaches the shipment from this record.
@@ -62,12 +65,36 @@ final class EditNawrisParcel
 
         $this->client->editOrder($body);
 
+        return $this->recordAccepted($parcel);
+    }
+
+    /**
+     * What Nawris now holds, written on our side: the parcel's figure, each order's share, and an
+     * older refusal put right.
+     *
+     * After a successful edit — and when their webhook shows someone at Nawris corrected the amount
+     * by hand to exactly what we would have sent, which is the same fact arrived by another road.
+     */
+    public function recordAccepted(NawrisParcel $parcel): NawrisParcel
+    {
+        $parcel->load('orders');
+
+        $orders = $parcel->orders->sortBy(fn (Order $order): int => (int) $order->getKey())->values()->all();
+
+        if ($orders === []) {
+            return $parcel;
+        }
+
         $amount = $this->payload->amountToCollectFor($orders);
 
         return DB::transaction(function () use ($parcel, $orders, $amount): NawrisParcel {
             // Rewritten on every successful edit, so what we believe they are collecting stays
             // what we actually asked for.
-            $parcel->forceFill(['amount_to_collect' => $amount])->save();
+            $parcel->forceFill([
+                'amount_to_collect' => $amount,
+                'sync_failed_at' => null,
+                'sync_error' => null,
+            ])->save();
 
             // Each order's own share, one row at a time: a mass update fires no model events, and
             // every row here is audited.

@@ -8,9 +8,11 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/carrier_notice_box.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/pay_from_wallet_dialog.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_entry_card.dart';
@@ -119,6 +121,7 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       remainingAmount: summary.remainingAmount,
       paidAmount: summary.paidAmount,
       orderId: widget.orderId,
+      carrierNotice: cubit.state.ledger?.carrier?.message,
     );
 
     if (draft == null || !mounted) return;
@@ -152,10 +155,32 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
       return;
     }
 
+    await _warnAboutCarrier(cubit);
+
+    if (!mounted) return;
+
     context.handBack(true);
     context.showSuccess(
       direction == PaymentDirection.incoming ? 'تم تسجيل الدفعة' : 'تم تسجيل الردّ',
     );
+  }
+
+  /// Nawris did not take the change: said in a dialog somebody has to dismiss, not a snackbar
+  /// that fades. The money is saved — but the courier is still collecting the old amount, and the
+  /// person who just took the money is the one who can still ring them.
+  Future<void> _warnAboutCarrier(OrderPaymentsCubit cubit) async {
+    final carrier = cubit.takeCarrierWarning();
+
+    if (carrier?.warning case final warning?) {
+      await showCustomDialog(
+        context: context,
+        title: 'لم تُبلَّغ نورس',
+        description: warning,
+        confirmLabel: 'حسناً',
+        cancelLabel: null,
+        severity: DialogSeverity.warning,
+      );
+    }
   }
 
   /// «الدفع من المحفظة» — the order paid out of its customer's wallet. CUSTOMER-WALLET §٤.
@@ -164,7 +189,11 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
     final summary = cubit.state.summary;
     if (summary == null) return;
 
-    final amount = await showPayFromWalletDialog(context: context, summary: summary);
+    final amount = await showPayFromWalletDialog(
+      context: context,
+      summary: summary,
+      carrierNotice: cubit.state.ledger?.carrier?.message,
+    );
 
     if (amount == null || !mounted) return;
 
@@ -177,6 +206,10 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
 
       return;
     }
+
+    await _warnAboutCarrier(cubit);
+
+    if (!mounted) return;
 
     context.handBack(true);
     context.showSuccess('تم الدفع من المحفظة');
@@ -231,6 +264,10 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
 
       return;
     }
+
+    await _warnAboutCarrier(cubit);
+
+    if (!mounted) return;
 
     context.handBack(true);
     context.showSuccess('تم إلغاء الدفعة');
@@ -299,9 +336,11 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
   }
 
   Future<String?> _askForReason(OrderPayment payment) {
+    final notice = context.read<OrderPaymentsCubit>().state.ledger?.carrier?.message;
+
     return showDialog<String>(
       context: context,
-      builder: (_) => _ReasonDialog(payment: payment),
+      builder: (_) => _ReasonDialog(payment: payment, carrierNotice: notice),
     );
   }
 }
@@ -316,9 +355,12 @@ class _OrderPaymentsViewState extends State<_OrderPaymentsView> {
 /// luck rather than a difference. A `State` disposes after the element leaves the tree, which is
 /// the only ordering that is safe by construction.
 class _ReasonDialog extends StatefulWidget {
-  const _ReasonDialog({required this.payment});
+  const _ReasonDialog({required this.payment, this.carrierNotice});
 
   final OrderPayment payment;
+
+  /// «الطلبية لدى نورس…» — cancelling an entry moves what the courier should collect too.
+  final String? carrierNotice;
 
   @override
   State<_ReasonDialog> createState() => _ReasonDialogState();
@@ -370,6 +412,10 @@ class _ReasonDialogState extends State<_ReasonDialog> {
                 color: context.colorScheme.onSurfaceVariant,
               ),
             ),
+            if (widget.carrierNotice case final notice?) ...[
+              SizedBox(height: 12.h),
+              CarrierNoticeBox(message: notice),
+            ],
             SizedBox(height: 16.h),
             AppTextField(
               controller: _reason,

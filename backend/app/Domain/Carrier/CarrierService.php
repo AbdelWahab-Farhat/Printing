@@ -4,20 +4,26 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier;
 
+use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\CancelNawrisParcel;
 use App\Domain\Carrier\Actions\DeleteNawrisParcel;
 use App\Domain\Carrier\Actions\DetachNawrisParcel;
 use App\Domain\Carrier\Actions\DispatchToNawris;
 use App\Domain\Carrier\Actions\EditNawrisParcel;
 use App\Domain\Carrier\Actions\ResendNawrisParcel;
+use App\Domain\Carrier\DTOs\NawrisMoneySync;
 use App\Domain\Carrier\Enums\NawrisStatusCode;
 use App\Domain\Carrier\Exceptions\DeliveryWasReportedByTheCarrier;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * The carrier context's only public entry point.
@@ -38,6 +44,7 @@ final class CarrierService
         private readonly EditNawrisParcel $edit,
         private readonly CancelNawrisParcel $cancel,
         private readonly ResendNawrisParcel $resend,
+        private readonly BuildNawrisPayload $payload,
     ) {}
 
     /**
@@ -106,6 +113,61 @@ final class CarrierService
         $parcel = $this->openParcelFor($order);
 
         return $parcel !== null ? ($this->edit)($parcel) : null;
+    }
+
+    /**
+     * Tell Nawris the COD moved, and say how it went — null when nothing is out.
+     *
+     * **Never throws for their sake.** The money that triggered this is already written and must
+     * stand; a refusal is kept on the parcel instead — `sync_failed_at` and their reason — and
+     * logged at warning, so it shows on the order and in the log rather than vanishing. It vanished
+     * before: their exceptions are `ShouldntReport`, so `rescue(report: true)` reported nothing,
+     * and the courier collected the old amount from customers who had already paid.
+     *
+     * Anything that is not theirs — a bug of ours — is still reported, by `rescue` itself.
+     */
+    public function tellAboutMoney(Order $order): ?NawrisMoneySync
+    {
+        $parcel = $this->openParcelFor($order);
+
+        if ($parcel === null) {
+            return null;
+        }
+
+        $asked = (string) $parcel->amount_to_collect;
+
+        return rescue(
+            function () use ($parcel, $asked): NawrisMoneySync {
+                $told = ($this->edit)($parcel);
+
+                return new NawrisMoneySync($told, true, $asked, (string) $told->amount_to_collect);
+            },
+            fn (Throwable $refusal): NawrisMoneySync => $this->refused($parcel, $asked, $refusal),
+        );
+    }
+
+    /** Kept on the parcel and in the log, so a refused edit is somebody's to put right. */
+    private function refused(NawrisParcel $parcel, string $asked, Throwable $refusal): NawrisMoneySync
+    {
+        $reason = Str::limit($refusal->getMessage(), 490);
+
+        $parcel->forceFill(['sync_failed_at' => now(), 'sync_error' => $reason])->save();
+
+        Log::channel((string) config('services.nawris.log_channel', 'nawris'))->warning('nawris.edit_refused', [
+            'parcel' => $parcel->code,
+            'reference' => $parcel->reference,
+            'reason' => $refusal->getMessage(),
+        ]);
+
+        $orders = $parcel->orders()->get()->sortBy(fn (Order $order): int => (int) $order->getKey())->values()->all();
+
+        return new NawrisMoneySync(
+            $parcel,
+            false,
+            $asked,
+            $orders === [] ? $asked : $this->payload->amountToCollectFor($orders),
+            $reason,
+        );
     }
 
     /**
@@ -230,7 +292,7 @@ final class CarrierService
      * one per order.
      *
      * @param  list<int>  $orderIds
-     * @return array<int, array{code: string, bar_code: ?string, is_open: bool, shared_with: list<array{id: int, code: string}>}>
+     * @return array<int, array{code: string, bar_code: ?string, is_open: bool, money_out_of_sync: bool, nawris_asks: string, sync_error: ?string, shared_with: list<array{id: int, code: string}>}>
      */
     public function parcelCodesFor(array $orderIds): array
     {
@@ -245,7 +307,10 @@ final class CarrierService
             ->whereNull('p.deleted_at')
             ->whereNotNull('p.code')
             ->orderByDesc('l.id')
-            ->get(['l.order_id', 'l.nawris_parcel_id', 'p.code', 'p.bar_code', 'p.closed_at']);
+            ->get([
+                'l.order_id', 'l.nawris_parcel_id', 'p.code', 'p.bar_code', 'p.closed_at',
+                'p.amount_to_collect', 'p.sync_failed_at', 'p.sync_error',
+            ]);
 
         $latest = [];
 
@@ -265,6 +330,11 @@ final class CarrierService
                 'code' => (string) $row->code,
                 'bar_code' => $row->bar_code === null ? null : (string) $row->bar_code,
                 'is_open' => $row->closed_at === null,
+                // Our last change of money never reached Nawris: the red line on the order, with
+                // what they still hold for us (without their fee) and their reason.
+                'money_out_of_sync' => $row->closed_at === null && $row->sync_failed_at !== null,
+                'nawris_asks' => Money::round((string) $row->amount_to_collect),
+                'sync_error' => $row->sync_error === null ? null : (string) $row->sync_error,
                 'shared_with' => array_values(array_filter(
                     $members[(int) $row->nawris_parcel_id] ?? [],
                     fn (array $member): bool => $member['id'] !== $orderId,

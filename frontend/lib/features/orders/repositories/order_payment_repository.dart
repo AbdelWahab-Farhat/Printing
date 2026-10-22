@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
 
@@ -146,10 +147,12 @@ abstract interface class OrderPaymentRepository {
   });
 }
 
-/// What a write to the ledger answers with: the entry, and the order's money after it.
+/// What a write to the ledger answers with: the entry, the order's money after it, and — while
+/// a parcel is out — whether Nawris heard about it.
 class PaymentResult {
-  const PaymentResult({required this.payment, required this.summary});
+  const PaymentResult({required this.payment, required this.summary, this.carrier});
 
   final OrderPayment payment;
   final PaymentSummary summary;
+  final CarrierMoneySync? carrier;
 }

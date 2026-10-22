@@ -2375,7 +2375,9 @@ as String,
 /// @nodoc
 mixin _$OrderLedger {
 
- List<OrderPayment> get payments; PaymentSummary get summary;
+ List<OrderPayment> get payments; PaymentSummary get summary;/// The parcel out with Nawris, for the warning before money is taken — null when nothing
+/// is out, which is most of the time.
+ CarrierMoneyNotice? get carrier;
 /// Create a copy of OrderLedger
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2388,16 +2390,16 @@ $OrderLedgerCopyWith<OrderLedger> get copyWith => _$OrderLedgerCopyWithImpl<Orde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLedger&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.summary, summary) || other.summary == summary));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLedger&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.carrier, carrier) || other.carrier == carrier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(payments),summary);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(payments),summary,carrier);
 
 @override
 String toString() {
-  return 'OrderLedger(payments: $payments, summary: $summary)';
+  return 'OrderLedger(payments: $payments, summary: $summary, carrier: $carrier)';
 }
 
 
@@ -2408,7 +2410,7 @@ abstract mixin class $OrderLedgerCopyWith<$Res>  {
   factory $OrderLedgerCopyWith(OrderLedger value, $Res Function(OrderLedger) _then) = _$OrderLedgerCopyWithImpl;
 @useResult
 $Res call({
- List<OrderPayment> payments, PaymentSummary summary
+ List<OrderPayment> payments, PaymentSummary summary, CarrierMoneyNotice? carrier
 });
 
 
@@ -2425,11 +2427,12 @@ class _$OrderLedgerCopyWithImpl<$Res>
 
 /// Create a copy of OrderLedger
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? payments = null,Object? summary = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? payments = null,Object? summary = null,Object? carrier = freezed,}) {
   return _then(_self.copyWith(
 payments: null == payments ? _self.payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderPayment>,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
-as PaymentSummary,
+as PaymentSummary,carrier: freezed == carrier ? _self.carrier : carrier // ignore: cast_nullable_to_non_nullable
+as CarrierMoneyNotice?,
   ));
 }
 /// Create a copy of OrderLedger
@@ -2523,10 +2526,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<OrderPayment> payments,  PaymentSummary summary)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<OrderPayment> payments,  PaymentSummary summary,  CarrierMoneyNotice? carrier)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderLedger() when $default != null:
-return $default(_that.payments,_that.summary);case _:
+return $default(_that.payments,_that.summary,_that.carrier);case _:
   return orElse();
 
 }
@@ -2544,10 +2547,10 @@ return $default(_that.payments,_that.summary);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<OrderPayment> payments,  PaymentSummary summary)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<OrderPayment> payments,  PaymentSummary summary,  CarrierMoneyNotice? carrier)  $default,) {final _that = this;
 switch (_that) {
 case _OrderLedger():
-return $default(_that.payments,_that.summary);case _:
+return $default(_that.payments,_that.summary,_that.carrier);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2564,10 +2567,10 @@ return $default(_that.payments,_that.summary);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<OrderPayment> payments,  PaymentSummary summary)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<OrderPayment> payments,  PaymentSummary summary,  CarrierMoneyNotice? carrier)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderLedger() when $default != null:
-return $default(_that.payments,_that.summary);case _:
+return $default(_that.payments,_that.summary,_that.carrier);case _:
   return null;
 
 }
@@ -2579,7 +2582,7 @@ return $default(_that.payments,_that.summary);case _:
 @JsonSerializable()
 
 class _OrderLedger implements OrderLedger {
-  const _OrderLedger({required final  List<OrderPayment> payments, required this.summary}): _payments = payments;
+  const _OrderLedger({required final  List<OrderPayment> payments, required this.summary, this.carrier}): _payments = payments;
   factory _OrderLedger.fromJson(Map<String, dynamic> json) => _$OrderLedgerFromJson(json);
 
  final  List<OrderPayment> _payments;
@@ -2590,6 +2593,9 @@ class _OrderLedger implements OrderLedger {
 }
 
 @override final  PaymentSummary summary;
+/// The parcel out with Nawris, for the warning before money is taken — null when nothing
+/// is out, which is most of the time.
+@override final  CarrierMoneyNotice? carrier;
 
 /// Create a copy of OrderLedger
 /// with the given fields replaced by the non-null parameter values.
@@ -2604,16 +2610,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLedger&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.summary, summary) || other.summary == summary));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLedger&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.carrier, carrier) || other.carrier == carrier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_payments),summary);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_payments),summary,carrier);
 
 @override
 String toString() {
-  return 'OrderLedger(payments: $payments, summary: $summary)';
+  return 'OrderLedger(payments: $payments, summary: $summary, carrier: $carrier)';
 }
 
 
@@ -2624,7 +2630,7 @@ abstract mixin class _$OrderLedgerCopyWith<$Res> implements $OrderLedgerCopyWith
   factory _$OrderLedgerCopyWith(_OrderLedger value, $Res Function(_OrderLedger) _then) = __$OrderLedgerCopyWithImpl;
 @override @useResult
 $Res call({
- List<OrderPayment> payments, PaymentSummary summary
+ List<OrderPayment> payments, PaymentSummary summary, CarrierMoneyNotice? carrier
 });
 
 
@@ -2641,11 +2647,12 @@ class __$OrderLedgerCopyWithImpl<$Res>
 
 /// Create a copy of OrderLedger
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? payments = null,Object? summary = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? payments = null,Object? summary = null,Object? carrier = freezed,}) {
   return _then(_OrderLedger(
 payments: null == payments ? _self._payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderPayment>,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
-as PaymentSummary,
+as PaymentSummary,carrier: freezed == carrier ? _self.carrier : carrier // ignore: cast_nullable_to_non_nullable
+as CarrierMoneyNotice?,
   ));
 }
 

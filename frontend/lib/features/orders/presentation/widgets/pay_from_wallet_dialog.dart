@@ -3,6 +3,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/presentation/widgets/carrier_notice_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,19 +18,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 Future<String?> showPayFromWalletDialog({
   required BuildContext context,
   required PaymentSummary summary,
+  String? carrierNotice,
 }) {
   return showDialog<String>(
     context: context,
-    builder: (_) => _PayFromWalletDialog(summary: summary),
+    builder: (_) => _PayFromWalletDialog(summary: summary, carrierNotice: carrierNotice),
   );
 }
 
 /// Stateful so the controller is disposed after the exit animation, not when the route pops —
 /// see `_WriteOffDialog`.
 class _PayFromWalletDialog extends StatefulWidget {
-  const _PayFromWalletDialog({required this.summary});
+  const _PayFromWalletDialog({required this.summary, this.carrierNotice});
 
   final PaymentSummary summary;
+
+  /// «الطلبية لدى نورس…» — while a parcel is out. See [CarrierNoticeBox].
+  final String? carrierNotice;
 
   @override
   State<_PayFromWalletDialog> createState() => _PayFromWalletDialogState();
@@ -84,6 +89,10 @@ class _PayFromWalletDialogState extends State<_PayFromWalletDialog> {
               'والمتبقي على الطلبية ${widget.summary.remainingAmount.grouped}',
               style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
+            if (widget.carrierNotice case final notice?) ...[
+              SizedBox(height: 12.h),
+              CarrierNoticeBox(message: notice),
+            ],
             SizedBox(height: 16.h),
             AppTextField(
               controller: _amount,

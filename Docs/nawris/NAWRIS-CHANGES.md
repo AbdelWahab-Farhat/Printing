@@ -249,6 +249,9 @@ to someone else, the price check that froze orders, codes 6 and 12 falling throu
 5. **Map the cities.** A delivery city with no `nawris_government_id` refuses dispatch by name.
 6. **Verify `shipment_on_sender` with Nawris directly.** Our whole COD subtraction rests on the
    courier adding their fee at the door. This needs a phone call, not API access — see §11.
+   **Partly answered 2026-10-22, from their own webhooks:** `1` the customer pays their fee, `2` we
+   do — the payment on delivery is built on that reading. Still to be confirmed by them; see
+   NAWRIS-INTEGRATION.md §5.3.
 
 ---
 
@@ -260,6 +263,7 @@ documentation**, and nothing here has ever spoken to Nawris.
 | Unknown | Consequence if wrong | Where it changes |
 |---|---|---|
 | **`shipment_on_sender = 0` behaviour** | Every customer under-billed by the delivery fee | `BuildNawrisPayload` |
+| **`shipment_on_sender` 1 / 2 in their webhooks** — read as customer / us, unconfirmed | Payments on delivery off by their fee | `NawrisParcelTerms` |
 | Status codes beyond the nine | Unmapped → no state change (fails safe) | `NawrisStatusCode` |
 | `result` vs `feed` envelope keys | Empty payload read | `NawrisClient` |
 | Whether `resend-request` accepts a repeated `order_code` | Re-sends refused | `ResendNawrisParcel` |

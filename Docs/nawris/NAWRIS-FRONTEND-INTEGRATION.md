@@ -159,6 +159,23 @@ an hour ago that has not been processed yet.
 `collected_amount` will usually be **higher** than `amount_to_collect`. That is not an error: the
 courier adds their own fee at the door. Do not colour it red.
 
+**Two optional fields since 2026-10-22**, not used by the app yet: `carrier_fee` (string, null until
+known) — their fee on the parcel — and `shipment_on_sender` (int, null) — `1` the customer pays it,
+`2` we do. Both are read from their webhooks; see NAWRIS-INTEGRATION.md §5.3. An app that ignores
+them is unaffected.
+
+### When Nawris refuses a change of money (2026-10-22)
+
+NAWRIS-INTEGRATION.md §5.4. The staff app now uses all of it:
+
+| Where | Field | What the app does |
+|---|---|---|
+| `GET /orders/{id}/payments` | `carrier` (null, or `parcel_code`, `nawris_asks`, `money_out_of_sync`, `reason`, `notice`) | `CarrierNoticeBox` in the payment form, the wallet dialog and the cancel dialog, before anything is saved |
+| Every payment / wallet / refund / reverse response | `carrier` (null, or `told`, `parcel_code`, `nawris_asks`, `should_ask`, `reason`, `warning`) | When `warning` is not null, a dialog that has to be dismissed — `OrderPaymentsCubit.takeCarrierWarning()` |
+| The order's `nawris_parcel` | `money_out_of_sync`, `nawris_asks`, `sync_error` | The red line under «كود النورس», with «إعادة إبلاغ نورس» for `carrier.manage` |
+| `POST /carrier/orders/{order}/sync-money` | `data` as the response `carrier` above, or null when nothing is out | `SyncCarrierMoney`; a second refusal is a 200 with `told: false` |
+| The parcel resource | `door_amount`, `money_out_of_sync`, `sync_failed_at`, `sync_error` | Not shown yet; `GET /carrier/parcels?unsynced=1` lists them |
+
 ### 4.2 Dispatch needs no new UI
 
 Moving an order to «جاري التوصيل» through the existing status endpoint lodges the parcel

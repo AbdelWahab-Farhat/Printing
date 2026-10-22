@@ -230,7 +230,8 @@ code 7  →  ChangeOrderStatus(order, Delivered, actor: carrier system user)
 ```
 
 **The amount recorded is what Nawris remits to us, not what the customer handed the courier.**
-Those differ by the carrier's own fee. **Since 2026-09-08 the COD payment closes the order on its
+Those differ by the carrier's own fee. **Since 2026-10-22 it is worked out from what they actually
+collected, not from what we asked for** — see [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it). **Since 2026-09-08 the COD payment closes the order on its
 own**: the delivery fee left `grand_total` altogether, so nothing of it is outstanding for a
 second entry to close — see [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive). The
 `CarrierSettled` entry and its action stay in place for parcels dispatched before that change,
@@ -327,6 +328,12 @@ the only thing worth an alert. So the check is `collected_amount >= amount_to_co
 The derived fee is not stored, for the reason `Order::profit()` gives about its own inputs: a third
 cached number could only ever disagree with the two it is computed from.
 
+> **Superseded 2026-10-22 — see [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it).**
+> `collected_amount − amount_to_collect` is their fee only while nobody edits the parcel on their
+> side, and they do: lowered to the fee alone just before delivery, raised, switched to us paying the
+> fee. The floor let all of that through as "their fee", and the payment ignored it altogether. The
+> fee is now read from the parcel's first event and stored.
+
 #### 3 · The order is left owing its own `delivery_price`, and settlement will block on it
 
 **This is the real cost of the decision, and it is not optional to resolve.** Verified against the
@@ -383,6 +390,138 @@ makes retrying safe: a transaction that replays cannot double-credit.
 Both entries are reversible the ordinary way (`ReverseOrderPayment`), so a delivery recorded in
 error is undone without either a discount or a write-off.
 
+### 5.3 Their fee, read from their history, and who pays it
+
+**Decided 2026-10-22.** Until then code 7 paid **what we asked for**, capped at what the order owed,
+whatever Nawris said it collected. Their `order_price` produced a «نقص في التحصيل» note and nothing
+else, so orders were marked fully paid on money nobody collected — parcel 4541005 was paid 2,035 on
+a delivery at 15; four parcels switched to us paying the fee with nothing at the door were paid
+their full amount. **Those past payments are left as they are**, by the owner's decision; this
+changes what happens from now on.
+
+#### What `order_price` is
+
+The total the courier takes at the door, as Nawris currently has it — resent on every event, and
+changed whenever someone edits the parcel on their side. What part of it is ours depends on
+`shipment_on_sender`, which their webhooks number differently from their API:
+
+| Webhook value | Who pays their fee | Door amount | Ours |
+|---|---|---|---|
+| **1** | the customer | ours + fee | `order_price − fee` |
+| **2** | us | ours | `order_price`; their fee is **our** delivery cost |
+
+We always send `0` at dispatch ([`BuildNawrisPayload`](../../backend/app/Domain/Carrier/Actions/BuildNawrisPayload.php)),
+and every parcel's history starts at `1`; each flip to `2` moved the door amount by exactly that
+parcel's fee (4494495, Misrata: 64 → 44; 4470105, Al-Khums: 20 → 0). **Read from their webhooks,
+not confirmed by them** — the question is with Nawris, and the meaning lives in one place,
+[`NawrisParcelTerms`](../../backend/app/Domain/Carrier/DTOs/NawrisParcelTerms.php), so a different
+answer is a change there and nowhere else.
+
+#### Where the fee comes from
+
+Their fee is fixed when they create the parcel. Their payload never states it, so it is read from
+the history by [`ReadNawrisParcelTerms`](../../backend/app/Domain/Carrier/Actions/ReadNawrisParcelTerms.php):
+
+```
+fee               = the earliest stored event's door amount − what we asked at that moment
+                    // an edit (`shipment.updated`) counts its `changes.amount_to_be_collected.old`
+                    // our ask at that moment comes from the audit trail, if we edited it since
+shipment_on_sender = 1, then whatever each edit's `changes.shipment_on_sender.new` set
+```
+
+- **Read from the stored rows in id order**, not from the event being processed, so a job retried
+  late cannot decide it.
+- **Never from a delivery, or anything after one.** Read off the delivery itself, the fee would be
+  exactly the door amount less our ask, and the payment our ask whatever was collected — the bug
+  this replaces. A parcel whose first word is «تم التسليم» has no known fee.
+- **Only while the customer pays it.** Under `2` the door amount is ours and shows no fee.
+- **Read before the unmapped-code return.** Their edits arrive under whatever status the parcel is
+  in — often `1` «محفوظة قبل التوصيل», which is unmapped — and would otherwise be skipped.
+- **A move to another city ends it.** Their fee is the city's, so an edit whose
+  `changes.government_id` names a different city makes the fee unknown from then on. Compared by
+  name: their ids get re-mapped (event 378 went 4 → 232, «طرابلس» both sides). **One exception for
+  the payment, by the owner's decision:** when the door amount less the *old* city's fee is exactly
+  what the orders still owe, Nawris kept the figure through the move — the payment is recorded with
+  «… والمبلغ مطابق بأجرة المدينة السابقة — سُجّلت الدفعة، راجِعها». Anything else waits for a
+  person. When we pay the fee (`2`) no fee is needed, so the payment is recorded and the move noted.
+- **Stored on the parcel** as `carrier_fee` and `shipment_on_sender`, refreshed on every event, so
+  it can be seen; the payment reads the history again rather than trusting the copy.
+  `php artisan nawris:read-carrier-terms` fills them for parcels that will hear nothing more — it
+  reports by default and writes only with `--write`.
+
+`changes` also joins the event fingerprint when present, so an edit that only flips
+`shipment_on_sender` is not thrown away as a duplicate of an earlier event.
+
+#### What code 7 pays
+
+```
+ours      = per the table above, never below 0
+payment   = min(ours, remainingAmount())       // into Nawris's custody, as before
+short     = what the order still owes once the payment is in
+```
+
+- **What is short stays owed.** The order reads partly paid; a webhook never writes money off.
+- **The shortfall note is what the order is still owed after the payment** — «نقص في التحصيل: بقي
+  على الطلبية 6.00 (الواصل لنا 135.00)» — not the door amount against the parcel's figure. That
+  figure goes stale whenever a payment taken after dispatch fails to reach Nawris; when someone at
+  Nawris then corrects the door amount by hand, the old comparison called a correct delivery short,
+  and overstated a short one by the payment. A shortfall smaller than their fee is caught too.
+- **Guard #2 measures the same way:** ours out of their door amount against what the parcel's
+  orders still owe (less the pre-2026-09-08 deduction), with the door amount itself standing in
+  when their fee is unknown.
+- **No automatic payment, and a note saying why**, when their fee is unknown under `1`, when
+  `shipment_on_sender` is anything but `1` or `2`, when code 7 carries no `order_price`, or when a
+  **shared** parcel comes back short — no rule says which of its orders lost the money. A shared
+  parcel that came back whole pays each order its own share, as before. Where the fee is what is
+  missing, the note also says what the courier took and what is left after a fee it can name —
+  «(حصّل المندوب 161.00؛ بأجرة المدينة السابقة (15.00) يبقى لنا 146.00)» — so whoever enters the
+  payment starts from a figure.
+- **Under `2`, a note names their fee**, to be entered in «ما احتفظ به الناقل» when the order is
+  settled; `SettleCustody` already books that as an expense under «رسوم شركة التوصيل».
+- **More than the order owes** is capped, as before, and now noted as «تحصيل زائد».
+- **A second code 7 at a new amount moves no money** — guard 1 — and now says
+  «تغيّر المبلغ بعد التسليم».
+- The `CarrierSettled` entry for parcels from before 2026-09-08 is unchanged.
+
+Every note goes on the event's `error`, appended rather than overwritten, so a delivery can be short
+*and* carry a fee we pay.
+
+#### Our edits keep who pays
+
+Every edit re-sends the whole payload. It used to send `shipment_on_sender = 0` regardless, which
+would quietly put the fee back on a customer someone at Nawris had taken it off. An edit now sends
+the parcel's current value, crossing from their webhook numbering to their API's in
+`NawrisParcelTerms::apiValueFor()`: webhook `2` → API `1`, anything else → `0`. Creation still
+sends `0`.
+
+### 5.4 A change Nawris refused
+
+**Found on production, 2026-10-22.** A payment taken while the parcel was «مع المندوب» sent an
+edit-order; Nawris refused it (why is still unconfirmed — likely no edits once the courier holds
+it); and the refusal vanished. `tellTheCarrier` wrapped the edit in `rescue(report: true)`, but
+`NawrisRejectedRequest` and `NawrisRequestFailed` are `DomainException`s, which are
+`ShouldntReport` — so nothing was logged, and the client's own info-level log was dropped by
+`LOG_LEVEL=warning`. The courier then collected the old amount: parcel 4600741 was delivered at
+the full 435 an hour after a 115 transfer. None of the six such edits on production ever landed.
+
+What happens now, through `CarrierService::tellAboutMoney()`:
+
+| Moment | What happens |
+|---|---|
+| **Before** money is taken | `GET /orders/{id}/payments` carries `carrier` — the parcel's code, what Nawris holds for us, and a sentence the payment form, the wallet dialog and the cancel dialog show: «الطلبية لدى نورس … وإن كان الطرد مع المندوب فقد ترفض» |
+| A payment, wallet payment, **refund or cancelled entry** while a parcel is out | The edit is sent. Refunds and cancellations now send it too — they raise what the courier should collect |
+| Nawris **accepts** | As before; an older refusal is cleared |
+| Nawris **refuses** | The money still stands. `nawris_parcels.sync_failed_at` and `sync_error` (their words) are set, a `nawris.edit_refused` warning is logged, and the response's `carrier` says so — the app shows it in a dialog that has to be dismissed |
+| On the order | `nawris_parcel.money_out_of_sync` draws a red line, «لم تُبلَّغ نورس … ما زالت تطلب X», with **«إعادة إبلاغ نورس»** for `carrier.manage` — `POST /carrier/orders/{order}/sync-money`, which answers in the same shape (a second refusal is a 200 saying `told: false`) |
+| **Hand correction at Nawris** | Every event's `order_price` is kept as `door_amount`. When what it leaves us — per §5.3 — is exactly what the orders still owe, that is the edit we would have sent: the refusal is cleared and our figures follow. Anything else stays flagged |
+| **Delivered** while still flagged | The event says «تغيّر مبلغ الطلبية بعد خروج الطرد ولم تُبلَّغ نورس — راجِع ما حصّله المندوب، فقد يكون الزبون دفع مرتين», beside «تحصيل زائد» when that applies |
+
+`GET /carrier/parcels?unsynced=1` lists the flagged parcels.
+
+**Not covered:** a write-off taken while a parcel is out still sends no edit — it was not part of
+what was asked for. And the reason Nawris refuses is a question for them; the log will now show
+their answer.
+
 ---
 
 ## 6. Schema
@@ -407,7 +546,11 @@ dispatch history goes with it. "At most one *open* parcel per order" is enforced
 | `government` · `area` | string | Destination **as sent**. Replayed on every edit |
 | `amount_to_collect` | decimal(12,2) | What we asked them to **remit** — `remaining − delivery_price`, as sent. Rewritten on every successful edit |
 | `delivery_price_deducted` | decimal(12,2) | **Our** fee as taken off at dispatch, frozen and replayed on every edit. Load-bearing — see [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive) |
-| `collected_amount` | decimal(12,2) null | Raw `order_price` — **includes the carrier's own fee**. The carrier fee is `collected_amount − amount_to_collect`, derived, never stored |
+| `collected_amount` | decimal(12,2) null | Raw `order_price` at delivery — **includes the carrier's own fee** when the customer pays it |
+| `carrier_fee` | decimal(12,2) null | Their fee, read from the parcel's first event — [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it). Null until known |
+| `shipment_on_sender` | smallint null | Who pays their fee, in **their webhook numbering**: `1` the customer, `2` us — [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it) |
+| `sync_failed_at` · `sync_error` | timestamp · string(500), null | Our last change of money was refused, and their reason. Cleared by an accepted edit or a matching hand correction — [§5.4](#54-a-change-nawris-refused) |
+| `door_amount` | decimal(12,2) null | Their latest `order_price` from **any** event, where `collected_amount` is only written on delivery |
 | `remote_status_code` | smallint null | **Their integer.** Primula stored only the label — unstable prose — and the mapping is written against the code |
 | `remote_status_text` | string null | Their label verbatim, for support |
 | `shipping_company_id` | fk | The Nawris row in `shipping_companies`, so existing carrier filters keep working |
@@ -652,12 +795,14 @@ orders indefinitely at "with the courier" while cash that had genuinely been col
 the books. Append the numbers to the timeline note so staff read one message rather than two, and
 let the state machine continue.
 
-The comparison is the floor from [§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive), at two
-decimal places with a small epsilon:
+Since 2026-10-22 the alert is **what the order is still owed once the payment from their door
+amount is in** — see [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it) — at two
+decimal places with a small epsilon. Guard #2 measures the same way, before anything is paid:
 
 ```
-flag when   collected_amount  <  amount_to_collect − ε
-otherwise   carrier_fee = collected_amount − amount_to_collect     // theirs, expected, fine
+ours        = order_price − carrier_fee   (1)   ·   order_price   (2)
+guard #2    blocks when the code differs and  ours  <  what the parcel's orders owe − ε
+guard #3    notes when, after the payment, the order still owes more than ε
 ```
 
 `order_price` **arrives as a string** — normalise it numerically before this runs, or the
@@ -698,7 +843,7 @@ has no signed-in user for `Auditable` to pick up.
 
 | Table | When | Contents |
 |---|---|---|
-| `order_payments` | code `7` | **Two rows in one transaction** — the COD payment and the carrier-settled entry ([§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive)) |
+| `order_payments` | code `7` | **Up to two rows in one transaction** — the COD payment, worked out from what they collected ([§5.3](#53-their-fee-read-from-their-history-and-who-pays-it)), and the carrier-settled entry for pre-2026-09-08 parcels ([§5.2](#52-the-delivery-fee-and-the-guard-it-keeps-alive)). Neither when the payment cannot be worked out — the event says why |
 | `order_status_transitions` | every applied move | `from_status`, `to_status`, `reason`, `user_id` = the carrier account |
 | `nawris_webhook_events` | **every webhook, processed or parked** | Payload verbatim + fingerprint |
 | `activity_log` | every write above | Causer set explicitly to the carrier account |
@@ -709,6 +854,9 @@ has no signed-in user for `Auditable` to pick up.
 |---|---|---|
 | `remote_status_code` · `remote_status_text` | every webhook carrying a label, **mapped or not** | Raw and verbatim, for support to read |
 | `collected_amount` | code `7` | Raw `order_price`, normalised from string first |
+| `carrier_fee` · `shipment_on_sender` | every webhook | Read again from the stored history each time — [§5.3](#53-their-fee-read-from-their-history-and-who-pays-it) |
+| `door_amount` | every webhook carrying `order_price` | Their latest figure for the door |
+| `sync_failed_at` · `sync_error` · `amount_to_collect` | a webhook showing a hand correction to exactly what the orders owe | Cleared, and our figure follows theirs — [§5.4](#54-a-change-nawris-refused) |
 | `conflict_raised_at` · `conflict_resolved_at` | code `7` | Guard #2 — raised, or auto-cleared on a clean delivery |
 | `closed_at` | a terminal outcome — `6`, `7`, `12` | Makes "still out there" a query rather than a status list to keep in sync |
 

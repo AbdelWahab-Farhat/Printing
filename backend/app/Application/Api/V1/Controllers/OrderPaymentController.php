@@ -9,9 +9,11 @@ use App\Application\Api\V1\Requests\Order\RefundOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\ReverseOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderPaymentRequest;
 use App\Application\Api\V1\Requests\Order\WriteOffOrderBalanceRequest;
+use App\Application\Api\V1\Resources\NawrisMoneySyncResource;
 use App\Application\Api\V1\Resources\OrderPaymentResource;
 use App\Application\Controller;
 use App\Domain\Carrier\CarrierService;
+use App\Domain\Carrier\DTOs\NawrisMoneySync;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Models\Order;
@@ -72,7 +74,41 @@ class OrderPaymentController extends Controller
             // them. A client subtracting these itself would be a second answer to one question,
             // and its answer is the one made of doubles.
             'summary' => $this->summary($order),
+            // The parcel out with Nawris, so the screen can warn before money is taken — null
+            // when nothing is out, which is most of the time.
+            'carrier' => $this->parcelOut($order),
         ]);
+    }
+
+    /**
+     * What the payments screen says before anything is saved, when a parcel is out.
+     *
+     * **Before, because after can be too late.** Nawris has refused edits once the courier holds
+     * the parcel, and the person taking the money is the one who can still ring the courier.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function parcelOut(Order $order): ?array
+    {
+        if (! $this->carrier->shouldDispatch($order)) {
+            return null;
+        }
+
+        $parcel = $this->carrier->openParcelFor($order);
+
+        if ($parcel === null) {
+            return null;
+        }
+
+        return [
+            'parcel_code' => $parcel->code,
+            // Ours, without their fee — what Nawris holds for us right now.
+            'nawris_asks' => (string) $parcel->amount_to_collect,
+            'money_out_of_sync' => $parcel->moneyOutOfSync(),
+            'reason' => $parcel->sync_error,
+            'notice' => "الطلبية لدى نورس في الطرد {$parcel->code} — نُبلّغها بالمبلغ الجديد عند الحفظ، "
+                .'وإن كان الطرد مع المندوب فقد ترفض. ستظهر النتيجة بعد الحفظ.',
+        ];
     }
 
     /**
@@ -97,10 +133,10 @@ class OrderPaymentController extends Controller
             $this->actor($request),
         );
 
-        $this->tellTheCarrier($order);
+        $carrier = $this->tellTheCarrier($order);
 
         return $this->created(
-            $this->entry($payment, $order),
+            $this->entry($payment, $order, $carrier),
             'تم تسجيل الدفعة بنجاح',
         );
     }
@@ -132,37 +168,37 @@ class OrderPaymentController extends Controller
             return $this->success($this->entry($payment, $order), 'هذه الدفعة مسجَّلة من قبل');
         }
 
-        $this->tellTheCarrier($order);
+        $carrier = $this->tellTheCarrier($order);
 
         return $this->created(
-            $this->entry($payment, $order),
+            $this->entry($payment, $order, $carrier),
             'تم الدفع من المحفظة',
         );
     }
 
     /**
-     * Lowers the COD Nawris is holding when money arrives after the parcel left.
+     * Moves the COD Nawris is holding when the order's money changes after the parcel left.
      *
      * **The one edit trigger there is.** A live parcel's address and recipient phone are frozen by
      * `Order::destinationIsEditable()`, and `receiver` is the order code rather than a name — so
      * money is the only thing that can change while a parcel is out. It is also the change that
      * matters most: a COD that still asks for a deposit the customer already paid bills them
-     * twice, which is the contract's first field rule.
+     * twice, which is the contract's first field rule. A payment and a wallet payment lower it; a
+     * refund and a cancelled entry raise it again.
      *
-     * **Wrapped in `rescue()`, and that asymmetry is deliberate.** A failed dispatch surfaces,
-     * because the clerk needs to know the parcel is not lodged. A failed *edit* must not: the
-     * payment is real, it is already written, and refusing to acknowledge it because a carrier's
-     * API is down would lose the more important of the two facts. It is reported, so it is visible
-     * in the log rather than silently swallowed — `rescue` is the escape hatch RULES.md §5 allows
-     * exactly here, where a `try`/`catch` is forbidden.
+     * **A refusal never fails the request, and never vanishes either.** The money is real and
+     * already written, so it stands. What Nawris said is kept on the parcel and comes back in the
+     * response, so the app can tell whoever took the money that the courier still holds the old
+     * amount — see `CarrierService::tellAboutMoney()`. Until 2026-10-22 it was swallowed: their
+     * exceptions are `ShouldntReport`, so `rescue(report: true)` logged nothing.
      */
-    private function tellTheCarrier(Order $order): void
+    private function tellTheCarrier(Order $order): ?NawrisMoneySync
     {
         if (! $this->carrier->shouldDispatch($order)) {
-            return;
+            return null;
         }
 
-        rescue(fn () => $this->carrier->syncMoneyFor($order->fresh()), rescue: null, report: true);
+        return $this->carrier->tellAboutMoney($order->fresh());
     }
 
     /**
@@ -184,8 +220,11 @@ class OrderPaymentController extends Controller
             $this->actor($request),
         );
 
+        // A refund raises what the order still owes, so the courier should collect more.
+        $carrier = $this->tellTheCarrier($order);
+
         return $this->created(
-            $this->entry($refund, $order),
+            $this->entry($refund, $order, $carrier),
             'تم تسجيل ردّ المبلغ بنجاح',
         );
     }
@@ -215,8 +254,11 @@ class OrderPaymentController extends Controller
             $this->actor($request),
         );
 
+        // Cancelling a payment puts its money back on what the courier should collect.
+        $carrier = $this->tellTheCarrier($order);
+
         return $this->created(
-            $this->entry($reversal, $order),
+            $this->entry($reversal, $order, $carrier),
             'تم إلغاء الدفعة',
         );
     }
@@ -255,15 +297,17 @@ class OrderPaymentController extends Controller
      * One entry, with the order's money as it stands after it.
      *
      * The summary travels back with every write so a screen never has to re-fetch the order to
-     * learn what the entry it just made did to the total.
+     * learn what the entry it just made did to the total. `carrier` says whether Nawris heard
+     * about it — null when no parcel is out, which is most of the time.
      *
      * @return array<string, mixed>
      */
-    private function entry(OrderPayment $payment, Order $order): array
+    private function entry(OrderPayment $payment, Order $order, ?NawrisMoneySync $carrier = null): array
     {
         return [
             'payment' => new OrderPaymentResource($payment->load(['recorder', 'reviewer', 'reversal', 'treasuryAccount'])),
             'summary' => $this->summary($order->refresh()),
+            'carrier' => $carrier !== null ? new NawrisMoneySyncResource($carrier) : null,
         ];
     }
 

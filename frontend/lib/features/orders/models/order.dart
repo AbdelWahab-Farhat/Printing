@@ -671,6 +671,15 @@ abstract class NawrisParcelRef with _$NawrisParcelRef {
     /// re-sending the parcel from this order takes those with it: Nawris delivers or returns a
     /// parcel as a whole, so every carrier action on it is an action on all of them.
     @JsonKey(name: 'shared_with') @Default(<SharedParcelOrder>[]) List<SharedParcelOrder> sharedWith,
+
+    /// **The last change to the order's money never reached Nawris** — the courier is still
+    /// collecting [nawrisAsks] (ours, without their fee). The red line on the order, until a
+    /// retry they accept or a correction at their end puts it right.
+    @JsonKey(name: 'money_out_of_sync') @Default(false) bool moneyOutOfSync,
+    @JsonKey(name: 'nawris_asks') String? nawrisAsks,
+
+    /// Their refusal, in their words.
+    @JsonKey(name: 'sync_error') String? syncError,
   }) = _NawrisParcelRef;
 
   factory NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);

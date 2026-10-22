@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Requests\Carrier\StoreSharedParcelRequest;
+use App\Application\Api\V1\Resources\NawrisMoneySyncResource;
 use App\Application\Api\V1\Resources\NawrisParcelResource;
 use App\Application\Api\V1\Resources\NawrisWebhookEventResource;
 use App\Application\Api\V1\Resources\OrderResource;
@@ -59,8 +60,9 @@ class CarrierController extends Controller
     /**
      * Parcels
      *
-     * Filter with `open=1` for parcels still out there, and `conflict=1` for those waiting on a
-     * human to close a delivery conflict.
+     * Filter with `open=1` for parcels still out there, `conflict=1` for those waiting on a
+     * human to close a delivery conflict, and `unsynced=1` for those whose last change of money
+     * Nawris refused — the courier is still collecting the old amount.
      */
     public function parcels(Request $request): JsonResponse
     {
@@ -68,6 +70,10 @@ class CarrierController extends Controller
 
         if ($request->boolean('open')) {
             $query->whereNull('closed_at');
+        }
+
+        if ($request->boolean('unsynced')) {
+            $query->whereNotNull('sync_failed_at');
         }
 
         if ($request->boolean('conflict')) {
@@ -196,6 +202,27 @@ class CarrierController extends Controller
         return $parcel === null
             ? $this->successMessage('لا توجد شحنة مرتبطة بهذه الطلبية')
             : $this->success(new NawrisParcelResource($parcel), 'فُكّ ربط الشحنة — يمكن إرسالها من جديد');
+    }
+
+    /**
+     * Tell Nawris the order's money again
+     *
+     * For a parcel whose last edit Nawris refused — the red line on the order. Sends the parcel's
+     * figures as they stand now; answers with whether they took it this time, in the same shape a
+     * payment does. Never 4xx for a refusal: the refusal is the answer.
+     */
+    public function syncMoney(Order $order): JsonResponse
+    {
+        $sync = $this->carrier->tellAboutMoney($order);
+
+        if ($sync === null) {
+            return $this->successMessage('لا توجد شحنة مفتوحة لهذه الطلبية');
+        }
+
+        return $this->success(
+            new NawrisMoneySyncResource($sync),
+            $sync->told ? 'أُبلغت نورس بالمبلغ' : 'لم تقبل نورس التعديل',
+        );
     }
 
     /**

@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 
 /// Handing an order to the carrier, and the two ways of taking it back.
@@ -41,4 +42,11 @@ abstract interface class CarrierRepository {
   /// side goes on saying a parcel is out and the order cannot be sent again. Null carries the
   /// same meaning it does above.
   Future<Either<Failure, NawrisParcel?>> unlink(int orderId);
+
+  /// `POST /carrier/orders/{id}/sync-money` — tells Nawris the order's money again.
+  ///
+  /// For the red line on the order: their last change was refused and the courier is still
+  /// collecting the old amount. **A second refusal is an answer, not a failure** —
+  /// [CarrierMoneySync.told] says which. Null when there is nothing out.
+  Future<Either<Failure, CarrierMoneySync?>> syncMoney(int orderId);
 }

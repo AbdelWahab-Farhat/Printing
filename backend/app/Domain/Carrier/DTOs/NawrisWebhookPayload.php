@@ -15,6 +15,10 @@ use App\Domain\Carrier\Enums\NawrisStatusCode;
  *
  * `order_price` **arrives as a string in practice**, so it is normalised here rather than in the
  * comparison — a numeric comparison decided by PHP's string rules is a coin toss on money.
+ *
+ * **`changes` rides only on `shipment.updated`**, their edit event, and is the one place two facts
+ * appear: the door amount *before* the edit, and `shipment_on_sender`. Its `old` arrives as a
+ * number and its `new` as text (`{"old": 1, "new": "2"}`), so both are normalised the same way.
  */
 final readonly class NawrisWebhookPayload
 {
@@ -32,6 +36,10 @@ final readonly class NawrisWebhookPayload
         public ?string $delayReason,
         public ?string $captainName,
         public ?string $captainPhone,
+        public ?string $collectedAmountBefore = null,
+        public ?int $shipmentOnSenderBefore = null,
+        public ?int $shipmentOnSenderAfter = null,
+        public bool $cityChanged = false,
     ) {}
 
     /**
@@ -39,6 +47,10 @@ final readonly class NawrisWebhookPayload
      */
     public static function fromArray(array $body): self
     {
+        $amountChange = self::change($body, 'amount_to_be_collected');
+        $senderChange = self::change($body, 'shipment_on_sender');
+        $cityChange = self::change($body, 'government_id');
+
         return new self(
             raw: $body,
             reference: self::text($body['remote_order_id'] ?? null),
@@ -52,6 +64,10 @@ final readonly class NawrisWebhookPayload
             delayReason: self::text($body['delay_reason'] ?? null),
             captainName: self::text($body['captain_name'] ?? null),
             captainPhone: self::text($body['captain_phone'] ?? null),
+            collectedAmountBefore: self::money($amountChange['old'] ?? null),
+            shipmentOnSenderBefore: self::integer($senderChange['old'] ?? null),
+            shipmentOnSenderAfter: self::integer($senderChange['new'] ?? null),
+            cityChanged: self::cityMoved($cityChange),
         );
     }
 
@@ -67,16 +83,27 @@ final readonly class NawrisWebhookPayload
      * we do not read, and any of those would make every duplicate look distinct — which is exactly
      * the failure this is meant to prevent. Hashing the meaningful fields means a genuine re-send
      * of the same news collides, as it should.
+     *
+     * **`changes` joins the hash only when it is there**, so every event without one keeps the
+     * fingerprint it always had. An edit that flips who pays the fee while leaving the status and
+     * the door amount where an earlier event put them would otherwise be thrown away as a
+     * duplicate — and the payment on delivery depends on that flip.
      */
     public function fingerprint(): string
     {
-        return hash('sha256', implode('|', [
+        $fields = [
             $this->reference ?? '',
             $this->code ?? '',
             (string) ($this->statusCode ?? ''),
             $this->collectedAmount ?? '',
             $this->returnReason ?? '',
-        ]));
+        ];
+
+        if (is_array($this->raw['changes'] ?? null) && $this->raw['changes'] !== []) {
+            $fields[] = (string) json_encode($this->raw['changes']);
+        }
+
+        return hash('sha256', implode('|', $fields));
     }
 
     private static function text(mixed $value): ?string
@@ -98,5 +125,50 @@ final readonly class NawrisWebhookPayload
         }
 
         return number_format((float) $value, 2, '.', '');
+    }
+
+    /**
+     * Whether an edit moved the parcel to another city.
+     *
+     * **By name when the names are there.** Their ids for one city get re-mapped — event 378 went
+     * 4 → 232 and stayed «طرابلس» both sides — and a fee is the city's, not the id's. Without
+     * names, different ids are read as a move: a fee wrongly kept costs money, one wrongly dropped
+     * costs a person a minute.
+     *
+     * @param  array<string, mixed>  $change
+     */
+    private static function cityMoved(array $change): bool
+    {
+        if ($change === []) {
+            return false;
+        }
+
+        $oldName = self::text($change['old_name'] ?? null);
+        $newName = self::text($change['new_name'] ?? null);
+
+        if ($oldName !== null && $newName !== null) {
+            return $oldName !== $newName;
+        }
+
+        return self::text($change['old'] ?? null) !== self::text($change['new'] ?? null);
+    }
+
+    private static function integer(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * One entry of `changes` as `{old, new}`, or an empty array when that field did not move.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private static function change(array $body, string $field): array
+    {
+        $changes = $body['changes'] ?? null;
+        $change = is_array($changes) ? ($changes[$field] ?? null) : null;
+
+        return is_array($change) ? $change : [];
     }
 }

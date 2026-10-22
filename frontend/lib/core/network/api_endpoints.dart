@@ -748,6 +748,9 @@ abstract final class CarrierEndpoints {
 
   /// Drops our claim on a parcel **without telling Nawris**, for one they deleted themselves.
   static String unlink(int orderId) => '/carrier/orders/$orderId/unlink';
+
+  /// Tells Nawris the order's money again, for a parcel whose last change they refused.
+  static String syncMoney(int orderId) => '/carrier/orders/$orderId/sync-money';
 }
 
 /// الإشعارات — every account's own mailbox, plus the device registry push needs.
