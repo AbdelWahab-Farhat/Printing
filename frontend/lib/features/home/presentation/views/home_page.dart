@@ -12,7 +12,8 @@ import 'package:dayaa/features/home/presentation/widgets/quick_actions.dart';
 import 'package:dayaa/features/home/presentation/widgets/ready_message_box.dart';
 import 'package:dayaa/features/home/presentation/widgets/status_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/summary_tiles.dart';
-import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_home_card.dart';
+import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_home_cubit.dart';
+import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_card_section.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,10 +30,17 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<HomeCubit>(
-      // Screen-scoped and closed with the screen; `..load()` so the first frame is already
-      // asking rather than waiting for someone to pull down.
-      create: (_) => sl<HomeCubit>()..load(),
+    return MultiBlocProvider(
+      providers: [
+        // Screen-scoped and closed with the screen; `..load()` so the first frame is already
+        // asking rather than waiting for someone to pull down.
+        BlocProvider<HomeCubit>(create: (_) => sl<HomeCubit>()..load()),
+        // تذاكرُ الموظفين على بطاقة الموظف — هنا لا في البطاقة، كي يعيد سحبُ التحديث قراءتها مع
+        // الرئيسية. وتُسأل مع الرئيسية لا بعدها، فتصل الصفوفُ والبطاقةُ معاً.
+        BlocProvider<InternalTicketsHomeCubit>(
+          create: (_) => sl<InternalTicketsHomeCubit>()..load(),
+        ),
+      ],
       child: const _HomeView(),
     );
   }
@@ -51,12 +59,17 @@ class _HomeView extends StatelessWidget {
           onRetry: context.read<HomeCubit>().load,
         ),
         HomeLoaded(:final user, :final summary) => RefreshIndicator(
-          onRefresh: context.read<HomeCubit>().refresh,
+          onRefresh: () => Future.wait([
+            context.read<HomeCubit>().refresh(),
+            context.read<InternalTicketsHomeCubit>().load(),
+          ]),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
             children: [
-              EmployeeCard(user: user),
+              // ما ينتظر ردّي من تذاكر الموظفين على البطاقة نفسها، كبطاقة بريمولا — طلبُ المالك
+              // ٢٠٢٦-١٠-٢٣. يُردّ من مكانه بلا فتح المحادثة، وبلا عدّادات.
+              EmployeeCard(user: user, bottom: const InternalTicketsCardSection()),
               SizedBox(height: 20.h),
               QuickActions(actions: _actionsFor(context)),
               SizedBox(height: 20.h),
@@ -77,9 +90,6 @@ class _HomeView extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 24.h),
-              // «تذاكر الموظفين — تنتظر ردّك»، كبطاقة بريمولا: ما ينتظر هذا الموظفَ بعينه، فهو
-              // أعلى ما في الرئيسية بعد أرقامها. وتغيب كلُّها — بمسافتها — حين لا شيء مفتوحاً.
-              const InternalTicketsHomeCard(),
               // **أعلى من لوحتي الحالات والدفع، وهو الصندوق الوحيد الذي يخصّ شخصاً بعينه.**
               // اللوحتان تحته تقسمان طلبيات الورشة كلّها على محاورها ويقرؤهما الجميع؛ هذا طابور
               // عملٍ يُفتح ليُفرَغ، ومن يملك صلاحيته يفتح التطبيق لأجله. وغائبٌ تماماً لمن لا

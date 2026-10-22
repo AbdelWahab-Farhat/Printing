@@ -14,10 +14,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// The code is tappable because it is the one thing here that gets *typed somewhere else*: into
 /// a paper form, a message, another system. Copying it beats re-reading it off the screen.
+///
+/// **[bottom] تحت الرأس، على البطاقة نفسها**، كبطاقة موظف بريمولا: تذاكرُ الموظفين التي تنتظر ردّه
+/// (`InternalTicketsCardSection`) — طلبُ المالك ٢٠٢٦-١٠-٢٣.
 class EmployeeCard extends StatelessWidget {
-  const EmployeeCard({required this.user, super.key});
+  const EmployeeCard({required this.user, this.bottom, super.key});
 
   final AuthUser user;
+
+  /// يُرسم بحبر البطاقة (`onPrimary`) — البطاقةُ تدرّجُ العلامة في الوضعين.
+  final Widget? bottom;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +45,7 @@ class EmployeeCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: corner,
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, bottom == null ? 20.h : 12.h),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: AlignmentDirectional.topStart,
@@ -48,36 +54,45 @@ class EmployeeCard extends StatelessWidget {
             ),
           ),
           // The mark is *behind* the row, not a cell in it: it bleeds off the corner and the
-          // card's height stays whatever the name and the code need.
-          child: Stack(
+          // card's height stays whatever the name and the code need. [bottom] sits under that
+          // Stack, not in it — the Stack clips to the header, and the tickets' highlight reaches
+          // into the card's padding.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const PositionedDirectional(bottom: -34, end: -22, child: _BrandMark()),
-              Row(
+              Stack(
                 children: [
-                  _Avatar(name: user.name),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          user.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.titleLarge?.copyWith(
-                            color: scheme.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  const PositionedDirectional(bottom: -34, end: -22, child: _BrandMark()),
+                  Row(
+                    children: [
+                      _Avatar(name: user.name),
+                      SizedBox(width: 14.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              user.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.titleLarge?.copyWith(
+                                color: scheme.onPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            _EmployeeCode(code: user.employeeCode),
+                          ],
                         ),
-                        SizedBox(height: 8.h),
-                        _EmployeeCode(code: user.employeeCode),
-                      ],
-                    ),
+                      ),
+                      if (user.roles.isNotEmpty) _RoleChip(label: user.roles.first.label),
+                    ],
                   ),
-                  if (user.roles.isNotEmpty) _RoleChip(label: user.roles.first.label),
                 ],
               ),
+              ?bottom,
             ],
           ),
         ),
