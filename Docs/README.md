@@ -39,6 +39,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-34-NAWRIS-CARRIER-FEE.md](changes/PR-34-NAWRIS-CARRIER-FEE.md) | نورس: الدفعة على قد اللي حصّله المندوب، والتعديل المرفوض ما يضيعش. |
 | [PR-31-INTERNAL-TICKETS.md](changes/PR-31-INTERNAL-TICKETS.md) | «تذاكر الموظفين» — موظف يكتب لزميله. |
 | [PR-30-PROFIT-CAPITALISATION-CASH.md](changes/PR-30-PROFIT-CAPITALISATION-CASH.md) | «تحويل أرباح إلى رأس مال» يخرج من نقد الصندوق. |
 | [PR-28-OUTSOURCED-VENDOR-COST.md](changes/PR-28-OUTSOURCED-VENDOR-COST.md) | «تكلفة المورد» على بنود الوسيط. |
