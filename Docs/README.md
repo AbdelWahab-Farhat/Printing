@@ -39,6 +39,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-31-INTERNAL-TICKETS.md](changes/PR-31-INTERNAL-TICKETS.md) | «تذاكر الموظفين» — موظف يكتب لزميله. |
 | [PR-30-PROFIT-CAPITALISATION-CASH.md](changes/PR-30-PROFIT-CAPITALISATION-CASH.md) | «تحويل أرباح إلى رأس مال» يخرج من نقد الصندوق. |
 | [PR-28-OUTSOURCED-VENDOR-COST.md](changes/PR-28-OUTSOURCED-VENDOR-COST.md) | «تكلفة المورد» على بنود الوسيط. |
 | [PR-27-CHECKOUT-DEPOSIT.md](changes/PR-27-CHECKOUT-DEPOSIT.md) | العربون في سلة الزبون، وبعد المراجعة. |
@@ -96,6 +97,12 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [EMPLOYEE-DETAIL-DESIGN.md](employees/EMPLOYEE-DETAIL-DESIGN.md) | شاشة تفاصيل الموظف — التعديل وإعادة التعيين والإيقاف. |
+
+## [internal-tickets/](internal-tickets/)
+
+| Document | |
+|---|---|
+| [INTERNAL-TICKETS-DESIGN.md](internal-tickets/INTERNAL-TICKETS-DESIGN.md) | تذاكر الموظفين كبريمولا — الجداول والـ API والرسائل الصوتية والتذكير والشاشات. **مُنفَّذ** (PR #31). |
 
 ## [inventory/](inventory/)
 
