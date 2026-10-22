@@ -21,16 +21,24 @@ enum Delivery {
 ///
 /// **لا تنعكس في الاتجاه العربي**: ✓ شكلٌ يُعرف كما هو، لا سهمٌ يشير إلى جهة.
 class DeliveryTicks extends StatelessWidget {
-  const DeliveryTicks({required this.delivery, required this.color, super.key});
+  const DeliveryTicks({
+    required this.delivery,
+    required this.color,
+    this.readLabel = 'قرأها العميل',
+    super.key,
+  });
 
   final Delivery delivery;
   final Color color;
+
+  /// ما يقوله قارئُ الشاشة عن ✓✓ — العميلُ في محادثة الدعم، والزميلُ في التذكرة الداخلية.
+  final String readLabel;
 
   @override
   Widget build(BuildContext context) {
     final label = switch (delivery) {
       Delivery.sent => 'وصلت',
-      Delivery.read => 'قرأها العميل',
+      Delivery.read => readLabel,
     };
 
     return Semantics(

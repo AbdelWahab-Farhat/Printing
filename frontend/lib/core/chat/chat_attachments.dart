@@ -27,6 +27,7 @@ class ChatRemoteImage extends StatelessWidget {
     required this.url,
     this.aspectRatio,
     this.onTap,
+    this.cacheKey,
     super.key,
   });
 
@@ -34,6 +35,10 @@ class ChatRemoteImage extends StatelessWidget {
   final String? url;
   final double? aspectRatio;
   final VoidCallback? onTap;
+
+  /// مفتاحٌ غيرُ [chatImageCacheKey] — للتذاكر الداخلية، التي ترقيمُ مرفقاتها غيرُ ترقيم رسائل
+  /// الدعم: الرقمُ نفسه في الجدولين كان سيُري صورةَ أحدهما في الآخر.
+  final String? cacheKey;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +60,7 @@ class ChatRemoteImage extends StatelessWidget {
                 ? const _ImagePlaceholder(failed: true)
                 : CachedNetworkImage(
                     imageUrl: link,
-                    cacheKey: chatImageCacheKey(messageId),
+                    cacheKey: cacheKey ?? chatImageCacheKey(messageId),
                     width: _imageWidth,
                     height: height,
                     fit: BoxFit.cover,

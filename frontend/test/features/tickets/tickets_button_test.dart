@@ -11,33 +11,29 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// زرّ «التذاكر» في شريط التطبيق: تذاكر التصميم وتذاكر العملاء خلف أيقونةٍ واحدة.
+/// زرّ «التذاكر» في شريط التطبيق: تذاكر التصميم والعملاء والموظفين خلف أيقونةٍ واحدة.
 ///
-/// كان زرَّ تذاكر التصميم وحدها، وتذاكرُ الدعم صفّاً في الدرج. جُمعتا في خانةٍ واحدة باسمٍ عامّ
-/// (طلب المستخدم، 2026-09-25). فما يُختبر هنا: أن أيّاً من الصلاحيتين يُظهر الزرّ، وأن غيابهما
-/// معاً يُخفيه — أيقونةٌ بلا حاجزٍ تفتح على صفحةٍ تردّ صاحبها إلى الرئيسية — وأنه يصغي لتبدّل
-/// الجلسة، فالصلاحيات تتغيّر والشجرة قائمة.
+/// كان يظهر بإحدى صلاحيتَي التصميم والدعم وحدهما. **منذ التذاكر الداخلية يظهر لكل موظف**:
+/// تبويبُ «الموظفين» بلا صلاحية (INTERNAL-TICKETS-DESIGN §٦)، فلا صفحةَ خلفه تردّ صاحبها.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
-  late Session session;
-
   /// آخر مسارٍ دُفع، لأن ما يفعله الزرّ هو الذهاب إلى مكان.
   String? pushed;
 
   Future<void> arrange(List<AppPermission> grants) async {
     await Injector.reset();
     pushed = null;
-    session = Session()
-      ..adopt(
+    sl.registerSingleton<Session>(
+      Session()..adopt(
         AuthUser(
           id: 1,
           name: 'عبدالوهاب',
           phone: '0911234567',
           permissions: [for (final grant in grants) grant.wire],
         ),
-      );
-    sl.registerSingleton<Session>(session);
+      ),
+    );
   }
 
   tearDown(Injector.reset);
@@ -76,20 +72,18 @@ void main() {
     );
   }
 
-  for (final grant in [AppPermission.viewDesignTickets, AppPermission.viewSupportTickets]) {
-    testWidgets('«${grant.wire}» alone is enough to get «التذاكر»', (tester) async {
-      // Arrange
-      await arrange([grant]);
+  testWidgets('an employee with no ticket grant at all still gets «التذاكر»', (tester) async {
+    // Arrange — «الموظفين» needs no permission, so the page behind the button is never empty.
+    await arrange([]);
 
-      // Act
-      await tester.pumpWidget(host());
-      await tester.pumpAndSettle();
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
 
-      // Assert
-      expect(find.byTooltip('التذاكر'), findsOneWidget);
-      expect(find.byIcon(AppIcons.comments), findsOneWidget);
-    });
-  }
+    // Assert
+    expect(find.byTooltip('التذاكر'), findsOneWidget);
+    expect(find.byIcon(AppIcons.comments), findsOneWidget);
+  });
 
   testWidgets('it pushes the tickets screen', (tester) async {
     // Arrange
@@ -103,40 +97,5 @@ void main() {
 
     // Assert
     expect(pushed, Routes.tickets);
-  });
-
-  testWidgets('without either grant there is no button at all', (tester) async {
-    // Arrange — every other ticket grant, but neither of the two that open a list.
-    await arrange([AppPermission.manageDesignTickets, AppPermission.manageSupportTickets]);
-
-    // Act
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    // Assert — hidden, not greyed: the route would send them back to الرئيسية.
-    expect(find.byTooltip('التذاكر'), findsNothing);
-    expect(find.byType(IconButton), findsNothing);
-  });
-
-  testWidgets('a grant arriving with the tree mounted brings it', (tester) async {
-    // Arrange — signed in with nothing, as before a pull-to-refresh re-reads `/auth/me`.
-    await arrange([]);
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('التذاكر'), findsNothing);
-
-    // Act
-    session.adopt(
-      AuthUser(
-        id: 1,
-        name: 'عبدالوهاب',
-        phone: '0911234567',
-        permissions: [AppPermission.viewSupportTickets.wire],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Assert
-    expect(find.byTooltip('التذاكر'), findsOneWidget);
   });
 }

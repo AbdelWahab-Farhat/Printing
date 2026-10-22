@@ -31,6 +31,10 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
+import 'package:dayaa/features/internal_tickets/presentation/views/internal_thread_page.dart';
+import 'package:dayaa/features/internal_tickets/presentation/views/internal_tickets_page.dart';
+import 'package:dayaa/features/internal_tickets/presentation/views/new_internal_ticket_page.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_cash_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/fund_expenses_page.dart';
@@ -442,6 +446,20 @@ abstract final class Routes {
   /// One thread. **A child of the queue**, so the back button lands on the list rather than on
   /// whatever screen happened to link here.
   static String supportTicket(int id) => '/support/tickets/$id';
+
+  /// التذاكر الداخلية بين الموظفين — **بلا صلاحية**: كلُّ موظفٍ يفتح تذكرةً إلى زميل.
+  static const String internalTickets = '/internal-tickets';
+
+  /// القائمةُ مقصورةً على طلبيةٍ أو عميل — والحمولةُ `InternalTicketSubject`.
+  static const String internalTicketsFiltered = '/internal-tickets/filter';
+
+  /// «تذكرة جديدة». **قبل `/:id`**، فلا تُقرأ الكلمةُ رقماً. والحمولةُ `InternalTicketSubject?`.
+  static const String newInternalTicket = '/internal-tickets/new';
+
+  /// المحادثة. **المسارُ نفسه الذي يرسله الخادم في الإشعار** (`/internal-tickets/{id}`).
+  static const String internalTicketPath = '/internal-tickets/:id';
+
+  static String internalTicket(int id) => '/internal-tickets/$id';
 
   static const String notifications = '/notifications';
 
@@ -1087,18 +1105,9 @@ abstract final class AppRouter {
         builder: (context, state) => const DesignTicketsPage(),
       ),
       // أيٌّ من الصفّين يفتحها — والشاشةُ نفسها تُظهر التبويبَ الذي يملكه القارئ وحده.
-      GoRoute(
-        path: Routes.tickets,
-        redirect: (context, state) {
-          final session = sl<Session>();
-
-          return session.can(AppPermission.viewDesignTickets) ||
-                  session.can(AppPermission.viewSupportTickets)
-              ? null
-              : Routes.home;
-        },
-        builder: (context, state) => const TicketsPage(),
-      ),
+      // **بلا `redirect` منذ التذاكر الداخلية** — تبويبُ «الموظفين» لكل موظف، فالصفحةُ لا تكون
+      // فارغةً لأحد. والتبويبان الآخران يظهران لمن يملك قراءتهما وحده.
+      GoRoute(path: Routes.tickets, builder: (context, state) => const TicketsPage()),
       GoRoute(
         path: Routes.designTicketsFiltered,
         redirect: (context, state) =>
@@ -1471,6 +1480,30 @@ abstract final class AppRouter {
         builder: (context, state) => BagPreviewPage(
           initialDesign: state.payload as PickedFile?,
         ),
+      ),
+      // التذاكر الداخلية — بلا `redirect`: لا صلاحية لها، والخادمُ يحكم على كل صف. والحرفيّان قبل
+      // `:id`، فلا تُقرأ «new» و«filter» رقمَي تذكرة.
+      GoRoute(
+        path: Routes.internalTickets,
+        builder: (context, state) => const InternalTicketsPage(),
+      ),
+      GoRoute(
+        path: Routes.internalTicketsFiltered,
+        builder: (context, state) =>
+            InternalTicketsPage(subject: state.payload as InternalTicketSubject?),
+      ),
+      GoRoute(
+        path: Routes.newInternalTicket,
+        builder: (context, state) =>
+            NewInternalTicketPage(subject: state.payload as InternalTicketSubject?),
+      ),
+      GoRoute(
+        path: Routes.internalTicketPath,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null ? const InternalTicketsPage() : InternalThreadPage(ticketId: id);
+        },
       ),
       GoRoute(
         path: Routes.supportTickets,

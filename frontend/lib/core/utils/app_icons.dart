@@ -339,6 +339,23 @@ abstract final class AppIcons {
   /// إعادةُ فتح تذكرةٍ مغلقة — قفلٌ مفتوح، مقابلُ ما أُغلق.
   static IconData get reopen => _pick(Icons.lock_open_rounded, CupertinoIcons.lock_open);
 
+  // ── التذاكر الداخلية والرسائل الصوتية ──────────────────────────────────────
+
+  /// الميكروفون: اضغط وأمسك لتسجّل.
+  static IconData get mic => _pick(Icons.mic_rounded, CupertinoIcons.mic_fill);
+
+  /// تشغيلُ رسالةٍ صوتية، وإيقافُها.
+  static IconData get play => _pick(Icons.play_arrow_rounded, CupertinoIcons.play_fill);
+
+  static IconData get pause => _pick(Icons.pause_rounded, CupertinoIcons.pause_fill);
+
+  /// «ردّ» على رسالةٍ بعينها — يقتبسها فوق الردّ.
+  static IconData get reply => _pick(Icons.reply_rounded, CupertinoIcons.reply);
+
+  /// تذاكرُ الموظفين بينهم: فقاعتا كلام، لا فقاعةٌ واحدة كالملاحظات.
+  static IconData get internalTickets =>
+      _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
+
   // ── choosing a file ────────────────────────────────────────────────────────
   // The three rows of the attachment sheet. Distinct glyphs on purpose: they sit side by side
   // and the icon is what is read, not the label under it.

@@ -199,6 +199,25 @@ return [
         'mimetypes' => ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
     ],
 
+    /*
+    | التذاكر الداخلية بين الموظفين: صورٌ ورسائل صوتية فقط (INTERNAL-TICKETS-DESIGN §٢).
+    |
+    | **حدّان لا حدٌّ واحد**، كما في بريمولا. الصورة ١٠ ميغابايت — بريمولا ٢، لكن هذا التطبيق لا
+    | يصغّر الصور قبل رفعها، وصورة الكاميرا ٣–٥ ميغابايت. والصوت ٦ ميغابايت: المسجّل يكتب نحو ٦
+    | كيلوبايت في الثانية، فخمس دقائق نحو ١٫٨ ميغابايت، والباقي هامشٌ لهاتفٍ يكتب بصيغةٍ أثقل.
+    | **هذا الحدّ هو حدُّ الصوت الحقيقي**؛ المدّة التي يرسلها الهاتف للعرض وحده، وقد يكذب فيها.
+    */
+    'internal_ticket_attachments' => [
+        'disk' => env('MEDIA_INTERNAL_TICKET_ATTACHMENTS_DISK', 'local'),
+        'image_max_kilobytes' => (int) env('MEDIA_INTERNAL_TICKET_IMAGE_MAX_KILOBYTES', 10240),
+        'voice_max_kilobytes' => (int) env('MEDIA_INTERNAL_TICKET_VOICE_MAX_KILOBYTES', 6144),
+        'voice_max_seconds' => 300,
+        // ما يرسمه التطبيق تحت الرسالة الصوتية: ٤٨ عموداً، كبريمولا.
+        'waveform_bars' => 48,
+        // صورُ «تذكرة جديدة».
+        'max_opening_images' => 4,
+    ],
+
     'product_images' => [
         'max_kilobytes' => (int) env('MEDIA_MAX_KILOBYTES', 5120),
         'mimes' => ['jpeg', 'jpg', 'png', 'webp'],

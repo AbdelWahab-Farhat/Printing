@@ -1,5 +1,12 @@
 import 'dart:async';
 
+import 'package:dayaa/core/chat/chat_attachments.dart';
+import 'package:dayaa/core/chat/chat_avatar.dart';
+import 'package:dayaa/core/chat/chat_composer.dart';
+import 'package:dayaa/core/chat/chat_pill.dart';
+import 'package:dayaa/core/chat/delivery_ticks.dart';
+import 'package:dayaa/core/chat/message_bubble.dart';
+import 'package:dayaa/core/chat/message_menu.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
@@ -15,13 +22,6 @@ import 'package:dayaa/core/widgets/receipt_viewer.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/chat_timeline.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/ticket_thread_cubit.dart';
-import 'package:dayaa/features/support/presentation/widgets/chat_attachments.dart';
-import 'package:dayaa/features/support/presentation/widgets/chat_avatar.dart';
-import 'package:dayaa/features/support/presentation/widgets/chat_composer.dart';
-import 'package:dayaa/features/support/presentation/widgets/chat_pill.dart';
-import 'package:dayaa/features/support/presentation/widgets/delivery_ticks.dart';
-import 'package:dayaa/features/support/presentation/widgets/message_bubble.dart';
-import 'package:dayaa/features/support/presentation/widgets/message_menu.dart';
 import 'package:dayaa/features/support/presentation/widgets/thread_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

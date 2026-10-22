@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Application\Realtime\Listeners\BroadcastInternalTicketChange;
 use App\Application\Realtime\Listeners\BroadcastTicketChange;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Carrier\Actions\BuildNawrisPayload;
@@ -13,6 +14,8 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
+use App\Domain\InternalTicket\Events\InternalTicketChanged;
+use App\Domain\InternalTicket\Events\InternalTicketReplyOverdue;
 use App\Domain\Inventory\Events\StockCreditedBack;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostFundProceedsWhenPaymentsMove;
@@ -28,10 +31,12 @@ use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenOrderStageChanges;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenSupportReplies;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenWalletToppedUp;
+use App\Domain\Notification\Listeners\NotifyOnInternalTicketActivity;
 use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
+use App\Domain\Notification\Listeners\NotifyWhenInternalTicketReplyIsOverdue;
 use App\Domain\Notification\Listeners\NotifyWhenOrderDepositIsChosen;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderIsRequested;
@@ -308,6 +313,13 @@ class AppServiceProvider extends ServiceProvider
         // وردُّ المحل يصل إلى هاتف العميل — المستمِعُ الثالث على الحدث نفسه، وهو الذي كان جرسُ
         // الموظفين يتركه له («ردُّ المحل خبرٌ للعميل»). انظر NotifyCustomerWhenSupportReplies.
         Event::listen(TicketChanged::class, NotifyCustomerWhenSupportReplies::class);
+
+        // **والتذاكرُ الداخلية بالترتيب نفسه** (INTERNAL-TICKETS-DESIGN §٥): السياقُ يُعلن، والبثُّ
+        // ينقل إلى المحادثة وقناةِ كل طرف، والجرسُ يصغي — تذكرةٌ جديدة لمن وُجّهت إليه، ورسالةٌ
+        // للطرف الآخر، والتذكيرُ كل ساعة لمن تأخّر ردّه.
+        Event::listen(InternalTicketChanged::class, BroadcastInternalTicketChange::class);
+        Event::listen(InternalTicketChanged::class, NotifyOnInternalTicketActivity::class);
+        Event::listen(InternalTicketReplyOverdue::class, NotifyWhenInternalTicketReplyIsOverdue::class);
 
         // «تم شحن محفظتك» — CUSTOMER-WALLET §٥.
         Event::listen(WalletToppedUpOnline::class, NotifyCustomerWhenWalletToppedUp::class);

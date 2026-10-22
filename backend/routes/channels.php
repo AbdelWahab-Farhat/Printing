@@ -3,6 +3,7 @@
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\InternalTicket\Models\InternalTicket;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -29,6 +30,28 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel(
     'support.desk',
     fn ($user): bool => $user instanceof User && $user->can(PermissionName::ViewSupportTickets->value),
+    ['guards' => ['sanctum']],
+);
+
+/*
+ * محادثةُ تذكرةٍ داخلية: يسمعها مَن يراها — طرفاها والمدير — بالقاعدة نفسها التي تحرس
+ * `GET internal-tickets/{id}` (InternalTicket::isVisibleTo). تذكرةٌ لا وجود لها لا يدخلها أحد.
+ */
+Broadcast::channel(
+    'internal-tickets.{ticketId}',
+    fn ($user, string $ticketId): bool => $user instanceof User
+        && ctype_digit($ticketId)
+        && (InternalTicket::query()->find((int) $ticketId)?->isVisibleTo($user) ?? false),
+    ['guards' => ['sanctum']],
+);
+
+/*
+ * قناةُ الموظف نفسه: إشارةٌ بأن تذكرةً هو طرفٌ فيها تغيّرت، فتعيد بطاقةُ الرئيسية والقائمةُ
+ * طلبَ ما تعرضانه. رقمٌ وسببٌ فقط، كبريمولا — لا محتوى يُبثّ لمن لم يفتح المحادثة.
+ */
+Broadcast::channel(
+    'staff.{userId}',
+    fn ($user, string $userId): bool => $user instanceof User && (string) $user->getKey() === $userId,
     ['guards' => ['sanctum']],
 );
 

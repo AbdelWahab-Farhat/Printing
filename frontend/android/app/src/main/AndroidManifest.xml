@@ -16,6 +16,12 @@
         فيُنزع. يحرسه `test/android/manifest_test.dart`.
     -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <!--
+        الرسائلُ الصوتية في التذاكر الداخلية (INTERNAL-TICKETS-DESIGN §٣): `record` يسجّل ما دام
+        الإصبعُ على الميكروفون. يُسأل عنه عند أوّل ضغطةٍ مطوّلة لا عند فتح التطبيق، ومَن رفضه يُقال
+        له كيف يفتحه من الإعدادات.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!--
         The back gesture, and the animation that comes with it.

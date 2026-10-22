@@ -17,6 +17,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
+import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/investors/presentation/widgets/order_investors_section.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
@@ -1479,6 +1480,17 @@ class _Actions extends StatelessWidget {
           icon: AppIcons.payment,
           permission: AppPermission.viewOrderPayments,
           onTap: onOpenPayments,
+        ),
+
+        // «تذاكر الطلبية»، كبريمولا: ما قاله الموظفون بينهم عنها، و«تذكرة جديدة» فيها تحملها.
+        // بلا `permission` — التذاكرُ الداخلية لكل موظف، والخادمُ يُري كلَّ واحدٍ ما هو طرفٌ فيه.
+        AppAction(
+          label: 'تذاكر الموظفين',
+          icon: AppIcons.internalTickets,
+          onTap: (context) => context.push(
+            Routes.internalTicketsFiltered,
+            extra: InternalTicketSubject(orderId: order.id, orderCode: order.code),
+          ),
         ),
 
         // «سجل التعديلات» used to stand here. It reads and never writes, which is what the two

@@ -935,6 +935,47 @@ final class AuditAttributeLabels
             'client_token' => 'رمز الإرسال',
         ],
 
+        // التذاكر الداخلية بين الموظفين. `status` و`code` و`is_active` و`sort_order` و`order_id`
+        // وأخواتها في SHARED أو بلا حاجة إلى تكرار — ما يطلبه AuditAttributeLabelsTest وحده هنا.
+        'internal_ticket' => [
+            'title' => 'عنوان التذكرة',
+            'priority' => 'الأولوية',
+            'category_id' => 'نوع المشكلة',
+            'opened_by' => 'صاحب التذكرة',
+            'assignee_id' => 'موجّهة إلى',
+            'customer_id' => 'العميل',
+            'opener_read_message_id' => 'قرأ صاحبها حتى الرسالة',
+            'assignee_read_message_id' => 'قرأ الزميل حتى الرسالة',
+            'last_message_at' => 'آخر رسالة',
+            'closed_at' => 'أُغلقت في',
+            'closed_by' => 'أغلقها',
+            'last_reminder_at' => 'آخر تذكير',
+            'reminder_count' => 'عدد التذكيرات',
+        ],
+
+        'internal_ticket_message' => [
+            'internal_ticket_id' => 'التذكرة',
+            'user_id' => 'كتبها',
+            'body' => 'نص الرسالة',
+            'reply_to_message_id' => 'ردّاً على الرسالة',
+            'client_token' => 'رمز الإرسال',
+            'edited_at' => 'عُدّلت في',
+            'original_body' => 'النص الأول',
+            'retracted_at' => 'حُذفت في',
+        ],
+
+        'internal_ticket_attachment' => [
+            'message_id' => 'الرسالة',
+            'kind' => 'صنف المرفق',
+            'filename' => 'اسم المرفق',
+            'duration_seconds' => 'مدة الرسالة الصوتية (ثوانٍ)',
+            'waveform' => 'موجة الصوت',
+        ],
+
+        'internal_ticket_category' => [
+            'name' => 'اسم النوع',
+        ],
+
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
             // المددُ الأربع. تُنسَخ على صفّ الفترة يوم تُفتح ولا تُقرأ من هنا بعدها — فتغييرُها

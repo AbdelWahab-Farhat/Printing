@@ -75,9 +75,12 @@
 		says the true thing rather than inventing a feature: the alert will not appear, because
 		the app never asks.
 
-		No NSMicrophoneUsageDescription: nothing here records video, and a permission string for
-		a capability the app never uses is one more thing to justify at review.
+		NSMicrophoneUsageDescription since the internal tickets' voice notes
+		(INTERNAL-TICKETS-DESIGN §٣): the app records while a finger holds the microphone button,
+		and asks the first time that button is held, never at launch.
 	-->
+		<key>NSMicrophoneUsageDescription</key>
+		<string>لتسجيل رسالةٍ صوتية لزميلك في التذاكر الداخلية حين تضغط على الميكروفون وتمسكه.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>لتصوير تصميم أو عيّنة مطبوعة وإضافتها مباشرةً إلى تصاميم العميل.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>

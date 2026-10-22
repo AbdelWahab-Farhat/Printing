@@ -144,6 +144,16 @@ dependencies:
   # ولماذا مقابس لا سؤالٌ كل ثوانٍ ولا FCM: Docs/support/SUPPORT-REALTIME.md §١.
   dart_pusher_channels: ^1.3.1
 
+  # ── الرسائل الصوتية في التذاكر الداخلية ───────────────────────────────────────
+  # الثلاث نفسها التي في تطبيق موظفي بريمولا وبنسخها — المطلوب أن تكون التذاكر كما هي هناك
+  # (INTERNAL-TICKETS-DESIGN §٣). `record` يسجّل AAC في m4a ويقيس الصوت للموجة؛ `just_audio`
+  # يشغّل من الملف بعد أن ينزل مرّةً (core/voice/voice_note_cache.dart)؛ و`audio_session` يعيد
+  # الهاتف من وضع التسجيل إلى مكبّر الصوت قبل كل تشغيل — بدونه يخرج الصوت خافتاً على iOS بعد
+  # أول تسجيل. وكلّها خلف `core/voice/`: لا شاشةَ تعرف أيّ حزمة تسجّل.
+  record: ^7.1.2
+  just_audio: ^0.10.6
+  audio_session: ^0.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

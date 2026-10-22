@@ -59,6 +59,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // الشحن الإلكتروني: كلُّ محاولةٍ معلّقة تُسأل عنها EzonePay — webhook ضاع لا يُضيّع مالاً.
         // لا يفعل شيئاً والدفع الإلكتروني مطفأ. انظر ReconcileOnlinePayments.
         $schedule->command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping();
+
+        // التذاكر الداخلية: تذكيرُ مَن تأخّر ردّه، كل ساعة حتى ٢٤ مرة — انظر RemindAwaitedParties.
+        $schedule->command('internal-tickets:remind')->hourly()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there
