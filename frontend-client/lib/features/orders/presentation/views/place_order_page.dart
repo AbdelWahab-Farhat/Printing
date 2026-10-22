@@ -643,7 +643,6 @@ class _DetailsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PlaceOrderCubit>();
-    final scheme = context.colorScheme;
     final city = state.selectedCity;
 
     Region? region;
@@ -761,33 +760,20 @@ class _DetailsStep extends StatelessWidget {
 
         SizedBox(height: 20.h),
         // «ملاحظات» وحدها (طلب صاحب العمل): الاسم فوق الصندوق يكفي، بلا جملةٍ تشرح ما يُكتب فيه.
+        // **بسطرٍ واحد** (طلب المستخدم، 2026-10-20: «صغر بحجم حقل الملاحظة بسطر»)، يطول مع الكلام
+        // حتى ثلاثة.
         AppTextField(
           controller: note,
           label: 'ملاحظات',
+          minLines: 1,
           maxLines: 3,
           textInputAction: TextInputAction.newline,
         ),
 
         SizedBox(height: 20.h),
+        // **بلا ملاحظةٍ تحته عن العربون** (طلب المستخدم، 2026-10-20: «حط العربون تبع صفحة ثانيه
+        // وانزع الملاحظة خاصة بالعربون»): له خطوته الثالثة، واسمها في الأعلى.
         _CostBreakdown(state: state),
-
-        SizedBox(height: 16.h),
-        Container(
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            color: scheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(12.r),
-          ),
-          child: Text(
-            switch (state.depositOffer) {
-              final offer? =>
-                'في الخطوة التالية تختار العربون — ${offer.minPercent}٪ من قيمة الطلبية على الأقل — '
-                    'ونبدأ العمل حين يصلنا.',
-              null => 'بعد الإرسال نراجع الطلبية ونؤكّد التفاصيل والسعر قبل البدء.',
-            },
-            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSecondaryContainer),
-          ),
-        ),
       ],
     );
   }

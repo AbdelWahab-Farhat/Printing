@@ -236,6 +236,27 @@ void main() {
     expect(find.text('أرسل الطلبية'), findsOneWidget);
   });
 
+  /// «حط العربون تبع صفحة ثانيه وانزع الملاحظة خاصة بالعربون» (طلب المستخدم، 2026-10-20): العربون
+  /// خطوته الثالثة، ولا جملة عنه في «بيانات الطلب».
+  testWidgets('the details step says nothing about the deposit — it has its own step', (
+    tester,
+  ) async {
+    // Arrange & Act
+    await open(tester);
+
+    // Assert — «العربون» الوحيدة اسم الخطوة في الأعلى.
+    expect(find.textContaining('العربون'), findsOneWidget);
+    expect(find.textContaining('الخطوة التالية'), findsNothing);
+  });
+
+  testWidgets('a basket not offered one carries no note under its costs either', (tester) async {
+    // Arrange & Act
+    await open(tester, offered: false);
+
+    // Assert
+    expect(find.textContaining('نراجع الطلبية'), findsNothing);
+  });
+
   testWidgets('«ادفع كامل القيمة» writes the whole amount into the box, and says so', (tester) async {
     // Arrange
     await open(tester);

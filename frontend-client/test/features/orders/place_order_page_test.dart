@@ -5,6 +5,7 @@ import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/app_snackbar.dart';
+import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/repositories/auth_repository.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
@@ -478,6 +479,33 @@ void main() {
       expect(find.text('ملاحظات'), findsOneWidget);
       expect(find.text('ملاحظاتك'), findsNothing);
       expect(find.textContaining('أي شيء تريد'), findsNothing);
+    });
+
+    /// «صغر بحجم حقل الملاحظة بسطر» (طلب المستخدم، 2026-10-20).
+    testWidgets('the notes box is one line tall, like the phone box above it', (tester) async {
+      // Arrange & Act
+      await open(tester);
+      await proceed(tester);
+
+      // Assert — يطول مع الكلام حتى ثلاثة أسطر، كصندوق الرسالة في المحادثة.
+      EditableText editor(String label) => tester.widget<EditableText>(
+        find.descendant(
+          of: find.widgetWithText(AppTextField, label),
+          matching: find.byType(EditableText),
+        ),
+      );
+      double height(String label) => tester
+          .getSize(
+            find.descendant(
+              of: find.widgetWithText(AppTextField, label),
+              matching: find.byType(InputDecorator),
+            ),
+          )
+          .height;
+
+      expect(editor('ملاحظات').minLines, 1);
+      expect(editor('ملاحظات').maxLines, 3);
+      expect(height('ملاحظات'), closeTo(height('هاتف الاستلام'), 1));
     });
 
     testWidgets('offers no way to add a shop — that lives under «حسابي»', (tester) async {
