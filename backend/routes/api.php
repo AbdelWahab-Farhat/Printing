@@ -936,6 +936,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('investors/{investor}/statement', [InvestorController::class, 'statement'])
             ->middleware('can:investors.view')->name('investors.statement');
 
+        Route::get('investors/{investor}/profit-sources', [InvestorController::class, 'profitSources'])
+            ->middleware('can:investors.view')->name('investors.profit-sources');
+
         Route::post('investors/{investor}/wallet', [InvestorController::class, 'storeWalletEntry'])
             ->middleware('can:investors.money.record')->name('investors.wallet.store');
 

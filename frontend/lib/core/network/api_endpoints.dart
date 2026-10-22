@@ -31,6 +31,9 @@ abstract final class InvestorEndpoints {
   static String investor(int id) => '/investors/$id';
   static String wallet(int id) => '/investors/$id/wallet';
   static String statement(int id) => '/investors/$id/statement';
+
+  /// One gate of his profit card, opened — `?gate=awaiting_delivery|pending|available`.
+  static String profitSources(int id) => '/investors/$id/profit-sources';
   static String walletReversal(int id, int entryId) => '/investors/$id/wallet/$entryId/reversal';
   static String deal(int id) => '/investor-deals/$id';
   static String closeDeal(int id) => '/investor-deals/$id/close';

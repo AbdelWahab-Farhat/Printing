@@ -7,6 +7,7 @@ import 'package:dayaa/features/investors/models/deal_order.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/investor_deal.dart';
 import 'package:dayaa/features/investors/models/order_investor_share.dart';
+import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/models/wallet_entry.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dio/dio.dart';
@@ -121,6 +122,17 @@ class InvestorRepositoryImpl implements InvestorRepository {
         },
       ),
       parseItem: (row) => WalletEntry.fromJson(row),
+    );
+  }
+
+  @override
+  Future<Either<Failure, ProfitSources>> profitSources(int investorId, ProfitGate gate) {
+    return safeRequest<ProfitSources>(
+      () => _dio.get(
+        InvestorEndpoints.profitSources(investorId),
+        queryParameters: <String, dynamic>{'gate': gate.value},
+      ),
+      parse: (data) => ProfitSources.fromJson(data as Map<String, dynamic>),
     );
   }
 

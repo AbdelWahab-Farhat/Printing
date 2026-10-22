@@ -135,6 +135,7 @@ import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_statement_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investors_cubit.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/order_investor_shares_cubit.dart';
+import 'package:dayaa/features/investors/presentation/viewmodel/profit_sources_cubit.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository.dart';
 import 'package:dayaa/features/investors/repositories/investor_repository_impl.dart';
 import 'package:dayaa/features/investors/usecases/investor_usecases.dart';
@@ -931,6 +932,7 @@ abstract final class Injector {
       ..registerLazySingleton<ReverseWalletEntry>(
         () => ReverseWalletEntry(sl<InvestorRepository>()),
       )
+      ..registerLazySingleton<GetProfitSources>(() => GetProfitSources(sl<InvestorRepository>()))
       // Factories: each screen owns its Cubit and closes it on dispose.
       ..registerFactory<InvestorsCubit>(() => InvestorsCubit(getInvestors: sl<GetInvestors>()))
       ..registerFactory<DealsCubit>(() => DealsCubit(getDeals: sl<GetInvestorDeals>()))
@@ -948,6 +950,9 @@ abstract final class Injector {
       )
       ..registerFactory<OrderInvestorSharesCubit>(
         () => OrderInvestorSharesCubit(getShares: sl<GetOrderInvestorShares>()),
+      )
+      ..registerFactory<ProfitSourcesCubit>(
+        () => ProfitSourcesCubit(getSources: sl<GetProfitSources>()),
       )
       ..registerFactory<DealOrdersCubit>(
         () => DealOrdersCubit(getOrders: sl<GetDealOrders>()),

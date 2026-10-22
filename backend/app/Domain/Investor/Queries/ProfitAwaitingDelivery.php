@@ -89,6 +89,51 @@ final class ProfitAwaitingDelivery
     }
 
     /**
+     * طلبياتُ رجلٍ واحد وراء رقمه — ما يجمعه {@see forInvestor()}، مفصَّلاً.
+     *
+     * **المشيُ نفسُه لا حسابٌ ثانٍ**: المرشّحاتُ نفسُها والقسمةُ نفسُها، فلا تفترق القائمةُ عن
+     * رقم البطاقة. والقسمةُ تُخرج كلَّ نصيبٍ مقرَّباً إلى قرشين ({@see Money::allocate()})، فمجموعُ
+     * الصفوف هو الرقمُ بلا فرق تقريب.
+     *
+     * @return array<int, string> الطلبية ← نصيبُه منها
+     */
+    public function ordersOf(int $investorId): array
+    {
+        $out = [];
+
+        foreach ($this->candidates() as $orderId) {
+            $shares = $this->sharesOf($orderId);
+
+            if (array_key_exists($investorId, $shares)) {
+                $out[$orderId] = Money::round($shares[$investorId]);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * نصيبُ كلِّ شريكٍ من طلبيةٍ واحدة في الطريق — و`null` ما لم تبلغ «جاهزة».
+     *
+     * بابُ «قيد التسليم» في شاشة الفترة ({@see PeriodOrdersByState}): الطلبيةُ تُعدّ هناك ما دامت
+     * في الطريق، ويُعرض رقمُها من هنا وحده — **و`null` غيرُ الصفر**: الأوّلُ «لم يُسعَّر بعد»،
+     * والثاني طلبيةٌ سُعِّرت ولا يصل المستثمرين منها شيءٌ عند التسليم (كلُّ سحبها اشترته المكينة).
+     *
+     * @return array<int, string>|null المستثمر ← نصيبُه، بلا تقريب
+     */
+    public function ofOrder(int $orderId): ?array
+    {
+        $priced = DB::table('orders')
+            ->where('id', $orderId)
+            ->whereNull('deleted_at')
+            ->whereNotNull('ready_at')
+            ->whereNotNull('total_cogs')
+            ->exists();
+
+        return $priced ? $this->sharesOf($orderId) : null;
+    }
+
+    /**
      * طلبياتٌ خرجت بضاعتُها من رفّ صفقةٍ وبلغت «جاهزة» ولم تبلغ خاتمتَها.
      *
      * **والطريقُ إلى الصفقة سحبُ المخزون نفسه**، كما يقرؤه {@see DealOrdersInFlightQuery}: الطلبيةُ

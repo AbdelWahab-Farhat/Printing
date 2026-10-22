@@ -4,12 +4,15 @@ import 'package:dayaa/core/utils/arabic_counts.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/investment_fund/models/fund_standing.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/period_orders_cubit.dart';
 import 'package:dayaa/features/investment_fund/presentation/views/period_expenses_tab.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_figures.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_order_card.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/period_profit_state_chip.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -70,9 +73,9 @@ class InvestmentPeriodPage extends StatelessWidget {
                     message: failure.message,
                     periodId: periodId,
                   ),
-                  PeriodOrdersLoaded(:final held) => RefreshIndicator(
+                  final PeriodOrdersLoaded loaded => RefreshIndicator(
                     onRefresh: () => context.read<PeriodOrdersCubit>().load(periodId),
-                    child: _Body(held: held),
+                    child: _Body(loaded: loaded),
                   ),
                 },
               ),
@@ -113,18 +116,38 @@ class _Retry extends StatelessWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.held});
+  const _Body({required this.loaded});
 
-  final PeriodOrders held;
+  final PeriodOrdersLoaded loaded;
 
   @override
   Widget build(BuildContext context) {
+    final held = loaded.held;
+    final cubit = context.read<PeriodOrdersCubit>();
+    final filters = _filtersFor(held);
+    final shown = visiblePeriodOrders(
+      held.orders,
+      filter: loaded.filter,
+      query: loaded.query,
+      sort: loaded.sort,
+    );
+
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
       children: [
         _Header(period: held.period),
         SizedBox(height: 20.h),
         _Pool(totals: held.totals),
+        if (held.orders.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          _Headlines(
+            period: held.period,
+            showOnTheRoad: filters.contains(PeriodOrdersFilter.onTheRoad),
+            totals: held.totals.byState,
+            selected: loaded.filter,
+            onTap: cubit.filterBy,
+          ),
+        ],
         if (held.investors.isNotEmpty) ...[
           SizedBox(height: 24.h),
           _Ledger(investors: held.investors),
@@ -143,16 +166,255 @@ class _Body extends StatelessWidget {
               style: context.textTheme.bodyMedium,
             ),
           )
-        else
-          // البابُ إلى الطلبية نفسها، ولا يعود منه شيء: ما تعرضه هذه الشاشة صفوفُ دفترٍ لا
-          // تغيّرها شاشةُ الطلبية.
-          for (final order in held.orders)
-            PeriodOrderCard(
-              key: ValueKey(order.orderId),
-              order: order,
-              onTap: () => context.push(Routes.order(order.orderId)),
-            ),
+        else ...[
+          SearchField(hint: 'ابحث برقم الطلبية أو اسم العميل', onChanged: cubit.search),
+          SizedBox(height: 10.h),
+          _Chips(
+            children: [
+              FilterOptionChip(
+                label: 'الكل',
+                count: held.orders.length,
+                isSelected: loaded.filter == null,
+                onTap: () => cubit.filterBy(null),
+              ),
+              for (final filter in filters)
+                FilterOptionChip(
+                  label: filter.label,
+                  count: held.totals.byState.ofFilter(filter).orders,
+                  isSelected: loaded.filter == filter,
+                  onTap: () => cubit.filterBy(filter),
+                ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          _Chips(
+            children: [
+              for (final sort in PeriodOrdersSort.values)
+                FilterOptionChip(
+                  label: sort.label,
+                  isSelected: loaded.sort == sort,
+                  onTap: () => cubit.sortBy(sort),
+                ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          if (shown.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: Text('لا طلبيات تطابق البحث', style: context.textTheme.bodyMedium),
+            )
+          else
+            // البابُ إلى الطلبية نفسها، ولا يعود منه شيء: ما تعرضه هذه الشاشة صفوفُ دفترٍ لا
+            // تغيّرها شاشةُ الطلبية.
+            for (final order in shown)
+              PeriodOrderCard(
+                key: ValueKey(order.orderId),
+                order: order,
+                onTap: () => context.push(Routes.order(order.orderId)),
+              ),
+        ],
       ],
+    );
+  }
+
+  /// المرشّحاتُ التي تُعرض لهذه الفترة.
+  ///
+  /// «استُلم» و«في الانتظار» دائماً — هما السؤال، وصفرُ أحدهما جوابٌ («لم يُفرَج عن شيءٍ بعد»).
+  /// و«قيد التسليم» ما لم تُغلق الفترة: المغلقةُ لا تُغلق وفيها شيءٌ في الطريق، وما وقع رغم ذلك
+  /// يُعرض.
+  List<PeriodOrdersFilter> _filtersFor(PeriodOrders held) {
+    final onTheRoad =
+        held.period.status != 'closed' ||
+        held.totals.byState.ofFilter(PeriodOrdersFilter.onTheRoad).orders > 0;
+
+    return [
+      PeriodOrdersFilter.received,
+      PeriodOrdersFilter.waiting,
+      if (onTheRoad) PeriodOrdersFilter.onTheRoad,
+    ];
+  }
+}
+
+/// صفُّ شرائح يُمرَّر أفقياً — أربعُ حالاتٍ بأعدادها لا تسعها شاشةُ هاتف في سطر.
+class _Chips extends StatelessWidget {
+  const _Chips({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (index, chip) in children.indexed) ...[
+            if (index > 0) SizedBox(width: 8.w),
+            chip,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// أين ربحُ الفترة من الجيوب — بسؤال المالك نفسِه: **ما استُلم ربحُها، وما ينتظر** (2026-10-21)،
+/// بطاقتان كبيرتان بعدد الطلبيات ومجموعها، ولمسُ إحداهما يصفّي القائمة عليها.
+///
+/// **الأرقامُ من الخادم كما وصلت.** البطاقتان معاً «ربح المستثمرين» فوقهما، وسببُ الانتظار تحت
+/// الثانية — في فترةٍ واحدة سببٌ واحد. و«قيد التسليم» تحتهما وحدها: محسوبٌ لا مقيَّد فيقف خارج
+/// ذلك المجموع، وما لم يُسعَّر بعد يُعدّ ولا يُخترع له رقم.
+class _Headlines extends StatelessWidget {
+  const _Headlines({
+    required this.period,
+    required this.showOnTheRoad,
+    required this.totals,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final FundPeriod period;
+  final bool showOnTheRoad;
+  final PeriodStatesTotals totals;
+  final PeriodOrdersFilter? selected;
+  final ValueChanged<PeriodOrdersFilter> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = 10.w;
+
+    _HeadlineCard card(PeriodOrdersFilter filter, List<String> notes, PeriodProfitState tone) =>
+        _HeadlineCard(
+          filter: filter,
+          total: totals.ofFilter(filter),
+          notes: notes,
+          tone: tone,
+          isSelected: selected == filter,
+          onTap: () => onTap(filter),
+        );
+
+    final heldForPayment = totals.awaitingPayment.orders > 0;
+
+    return Column(
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: card(PeriodOrdersFilter.received, [
+                  if (period.status == 'open' && totals.released.orders == 0)
+                    'يُفرج عنه بعد انتهاء الفترة',
+                ], PeriodProfitState.released),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: card(
+                  PeriodOrdersFilter.waiting,
+                  [
+                    if (totals.awaitingPeriodEnd.orders > 0) 'حتى تنتهي الفترة',
+                    if (heldForPayment) 'حتى يُحصَّل ثمنها',
+                  ],
+                  heldForPayment
+                      ? PeriodProfitState.awaitingPayment
+                      : PeriodProfitState.awaitingPeriodEnd,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showOnTheRoad) ...[
+          SizedBox(height: gap),
+          card(PeriodOrdersFilter.onTheRoad, [
+            if (totals.awaitingDelivery.unpriced > 0)
+              'منها ${ordersCount(totals.awaitingDelivery.unpriced)} لم تُسعَّر',
+            'متوقَّع عند التسليم — ليس في المجموع أعلاه',
+          ], PeriodProfitState.awaitingDelivery),
+        ],
+      ],
+    );
+  }
+}
+
+class _HeadlineCard extends StatelessWidget {
+  const _HeadlineCard({
+    required this.filter,
+    required this.total,
+    required this.notes,
+    required this.tone,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final PeriodOrdersFilter filter;
+  final PeriodStateTotal total;
+
+  /// سطورٌ صغيرة تحت العدد: سببُ الانتظار، أو ما لم يُسعَّر.
+  final List<String> notes;
+
+  /// لونُ البطاقة — لونُ شريحة الحالة التي تمثّلها على بطاقات الطلبيات.
+  final PeriodProfitState tone;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final (background, foreground) = periodProfitStateColors(context, tone);
+    final radius = BorderRadius.circular(16.r);
+
+    return Material(
+      color: background,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: isSelected ? scheme.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                filter.label,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  '${total.amount.grouped} د.ل',
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                  style: context.textTheme.titleLarge?.copyWith(
+                    color: total.amount.startsWith('-') ? scheme.error : foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                total.orders == 0 ? 'لا طلبيات' : ordersCount(total.orders),
+                style: context.textTheme.bodyMedium?.copyWith(color: foreground),
+              ),
+              for (final note in notes)
+                Text(
+                  note,
+                  style: context.textTheme.bodySmall?.copyWith(color: foreground),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -291,6 +553,19 @@ class _LedgerRow extends StatelessWidget {
 
   final PeriodInvestorShare share;
 
+  /// سؤالُ المستثمر نفسُه: «كم وصلني من هذه الفترة، وكم بقي» — ما ليس صفراً وحده.
+  String? get _split {
+    final parts = [
+      if (!_isZero(share.released)) 'استُلم ${share.released.grouped}',
+      if (!_isZero(share.pending)) 'ينتظر ${share.pending.grouped}',
+      if (!_isZero(share.expected)) 'في الطريق ${share.expected.grouped}',
+    ];
+
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  static bool _isZero(String amount) => (double.tryParse(amount) ?? 0) == 0;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
@@ -300,7 +575,21 @@ class _LedgerRow extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
         children: [
-          Expanded(child: Text(share.name, style: context.textTheme.bodyMedium)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(share.name, style: context.textTheme.bodyMedium),
+                if (_split != null)
+                  Text(
+                    _split!,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
           SizedBox(width: 8.w),
           Text(
             '${share.amount.grouped} د.ل',

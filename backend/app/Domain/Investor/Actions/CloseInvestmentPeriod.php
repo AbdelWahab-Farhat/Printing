@@ -18,6 +18,7 @@ use App\Domain\Investor\Queries\GoodsExpenseCharges;
 use App\Domain\Investor\Queries\InvestorBalances;
 use App\Domain\Investor\Queries\OrderInvestorSharesQuery;
 use App\Domain\Investor\Queries\PeriodForEntry;
+use App\Domain\Investor\Queries\PeriodOrderIds;
 use App\Domain\Investor\Queries\PeriodShares;
 use App\Domain\Investor\Support\Money;
 use App\Domain\Investor\Support\StillOwed;
@@ -75,6 +76,7 @@ final class CloseInvestmentPeriod
         private readonly PeriodForEntry $periodFor,
         private readonly OrderService $orders,
         private readonly GoodsExpenseCharges $goodsExpenses,
+        private readonly PeriodOrderIds $periodOrders,
     ) {}
 
     public function __invoke(?int $actorId, ?string $overrideReason = null): InvestmentPeriod
@@ -158,7 +160,7 @@ final class CloseInvestmentPeriod
      */
     private function settle(InvestmentPeriod $period, ?int $actorId, ?int $reopenedOrderId = null): InvestmentPeriod
     {
-        $orderIds = $this->ordersOf($period);
+        $orderIds = $this->periodOrders->of($period);
         [$netProfit, $investorsPool] = $this->profitOf($orderIds);
 
         $this->claimUnstamped($period);
@@ -306,7 +308,7 @@ final class CloseInvestmentPeriod
      */
     public function owedOrdersOf(InvestmentPeriod $period): array
     {
-        return $this->stillOwing($this->ordersOf($period));
+        return $this->stillOwing($this->periodOrders->of($period));
     }
 
     /**
@@ -326,7 +328,7 @@ final class CloseInvestmentPeriod
             return [];
         }
 
-        $waiting = $this->inFlightAmong($orderIds);
+        $waiting = $this->periodOrders->inFlightAmong($orderIds);
 
         $uncollected = DB::table('stock_batch_consumptions as c')
             ->join('stock_batches as b', 'b.id', '=', 'c.stock_batch_id')
@@ -375,65 +377,6 @@ final class CloseInvestmentPeriod
         sort($all);
 
         return $all;
-    }
-
-    /**
-     * طلبياتُ هذه الفترة — بـ`placed_at` بالسقوط إلى `created_at`، بتوقيت المحلّ.
-     *
-     * وهو العمودُ نفسه الذي تعدّ عليه `OrderTotalsQuery` و`FiltersOrders`، فأرقامُ الصندوق
-     * تتّفق مع تقارير الطلبيات بالبناء لا بالمصادفة.
-     *
-     * @return list<int>
-     */
-    private function ordersOf(InvestmentPeriod $period): array
-    {
-        return DB::table('orders')
-            ->whereNull('deleted_at')
-            ->whereRaw('coalesce(placed_at, created_at)::date >= ?', [$period->starts_on->toDateString()])
-            ->whereRaw('coalesce(placed_at, created_at)::date <= ?', [$period->ends_on->toDateString()])
-            ->pluck('id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
-    }
-
-    /**
-     * أيُّ هذه الطلبيات سحب من رفّ الصندوق ولم يصل العميل بعد.
-     *
-     * @param  list<int>  $orderIds
-     * @return list<int>
-     */
-    private function inFlightAmong(array $orderIds): array
-    {
-        if ($orderIds === []) {
-            return [];
-        }
-
-        return DB::table('stock_batch_consumptions as c')
-            ->join('stock_batches as b', 'b.id', '=', 'c.stock_batch_id')
-            ->join('stock_movements as m', 'm.id', '=', 'c.stock_movement_id')
-            ->join('order_items as oi', 'oi.fulfillment_stock_movement_id', '=', 'm.id')
-            ->join('orders as o', 'o.id', '=', 'oi.order_id')
-            ->whereIn('o.id', $orderIds)
-            ->whereNotNull('b.investor_deal_id')
-            ->whereNull('b.deleted_at')
-            ->whereNull('c.deleted_at')
-            ->whereNull('m.deleted_at')
-            ->whereNull('oi.deleted_at')
-            ->whereNull('o.deleted_at')
-            ->whereNotIn('o.status', [
-                OrderStatus::Delivered->value,
-                OrderStatus::Settled->value,
-                OrderStatus::Cancelled->value,
-            ])
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('stock_movements as r')
-                ->whereColumn('r.reverses_movement_id', 'm.id')
-                ->whereNull('r.deleted_at'))
-            ->distinct()
-            ->orderBy('o.id')
-            ->pluck('o.id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
     }
 
     /**
