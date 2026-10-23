@@ -4,7 +4,6 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
-import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:dayaa/features/root/presentation/widgets/root_drawer.dart';
 import 'package:dayaa/features/tickets/presentation/widgets/tickets_button.dart';
 import 'package:dayaa/features/tools/presentation/widgets/tools_menu_button.dart';
@@ -74,10 +73,11 @@ class RootPage extends StatelessWidget {
           ),
         ),
         actions: [
-          // Both shells carry the same bell — this one and the investor portal's, which sits
-          // outside this shell entirely. See [NotificationBell].
-          const NotificationBell(),
-          // Beside the bell rather than under a drawer heading — الأدوات are the one thing in
+          // **لا جرسَ هنا منذ ٢٠٢٦-١٠-٢٣**: انتقل إلى بطاقة الموظف في الرئيسية بجانب الدور، كبطاقة
+          // بريمولا — طلبُ المالك. بوّابةُ المستثمر وحدها تُبقي جرسها في شريطها. See
+          // `NotificationBell`.
+          //
+          // In the bar rather than under a drawer heading — الأدوات are the one thing in
           // this app that reads nothing and writes nothing, opened mid-order and left again, so
           // they belong where the hand already is instead of three taps away. See
           // [ToolsMenuButton].

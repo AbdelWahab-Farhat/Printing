@@ -5,6 +5,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
@@ -23,6 +24,9 @@ class _MockRepository extends Mock implements InternalTicketsRepository {}
 /// قائمة «الموظفين» كما طلبها المالك ٢٠٢٦-١٠-٢٣: **الحالتان وحدهما على الصفحة**، وكلُّ ما سواهما —
 /// «تذاكري / الكل» للمدير وحده، و«غير المقروءة»، ونوعُ المشكلة، والترتيب — خلف زرّ التصفية في
 /// ورقةٍ سفلية. والمديرُ يفتح على «تذاكري».
+///
+/// **ولا «تذكرة جديدة» فيها، والصفحةُ كلُّها تُمرَّر** — البحثُ والرقاقتان مع الصفوف (٢٠٢٦-١٠-٢٣):
+/// التذكرةُ الجديدة من بطاقة الموظف في الرئيسية.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -135,6 +139,33 @@ void main() {
     expect(find.text('غير المقروءة'), findsNothing);
     expect(find.text('الأقدم نشاطاً'), findsNothing);
     expect(find.byTooltip('تصفية التذاكر'), findsOneWidget);
+  });
+
+  testWidgets('the list offers no «تذكرة جديدة» of its own', (tester) async {
+    // Arrange
+    await arrange(admin: false);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('تذكرة جديدة'), findsNothing);
+  });
+
+  testWidgets('the search and the status chips scroll with the rows', (tester) async {
+    // Arrange
+    await arrange(admin: false);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    final scroller = find.byType(CustomScrollView);
+    expect(find.descendant(of: scroller, matching: find.byType(SearchField)), findsOneWidget);
+    expect(find.descendant(of: scroller, matching: find.text('قيد المعالجة')), findsOneWidget);
   });
 
   testWidgets('an administrator lands on «تذاكري» and may widen it to «الكل»', (tester) async {

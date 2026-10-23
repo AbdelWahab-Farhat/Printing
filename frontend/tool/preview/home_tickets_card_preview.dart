@@ -18,6 +18,10 @@ import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_
 import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_card_section.dart';
 import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository.dart';
 import 'package:dayaa/features/internal_tickets/usecases/internal_tickets_usecases.dart';
+import 'package:dayaa/features/notifications/models/unread_count.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
+import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
+import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +30,22 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _user = AuthUser(id: 7, name: 'فرحات', phone: '0911234567', employeeCode: '1013', permissions: []);
+const _user = AuthUser(
+  id: 7,
+  name: 'فرحات',
+  phone: '0911234567',
+  employeeCode: '1013',
+  permissions: [],
+  roles: [UserRole(name: 'admin', label: 'مدير')],
+);
+
+class _UnreadThree implements GetUnreadCount {
+  @override
+  Future<Either<Failure, UnreadCount>> call() async => const Right(UnreadCount(count: 3));
+
+  @override
+  Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 final _tickets = [
   InternalTicket(
@@ -148,12 +167,21 @@ Future<void> main() async {
                 GlobalCupertinoLocalizations.delegate,
               ],
               home: Scaffold(
-                body: BlocProvider<InternalTicketsHomeCubit>.value(
-                  value: cubit,
+                body: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<InternalTicketsHomeCubit>.value(value: cubit),
+                    BlocProvider<UnreadBadgeCubit>(
+                      create: (_) => UnreadBadgeCubit(_UnreadThree())..load(),
+                    ),
+                  ],
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
                     children: const [
-                      EmployeeCard(user: _user, bottom: InternalTicketsCardSection()),
+                      EmployeeCard(
+                        user: _user,
+                        action: NotificationBell(onCard: true),
+                        bottom: InternalTicketsCardSection(),
+                      ),
                     ],
                   ),
                 ),

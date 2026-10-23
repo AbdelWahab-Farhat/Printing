@@ -8,14 +8,9 @@ import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tickets_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
-import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
-import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
-import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_cubit.dart';
-import 'package:dayaa/features/internal_tickets/presentation/views/internal_tickets_page.dart';
-import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository.dart';
-import 'package:dayaa/features/internal_tickets/usecases/internal_tickets_usecases.dart';
 import 'package:dayaa/features/support/models/support_ticket.dart';
 import 'package:dayaa/features/support/presentation/viewmodel/support_tickets_cubit.dart';
 import 'package:dayaa/features/support/presentation/views/support_tickets_page.dart';
@@ -29,8 +24,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockSupportRepository extends Mock implements SupportRepository {}
-
-class _MockInternalRepository extends Mock implements InternalTicketsRepository {}
 
 /// لا تذاكر تصميم، وعددٌ صفر — يكفي أن تُبنى القائمة.
 class _EmptyDesignRepository implements DesignTicketRepository {
@@ -64,10 +57,7 @@ class _EmptyDesignRepository implements DesignTicketRepository {
   Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// «التذاكر»: تذاكر التصميم والعملاء والموظفين في شاشةٍ واحدة.
-///
-/// **«الموظفين» بلا صلاحية** (INTERNAL-TICKETS-DESIGN §٦): يظهر لكل أحد، فمَن لا يملك التصميم ولا
-/// الدعم يجده وحده بشريطه.
+/// «التذاكر»: تذاكر التصميم وتذاكر العملاء في شاشةٍ واحدة، تبويبين.
 ///
 /// كانت تذاكرُ الدعم صفّاً في الدرج، وتذاكرُ التصميم أيقونةً في الشريط. طلب المستخدم أن تجتمعا في
 /// خانة تذاكر التصميم باسمٍ عامّ، وتبويبين: «تصميم» و«العملاء» — بلا كلمة «تذاكر» قبلهما
@@ -78,8 +68,6 @@ class _EmptyDesignRepository implements DesignTicketRepository {
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
-  setUpAll(() => registerFallbackValue(const InternalTicketQuery()));
-
   Future<void> arrange(List<AppPermission> grants) async {
     await Injector.reset();
 
@@ -102,24 +90,6 @@ void main() {
     );
 
     final design = _EmptyDesignRepository();
-
-    final internal = _MockInternalRepository();
-    when(() => internal.watchMine(any())).thenAnswer((_) => const Stream.empty());
-    when(() => internal.liveResumed).thenAnswer((_) => const Stream<void>.empty());
-    when(
-      () => internal.tickets(
-        query: any(named: 'query'),
-        search: any(named: 'search'),
-        page: any(named: 'page'),
-      ),
-    ).thenAnswer(
-      (_) async => const Right(
-        Paginated<InternalTicket>(
-          items: [],
-          meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 0),
-        ),
-      ),
-    );
 
     sl
       ..registerSingleton<Session>(
@@ -144,14 +114,6 @@ void main() {
           getTickets: GetDesignTickets(design),
           getCounts: GetDesignTicketCounts(design),
           acceptTicket: AcceptDesignTicket(design),
-        ),
-      )
-      ..registerFactoryParam<InternalTicketsCubit, InternalTicketQuery, void>(
-        (query, _) => InternalTicketsCubit(
-          browse: BrowseInternalTickets(internal),
-          watch: WatchInternalTickets(internal),
-          me: 1,
-          query: query,
         ),
       );
   }
@@ -220,22 +182,7 @@ void main() {
     expect(find.byType(SupportTicketsPage), findsOneWidget);
   });
 
-  testWidgets('«الموظفين» is the third tab, last on the left', (tester) async {
-    // Arrange
-    await arrange(both);
-
-    // Act
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    // Assert — تبويبُ التذاكر الداخلية بلا صلاحية، فيظهر مع التبويبين.
-    final customers = tester.getCenter(find.widgetWithText(Tab, 'العملاء')).dx;
-    final staff = tester.getCenter(find.widgetWithText(Tab, 'الموظفين')).dx;
-
-    expect(customers, greaterThan(staff));
-  });
-
-  testWidgets('with the design queue alone, «الموظفين» still sits beside it', (tester) async {
+  testWidgets('with the design queue alone, it opens as it always did', (tester) async {
     // Arrange
     await arrange([AppPermission.viewDesignTickets]);
 
@@ -243,25 +190,23 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.widgetWithText(Tab, 'تصميم'), findsOneWidget);
-    expect(find.widgetWithText(Tab, 'الموظفين'), findsOneWidget);
-    expect(find.widgetWithText(Tab, 'العملاء'), findsNothing);
+    // Assert — شريطُ تبويبٍ فوق تبويبٍ واحد أداةٌ لا تفعل شيئاً.
+    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(DesignTicketsPage), findsOneWidget);
+    expect(find.text('تذاكر التصميم'), findsOneWidget);
   });
 
-  testWidgets('with no ticket grant at all, the staff tickets open alone with their own bar', (
-    tester,
-  ) async {
+  testWidgets('with the customers\' queue alone, it opens as it always did', (tester) async {
     // Arrange
-    await arrange([]);
+    await arrange([AppPermission.viewSupportTickets]);
 
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — شريطُ تبويبٍ فوق تبويبٍ واحد أداةٌ لا تفعل شيئاً.
+    // Assert
     expect(find.byType(TabBar), findsNothing);
-    expect(find.byType(InternalTicketsPage), findsOneWidget);
-    expect(find.text('تذاكر الموظفين'), findsOneWidget);
+    expect(find.byType(SupportTicketsPage), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget);
   });
 }

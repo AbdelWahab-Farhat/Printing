@@ -3,7 +3,6 @@ import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
-import 'package:dayaa/features/internal_tickets/presentation/views/internal_tickets_page.dart';
 import 'package:dayaa/features/support/presentation/views/support_tickets_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,7 +34,7 @@ class TicketsPage extends StatelessWidget {
       builder: (context, _, _) {
         final queues = [
           for (final queue in _Queue.values)
-            if (queue.permission == null || session.can(queue.permission!)) queue,
+            if (session.can(queue.permission)) queue,
         ];
 
         // المسارُ لا يُدخل أحداً بلا واحدةٍ منهما، لكن `TabController` بطولٍ صفر خطأٌ لا شاشةٌ
@@ -63,27 +62,21 @@ class TicketsPage extends StatelessWidget {
   }
 }
 
-/// صفوفُ التذاكر، بترتيب التبويبات: الأول يميناً.
-///
-/// **«الموظفين» ثالثُها، وبلا صلاحية** (INTERNAL-TICKETS-DESIGN §٦): كلُّ موظفٍ يفتح تذكرةً إلى
-/// زميل، فالتبويبُ لكل أحد — ومن لا يملك غيره يرى شاشته وحدها بلا شريط تبويب، كما كانت الصفحة
-/// تفعل لمن يملك واحداً من الاثنين.
+/// صفّا التذاكر، بترتيب التبويبين: الأول يميناً.
 enum _Queue {
   design('تصميم', AppPermission.viewDesignTickets),
-  customers('العملاء', AppPermission.viewSupportTickets),
-  staff('الموظفين', null);
+  customers('العملاء', AppPermission.viewSupportTickets);
 
   const _Queue(this.label, this.permission);
 
   final String label;
 
-  /// ما يُظهر التبويب أصلاً — صلاحيةُ قراءة القائمة نفسها، كما يحجبها مسارُها. `null` لكل أحد.
-  final AppPermission? permission;
+  /// ما يُظهر التبويب أصلاً — صلاحيةُ قراءة القائمة نفسها، كما يحجبها مسارُها.
+  final AppPermission permission;
 
   Widget page({required bool embedded}) => switch (this) {
     _Queue.design => DesignTicketsPage(embedded: embedded),
     _Queue.customers => SupportTicketsPage(embedded: embedded),
-    _Queue.staff => InternalTicketsPage(embedded: embedded),
   };
 }
 

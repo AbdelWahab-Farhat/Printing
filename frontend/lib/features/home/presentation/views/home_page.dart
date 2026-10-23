@@ -14,6 +14,7 @@ import 'package:dayaa/features/home/presentation/widgets/status_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/summary_tiles.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_home_cubit.dart';
 import 'package:dayaa/features/internal_tickets/presentation/widgets/internal_tickets_card_section.dart';
+import 'package:dayaa/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,7 +70,12 @@ class _HomeView extends StatelessWidget {
             children: [
               // ما ينتظر ردّي من تذاكر الموظفين على البطاقة نفسها، كبطاقة بريمولا — طلبُ المالك
               // ٢٠٢٦-١٠-٢٣. يُردّ من مكانه بلا فتح المحادثة، وبلا عدّادات.
-              EmployeeCard(user: user, bottom: const InternalTicketsCardSection()),
+              EmployeeCard(
+                user: user,
+                // الجرسُ بجانب الدور، لا في الشريط — كبطاقة بريمولا.
+                action: const NotificationBell(onCard: true),
+                bottom: const InternalTicketsCardSection(),
+              ),
               SizedBox(height: 20.h),
               QuickActions(actions: _actionsFor(context)),
               SizedBox(height: 20.h),

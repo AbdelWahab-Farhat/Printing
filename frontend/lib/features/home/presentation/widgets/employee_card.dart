@@ -18,9 +18,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **[bottom] تحت الرأس، على البطاقة نفسها**، كبطاقة موظف بريمولا: تذاكرُ الموظفين التي تنتظر ردّه
 /// (`InternalTicketsCardSection`) — طلبُ المالك ٢٠٢٦-١٠-٢٣.
 class EmployeeCard extends StatelessWidget {
-  const EmployeeCard({required this.user, this.bottom, super.key});
+  const EmployeeCard({required this.user, this.action, this.bottom, super.key});
 
   final AuthUser user;
+
+  /// في آخر سطر الرأس بجانب الدور — جرسُ الإشعارات، كبطاقة بريمولا (٢٠٢٦-١٠-٢٣).
+  final Widget? action;
 
   /// يُرسم بحبر البطاقة (`onPrimary`) — البطاقةُ تدرّجُ العلامة في الوضعين.
   final Widget? bottom;
@@ -88,6 +91,7 @@ class EmployeeCard extends StatelessWidget {
                         ),
                       ),
                       if (user.roles.isNotEmpty) _RoleChip(label: user.roles.first.label),
+                      if (action case final action?) ...[SizedBox(width: 10.w), action],
                     ],
                   ),
                 ],
@@ -201,9 +205,14 @@ class _EmployeeCode extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'كود الموظف',
-              style: context.textTheme.bodySmall?.copyWith(color: foreground),
+            // يُقصّ أوّلاً حين يضيق السطر — الجرسُ بجانب الدور منذ ٢٠٢٦-١٠-٢٣ — والكودُ يبقى كاملاً.
+            Flexible(
+              child: Text(
+                'كود الموظف',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall?.copyWith(color: foreground),
+              ),
             ),
             SizedBox(width: 6.w),
             Text(

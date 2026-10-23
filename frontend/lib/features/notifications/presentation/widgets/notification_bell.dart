@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 /// The bell, with its count.
@@ -18,8 +20,14 @@ import 'package:go_router/go_router.dart';
 ///
 /// Reads [UnreadBadgeCubit], which is provided above the shell so the count survives tab
 /// switches.
+///
+/// **[onCard] على بطاقة الموظف في الرئيسية** بجانب الدور، لا في شريط الموظفين — طلبُ المالك
+/// ٢٠٢٦-١٠-٢٣، كبطاقة بريمولا: دائرةٌ زجاجية بحبر البطاقة (`onPrimary`). وشريطُ بوّابة المستثمر
+/// يبقى بجرسه كما هو.
 class NotificationBell extends StatefulWidget {
-  const NotificationBell({super.key});
+  const NotificationBell({this.onCard = false, super.key});
+
+  final bool onCard;
 
   @override
   State<NotificationBell> createState() => _NotificationBellState();
@@ -62,21 +70,56 @@ class _NotificationBellState extends State<NotificationBell> {
         // open fine, so the way in stays available either way.
         final count = state is UnreadBadgeLoaded ? state.count : 0;
 
+        Future<void> open() async {
+          await context.push(Routes.notifications);
+          if (!context.mounted) return;
+          // Coming back is one of the four moments the count is refreshed — the user may have
+          // read everything while they were in there.
+          await context.read<UnreadBadgeCubit>().load();
+        }
+
+        // Capped for width, not for truth: «+99» keeps the app bar from reflowing when a long
+        // weekend of orders piles up. Western digits, because that is what every other number in
+        // this app renders as - see `GroupedDigits`.
+        final label = Text(count > 99 ? '+99' : '$count');
+
+        if (widget.onCard) {
+          final ink = context.colorScheme.onPrimary;
+
+          return Tooltip(
+            message: 'الإشعارات',
+            child: Semantics(
+              button: true,
+              label: 'الإشعارات',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => unawaited(open()),
+                child: Badge(
+                  isLabelVisible: count > 0,
+                  label: label,
+                  child: Container(
+                    width: 40.r,
+                    height: 40.r,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: ink.withValues(alpha: 0.20),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: ink.withValues(alpha: 0.28)),
+                    ),
+                    child: Icon(AppIcons.notifications, size: 22.r, color: ink),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         return IconButton(
           tooltip: 'الإشعارات',
-          onPressed: () async {
-            await context.push(Routes.notifications);
-            if (!context.mounted) return;
-            // Coming back is one of the four moments the count is refreshed — the user may have
-            // read everything while they were in there.
-            await context.read<UnreadBadgeCubit>().load();
-          },
+          onPressed: () => unawaited(open()),
           icon: Badge(
             isLabelVisible: count > 0,
-            // Capped for width, not for truth: «+99» keeps the app bar from reflowing when a
-            // long weekend of orders piles up. Western digits, because that is what every other
-            // number in this app renders as - see `GroupedDigits`.
-            label: Text(count > 99 ? '+99' : '$count'),
+            label: label,
             child: Icon(AppIcons.notifications),
           ),
         );

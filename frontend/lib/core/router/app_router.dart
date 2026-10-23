@@ -1123,9 +1123,18 @@ abstract final class AppRouter {
         builder: (context, state) => const DesignTicketsPage(),
       ),
       // أيٌّ من الصفّين يفتحها — والشاشةُ نفسها تُظهر التبويبَ الذي يملكه القارئ وحده.
-      // **بلا `redirect` منذ التذاكر الداخلية** — تبويبُ «الموظفين» لكل موظف، فالصفحةُ لا تكون
-      // فارغةً لأحد. والتبويبان الآخران يظهران لمن يملك قراءتهما وحده.
-      GoRoute(path: Routes.tickets, builder: (context, state) => const TicketsPage()),
+      GoRoute(
+        path: Routes.tickets,
+        redirect: (context, state) {
+          final session = sl<Session>();
+
+          return session.can(AppPermission.viewDesignTickets) ||
+                  session.can(AppPermission.viewSupportTickets)
+              ? null
+              : Routes.home;
+        },
+        builder: (context, state) => const TicketsPage(),
+      ),
       GoRoute(
         path: Routes.designTicketsFiltered,
         redirect: (context, state) =>

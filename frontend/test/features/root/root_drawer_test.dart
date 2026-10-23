@@ -261,7 +261,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — the queue is an app bar button beside الأدوات now, see [TicketsButton];
-    // that widget's own test pins down that every employee gets it.
+    // that widget's own test pins down the grant it still carries.
     expect(find.text('تذاكر التصميم'), findsNothing);
   });
 
