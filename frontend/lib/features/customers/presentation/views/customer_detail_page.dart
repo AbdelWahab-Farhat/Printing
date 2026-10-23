@@ -16,9 +16,11 @@ import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/copy_text.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/social_platform.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_order_counts_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_orders_section.dart';
+import 'package:dayaa/features/customers/presentation/widgets/social_platform_icon.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cubit.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +28,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Everything about one customer, and the things staff do to them.
 ///
@@ -347,6 +350,12 @@ class _Body extends StatelessWidget {
               isLatin: false,
             ),
           ),
+          SizedBox(height: 14.h),
+        ],
+
+        // كالعنوان: حين توجد فقط. «لا توجد روابط» على كلّ عميلٍ سُجّل قبلها جملةٌ لا يعمل بها أحد.
+        if (customer.socialLinks case final links? when links.isNotEmpty) ...[
+          _SocialLinks(links: links),
           SizedBox(height: 14.h),
         ],
 
@@ -760,10 +769,106 @@ class _ShopRow extends StatelessWidget {
   }
 }
 
+/// روابط التواصل: لمسةُ السطر تفتح الرابط في تطبيق منصّته، والأيقونة في آخره تنسخه.
+class _SocialLinks extends StatelessWidget {
+  const _SocialLinks({required this.links});
+
+  final List<CustomerSocialLink> links;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Section(
+      title: 'روابط التواصل',
+      child: Column(
+        children: [
+          for (final (index, link) in links.indexed) ...[
+            if (index > 0) SizedBox(height: 6.h),
+            _SocialLinkRow(link: link),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// شعارُ المنصّة واسمها، والرابط بلا `https://` — «facebook.com/alnoor.print» يكفي ليُعرف.
+class _SocialLinkRow extends StatelessWidget {
+  const _SocialLinkRow({required this.link});
+
+  final CustomerSocialLink link;
+
+  /// إلى تطبيق المنصّة إن كان على الهاتف، وإلى المتصفح إن لم يكن — كما يفتح التطبيق ملف التصميم.
+  Future<void> _open(BuildContext context) async {
+    final uri = Uri.tryParse(link.url);
+    final opened = uri != null && await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (opened || !context.mounted) return;
+
+    context.showError('تعذّر فتح الرابط');
+  }
+
+  void _copy(BuildContext context) {
+    unawaited(Clipboard.setData(ClipboardData(text: link.url)));
+    context.showSuccess('تم نسخ الرابط');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final platform = link.platform;
+
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () => unawaited(_open(context)),
+            borderRadius: BorderRadius.circular(10.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Row(
+                children: [
+                  SocialPlatformIcon(platform, size: 20.sp),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          platform.label,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          displaySocialLink(link.url),
+                          textDirection: TextDirection.ltr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () => _copy(context),
+          icon: Icon(AppIcons.copy, size: 16.sp, color: scheme.outline),
+          tooltip: 'نسخ الرابط',
+        ),
+      ],
+    );
+  }
+}
+
 /// A label, a value, and a way to get the value out of the app.
 ///
-/// Copy rather than "call" or "open": there is no `url_launcher` in this project, and a row that
-/// looks tappable and does nothing is worse than one that plainly copies.
+/// Copy rather than "call" or "open": a row that looks tappable and does nothing is worse than
+/// one that plainly copies. Social links are the exception — see [_SocialLinkRow].
 class _CopyRow extends StatelessWidget {
   const _CopyRow({
     required this.icon,

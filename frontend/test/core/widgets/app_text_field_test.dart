@@ -119,6 +119,20 @@ void main() {
     expect(decoration.suffixIcon, isNull);
   });
 
+  group('prefix', () {
+    testWidgets('a drawn mark takes the icon slot', (tester) async {
+      // Arrange — شعارُ منصّةٍ لا تملكه أيّ عائلة أيقونات، فيُعطى رسماً لا IconData.
+      const mark = SizedBox(key: Key('mark'), width: 22, height: 22);
+
+      // Act
+      await tester.pumpWidget(host(const AppTextField(prefix: mark, prefixIcon: Icons.link)));
+
+      // Assert — الرسم وحده، لا الأيقونة معه.
+      expect(find.byKey(const Key('mark')), findsOneWidget);
+      expect(find.byIcon(Icons.link), findsNothing);
+    });
+  });
+
   testWidgets('typing reaches the caller', (tester) async {
     // Arrange
     final typed = <String>[];

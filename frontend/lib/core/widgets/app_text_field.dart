@@ -32,6 +32,7 @@ class AppTextField extends StatefulWidget {
     this.helperText,
     this.errorText,
     this.prefixIcon,
+    this.prefix,
     this.suffix,
     this.validator,
     this.keyboardType,
@@ -74,6 +75,7 @@ class AppTextField extends StatefulWidget {
     this.focusNode,
   }) : obscureText = true,
        initialValue = null,
+       prefix = null,
        suffix = null,
        keyboardType = TextInputType.visiblePassword,
        inputFormatters = null,
@@ -95,6 +97,10 @@ class AppTextField extends StatefulWidget {
   final String? errorText;
 
   final IconData? prefixIcon;
+
+  /// رسمٌ في مكان [prefixIcon] حين لا تملكه Material ولا Cupertino — شعارُ فيسبوك على خانة رابطه.
+  /// يُقدَّم على [prefixIcon] ويُرسم بألوانه هو، فلا يتبع لونَ الحالة كما تتبعه الأيقونة.
+  final Widget? prefix;
   final Widget? suffix;
   final Validator? validator;
   final TextInputType? keyboardType;
@@ -266,7 +272,9 @@ class _AppTextFieldState extends State<AppTextField> {
           height: 1.4,
         ),
         errorMaxLines: 2,
-        prefixIcon: leadingIcon == null
+        prefixIcon: widget.prefix != null
+            ? Center(widthFactor: 1, heightFactor: 1, child: widget.prefix)
+            : leadingIcon == null
             ? null
             : Icon(leadingIcon, size: 22.sp, color: accent),
         prefixIconConstraints: slot,

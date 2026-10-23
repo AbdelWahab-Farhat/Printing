@@ -119,6 +119,19 @@ void main() {
     expect(decoration.suffixIcon, isNull);
   });
 
+  testWidgets('a mark that is not a glyph — a platform’s logo — sits where the icon would', (
+    tester,
+  ) async {
+    // Arrange
+    const mark = SizedBox(key: Key('logo'), width: 22, height: 22);
+
+    // Act
+    await tester.pumpWidget(host(const AppTextField(prefix: mark)));
+
+    // Assert
+    expect(field(tester).decoration!.prefixIcon, same(mark));
+  });
+
   testWidgets('typing reaches the caller', (tester) async {
     // Arrange
     final typed = <String>[];

@@ -415,4 +415,111 @@ void main() {
     expect(cubit.state.shopError(0, 'city_id'), isNull);
     expect(cubit.state.nameError, isNull);
   });
+
+  // ─────────────────────────── روابط التواصل ───────────────────────────
+
+  test('a link typed without https is sent with it, trimmed', () async {
+    // Arrange — «instagram.com/alnoor» هو ما يكتبه الناس، والخادم يقبل رابط ويبٍ كاملاً فقط.
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      socialLinks: const [
+        (id: null, url: '  instagram.com/alnoor  '),
+        (id: null, url: 'https://facebook.com/alnoor'),
+      ],
+    );
+
+    // Assert
+    expect(sentCustomer().socialLinks, const [
+      NewCustomerSocialLink(url: 'https://instagram.com/alnoor'),
+      NewCustomerSocialLink(url: 'https://facebook.com/alnoor'),
+    ]);
+  });
+
+  test('a new customer with no links does not mention them', () async {
+    // Arrange
+    arrangeCreate(const Right(created));
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert
+    expect(sentCustomer().toJson().containsKey('social_links'), isFalse);
+  });
+
+  test('an existing link keeps its id, so saving edits it rather than replacing it', () async {
+    // Arrange
+    when(() => repository.update(any(), any())).thenAnswer((_) async => const Right(created));
+
+    // Act
+    await cubit.submit(
+      customerId: 7,
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      socialLinks: const [(id: 4, url: 'https://facebook.com/alnoor')],
+    );
+
+    // Assert
+    final sent = verify(() => repository.update(7, captureAny())).captured.last as NewCustomer;
+    expect(sent.socialLinks, const [NewCustomerSocialLink(id: 4, url: 'https://facebook.com/alnoor')]);
+  });
+
+  test('saving a customer whose links were all removed sends an empty list', () async {
+    // Arrange — على التعديل، غيابُ المفتاح يعني «اتركها كما هي»، فالروابط المحذوفة كانت ستبقى.
+    when(() => repository.update(any(), any())).thenAnswer((_) async => const Right(created));
+
+    // Act
+    await cubit.submit(customerId: 7, name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert
+    final sent = verify(() => repository.update(7, captureAny())).captured.last as NewCustomer;
+    expect(sent.toJson()['social_links'], isEmpty);
+    expect(sent.toJson().containsKey('social_links'), isTrue);
+  });
+
+  test('a rejected link is blamed on the row the server named', () async {
+    // Arrange
+    arrangeCreate(
+      const Left(
+        ServerFailure(
+          message: 'البيانات غير صحيحة',
+          statusCode: 422,
+          fieldErrors: {
+            'social_links.1.url': ['الرابط مكرر'],
+          },
+        ),
+      ),
+    );
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert
+    expect(cubit.state.socialLinkError(1), 'الرابط مكرر');
+    expect(cubit.state.socialLinkError(0), isNull);
+  });
+
+  test('a complaint about the list as a whole is told apart from one about a row', () async {
+    // Arrange
+    arrangeCreate(
+      const Left(
+        ServerFailure(
+          message: 'البيانات غير صحيحة',
+          statusCode: 422,
+          fieldErrors: {
+            'social_links': ['لا يمكن إضافة أكثر من 10 روابط'],
+          },
+        ),
+      ),
+    );
+
+    // Act
+    await cubit.submit(name: 'مطبعة النور', phone: '0913334444');
+
+    // Assert
+    expect(cubit.state.socialLinksError, 'لا يمكن إضافة أكثر من 10 روابط');
+  });
 }

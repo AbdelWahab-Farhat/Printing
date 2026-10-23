@@ -145,6 +145,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       await _read();
                     },
                   ),
+                  // عددها على الصف من `auth/me` نفسها، ويُقرأ الحساب ثانيةً بعد العودة: قد تكون
+                  // أُضيفت أو حُذفت هناك. وحسابٌ بلا روابط لا يُكتب عليه صفر.
+                  MenuRow(
+                    icon: AppIcons.link,
+                    label: 'روابط التواصل',
+                    value: switch (_customer?.socialLinksCount) {
+                      final int count when count > 0 => '$count',
+                      _ => null,
+                    },
+                    onTap: () async {
+                      await context.push(Routes.socialLinks);
+                      await _read();
+                    },
+                  ),
                   MenuRow(
                     icon: AppIcons.qrCode,
                     label: 'رمز QR',

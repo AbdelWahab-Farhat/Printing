@@ -16,6 +16,7 @@ use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Customer\Models\CustomerShop;
+use App\Domain\Customer\Models\CustomerSocialLink;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
@@ -106,6 +107,7 @@ enum AuditSubject: string
     // Customers
     case Customer = 'customer';
     case CustomerShop = 'customer_shop';
+    case CustomerSocialLink = 'customer_social_link';
     case CustomerDesign = 'customer_design';
     case Comment = 'comment';
     case BusinessField = 'business_field';
@@ -233,6 +235,7 @@ enum AuditSubject: string
             self::Role => Role::class,
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
+            self::CustomerSocialLink => CustomerSocialLink::class,
             self::CustomerDesign => CustomerDesign::class,
             self::Comment => Comment::class,
             self::BusinessField => BusinessField::class,
@@ -314,6 +317,7 @@ enum AuditSubject: string
             self::Role => 'دور',
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',
+            self::CustomerSocialLink => 'رابط تواصل',
             self::CustomerDesign => 'تصميم عميل',
             self::Comment => 'ملاحظة',
             self::BusinessField => 'مجال عمل',

@@ -1,5 +1,6 @@
 import 'package:dayaa/features/business_fields/models/business_field.dart';
 import 'package:dayaa/features/cities/models/city.dart';
+import 'package:dayaa/features/customers/models/social_platform.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'customer.freezed.dart';
@@ -38,6 +39,9 @@ abstract class Customer with _$Customer {
     /// a missing key rather than `[]`, and "we did not ask" is a different fact from "this
     /// customer has none".
     List<CustomerShop>? shops,
+
+    /// روابط التواصل، بترتيب إضافتها. غائبةٌ لا فارغة حين لم يحمّلها الخادم، كـ[shops].
+    @JsonKey(name: 'social_links') List<CustomerSocialLink>? socialLinks,
 
     /// How many orders this customer has placed, ever — cancellations included.
     ///
@@ -171,4 +175,19 @@ abstract class CustomerShop with _$CustomerShop {
 
     return parts.isEmpty ? null : parts.join(' · ');
   }
+}
+
+/// رابطُ تواصلٍ للعميل — صفحته على فيسبوك أو حسابه على إنستغرام أو أيّ رابطٍ آخر.
+///
+/// المنصّة لا تأتي من الخادم: [SocialPlatform.of] يقرؤها من الرابط نفسه.
+@freezed
+abstract class CustomerSocialLink with _$CustomerSocialLink {
+  const factory CustomerSocialLink({required int id, required String url}) = _CustomerSocialLink;
+
+  const CustomerSocialLink._();
+
+  factory CustomerSocialLink.fromJson(Map<String, dynamic> json) =>
+      _$CustomerSocialLinkFromJson(json);
+
+  SocialPlatform get platform => SocialPlatform.of(url);
 }

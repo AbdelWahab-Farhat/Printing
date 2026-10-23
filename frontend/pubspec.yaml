@@ -117,6 +117,9 @@ dependencies:
   # Where that temp file goes. Already present transitively for flutter_map's tile cache;
   # declared because our own code names it, which is what `depend_on_referenced_packages` is for.
   path_provider: ^2.1.6
+  # أيقوناتُ منصّات التواصل على روابط العميل — فيسبوك وإنستغرام وغيرهما، رسومٌ لا تملكها Material
+  # ولا Cupertino. من فريق Flutter نفسه، دارت خالصة بلا كودٍ أصلي، وهي التي يستعملها تطبيق العميل.
+  flutter_svg: ^2.3.0
 
   # ── the screen before the app ────────────────────────────────────────────────
   # A real dependency rather than a dev one, and `main.dart` is why: it holds the system's
@@ -188,6 +191,8 @@ flutter:
     - .env.dev
     - assets/images/
     - assets/icons/
+    # شعارات منصّات التواصل، من Simple Icons 13.21.0 (CC0): مسارٌ واحد أحادي اللون يُصبغ بلون المنصّة.
+    - assets/icons/social/
     # صور الأكياس التي تُعاين عليها التصاميم، مأخوذة من `daaya.ly/preview.html` — نفس الصور
     # التي يراها الزبون على الموقع، فالمعاينة في التطبيق تُريه ما رآه هناك.
     - assets/mockups/

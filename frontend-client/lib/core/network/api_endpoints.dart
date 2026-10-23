@@ -80,6 +80,11 @@ abstract final class ShopEndpoints {
   static const String businessFields = '/client/business-fields';
 }
 
+/// «روابط التواصل» — تُقرأ بـ`GET` وتُحفظ مجموعةً واحدة بـ`PUT` على المسار نفسه.
+abstract final class SocialLinkEndpoints {
+  static const String index = '/client/social-links';
+}
+
 /// «طلباتي».
 ///
 /// The workshop's nineteen statuses reach this app as eight *stages* — the server does the

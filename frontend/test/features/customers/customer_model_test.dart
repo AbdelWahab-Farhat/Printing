@@ -96,6 +96,47 @@ void main() {
     expect(customer.createdAt, isNull);
   });
 
+  test('parses the social links in the order the API sent them', () {
+    // Arrange
+    final json = <String, dynamic>{
+      'id': 2,
+      'code': 'C2',
+      'name': 'مطبعة النور',
+      'phone': '0912345679',
+      'is_active': true,
+      'social_links': <dynamic>[
+        {'id': 4, 'url': 'https://facebook.com/alnoor.print'},
+        {'id': 9, 'url': 'https://wa.me/218912345678'},
+      ],
+    };
+
+    // Act
+    final customer = Customer.fromJson(json);
+
+    // Assert
+    expect(customer.socialLinks, const [
+      CustomerSocialLink(id: 4, url: 'https://facebook.com/alnoor.print'),
+      CustomerSocialLink(id: 9, url: 'https://wa.me/218912345678'),
+    ]);
+  });
+
+  test('unloaded social links are absent, not an empty list', () {
+    // Arrange
+    final json = <String, dynamic>{
+      'id': 3,
+      'code': 'C3',
+      'name': 'عميل',
+      'phone': '0912345670',
+      'is_active': true,
+    };
+
+    // Act
+    final customer = Customer.fromJson(json);
+
+    // Assert
+    expect(customer.socialLinks, isNull);
+  });
+
   test('a shop reads back the city and the region the API named it by', () {
     // Arrange — the server sends both the ids a form preselects and the names a screen renders,
     // so nothing here has to fetch the delivery map to translate two numbers.

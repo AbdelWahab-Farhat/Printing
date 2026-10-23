@@ -54,6 +54,10 @@ class CustomerAccountResource extends JsonResource
             // per customer if it is ever used on a list.
             'shop' => $this->whenLoaded('shops', fn (): ?array => $this->firstShop()),
 
+            // عددُ روابط التواصل، يُكتب على صفّها في «حسابي». العدد وحده: الروابط نفسها في
+            // `GET /client/social-links`. ومحمَّلةٌ لا مُستعلَمة، كالمتجر أعلاه.
+            'social_links_count' => $this->whenLoaded('socialLinks', fn (): int => $this->socialLinks->count()),
+
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

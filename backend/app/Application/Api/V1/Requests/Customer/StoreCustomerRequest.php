@@ -58,6 +58,12 @@ class StoreCustomerRequest extends FormRequest
             // stale id from a client's cached list out of the database. Deactivated fields are
             // still accepted: a shop already recorded under one must survive being saved again.
             'shops.*.business_field_id' => ['nullable', 'integer', Rule::exists('business_fields', 'id')->withoutTrashed()],
+
+            // روابط التواصل — فيسبوك وإنستغرام وغيرهما، تُنشأ مع العميل. رابطُ ويبٍ لا غير:
+            // `javascript:` في رابطٍ يُفتح بلمسة ثغرةٌ لا رابط. وتكرارُ الرابط بحالة أحرفٍ أخرى
+            // تكرارٌ أيضاً. والحدّ عشرة: ما بعدها قائمةٌ لا يقرؤها أحد.
+            'social_links' => ['sometimes', 'array', 'max:10'],
+            'social_links.*.url' => ['required', 'string', 'max:2048', 'url:http,https', 'distinct:ignore_case'],
         ];
     }
 
@@ -137,6 +143,13 @@ class StoreCustomerRequest extends FormRequest
             'shops.*.longitude.between' => 'خط الطول يجب أن يكون بين -180 و 180',
             'shops.*.page_url.url' => 'رابط الصفحة غير صحيح',
             'shops.*.business_field_id.exists' => 'مجال العمل المختار غير موجود',
+            'social_links.array' => 'روابط التواصل يجب أن تكون قائمة',
+            'social_links.max' => 'لا يمكن إضافة أكثر من 10 روابط',
+            'social_links.*.url.required' => 'الرابط مطلوب',
+            'social_links.*.url.string' => 'الرابط غير صحيح',
+            'social_links.*.url.max' => 'الرابط طويل جداً',
+            'social_links.*.url.url' => 'الرابط غير صحيح',
+            'social_links.*.url.distinct' => 'الرابط مكرر',
         ];
     }
 
@@ -159,6 +172,8 @@ class StoreCustomerRequest extends FormRequest
             'shops.*.longitude' => 'خط الطول',
             'shops.*.page_url' => 'رابط الصفحة',
             'shops.*.business_field_id' => 'مجال العمل',
+            'social_links' => 'روابط التواصل',
+            'social_links.*.url' => 'الرابط',
         ];
     }
 }

@@ -10,7 +10,9 @@ import 'package:dayaa/features/business_fields/presentation/viewmodel/business_f
 import 'package:dayaa/features/business_fields/presentation/widgets/business_field_picker.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/social_platform.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
+import 'package:dayaa/features/customers/presentation/widgets/social_platform_icon.dart';
 import 'package:dayaa/features/customers/usecases/create_customer.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
@@ -92,6 +94,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _shops = <_ShopFields>[];
+  final _links = <_LinkFields>[];
 
   /// عنوان العميل as picked — chosen, never typed, so no controllers to dispose.
   City? _city;
@@ -119,6 +122,11 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     for (final shop in customer.shops ?? const []) {
       _shops.add(_ShopFields.from(shop));
     }
+
+    // وكلُّ رابطٍ بمُعرِّفه، للسبب نفسه: بدونه يُحذف القائم ويُنشأ غيره، ويقول السجل ذلك.
+    for (final link in customer.socialLinks ?? const <CustomerSocialLink>[]) {
+      _links.add(_LinkFields.from(link));
+    }
   }
 
   @override
@@ -127,6 +135,9 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     _phone.dispose();
     for (final shop in _shops) {
       shop.dispose();
+    }
+    for (final link in _links) {
+      link.dispose();
     }
     super.dispose();
   }
@@ -153,6 +164,17 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
     setState(() {});
   }
 
+  /// سطرُ رابطٍ جديد، والمؤشّر فيه: من ضغط «إضافة رابط» سيكتب رابطاً الآن.
+  void _addLink() => setState(() => _links.add(_LinkFields(isNew: true)));
+
+  void _removeLink(int index) {
+    // يُتخلّص منه حالاً كسطر المحل: السطر خرج من الشجرة، ولا أحد سيقرأ خانته ثانيةً.
+    final removed = _links.removeAt(index);
+    removed.dispose();
+    setState(() {});
+    context.read<AddCustomerCubit>().clearFailure();
+  }
+
   void _submit() {
     // Dismissed first so the button the user just pressed is not hidden behind the keyboard
     // while the request runs.
@@ -167,6 +189,7 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
       cityId: _city?.id,
       regionId: _region?.id,
       shops: [for (final shop in _shops) shop.toInput()],
+      socialLinks: [for (final link in _links) link.toInput()],
     );
   }
 
@@ -286,6 +309,15 @@ class _AddCustomerViewState extends State<_AddCustomerView> {
                       ),
                       SizedBox(height: 28.h),
 
+                      _SocialLinksSection(
+                        links: _links,
+                        state: state,
+                        onAdd: _addLink,
+                        onRemove: _removeLink,
+                        onChanged: () => context.read<AddCustomerCubit>().clearFailure(),
+                      ),
+                      SizedBox(height: 28.h),
+
                       _ShopsSection(
                         shops: _shops,
                         state: state,
@@ -396,11 +428,6 @@ class _AddressSection extends StatelessWidget {
               ),
           ],
         ),
-        SizedBox(height: 4.h),
-        Text(
-          'تبدأ منه الطلبيات الجديدة حين لا يُختار محل، ويبقى قابلاً للتعديل في كل طلبية.',
-          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
         SizedBox(height: 12.h),
         Row(
           children: [
@@ -433,6 +460,150 @@ class _AddressSection extends StatelessWidget {
           Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
         ],
       ],
+    );
+  }
+}
+
+/// روابط التواصل — صفحات العميل على فيسبوك وإنستغرام وغيرها، بلا حدٍّ للمنصّات وعشرةٌ على الأكثر.
+///
+/// **سطرٌ بدأه المستخدم يُكمَل أو يُحذف**، كسطر المحل: خانةٌ فارغة «مطلوب» لا رابطٌ يُسقط بصمت —
+/// والخادم يسمّي شكواه برقم السطر (`social_links.1.url`)، فما على الشاشة وما يُرسل قائمةٌ واحدة.
+class _SocialLinksSection extends StatelessWidget {
+  const _SocialLinksSection({
+    required this.links,
+    required this.state,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onChanged,
+  });
+
+  /// حدُّ الخادم نفسه (`social_links` → `max:10`): الزرّ يتوقّف عنده بدل أن يردّه الخادم.
+  static const maxLinks = 10;
+
+  final List<_LinkFields> links;
+  final AddCustomerState state;
+  final VoidCallback onAdd;
+  final ValueChanged<int> onRemove;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(AppIcons.link, size: 18.sp, color: scheme.onSurfaceVariant),
+            SizedBox(width: 8.w),
+            Text(
+              'روابط التواصل',
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'اختياري',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        SizedBox(height: 14.h),
+
+        for (final (index, link) in links.indexed) ...[
+          _LinkRow(
+            key: ObjectKey(link),
+            fields: link,
+            errorText: state.socialLinkError(index),
+            onRemove: () => onRemove(index),
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 14.h),
+        ],
+
+        if (state.socialLinksError case final error?) ...[
+          Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+          SizedBox(height: 10.h),
+        ],
+
+        AppButton(
+          label: 'إضافة رابط',
+          variant: AppButtonVariant.outlined,
+          icon: AppIcons.add,
+          onPressed: links.length >= maxLinks ? null : onAdd,
+        ),
+      ],
+    );
+  }
+}
+
+/// سطرُ رابطٍ واحد: الخانة بشعار منصّتها واسمها، وزرّ حذفه.
+///
+/// **الاسم والشعار يتبعان ما يُكتب.** «فيسبوك» حين يصير الرابط فيسبوك، و«رابط» ما دام لا يُعرف —
+/// يُقرآن من الخانة نفسها عند كلّ حرف، فلا حالة لهما تُحفظ.
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.fields,
+    required this.errorText,
+    required this.onRemove,
+    required this.onChanged,
+    super.key,
+  });
+
+  final _LinkFields fields;
+  final String? errorText;
+  final VoidCallback onRemove;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: fields.url,
+      builder: (context, value, _) {
+        final platform = SocialPlatform.of(value.text);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppTextField(
+                controller: fields.url,
+                label: platform.label,
+                hint: 'https://',
+                // أيقونة الرابط العامة تتبع حالة الخانة كأيّ أيقونة، والشعار يبقى بلونه.
+                prefixIcon: AppIcons.link,
+                prefix: platform == SocialPlatform.other
+                    ? null
+                    : SocialPlatformIcon(platform, size: 22.sp),
+                textDirection: TextDirection.ltr,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.done,
+                autofocus: fields.isNew,
+                // على الرابط كما سيُرسل: «instagram.com/alnoor» صحيحٌ لأن `https://` تُضاف إليه.
+                validator: Validators.compose([
+                  Validators.required,
+                  (input) => Validators.url(normalizeSocialLink(input ?? '')),
+                ]),
+                errorText: errorText,
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: IconButton(
+                onPressed: onRemove,
+                icon: Icon(AppIcons.delete, color: scheme.error),
+                tooltip: 'حذف الرابط',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -478,13 +649,6 @@ class _ShopsSection extends StatelessWidget {
               ),
             ),
           ],
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          'المكان الذي يبيع منه العميل، ومدينته والمنطقة التي يقع فيها.',
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
         ),
         SizedBox(height: 12.h),
 
@@ -794,4 +958,27 @@ class _ShopFields {
     name.dispose();
     pageUrl.dispose();
   }
+}
+
+/// خانةُ رابطٍ واحد ومُعرِّفه، تُنشأ وتُتخلَّص منها مع سطرها.
+class _LinkFields {
+  _LinkFields({this.isNew = false});
+
+  /// سطرٌ من رابطٍ يعرفه الخادم، بمُعرِّفه.
+  factory _LinkFields.from(CustomerSocialLink link) =>
+      _LinkFields()
+        ..id = link.id
+        ..url.text = link.url;
+
+  final url = TextEditingController();
+
+  /// null لسطرٍ أضافه المستخدم الآن: يُضاف على الخادم ولا يُعدَّل.
+  int? id;
+
+  /// سطرٌ أُضيف بالزرّ الآن، فالمؤشّر يبدأ فيه.
+  final bool isNew;
+
+  SocialLinkInput toInput() => (id: id, url: url.text);
+
+  void dispose() => url.dispose();
 }

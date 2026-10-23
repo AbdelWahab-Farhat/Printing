@@ -35,6 +35,8 @@ class CustomerResource extends JsonResource
             // whenLoaded keeps this resource honest: a caller that forgot to eager-load gets
             // no `shops` key rather than a silent query per row.
             'shops' => CustomerShopResource::collection($this->whenLoaded('shops')),
+            // روابط التواصل، بترتيب إضافتها. غائبةٌ لا فارغة حين لم تُحمَّل، كالمحلات.
+            'social_links' => CustomerSocialLinkResource::collection($this->whenLoaded('socialLinks')),
             // How much business this customer has done, when the reader is allowed to know.
             //
             // **Absent rather than zero in every other case**, and the two cases are different

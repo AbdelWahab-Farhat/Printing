@@ -46,6 +46,13 @@ extension AddCustomerStateX on AddCustomerState {
   /// to guess which of three addresses the server disliked.
   String? shopError(int index, String field) => _fieldError('shops.$index.$field');
 
+  /// شكوى الخادم من سطر رابطٍ واحد — «الرابط مكرر» تحت السطر الثاني لا فوق النموذج كلّه.
+  String? socialLinkError(int index) =>
+      _fieldError('social_links.$index.url') ?? _fieldError('social_links.$index.id');
+
+  /// شكواه من القائمة كلّها، وهي واحدة: «لا يمكن إضافة أكثر من 10 روابط».
+  String? get socialLinksError => _fieldError('social_links');
+
   String? _fieldError(String field) => switch (this) {
     AddCustomerFailure(:final failure) => switch (failure) {
       ServerFailure(:final fieldErrors) => fieldErrors?[field]?.firstOrNull,

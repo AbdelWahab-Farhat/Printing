@@ -127,6 +127,7 @@ void main() {
           (Routes.bagPreview, 'شاشة المعاينة'),
           (Routes.designs, 'شاشة تصاميمي'),
           (Routes.shops, 'شاشة متاجري'),
+          (Routes.socialLinks, 'شاشة روابط التواصل'),
         ])
           GoRoute(
             path: path,
@@ -264,6 +265,7 @@ void main() {
           'محفظتي',
           'تصاميمي',
           'متاجري',
+          'روابط التواصل',
           'رمز QR',
           'معاينة على الكيس',
           'الإعدادات',
@@ -287,6 +289,7 @@ void main() {
       ('معاينة على الكيس', 'شاشة المعاينة'),
       ('تصاميمي', 'شاشة تصاميمي'),
       ('متاجري', 'شاشة متاجري'),
+      ('روابط التواصل', 'شاشة روابط التواصل'),
     ]) {
       testWidgets('«$label» opens its screen over «حسابي», with the way back kept', (
         tester,
@@ -318,6 +321,45 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert — أول المتاجر هو ما تسمّيه البطاقة، وقد يكون أُضيف أو عُدِّل أو حُذف هناك.
+      expect(auth.reads, readsBefore + 1);
+    });
+
+    testWidgets('«روابط التواصل» carries how many there are on the row', (tester) async {
+      // Arrange & Act
+      await open(tester, abdo.copyWith(socialLinksCount: 4));
+
+      // Assert
+      final row = tester
+          .widgetList<MenuRow>(find.byType(MenuRow))
+          .singleWhere((row) => row.label == 'روابط التواصل');
+      expect(row.value, '4');
+    });
+
+    testWidgets('«روابط التواصل» writes no nought for an account that has none', (tester) async {
+      // Arrange & Act — صفرٌ على الصف كلمةٌ لا تقول شيئاً.
+      await open(tester, abdo.copyWith(socialLinksCount: 0));
+
+      // Assert
+      final row = tester
+          .widgetList<MenuRow>(find.byType(MenuRow))
+          .singleWhere((row) => row.label == 'روابط التواصل');
+      expect(row.value, isNull);
+    });
+
+    testWidgets('coming back from «روابط التواصل» reads the account again — the row counts them', (
+      tester,
+    ) async {
+      // Arrange
+      await open(tester);
+      await tester.tap(find.text('روابط التواصل'));
+      await tester.pumpAndSettle();
+      final readsBefore = auth.reads;
+
+      // Act
+      router.pop();
+      await tester.pumpAndSettle();
+
+      // Assert
       expect(auth.reads, readsBefore + 1);
     });
 

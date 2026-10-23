@@ -214,6 +214,9 @@ flutter:
     - .env.dev
     # أيقونات SVG تُرسم بلون `IconTheme` كأي `Icon` — انظر `SvgIcon`.
     - assets/icons/
+    # شعارات منصّات التواصل لـ«روابط التواصل» — Simple Icons 13.21.0 (CC0)، مسارٌ واحدٌ بلا لون
+    # يُصبغ بلون المنصّة. المجلّد الفرعي يُعلَن وحده: Flutter لا يحزم ما تحت `assets/icons/`.
+    - assets/icons/social/
     # رسوم SVG بألوانٍ بديلة تُستبدل بألوان الثيم، كالسلة الفارغة — انظر `EmptyBasket`.
     - assets/illustrations/
     # The five bags «معاينة على الكيس» draws on. ~130 KB the whole set, and they never change —

@@ -13,6 +13,7 @@ final class CreateCustomer
     public function __construct(
         private readonly AllocateCustomerIdentifier $allocateIdentifier,
         private readonly SyncCustomerShops $syncShops,
+        private readonly SyncCustomerSocialLinks $syncSocialLinks,
     ) {}
 
     public function __invoke(CustomerData $data): Customer
@@ -37,6 +38,7 @@ final class CreateCustomer
             $customer->save();
 
             ($this->syncShops)($customer, $data->shops ?? []);
+            ($this->syncSocialLinks)($customer, $data->socialLinks ?? []);
 
             return $customer->load(Customer::SHOP_RELATIONS);
         });

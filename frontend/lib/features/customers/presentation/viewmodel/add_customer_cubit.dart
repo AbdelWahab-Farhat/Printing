@@ -42,6 +42,7 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
     int? cityId,
     int? regionId,
     List<ShopInput> shops = const [],
+    List<SocialLinkInput> socialLinks = const [],
   }) async {
     // Ignored rather than queued: a second tap while the first request is in flight would be a
     // second POST, and the screen has already moved on by the time it answers.
@@ -56,6 +57,7 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
             cityId: cityId,
             regionId: regionId,
             shops: shops,
+            socialLinks: socialLinks,
           )
         : await _updateCustomer(
             customerId: customerId,
@@ -64,6 +66,7 @@ class AddCustomerCubit extends Cubit<AddCustomerState> {
             cityId: cityId,
             regionId: regionId,
             shops: shops,
+            socialLinks: socialLinks,
           );
 
     // The screen may have been popped while the request was in flight, and emitting into a

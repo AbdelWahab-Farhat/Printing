@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdateCustomer
 {
-    public function __construct(private readonly SyncCustomerShops $syncShops) {}
+    public function __construct(
+        private readonly SyncCustomerShops $syncShops,
+        private readonly SyncCustomerSocialLinks $syncSocialLinks,
+    ) {}
 
     public function __invoke(Customer $customer, CustomerData $data): Customer
     {
@@ -39,6 +42,11 @@ final class UpdateCustomer
             // whatever they have. An empty array is an explicit instruction to clear them.
             if ($data->shops !== null) {
                 ($this->syncShops)($customer, $data->shops);
+            }
+
+            // والقاعدة نفسها للروابط: نسخةُ تطبيقٍ لا تعرفها تحفظ العميل ولا تمسحها.
+            if ($data->socialLinks !== null) {
+                ($this->syncSocialLinks)($customer, $data->socialLinks);
             }
 
             // The code is derived from the id and therefore never changes on update.

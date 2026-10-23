@@ -25,7 +25,9 @@ mixin _$NewCustomer {
 /// array is a *statement* ("this customer has no shops"), and on the update endpoint the
 /// same key means "delete the ones they had". Saying nothing is the honest thing for a form
 /// where the user simply did not add any.
-@JsonKey(includeIfNull: false) List<NewCustomerShop>? get shops;
+@JsonKey(includeIfNull: false) List<NewCustomerShop>? get shops;/// روابط التواصل، بمعنى [shops] نفسه: غائبةٌ عند الإنشاء حين لم يُضف المستخدم شيئاً، وحاضرةٌ
+/// دائماً عند التعديل — القائمة الفارغة هناك تعني «احذفها كلّها».
+@JsonKey(name: 'social_links', includeIfNull: false) List<NewCustomerSocialLink>? get socialLinks;
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -38,16 +40,16 @@ $NewCustomerCopyWith<NewCustomer> get copyWith => _$NewCustomerCopyWithImpl<NewC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other.shops, shops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other.shops, shops)&&const DeepCollectionEquality().equals(other.socialLinks, socialLinks));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(shops));
+int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(shops),const DeepCollectionEquality().hash(socialLinks));
 
 @override
 String toString() {
-  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops)';
+  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops, socialLinks: $socialLinks)';
 }
 
 
@@ -58,7 +60,7 @@ abstract mixin class $NewCustomerCopyWith<$Res>  {
   factory $NewCustomerCopyWith(NewCustomer value, $Res Function(NewCustomer) _then) = _$NewCustomerCopyWithImpl;
 @useResult
 $Res call({
- String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
+ String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops,@JsonKey(name: 'social_links', includeIfNull: false) List<NewCustomerSocialLink>? socialLinks
 });
 
 
@@ -75,14 +77,15 @@ class _$NewCustomerCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,Object? socialLinks = freezed,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
 as int?,shops: freezed == shops ? _self.shops : shops // ignore: cast_nullable_to_non_nullable
-as List<NewCustomerShop>?,
+as List<NewCustomerShop>?,socialLinks: freezed == socialLinks ? _self.socialLinks : socialLinks // ignore: cast_nullable_to_non_nullable
+as List<NewCustomerSocialLink>?,
   ));
 }
 
@@ -167,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops, @JsonKey(name: 'social_links', includeIfNull: false)  List<NewCustomerSocialLink>? socialLinks)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewCustomer() when $default != null:
-return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops,_that.socialLinks);case _:
   return orElse();
 
 }
@@ -188,10 +191,10 @@ return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops, @JsonKey(name: 'social_links', includeIfNull: false)  List<NewCustomerSocialLink>? socialLinks)  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomer():
-return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops,_that.socialLinks);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +211,10 @@ return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String phone, @JsonKey(name: 'city_id')  int? cityId, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(includeIfNull: false)  List<NewCustomerShop>? shops, @JsonKey(name: 'social_links', includeIfNull: false)  List<NewCustomerSocialLink>? socialLinks)?  $default,) {final _that = this;
 switch (_that) {
 case _NewCustomer() when $default != null:
-return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);case _:
+return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops,_that.socialLinks);case _:
   return null;
 
 }
@@ -223,7 +226,7 @@ return $default(_that.name,_that.phone,_that.cityId,_that.regionId,_that.shops);
 @JsonSerializable(createFactory: false)
 
 class _NewCustomer implements NewCustomer {
-  const _NewCustomer({required this.name, required this.phone, @JsonKey(name: 'city_id') this.cityId, @JsonKey(name: 'region_id') this.regionId, @JsonKey(includeIfNull: false) final  List<NewCustomerShop>? shops}): _shops = shops;
+  const _NewCustomer({required this.name, required this.phone, @JsonKey(name: 'city_id') this.cityId, @JsonKey(name: 'region_id') this.regionId, @JsonKey(includeIfNull: false) final  List<NewCustomerShop>? shops, @JsonKey(name: 'social_links', includeIfNull: false) final  List<NewCustomerSocialLink>? socialLinks}): _shops = shops,_socialLinks = socialLinks;
   
 
 @override final  String name;
@@ -256,6 +259,19 @@ class _NewCustomer implements NewCustomer {
   return EqualUnmodifiableListView(value);
 }
 
+/// روابط التواصل، بمعنى [shops] نفسه: غائبةٌ عند الإنشاء حين لم يُضف المستخدم شيئاً، وحاضرةٌ
+/// دائماً عند التعديل — القائمة الفارغة هناك تعني «احذفها كلّها».
+ final  List<NewCustomerSocialLink>? _socialLinks;
+/// روابط التواصل، بمعنى [shops] نفسه: غائبةٌ عند الإنشاء حين لم يُضف المستخدم شيئاً، وحاضرةٌ
+/// دائماً عند التعديل — القائمة الفارغة هناك تعني «احذفها كلّها».
+@override@JsonKey(name: 'social_links', includeIfNull: false) List<NewCustomerSocialLink>? get socialLinks {
+  final value = _socialLinks;
+  if (value == null) return null;
+  if (_socialLinks is EqualUnmodifiableListView) return _socialLinks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
@@ -270,16 +286,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._shops, _shops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomer&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._shops, _shops)&&const DeepCollectionEquality().equals(other._socialLinks, _socialLinks));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(_shops));
+int get hashCode => Object.hash(runtimeType,name,phone,cityId,regionId,const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_socialLinks));
 
 @override
 String toString() {
-  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops)';
+  return 'NewCustomer(name: $name, phone: $phone, cityId: $cityId, regionId: $regionId, shops: $shops, socialLinks: $socialLinks)';
 }
 
 
@@ -290,7 +306,7 @@ abstract mixin class _$NewCustomerCopyWith<$Res> implements $NewCustomerCopyWith
   factory _$NewCustomerCopyWith(_NewCustomer value, $Res Function(_NewCustomer) _then) = __$NewCustomerCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops
+ String name, String phone,@JsonKey(name: 'city_id') int? cityId,@JsonKey(name: 'region_id') int? regionId,@JsonKey(includeIfNull: false) List<NewCustomerShop>? shops,@JsonKey(name: 'social_links', includeIfNull: false) List<NewCustomerSocialLink>? socialLinks
 });
 
 
@@ -307,14 +323,280 @@ class __$NewCustomerCopyWithImpl<$Res>
 
 /// Create a copy of NewCustomer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? phone = null,Object? cityId = freezed,Object? regionId = freezed,Object? shops = freezed,Object? socialLinks = freezed,}) {
   return _then(_NewCustomer(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int?,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
 as int?,shops: freezed == shops ? _self._shops : shops // ignore: cast_nullable_to_non_nullable
-as List<NewCustomerShop>?,
+as List<NewCustomerShop>?,socialLinks: freezed == socialLinks ? _self._socialLinks : socialLinks // ignore: cast_nullable_to_non_nullable
+as List<NewCustomerSocialLink>?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+mixin _$NewCustomerSocialLink {
+
+@JsonKey(includeIfNull: false) int? get id; String get url;
+/// Create a copy of NewCustomerSocialLink
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$NewCustomerSocialLinkCopyWith<NewCustomerSocialLink> get copyWith => _$NewCustomerSocialLinkCopyWithImpl<NewCustomerSocialLink>(this as NewCustomerSocialLink, _$identity);
+
+  /// Serializes this NewCustomerSocialLink to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewCustomerSocialLink&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,url);
+
+@override
+String toString() {
+  return 'NewCustomerSocialLink(id: $id, url: $url)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $NewCustomerSocialLinkCopyWith<$Res>  {
+  factory $NewCustomerSocialLinkCopyWith(NewCustomerSocialLink value, $Res Function(NewCustomerSocialLink) _then) = _$NewCustomerSocialLinkCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(includeIfNull: false) int? id, String url
+});
+
+
+
+
+}
+/// @nodoc
+class _$NewCustomerSocialLinkCopyWithImpl<$Res>
+    implements $NewCustomerSocialLinkCopyWith<$Res> {
+  _$NewCustomerSocialLinkCopyWithImpl(this._self, this._then);
+
+  final NewCustomerSocialLink _self;
+  final $Res Function(NewCustomerSocialLink) _then;
+
+/// Create a copy of NewCustomerSocialLink
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? url = null,}) {
+  return _then(_self.copyWith(
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [NewCustomerSocialLink].
+extension NewCustomerSocialLinkPatterns on NewCustomerSocialLink {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _NewCustomerSocialLink value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _NewCustomerSocialLink value)  $default,){
+final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _NewCustomerSocialLink value)?  $default,){
+final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String url)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink() when $default != null:
+return $default(_that.id,_that.url);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  int? id,  String url)  $default,) {final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink():
+return $default(_that.id,_that.url);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  int? id,  String url)?  $default,) {final _that = this;
+switch (_that) {
+case _NewCustomerSocialLink() when $default != null:
+return $default(_that.id,_that.url);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable(createFactory: false)
+
+class _NewCustomerSocialLink implements NewCustomerSocialLink {
+  const _NewCustomerSocialLink({@JsonKey(includeIfNull: false) this.id, required this.url});
+  
+
+@override@JsonKey(includeIfNull: false) final  int? id;
+@override final  String url;
+
+/// Create a copy of NewCustomerSocialLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$NewCustomerSocialLinkCopyWith<_NewCustomerSocialLink> get copyWith => __$NewCustomerSocialLinkCopyWithImpl<_NewCustomerSocialLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$NewCustomerSocialLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewCustomerSocialLink&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,url);
+
+@override
+String toString() {
+  return 'NewCustomerSocialLink(id: $id, url: $url)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$NewCustomerSocialLinkCopyWith<$Res> implements $NewCustomerSocialLinkCopyWith<$Res> {
+  factory _$NewCustomerSocialLinkCopyWith(_NewCustomerSocialLink value, $Res Function(_NewCustomerSocialLink) _then) = __$NewCustomerSocialLinkCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(includeIfNull: false) int? id, String url
+});
+
+
+
+
+}
+/// @nodoc
+class __$NewCustomerSocialLinkCopyWithImpl<$Res>
+    implements _$NewCustomerSocialLinkCopyWith<$Res> {
+  __$NewCustomerSocialLinkCopyWithImpl(this._self, this._then);
+
+  final _NewCustomerSocialLink _self;
+  final $Res Function(_NewCustomerSocialLink) _then;
+
+/// Create a copy of NewCustomerSocialLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? url = null,}) {
+  return _then(_NewCustomerSocialLink(
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

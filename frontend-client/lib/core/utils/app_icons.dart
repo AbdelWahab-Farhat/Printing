@@ -133,6 +133,10 @@ abstract final class AppIcons {
   static IconData get unlink =>
       _pick(Icons.link_off_rounded, CupertinoIcons.link);
 
+  /// رابط ويب — صفّ «روابط التواصل» في «حسابي»، وسطرٌ فيها لا نعرف منصّته. حلقتان متشابكتان: ما
+  /// يقوله [unlink] مكسوراً.
+  static IconData get link => _pick(Icons.link_rounded, CupertinoIcons.link);
+
   /// A machine-readable name — a slug, a code.
   static IconData get tag => _pick(Icons.tag_rounded, CupertinoIcons.tag);
 

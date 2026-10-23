@@ -115,6 +115,9 @@ abstract final class AppIcons {
   static IconData get delete =>
       _pick(Icons.delete_outline_rounded, CupertinoIcons.delete);
 
+  /// رابطُ ويب — رابط تواصلٍ لا تُعرف منصّته، وعنوان قسم «روابط التواصل».
+  static IconData get link => _pick(Icons.link_rounded, CupertinoIcons.link);
+
   /// Lets go of a tie between two records without destroying either.
   ///
   /// **A broken chain, never a bin.** «فكّ الربط» is exactly the act of *not* deleting: the

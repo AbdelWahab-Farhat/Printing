@@ -35,7 +35,23 @@ abstract class NewCustomer with _$NewCustomer {
     /// same key means "delete the ones they had". Saying nothing is the honest thing for a form
     /// where the user simply did not add any.
     @JsonKey(includeIfNull: false) List<NewCustomerShop>? shops,
+
+    /// روابط التواصل، بمعنى [shops] نفسه: غائبةٌ عند الإنشاء حين لم يُضف المستخدم شيئاً، وحاضرةٌ
+    /// دائماً عند التعديل — القائمة الفارغة هناك تعني «احذفها كلّها».
+    @JsonKey(name: 'social_links', includeIfNull: false) List<NewCustomerSocialLink>? socialLinks,
   }) = _NewCustomer;
+}
+
+/// رابطُ تواصلٍ كما يُرسل: بمُعرِّفه حين يكون قائماً فيُعدَّل، وبلا مُعرِّف فيُضاف.
+///
+/// `SyncCustomerSocialLinks` على الخادم يحذف ما لم يُرسَل، فإضافة الأسطر وحذفها في النموذج هي
+/// نفسها ما يُحفظ، كالمحلات.
+@Freezed(toJson: true, fromJson: false)
+abstract class NewCustomerSocialLink with _$NewCustomerSocialLink {
+  const factory NewCustomerSocialLink({
+    @JsonKey(includeIfNull: false) int? id,
+    required String url,
+  }) = _NewCustomerSocialLink;
 }
 
 /// One place a customer sells from.

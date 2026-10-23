@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/new_customer.dart';
+import 'package:dayaa/features/customers/models/social_platform.dart';
 import 'package:dayaa/features/customers/repositories/customer_repository.dart';
 
 /// One shop exactly as it was typed — the boxes of text, nothing converted yet.
@@ -27,6 +28,13 @@ typedef ShopInput = ({
   int? businessFieldId,
 });
 
+/// رابطُ تواصلٍ كما كُتب في خانته، قبل أن يُطبَّع.
+typedef SocialLinkInput = ({
+  /// null لسطرٍ أضافه المستخدم الآن، ومُعرِّف الرابط حين جاء من الخادم.
+  int? id,
+  String url,
+});
+
 /// Register a new customer.
 ///
 /// One verb, one `call` — and this one already earns its keep: it is where what the user typed
@@ -43,6 +51,7 @@ class CreateCustomer {
     int? cityId,
     int? regionId,
     List<ShopInput> shops = const [],
+    List<SocialLinkInput> socialLinks = const [],
   }) {
     return _repository.create(
       NewCustomer(
@@ -59,9 +68,15 @@ class CreateCustomer {
         // Absent, not `[]`, when the user added none: to this API an empty array is a statement
         // about the customer's shops rather than silence about them.
         shops: shops.isEmpty ? null : shops.map(toShop).toList(),
+        // غائبةٌ لا فارغة حين لم يُضف المستخدم شيئاً، للسبب نفسه.
+        socialLinks: socialLinks.isEmpty ? null : socialLinks.map(toSocialLink).toList(),
       ),
     );
   }
+
+  /// سطرُ رابطٍ → ما يقبله الخادم: بلا فراغٍ حوله، وبـ`https://` حين كُتب بدونه.
+  static NewCustomerSocialLink toSocialLink(SocialLinkInput link) =>
+      NewCustomerSocialLink(id: link.id, url: normalizeSocialLink(link.url));
 
   /// A form row → what the API accepts.
   ///

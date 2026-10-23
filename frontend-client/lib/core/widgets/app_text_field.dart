@@ -34,6 +34,7 @@ class AppTextField extends StatefulWidget {
     this.helperText,
     this.errorText,
     this.prefixIcon,
+    this.prefix,
     this.suffix,
     this.validator,
     this.keyboardType,
@@ -80,6 +81,7 @@ class AppTextField extends StatefulWidget {
     this.focusNode,
   }) : obscureText = true,
        initialValue = null,
+       prefix = null,
        suffix = null,
        keyboardType = TextInputType.visiblePassword,
        inputFormatters = null,
@@ -112,6 +114,12 @@ class AppTextField extends StatefulWidget {
   final String? errorText;
 
   final IconData? prefixIcon;
+
+  /// ما يُرسم مكان الأيقونة حين لا يكون أيقونةً من الخطّين — شعار منصّةٍ في «روابط التواصل». يبقى
+  /// بلونه هو ولا يتبع حالات الحدّ كما تتبعها [prefixIcon]: الشعار هويّة المنصّة لا حالة الحقل.
+  /// و[prefixIcon] يغلبه حين يُعطيان معاً.
+  final Widget? prefix;
+
   final Widget? suffix;
   final Validator? validator;
   final TextInputType? keyboardType;
@@ -229,7 +237,7 @@ class _AppTextFieldState extends State<AppTextField> {
         helperText: widget.helperText,
         errorText: widget.errorText,
         prefix: widget.prefixIcon == null
-            ? null
+            ? widget.prefix
             : Icon(widget.prefixIcon, size: 22.sp, color: accent),
         suffix: _buildSuffix(accent),
       ),

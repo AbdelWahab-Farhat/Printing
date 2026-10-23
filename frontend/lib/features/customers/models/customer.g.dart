@@ -23,6 +23,9 @@ _Customer _$CustomerFromJson(Map<String, dynamic> json) => _Customer(
   shops: (json['shops'] as List<dynamic>?)
       ?.map((e) => CustomerShop.fromJson(e as Map<String, dynamic>))
       .toList(),
+  socialLinks: (json['social_links'] as List<dynamic>?)
+      ?.map((e) => CustomerSocialLink.fromJson(e as Map<String, dynamic>))
+      .toList(),
   ordersCount: (json['orders_count'] as num?)?.toInt(),
   lastOrderAt: json['last_order_at'] == null
       ? null
@@ -46,6 +49,7 @@ Map<String, dynamic> _$CustomerToJson(_Customer instance) => <String, dynamic>{
   'region_id': instance.regionId,
   'region': instance.region?.toJson(),
   'shops': instance.shops?.map((e) => e.toJson()).toList(),
+  'social_links': instance.socialLinks?.map((e) => e.toJson()).toList(),
   'orders_count': instance.ordersCount,
   'last_order_at': instance.lastOrderAt?.toIso8601String(),
   'created_at': instance.createdAt?.toIso8601String(),
@@ -89,3 +93,12 @@ Map<String, dynamic> _$CustomerShopToJson(_CustomerShop instance) =>
       'business_field_id': instance.businessFieldId,
       'business_field': instance.businessField?.toJson(),
     };
+
+_CustomerSocialLink _$CustomerSocialLinkFromJson(Map<String, dynamic> json) =>
+    _CustomerSocialLink(
+      id: (json['id'] as num).toInt(),
+      url: json['url'] as String,
+    );
+
+Map<String, dynamic> _$CustomerSocialLinkToJson(_CustomerSocialLink instance) =>
+    <String, dynamic>{'id': instance.id, 'url': instance.url};

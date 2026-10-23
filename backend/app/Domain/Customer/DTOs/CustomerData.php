@@ -28,6 +28,13 @@ final readonly class CustomerData
         public bool $addressSupplied = false,
         public ?int $cityId = null,
         public ?int $regionId = null,
+        /**
+         * روابط التواصل، بمعنى `shops` نفسه: null «لم تُذكر» فتبقى كما هي، والمصفوفة الفارغة
+         * «احذفها كلّها».
+         *
+         * @var list<CustomerSocialLinkData>|null
+         */
+        public ?array $socialLinks = null,
     ) {}
 
     /**
@@ -52,6 +59,9 @@ final readonly class CustomerData
             // Never without the city it belongs to: a city sent alone means the old
             // neighbourhood, which was in some other city, goes.
             regionId: isset($validated['city_id'], $validated['region_id']) ? (int) $validated['region_id'] : null,
+            socialLinks: array_key_exists('social_links', $validated) && is_array($validated['social_links'])
+                ? CustomerSocialLinkData::listFromArray($validated['social_links'])
+                : null,
         );
     }
 }

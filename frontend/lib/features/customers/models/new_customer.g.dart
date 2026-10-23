@@ -13,7 +13,12 @@ Map<String, dynamic> _$NewCustomerToJson(_NewCustomer instance) =>
       'city_id': instance.cityId,
       'region_id': instance.regionId,
       'shops': ?instance.shops?.map((e) => e.toJson()).toList(),
+      'social_links': ?instance.socialLinks?.map((e) => e.toJson()).toList(),
     };
+
+Map<String, dynamic> _$NewCustomerSocialLinkToJson(
+  _NewCustomerSocialLink instance,
+) => <String, dynamic>{'id': ?instance.id, 'url': instance.url};
 
 Map<String, dynamic> _$NewCustomerShopToJson(_NewCustomerShop instance) =>
     <String, dynamic>{

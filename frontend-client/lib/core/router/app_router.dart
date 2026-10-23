@@ -19,6 +19,7 @@ import 'package:dayaa_client/features/shops/models/shop.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shop_details_page.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shop_form_page.dart';
 import 'package:dayaa_client/features/shops/presentation/views/shops_page.dart';
+import 'package:dayaa_client/features/social_links/presentation/views/social_links_page.dart';
 import 'package:dayaa_client/features/splash/presentation/views/splash_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/support_page.dart';
 import 'package:dayaa_client/features/support/presentation/views/ticket_thread_page.dart';
@@ -80,6 +81,9 @@ abstract final class Routes {
   /// صفحة متجرٍ واحد: تفاصيله وتعديلها، ومكتبة التصاميم. **المتجر يُمرَّر لا يُطلب** — «متاجري»
   /// جلبته للتوّ — وما يتغيّر فيها يعود إلى القائمة عبر `pushForResult`، فالمسار ثابتٌ بلا مُعرِّف.
   static const String shopDetails = '/shops/details';
+
+  /// «روابط التواصل». تُفتح من «حسابي»، وتعود إليها بـ`true` حين تُحفظ.
+  static const String socialLinks = '/social-links';
 
   static const String support = '/support';
 
@@ -172,6 +176,7 @@ abstract final class AppRouter {
           _ => const ShopsPage(),
         },
       ),
+      GoRoute(path: Routes.socialLinks, builder: (context, state) => const SocialLinksPage()),
       GoRoute(
         path: '/products/:id',
         builder: (context, state) =>

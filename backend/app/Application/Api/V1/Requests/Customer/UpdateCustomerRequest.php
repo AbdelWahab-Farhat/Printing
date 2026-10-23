@@ -59,6 +59,12 @@ class UpdateCustomerRequest extends StoreCustomerRequest
             // stale id from a client's cached list out of the database. Deactivated fields are
             // still accepted: a shop already recorded under one must survive being saved again.
             'shops.*.business_field_id' => ['nullable', 'integer', Rule::exists('business_fields', 'id')->withoutTrashed()],
+
+            // بمعنى `shops` نفسه: غيابُ المفتاح يُبقي الروابط، وإرسالُه يستبدل المجموعة كلّها —
+            // رابطٌ بمُعرِّفه يُعدَّل، وبلا مُعرِّف يُضاف، والغائب يُحذف. انظر StoreCustomerRequest.
+            'social_links' => ['sometimes', 'array', 'max:10'],
+            'social_links.*.id' => ['sometimes', 'integer', 'distinct', $this->socialLinkBelongsToThisCustomer()],
+            'social_links.*.url' => ['required', 'string', 'max:2048', 'url:http,https', 'distinct:ignore_case'],
         ];
     }
 
@@ -86,12 +92,28 @@ class UpdateCustomerRequest extends StoreCustomerRequest
     }
 
     /**
+     * كـ{@see self::shopBelongsToThisCustomer()}: رابطُ عميلٍ آخر لا يُعدَّل من طلب هذا العميل.
+     * والمحذوف منها لا يُقبل أيضاً، فلا يعود إلى الحياة بتعديله.
+     */
+    private function socialLinkBelongsToThisCustomer(): Exists
+    {
+        /** @var Customer $customer */
+        $customer = $this->route('customer');
+
+        return Rule::exists('customer_social_links', 'id')
+            ->where('customer_id', $customer->getKey())
+            ->withoutTrashed();
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array
     {
         return array_merge(parent::messages(), [
             'shops.*.id.exists' => 'المحل المحدد لا ينتمي لهذا العميل',
+            'social_links.*.id.exists' => 'الرابط المحدد لا ينتمي لهذا العميل',
+            'social_links.*.id.distinct' => 'الرابط مكرر',
         ]);
     }
 }

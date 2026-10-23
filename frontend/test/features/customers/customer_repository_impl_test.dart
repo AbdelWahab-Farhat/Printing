@@ -133,6 +133,41 @@ void main() {
     expect(shop.containsKey('page_url'), isFalse);
   });
 
+  test('the social links travel as objects, a new one without an id', () async {
+    // Arrange
+    const customer = NewCustomer(
+      name: 'مطبعة النور',
+      phone: '0913334444',
+      socialLinks: [
+        NewCustomerSocialLink(id: 4, url: 'https://facebook.com/alnoor'),
+        NewCustomerSocialLink(url: 'https://instagram.com/alnoor'),
+      ],
+    );
+
+    // Act
+    await repository.update(7, customer);
+
+    // Assert — بمُعرِّفه يُعدَّل، وبلا مُعرِّف يُضاف: المفتاح الغائب هو ما يقول «جديد».
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    final links = (sent['social_links'] as List<dynamic>).cast<Map<String, dynamic>>();
+    expect(links, [
+      {'id': 4, 'url': 'https://facebook.com/alnoor'},
+      {'url': 'https://instagram.com/alnoor'},
+    ]);
+  });
+
+  test('a customer with no social links does not mention the key', () async {
+    // Arrange
+    const customer = NewCustomer(name: 'مطبعة النور', phone: '0913334444');
+
+    // Act
+    await repository.create(customer);
+
+    // Assert
+    final sent = jsonDecode(adapter.body!) as Map<String, dynamic>;
+    expect(sent.containsKey('social_links'), isFalse);
+  });
+
   // ─────────────────────────── what the list asks for ───────────────────────────
 
   test('the plain list mentions neither the orders filter nor a sort', () async {

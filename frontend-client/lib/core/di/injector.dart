@@ -80,6 +80,11 @@ import 'package:dayaa_client/features/shops/usecases/list_business_fields.dart';
 import 'package:dayaa_client/features/shops/usecases/list_shops.dart';
 import 'package:dayaa_client/features/shops/usecases/remove_shop.dart';
 import 'package:dayaa_client/features/shops/usecases/update_shop.dart';
+import 'package:dayaa_client/features/social_links/presentation/viewmodel/social_links_cubit.dart';
+import 'package:dayaa_client/features/social_links/repositories/social_link_repository.dart';
+import 'package:dayaa_client/features/social_links/repositories/social_link_repository_impl.dart';
+import 'package:dayaa_client/features/social_links/usecases/list_social_links.dart';
+import 'package:dayaa_client/features/social_links/usecases/save_social_links.dart';
 import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/attachment_files_cubit.dart';
 import 'package:dayaa_client/features/support/presentation/viewmodel/open_thread.dart';
@@ -192,6 +197,7 @@ abstract final class Injector {
     _registerCatalog();
     _registerDelivery();
     _registerShops();
+    _registerSocialLinks();
     _registerOrders();
     _registerBagPreview();
     _registerBillboards();
@@ -330,6 +336,17 @@ abstract final class Injector {
           update: sl<UpdateShop>(),
           editing: editing,
         ),
+      );
+  }
+
+  /// «روابط التواصل» — تُفتح من «حسابي». الـ Cubit لكل شاشة، كـ«متاجري».
+  static void _registerSocialLinks() {
+    sl
+      ..registerLazySingleton<SocialLinkRepository>(() => SocialLinkRepositoryImpl(sl<Dio>()))
+      ..registerLazySingleton(() => ListSocialLinks(sl<SocialLinkRepository>()))
+      ..registerLazySingleton(() => SaveSocialLinks(sl<SocialLinkRepository>()))
+      ..registerFactory(
+        () => SocialLinksCubit(list: sl<ListSocialLinks>(), save: sl<SaveSocialLinks>()),
       );
   }
 

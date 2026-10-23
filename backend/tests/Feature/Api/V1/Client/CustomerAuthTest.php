@@ -7,6 +7,7 @@ namespace Tests\Feature\Api\V1\Client;
 use App\Domain\Customer\Models\BusinessField;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerShop;
+use App\Domain\Customer\Models\CustomerSocialLink;
 use App\Domain\Delivery\Models\City;
 use App\Domain\Delivery\Models\Region;
 use App\Domain\Identity\Models\User;
@@ -371,6 +372,23 @@ class CustomerAuthTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.city_id', $city->id)
             ->assertJsonPath('data.region_id', $region->id);
+    }
+
+    /**
+     * «روابط التواصل» في «حسابي» يحمل عددها، فيُقرأ من `me` نفسها لا بطلبٍ ثانٍ. والمحذوف لا يُعدّ.
+     */
+    public function test_me_counts_the_social_links_the_account_has(): void
+    {
+        // Arrange
+        $customer = $this->registered();
+        CustomerSocialLink::factory()->count(2)->create(['customer_id' => $customer->id]);
+        CustomerSocialLink::factory()->create(['customer_id' => $customer->id])->delete();
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($customer))->getJson('/api/v1/client/auth/me');
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.social_links_count', 2);
     }
 
     /**

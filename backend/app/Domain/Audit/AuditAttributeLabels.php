@@ -115,6 +115,10 @@ final class AuditAttributeLabels
             'page_url' => 'رابط الصفحة',
             'business_field_id' => 'مجال العمل',
         ],
+        'customer_social_link' => [
+            'customer_id' => 'العميل',
+            'url' => 'رابط التواصل',
+        ],
         'customer_design' => [
             'customer_id' => 'العميل',
             'kind' => 'نوع التصميم',

@@ -48,6 +48,10 @@ abstract class CustomerAccount with _$CustomerAccount {
     @JsonKey(name: 'city_id') int? cityId,
     @JsonKey(name: 'region_id') int? regionId,
 
+    /// كم رابط تواصلٍ للحساب، يُكتب على صفّ «روابط التواصل» في «حسابي». `auth/me` وحدها ترسله؛
+    /// و`null` من `login` و`register` «لم نُخبَر» لا صفر.
+    @JsonKey(name: 'social_links_count') int? socialLinksCount,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _CustomerAccount;
 

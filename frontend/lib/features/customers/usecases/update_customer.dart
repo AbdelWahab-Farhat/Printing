@@ -30,6 +30,7 @@ class UpdateCustomer {
     int? cityId,
     int? regionId,
     List<ShopInput> shops = const [],
+    List<SocialLinkInput> socialLinks = const [],
   }) {
     return _repository.update(
       customerId,
@@ -41,6 +42,8 @@ class UpdateCustomer {
         // Always present, even when empty — see the note above. This is the single line that
         // separates "the user removed every shop" from "the user did not mention shops".
         shops: shops.map(CreateCustomer.toShop).toList(),
+        // ودائماً للروابط أيضاً: قائمةٌ فارغة هي «حذف المستخدم كلّ الروابط».
+        socialLinks: socialLinks.map(CreateCustomer.toSocialLink).toList(),
       ),
     );
   }

@@ -155,6 +155,16 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::delete('shops/{shop}', [Client\ShopController::class, 'destroy'])
             ->whereNumber('shop')->name('shops.destroy');
 
+        /*
+         * ── my social links ─────────────────────────────────────────────────────────────
+         *
+         * روابط التواصل للعميل، تُقرأ وتُحفظ مجموعةً واحدة من «حسابي». الحفظ مُقيَّد المعدّل كإضافة
+         * المتجر: كلُّ حفظٍ قد يترك صفوفاً محذوفةً في سجلّ العميل.
+         */
+        Route::get('social-links', [Client\SocialLinkController::class, 'index'])->name('social-links.index');
+        Route::put('social-links', [Client\SocialLinkController::class, 'update'])
+            ->middleware('throttle:20,1,social-links-update')->name('social-links.update');
+
         // منتقي «مجال العمل» في نموذج المتجر: المعروضة وحدها، كما يراها الموظف.
         Route::get('business-fields', [Client\BusinessFieldController::class, 'index'])
             ->name('business-fields.index');

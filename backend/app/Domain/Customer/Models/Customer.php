@@ -84,9 +84,11 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
      * list — and a relation added to the resource but forgotten at one of them is not a broken
      * response, it is a silent query per row that nobody notices until the list is slow.
      *
+     * وروابط التواصل معها للسبب نفسه: كلّ شاشةٍ ترسم العميل من هذه الاستجابة ترسم روابطه.
+     *
      * @var list<string>
      */
-    public const SHOP_RELATIONS = ['shops.businessField', 'shops.city', 'shops.region', 'city', 'region'];
+    public const SHOP_RELATIONS = ['shops.businessField', 'shops.city', 'shops.region', 'city', 'region', 'socialLinks'];
 
     /**
      * @return array<string, string>
@@ -125,6 +127,18 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
     public function shops(): HasMany
     {
         return $this->hasMany(CustomerShop::class);
+    }
+
+    /**
+     * روابط التواصل — صفحاته على فيسبوك وإنستغرام وغيرها.
+     *
+     * بترتيب إضافتها: هو الترتيب الذي كتبها به من سجّلها، وتُرسم به في الشاشتين.
+     *
+     * @return HasMany<CustomerSocialLink, $this>
+     */
+    public function socialLinks(): HasMany
+    {
+        return $this->hasMany(CustomerSocialLink::class)->orderBy('id');
     }
 
     /**
@@ -170,6 +184,8 @@ class Customer extends Model implements Authenticatable, Commentable, HasAuditTr
             // the question this history exists to answer, and a removed design is the only kind
             // anyone asks about.
             (new CustomerDesign)->getMorphClass() => $this->designs()->withTrashed()->pluck('id')->all(),
+            // «من حذف صفحة الإنستغرام؟» سؤالٌ عن العميل نفسه، والمحذوف منها هو ما يُبحث عنه.
+            (new CustomerSocialLink)->getMorphClass() => $this->socialLinks()->withTrashed()->pluck('id')->all(),
             // Same reasoning, and the same `withTrashed`: «من حذف الملاحظة؟» is a question about
             // this customer, and a removed note is the only kind anyone goes looking for.
             (new Comment)->getMorphClass() => $this->comments()->withTrashed()->pluck('id')->all(),
