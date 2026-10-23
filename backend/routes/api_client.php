@@ -184,8 +184,9 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::get('orders', [Client\OrderController::class, 'index'])->name('orders.index');
 
         // Throttled although it is authenticated: this is the one endpoint in the customer API
-        // that creates work for the shop, and a double-tapped button on a slow connection must
-        // not put the same order on the review queue twice.
+        // that creates work for the shop. **The throttle is not what stops a duplicate** — twenty
+        // a minute lets a retry straight through. `client_token` is: the same key again returns
+        // the first order.
         Route::post('orders', [Client\OrderController::class, 'store'])
             ->middleware('throttle:20,1,orders-store')->name('orders.store');
 

@@ -10,15 +10,16 @@ use App\Domain\Order\Support\CheckoutDeposit;
 /**
  * Where an order is, said in words a customer can act on.
  *
- * **Nineteen statuses become eight stages, and the collapsing happens here rather than in the
+ * **Nineteen statuses become thirteen stages, and the collapsing happens here rather than in the
  * app.** {@see OrderStatus} is the workshop's vocabulary: «جاهزة للطباعة» is the moment
- * inventory hands a job to the press, «نواقص» is a shelf that came up short. Those are true and
- * they are none of the customer's business — telling somebody their order is «قيد التصنيع»
- * announces that we did not make it ourselves. «انتظار العربون» is the one exception, because it
- * is the one status waiting on the customer — see {@see self::AwaitingDeposit}.
+ * inventory hands a job to the press, «قيد التصنيع» is a vendor's bench. Those are true and they
+ * are none of the customer's business — telling somebody their order is «قيد التصنيع» announces
+ * that we did not make it ourselves. The exceptions are the statuses the customer may want to act
+ * on: «انتظار العربون» waits on them ({@see self::AwaitingDeposit}), and «نواقص» and «مرفوض» are
+ * news they may want to call us about ({@see needsAttention()}).
  *
  * What a customer wants from a status is one of two answers: *is anything required of me?* and
- * *roughly how far along is it?* Eight stages answer both; nineteen answer neither.
+ * *roughly how far along is it?* Thirteen stages answer both; nineteen answer neither.
  *
  * **In the server, because a mapping in the client is a mapping in two places.** The app draws
  * what it is sent, the same rule `label()` follows everywhere else in this codebase — and a
@@ -29,7 +30,12 @@ use App\Domain\Order\Support\CheckoutDeposit;
  */
 enum CustomerOrderStage: string
 {
-    /** Sent from the app, nobody has looked at it yet. The only stage that is the customer's move to make — by waiting. */
+    /**
+     * Sent from the app and not looked at yet, or taken and not started.
+     *
+     * **«جديدة» reads here, not as «قيد التجهيز»** (owner, 2026-10-23). Nothing is being got
+     * ready while an order sits in «جديدة»: the work starts at «جاهزة للطباعة», or at the deposit.
+     */
     case UnderReview = 'under_review';
 
     /**
@@ -46,14 +52,32 @@ enum CustomerOrderStage: string
     /** Accepted, and being got ready. Everything the workshop does before the artwork or the press. */
     case Preparing = 'preparing';
 
+    /**
+     * The stock to start the job is not there — «نواقص».
+     *
+     * **Its own stage since 2026-10-23, at the owner's request.** It used to hide inside «قيد
+     * التجهيز» as our problem rather than the customer's news. But a shortage is a wait nobody
+     * can promise the end of, and the customer is better told — and offered somebody to ask —
+     * than left watching a stage that does not move.
+     */
+    case Shortage = 'shortage';
+
     /** The artwork is being agreed — the one stage where the customer may be asked for something. */
     case Designing = 'designing';
 
     /** Being made, here or at a vendor's bench. The customer is not told which, because it does not change anything for them. */
     case Producing = 'producing';
 
-    /** Made, and waiting to go out or to be collected. */
+    /** Made, and waiting to go out. */
     case Ready = 'ready';
+
+    /**
+     * Waiting at one of our branches for the customer to collect — «استلام مكتب».
+     *
+     * **Its own stage since 2026-10-23** (owner). It read as «جاهزة» before, which was true but
+     * left out the one thing the customer has to do: come and get it.
+     */
+    case OfficePickup = 'office_pickup';
 
     /** On its way. */
     case OnTheWay = 'on_the_way';
@@ -88,19 +112,19 @@ enum CustomerOrderStage: string
     public static function forStatus(OrderStatus $status): self
     {
         return match ($status) {
-            OrderStatus::Requested => self::UnderReview,
+            // Taken or not, nothing has been started yet — see the case's own docblock.
+            OrderStatus::Requested,
+            OrderStatus::New => self::UnderReview,
 
             // The one workshop status that waits on the customer — see the case's own docblock.
             OrderStatus::AwaitingDeposit => self::AwaitingDeposit,
 
-            // **Four statuses, one stage.** «عربون مدفوع» is the deposit settled, which to the
-            // customer is simply the order going ahead; «نواقص» is our shelf being short, which
-            // is our problem to solve rather than news to break by status label. All four mean
-            // the same thing to the person waiting: taken, not yet being made.
-            OrderStatus::New,
+            // «عربون مدفوع» is the deposit settled, which to the customer is simply the order
+            // going ahead; «جاهزة للطباعة» is the stock leaving the shelf for the press.
             OrderStatus::DepositPaid,
-            OrderStatus::ReadyToPrint,
-            OrderStatus::Shortage => self::Preparing,
+            OrderStatus::ReadyToPrint => self::Preparing,
+
+            OrderStatus::Shortage => self::Shortage,
 
             OrderStatus::Designing => self::Designing,
 
@@ -109,13 +133,13 @@ enum CustomerOrderStage: string
             OrderStatus::Printing,
             OrderStatus::Manufacturing => self::Producing,
 
-            // «استلام مكتب» is an order waiting at the counter, which from the customer's side
-            // is exactly «جاهزة» — the app tells them where to come from the fulfilment type,
-            // not from the stage.
-            OrderStatus::Ready,
-            OrderStatus::OfficePickup => self::Ready,
+            OrderStatus::Ready => self::Ready,
 
-            OrderStatus::OutForDelivery => self::OnTheWay,
+            OrderStatus::OfficePickup => self::OfficePickup,
+
+            // «إعادة إرسال» is the parcel going out again — on its way, a second time.
+            OrderStatus::OutForDelivery,
+            OrderStatus::Resend => self::OnTheWay,
 
             // **«تم التسوية» is not a stage of its own.** Settling is the shop agreeing its own
             // books; for the customer the parcel arrived and that was the end of it.
@@ -123,12 +147,10 @@ enum CustomerOrderStage: string
             OrderStatus::Settled => self::Delivered,
 
             // Which link in the chain it came back from — courier, carrier, our own counter —
-            // is an operational fact. To the customer it came back, and «إعادة إرسال» is it
-            // going out again, which has not happened yet.
+            // is an operational fact. To the customer it came back.
             OrderStatus::ReturnedCourier,
             OrderStatus::ReturnedCarrier,
-            OrderStatus::ReturnedOffice,
-            OrderStatus::Resend => self::Returned,
+            OrderStatus::ReturnedOffice => self::Returned,
 
             OrderStatus::Cancelled => self::Cancelled,
 
@@ -141,7 +163,7 @@ enum CustomerOrderStage: string
      *
      * **An app order the shop has just accepted, whose عربون the customer has yet to choose, is
      * «بانتظار العربون»** (owner, 2026-10-19), though the workshop still has it in «جديدة»: the next
-     * move is the customer's, and «قيد التجهيز — نجهّزها الآن» would tell them otherwise. See
+     * move is the customer's, and «بانتظار المراجعة — نراجع طلبيتك» would tell them otherwise. See
      * {@see CheckoutDeposit::isOfferedAfterReview()}. Read by the list and the order alike, so a
      * card and the order it opens never disagree; the stage filter asks the same question in SQL.
      */
@@ -158,9 +180,11 @@ enum CustomerOrderStage: string
             self::UnderReview => 'بانتظار المراجعة',
             self::AwaitingDeposit => 'بانتظار العربون',
             self::Preparing => 'قيد التجهيز',
+            self::Shortage => 'نواقص',
             self::Designing => 'قيد التصميم',
             self::Producing => 'قيد الإنتاج',
             self::Ready => 'جاهزة',
+            self::OfficePickup => 'استلام مكتب',
             self::OnTheWay => 'جاري التوصيل',
             self::Delivered => 'تم الاستلام',
             self::Returned => 'مرتجعة',
@@ -191,9 +215,11 @@ enum CustomerOrderStage: string
             self::UnderReview => 'نراجع طلبيتك ونؤكّدها خلال ساعات العمل',
             self::AwaitingDeposit => 'نبدأ العمل حين يصلنا العربون — في المكتب أو من محفظتك',
             self::Preparing => 'طلبيتك مؤكّدة، ونجهّزها الآن',
+            self::Shortage => 'ينقصنا بعض المواد، وقد يتأخر تجهيزها — تواصل معنا إن أردت',
             self::Designing => 'نعمل على التصميم، وسنعرضه عليك قبل الطباعة',
             self::Producing => 'طلبيتك في الإنتاج',
             self::Ready => 'جاهزة — سنتواصل معك للتسليم',
+            self::OfficePickup => 'بانتظارك في المكتب، تعال لاستلامها',
             self::OnTheWay => 'مع المندوب، في الطريق إليك',
             self::Returned => 'رجعت إلينا، وسنتواصل معك بشأنها',
             // **A sentence, where «ملغاة» gets none.** The other two endings need no line: one
@@ -210,7 +236,7 @@ enum CustomerOrderStage: string
      * The workshop statuses that read as this stage.
      *
      * **Derived from {@see forStatus()}, never written out a second time.** «قيد التجهيز» is
-     * five statuses and «مرتجعة» is four; a hand-kept list here would agree with `forStatus()`
+     * two statuses and «مرتجعة» is three; a hand-kept list here would agree with `forStatus()`
      * on the day it was written and drift the first time a status moves between stages. Walking
      * every status and keeping the ones that map here cannot drift, and it costs a loop over
      * nineteen enum cases.
@@ -229,5 +255,16 @@ enum CustomerOrderStage: string
     public function isOpen(): bool
     {
         return ! in_array($this, [self::Delivered, self::Cancelled, self::Rejected], true);
+    }
+
+    /**
+     * News the customer may want to ask us about — «نواقص» and «مرفوضة».
+     *
+     * **Drawn on top of «طلبياتي الجارية»** (owner, 2026-10-23), a refusal included though it is
+     * not open: it stays there, first, until somebody on our side moves the order on.
+     */
+    public function needsAttention(): bool
+    {
+        return $this === self::Shortage || $this === self::Rejected;
     }
 }

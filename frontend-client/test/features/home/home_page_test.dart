@@ -18,6 +18,7 @@ import 'package:dayaa_client/features/home/presentation/views/home_page.dart';
 import 'package:dayaa_client/features/home/presentation/widgets/active_order_card.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
+import 'package:dayaa_client/features/orders/presentation/views/order_progress_bar.dart';
 import 'package:dayaa_client/features/orders/repositories/order_repository.dart';
 import 'package:dayaa_client/features/orders/usecases/list_active_orders.dart';
 import 'package:flutter/material.dart';
@@ -216,6 +217,46 @@ void main() {
     expect(first.width, 430 - 2 * 16);
   });
 
+  // «نواقص» و«مرفوضة» أولاً، وتحتهما ما يُسأل به (طلب المستخدم، 2026-10-23).
+  testWidgets('a shortage comes first, with its sentence and a way to ask about it', (tester) async {
+    // Arrange — older than the order in production, and drawn above it anyway.
+    final short = CustomerOrder(
+      id: 3,
+      code: '1310',
+      stage: OrderStage.shortage,
+      stageLabel: 'نواقص',
+      stageHint: 'ينقصنا بعض المواد، وقد يتأخر تجهيزها — تواصل معنا إن أردت',
+      summary: 'أكياس شحن - مطبوعة صغير',
+      total: '113.000',
+      placedAt: DateTime.now().subtract(const Duration(days: 3)),
+    );
+    register(moving: Right([producing, short]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(
+      tester.getTopLeft(find.text('1310')).dy,
+      lessThan(tester.getTopLeft(find.text('1228')).dy),
+    );
+    expect(find.text('ينقصنا بعض المواد، وقد يتأخر تجهيزها — تواصل معنا إن أردت'), findsOneWidget);
+    expect(find.text('تواصل معنا'), findsOneWidget);
+  });
+
+  testWidgets('an order still moving carries no button to ask about it', (tester) async {
+    // Arrange
+    register(moving: Right([producing]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('تواصل معنا'), findsNothing);
+  });
+
   testWidgets('tapping the order opens it, with a way back', (tester) async {
     // Arrange
     register(moving: Right([producing]));
@@ -370,5 +411,70 @@ void main() {
     // Assert
     final name = tester.renderObject<RenderParagraph>(find.text('معاينة على الكيس'));
     expect(name.didExceedMaxLines, isFalse);
+  });
+
+  // «استلام مكتب» مكان «التوصيل» على شريط طلبيةٍ تُستلم من المكتب (طلب المستخدم، 2026-10-23).
+  CustomerOrder atTheCounter() => CustomerOrder(
+    id: 4,
+    code: '1311',
+    stage: OrderStage.officePickup,
+    stageLabel: 'استلام مكتب',
+    fulfilmentType: 'office_pickup',
+    summary: 'أكياس شحن - مطبوعة صغير',
+    total: '113.000',
+    placedAt: DateTime.now().subtract(const Duration(days: 5)),
+  );
+
+  testWidgets('an order at the counter stands on the last step, named for the counter', (
+    tester,
+  ) async {
+    // Arrange
+    register(moving: Right([atTheCounter()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — the pill and the last step both say it; no «التوصيل» is promised.
+    expect(find.text('استلام مكتب'), findsNWidgets(2));
+    expect(find.text('التوصيل'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('الخطوة 5 من 5: استلام مكتب')), findsOneWidget);
+  });
+
+  testWidgets('an order at the counter comes before newer ones', (tester) async {
+    // Arrange
+    register(moving: Right([producing, atTheCounter()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(
+      tester.getTopLeft(find.text('1311')).dy,
+      lessThan(tester.getTopLeft(find.text('1228')).dy),
+    );
+  });
+
+  testWidgets('«استلام مكتب» fits whole under its step on a narrow phone, barely smaller', (
+    tester,
+  ) async {
+    // Arrange
+    tester.view.physicalSize = const Size(360, 780);
+    register(moving: Right([atTheCounter()]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — the step's label, not the pill's: whole, inside its column, and shrunk by no
+    // more than a fifth against its neighbour «جاهزة».
+    Finder inBar(String text) =>
+        find.descendant(of: find.byType(OrderProgressBar), matching: find.text(text));
+    final counter = tester.getRect(inBar('استلام مكتب'));
+    final ready = tester.getRect(inBar('جاهزة'));
+    expect(tester.renderObject<RenderParagraph>(inBar('استلام مكتب')).didExceedMaxLines, isFalse);
+    expect(counter.width, lessThanOrEqualTo(tester.getRect(find.byType(OrderProgressBar)).width / 5));
+    expect(counter.height / ready.height, greaterThanOrEqualTo(0.8));
   });
 }

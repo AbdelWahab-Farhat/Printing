@@ -18,6 +18,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The middle cell is «المدفوع», not «العربون». A deposit is what a part-payment is *called*, and
 /// the word stops being true the moment the order is paid in full — one label that is always
 /// accurate beats one that is usually accurate.
+///
+/// **A fourth cell, «الزائد», beside «المدفوع» — only when the customer paid beyond the order.**
+/// That money is revenue and never part of «المدفوع», so without its own cell an order that took
+/// 100 on 99 reads as 99 paid and the extra dinar is nowhere on the screen. Absent at zero, so
+/// almost every order keeps its three cells.
 class OrderMoneyRow extends StatelessWidget {
   const OrderMoneyRow({required this.summary, super.key});
 
@@ -40,6 +45,18 @@ class OrderMoneyRow extends StatelessWidget {
             Expanded(
               child: _Cell(label: 'المدفوع', value: summary.paidAmount, tone: scheme.primary),
             ),
+            if (summary.hasOverpaid) ...[
+              _Divider(color: scheme.outlineVariant),
+              Expanded(
+                child: _Cell(
+                  key: const ValueKey('overpaid-cell'),
+                  label: 'الزائد',
+                  value: summary.overpaidAmount,
+                  // The tone of the «مدفوعة بالزيادة» chip below, so the two read as one fact.
+                  tone: scheme.tertiary,
+                ),
+              ),
+            ],
             _Divider(color: scheme.outlineVariant),
             Expanded(
               child: _Cell(
@@ -67,9 +84,9 @@ class OrderMoneyRow extends StatelessWidget {
 
         // What was forgiven, on its own line and only when there is any.
         //
-        // **Not a fourth cell in the row above.** Three money figures already share one line on
-        // a narrow phone; a fourth would shrink all of them for a number that is zero on almost
-        // every order. Said in a sentence instead, where it can say what it means.
+        // **Not a cell in the row above.** That row can already hold four figures on a narrow
+        // phone (with «الزائد»); another would shrink all of them for a number that is zero on
+        // almost every order. Said in a sentence instead, where it can say what it means.
         if (summary.hasWriteOff) ...[
           SizedBox(height: 10.h),
           Align(
@@ -96,7 +113,7 @@ class OrderMoneyRow extends StatelessWidget {
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.label, required this.value, this.tone});
+  const _Cell({required this.label, required this.value, this.tone, super.key});
 
   final String label;
   final String value;

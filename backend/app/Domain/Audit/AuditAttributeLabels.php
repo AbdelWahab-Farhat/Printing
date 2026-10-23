@@ -349,6 +349,7 @@ final class AuditAttributeLabels
             'stock_redrawn_at' => 'تاريخ سحب المخزون مرة ثانية عند الاستعادة',
             'fulfillment_warehouse_id' => 'مخزن التنفيذ',
             'total_cogs' => 'إجمالي تكلفة البضاعة',
+            'client_token' => 'رمز الإرسال',
             // Its *values* need no dictionary: `OrderFlow` names itself, and AuditValueLabels
             // translates any enum-cast column whose enum can — so a history row reads «بلا تصميم
             // وطباعة» rather than `no_production`.

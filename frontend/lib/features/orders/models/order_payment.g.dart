@@ -232,6 +232,7 @@ _PaymentSummary _$PaymentSummaryFromJson(Map<String, dynamic> json) =>
       paidAmount: json['paid_amount'] as String,
       writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
       excessAmount: json['excess_amount'] as String? ?? '0.00',
+      overpaidAmount: json['overpaid_amount'] as String? ?? '0.00',
       remainingAmount: json['remaining_amount'] as String,
       paymentStatus: $enumDecode(
         _$PaymentStatusEnumMap,
@@ -249,6 +250,7 @@ Map<String, dynamic> _$PaymentSummaryToJson(_PaymentSummary instance) =>
       'paid_amount': instance.paidAmount,
       'written_off_amount': instance.writtenOffAmount,
       'excess_amount': instance.excessAmount,
+      'overpaid_amount': instance.overpaidAmount,
       'remaining_amount': instance.remainingAmount,
       'payment_status': _$PaymentStatusEnumMap[instance.paymentStatus]!,
       'payment_status_label': instance.paymentStatusLabel,

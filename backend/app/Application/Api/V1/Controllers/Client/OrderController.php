@@ -14,6 +14,7 @@ use App\Application\Api\V1\Resources\Client\ClientOrderResource;
 use App\Application\Controller;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Order\Actions\ChooseOrderDeposit;
+use App\Domain\Order\Actions\PlaceOrderOnce;
 use App\Domain\Order\Actions\PlaceOrderWithDeposit;
 use App\Domain\Order\Actions\QuoteBasket;
 use App\Domain\Order\Actions\RequestOrder;
@@ -22,6 +23,7 @@ use App\Domain\Order\DTOs\OrderItemData;
 use App\Domain\Order\Enums\CheckoutPayment;
 use App\Domain\Order\Enums\CustomerOrderStage;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Models\Order;
 use App\Domain\Order\OrderService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +55,7 @@ class OrderController extends Controller
         private readonly OrderService $orders,
         private readonly RequestOrder $requestOrder,
         private readonly PlaceOrderWithDeposit $placeWithDeposit,
+        private readonly PlaceOrderOnce $placeOnce,
         private readonly ChooseOrderDeposit $chooseDeposit,
         private readonly QuoteBasket $quoteBasket,
     ) {}
@@ -61,9 +64,10 @@ class OrderController extends Controller
      * My orders
      *
      * Newest first. Pass `open=1` for the ones still being worked on — everything that has not
-     * been delivered, written off, or finished and set aside for collection — or `stage=` with
-     * one of the eight stage values for a single one of them. See {@see openStatuses()} for why
-     * «جاهزة» is outside `open=1` although a ready order is still `is_open`.
+     * been delivered, written off, or finished and set aside for collection, plus the refused
+     * ones, with «نواقص» and «مرفوضة» first — or `stage=` with one of the stage values for a
+     * single one of them. See {@see openStatuses()} for why «جاهزة» is outside `open=1` although a
+     * ready order is still `is_open`.
      *
      * **`stage` is the app's vocabulary, translated here.** A customer's screen offers «جاهزة»
      * and «مكتملة»; the Order context knows «استلام مكتب» and «تم التسوية» and must not be asked
@@ -92,9 +96,12 @@ class OrderController extends Controller
             // التجهيز» — see `CustomerOrderStage::of()`.
             depositOffered: match (CustomerOrderStage::tryFrom($request->string('stage')->toString())) {
                 CustomerOrderStage::AwaitingDeposit => true,
-                CustomerOrderStage::Preparing => false,
+                CustomerOrderStage::UnderReview => false,
                 default => null,
             },
+            // «نواقص» and «مرفوضة», then «استلام مكتب», on top of the home screen's list (owner,
+            // 2026-10-23) — see {@see firstStatuses()}.
+            firstStatuses: $request->boolean('open') ? self::firstStatuses() : [],
         );
 
         return $this->successWithPagination(ClientOrderResource::collection($orders));
@@ -117,11 +124,15 @@ class OrderController extends Controller
      * Every line is priced by the server from the same code the quote endpoint uses, so the
      * total here is the total the app showed. A client cannot send a price, a discount, or a
      * vendor; see {@see RequestOrderRequest} for the whole list of what is refused by absence.
+     *
+     * `client_token` makes a retry safe: the same token again returns the first order with 200,
+     * and writes nothing and pays nothing.
      */
     public function store(RequestOrderRequest $request): JsonResponse
     {
         $customer = $this->customer($request);
         $validated = $request->validated();
+        $clientToken = $validated['client_token'] ?? null;
 
         $data = new OrderData(
             // **From the token, never from the body.** A customer who could name a customer id
@@ -157,33 +168,41 @@ class OrderController extends Controller
                 array_keys($validated['items']),
             ),
             designIds: array_map('intval', $validated['design_ids'] ?? []),
+            clientToken: $clientToken,
         );
 
         // **With the عربون chosen in the basket, the order skips review** — see
         // {@see PlaceOrderWithDeposit}. Without one it is a request, as it always was.
         $deposit = $validated['deposit'] ?? null;
+        $payment = $deposit === null ? null : CheckoutPayment::from((string) $deposit['payment']);
 
-        if ($deposit === null) {
-            $order = ($this->requestOrder)($data);
-            $message = 'تم إرسال طلبك، وسنراجعه ونؤكده قريباً';
-        } else {
-            $payment = CheckoutPayment::from((string) $deposit['payment']);
-            $order = ($this->placeWithDeposit)(
-                $data,
-                $payment,
-                (string) $deposit['amount'],
-                $deposit['client_token'] ?? null,
-            );
-            $message = match ($payment) {
-                CheckoutPayment::Office => 'تم إرسال طلبك — ادفع العربون في المكتب لنبدأ العمل',
-                CheckoutPayment::Wallet => 'تم إرسال طلبك ودُفع العربون من محفظتك',
-            };
+        // **A retry after a lost reply** is answered with the order it already placed — see
+        // {@see PlaceOrderOnce}.
+        $order = ($this->placeOnce)(
+            (int) $customer->getKey(),
+            $clientToken,
+            fn (): Order => $payment === null
+                ? ($this->requestOrder)($data)
+                : ($this->placeWithDeposit)(
+                    $data,
+                    $payment,
+                    (string) $deposit['amount'],
+                    $deposit['client_token'] ?? null,
+                ),
+        );
+
+        $resource = new ClientOrderDetailResource($order->load(['items.product.images', 'transitions']));
+
+        // The same `client_token` again: the first order, 200, and nothing written or paid.
+        if (! $order->wasRecentlyCreated) {
+            return $this->success($resource, 'هذه الطلبية وصلتنا من قبل');
         }
 
-        return $this->created(
-            new ClientOrderDetailResource($order->load(['items.product.images', 'transitions'])),
-            $message,
-        );
+        return $this->created($resource, match ($payment) {
+            null => 'تم إرسال طلبك، وسنراجعه ونؤكده قريباً',
+            CheckoutPayment::Office => 'تم إرسال طلبك — ادفع العربون في المكتب لنبدأ العمل',
+            CheckoutPayment::Wallet => 'تم إرسال طلبك ودُفع العربون من محفظتك',
+        });
     }
 
     /**
@@ -290,6 +309,10 @@ class OrderController extends Controller
      * is asked by other things — the badge, `PagedCubit.belongs` — and narrowing it would move a
      * chip's problem into the vocabulary the whole app shares.
      *
+     * **«مرفوضة» is included, though it is not open** (owner, 2026-10-23). A refusal is the news
+     * the customer most needs to see and may want to ask about, so it sits on the home screen —
+     * first, see {@see attentionStatuses()} — until somebody on our side moves the order on.
+     *
      * @return list<string>
      */
     private static function openStatuses(): array
@@ -299,9 +322,33 @@ class OrderController extends Controller
             array_filter(OrderStatus::cases(), function (OrderStatus $status): bool {
                 $stage = CustomerOrderStage::forStatus($status);
 
-                return $stage->isOpen() && $stage !== CustomerOrderStage::Ready;
+                return ($stage->isOpen() && $stage !== CustomerOrderStage::Ready) || $stage->needsAttention();
             }),
         ));
+    }
+
+    /**
+     * What `open=1` lists before the rest, in rank order (owner, 2026-10-23).
+     *
+     * First the stages the customer may want to ask us about («نواقص», «مرفوضة»); then
+     * «استلام مكتب», an order waiting for them to come, so they do not scroll to find it.
+     *
+     * @return list<list<string>>
+     */
+    private static function firstStatuses(): array
+    {
+        $values = fn (array $statuses): array => array_values(array_map(
+            fn (OrderStatus $status) => $status->value,
+            $statuses,
+        ));
+
+        return [
+            $values(array_filter(
+                OrderStatus::cases(),
+                fn (OrderStatus $status): bool => CustomerOrderStage::forStatus($status)->needsAttention(),
+            )),
+            $values(CustomerOrderStage::OfficePickup->statuses()),
+        ];
     }
 
     /**

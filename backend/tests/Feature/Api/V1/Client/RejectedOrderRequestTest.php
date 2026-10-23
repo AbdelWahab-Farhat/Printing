@@ -273,7 +273,7 @@ class RejectedOrderRequestTest extends TestCase
             ->assertJsonPath('data.rejection_reason', 'المقاس غير متوفر لدينا حالياً');
     }
 
-    public function test_a_refused_request_is_not_in_the_open_list(): void
+    public function test_a_refused_request_stays_on_the_home_screen_though_it_is_closed(): void
     {
         // Arrange
         $me = $this->customer();
@@ -289,7 +289,11 @@ class RejectedOrderRequestTest extends TestCase
         $response = $this->withHeaders($this->bearerFor($me))
             ->getJson('/api/v1/client/orders?open=1');
 
-        // Assert — «قيد التنفيذ» is what is still moving, and this is not.
-        $response->assertOk()->assertJsonCount(0, 'data');
+        // Assert — not moving, but the owner wants it in «طلبياتي الجارية» (2026-10-23), where
+        // the customer sees it and can ask us about it.
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.stage', CustomerOrderStage::Rejected->value)
+            ->assertJsonPath('data.0.is_open', false);
     }
 }

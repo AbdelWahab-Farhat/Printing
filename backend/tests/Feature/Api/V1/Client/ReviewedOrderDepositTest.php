@@ -171,14 +171,15 @@ class ReviewedOrderDepositTest extends TestCase
         // Act
         $all = $this->withHeaders($headers)->getJson('/api/v1/client/orders');
         $waiting = $this->withHeaders($headers)->getJson('/api/v1/client/orders?stage=awaiting_deposit');
-        $preparing = $this->withHeaders($headers)->getJson('/api/v1/client/orders?stage=preparing');
+        $review = $this->withHeaders($headers)->getJson('/api/v1/client/orders?stage=under_review');
 
-        // Assert — the card, and the filter that must agree with it.
+        // Assert — the card, and the filter that must agree with it. A clerk's «جديدة» reads as
+        // «بانتظار المراجعة» since 2026-10-23.
         $stages = collect($all->assertOk()->json('data'))->pluck('stage', 'id');
         $this->assertSame(CustomerOrderStage::AwaitingDeposit->value, $stages[$offered->id]);
-        $this->assertSame(CustomerOrderStage::Preparing->value, $stages[$clerks->id]);
+        $this->assertSame(CustomerOrderStage::UnderReview->value, $stages[$clerks->id]);
         $this->assertSame([$offered->id], array_column($waiting->assertOk()->json('data'), 'id'));
-        $this->assertSame([$clerks->id], array_column($preparing->assertOk()->json('data'), 'id'));
+        $this->assertSame([$clerks->id], array_column($review->assertOk()->json('data'), 'id'));
     }
 
     public function test_a_clerks_order_and_a_request_not_yet_accepted_are_not_offered_one(): void

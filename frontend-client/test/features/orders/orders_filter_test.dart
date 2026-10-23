@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// اختيارات «طلباتي»: «كل الحالات»، ثم المراحل العشر كلها بترتيب ما تمرّ به الطلبية (طلب
+/// اختيارات «طلباتي»: «كل الحالات»، ثم المراحل كلها بترتيب ما تمرّ به الطلبية (طلب
 /// المستخدم، 2026-09-25).
 ///
 /// Arrange - Act - Assert throughout.
@@ -24,9 +24,11 @@ void main() {
       'بانتظار المراجعة',
       'بانتظار العربون',
       'قيد التجهيز',
+      'نواقص',
       'قيد التصميم',
       'قيد الإنتاج',
       'جاهزة',
+      'استلام مكتب',
       'جاري التوصيل',
       'تم الاستلام',
       'مرتجعة',
@@ -61,9 +63,11 @@ void main() {
       OrdersFilter.underReview: 'under_review',
       OrdersFilter.awaitingDeposit: 'awaiting_deposit',
       OrdersFilter.preparing: 'preparing',
+      OrdersFilter.shortage: 'shortage',
       OrdersFilter.designing: 'designing',
       OrdersFilter.producing: 'producing',
       OrdersFilter.ready: 'ready',
+      OrdersFilter.officePickup: 'office_pickup',
       OrdersFilter.onTheWay: 'on_the_way',
       OrdersFilter.delivered: 'delivered',
       OrdersFilter.returned: 'returned',

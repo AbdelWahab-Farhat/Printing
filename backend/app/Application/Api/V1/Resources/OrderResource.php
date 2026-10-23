@@ -10,6 +10,7 @@ use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Http\Request;
@@ -200,6 +201,14 @@ class OrderResource extends JsonResource
             // owed back until it is refunded or kept. It closes nothing, so `remaining_amount`
             // ignores it, and it is never part of `paid_amount`, so the sale stays 99.
             'excess_amount' => (string) $this->excess_amount,
+            // The seventh: what was paid beyond the order and kept as revenue — the excess on the
+            // payments themselves, since `excess_amount` above stays zero (see
+            // Order::overpaidPayments()). **Only on the order screen**, which loads the sum; a
+            // list does not, and the key is simply absent there.
+            'overpaid_amount' => $this->whenHas(
+                'overpaid_amount',
+                fn ($sum) => Money::round((string) ($sum ?? '0')),
+            ),
             'remaining_amount' => $this->remainingAmount(),
             'payment_status' => $this->paymentStatus()->value,
             'payment_status_label' => $this->paymentStatus()->label(),

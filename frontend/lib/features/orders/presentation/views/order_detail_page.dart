@@ -1337,6 +1337,7 @@ class _Header extends StatelessWidget {
               grandTotal: order.grandTotal,
               paidAmount: order.paidAmount,
               excessAmount: order.excessAmount,
+              overpaidAmount: order.overpaidAmount,
               remainingAmount: order.remainingAmount,
               paymentStatus: order.paymentStatus,
               paymentStatusLabel: order.paymentStatusLabel,

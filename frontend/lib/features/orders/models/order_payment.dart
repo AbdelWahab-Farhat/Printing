@@ -411,6 +411,10 @@ abstract class PaymentSummary with _$PaymentSummary {
     /// refunded or kept. **Never part of «المدفوع»**, so that stays what the order was paid.
     @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
 
+    /// What was paid beyond the order and kept as revenue — the fourth cell, «الزائد». Read off
+    /// the payments by the server; defaulted so a server from before it reads as none.
+    @JsonKey(name: 'overpaid_amount') @Default('0.00') String overpaidAmount,
+
     /// What is still owed. **Negative when the order is overpaid**, so the screen can say
     /// «زائد ٥٠» rather than flooring the fact away.
     @JsonKey(name: 'remaining_amount') required String remainingAmount,
@@ -452,6 +456,10 @@ abstract class PaymentSummary with _$PaymentSummary {
 
   /// Whether the order holds money the customer paid beyond it.
   bool get hasExcess => excessAmount != '0.00' && excessAmount.isNotEmpty;
+
+  /// Whether anything was paid beyond the order — what decides the «الزائد» cell.
+  bool get hasOverpaid =>
+      overpaidAmount.isNotEmpty && overpaidAmount != '0.00' && !overpaidAmount.startsWith('-');
 
   /// Whether the customer's wallet holds anything to pay with.
   bool get hasWalletMoney =>
