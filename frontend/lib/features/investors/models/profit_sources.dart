@@ -88,6 +88,15 @@ enum ProfitGate {
   /// What the API calls it.
   final String value;
 
-  /// The sheet's heading.
+  /// عنوانُ صفحتها.
   final String title;
+
+  /// البوّابةُ من مقطع مسارها — `null` لما ليس بوّابة، فيُردّ المسارُ ولا يُخمَّن.
+  static ProfitGate? fromValue(String? value) {
+    for (final gate in values) {
+      if (gate.value == value) return gate;
+    }
+
+    return null;
+  }
 }

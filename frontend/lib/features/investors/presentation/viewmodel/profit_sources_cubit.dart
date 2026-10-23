@@ -6,10 +6,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'profit_sources_cubit.freezed.dart';
 
-/// One gate of his profit card, opened in a sheet.
+/// بوّابةٌ من بطاقة أرباحه، مفتوحةً صفحةً.
 ///
-/// Read when the sheet opens rather than with the investor: three lists on every visit to the
-/// page would be work for a question asked now and then.
+/// تُقرأ حين تُفتح الصفحة لا مع المستثمر: ثلاثُ قوائم في كل زيارةٍ لصفحته عملٌ لسؤالٍ يُسأل
+/// أحياناً.
 class ProfitSourcesCubit extends Cubit<ProfitSourcesState> {
   ProfitSourcesCubit({required GetProfitSources getSources})
     : _getSources = getSources,

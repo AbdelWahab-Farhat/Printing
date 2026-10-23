@@ -14,7 +14,6 @@ import 'package:dayaa/features/investors/models/investor.dart';
 import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/presentation/viewmodel/investor_detail_cubit.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
-import 'package:dayaa/features/investors/presentation/widgets/profit_sources_sheet.dart';
 import 'package:dayaa/features/investors/presentation/widgets/wallet_entry_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -419,14 +418,9 @@ class _ProfitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // **كلُّ بوّابةٍ تُفتح على مصدرها** — «من أيّ طلبياتٍ جاء هذا الرقم؟». الورقةُ تقرأ قائمتَها
-    // حين تُفتح، والطلبيةُ تُفتح من الصفحة بعد أن تُغلق الورقة.
-    void open(ProfitGate gate) => showProfitSourcesSheet(
-      context: context,
-      investorId: investorId,
-      gate: gate,
-      onOrder: (orderId) => context.push(Routes.order(orderId)),
-    );
+    // **كلُّ بوّابةٍ تُفتح على مصدرها** — «من أيّ طلبياتٍ جاء هذا الرقم؟». صفحةٌ تقرأ قائمتَها
+    // حين تُفتح، والطلبيةُ تُفتح فوقها.
+    void open(ProfitGate gate) => context.push(Routes.investorProfitSources(investorId, gate));
 
     if (figures case final figures?) {
       return InvestorMoneyTile(

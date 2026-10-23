@@ -49,6 +49,7 @@ import 'package:dayaa/features/investment_fund/presentation/views/investment_per
 import 'package:dayaa/features/investment_fund/presentation/views/investment_periods_page.dart';
 import 'package:dayaa/features/investment_settings/presentation/views/investment_settings_page.dart';
 import 'package:dayaa/features/investor_portal/presentation/views/investor_portal_page.dart';
+import 'package:dayaa/features/investors/models/profit_sources.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_detail_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deal_orders_page.dart';
 import 'package:dayaa/features/investors/presentation/views/deals_page.dart';
@@ -56,6 +57,7 @@ import 'package:dayaa/features/investors/presentation/views/fund_purchase_order_
 import 'package:dayaa/features/investors/presentation/views/investor_detail_page.dart';
 import 'package:dayaa/features/investors/presentation/views/investor_statement_page.dart';
 import 'package:dayaa/features/investors/presentation/views/investors_page.dart';
+import 'package:dayaa/features/investors/presentation/views/profit_sources_page.dart';
 import 'package:dayaa/features/location/presentation/views/pick_location_page.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/models/manufacturing_cost_rate.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rate_form_page.dart';
@@ -206,6 +208,11 @@ abstract final class Routes {
   /// Every movement of one investor's money. **Registered before `/investors/:id`** for the
   /// reason [investorDealOrders] gives.
   static String investorStatement(int id) => '/investors/$id/statement';
+
+  /// «من أين جاء هذا الرقم؟» — بوّابةٌ من بطاقة أرباحه. **قبل `/investors/:id`** لما يقوله
+  /// [investorDealOrders].
+  static String investorProfitSources(int id, ProfitGate gate) =>
+      '/investors/$id/profit/${gate.value}';
 
   static String investorDeal(int id) => '/investor-deals/$id';
 
@@ -664,6 +671,17 @@ abstract final class AppRouter {
         builder: (context, state) => InvestorStatementPage(
           investorId: int.parse(state.pathParameters['id']!),
           investorName: state.payload as String?,
+        ),
+      ),
+      GoRoute(
+        path: '/investors/:id/profit/:gate',
+        // مقطعٌ ليس بوّابةً يعود إلى صفحة المستثمر، ولا يُخمَّن له جيب.
+        redirect: (context, state) => ProfitGate.fromValue(state.pathParameters['gate']) == null
+            ? Routes.investor(int.parse(state.pathParameters['id']!))
+            : null,
+        builder: (context, state) => ProfitSourcesPage(
+          investorId: int.parse(state.pathParameters['id']!),
+          gate: ProfitGate.fromValue(state.pathParameters['gate'])!,
         ),
       ),
       GoRoute(
