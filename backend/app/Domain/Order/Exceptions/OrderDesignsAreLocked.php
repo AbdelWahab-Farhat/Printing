@@ -20,7 +20,7 @@ final class OrderDesignsAreLocked extends DomainException
     public static function make(OrderStatus $status): self
     {
         return new self(
-            'إضافة التصاميم متاحة في «جديدة» و«قيد التصميم» — '
+            'إضافة التصاميم متاحة قبل «قيد الطباعة» — '
             ."والطلبية الآن «{$status->label()}»، وتعديل التصميم يبدأ بإرجاعها إلى «قيد التصميم»",
         );
     }

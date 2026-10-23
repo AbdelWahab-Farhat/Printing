@@ -845,6 +845,11 @@ class Order extends Model implements HasAuditTrail
      * been verified yet — and that caution belongs in the transitions, not here. Artwork is not
      * a move on the order; it is what the customer already had in hand.
      *
+     * **«انتظار العربون» and «عربون مدفوع» accept one because the deposit is a gate on money,
+     * not a step of the work.** Nothing has been printed while the order waits on its عربون, and
+     * an order sent from the checkout with a deposit *and* a design opens in the first of them —
+     * refusing the file there refused the whole order.
+     *
      * **A different line from {@see itemsAreEditable()}, deliberately.** A quantity is a number
      * the shop floor can still act on; a design is a decision that has already been acted on.
      */
@@ -855,6 +860,8 @@ class Order extends Model implements HasAuditTrail
             [
                 OrderStatus::Requested,
                 OrderStatus::New,
+                OrderStatus::AwaitingDeposit,
+                OrderStatus::DepositPaid,
                 OrderStatus::ReadyToPrint,
                 OrderStatus::Designing,
             ],

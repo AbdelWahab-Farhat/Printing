@@ -23,6 +23,7 @@ use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -1163,13 +1164,44 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertSame(1, $order->designs()->count());
     }
 
+    /**
+     * @return array<string, array{OrderStatus}>
+     */
+    public static function depositStatuses(): array
+    {
+        return [
+            'waiting on the deposit' => [OrderStatus::AwaitingDeposit],
+            'the deposit is in' => [OrderStatus::DepositPaid],
+        ];
+    }
+
+    #[DataProvider('depositStatuses')]
+    public function test_artwork_may_be_added_while_the_order_waits_on_its_deposit(OrderStatus $status): void
+    {
+        // Arrange
+        [$order, $customer] = $this->orderNeedingArtwork();
+        $design = CustomerDesign::factory()->for($customer)->create();
+        $order->forceFill(['status' => $status])->save();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson(
+            "/api/v1/orders/{$order->id}/designs",
+            ['customer_design_id' => $design->id],
+        );
+
+        // Assert — the عربون gates money, not the artwork: nothing has been printed yet.
+        $response->assertSuccessful();
+        $this->assertSame(1, $order->designs()->count());
+    }
+
     public function test_the_order_says_which_of_the_two_may_still_be_changed(): void
     {
         // Arrange
-        // «تم دفع العربون»: the lines are open until the press, the artwork only from «جديدة»
-        // and «جاهزة للطباعة» onwards — so here the two answers part.
+        // «نواقص»: the lines stay open while the shortage is chased, the artwork does not — so
+        // here the two answers part.
         [$order] = $this->orderNeedingArtwork();
-        $order->forceFill(['status' => OrderStatus::DepositPaid])->save();
+        $order->forceFill(['status' => OrderStatus::Shortage])->save();
         $headers = $this->foreman();
 
         // Act
