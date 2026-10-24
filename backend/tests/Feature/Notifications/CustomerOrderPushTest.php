@@ -90,10 +90,14 @@ class CustomerOrderPushTest extends TestCase
             'the request is refused' => [OrderStatus::Requested, OrderStatus::RequestRejected, 'تعذّر قبول طلبيتك'],
             // «بانتظار العربون» مرحلةٌ منذ 2026-10-19 — الخطوة التالية خطوةُ العميل.
             'the shop asks for a deposit' => [OrderStatus::New, OrderStatus::AwaitingDeposit, 'طلبيتك بانتظار العربون'],
+            // «نواقص» مرحلةٌ منذ 2026-10-23، وآخرُها خبرٌ كذلك.
+            'our shelf came up short' => [OrderStatus::New, OrderStatus::Shortage, 'طلبيتك تنتظر توفّر بعض المواد'],
+            'the shortage is over' => [OrderStatus::Shortage, OrderStatus::ReadyToPrint, 'توفّرت المواد لطلبيتك'],
             'made at our press' => [OrderStatus::Printing, OrderStatus::Ready, 'طلبيتك جاهزة'],
             'made at a vendor, waiting at the counter' => [OrderStatus::Manufacturing, OrderStatus::OfficePickup, 'طلبيتك جاهزة'],
+            'sent again, waiting at the counter' => [OrderStatus::Resend, OrderStatus::OfficePickup, 'طلبيتك جاهزة'],
             'out with the courier' => [OrderStatus::Ready, OrderStatus::OutForDelivery, 'طلبيتك في الطريق إليك'],
-            'sent out again after a return' => [OrderStatus::Resend, OrderStatus::OutForDelivery, 'طلبيتك في الطريق إليك'],
+            'sent out again after a return' => [OrderStatus::ReturnedCarrier, OrderStatus::Resend, 'طلبيتك في الطريق إليك'],
             'came back' => [OrderStatus::OutForDelivery, OrderStatus::ReturnedCourier, 'رجعت طلبيتك إلينا'],
             'written off' => [OrderStatus::New, OrderStatus::Cancelled, 'أُلغيت طلبيتك'],
         ];
@@ -122,9 +126,16 @@ class CustomerOrderPushTest extends TestCase
         return [
             // المرحلةُ نفسها على الجانبين: لا شيء تغيّر على شاشة العميل.
             'press to vendor, both producing' => [OrderStatus::Printing, OrderStatus::Manufacturing],
-            'ready to the counter, both ready' => [OrderStatus::Ready, OrderStatus::OfficePickup],
             'delivered to settled, both delivered' => [OrderStatus::Delivered, OrderStatus::Settled],
-            'returned to resend, both returned' => [OrderStatus::ReturnedCourier, OrderStatus::Resend],
+            'courier to carrier, both returned' => [OrderStatus::ReturnedCourier, OrderStatus::ReturnedCarrier],
+            'resend out with the courier, both on the way' => [OrderStatus::Resend, OrderStatus::OutForDelivery],
+
+            // «طلبيتك جاهزة» قيلت عند «جاهزة»، فلا تُقال ثانيةً عند المكتب.
+            'ready to the counter, told already' => [OrderStatus::Ready, OrderStatus::OfficePickup],
+
+            // «جديدة» «بانتظار المراجعة» عند العميل، و«قبلنا» قيلت عند القبول — وطلبيةُ الموظف
+            // لم تُراجَع أصلاً، فلا «قبلنا» حين تبدأ.
+            'a taken order is started' => [OrderStatus::New, OrderStatus::ReadyToPrint],
             // العربون وصل والطلبية تمضي: هو الذي دفع، فلا يُخبَر بما فعله.
             'deposit paid, back to preparing' => [OrderStatus::AwaitingDeposit, OrderStatus::DepositPaid],
 
@@ -209,10 +220,23 @@ class CustomerOrderPushTest extends TestCase
             $this->move($order, OrderStatus::Cancelled, $to);
         }
 
-        // Assert — من المراجعة: أربعُ حالاتٍ إلى «قيد التجهيز» + «بانتظار العربون» + جاهزتان + التوصيل
-        // + أربعُ مرتجعات + الإلغاء + الرفض = ١٤. ومن «ملغاة»: التجهيزُ صامتٌ لأنه ليس من المراجعة،
-        // فالعربون + جاهزتان + التوصيل + أربعُ مرتجعات + الرفض = ٩.
-        Queue::assertPushed(DeliverCustomerPush::class, 23);
+        // Assert — من المراجعة: القبول + الرفض + النواقص + العربون + جاهزتان + التوصيلان (الخروج
+        // والإعادة) + ثلاثُ مرتجعات + الإلغاء = ١٢. ومن «ملغاة»: القبولُ ليس منها، فالرفض + النواقص
+        // + العربون + جاهزتان + التوصيلان + ثلاثُ مرتجعات = ١٠.
+        Queue::assertPushed(DeliverCustomerPush::class, 22);
+    }
+
+    public function test_an_accepted_request_says_so_rather_than_the_review_line(): void
+    {
+        // Arrange — «جديدة» «بانتظار المراجعة» عند العميل، وسطرُها «نراجع طلبيتك» كذبٌ بعد القبول.
+        $order = $this->orderWithADevice();
+
+        // Act
+        $this->move($order, OrderStatus::Requested, OrderStatus::New);
+
+        // Assert
+        Queue::assertPushed(DeliverCustomerPush::class, fn (DeliverCustomerPush $job) => $job->title === 'قبلنا طلبيتك'
+            && $job->body === "{$order->code} · طلبيتك مؤكّدة، وسنبدأ العمل عليها");
     }
 
     public function test_only_the_customer_who_owns_the_order_is_pushed(): void

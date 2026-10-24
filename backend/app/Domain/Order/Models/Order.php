@@ -425,6 +425,35 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * The payments whose `excess_amount` still stands — what «الزائد» on the order screen adds up.
+     *
+     * **Read off the entries, never off `orders.excess_amount`.** That column stays zero since
+     * ٢٠٢٦-١٠-٠٧ (the excess is the shop's revenue the moment it is paid) and published apps
+     * still read it as money owed back, so a figure written there would put the retired
+     * «زائد للزبون» line back on their screens.
+     *
+     * Payments only, and only those nobody reversed: a reversal takes the whole entry back,
+     * excess included. Refunds are left out on purpose — a refund comes off «المدفوع», not off
+     * the excess (PAYMENT-REVIEW-AND-OVERPAY §٧).
+     *
+     * @return HasMany<OrderPayment, $this>
+     */
+    public function overpaidPayments(): HasMany
+    {
+        return $this->hasMany(OrderPayment::class)
+            ->where('type', OrderPaymentType::Payment->value)
+            ->whereDoesntHave('reversal');
+    }
+
+    /**
+     * What the customer paid beyond the order, as revenue — the sum of {@see overpaidPayments()}.
+     */
+    public function overpaidAmount(): string
+    {
+        return Money::round((string) ($this->overpaidPayments()->sum('excess_amount') ?? '0'));
+    }
+
+    /**
      * The branch this order is waiting at, while it waits there — its city, which for
      * «استلام مكتب» *is* the branch. Cash taken now lands in that branch's box
      * (TREASURY-DESIGN §١٩). Null before it reaches the counter and after it leaves: a deposit

@@ -19,6 +19,11 @@ enum OrderStep {
   const OrderStep(this.label);
 
   final String label;
+
+  /// اسم الخطوة على شريط هذه الطلبية: **الأخيرة «استلام مكتب» لطلبيةٍ تُستلم من المكتب** (طلب
+  /// المستخدم، 2026-10-23) — من أول يومها، فلا يَعِدها الشريط بمندوبٍ لن يأتي.
+  String labelFor({required bool pickup}) =>
+      pickup && this == OrderStep.delivering ? 'استلام مكتب' : label;
 }
 
 extension OrderStageStep on OrderStage {
@@ -28,13 +33,16 @@ extension OrderStageStep on OrderStage {
   /// **بلا `default`**: مرحلةٌ تُضاف إلى [OrderStage] توقف البناء هنا حتى يُقال أين تقف.
   OrderStep? get step => switch (this) {
     OrderStage.underReview => OrderStep.review,
-    // مقبولةٌ ولم يبدأ العمل عليها: بعد المراجعة وقبل التجهيز، فتقف على بابه.
+    // مقبولةٌ ولم يبدأ العمل عليها: بعد المراجعة وقبل التجهيز، فتقف على بابه. و«نواقص» واقفةٌ
+    // على بابه كذلك، تنتظر ما تبدأ به.
     OrderStage.awaitingDeposit ||
     OrderStage.preparing ||
+    OrderStage.shortage ||
     OrderStage.designing => OrderStep.preparing,
     OrderStage.producing => OrderStep.producing,
     OrderStage.ready => OrderStep.ready,
-    OrderStage.onTheWay => OrderStep.delivering,
+    // تنتظر صاحبها في المكتب: الخطوة الأخيرة، واسمها على شريطها «استلام مكتب» (2026-10-23).
+    OrderStage.officePickup || OrderStage.onTheWay => OrderStep.delivering,
     OrderStage.delivered ||
     OrderStage.returned ||
     OrderStage.cancelled ||
@@ -63,15 +71,20 @@ extension OrderStageStep on OrderStage {
   };
 }
 
+/// هل تُستلم الطلبية من المكتب — طريقتها كما أرسلها الخادم، أو مرحلتها «استلام مكتب» حين
+/// لا طريقة معها (خادمٌ أقدم من الحقل في الطلبية المفتوحة).
+bool isPickupOrder({required String? fulfilmentType, required OrderStage stage}) =>
+    fulfilmentType == 'office_pickup' || stage == OrderStage.officePickup;
+
 /// خطوةٌ مضت، أو التي تقف عليها الطلبية، أو خطوةٌ أمامها.
 enum StepMark { done, current, ahead }
 
 /// متى بلغت الطلبية كل خطوة: أول لحظةٍ بلغت فيها مرحلةً تقع على تلك الخطوة.
 ///
 /// **يُطوى المسار على الخطوات كما يطويه الخادم على المراحل.** «قيد التصميم» تقع على «التجهيز»
-/// فلا تكتب فوقه تاريخها، و«تم الاستلام» تقع على «التوصيل»: طلبيةٌ استُلمت من المكتب لم تمرّ
-/// بـ«جاري التوصيل»، فيؤرّخ الاستلامُ خطوتها الأخيرة. وما لا خطوة له — رجوعٌ أو إلغاءٌ أو مرحلةٌ
-/// مجهولة — لا يؤرّخ شيئاً.
+/// فلا تكتب فوقه تاريخها، و«استلام مكتب» و«تم الاستلام» تقعان على الخطوة الأخيرة: طلبيةٌ
+/// استُلمت من المكتب لم تمرّ بـ«جاري التوصيل»، فيؤرّخ خطوتَها الأخيرة أولُ ما بلغته منهما. وما
+/// لا خطوة له — رجوعٌ أو إلغاءٌ أو مرحلةٌ مجهولة — لا يؤرّخ شيئاً.
 Map<OrderStep, DateTime> reachedSteps(List<OrderTimelineEntry> timeline) {
   final reached = <OrderStep, DateTime>{};
 

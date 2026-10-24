@@ -17,13 +17,38 @@ void main() {
     expect(labels, ['المراجعة', 'التجهيز', 'الإنتاج', 'جاهزة', 'التوصيل']);
   });
 
+  /// طلبيةٌ تُستلم من المكتب: آخر خطوةٍ على شريطها «استلام مكتب» لا «التوصيل» (طلب المستخدم،
+  /// 2026-10-23)، والبقية كما هي.
+  test('a pickup order names its last step «استلام مكتب», and only that one', () {
+    // Arrange
+    const steps = OrderStep.values;
+
+    // Act
+    final labels = steps.map((step) => step.labelFor(pickup: true)).toList();
+
+    // Assert
+    expect(labels, ['المراجعة', 'التجهيز', 'الإنتاج', 'جاهزة', 'استلام مكتب']);
+    expect(OrderStep.delivering.labelFor(pickup: false), 'التوصيل');
+  });
+
+  test('an order is a pickup by its fulfilment, or by standing at the counter', () {
+    // Arrange - Act - Assert
+    expect(isPickupOrder(fulfilmentType: 'office_pickup', stage: OrderStage.producing), isTrue);
+    expect(isPickupOrder(fulfilmentType: null, stage: OrderStage.officePickup), isTrue);
+    expect(isPickupOrder(fulfilmentType: 'delivery', stage: OrderStage.ready), isFalse);
+  });
+
   test('every stage that is still moving has its step', () {
     // Arrange
     const expected = {
       OrderStage.underReview: OrderStep.review,
       OrderStage.preparing: OrderStep.preparing,
+      // واقفةٌ على باب التجهيز تنتظر ما تبدأ به (2026-10-23).
+      OrderStage.shortage: OrderStep.preparing,
       OrderStage.producing: OrderStep.producing,
       OrderStage.ready: OrderStep.ready,
+      // تنتظر صاحبها في المكتب: الخطوة الأخيرة، واسمها على شريطها «استلام مكتب».
+      OrderStage.officePickup: OrderStep.delivering,
       OrderStage.onTheWay: OrderStep.delivering,
     };
 

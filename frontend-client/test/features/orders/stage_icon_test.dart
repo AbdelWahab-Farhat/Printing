@@ -17,12 +17,14 @@ void main() {
       OrderStage.underReview: AppIcons.comments,
       // awaitingDeposit — the workshop status of the same name
       OrderStage.awaitingDeposit: AppIcons.awaitingDeposit,
-      // taken — «جديدة»، أول ما في «قيد التجهيز»
-      OrderStage.preparing: AppIcons.statusNew,
+      // readyToPrint — المخزن، الذي تمرّ به كل طلبية؛ «عربون مدفوع» أولها ولا عربون لأكثرها
+      OrderStage.preparing: AppIcons.warehouse,
+      OrderStage.shortage: AppIcons.error,
       OrderStage.designing: AppIcons.designs,
       // printing — المطبعة نفسها
       OrderStage.producing: AppIcons.printedProduct,
       OrderStage.ready: AppIcons.activate,
+      OrderStage.officePickup: AppIcons.officePickup,
       OrderStage.onTheWay: AppIcons.outForDelivery,
       OrderStage.delivered: AppIcons.ordersReceived,
       // returnedCourier — أول الرواجع

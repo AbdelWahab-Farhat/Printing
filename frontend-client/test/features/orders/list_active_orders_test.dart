@@ -68,6 +68,41 @@ void main() {
     expect(result.getOrElse(() => const []), [underReview, ready, producing]);
   });
 
+  /// «نواقص» و«مرفوضة» أولاً لتُرى، ثم الأحدث أولاً بين كلٍّ من الفريقين (طلب المستخدم،
+  /// 2026-10-23).
+  test('a shortage and a refusal come first, newest first among themselves', () async {
+    // Arrange
+    final rejected = order(1, OrderStage.rejected, placedAt: DateTime(2026, 9, 18));
+    final shortage = order(2, OrderStage.shortage, placedAt: DateTime(2026, 9, 19));
+    final producing = order(3, OrderStage.producing, placedAt: DateTime(2026, 9, 20));
+    final ready = order(4, OrderStage.ready, placedAt: DateTime(2026, 9, 22));
+    answer(open: Right(page([producing, rejected, shortage])), ready: Right(page([ready])));
+    final useCase = ListActiveOrders(repository);
+
+    // Act
+    final result = await useCase();
+
+    // Assert
+    expect(result.getOrElse(() => const []), [shortage, rejected, ready, producing]);
+  });
+
+  /// ثم «استلام مكتب»، فلا يمرّر العميل ليجد ما ينتظره في المكتب (طلب المستخدم، 2026-10-23).
+  test('an order at the counter comes after the two to ask about, before the rest', () async {
+    // Arrange
+    final pickup = order(1, OrderStage.officePickup, placedAt: DateTime(2026, 9, 10));
+    final shortage = order(2, OrderStage.shortage, placedAt: DateTime(2026, 9, 11));
+    final producing = order(3, OrderStage.producing, placedAt: DateTime(2026, 9, 20));
+    final ready = order(4, OrderStage.ready, placedAt: DateTime(2026, 9, 22));
+    answer(open: Right(page([producing, pickup, shortage])), ready: Right(page([ready])));
+    final useCase = ListActiveOrders(repository);
+
+    // Act
+    final result = await useCase();
+
+    // Assert
+    expect(result.getOrElse(() => const []), [shortage, pickup, ready, producing]);
+  });
+
   /// طلبيةٌ صارت جاهزة بين الطلبين تصل في الجوابين. تُعرض مرةً واحدة، بمرحلتها الأبعد.
   test('an order in both answers is drawn once, as the ready one', () async {
     // Arrange

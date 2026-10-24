@@ -237,6 +237,12 @@ abstract class Order with _$Order {
     /// Defaulted like its neighbours, for a server that predates it.
     @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
 
+    /// What was paid beyond the order and kept as revenue — «الزائد» beside «المدفوع».
+    ///
+    /// Summed by the server off the payments themselves, since [excessAmount] stays zero. Only
+    /// the order screen's responses carry it; a list card reads the default and shows nothing.
+    @JsonKey(name: 'overpaid_amount') @Default('0.00') String overpaidAmount,
+
     /// What is still owed — the invoice less what was collected **and** what was forgiven.
     /// **Negative on an overpaid order**, so «زائد ٥٠» can be said rather than floored away.
     @JsonKey(name: 'remaining_amount') @Default('0.00') String remainingAmount,

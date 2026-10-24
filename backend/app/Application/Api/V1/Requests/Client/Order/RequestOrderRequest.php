@@ -93,6 +93,10 @@ class RequestOrderRequest extends FormRequest
             // `notes`, which is staff-written — see `prepareForValidation()`.
             'customer_note' => ['nullable', 'string', 'max:1000'],
 
+            // The app's key for the whole order, kept until it lands — the same key again returns
+            // the first order. Optional, so an app older than it still orders.
+            'client_token' => ['nullable', 'string', 'max:64'],
+
             // **The عربون chosen in the basket** (2026-10-19) — absent, the order goes to review as
             // it always did, which is also what an app older than the step sends. Its floor and
             // ceiling need the priced order, so they are the domain's — see `CheckoutDeposit`.

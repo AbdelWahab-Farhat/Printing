@@ -63,6 +63,13 @@ final readonly class OrderData
         public ?bool $isUrgent = null,
         public ?array $items = null,
         public array $designIds = [],
+        /**
+         * The app's key for this order, so a retry after a lost reply is not a second order.
+         *
+         * Written on create only, and only by the customer app — a clerk at the desk can see
+         * whether the order went in. See `RequestOrderRequest`.
+         */
+        public ?string $clientToken = null,
     ) {}
 
     /**

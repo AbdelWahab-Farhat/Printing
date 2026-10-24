@@ -233,6 +233,89 @@ class OrderOverpaymentTest extends TestCase
             ->assertJsonPath('data.summary.paid_amount', '50.00');
     }
 
+    // ── «الزائد» بجانب «المدفوع» ─────────────────────────────────────────────────────────
+
+    public function test_the_order_screen_says_how_much_was_paid_beyond_it(): void
+    {
+        // Arrange
+        $headers = $this->cashier();
+        $order = $this->order('99.00');
+
+        // Act
+        $paid = $this->pay($headers, $order, ['amount' => '100.00', 'accept_overpayment' => true]);
+        $shown = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert — يُقرأ من الدفعات، و`excess_amount` يبقى صفراً للتطبيقات المنشورة.
+        $paid->assertCreated()
+            ->assertJsonPath('data.summary.overpaid_amount', '1.00')
+            ->assertJsonPath('data.summary.excess_amount', '0.00');
+        $shown->assertOk()
+            ->assertJsonPath('data.overpaid_amount', '1.00')
+            ->assertJsonPath('data.excess_amount', '0.00')
+            ->assertJsonPath('data.paid_amount', '99.00');
+    }
+
+    public function test_every_overpayment_on_the_order_adds_to_it(): void
+    {
+        // Arrange
+        $headers = $this->cashier();
+        $order = $this->order('99.00');
+        $this->overpay($headers, $order);
+
+        // Act
+        $this->overpay($headers, $order, '5.00');
+
+        // Assert
+        $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
+            ->assertJsonPath('data.overpaid_amount', '6.00');
+    }
+
+    public function test_an_order_paid_exactly_shows_no_excess(): void
+    {
+        // Arrange
+        $headers = $this->cashier();
+        $order = $this->order('99.00');
+
+        // Act
+        $this->pay($headers, $order, ['amount' => '99.00'])->assertCreated();
+
+        // Assert
+        $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
+            ->assertJsonPath('data.overpaid_amount', '0.00');
+    }
+
+    public function test_a_reversed_overpayment_takes_its_excess_with_it(): void
+    {
+        // Arrange
+        $headers = $this->cashier();
+        $order = $this->order('99.00');
+        $payment = $this->overpay($headers, $order);
+
+        // Act
+        $response = $this->reverse($headers, $payment);
+
+        // Assert
+        $response->assertCreated()->assertJsonPath('data.summary.overpaid_amount', '0.00');
+        $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}")
+            ->assertJsonPath('data.overpaid_amount', '0.00');
+    }
+
+    public function test_the_list_does_not_pay_for_the_excess_per_card(): void
+    {
+        // Arrange
+        $headers = $this->cashier();
+        $order = $this->order('99.00');
+        $this->overpay($headers, $order);
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $order->id)
+            ->assertJsonMissingPath('data.0.overpaid_amount');
+    }
+
     // ── الردّ ────────────────────────────────────────────────────────────────────────────
 
     public function test_a_refund_comes_off_what_the_order_was_paid(): void

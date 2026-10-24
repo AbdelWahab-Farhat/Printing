@@ -40,6 +40,7 @@ void main() {
     String paid = '150.00',
     String remaining = '300.00',
     String writtenOff = '0.00',
+    String overpaid = '0.00',
     PaymentStatus status = PaymentStatus.partiallyPaid,
     String label = 'مدفوعة جزئياً',
     bool unrecorded = false,
@@ -48,6 +49,7 @@ void main() {
       grandTotal: '450.00',
       paidAmount: paid,
       writtenOffAmount: writtenOff,
+      overpaidAmount: overpaid,
       remainingAmount: remaining,
       paymentStatus: status,
       paymentStatusLabel: label,
@@ -174,6 +176,70 @@ void main() {
     // Assert — the pale fill, with its own readable ink on top.
     expect(chip.style?.color, scheme.onPaidContainer);
     expect(scheme.paidContainer, isNot(scheme.primaryContainer));
+  });
+
+  // ── what was paid beyond the order ─────────────────────────────────────────────────────
+
+  testWidgets('money paid beyond the order gets a fourth cell, right after «المدفوع»', (
+    tester,
+  ) async {
+    // Arrange — 500 handed over on 450: «المدفوع» stays 450, the 50 is revenue.
+    await tester.pumpWidget(
+      host(
+        OrderMoneyRow(
+          summary: summary(
+            paid: '450.00',
+            overpaid: '50.00',
+            remaining: '0.00',
+            status: PaymentStatus.paid,
+            label: 'مدفوعة بالكامل',
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final cell = find.byKey(const ValueKey('overpaid-cell'));
+    final paidX = tester.getCenter(find.text('المدفوع')).dx;
+    final overpaidX = tester.getCenter(find.text('الزائد')).dx;
+    final remainingX = tester.getCenter(find.text('المتبقي')).dx;
+
+    // Assert — RTL, so «بجانب المدفوع» is to its left and before «المتبقي».
+    expect(cell, findsOneWidget);
+    expect(find.descendant(of: cell, matching: find.text('50')), findsOneWidget);
+    expect(find.text('450'), findsNWidgets(2));
+    expect(overpaidX, lessThan(paidX));
+    expect(overpaidX, greaterThan(remainingX));
+  });
+
+  testWidgets('an order paid no more than it cost keeps its three cells', (tester) async {
+    // Arrange — the ordinary order
+    await tester.pumpWidget(host(OrderMoneyRow(summary: summary())));
+
+    // Act - Assert
+    expect(find.byKey(const ValueKey('overpaid-cell')), findsNothing);
+    expect(find.text('الزائد'), findsNothing);
+  });
+
+  test('a server from before «الزائد» reads as none', () {
+    // Arrange — the key is absent, as it is on a list card or an older server.
+    final json = {
+      'grand_total': '99.00',
+      'paid_amount': '99.00',
+      'remaining_amount': '0.00',
+      'payment_status': 'paid',
+      'payment_status_label': 'مدفوعة بالكامل',
+    };
+
+    // Act
+    final absent = PaymentSummary.fromJson(json);
+    final present = PaymentSummary.fromJson({...json, 'overpaid_amount': '1.00'});
+
+    // Assert
+    expect(absent.overpaidAmount, '0.00');
+    expect(absent.hasOverpaid, isFalse);
+    expect(present.overpaidAmount, '1.00');
+    expect(present.hasOverpaid, isTrue);
   });
 
   // ── what was forgiven ──────────────────────────────────────────────────────────────────

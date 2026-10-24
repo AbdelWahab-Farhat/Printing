@@ -337,6 +337,25 @@ void main() {
       expect(find.bySemanticsLabel('اكتملت الخطوات الخمس'), findsOneWidget);
     });
 
+    // «استلام مكتب» مكان «التوصيل» على طريق طلبيةٍ تُستلم من المكتب (طلب المستخدم، 2026-10-23).
+    testWidgets('an order at the counter stands on the last step, named for the counter', (
+      tester,
+    ) async {
+      // Arrange
+      final order = order1304(
+        stage: OrderStage.officePickup,
+        stageLabel: 'استلام مكتب',
+      ).copyWith(fulfilmentType: 'office_pickup');
+
+      // Act
+      await open(tester, order);
+
+      // Assert — the title and the last step.
+      expect(find.text('استلام مكتب'), findsNWidgets(2));
+      expect(find.text('التوصيل'), findsNothing);
+      expect(find.bySemanticsLabel('الخطوة 5 من 5: استلام مكتب'), findsOneWidget);
+    });
+
     testWidgets('a refused order draws no road, and says why', (tester) async {
       // Arrange
       final order = order1304(
@@ -352,6 +371,27 @@ void main() {
       expect(find.text('المقاس غير متوفر حالياً'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('^الخطوة')), findsNothing);
       expect(find.bySemanticsLabel('اكتملت الخطوات الخمس'), findsNothing);
+    });
+
+    // «نواقص» و«مرفوضة»: جملتها و«تواصل معنا» تحت المرحلة (طلب المستخدم، 2026-10-23).
+    testWidgets('a shortage says so under the stage, and opens a ticket on the order', (
+      tester,
+    ) async {
+      // Arrange
+      final order = order1304(stage: OrderStage.shortage, stageLabel: 'نواقص').copyWith(
+        stageHint: 'ينقصنا بعض المواد، وقد يتأخر تجهيزها — تواصل معنا إن أردت',
+      );
+      await open(tester, order);
+
+      // Act
+      await tester.tap(find.text('تواصل معنا'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('ينقصنا بعض المواد، وقد يتأخر تجهيزها — تواصل معنا إن أردت'), findsOneWidget);
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.text('تذكرة عن الطلبية')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.text('1304')), findsOneWidget);
     });
   });
 
@@ -541,6 +581,35 @@ void main() {
       // Assert — 500 in the wallet, 2,332 owed: it pays 500.
       expect(find.text('في محفظتك 500 د.ل'), findsOneWidget);
       expect(find.text('ادفع 500'), findsOneWidget);
+    });
+
+    // «جديدة» «بانتظار المراجعة» عند العميل منذ 2026-10-23، وتقبل الدفع.
+    testWidgets('offers it on an order the shop took, though it still reads «بانتظار المراجعة»', (
+      tester,
+    ) async {
+      // Arrange & Act
+      await open(
+        tester,
+        order1304().copyWith(isReviewed: true),
+        wallet: FakeWallet(held: '500.00'),
+      );
+
+      // Assert
+      expect(find.text('ادفع 500'), findsOneWidget);
+    });
+
+    testWidgets('stays away from a request the shop has not taken, whatever its stage', (
+      tester,
+    ) async {
+      // Arrange & Act
+      await open(
+        tester,
+        order1304(stage: OrderStage.preparing, stageLabel: 'قيد التجهيز').copyWith(isReviewed: false),
+        wallet: FakeWallet(held: '500.00'),
+      );
+
+      // Assert
+      expect(find.textContaining('في محفظتك'), findsNothing);
     });
 
     testWidgets('stays away while the shop has not reviewed the order', (tester) async {

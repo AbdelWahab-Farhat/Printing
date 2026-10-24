@@ -66,9 +66,11 @@ const _$OrderStageEnumMap = {
   OrderStage.underReview: 'under_review',
   OrderStage.awaitingDeposit: 'awaiting_deposit',
   OrderStage.preparing: 'preparing',
+  OrderStage.shortage: 'shortage',
   OrderStage.designing: 'designing',
   OrderStage.producing: 'producing',
   OrderStage.ready: 'ready',
+  OrderStage.officePickup: 'office_pickup',
   OrderStage.onTheWay: 'on_the_way',
   OrderStage.delivered: 'delivered',
   OrderStage.returned: 'returned',
@@ -131,12 +133,14 @@ _CustomerOrderDetail _$CustomerOrderDetailFromJson(
   stageLabel: json['stage_label'] as String,
   isOpen: json['is_open'] as bool? ?? true,
   stageHint: json['stage_hint'] as String?,
+  isReviewed: json['is_reviewed'] as bool?,
   rejectionReason: json['rejection_reason'] as String?,
   cityName: json['city_name'] as String?,
   regionName: json['region_name'] as String?,
   addressDetails: json['address_details'] as String?,
   recipientName: json['recipient_name'] as String?,
   recipientPhone: json['recipient_phone'] as String?,
+  fulfilmentType: json['fulfilment_type'] as String?,
   fulfilmentTypeLabel: json['fulfilment_type_label'] as String?,
   items:
       (json['items'] as List<dynamic>?)
@@ -177,12 +181,14 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'stage_label': instance.stageLabel,
   'is_open': instance.isOpen,
   'stage_hint': instance.stageHint,
+  'is_reviewed': instance.isReviewed,
   'rejection_reason': instance.rejectionReason,
   'city_name': instance.cityName,
   'region_name': instance.regionName,
   'address_details': instance.addressDetails,
   'recipient_name': instance.recipientName,
   'recipient_phone': instance.recipientPhone,
+  'fulfilment_type': instance.fulfilmentType,
   'fulfilment_type_label': instance.fulfilmentTypeLabel,
   'items': instance.items.map((e) => e.toJson()).toList(),
   'items_total': instance.itemsTotal,
@@ -233,6 +239,7 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
   deposit: json['deposit'] == null
       ? null
       : CheckoutDeposit.fromJson(json['deposit'] as Map<String, dynamic>),
+  clientToken: json['client_token'] as String?,
 );
 
 Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
@@ -244,6 +251,7 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'design_ids': instance.designIds,
   'customer_note': instance.customerNote,
   'deposit': ?instance.deposit?.toJson(),
+  'client_token': ?instance.clientToken,
 };
 
 _CheckoutDeposit _$CheckoutDepositFromJson(Map<String, dynamic> json) =>

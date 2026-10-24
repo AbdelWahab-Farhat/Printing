@@ -34,7 +34,9 @@ class ListActiveOrders {
     );
   }
 
-  /// الأحدث أولاً، كما في «طلباتي».
+  /// «نواقص» و«مرفوضة» أولاً، لتُرى، ثم «استلام مكتب»، فلا يمرّر العميل ليجد ما ينتظره (طلب
+  /// المستخدم، 2026-10-23) — ثم الأحدث أولاً، كما في «طلباتي»، وكذلك داخل كل فريق. الخادم يرتّب
+  /// `open=1` كذلك، فتصل الصفحة الأولى بها.
   ///
   /// وطلبيةٌ في الجوابين (صارت جاهزةً بين السؤالين) تُرسم مرةً واحدة بمرحلتها الأبعد، أي كما
   /// جاءت في جواب «جاهزة»: الطلبية لا ترجع من الجاهزية إلى الإنتاج.
@@ -44,8 +46,20 @@ class ListActiveOrders {
       for (final order in ready) order.id: order,
     };
 
-    return byId.values.toList()..sort(_newestFirst);
+    return byId.values.toList()..sort(_attentionThenNewest);
   }
+
+  static int _attentionThenNewest(CustomerOrder a, CustomerOrder b) {
+    final byRank = _rank(a).compareTo(_rank(b));
+
+    return byRank != 0 ? byRank : _newestFirst(a, b);
+  }
+
+  static int _rank(CustomerOrder order) => switch (order.stage) {
+    final stage when stage.needsAttention => 0,
+    OrderStage.officePickup => 1,
+    _ => 2,
+  };
 
   /// طلبيةٌ بلا تاريخ بعد المؤرَّخة لا قبلها: مكانها بين الأحدث والأقدم غير معروف.
   static int _newestFirst(CustomerOrder a, CustomerOrder b) {
