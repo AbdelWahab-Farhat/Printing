@@ -105,6 +105,14 @@ dependencies:
   # الويب: بايتاتٌ تصير رابط blob يُرفع ويُحفظ ويُعرض كما يُعامَل المسار على الهاتف. من فريق
   # Flutter نفسه، وهو في البناء أصلاً عبر المنتقيين.
   cross_file: ^0.3.5+4
+  # ── إرفاق الصور في المحادثة، كبريمولا ─────────────────────────────────────────
+  # ورقةُ تيليجرام في `core/chat/media_attach_sheet.dart`: صورُ الهاتف الأخيرة شبكةً تحت المحادثة،
+  # تُختار مرقّمةً حتى عشرٍ وتُرسل رسالةً واحدة بتعليقها. `photo_manager` يقرأ المكتبة، وأخوه يرسم
+  # الصورة المصغّرة — الإصداران اللذان في بريمولا. **يقرأ المكتبة فيسأل إذنها**: `READ_MEDIA_IMAGES`
+  # على أندرويد ١٣ فما فوق و`READ_EXTERNAL_STORAGE` حتى ١٢، و`NSPhotoLibraryUsageDescription` على
+  # آيفون (موجودٌ أصلاً). ومن رفض بقي له منتقي النظام في الورقة نفسها. يدعم Swift Package Manager.
+  photo_manager: ^3.12.0
+  photo_manager_image_provider: ^2.2.0
   # Hands a design to whatever the phone already opens PDFs with.
   #
   # Deliberately not a PDF renderer: every one of them ships a native engine, and this app needs

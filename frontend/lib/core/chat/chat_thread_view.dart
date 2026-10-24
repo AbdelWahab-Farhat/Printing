@@ -16,6 +16,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/voice/voice_playback.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/core/widgets/receipt_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -138,7 +139,7 @@ class ChatThreadMessage extends StatelessWidget {
     final mine = message.isFrom(me);
     final deleted = message.isDeleted;
     final voice = deleted ? null : message.voice;
-    final image = deleted ? null : message.image;
+    final images = deleted ? const <ChatAttachment>[] : message.images;
     final body = message.body ?? '';
     final readUpTo = this.readUpTo;
 
@@ -156,7 +157,7 @@ class ChatThreadMessage extends StatelessWidget {
       // الاسمُ على كلام الآخرين وحده — ومَن ليس طرفاً يرى الاسمين.
       author: mine ? null : message.author?.name,
       avatar: ChatAvatar.desk(name: message.author?.name),
-      imageOnly: image != null && body.trim().isEmpty,
+      imageOnly: images.isNotEmpty && body.trim().isEmpty,
       isEdited: message.isEdited,
       isDeleted: deleted,
       quote: switch (message.replyTo) {
@@ -168,7 +169,7 @@ class ChatThreadMessage extends StatelessWidget {
           outgoing: mine,
         ),
       },
-      attachment: switch ((voice, image)) {
+      attachment: switch ((voice, images)) {
         (final ChatAttachment note?, _) => VoiceNoteView(
           playbackKey: VoicePlayback.keyForAttachment(note.id, scope: attachmentScope),
           outgoing: mine,
@@ -176,12 +177,18 @@ class ChatThreadMessage extends StatelessWidget {
           durationSeconds: note.durationSeconds,
           waveform: note.waveform,
         ),
-        (_, final ChatAttachment photo?) => ChatRemoteImage(
+        (_, [final ChatAttachment photo]) => ChatRemoteImage(
           messageId: message.id,
           cacheKey: _imageKey(photo),
           url: photo.url,
           aspectRatio: _aspectRatioOf(photo),
           onTap: detached ? null : () => unawaited(_openImage(context, photo)),
+        ),
+        // ألبومٌ في رسالةٍ واحدة، كبريمولا — يُفتح على الصورة المضغوطة، والباقي بالسحب.
+        (_, final List<ChatAttachment> album) when album.length > 1 => ChatImageAlbum(
+          images: album,
+          cacheKeyOf: _imageKey,
+          onOpen: detached ? null : (index) => unawaited(_openAlbum(context, album, index)),
         ),
         _ => null,
       },
@@ -206,11 +213,11 @@ class ChatThreadMessage extends StatelessWidget {
                       icon: AppIcons.copy,
                       onSelected: () => unawaited(_copy(context, body)),
                     ),
-                  if (image != null)
+                  if (images.isNotEmpty)
                     MessageMenuAction(
-                      label: 'فتح الصورة',
+                      label: images.length > 1 ? 'فتح الصور' : 'فتح الصورة',
                       icon: AppIcons.photos,
-                      onSelected: () => unawaited(_openImage(context, image)),
+                      onSelected: () => unawaited(_openAlbum(context, images, 0)),
                     ),
                   if (message.canEdit && voice == null)
                     MessageMenuAction(
@@ -250,6 +257,20 @@ class ChatThreadMessage extends StatelessWidget {
 
   Future<void> _openImage(BuildContext context, ChatAttachment photo) =>
       showReceipt(context, Receipt(cacheKey: _imageKey(photo), url: photo.url, isImage: true));
+
+  /// صورُ الرسالة ملءَ الشاشة، مفتوحةً على [index]، والسحبُ بينها. الصورةُ الواحدة كما كانت.
+  Future<void> _openAlbum(BuildContext context, List<ChatAttachment> album, int index) {
+    if (album.length == 1) return _openImage(context, album.single);
+
+    final reachable = album.where((photo) => photo.url != null).toList(growable: false);
+
+    return openImageViewer(
+      context,
+      urls: [for (final photo in reachable) photo.url!],
+      cacheKeys: [for (final photo in reachable) _imageKey(photo)],
+      initialIndex: reachable.indexOf(album[index]),
+    );
+  }
 
   static Future<void> _copy(BuildContext context, String text) async {
     await Clipboard.setData(ClipboardData(text: text));

@@ -78,6 +78,12 @@
 		NSMicrophoneUsageDescription since the internal tickets' voice notes
 		(INTERNAL-TICKETS-DESIGN §٣): the app records while a finger holds the microphone button,
 		and asks the first time that button is held, never at launch.
+
+		NSPhotoLibraryUsageDescription since the chat's photo sheet, copied from Primula
+		(core/chat/media_attach_sheet.dart): it reads the library to show the latest photos as a
+		grid, asked the first time the sheet opens. PHPhotoLibraryPreventAutomaticLimitedAccessAlert
+		stops iOS re-asking on every launch when only some photos were allowed — the sheet carries
+		its own «إدارة» for that, as Primula's does.
 	-->
 		<key>NSMicrophoneUsageDescription</key>
 		<string>لتسجيل رسالةٍ صوتية لزميلك في التذاكر الداخلية حين تضغط على الميكروفون وتمسكه.</string>
@@ -88,7 +94,9 @@
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>لحفظ تصاميم العملاء ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>لاختيار تصاميم العميل من صورك — كالتي تصلك عبر واتساب — ورفعها إلى ملفه.</string>
+		<string>لاختيار تصاميم العميل من صورك — كالتي تصلك عبر واتساب — ورفعها إلى ملفه، ولإرسال صورك في محادثات التذاكر.</string>
+		<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+		<true/>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

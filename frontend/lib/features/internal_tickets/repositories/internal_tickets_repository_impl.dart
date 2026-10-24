@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/chat/chat_message.dart';
+import 'package:dayaa/core/chat/outgoing_chat_payload.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
@@ -108,25 +109,10 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
 
   @override
   Future<Either<Failure, InternalTicket>> send(int id, OutgoingChatMessage message) {
-    final text = message.body?.trim();
-    final fields = <String, dynamic>{
-      'client_token': message.clientToken,
-      if (text != null && text.isNotEmpty) 'body': text,
-      'reply_to_message_id': ?message.replyToMessageId,
-    };
-    final file = message.file;
-
     return safeRequest(
       () async => _dio.post<Map<String, dynamic>>(
         InternalTicketEndpoints.messages(id),
-        data: file == null
-            ? fields
-            : FormData.fromMap({
-                ...fields,
-                'file': await LocalFiles.multipart(file.path, filename: file.name),
-                'duration_seconds': ?message.durationSeconds,
-                'waveform': ?message.waveform,
-              }, ListFormat.multiCompatible),
+        data: await outgoingChatPayload(message),
       ),
       parse: _one,
     );

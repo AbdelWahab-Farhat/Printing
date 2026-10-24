@@ -108,9 +108,19 @@ class DesignTicketThreadCubit extends Cubit<DesignTicketThreadState> {
     return _post(OutgoingChatMessage(clientToken: _newToken(), body: trimmed));
   }
 
-  /// صورةٌ من الهاتف، وما في الصندوق تعليقاً.
-  Future<bool> sendImage(PickedFile image, {String caption = ''}) =>
-      _post(OutgoingChatMessage(clientToken: _newToken(), body: caption.trim(), file: image));
+  /// صورٌ من الهاتف **رسالةً واحدة** بتعليقها، كبريمولا — بالترتيب الذي اختيرت به، حتى
+  /// [OutgoingChatMessage.maxImages].
+  Future<bool> sendImages(List<PickedFile> images, {String caption = ''}) {
+    if (images.isEmpty) return Future<bool>.value(false);
+
+    return _post(
+      OutgoingChatMessage(
+        clientToken: _newToken(),
+        body: caption.trim(),
+        images: images.take(OutgoingChatMessage.maxImages).toList(growable: false),
+      ),
+    );
+  }
 
   /// رسالةٌ صوتية سُجّلت للتوّ. **إن لم تصل بقيت** فوق الصندوق ([DesignTicketThreadLoaded.unsentVoice]).
   Future<bool> sendVoice(VoiceRecording recording) {
@@ -156,7 +166,7 @@ class DesignTicketThreadCubit extends Cubit<DesignTicketThreadState> {
     return _post(
       OutgoingChatMessage(
         clientToken: pending.clientToken,
-        file: PickedFile(path: pending.path, name: 'voice.m4a', sizeBytes: size),
+        voice: PickedFile(path: pending.path, name: 'voice.m4a', sizeBytes: size),
         durationSeconds: pending.durationSeconds,
         waveform: pending.waveform,
         replyToMessageId: pending.replyToMessageId,

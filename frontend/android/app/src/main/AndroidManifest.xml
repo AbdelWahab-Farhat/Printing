@@ -12,10 +12,18 @@
     <!--
         «تحميل» التصميم يحفظه عبر `file_saver`، وهي تطلب WRITE_EXTERNAL_STORAGE حتى أندرويد ٩
         (`maxSdkVersion=28`) لتكتب في «الصور» و«التنزيلات». ودامجُ البيان يفترض معها
-        READ_EXTERNAL_STORAGE بلا حدٍّ أعلى — إذنٌ يسأل عنه متجر Play ولا يقرأ به شيءٌ هنا شيئاً.
-        فيُنزع. يحرسه `test/android/manifest_test.dart`.
+        READ_EXTERNAL_STORAGE بلا حدٍّ أعلى — إذنٌ يسأل عنه متجر Play.
+
+        وورقةُ صور المحادثة، كبريمولا (`core/chat/media_attach_sheet.dart`)، تقرأ مكتبة الصور:
+        بـREAD_EXTERNAL_STORAGE حتى أندرويد ١٢ — فيُستبدل المفترَضُ بحدّه (`maxSdkVersion=32`) —
+        وبـREAD_MEDIA_IMAGES من ١٣، للصور وحدها. يُسأل عند أوّل فتحٍ للورقة، ومَن رفض بقي له منتقي
+        النظام فيها. يحرسهما `test/android/manifest_test.dart`.
     -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:node="replace"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <!--
         الرسائلُ الصوتية في التذاكر الداخلية (INTERNAL-TICKETS-DESIGN §٣): `record` يسجّل ما دام
         الإصبعُ على الميكروفون. يُسأل عنه عند أوّل ضغطةٍ مطوّلة لا عند فتح التطبيق، ومَن رفضه يُقال

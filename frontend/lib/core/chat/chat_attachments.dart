@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -72,6 +73,145 @@ class ChatRemoteImage extends StatelessWidget {
                     errorWidget: (context, _, _) => const _ImagePlaceholder(failed: true),
                   ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ألبومُ صورٍ في رسالةٍ واحدة — **شكلُ بريمولا**: الصورُ حافّةً إلى حافّة بينها نَفَسان، وشكلٌ لكل
+/// عدد. صورتان جنباً إلى جنب، وثلاثٌ كبيرةٌ وصغيرتان تحتها بعضُها فوق بعض، وأربعٌ فأكثر شبكةٌ
+/// تحمل رابعتُها «+العدد» الباقي. **وعرضُه عرضُ الصورة الواحدة**، فلا تتّسع الفقاعة به.
+///
+/// [onOpen] برقم الصورة في الألبوم — يفتح العارضَ عليها، والباقي بالسحب.
+class ChatImageAlbum extends StatelessWidget {
+  const ChatImageAlbum({
+    required this.images,
+    required this.cacheKeyOf,
+    required this.onOpen,
+    super.key,
+  });
+
+  final List<ChatAttachment> images;
+  final String Function(ChatAttachment photo) cacheKeyOf;
+  final ValueChanged<int>? onOpen;
+
+  static const double _gap = 2;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = _imageWidth;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(13.r),
+      child: SizedBox(width: width, child: _mosaic(width)),
+    );
+  }
+
+  Widget _mosaic(double width) => switch (images.length) {
+    0 => const SizedBox.shrink(),
+    1 => AspectRatio(aspectRatio: 4 / 3, child: _tile(0)),
+    2 => SizedBox(
+      height: (width - _gap) / 2,
+      child: Row(
+        children: [
+          Expanded(child: _tile(0)),
+          const SizedBox(width: _gap),
+          Expanded(child: _tile(1)),
+        ],
+      ),
+    ),
+    3 => SizedBox(
+      height: width * .62,
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: _tile(0)),
+          const SizedBox(width: _gap),
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                Expanded(child: _tile(1)),
+                const SizedBox(height: _gap),
+                Expanded(child: _tile(2)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    _ => SizedBox(
+      height: width,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _tile(0)),
+                const SizedBox(width: _gap),
+                Expanded(child: _tile(1)),
+              ],
+            ),
+          ),
+          const SizedBox(height: _gap),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _tile(2)),
+                const SizedBox(width: _gap),
+                // الرابعةُ تحمل باقي الألبوم.
+                Expanded(child: _tile(3, hiddenCount: images.length - 4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  };
+
+  Widget _tile(int index, {int hiddenCount = 0}) {
+    final photo = images[index];
+    final link = photo.url;
+    final open = onOpen;
+
+    return Semantics(
+      container: true,
+      image: true,
+      button: open != null,
+      excludeSemantics: true,
+      label: 'صورة ${index + 1} من ${images.length}',
+      child: GestureDetector(
+        onTap: open == null ? null : () => open(index),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (link == null)
+              const _ImagePlaceholder(failed: true)
+            else
+              CachedNetworkImage(
+                imageUrl: link,
+                cacheKey: cacheKeyOf(photo),
+                fit: BoxFit.cover,
+                progressIndicatorBuilder: (context, _, progress) =>
+                    _ImagePlaceholder(progress: progress.progress),
+                errorWidget: (context, _, _) => const _ImagePlaceholder(failed: true),
+              ),
+            if (hiddenCount > 0)
+              ColoredBox(
+                // ألوانٌ ثابتة عمداً: الخلفيةُ صورةٌ لا سطحٌ من الثيم.
+                color: Colors.black.withValues(alpha: .45),
+                child: Center(
+                  child: Text(
+                    '+$hiddenCount',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/chat/chat_message.dart';
+import 'package:dayaa/core/chat/outgoing_chat_payload.dart';
 import 'package:dayaa/core/error/failure.dart';
-import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/core/realtime/realtime_client.dart';
@@ -27,27 +27,10 @@ class DesignTicketThreadRepositoryImpl implements DesignTicketThreadRepository {
 
   @override
   Future<Either<Failure, DesignTicketThread>> send(int ticketId, OutgoingChatMessage message) {
-    final text = message.body?.trim();
-    final fields = <String, dynamic>{
-      'client_token': message.clientToken,
-      if (text != null && text.isNotEmpty) 'body': text,
-      'reply_to_message_id': ?message.replyToMessageId,
-    };
-    final file = message.file;
-
     return safeRequest(
       () async => _dio.post<Map<String, dynamic>>(
         DesignTicketEndpoints.messages(ticketId),
-        // **JSON بلا ملف، وmultipart به** — والملفُّ يُقرأ من القرص وهو يُرسل. و`multiCompatible`
-        // يكتب `waveform[]=` لكل عمود: الصيغةُ الافتراضية تكرّر المفتاح، وPHP يُبقي آخرها.
-        data: file == null
-            ? fields
-            : FormData.fromMap({
-                ...fields,
-                'file': await LocalFiles.multipart(file.path, filename: file.name),
-                'duration_seconds': ?message.durationSeconds,
-                'waveform': ?message.waveform,
-              }, ListFormat.multiCompatible),
+        data: await outgoingChatPayload(message),
       ),
       parse: _thread,
     );

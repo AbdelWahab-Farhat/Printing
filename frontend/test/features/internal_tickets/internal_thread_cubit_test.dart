@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:dayaa/core/voice/voice_recorder.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
@@ -172,6 +173,44 @@ void main() {
       await cubit.close();
     },
   );
+
+  test('an album goes out as one message: the pictures in order, the caption and the quote', () async {
+    // Arrange — كبريمولا: الصورُ وتعليقُها رسالةٌ واحدة لا رسائلُ متفرّقة.
+    when(() => repository.send(any(), any())).thenAnswer((_) async => Right(opened));
+    final cubit = build();
+    await cubit.load();
+    cubit.replyTo(message(1, author: colleague));
+    const front = PickedFile(path: '/tmp/front.jpg', name: 'front.jpg', sizeBytes: 10);
+    const back = PickedFile(path: '/tmp/back.jpg', name: 'back.jpg', sizeBytes: 10);
+    const side = PickedFile(path: '/tmp/side.jpg', name: 'side.jpg', sizeBytes: 10);
+
+    // Act
+    final sent = await cubit.sendImages([front, back, side], caption: '  الوجهان والجانب ');
+
+    // Assert
+    expect(sent, isTrue);
+    final outgoing =
+        verify(() => repository.send(3, captureAny())).captured.single as OutgoingChatMessage;
+    expect(outgoing.images, [front, back, side]);
+    expect(outgoing.voice, isNull);
+    expect(outgoing.body, 'الوجهان والجانب');
+    expect(outgoing.replyToMessageId, 1);
+    await cubit.close();
+  });
+
+  test('an empty album sends nothing', () async {
+    // Arrange
+    final cubit = build();
+    await cubit.load();
+
+    // Act
+    final sent = await cubit.sendImages(const []);
+
+    // Assert
+    expect(sent, isFalse);
+    verifyNever(() => repository.send(any(), any()));
+    await cubit.close();
+  });
 
   test('a failed send keeps the thread and says why beside it', () async {
     // Arrange

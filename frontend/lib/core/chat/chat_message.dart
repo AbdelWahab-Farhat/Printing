@@ -104,8 +104,11 @@ abstract class ChatMessage with _$ChatMessage {
   ChatAttachment? get voice =>
       attachments.where((file) => file.kind == ChatAttachmentKind.voice).firstOrNull;
 
-  ChatAttachment? get image =>
-      attachments.where((file) => file.kind == ChatAttachmentKind.image).firstOrNull;
+  ChatAttachment? get image => images.firstOrNull;
+
+  /// صورُها بالترتيب الذي اختيرت به — ألبومٌ في رسالةٍ واحدة، كبريمولا.
+  List<ChatAttachment> get images =>
+      attachments.where((file) => file.kind == ChatAttachmentKind.image).toList(growable: false);
 
   /// سطرٌ واحد عنها — للاقتباس فوق صندوق الكتابة.
   String get preview {
@@ -114,9 +117,13 @@ abstract class ChatMessage with _$ChatMessage {
     final text = body?.trim() ?? '';
     if (text.isNotEmpty) return text;
     if (voice != null) return '🎤 رسالة صوتية';
-    if (image != null) return 'صورة';
 
-    return '';
+    return switch (images.length) {
+      0 => '',
+      1 => 'صورة',
+      2 => 'صورتان',
+      final count => '$count صور',
+    };
   }
 }
 
@@ -135,21 +142,29 @@ abstract class PendingVoice with _$PendingVoice {
   }) = _PendingVoice;
 }
 
-/// رسالةٌ في طريقها: كلامٌ، أو صورة، أو صوتٌ بمدّته وموجته، وربما اقتباس.
+/// رسالةٌ في طريقها: كلامٌ، أو صور، أو صوتٌ بمدّته وموجته، وربما اقتباس.
+///
+/// **الصورُ ألبومٌ في رسالةٍ واحدة** ([images]، حتى [maxImages])، كبريمولا: الصورُ وتعليقُها رسالةٌ
+/// واحدة لا رسائلُ متفرّقة. **والصوتُ رسالةٌ وحده** ([voice]).
 class OutgoingChatMessage {
   const OutgoingChatMessage({
     required this.clientToken,
     this.body,
-    this.file,
+    this.images = const [],
+    this.voice,
     this.durationSeconds,
     this.waveform,
     this.replyToMessageId,
   });
 
+  /// حدُّ الخادم (`media.chat_attachments.max_images_per_message`).
+  static const int maxImages = 10;
+
   /// يولّده التطبيق قبل الإرسال ويعيده كما هو في الإعادة — فالرمزُ نفسه رسالةٌ واحدة على الخادم.
   final String clientToken;
   final String? body;
-  final PickedFile? file;
+  final List<PickedFile> images;
+  final PickedFile? voice;
   final int? durationSeconds;
   final List<int>? waveform;
   final int? replyToMessageId;
@@ -158,7 +173,8 @@ class OutgoingChatMessage {
   OutgoingChatMessage quoting(int messageId) => OutgoingChatMessage(
     clientToken: clientToken,
     body: body,
-    file: file,
+    images: images,
+    voice: voice,
     durationSeconds: durationSeconds,
     waveform: waveform,
     replyToMessageId: messageId,

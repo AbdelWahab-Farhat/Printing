@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dayaa/core/chat/chat_composer.dart';
 import 'package:dayaa/core/chat/chat_thread_view.dart';
+import 'package:dayaa/core/chat/media_attach_sheet.dart';
 import 'package:dayaa/core/chat/reply_quote.dart';
 import 'package:dayaa/core/di/injector.dart';
-import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -14,7 +14,6 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/voice/voice_playback.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
-import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_thread_cubit.dart';
 import 'package:dayaa/features/internal_tickets/presentation/widgets/colleague_picker_sheet.dart';
@@ -110,30 +109,20 @@ class _ThreadViewState extends State<_ThreadView> {
     _toLatest();
   }
 
-  /// صورةٌ من الهاتف — صورٌ فقط، كبريمولا — وما في الصندوق تعليقاً.
-  Future<void> _attach() async {
-    final source = await showAttachmentSheet(
-      context: context,
-      title: 'إرفاق صورة',
-      sources: const [AttachmentSource.photos, AttachmentSource.camera],
+  /// ورقةُ الصور، **كبريمولا**: صورُ الهاتف شبكةً، حتى عشرٍ مرقّمةً بترتيب اختيارها، وتعليقُها —
+  /// **رسالةً واحدة**. صورٌ فقط؛ الملفاتُ مكانها «المرفقات». وما في الصندوق يبقى فيه.
+  Future<void> _attach() {
+    // يُقرأ هنا لا داخل الورقة: الورقةُ تُبنى فوق المتصفّح، خارج مزوّدات المحادثة.
+    final cubit = context.read<InternalThreadCubit>();
+
+    return showMediaAttachSheet(
+      context,
+      onSend: (images, caption) async {
+        final sent = await cubit.sendImages(images, caption: caption);
+
+        if (sent && mounted) _toLatest();
+      },
     );
-    if (source == null || !mounted) return;
-
-    final picked = await sl<AttachmentPicker>().pick(
-      source,
-      extensions: const ['jpg', 'jpeg', 'png', 'webp'],
-    );
-    if (picked.isEmpty || !mounted) return;
-
-    final sent = await context.read<InternalThreadCubit>().sendImage(
-      picked.first,
-      caption: _reply.text,
-    );
-
-    if (!sent) return;
-
-    _reply.clear();
-    _toLatest();
   }
 
   List<_ThreadAction> _actionsFor(InternalTicket ticket) => [
