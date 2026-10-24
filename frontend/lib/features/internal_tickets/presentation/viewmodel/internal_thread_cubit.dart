@@ -2,13 +2,14 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
+import 'package:dayaa/core/chat/chat_thread_logic.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:dayaa/core/voice/voice_recorder.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
-import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository.dart';
 import 'package:dayaa/features/internal_tickets/usecases/internal_tickets_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -50,7 +51,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
        _close = close,
        _transfer = transfer,
        _voiceCache = voiceCache,
-       _newToken = newToken ?? _randomToken,
+       _newToken = newToken ?? randomClientToken,
        super(const InternalThreadState.loading()) {
     _live = [
       watch.ticket(ticketId).listen(_absorbLive),
@@ -101,12 +102,12 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
     final trimmed = body.trim();
     if (trimmed.isEmpty) return Future<bool>.value(false);
 
-    return _post(OutgoingInternalMessage(clientToken: _newToken(), body: trimmed));
+    return _post(OutgoingChatMessage(clientToken: _newToken(), body: trimmed));
   }
 
   /// صورةٌ من الهاتف، وما في الصندوق تعليقاً.
   Future<bool> sendImage(PickedFile image, {String caption = ''}) =>
-      _post(OutgoingInternalMessage(clientToken: _newToken(), body: caption.trim(), file: image));
+      _post(OutgoingChatMessage(clientToken: _newToken(), body: caption.trim(), file: image));
 
   /// رسالةٌ صوتية سُجّلت للتوّ. **إن لم تصل بقيت** فوق الصندوق ([InternalThreadLoaded.unsentVoice]).
   Future<bool> sendVoice(VoiceRecording recording) {
@@ -149,7 +150,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
   Future<bool> _postVoice(PendingVoice pending) async {
     final size = await LocalFiles.length(pending.path);
     final sent = await _post(
-      OutgoingInternalMessage(
+      OutgoingChatMessage(
         clientToken: pending.clientToken,
         file: PickedFile(
           path: pending.path,
@@ -184,7 +185,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
   }
 
   /// يختار الرسالةَ التي يُردّ عليها — سحبٌ جانبيّ أو «ردّ» من قائمتها.
-  void replyTo(InternalMessage message) {
+  void replyTo(ChatMessage message) {
     final current = state;
     if (current is! InternalThreadLoaded || message.isDeleted) return;
 
@@ -230,7 +231,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
 
   /// الرسالةُ تُرسل وتنتظر جوابها، والصندوقُ منشغلٌ لا معطّل — كمحادثة الدعم.
   Future<bool> _post(
-    OutgoingInternalMessage message, {
+    OutgoingChatMessage message, {
     InternalThreadLoaded Function(InternalThreadLoaded current)? onFailure,
     InternalThreadLoaded Function(InternalThreadLoaded current, InternalTicket ticket)? onSuccess,
   }) {
@@ -239,14 +240,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
 
     final withQuote = message.replyToMessageId != null || quoted == null
         ? message
-        : OutgoingInternalMessage(
-            clientToken: message.clientToken,
-            body: message.body,
-            file: message.file,
-            durationSeconds: message.durationSeconds,
-            waveform: message.waveform,
-            replyToMessageId: quoted,
-          );
+        : message.quoting(quoted);
 
     return _write(
       () => _send(_ticketId, withQuote),
@@ -299,7 +293,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
   }
 
   /// تعديلٌ أو سحب — يُجاب بالرسالة وحدها، فتوضع مكانها.
-  Future<bool> _mutate(Future<Either<Failure, InternalMessage>> Function() call) async {
+  Future<bool> _mutate(Future<Either<Failure, ChatMessage>> Function() call) async {
     final loaded = state;
     if (loaded is! InternalThreadLoaded || loaded.isWorking) return false;
 
@@ -324,7 +318,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
           current.copyWith(
             isWorking: false,
             ticket: current.ticket.copyWith(
-              messages: _placed(current.ticket.messages, message, keepFlags: false),
+              messages: placeChatMessage(current.ticket.messages, message, keepFlags: false),
             ),
           ),
         );
@@ -351,7 +345,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
     final message = change.message;
     final messages = message == null
         ? current.ticket.messages
-        : _placed(current.ticket.messages, message, keepFlags: true);
+        : placeChatMessage(current.ticket.messages, message, keepFlags: true);
 
     emit(
       current.copyWith(
@@ -403,52 +397,14 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
     );
   }
 
-  /// الرسالةُ مكانها: تحلّ محلّ نسختها إن كانت، وإلا تُلحق بترتيب رقمها.
-  ///
-  /// [keepFlags] للبثّ: نسختُه بلا قارئ — `can_edit` فيها `false` دائماً — فتبقى أعلامُ النسخة التي
-  /// على الشاشة، ويُؤخذ منه ما قيل: النصُّ، والسحبُ، والتعديل.
-  static List<InternalMessage> _placed(
-    List<InternalMessage> messages,
-    InternalMessage incoming, {
-    required bool keepFlags,
-  }) {
-    final index = messages.indexWhere((m) => m.id == incoming.id);
-
-    if (index == -1) return [...messages, incoming]..sort((a, b) => a.id.compareTo(b.id));
-
-    final existing = messages[index];
-    final merged = keepFlags
-        ? incoming.copyWith(
-            isMine: existing.isMine,
-            canEdit: existing.canEdit && !incoming.isDeleted,
-            canDelete: existing.canDelete && !incoming.isDeleted,
-            mutationBlockReason: existing.mutationBlockReason,
-          )
-        : incoming;
-
-    return [...messages]..[index] = merged;
-  }
-
   /// جوابُ الخادم، ومعه أيُّ رسالةٍ وصلت حيّةً ولم يعرفها الجواب — كمحادثة الدعم.
   static InternalTicket _keepingLiveMessages(InternalTicket answer, InternalTicket onScreen) {
-    final known = {for (final message in answer.messages) message.id};
-    final missing = onScreen.messages.where((message) => !known.contains(message.id));
+    final messages = chatMessagesMissingFrom(answer.messages, onScreen.messages);
 
-    if (missing.isEmpty) return answer;
-
-    return answer.copyWith(
-      messages: [...answer.messages, ...missing]..sort((a, b) => a.id.compareTo(b.id)),
-    );
+    return messages == null ? answer : answer.copyWith(messages: messages);
   }
 
   static void _deleteFile(String path) => LocalFiles.delete(path);
-
-  /// ستّةَ عشرَ حرفاً ستّ‌عشرياً — رمزُ الإرسال، فريدٌ بما يكفي لتذكرةٍ واحدة.
-  static String _randomToken() {
-    final random = math.Random.secure();
-
-    return List<String>.generate(32, (_) => random.nextInt(16).toRadixString(16)).join();
-  }
 
   @override
   Future<void> close() async {

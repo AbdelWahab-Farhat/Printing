@@ -32,6 +32,7 @@ import 'package:dayaa/features/customers/presentation/views/customer_detail_page
 import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_detail_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
+import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_thread_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
@@ -372,8 +373,8 @@ abstract final class Routes {
   static const String tickets = '/tickets';
 
   /// «الرد داخل التذكرة». A child of the ticket, because that is what it is: the conversation
-  /// about *this* request. The title travels as `extra` so the bar can name the ticket without a
-  /// second request.
+  /// about *this* request. Still spelt `comments`, the path the notes lived on — the bell's
+  /// stored routes point here.
   static const String designTicketCommentsPath = 'comments';
 
   static String designTicketComments(int id) => '/design-tickets/$id/comments';
@@ -1212,9 +1213,11 @@ abstract final class AppRouter {
           return id == null ? const _UnknownDesignTicket() : DesignTicketDetailPage(ticketId: id);
         },
         routes: [
-          // The conversation. Behind `design_tickets.view` like the ticket itself — writing a
-          // note is part of doing the work, not a privilege over it — and the server narrows it
-          // to readers who may see this particular ticket, so a colleague's thread is a 404.
+          // The conversation — the internal tickets' chat, with photos and voice notes
+          // (DESIGN-TICKET-CHAT). Behind `design_tickets.view` like the ticket itself: writing is
+          // part of doing the work, not a privilege over it, and the server narrows it to readers
+          // who may see this particular ticket, so a colleague's thread is a 404. **The path is the
+          // one the notes lived on**, so yesterday's notifications still open it.
           GoRoute(
             path: Routes.designTicketCommentsPath,
             builder: (context, state) {
@@ -1222,10 +1225,7 @@ abstract final class AppRouter {
 
               return id == null
                   ? const _UnknownDesignTicket()
-                  : CommentsPage(
-                      subject: CommentSubject.designTicket(id),
-                      ownerName: state.payload is String ? state.payload! as String : null,
-                    );
+                  : DesignTicketThreadPage(ticketId: id);
             },
           ),
         ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -29,7 +30,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const InternalTicketQuery());
-    registerFallbackValue(const OutgoingInternalMessage(clientToken: 'x'));
+    registerFallbackValue(const OutgoingChatMessage(clientToken: 'x'));
     registerFallbackValue(const InternalTicketDraft(assigneeId: 1, title: 'x', description: 'xyz'));
   });
 
@@ -230,7 +231,7 @@ void main() {
       // Assert
       expect(sent, isTrue);
       final outgoing =
-          verify(() => repository.send(4, captureAny())).captured.single as OutgoingInternalMessage;
+          verify(() => repository.send(4, captureAny())).captured.single as OutgoingChatMessage;
       expect(outgoing.body, 'تمام');
       verify(() => repository.home()).called(2);
       await cubit.close();

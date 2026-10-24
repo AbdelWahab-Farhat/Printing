@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -25,7 +26,7 @@ class _MockRepository extends Mock implements InternalTicketsRepository {}
 void main() {
   late _MockRepository repository;
 
-  setUpAll(() => registerFallbackValue(const OutgoingInternalMessage(clientToken: 'x')));
+  setUpAll(() => registerFallbackValue(const OutgoingChatMessage(clientToken: 'x')));
 
   InternalTicket waiting(int id, String title) => InternalTicket(
     id: id,
@@ -33,7 +34,7 @@ void main() {
     title: title,
     status: InternalTicketStatus.inProgress,
     statusLabel: 'قيد المعالجة',
-    counterpart: const InternalPerson(id: 9, name: 'هدى'),
+    counterpart: const ChatPerson(id: 9, name: 'هدى'),
     awaitingMyReply: true,
     lastMessage: InternalLastMessage(
       id: id * 10,
@@ -185,7 +186,7 @@ void main() {
 
     // Assert
     final sent =
-        verify(() => repository.send(1, captureAny())).captured.single as OutgoingInternalMessage;
+        verify(() => repository.send(1, captureAny())).captured.single as OutgoingChatMessage;
     expect(sent.body, 'وصلت الصبح');
     expect(find.byType(TextField), findsNothing);
   });

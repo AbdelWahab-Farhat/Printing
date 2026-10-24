@@ -12,16 +12,15 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/comments/models/comment.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/presentation/viewmodel/comments_cubit.dart';
-import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
-import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// ما يكتبه الموظفون لبعضهم عن سجلٍّ واحد — عميل، أو مورّد، أو تذكرة تصميم.
+/// ما يكتبه الموظفون لبعضهم عن سجلٍّ واحد — عميل، أو مورّد.
 ///
-/// **شاشةٌ واحدة للثلاثة، لأنها ميزةٌ واحدة.** الذي يختلف بينها هو السجلّ الذي تتعلّق به
+/// **شاشةٌ واحدة للاثنين، لأنها ميزةٌ واحدة.** وكانت تخدم تذكرة التصميم أيضاً حتى صارت محادثتُها
+/// على محرّك التذاكر الداخلية، بصورٍ وصوت (DESIGN-TICKET-CHAT). الذي يختلف بينها هو السجلّ الذي تتعلّق به
 /// الملاحظات، ويصل كـ[CommentSubject] ولا يتجاوز المستودع — إلا كلامَ الصندوق والصفحة الفارغة،
 /// وهو المكان الوحيد الذي يعرف منه القارئ عمّاذا يكتب. انظر GENERAL-COMMENTS.md.
 ///
@@ -38,7 +37,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **ومَن يُعدّلها جوابُ الخادم، محمولاً على الملاحظة نفسها.** كاتبها، أو مَن يملك
 /// `comments.moderate`. والورقة ترسم صفوفها من `canEdit` و`canDelete` لا من مقارنة معرّفات هنا —
 /// فنسخةٌ ثانية من قاعدة صلاحيات هي نسخةٌ ستنحرف، ونقاط النهاية ترفض على أي حال.
-class CommentsPage extends StatefulWidget {
+class CommentsPage extends StatelessWidget {
   const CommentsPage({required this.subject, this.ownerName, super.key});
 
   /// أيُّ سجلٍّ هذه الملاحظات عنه.
@@ -49,39 +48,10 @@ class CommentsPage extends StatefulWidget {
   final String? ownerName;
 
   @override
-  State<CommentsPage> createState() => _CommentsPageState();
-}
-
-class _CommentsPageState extends State<CommentsPage> {
-  @override
-  void initState() {
-    super.initState();
-
-    // مرّةً واحدة عند الفتح، لا مع كلّ إعادة بناء — ولهذا صارت هذه الشاشة ذات حالة.
-    unawaited(_markRead());
-  }
-
-  /// **فتحُ المحادثة هو قراءتها.** لا انتظار لتمرير القارئ إلى آخرها: الخيط قصير، ومَن فتحه
-  /// جاء لأجله.
-  ///
-  /// ويُطفئ الجرسَ معه، لأن الشارة وصفوف الجرس شيءٌ واحد على الخادم. والرقم يصل في الجواب
-  /// فيُوضع كما هو — رحلةٌ ثانية لسؤال `unread-count` عمّا قيل لنا للتوّ تأخيرٌ بلا مقابل، وهي
-  /// الحجّة نفسها التي يسوقها `UnreadBadgeCubit.clear()`.
-  ///
-  /// **والفشل يُبتلع عن قصد.** شارةٌ لم تنطفئ ليست خطأً يستحقّ شريطاً أحمر فوق محادثةٍ فُتحت كما
-  /// ينبغي — والنداء يتكرّر في المرّة القادمة على أي حال، وهو عديم الأثر عند التكرار.
-  Future<void> _markRead() async {
-    final result = await sl<MarkThreadRead>()(widget.subject);
-    if (!mounted) return;
-
-    result.fold((_) {}, sl<UnreadBadgeCubit>().setCount);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocProvider<CommentsCubit>(
-      create: (_) => sl<CommentsCubit>(param1: widget.subject)..load(),
-      child: _CommentsView(subject: widget.subject, ownerName: widget.ownerName),
+      create: (_) => sl<CommentsCubit>(param1: subject)..load(),
+      child: _CommentsView(subject: subject, ownerName: ownerName),
     );
   }
 }
@@ -865,27 +835,21 @@ class _FailureView extends StatelessWidget {
   }
 }
 
-/// بماذا تُسمّي هذه الشاشة نفسها، وعمّاذا تسأل، في كلٍّ من السجلات الثلاثة.
+/// بماذا تُسمّي هذه الشاشة نفسها، وعمّاذا تسأل، في كلٍّ من السجلّين.
 ///
-/// **شاشةٌ واحدة، وثلاثُ مفردات.** كان الصندوق يقول «اكتب ملاحظة عن هذا العميل» داخل تذكرة
-/// تصميم، حيث لا عميل في الغرفة وحيث المكتوب ردٌّ على المصمّم. والكلام هو الشيء الوحيد في هذه
-/// الشاشة الذي يختلف باختلاف السجلّ، وهو الشيء الذي يعرف به القارئ ما الذي يكتبه.
+/// **شاشةٌ واحدة، ومفرداتُ كلِّ سجلّ.** الكلام هو الشيء الوحيد في هذه الشاشة الذي يختلف باختلاف
+/// السجلّ، وهو الشيء الذي يعرف به القارئ ما الذي يكتبه.
 extension on CommentSubjectKind {
-  String get threadTitle => switch (this) {
-    CommentSubjectKind.customer || CommentSubjectKind.vendor => 'الملاحظات',
-    CommentSubjectKind.designTicket => 'المحادثة',
-  };
+  String get threadTitle => 'الملاحظات';
 
   String get composerHint => switch (this) {
     CommentSubjectKind.customer => 'اكتب ملاحظة عن هذا العميل…',
     CommentSubjectKind.vendor => 'اكتب ملاحظة عن هذا المورّد…',
-    CommentSubjectKind.designTicket => 'اكتب رسالة في هذه التذكرة…',
   };
 
   String get emptyTitle => switch (this) {
     CommentSubjectKind.customer => 'لا توجد ملاحظات على هذا العميل',
     CommentSubjectKind.vendor => 'لا توجد ملاحظات على هذا المورّد',
-    CommentSubjectKind.designTicket => 'لا توجد رسائل في هذه التذكرة',
   };
 
   String get emptyInvitation => switch (this) {
@@ -895,7 +859,5 @@ extension on CommentSubjectKind {
     CommentSubjectKind.vendor =>
       'اكتب ما يحتاج زميلك معرفته عنه قبل أن يشتري منه — المدّة التي يلتزم بها، '
           'أو الرقم الذي يردّ عليه.',
-    CommentSubjectKind.designTicket =>
-      'هنا يتّفق الموظّف والمصمّم — ما المطلوب بالضبط، وما الذي تغيّر في النسخة الأخيرة.',
   };
 }

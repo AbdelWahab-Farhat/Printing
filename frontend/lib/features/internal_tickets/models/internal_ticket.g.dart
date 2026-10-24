@@ -6,15 +6,6 @@ part of 'internal_ticket.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_InternalPerson _$InternalPersonFromJson(Map<String, dynamic> json) =>
-    _InternalPerson(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-    );
-
-Map<String, dynamic> _$InternalPersonToJson(_InternalPerson instance) =>
-    <String, dynamic>{'id': instance.id, 'name': instance.name};
-
 _InternalCustomerRef _$InternalCustomerRefFromJson(Map<String, dynamic> json) =>
     _InternalCustomerRef(
       id: (json['id'] as num).toInt(),
@@ -49,116 +40,6 @@ _InternalCategory _$InternalCategoryFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$InternalCategoryToJson(_InternalCategory instance) =>
     <String, dynamic>{'id': instance.id, 'name': instance.name};
-
-_InternalAttachment _$InternalAttachmentFromJson(Map<String, dynamic> json) =>
-    _InternalAttachment(
-      id: (json['id'] as num).toInt(),
-      kind:
-          $enumDecodeNullable(
-            _$InternalAttachmentKindEnumMap,
-            json['kind'],
-            unknownValue: InternalAttachmentKind.unknown,
-          ) ??
-          InternalAttachmentKind.unknown,
-      name: json['name'] as String?,
-      mimeType: json['mime_type'] as String?,
-      sizeBytes: (json['size_bytes'] as num?)?.toInt(),
-      widthPx: (json['width_px'] as num?)?.toInt(),
-      heightPx: (json['height_px'] as num?)?.toInt(),
-      durationSeconds: (json['duration_seconds'] as num?)?.toInt(),
-      waveform: (json['waveform'] as List<dynamic>?)
-          ?.map((e) => (e as num).toInt())
-          .toList(),
-      url: json['url'] as String?,
-    );
-
-Map<String, dynamic> _$InternalAttachmentToJson(_InternalAttachment instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'kind': _$InternalAttachmentKindEnumMap[instance.kind]!,
-      'name': instance.name,
-      'mime_type': instance.mimeType,
-      'size_bytes': instance.sizeBytes,
-      'width_px': instance.widthPx,
-      'height_px': instance.heightPx,
-      'duration_seconds': instance.durationSeconds,
-      'waveform': instance.waveform,
-      'url': instance.url,
-    };
-
-const _$InternalAttachmentKindEnumMap = {
-  InternalAttachmentKind.image: 'image',
-  InternalAttachmentKind.voice: 'voice',
-  InternalAttachmentKind.unknown: 'unknown',
-};
-
-_InternalQuote _$InternalQuoteFromJson(Map<String, dynamic> json) =>
-    _InternalQuote(
-      id: (json['id'] as num).toInt(),
-      authorName: json['author_name'] as String?,
-      preview: json['preview'] as String? ?? '',
-      isDeleted: json['is_deleted'] as bool? ?? false,
-    );
-
-Map<String, dynamic> _$InternalQuoteToJson(_InternalQuote instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'author_name': instance.authorName,
-      'preview': instance.preview,
-      'is_deleted': instance.isDeleted,
-    };
-
-_InternalMessage _$InternalMessageFromJson(Map<String, dynamic> json) =>
-    _InternalMessage(
-      id: (json['id'] as num).toInt(),
-      ticketId: (json['ticket_id'] as num?)?.toInt(),
-      author: json['author'] == null
-          ? null
-          : InternalPerson.fromJson(json['author'] as Map<String, dynamic>),
-      isMine: json['is_mine'] as bool? ?? false,
-      body: json['body'] as String?,
-      isDeleted: json['is_deleted'] as bool? ?? false,
-      isEdited: json['is_edited'] as bool? ?? false,
-      replyTo: json['reply_to'] == null
-          ? null
-          : InternalQuote.fromJson(json['reply_to'] as Map<String, dynamic>),
-      attachments:
-          (json['attachments'] as List<dynamic>?)
-              ?.map(
-                (e) => InternalAttachment.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const <InternalAttachment>[],
-      clientToken: json['client_token'] as String?,
-      sentAt: json['sent_at'] == null
-          ? null
-          : DateTime.parse(json['sent_at'] as String),
-      canEdit: json['can_edit'] as bool? ?? false,
-      canDelete: json['can_delete'] as bool? ?? false,
-      mutationBlockReason: json['mutation_block_reason'] as String?,
-      mutableUntil: json['mutable_until'] == null
-          ? null
-          : DateTime.parse(json['mutable_until'] as String),
-    );
-
-Map<String, dynamic> _$InternalMessageToJson(_InternalMessage instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'ticket_id': instance.ticketId,
-      'author': instance.author?.toJson(),
-      'is_mine': instance.isMine,
-      'body': instance.body,
-      'is_deleted': instance.isDeleted,
-      'is_edited': instance.isEdited,
-      'reply_to': instance.replyTo?.toJson(),
-      'attachments': instance.attachments.map((e) => e.toJson()).toList(),
-      'client_token': instance.clientToken,
-      'sent_at': instance.sentAt?.toIso8601String(),
-      'can_edit': instance.canEdit,
-      'can_delete': instance.canDelete,
-      'mutation_block_reason': instance.mutationBlockReason,
-      'mutable_until': instance.mutableUntil?.toIso8601String(),
-    };
 
 _InternalLastMessage _$InternalLastMessageFromJson(Map<String, dynamic> json) =>
     _InternalLastMessage(
@@ -221,13 +102,13 @@ _InternalTicket _$InternalTicketFromJson(
       : InternalCategory.fromJson(json['category'] as Map<String, dynamic>),
   opener: json['opener'] == null
       ? null
-      : InternalPerson.fromJson(json['opener'] as Map<String, dynamic>),
+      : ChatPerson.fromJson(json['opener'] as Map<String, dynamic>),
   assignee: json['assignee'] == null
       ? null
-      : InternalPerson.fromJson(json['assignee'] as Map<String, dynamic>),
+      : ChatPerson.fromJson(json['assignee'] as Map<String, dynamic>),
   counterpart: json['counterpart'] == null
       ? null
-      : InternalPerson.fromJson(json['counterpart'] as Map<String, dynamic>),
+      : ChatPerson.fromJson(json['counterpart'] as Map<String, dynamic>),
   iOpenedIt: json['i_opened_it'] as bool? ?? false,
   isParty: json['is_party'] as bool? ?? false,
   customer: json['customer'] == null
@@ -249,9 +130,9 @@ _InternalTicket _$InternalTicketFromJson(
         ),
   messages:
       (json['messages'] as List<dynamic>?)
-          ?.map((e) => InternalMessage.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <InternalMessage>[],
+      const <ChatMessage>[],
   canReply: json['can_reply'] as bool? ?? false,
   canClose: json['can_close'] as bool? ?? false,
   canTransfer: json['can_transfer'] as bool? ?? false,
@@ -263,7 +144,7 @@ _InternalTicket _$InternalTicketFromJson(
       : DateTime.parse(json['closed_at'] as String),
   closedBy: json['closed_by'] == null
       ? null
-      : InternalPerson.fromJson(json['closed_by'] as Map<String, dynamic>),
+      : ChatPerson.fromJson(json['closed_by'] as Map<String, dynamic>),
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -363,7 +244,7 @@ _InternalTicketChange _$InternalTicketChangeFromJson(
   ticket: InternalTicket.fromJson(json['ticket'] as Map<String, dynamic>),
   message: json['message'] == null
       ? null
-      : InternalMessage.fromJson(json['message'] as Map<String, dynamic>),
+      : ChatMessage.fromJson(json['message'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$InternalTicketChangeToJson(

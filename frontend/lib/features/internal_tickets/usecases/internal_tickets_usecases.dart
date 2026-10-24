@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -69,7 +70,7 @@ class SendInternalMessage {
 
   final InternalTicketsRepository _repository;
 
-  Future<Either<Failure, InternalTicket>> call(int id, OutgoingInternalMessage message) =>
+  Future<Either<Failure, InternalTicket>> call(int id, OutgoingChatMessage message) =>
       _repository.send(id, message);
 }
 
@@ -78,7 +79,7 @@ class EditInternalMessage {
 
   final InternalTicketsRepository _repository;
 
-  Future<Either<Failure, InternalMessage>> call(int id, int messageId, String body) =>
+  Future<Either<Failure, ChatMessage>> call(int id, int messageId, String body) =>
       _repository.edit(id, messageId, body);
 }
 
@@ -87,7 +88,7 @@ class RetractInternalMessage {
 
   final InternalTicketsRepository _repository;
 
-  Future<Either<Failure, InternalMessage>> call(int id, int messageId) =>
+  Future<Either<Failure, ChatMessage>> call(int id, int messageId) =>
       _repository.retract(id, messageId);
 }
 

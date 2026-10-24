@@ -211,7 +211,7 @@ class _DesignTicketDetailView extends StatelessWidget {
   Future<void> _openConversation(BuildContext context, DesignTicket ticket) async {
     final cubit = context.read<DesignTicketDetailCubit>();
 
-    await context.push(Routes.designTicketComments(ticket.id), extra: ticket.title);
+    await context.push(Routes.designTicketComments(ticket.id));
 
     await cubit.load();
   }

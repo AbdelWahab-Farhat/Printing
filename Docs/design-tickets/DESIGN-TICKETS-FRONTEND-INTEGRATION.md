@@ -200,6 +200,11 @@ opening it. The affordance is **absent** rather than disabled when `can_manage` 
 
 ### 6.4 The in-ticket conversation
 
+> **Superseded on 2026-10-24** by [DESIGN-TICKET-CHAT.md](DESIGN-TICKET-CHAT.md): the conversation
+> now runs on the internal tickets' chat (photos, voice notes, quoted replies, ✓✓) at
+> `/design-tickets/{id}/messages`, drawn by `DesignTicketThreadPage` on the same route. The old
+> notes stay readable for the previous app build only. What follows is the original shape.
+
 `CommentSubject.designTicket(id)` joins the shared comments feature — the same four calls a
 customer's notes use, at `/design-tickets/{id}/comments`, reached from a «المحادثة» action in the
 app bar and a nested `comments` route.

@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_thread_cubit.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/products_cubit.dart';
@@ -77,6 +78,16 @@ void main() {
 
     // Assert
     expect(cubit, isA<ProfitAndLossCubit>());
+    addTearDown(cubit.close);
+  });
+
+  test('builds the Cubit behind a design ticket\'s conversation', () {
+    // Act — the factory reaches for the realtime client, the voice cache and the bell's badge,
+    // none of which the compiler can see from the route that opens it.
+    final cubit = sl<DesignTicketThreadCubit>(param1: 3);
+
+    // Assert
+    expect(cubit, isA<DesignTicketThreadCubit>());
     addTearDown(cubit.close);
   });
 }

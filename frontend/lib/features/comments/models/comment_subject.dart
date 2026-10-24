@@ -15,8 +15,6 @@ class CommentSubject {
 
   const CommentSubject.vendor(this.id) : kind = CommentSubjectKind.vendor;
 
-  const CommentSubject.designTicket(this.id) : kind = CommentSubjectKind.designTicket;
-
   final CommentSubjectKind kind;
   final int id;
 
@@ -30,17 +28,15 @@ class CommentSubject {
 
 /// السجلات التي تقبل ملاحظاتٍ اليوم.
 ///
-/// ثلاثة: العميل، والمورّد، وتذكرة التصميم. والطلبية أو أمر الشراء حالةٌ هنا ومسارٌ على الخادم —
-/// ولا يُضاف أيٌّ منهما قبل أن تطلبه شاشة، وهي القاعدة نفسها التي أبقت هذه الميزة على العميل
-/// وحده حتى احتاجها المورّد. انظر GENERAL-COMMENTS.md.
+/// اثنان: العميل، والمورّد. والطلبية أو أمر الشراء حالةٌ هنا ومسارٌ على الخادم — ولا يُضاف أيٌّ
+/// منهما قبل أن تطلبه شاشة، وهي القاعدة نفسها التي أبقت هذه الميزة على العميل وحده حتى احتاجها
+/// المورّد. انظر GENERAL-COMMENTS.md.
+///
+/// **وكانت تذكرةُ التصميم ثالثهما**، حتى صارت محادثتُها على محرّك التذاكر الداخلية بصورٍ وصوت
+/// (DESIGN-TICKET-CHAT). ملاحظاتُها القديمة على الخادم للنسخة القديمة من التطبيق وحدها.
 enum CommentSubjectKind {
   customer('customer'),
-  vendor('vendor'),
-
-  /// **الوحيد الذي ملاحظاتُه هي مقصود السجلّ لا هامشه.** ملاحظات العميل أشياءُ تستحقّ أن تُتذكّر
-  /// عنه؛ وملاحظات التذكرة هي المحادثة التي وُجدت التذكرة لتحملها — «الشعار في المرفقات»، «وصلني،
-  /// أبدأ اليوم». النداءات الأربعة نفسها، والقواعد نفسها.
-  designTicket('design_ticket');
+  vendor('vendor');
 
   const CommentSubjectKind(this.wire);
 

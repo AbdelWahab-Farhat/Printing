@@ -432,17 +432,22 @@ abstract final class DesignTicketEndpoints {
   static String review(int ticketId, int versionId) =>
       '/design-tickets/$ticketId/versions/$versionId/review';
 
-  /// «الرد داخل التذكرة» — the same comment shape every other commentable record uses.
-  static String comments(int ticketId) => '/design-tickets/$ticketId/comments';
+  /// «الرد داخل التذكرة» — **على محرّك التذاكر الداخلية**: نصٌّ، أو صورة، أو رسالة صوتية
+  /// (DESIGN-TICKET-CHAT). `GET` المحادثةُ كاملة، وفتحُها يعلّمها مقروءة؛ و`POST` رسالة.
+  static String messages(int ticketId) => '/design-tickets/$ticketId/messages';
 
-  /// «قرأتُ المحادثة» — تُطفئ شارة هذه التذكرة، ومعها خبرُها في الجرس لأنهما صفوفٌ واحدة.
-  ///
-  /// مُعلَنٌ على الخادم **قبل** `comments/{comment}`، وإلا قرأ المتغيّرُ كلمةَ «read» معرّفاً.
-  /// و`POST` لا أثرٌ جانبيٌّ على `GET` القائمة: طلبٌ يغيّر حالةً لا يُعاد إرساله عند كلّ تحديث.
-  static String commentsRead(int ticketId) => '/design-tickets/$ticketId/comments/read';
+  /// تعديلُ نصّ رسالتي (`PATCH`) أو سحبُها (`DELETE`) — خلال عشرين دقيقة.
+  static String message(int ticketId, int messageId) =>
+      '/design-tickets/$ticketId/messages/$messageId';
 
-  static String comment(int ticketId, int commentId) =>
-      '/design-tickets/$ticketId/comments/$commentId';
+  /// لشاشةٍ مفتوحة وصلتها رسالةٌ حيّة: `up_to_message_id`. ويطفئ جرسَ المحادثة معه.
+  static String messagesRead(int ticketId) => '/design-tickets/$ticketId/messages/read';
+
+  /// قناةُ المحادثة الحيّة، يدخلها مَن يرى التذكرة.
+  static String channel(int ticketId) => 'private-design-tickets.$ticketId';
+
+  /// اسمُ الحدث عليها — `DesignTicketThreadChanged::NAME`.
+  static const String changedEvent = 'design_ticket.changed';
 
   /// The history, identical in shape to every other `logs` endpoint and read by the same screen.
   static String logs(int ticketId) => '/design-tickets/$ticketId/logs';

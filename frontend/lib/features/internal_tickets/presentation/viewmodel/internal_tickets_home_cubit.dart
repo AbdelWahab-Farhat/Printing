@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
-import 'package:dayaa/features/internal_tickets/repositories/internal_tickets_repository.dart';
 import 'package:dayaa/features/internal_tickets/usecases/internal_tickets_usecases.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -88,7 +88,7 @@ class InternalTicketsHomeCubit extends Cubit<InternalTicketsHomeState> {
 
     final result = await _send(
       ticketId,
-      OutgoingInternalMessage(clientToken: _newToken(), body: text),
+      OutgoingChatMessage(clientToken: _newToken(), body: text),
     );
 
     if (isClosed) return false;

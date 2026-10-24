@@ -1,3 +1,4 @@
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'internal_ticket.freezed.dart';
@@ -62,24 +63,6 @@ extension InternalTicketPriorityX on InternalTicketPriority {
   };
 }
 
-/// ما في الرسالة غير الكلام: صورة، أو رسالة صوتية.
-enum InternalAttachmentKind {
-  @JsonValue('image')
-  image,
-  @JsonValue('voice')
-  voice,
-
-  unknown,
-}
-
-/// موظفٌ باسمه — طرفٌ في التذكرة، أو كاتبُ رسالة.
-@freezed
-abstract class InternalPerson with _$InternalPerson {
-  const factory InternalPerson({required int id, required String name}) = _InternalPerson;
-
-  factory InternalPerson.fromJson(Map<String, dynamic> json) => _$InternalPersonFromJson(json);
-}
-
 @freezed
 abstract class InternalCustomerRef with _$InternalCustomerRef {
   const factory InternalCustomerRef({required int id, String? code, String? name, String? phone}) =
@@ -102,103 +85,6 @@ abstract class InternalCategory with _$InternalCategory {
   const factory InternalCategory({required int id, required String name}) = _InternalCategory;
 
   factory InternalCategory.fromJson(Map<String, dynamic> json) => _$InternalCategoryFromJson(json);
-}
-
-/// صورةٌ أو رسالةٌ صوتية.
-///
-/// **[id] مفتاحُ حفظها على الهاتف لا [url]**: الرابطُ موقّعٌ ويتغيّر مع كل قراءة، والملفُّ خلفه
-/// لا يتغيّر — فينزل الصوت مرّةً واحدة.
-@freezed
-abstract class InternalAttachment with _$InternalAttachment {
-  const factory InternalAttachment({
-    required int id,
-    @JsonKey(unknownEnumValue: InternalAttachmentKind.unknown)
-    @Default(InternalAttachmentKind.unknown)
-    InternalAttachmentKind kind,
-    String? name,
-    @JsonKey(name: 'mime_type') String? mimeType,
-    @JsonKey(name: 'size_bytes') int? sizeBytes,
-    @JsonKey(name: 'width_px') int? widthPx,
-    @JsonKey(name: 'height_px') int? heightPx,
-
-    /// للصوت: كما قاسها الهاتف المرسِل، للعرض.
-    @JsonKey(name: 'duration_seconds') int? durationSeconds,
-
-    /// للصوت: ٤٨ رقماً من ٠ إلى ١٠٠، يحفظها الخادم فيرى المستقبِل موجةً حقيقية.
-    List<int>? waveform,
-    String? url,
-  }) = _InternalAttachment;
-
-  factory InternalAttachment.fromJson(Map<String, dynamic> json) =>
-      _$InternalAttachmentFromJson(json);
-}
-
-/// الرسالةُ المقتبَسة في سطرٍ واحد.
-@freezed
-abstract class InternalQuote with _$InternalQuote {
-  const factory InternalQuote({
-    required int id,
-    @JsonKey(name: 'author_name') String? authorName,
-    @Default('') String preview,
-    @JsonKey(name: 'is_deleted') @Default(false) bool isDeleted,
-  }) = _InternalQuote;
-
-  factory InternalQuote.fromJson(Map<String, dynamic> json) => _$InternalQuoteFromJson(json);
-}
-
-/// رسالةٌ في تذكرةٍ داخلية.
-///
-/// **الأعلامُ من الخادم** ([canEdit] و[canDelete] و[mutableUntil])، كبريمولا. وفي البثّ الحيّ لا
-/// قارئ — الأعلامُ `false` و[isMine] `false` دائماً — فالشاشةُ تحسب «رسالتي» من [author] والمهلةَ من
-/// [mutableUntil]؛ انظر `InternalMessageX`.
-@freezed
-abstract class InternalMessage with _$InternalMessage {
-  const factory InternalMessage({
-    required int id,
-    @JsonKey(name: 'ticket_id') int? ticketId,
-    InternalPerson? author,
-    @JsonKey(name: 'is_mine') @Default(false) bool isMine,
-
-    /// «تم حذف هذه الرسالة» حين [isDeleted] — نصٌّ لا `null`، كي تُرسم فقاعةً عادية.
-    String? body,
-    @JsonKey(name: 'is_deleted') @Default(false) bool isDeleted,
-    @JsonKey(name: 'is_edited') @Default(false) bool isEdited,
-    @JsonKey(name: 'reply_to') InternalQuote? replyTo,
-    @Default(<InternalAttachment>[]) List<InternalAttachment> attachments,
-    @JsonKey(name: 'client_token') String? clientToken,
-    @JsonKey(name: 'sent_at') DateTime? sentAt,
-    @JsonKey(name: 'can_edit') @Default(false) bool canEdit,
-    @JsonKey(name: 'can_delete') @Default(false) bool canDelete,
-
-    /// لماذا الزرّ مطفأ — الجملةُ نفسها التي يرفض بها الخادم.
-    @JsonKey(name: 'mutation_block_reason') String? mutationBlockReason,
-    @JsonKey(name: 'mutable_until') DateTime? mutableUntil,
-  }) = _InternalMessage;
-
-  const InternalMessage._();
-
-  factory InternalMessage.fromJson(Map<String, dynamic> json) => _$InternalMessageFromJson(json);
-
-  /// رسالتي — من [isMine] حين يعرف الخادمُ القارئ، ومن الكاتب حين لا يعرف (البثّ).
-  bool isFrom(int? me) => isMine || (me != null && author?.id == me);
-
-  InternalAttachment? get voice =>
-      attachments.where((file) => file.kind == InternalAttachmentKind.voice).firstOrNull;
-
-  InternalAttachment? get image =>
-      attachments.where((file) => file.kind == InternalAttachmentKind.image).firstOrNull;
-
-  /// سطرٌ واحد عنها — للاقتباس فوق صندوق الكتابة.
-  String get preview {
-    if (isDeleted) return 'تم حذف هذه الرسالة';
-
-    final text = body?.trim() ?? '';
-    if (text.isNotEmpty) return text;
-    if (voice != null) return '🎤 رسالة صوتية';
-    if (image != null) return 'صورة';
-
-    return '';
-  }
 }
 
 /// آخرُ كلامٍ حيٍّ في التذكرة — معاينةُ الصفّ.
@@ -244,11 +130,11 @@ abstract class InternalTicket with _$InternalTicket {
     InternalTicketPriority priority,
     @JsonKey(name: 'priority_label') @Default('') String priorityLabel,
     InternalCategory? category,
-    InternalPerson? opener,
-    InternalPerson? assignee,
+    ChatPerson? opener,
+    ChatPerson? assignee,
 
     /// الطرفُ الآخر عند هذا القارئ. `null` للمدير الذي ليس طرفاً — وفي البثّ.
-    InternalPerson? counterpart,
+    ChatPerson? counterpart,
     @JsonKey(name: 'i_opened_it') @Default(false) bool iOpenedIt,
     @JsonKey(name: 'is_party') @Default(false) bool isParty,
     InternalCustomerRef? customer,
@@ -262,13 +148,13 @@ abstract class InternalTicket with _$InternalTicket {
     @JsonKey(name: 'last_message') InternalLastMessage? lastMessage,
 
     /// فارغةٌ في القائمة، كاملةٌ في المحادثة.
-    @Default(<InternalMessage>[]) List<InternalMessage> messages,
+    @Default(<ChatMessage>[]) List<ChatMessage> messages,
     @JsonKey(name: 'can_reply') @Default(false) bool canReply,
     @JsonKey(name: 'can_close') @Default(false) bool canClose,
     @JsonKey(name: 'can_transfer') @Default(false) bool canTransfer,
     @JsonKey(name: 'last_message_at') DateTime? lastMessageAt,
     @JsonKey(name: 'closed_at') DateTime? closedAt,
-    @JsonKey(name: 'closed_by') InternalPerson? closedBy,
+    @JsonKey(name: 'closed_by') ChatPerson? closedBy,
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _InternalTicket;
 
@@ -288,7 +174,7 @@ abstract class InternalTicket with _$InternalTicket {
   }
 
   /// الطرفُ الآخر عند [me]، أو `null` لمن ليس طرفاً.
-  InternalPerson? otherSideOf(int? me) {
+  ChatPerson? otherSideOf(int? me) {
     if (counterpart != null) return counterpart;
     if (me == null) return null;
     if (opener?.id == me) return assignee;
@@ -334,7 +220,7 @@ abstract class InternalTicketChange with _$InternalTicketChange {
     /// `message_posted` · `message_edited` · `message_retracted` · `read` · `closed` · `transferred`.
     required String change,
     required InternalTicket ticket,
-    InternalMessage? message,
+    ChatMessage? message,
   }) = _InternalTicketChange;
 
   factory InternalTicketChange.fromJson(Map<String, dynamic> json) =>

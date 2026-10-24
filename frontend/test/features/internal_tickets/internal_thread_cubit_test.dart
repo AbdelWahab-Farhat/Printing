@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:dayaa/core/voice/voice_recorder.dart';
@@ -32,15 +33,15 @@ void main() {
   var tokens = 0;
 
   const me = 7;
-  const colleague = InternalPerson(id: 9, name: 'هدى');
-  const self = InternalPerson(id: me, name: 'سالم');
+  const colleague = ChatPerson(id: 9, name: 'هدى');
+  const self = ChatPerson(id: me, name: 'سالم');
 
   setUpAll(() {
-    registerFallbackValue(const OutgoingInternalMessage(clientToken: 'x'));
+    registerFallbackValue(const OutgoingChatMessage(clientToken: 'x'));
   });
 
-  InternalMessage message(int id, {InternalPerson author = self, String body = 'نص'}) =>
-      InternalMessage(
+  ChatMessage message(int id, {ChatPerson author = self, String body = 'نص'}) =>
+      ChatMessage(
         id: id,
         author: author,
         isMine: author.id == me,
@@ -49,7 +50,7 @@ void main() {
         canDelete: author.id == me,
       );
 
-  InternalTicket ticketWith(List<InternalMessage> messages, {bool isParty = true}) =>
+  InternalTicket ticketWith(List<ChatMessage> messages, {bool isParty = true}) =>
       InternalTicket(
         id: 3,
         code: 'T3',
@@ -161,7 +162,7 @@ void main() {
       // Assert
       expect(sent, isTrue);
       final outgoing =
-          verify(() => repository.send(3, captureAny())).captured.single as OutgoingInternalMessage;
+          verify(() => repository.send(3, captureAny())).captured.single as OutgoingChatMessage;
       expect(outgoing.body, 'وصلت');
       expect(outgoing.replyToMessageId, 1);
       expect(outgoing.clientToken, 'token-1');
@@ -227,7 +228,7 @@ void main() {
     expect(pending.durationSeconds, 4);
     final sent = verify(
       () => repository.send(3, captureAny()),
-    ).captured.cast<OutgoingInternalMessage>();
+    ).captured.cast<OutgoingChatMessage>();
     expect(sent.map((m) => m.clientToken).toSet(), {'token-1'});
     expect(sent.first.waveform, hasLength(48));
     expect(File(note.path).existsSync(), isTrue);
@@ -239,12 +240,12 @@ void main() {
     final note = recording();
     final answered = ticketWith([
       message(1),
-      const InternalMessage(
+      const ChatMessage(
         id: 2,
         author: self,
         isMine: true,
         clientToken: 'token-1',
-        attachments: [InternalAttachment(id: 44, kind: InternalAttachmentKind.voice)],
+        attachments: [ChatAttachment(id: 44, kind: ChatAttachmentKind.voice)],
       ),
     ]);
     when(() => repository.send(any(), any())).thenAnswer((_) async => Right(answered));

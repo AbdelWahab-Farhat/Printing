@@ -1,6 +1,7 @@
+import 'package:dayaa/core/chat/chat_message.dart';
+import 'package:dayaa/core/chat/chat_thread_timeline.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
-import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_chat_timeline.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// النماذج كما يرسلها الخادم (INTERNAL-TICKETS-DESIGN §٥)، والسؤال كما يُرسل، والمحادثةُ مرصوفة.
@@ -125,7 +126,7 @@ void main() {
     // Assert
     expect(ticket.status, InternalTicketStatus.unknown);
     expect(ticket.priority, InternalTicketPriority.unknown);
-    expect(ticket.messages.last.attachments.single.kind, InternalAttachmentKind.unknown);
+    expect(ticket.messages.last.attachments.single.kind, ChatAttachmentKind.unknown);
   });
 
   test('a broadcast ticket — no reader — still knows who read up to where', () {
@@ -146,7 +147,7 @@ void main() {
 
   test('«my» message is mine by the flag or, in a broadcast, by its author', () {
     // Arrange
-    const echo = InternalMessage(id: 1, author: InternalPerson(id: 7, name: 'سالم'));
+    const echo = ChatMessage(id: 1, author: ChatPerson(id: 7, name: 'سالم'));
 
     // Assert
     expect(echo.isFrom(7), isTrue);
@@ -189,9 +190,9 @@ void main() {
   });
 
   group('the conversation laid out', () {
-    InternalMessage said(int id, int author, DateTime at) => InternalMessage(
+    ChatMessage said(int id, int author, DateTime at) => ChatMessage(
       id: id,
-      author: InternalPerson(id: author, name: 'م$author'),
+      author: ChatPerson(id: author, name: 'م$author'),
       sentAt: at,
     );
 
@@ -205,26 +206,26 @@ void main() {
       ];
 
       // Act
-      final items = internalChatTimeline(messages: messages);
+      final items = chatThreadTimeline(messages: messages);
 
       // Assert
-      final entries = items.whereType<InternalChatEntry>().toList();
-      expect(items.first, isA<InternalChatDay>());
+      final entries = items.whereType<ChatThreadEntry>().toList();
+      expect(items.first, isA<ChatThreadDay>());
       expect(
         [for (final e in entries) (e.startsRun, e.endsRun)],
         [(true, false), (false, true), (true, true)],
       );
     });
 
-    test('a closed ticket ends with «أُغلقت التذكرة»', () {
+    test('a closed ticket ends with its closing line', () {
       // Act
-      final items = internalChatTimeline(
+      final items = chatThreadTimeline(
         messages: [said(1, 7, DateTime(2026, 10, 21, 9))],
-        isClosed: true,
+        closedNotice: 'أُغلقت التذكرة',
       );
 
       // Assert
-      expect((items.last as InternalChatNotice).label, 'أُغلقت التذكرة');
+      expect((items.last as ChatThreadNotice).label, 'أُغلقت التذكرة');
     });
   });
 }

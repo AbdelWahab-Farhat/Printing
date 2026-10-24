@@ -1,29 +1,10 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
-
-/// رسالةٌ في طريقها: كلامٌ، أو صورة، أو صوتٌ بمدّته وموجته، وربما اقتباس.
-class OutgoingInternalMessage {
-  const OutgoingInternalMessage({
-    required this.clientToken,
-    this.body,
-    this.file,
-    this.durationSeconds,
-    this.waveform,
-    this.replyToMessageId,
-  });
-
-  /// يولّده التطبيق قبل الإرسال ويعيده كما هو في الإعادة — فالرمزُ نفسه رسالةٌ واحدة على الخادم.
-  final String clientToken;
-  final String? body;
-  final PickedFile? file;
-  final int? durationSeconds;
-  final List<int>? waveform;
-  final int? replyToMessageId;
-}
 
 /// ما يفعله الموظف بالتذاكر بينه وبين زملائه — INTERNAL-TICKETS-DESIGN §٥.
 abstract interface class InternalTicketsRepository {
@@ -50,13 +31,13 @@ abstract interface class InternalTicketsRepository {
   Future<Either<Failure, InternalTicket>> ticket(int id);
 
   /// يرسل، ويُرجع التذكرةَ بالرسالة فيها.
-  Future<Either<Failure, InternalTicket>> send(int id, OutgoingInternalMessage message);
+  Future<Either<Failure, InternalTicket>> send(int id, OutgoingChatMessage message);
 
   /// يعدّل نصَّ رسالتي — خلال عشرين دقيقة.
-  Future<Either<Failure, InternalMessage>> edit(int id, int messageId, String body);
+  Future<Either<Failure, ChatMessage>> edit(int id, int messageId, String body);
 
   /// يسحب رسالتي: تبقى مكانها وتقول «تم حذف هذه الرسالة».
-  Future<Either<Failure, InternalMessage>> retract(int id, int messageId);
+  Future<Either<Failure, ChatMessage>> retract(int id, int messageId);
 
   /// لشاشةٍ مفتوحة وصلتها رسالةٌ حيّة: حتى [upToMessageId].
   Future<Either<Failure, Unit>> markRead(int id, {int? upToMessageId});

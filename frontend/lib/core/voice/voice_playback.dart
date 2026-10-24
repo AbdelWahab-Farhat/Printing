@@ -127,7 +127,7 @@ class VoicePlayback {
     // على الويب لا قرص يُخزَّن فيه: تُسمع من رابطها مباشرةً، والمتصفّح يخزّنها بنفسه.
     if (kIsWeb) return url;
 
-    final cacheKey = _cacheKeyOf(key);
+    final cacheKey = cacheKeyFor(key);
 
     if (cacheKey != null) {
       final hit = await _cache.cached(cacheKey);
@@ -248,17 +248,28 @@ class VoicePlayback {
     return _player = player;
   }
 
-  /// مفتاحُ الذاكرة من مفتاح التشغيل: `voice-<رقم المرفق>`، وما سواه تسجيلٌ لم يصل الخادم بعد.
-  static String? _cacheKeyOf(String key) {
-    final id = int.tryParse(key.replaceFirst(playbackKeyPrefix, ''));
+  /// مفتاحُ الملف على الهاتف من مفتاح التشغيل: `voice-<رقم المرفق>` أو `voice-<المحادثة>-<رقمه>`،
+  /// وما سواهما تسجيلٌ لم يصل الخادم بعد.
+  static String? cacheKeyFor(String key) {
+    if (!key.startsWith(playbackKeyPrefix)) return null;
 
-    return key.startsWith(playbackKeyPrefix) && id != null ? VoiceNoteCache.keyFor(id) : null;
+    final rest = key.substring(playbackKeyPrefix.length);
+    final dash = rest.lastIndexOf('-');
+    final id = int.tryParse(dash == -1 ? rest : rest.substring(dash + 1));
+
+    return id == null
+        ? null
+        : VoiceNoteCache.keyFor(id, scope: dash == -1 ? '' : rest.substring(0, dash));
   }
 
   static const String playbackKeyPrefix = 'voice-';
 
   /// مفتاحُ تشغيل رسالةٍ وصلت الخادم.
-  static String keyForAttachment(int attachmentId) => '$playbackKeyPrefix$attachmentId';
+  ///
+  /// [scope] اسمُ المحادثة حين لا تكون تذكرةً داخلية — `design` لتذكرة التصميم: الرقمُ من جدولٍ آخر،
+  /// ومرفقان برقمٍ واحد صوتان مختلفان. والتذاكرُ الداخلية بلا اسم، فتبقى مفاتيحها كما كانت.
+  static String keyForAttachment(int attachmentId, {String scope = ''}) =>
+      '$playbackKeyPrefix${scope.isEmpty ? '' : '$scope-'}$attachmentId';
 
   Future<void> dispose() async {
     await _positionSub?.cancel();

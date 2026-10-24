@@ -22,7 +22,6 @@ class CommentRepositoryImpl implements CommentRepository {
   static String _base(CommentSubject subject) => switch (subject.kind) {
     CommentSubjectKind.customer => CustomerEndpoints.comments(subject.id),
     CommentSubjectKind.vendor => VendorEndpoints.comments(subject.id),
-    CommentSubjectKind.designTicket => DesignTicketEndpoints.comments(subject.id),
   };
 
   static String _one(CommentSubject subject, int commentId) => '${_base(subject)}/$commentId';
@@ -58,20 +57,6 @@ class CommentRepositoryImpl implements CommentRepository {
         data: <String, dynamic>{'body': body.trim()},
       ),
       parse: (data) => Comment.fromJson(data! as Map<String, dynamic>),
-    );
-  }
-
-  @override
-  Future<Either<Failure, int>> markThreadRead(CommentSubject subject) async {
-    // العميل والمورّد لا مسار لهما ولا شارة، فلا شيء يُطفأ. صفرٌ بلا رحلة، لا فشلٌ: الشاشة
-    // نفسها تخدم الثلاثة، وخطأٌ هنا كان سيظهر للمستخدم كعطبٍ في فتح محادثةٍ فُتحت.
-    if (subject.kind != CommentSubjectKind.designTicket) return const Right(0);
-
-    return safeRequest<int>(
-      () => _dio.post(DesignTicketEndpoints.commentsRead(subject.id)),
-      // `unread_total` لا `unread_comments_count`: الثانية صفرٌ بالتعريف بعد هذا النداء، وما
-      // يحتاجه المتّصل هو الرقم الذي يضعه فوق الجرس.
-      parse: (data) => ((data! as Map<String, dynamic>)['unread_total'] as num?)?.toInt() ?? 0,
     );
   }
 

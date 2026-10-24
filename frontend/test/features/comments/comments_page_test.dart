@@ -14,10 +14,6 @@ import 'package:dayaa/features/comments/usecases/add_comment.dart';
 import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
-import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
-import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
-import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
-import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -39,8 +35,6 @@ import 'package:mocktail/mocktail.dart';
 ///
 /// Arrange - Act - Assert في كل اختبار.
 class _MockCommentRepository extends Mock implements CommentRepository {}
-
-class _MockNotificationsRepository extends Mock implements NotificationsRepository {}
 
 void main() {
   /// السجلّ الذي تتعلّق به كلّ ملاحظةٍ في هذا الملف — عميلٌ واحد، يُسمّى مرّة.
@@ -81,18 +75,9 @@ void main() {
 
     when(() => repository.comments(subject))
         .thenAnswer((_) async => const Right(CommentThread(comments: [theirs, mine])));
-    // فتحُ المحادثة يعلّمها مقروءة ويطفئ الجرس. يفشل هنا بصمت — كما تبتلعه الشاشة — فلا يحتاج
-    // الاختبارُ شارةَ الجرس، وهذا الملف عن المحادثة لا عن الشارة.
-    when(() => repository.markThreadRead(any()))
-        .thenAnswer((_) async => const Left(Failure.network(message: 'لا اتصال')));
 
     sl
       ..registerSingleton<Session>(session)
-      ..registerLazySingleton<MarkThreadRead>(() => MarkThreadRead(repository))
-      // الشاشة تقرأ الشارةَ لتضع فيها الرقم إن نجح التعليم — ولا تُطلب هنا إلا قراءتها.
-      ..registerLazySingleton<UnreadBadgeCubit>(
-        () => UnreadBadgeCubit(GetUnreadCount(_MockNotificationsRepository())),
-      )
       ..registerFactoryParam<CommentsCubit, CommentSubject, void>(
         (subject, _) => CommentsCubit(
           subject: subject,
@@ -386,38 +371,14 @@ void main() {
     verifyNever(() => repository.comments(subject));
   });
 
-  testWidgets('and a design ticket, where the notes are the point of the record', (tester) async {
-    // Arrange — الموضوع الثالث، وهو الوحيد الذي محادثتُه ليست هامشاً: «الرد داخل التذكرة» هو
-    // معظمُ ما يجعل التذكرة تذكرةً لا نموذجاً.
-    const ticket = CommentSubject.designTicket(7);
-    const fromTheDesigner = Comment(
-      id: 11,
-      commentableType: 'design_ticket',
-      commentableId: 7,
-      body: 'وصلني، أبدأ اليوم',
-      author: CommentAuthor(id: 5, name: 'سالم'),
-    );
-
-    when(() => repository.comments(ticket))
-        .thenAnswer((_) async => const Right(CommentThread(comments: [fromTheDesigner])));
-
-    // Act
-    await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
-    await tester.pumpAndSettle();
-
-    // Assert — شاشةٌ واحدة، وثلاثةُ أنواعٍ من السجلات، ولم يُطلب أيٌّ من الآخرَين.
-    expect(find.text('وصلني، أبدأ اليوم'), findsOneWidget);
-    expect(find.text('تصميم كيس شحن — أسود'), findsOneWidget);
-    verifyNever(() => repository.comments(subject));
-  });
-
   testWidgets('a closed conversation has no box, and says why', (tester) async {
-    // Arrange — تذكرةٌ اعتُمد تصميمها. لا يُكتب عليها مزيد، لا من المصمّم ولا من الموظف الذي
-    // طلب، فالصندوق يختفي ولا يُعطَّل: حقلٌ يُكتب فيه ولا يُرسل أسوأ من لا حقل.
-    const ticket = CommentSubject.designTicket(7);
+    // Arrange — الخادمُ يملك أن يُغلق خيطاً (`meta.can_comment`)، والشاشةُ تطيع: الصندوق يختفي ولا
+    // يُعطَّل، فحقلٌ يُكتب فيه ولا يُرسل أسوأ من لا حقل. لا سجلَّ يُغلق خيطه اليوم — كانت تذكرةُ
+    // التصميم حتى صار لها محادثتُها — والعقدُ باقٍ على الخادم.
+    const ticket = CommentSubject.vendor(7);
     const settled = Comment(
       id: 11,
-      commentableType: 'design_ticket',
+      commentableType: 'vendor',
       commentableId: 7,
       body: 'اعتمدنا النسخة الثالثة',
       author: CommentAuthor(id: 1, name: 'عبدالوهاب'),
@@ -434,7 +395,7 @@ void main() {
     );
 
     // Act
-    await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
+    await tester.pumpWidget(host(about: ticket, ownerName: 'مصنع الصفا'));
     await tester.pumpAndSettle();
 
     // Assert — المحادثة ما تزال تُقرأ؛ والذي انتهى هو الكتابة وحدها.
@@ -445,9 +406,9 @@ void main() {
   });
 
   testWidgets('an empty closed conversation still says why it is closed', (tester) async {
-    // Arrange — الحالة التي جعلت هذه حقيقةً عن الخيط لا عن ملاحظة: تذكرةٌ اعتُمدت قبل أن يكتب
-    // أحدٌ كلمة لا صفَّ فيها يُعلَّق به السبب.
-    const ticket = CommentSubject.designTicket(7);
+    // Arrange — الحالة التي جعلت هذه حقيقةً عن الخيط لا عن ملاحظة: خيطٌ أُغلق قبل أن يكتب أحدٌ
+    // كلمة لا صفَّ فيه يُعلَّق به السبب.
+    const ticket = CommentSubject.vendor(7);
     when(() => repository.comments(ticket)).thenAnswer(
       (_) async => const Right(
         CommentThread(
@@ -459,7 +420,7 @@ void main() {
     );
 
     // Act
-    await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
+    await tester.pumpWidget(host(about: ticket, ownerName: 'مصنع الصفا'));
     await tester.pumpAndSettle();
 
     // Assert
@@ -514,19 +475,4 @@ void main() {
     expect(tester.widget<TextField>(box).textDirection, TextDirection.rtl);
   });
 
-  testWidgets('a ticket asks for a reply, not for a note about a customer', (tester) async {
-    // Arrange — الشاشة نفسها خدمت ثلاثة سجلات وصندوقُها يسأل عن «هذا العميل» في الثلاثة. والذي
-    // يُكتب يختلف، والصندوق هو المكان الذي يقرأ فيه صاحبه ذلك.
-    const ticket = CommentSubject.designTicket(7);
-    when(() => repository.comments(ticket))
-        .thenAnswer((_) async => const Right(CommentThread(comments: [])));
-
-    // Act
-    await tester.pumpWidget(host(about: ticket, ownerName: 'تصميم كيس شحن — أسود'));
-    await tester.pumpAndSettle();
-
-    // Assert
-    expect(find.text('اكتب رسالة في هذه التذكرة…'), findsOneWidget);
-    expect(find.textContaining('هذا العميل'), findsNothing);
-  });
 }

@@ -31,8 +31,10 @@ class VoiceNoteCache {
 
   final Map<String, Future<File>> _running = {};
 
-  /// اسمُ الملف: رقمُ المرفق، بامتدادٍ يعرف المشغّلُ الصيغةَ منه.
-  static String keyFor(int attachmentId) => 'a$attachmentId.m4a';
+  /// اسمُ الملف: رقمُ المرفق، بامتدادٍ يعرف المشغّلُ الصيغةَ منه — وقبله اسمُ المحادثة حين لا
+  /// تكون تذكرةً داخلية (`VoicePlayback.keyForAttachment`).
+  static String keyFor(int attachmentId, {String scope = ''}) =>
+      '${scope.isEmpty ? '' : '$scope-'}a$attachmentId.m4a';
 
   /// الملفُّ إن كان على الهاتف — بلا شبكة.
   Future<File?> cached(String key) async {

@@ -75,7 +75,6 @@ import 'package:dayaa/features/comments/usecases/add_comment.dart';
 import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
-import 'package:dayaa/features/comments/usecases/mark_thread_read.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
@@ -96,9 +95,13 @@ import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
 import 'package:dayaa/features/customers/usecases/update_customer.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_thread_cubit.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tickets_cubit.dart';
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository.dart';
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository_impl.dart';
+import 'package:dayaa/features/design_tickets/repositories/design_ticket_thread_repository.dart';
+import 'package:dayaa/features/design_tickets/repositories/design_ticket_thread_repository_impl.dart';
+import 'package:dayaa/features/design_tickets/usecases/design_ticket_thread_usecases.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
 import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
@@ -1482,6 +1485,44 @@ abstract final class Injector {
           submitVersion: sl<SubmitDesignVersion>(),
           reviewVersion: sl<ReviewDesignVersion>(),
         ),
+      )
+      // ── «الرد داخل التذكرة»: على محرّك التذاكر الداخلية — DESIGN-TICKET-CHAT ──────────
+      ..registerLazySingleton<DesignTicketThreadRepository>(
+        () => DesignTicketThreadRepositoryImpl(sl<Dio>(), sl<RealtimeClient>()),
+      )
+      ..registerLazySingleton<GetDesignTicketThread>(
+        () => GetDesignTicketThread(sl<DesignTicketThreadRepository>()),
+      )
+      ..registerLazySingleton<SendDesignTicketMessage>(
+        () => SendDesignTicketMessage(sl<DesignTicketThreadRepository>()),
+      )
+      ..registerLazySingleton<EditDesignTicketMessage>(
+        () => EditDesignTicketMessage(sl<DesignTicketThreadRepository>()),
+      )
+      ..registerLazySingleton<RetractDesignTicketMessage>(
+        () => RetractDesignTicketMessage(sl<DesignTicketThreadRepository>()),
+      )
+      ..registerLazySingleton<MarkDesignTicketThreadRead>(
+        () => MarkDesignTicketThreadRead(sl<DesignTicketThreadRepository>()),
+      )
+      ..registerLazySingleton<WatchDesignTicketThread>(
+        () => WatchDesignTicketThread(sl<DesignTicketThreadRepository>()),
+      )
+      // A factory taking the ticket id, for the reason the detail cubit is one. The bell's new
+      // count is handed to the shared badge, as the notes screen used to do.
+      ..registerFactoryParam<DesignTicketThreadCubit, int, void>(
+        (ticketId, _) => DesignTicketThreadCubit(
+          ticketId: ticketId,
+          me: sl<Session>().user?.id,
+          get: sl<GetDesignTicketThread>(),
+          send: sl<SendDesignTicketMessage>(),
+          edit: sl<EditDesignTicketMessage>(),
+          retract: sl<RetractDesignTicketMessage>(),
+          markRead: sl<MarkDesignTicketThreadRead>(),
+          watch: sl<WatchDesignTicketThread>(),
+          voiceCache: sl<VoiceNoteCache>(),
+          onBellCount: sl<UnreadBadgeCubit>().setCount,
+        ),
       );
   }
 
@@ -2258,7 +2299,6 @@ abstract final class Injector {
       ..registerLazySingleton<AddComment>(() => AddComment(sl<CommentRepository>()))
       ..registerLazySingleton<EditComment>(() => EditComment(sl<CommentRepository>()))
       ..registerLazySingleton<DeleteComment>(() => DeleteComment(sl<CommentRepository>()))
-      ..registerLazySingleton<MarkThreadRead>(() => MarkThreadRead(sl<CommentRepository>()))
       // Parameterised on the subject rather than an id: the notes screen is about one record,
       // and *which kind* of record is half of what identifies it.
       ..registerFactoryParam<CommentsCubit, CommentSubject, void>(

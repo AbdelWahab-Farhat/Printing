@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
@@ -106,7 +107,7 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
   }
 
   @override
-  Future<Either<Failure, InternalTicket>> send(int id, OutgoingInternalMessage message) {
+  Future<Either<Failure, InternalTicket>> send(int id, OutgoingChatMessage message) {
     final text = message.body?.trim();
     final fields = <String, dynamic>{
       'client_token': message.clientToken,
@@ -132,7 +133,7 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
   }
 
   @override
-  Future<Either<Failure, InternalMessage>> edit(int id, int messageId, String body) {
+  Future<Either<Failure, ChatMessage>> edit(int id, int messageId, String body) {
     return safeRequest(
       () => _dio.patch<Map<String, dynamic>>(
         InternalTicketEndpoints.message(id, messageId),
@@ -143,7 +144,7 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
   }
 
   @override
-  Future<Either<Failure, InternalMessage>> retract(int id, int messageId) {
+  Future<Either<Failure, ChatMessage>> retract(int id, int messageId) {
     return safeRequest(
       () => _dio.delete<Map<String, dynamic>>(InternalTicketEndpoints.message(id, messageId)),
       parse: _message,
@@ -205,6 +206,6 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
 
   static InternalTicket _one(dynamic data) => InternalTicket.fromJson(data as Map<String, dynamic>);
 
-  static InternalMessage _message(dynamic data) =>
-      InternalMessage.fromJson(data as Map<String, dynamic>);
+  static ChatMessage _message(dynamic data) =>
+      ChatMessage.fromJson(data as Map<String, dynamic>);
 }

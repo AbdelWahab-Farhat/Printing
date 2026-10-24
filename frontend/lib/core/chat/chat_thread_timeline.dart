@@ -1,25 +1,25 @@
-import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:flutter/foundation.dart';
 
-/// سطرٌ واحد في المحادثة الداخلية كما تُرسم.
-sealed class InternalChatItem {
-  const InternalChatItem();
+/// سطرٌ واحد في محادثة الموظفين كما تُرسم — تذكرةٌ داخلية أو تذكرةُ تصميم.
+sealed class ChatThreadItem {
+  const ChatThreadItem();
 }
 
 /// «اليوم» · «أمس» · «14 أغسطس» — مرّةً فوق رسائل يومه.
 @immutable
-final class InternalChatDay extends InternalChatItem {
-  const InternalChatDay(this.day);
+final class ChatThreadDay extends ChatThreadItem {
+  const ChatThreadDay(this.day);
 
   final DateTime day;
 }
 
 /// رسالةٌ في مكانها من سلسلتها.
 @immutable
-final class InternalChatEntry extends InternalChatItem {
-  const InternalChatEntry(this.message, {required this.startsRun, required this.endsRun});
+final class ChatThreadEntry extends ChatThreadItem {
+  const ChatThreadEntry(this.message, {required this.startsRun, required this.endsRun});
 
-  final InternalMessage message;
+  final ChatMessage message;
 
   /// أوّلُ سلسلة: مسافةٌ أوسع فوقها، واسمُ صاحبها عليها.
   final bool startsRun;
@@ -30,8 +30,8 @@ final class InternalChatEntry extends InternalChatItem {
 
 /// سطرُ خدمةٍ في وسط المحادثة، كـ«أُغلقت التذكرة».
 @immutable
-final class InternalChatNotice extends InternalChatItem {
-  const InternalChatNotice(this.label);
+final class ChatThreadNotice extends ChatThreadItem {
+  const ChatThreadNotice(this.label);
 
   final String label;
 }
@@ -41,9 +41,11 @@ const Duration _runGap = Duration(minutes: 10);
 
 /// المحادثةُ مرصوفةً للرسم، الأقدم أولاً — بقواعد محادثة الدعم (`chatTimeline`)، **والمتكلّمُ هنا
 /// شخصٌ بعينه في الجهتين**: زميلان يتناوبان، وكلٌّ باسمه.
-List<InternalChatItem> internalChatTimeline({
-  required List<InternalMessage> messages,
-  bool isClosed = false,
+///
+/// [closedNotice] سطرُ الخدمة في آخرها حين انتهت — «أُغلقت التذكرة»، أو «اعتُمد التصميم».
+List<ChatThreadItem> chatThreadTimeline({
+  required List<ChatMessage> messages,
+  String? closedNotice,
 }) {
   final at = [for (final message in messages) (message.sentAt ?? DateTime.now()).toLocal()];
 
@@ -52,14 +54,14 @@ List<InternalChatItem> internalChatTimeline({
       _dayOf(at[a]) == _dayOf(at[b]) &&
       at[b].difference(at[a]).abs() < _runGap;
 
-  final items = <InternalChatItem>[];
+  final items = <ChatThreadItem>[];
 
   for (var index = 0; index < messages.length; index++) {
     final day = _dayOf(at[index]);
-    if (index == 0 || day != _dayOf(at[index - 1])) items.add(InternalChatDay(day));
+    if (index == 0 || day != _dayOf(at[index - 1])) items.add(ChatThreadDay(day));
 
     items.add(
-      InternalChatEntry(
+      ChatThreadEntry(
         messages[index],
         startsRun: index == 0 || !sameRun(index - 1, index),
         endsRun: index == messages.length - 1 || !sameRun(index, index + 1),
@@ -67,7 +69,7 @@ List<InternalChatItem> internalChatTimeline({
     );
   }
 
-  if (isClosed) items.add(const InternalChatNotice('أُغلقت التذكرة'));
+  if (closedNotice != null) items.add(ChatThreadNotice(closedNotice));
 
   return items;
 }

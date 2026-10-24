@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -54,7 +55,7 @@ final _tickets = [
     title: 'الأكياس المطبوعة للمتجر',
     status: InternalTicketStatus.inProgress,
     statusLabel: 'قيد المعالجة',
-    counterpart: const InternalPerson(id: 9, name: 'المدير'),
+    counterpart: const ChatPerson(id: 9, name: 'المدير'),
     awaitingMyReply: true,
     unreadCount: 2,
     order: const InternalOrderRef(id: 77, code: '1077'),
@@ -73,7 +74,7 @@ final _tickets = [
     title: 'فاتورة المطبعة',
     status: InternalTicketStatus.inProgress,
     statusLabel: 'قيد المعالجة',
-    counterpart: const InternalPerson(id: 10, name: 'هدى'),
+    counterpart: const ChatPerson(id: 10, name: 'هدى'),
     awaitingMyReply: true,
     lastMessage: InternalLastMessage(
       id: 40,
