@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DesignTicket\Enums;
 
 use App\Domain\DesignTicket\Actions\ReviewDesignVersion;
+use App\Domain\DesignTicket\Actions\WithdrawDesignVersion;
 use App\Domain\Order\Enums\OrderDesignStatus;
 
 /**
@@ -33,16 +34,24 @@ enum DesignSubmissionStatus: string
     /** Turned back, with `review_note` saying what has to change. */
     case ChangesRequested = 'changes_requested';
 
+    /**
+     * «سحبها المصمّم» — رفع ملفاً خطأً فسحبه قبل أن يحكم عليه أحد ({@see WithdrawDesignVersion}).
+     *
+     * **ليس حكماً**: لا مراجِع ولا ملاحظة، والنسخةُ تبقى في السجلّ برقمها كما تبقى كلُّ نسخة.
+     */
+    case Withdrawn = 'withdrawn';
+
     public function label(): string
     {
         return match ($this) {
             self::Proposed => 'بانتظار المراجعة',
             self::Approved => 'معتمد',
             self::ChangesRequested => 'تعديل مطلوب',
+            self::Withdrawn => 'سحبها المصمّم',
         };
     }
 
-    /** Decided one way or the other — no longer waiting on the reviewer. */
+    /** Decided one way or the other — or withdrawn — and no longer waiting on the reviewer. */
     public function isReviewed(): bool
     {
         return $this !== self::Proposed;

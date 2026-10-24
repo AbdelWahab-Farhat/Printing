@@ -247,6 +247,14 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, DesignTicketFile>> withdrawVersion(int ticketId, int versionId) {
+    return safeRequest<DesignTicketFile>(
+      () => _dio.post(DesignTicketEndpoints.withdrawal(ticketId, versionId)),
+      parse: (data) => DesignTicketFile.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
   /// The two uploads, which differ only in where they post.
   ///
   /// `fromFile` streams from disk. `fromBytes` would hold a 25 MB design in memory for the length

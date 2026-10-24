@@ -32,6 +32,10 @@ enum DesignSubmissionStatus {
   approved,
   @JsonValue('changes_requested')
   changesRequested,
+
+  /// «سحبها المصمّم» — رفع ملفاً خطأً فسحبه قبل الحكم. تبقى في السجلّ برقمها.
+  @JsonValue('withdrawn')
+  withdrawn,
   unknown,
 }
 
@@ -117,6 +121,8 @@ abstract class DesignTicketFile with _$DesignTicketFile implements DesignFile {
   bool get needsChanges => status == DesignSubmissionStatus.changesRequested;
 
   bool get isApproved => status == DesignSubmissionStatus.approved;
+
+  bool get isWithdrawn => status == DesignSubmissionStatus.withdrawn;
 
   /// من [fileKind] لا من [kind]: ذاك «مرفق» أم «نسخة»، وهذا ما في الملف نفسه.
   @override

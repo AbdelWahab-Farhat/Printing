@@ -203,6 +203,22 @@ class _DesignTicketDetailView extends StatelessWidget {
     );
   }
 
+  /// «سحب النسخة» — المصمّم رفع ملفاً خطأً. **يُسأل أولاً**: النسخةُ تخرج من طابور المراجعة.
+  Future<void> _withdraw(BuildContext context, DesignTicketFile version) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final confirmed = await showDestructiveDialog(
+      context: context,
+      title: 'سحب النسخة',
+      description: 'تبقى في السجلّ بعلامة «سحبها المصمّم»، وترفع الملف الصحيح بعدها.',
+      confirmLabel: 'سحب',
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await _run(context, () => cubit.withdraw(version.id), 'سُحبت النسخة — ارفع الملف الصحيح');
+  }
+
   /// يفتح «الرد داخل التذكرة»، ثم يُحدّث التذكرة عند العودة.
   ///
   /// **التحديث هو نصفُ الشارة.** الشاشةُ التي تفتحها تُعلّم المحادثة مقروءةً على الخادم، فلو
@@ -422,6 +438,11 @@ class _DesignTicketDetailView extends StatelessWidget {
                     final pending = ticket.pendingVersion;
 
                     if (pending != null) _review(context, pending);
+                  },
+                  onWithdraw: () {
+                    final pending = ticket.pendingVersion;
+
+                    if (pending != null) _withdraw(context, pending);
                   },
                 ),
               ],
@@ -709,6 +730,7 @@ class _Actions extends StatelessWidget {
     required this.onSubmit,
     required this.onAttach,
     required this.onReview,
+    required this.onWithdraw,
   });
 
   final DesignTicket ticket;
@@ -718,12 +740,17 @@ class _Actions extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onAttach;
   final VoidCallback onReview;
+  final VoidCallback onWithdraw;
 
   @override
   Widget build(BuildContext context) {
     // Nothing the server says this reader may do — so nothing is drawn. A closed ticket lands
     // here too, which is what «بعد الإغلاق: قراءة فقط» looks like.
-    if (!ticket.canAccept && !ticket.canSubmit && !ticket.canReview && !ticket.canManage) {
+    if (!ticket.canAccept &&
+        !ticket.canSubmit &&
+        !ticket.canReview &&
+        !ticket.canWithdraw &&
+        !ticket.canManage) {
       return const SizedBox.shrink();
     }
 
@@ -742,6 +769,11 @@ class _Actions extends StatelessWidget {
         if (ticket.canReview) ...[
           SizedBox(height: 10.h),
           AppButton(label: 'مراجعة التصميم', isLoading: isWorking, onPressed: onReview),
+        ],
+        // للمصمّم الذي رفع ملفاً خطأً: يسحبه بنفسه، فيعود زرُّ الرفع.
+        if (ticket.canWithdraw) ...[
+          SizedBox(height: 10.h),
+          AppButton.tonal(label: 'سحب النسخة', isLoading: isWorking, onPressed: onWithdraw),
         ],
         if (ticket.canAssign) ...[
           SizedBox(height: 10.h),

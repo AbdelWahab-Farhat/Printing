@@ -152,4 +152,10 @@ abstract interface class DesignTicketRepository {
     required String verdict,
     String? note,
   });
+
+  /// «سحب النسخة» — المصمّم رفع ملفاً خطأً فيسحبه بنفسه، ما دام بانتظار المراجعة.
+  ///
+  /// تعود التذكرة إلى «قيد التصميم» (أو «تعديل مطلوب» إن كان طلبُ تعديلٍ قائماً)، والنسخةُ تبقى في
+  /// السجلّ بعلامة «سحبها المصمّم». **لمن رفعها وحده** — اقرأ `canWithdraw` على التذكرة.
+  Future<Either<Failure, DesignTicketFile>> withdrawVersion(int ticketId, int versionId);
 }

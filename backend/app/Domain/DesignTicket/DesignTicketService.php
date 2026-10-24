@@ -17,6 +17,7 @@ use App\Domain\DesignTicket\Actions\RetractDesignTicketMessage;
 use App\Domain\DesignTicket\Actions\ReviewDesignVersion;
 use App\Domain\DesignTicket\Actions\SubmitDesignVersion;
 use App\Domain\DesignTicket\Actions\UpdateDesignTicket;
+use App\Domain\DesignTicket\Actions\WithdrawDesignVersion;
 use App\Domain\DesignTicket\DTOs\DesignTicketData;
 use App\Domain\DesignTicket\DTOs\DesignTicketMessageData;
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
@@ -56,6 +57,7 @@ final class DesignTicketService
         private readonly DeleteDesignTicketAttachment $deleteAttachment,
         private readonly SubmitDesignVersion $submitVersion,
         private readonly ReviewDesignVersion $reviewVersion,
+        private readonly WithdrawDesignVersion $withdrawVersion,
         private readonly PostDesignTicketMessage $postMessage,
         private readonly EditDesignTicketMessage $editMessage,
         private readonly RetractDesignTicketMessage $retractMessage,
@@ -137,6 +139,11 @@ final class DesignTicketService
         ?User $actor = null,
     ): DesignTicketFile {
         return ($this->reviewVersion)($ticket, $version, $verdict, $note, $actor);
+    }
+
+    public function withdraw(DesignTicket $ticket, DesignTicketFile $version, User $designer): DesignTicketFile
+    {
+        return ($this->withdrawVersion)($ticket, $version, $designer);
     }
 
     // ─────────────────────────────── the conversation ───────────────────────────────

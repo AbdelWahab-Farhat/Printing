@@ -21,6 +21,11 @@ final class DesignVersionAlreadyReviewed extends DomainException
 {
     public static function make(int $version, DesignSubmissionStatus $status): self
     {
+        // المسحوبةُ لم يراجعها أحد — فلا يُقال إنها «تمت مراجعتها».
+        if ($status === DesignSubmissionStatus::Withdrawn) {
+            return new self("سحب المصمّم النسخة رقم {$version}، فلا تُراجَع");
+        }
+
         return new self("النسخة رقم {$version} تمت مراجعتها مسبقاً: {$status->label()}");
     }
 }

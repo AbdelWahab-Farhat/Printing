@@ -102,7 +102,9 @@ enum DesignTicketStatus: string
             // Straight to UnderReview on a submission. A designer who has taken the job does not
             // announce that they are about to start.
             self::InProgress => [self::UnderReview, self::Cancelled],
-            self::UnderReview => [self::ChangesRequested, self::Completed, self::Cancelled],
+            // InProgress (or ChangesRequested) too when the designer withdraws a wrong file —
+            // back to where the ticket stood before the upload. See WithdrawDesignVersion.
+            self::UnderReview => [self::InProgress, self::ChangesRequested, self::Completed, self::Cancelled],
             // Back to InProgress when the designer picks the revision up, or straight to
             // UnderReview when they simply upload the next version — which is the usual path.
             self::ChangesRequested => [self::InProgress, self::UnderReview, self::Cancelled],

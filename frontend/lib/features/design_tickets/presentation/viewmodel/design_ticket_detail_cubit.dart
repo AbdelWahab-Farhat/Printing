@@ -34,6 +34,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
     required RemoveDesignTicketAttachment removeAttachment,
     required SubmitDesignVersion submitVersion,
     required ReviewDesignVersion reviewVersion,
+    required WithdrawDesignVersion withdrawVersion,
   }) : _id = ticketId,
        _getTicket = getTicket,
        _accept = acceptTicket,
@@ -44,6 +45,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
        _removeAttachment = removeAttachment,
        _submit = submitVersion,
        _review = reviewVersion,
+       _withdraw = withdrawVersion,
        super(const DesignTicketDetailState.loading());
 
   final int _id;
@@ -56,6 +58,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   final RemoveDesignTicketAttachment _removeAttachment;
   final SubmitDesignVersion _submit;
   final ReviewDesignVersion _review;
+  final WithdrawDesignVersion _withdraw;
 
   Future<void> load() async {
     // What it already has is kept while the next read is in flight, so a pull-to-refresh does not
@@ -123,6 +126,9 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
     required DesignSubmissionStatus verdict,
     String? note,
   }) => _write(() => _review(_id, versionId, verdict: verdict, note: note));
+
+  /// «سحب النسخة» — الملفُّ المرفوع خطأ. والقراءةُ بعده تُظهر «رفع نسخة معدّلة» من جديد.
+  Future<Failure?> withdraw(int versionId) => _write(() => _withdraw(_id, versionId));
 
   /// One write, then one re-read.
   ///

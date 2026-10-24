@@ -108,6 +108,7 @@ _DesignTicket _$DesignTicketFromJson(
   canAccept: json['can_accept'] as bool? ?? false,
   canSubmit: json['can_submit'] as bool? ?? false,
   canReview: json['can_review'] as bool? ?? false,
+  canWithdraw: json['can_withdraw'] as bool? ?? false,
   canAssign: json['can_assign'] as bool? ?? false,
   canManage: json['can_manage'] as bool? ?? false,
   createdAt: json['created_at'] == null
@@ -155,6 +156,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'can_accept': instance.canAccept,
       'can_submit': instance.canSubmit,
       'can_review': instance.canReview,
+      'can_withdraw': instance.canWithdraw,
       'can_assign': instance.canAssign,
       'can_manage': instance.canManage,
       'created_at': instance.createdAt?.toIso8601String(),

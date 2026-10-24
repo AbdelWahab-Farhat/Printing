@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Resources;
 
+use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -166,6 +167,7 @@ class DesignTicketResource extends JsonResource
             'can_accept' => $this->readerCanAccept($reader),
             'can_submit' => $this->readerCanSubmit($reader),
             'can_review' => $this->readerCanReview($reader),
+            'can_withdraw' => $this->readerCanWithdraw($reader),
             'can_assign' => $this->status->isOpen()
                 && $reader?->can(PermissionName::AssignDesignTickets->value) === true,
             'can_manage' => $this->status->isOpen()
@@ -244,5 +246,23 @@ class DesignTicketResource extends JsonResource
 
         return $pending !== null
             && (int) $pending->uploaded_by_user_id !== (int) $reader->getKey();
+    }
+
+    /**
+     * «سحب النسخة» للمصمّم الذي رفع النسخة التي بانتظار المراجعة — وحده، وما دامت لم يُحكم عليها.
+     * **عكسُ {@see readerCanReview} تماماً**: مَن يراجع لا يسحب، ومَن رفع لا يراجع.
+     */
+    private function readerCanWithdraw(?User $reader): bool
+    {
+        if ($reader === null
+            || $this->status !== DesignTicketStatus::UnderReview
+            || ! $reader->can(PermissionName::SubmitDesignTickets->value)) {
+            return false;
+        }
+
+        $pending = $this->pendingVersion();
+
+        return $pending !== null
+            && (int) $pending->uploaded_by_user_id === (int) $reader->getKey();
     }
 }

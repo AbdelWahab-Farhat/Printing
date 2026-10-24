@@ -408,6 +408,34 @@ class DesignTicketController extends Controller
     }
 
     /**
+     * Withdraw a design
+     *
+     * «سحب النسخة»: المصمّم رفع ملفاً خطأً فيسحبه بنفسه، ما دام بانتظار المراجعة. تعود التذكرة إلى
+     * «قيد التصميم» — أو «تعديل مطلوب» إن كان طلبُ تعديلٍ قائماً — فيرفع الملفّ الصحيح نسخةً تالية.
+     * **يسحبها مَن رفعها وحده** (403 لغيره)، ونسخةٌ حُكم عليها لا تُسحب (422). **ولا تُحذف**: تبقى
+     * في السجلّ بحالة `withdrawn`.
+     */
+    public function withdrawVersion(Request $request, DesignTicket $ticket, DesignTicketFile $version): JsonResponse
+    {
+        $this->refuseUnlessVisibleTicket($request, $ticket);
+
+        // مرفقُ الطلب ليس نسخة، فلا يُسحب — سؤالٌ عن الرابط لا عن الجسم.
+        if ($version->kind !== DesignTicketFileKind::Submission) {
+            throw new NotFoundHttpException;
+        }
+
+        /** @var User $designer */
+        $designer = $request->user();
+
+        $withdrawn = $this->tickets->withdraw($ticket, $version, $designer);
+
+        return $this->success(
+            new DesignTicketFileResource($withdrawn->load('uploader')),
+            'سُحبت النسخة — ارفع الملف الصحيح',
+        );
+    }
+
+    /**
      * A ticket's history
      *
      * Everything that happened, from the request to the approval — who raised it and when, who

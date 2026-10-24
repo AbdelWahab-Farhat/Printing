@@ -133,6 +133,7 @@ void main() {
         removeAttachment: RemoveDesignTicketAttachment(repository),
         submitVersion: SubmitDesignVersion(repository),
         reviewVersion: ReviewDesignVersion(repository),
+        withdrawVersion: WithdrawDesignVersion(repository),
       ),
     );
   });

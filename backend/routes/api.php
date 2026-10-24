@@ -1207,6 +1207,14 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->name('design-tickets.versions.review');
 
+        // «سحب النسخة» — مَن رفع ملفاً خطأً يسحبه قبل الحكم. `submit` لأنه نصفُ الرفع لا المراجعة.
+        Route::post(
+            'design-tickets/{ticket}/versions/{version}/withdrawal',
+            [DesignTicketController::class, 'withdrawVersion'],
+        )->middleware('can:design_tickets.submit')
+            ->scopeBindings()
+            ->name('design-tickets.versions.withdrawal');
+
         // «الرد داخل التذكرة». The whole set sits behind `design_tickets.view`, writes included,
         // and that is the same decision a customer's notes carry: a note is a working tool, not a
         // privilege, and anyone who may read the ticket may leave the next person a sentence on

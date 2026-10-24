@@ -432,6 +432,10 @@ abstract final class DesignTicketEndpoints {
   static String review(int ticketId, int versionId) =>
       '/design-tickets/$ticketId/versions/$versionId/review';
 
+  /// «سحب النسخة»: مَن رفع ملفاً خطأً يسحبه قبل الحكم، فيرفع الصحيح نسخةً تالية.
+  static String withdrawal(int ticketId, int versionId) =>
+      '/design-tickets/$ticketId/versions/$versionId/withdrawal';
+
   /// «الرد داخل التذكرة» — **على محرّك التذاكر الداخلية**: نصٌّ، أو صورة، أو رسالة صوتية
   /// (DESIGN-TICKET-CHAT). `GET` المحادثةُ كاملة، وفتحُها يعلّمها مقروءة؛ و`POST` رسالة.
   static String messages(int ticketId) => '/design-tickets/$ticketId/messages';

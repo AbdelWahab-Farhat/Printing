@@ -174,6 +174,9 @@ abstract class DesignTicket with _$DesignTicket {
     @JsonKey(name: 'can_accept') @Default(false) bool canAccept,
     @JsonKey(name: 'can_submit') @Default(false) bool canSubmit,
     @JsonKey(name: 'can_review') @Default(false) bool canReview,
+
+    /// «سحب النسخة» — للمصمّم الذي رفع النسخة التي بانتظار المراجعة، ما دام لم يُحكم عليها.
+    @JsonKey(name: 'can_withdraw') @Default(false) bool canWithdraw,
     @JsonKey(name: 'can_assign') @Default(false) bool canAssign,
     @JsonKey(name: 'can_manage') @Default(false) bool canManage,
 

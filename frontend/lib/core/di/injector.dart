@@ -1465,6 +1465,9 @@ abstract final class Injector {
       ..registerLazySingleton<ReviewDesignVersion>(
         () => ReviewDesignVersion(sl<DesignTicketRepository>()),
       )
+      ..registerLazySingleton<WithdrawDesignVersion>(
+        () => WithdrawDesignVersion(sl<DesignTicketRepository>()),
+      )
       ..registerFactory<DesignTicketsCubit>(
         () => DesignTicketsCubit(
           getTickets: sl<GetDesignTickets>(),
@@ -1484,6 +1487,7 @@ abstract final class Injector {
           removeAttachment: sl<RemoveDesignTicketAttachment>(),
           submitVersion: sl<SubmitDesignVersion>(),
           reviewVersion: sl<ReviewDesignVersion>(),
+          withdrawVersion: sl<WithdrawDesignVersion>(),
         ),
       )
       // ── «الرد داخل التذكرة»: على محرّك التذاكر الداخلية — DESIGN-TICKET-CHAT ──────────

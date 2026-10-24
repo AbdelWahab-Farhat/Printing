@@ -99,6 +99,7 @@ const _$DesignSubmissionStatusEnumMap = {
   DesignSubmissionStatus.proposed: 'proposed',
   DesignSubmissionStatus.approved: 'approved',
   DesignSubmissionStatus.changesRequested: 'changes_requested',
+  DesignSubmissionStatus.withdrawn: 'withdrawn',
   DesignSubmissionStatus.unknown: 'unknown',
 };
 

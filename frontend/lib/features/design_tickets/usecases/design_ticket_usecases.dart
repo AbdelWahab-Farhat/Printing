@@ -236,3 +236,13 @@ class ReviewDesignVersion {
     );
   }
 }
+
+/// «سحب النسخة» — المصمّم يصلح ملفاً رفعه خطأً، بلا انتظار المراجِع.
+class WithdrawDesignVersion {
+  const WithdrawDesignVersion(this._repository);
+
+  final DesignTicketRepository _repository;
+
+  Future<Either<Failure, DesignTicketFile>> call(int ticketId, int versionId) =>
+      _repository.withdrawVersion(ticketId, versionId);
+}
