@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
@@ -65,6 +66,9 @@ abstract interface class DesignTicketRepository {
   /// Naming a designer needs `design_tickets.assign`. Without it the server **drops the field and
   /// creates the ticket anyway** rather than refusing the whole request, so a screen that offers
   /// the picker to somebody who may not use it loses nothing but the preference.
+  ///
+  /// [files] مرفقاتُ الطلب، تصل معه فيُبلَّغ المصمّم بتذكرةٍ كاملة: كلُّها أو لا شيء، وملفٌّ مرفوضٌ
+  /// يردّ الطلب كلَّه.
   Future<Either<Failure, DesignTicket>> create({
     required int customerId,
     required String title,
@@ -72,6 +76,7 @@ abstract interface class DesignTicketRepository {
     String? instructions,
     int? orderId,
     int? assignedDesignerId,
+    List<PickedFile> files = const [],
   });
 
   /// Correcting the words.

@@ -1,8 +1,11 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
@@ -18,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 class _RecordingRepository implements DesignTicketRepository {
   bool wasCalled = false;
   int? sentDesignerId;
+  List<PickedFile> sentFiles = const [];
 
   @override
   Future<Either<Failure, DesignTicket>> create({
@@ -27,15 +31,28 @@ class _RecordingRepository implements DesignTicketRepository {
     String? instructions,
     int? orderId,
     int? assignedDesignerId,
+    List<PickedFile> files = const [],
   }) async {
     wasCalled = true;
     sentDesignerId = assignedDesignerId;
+    sentFiles = files;
 
     return const Left(Failure.server(message: 'البيانات غير صحيحة'));
   }
 
   @override
   Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// يسلّم ما يُطلب منه دون منتقي النظام، الذي لا وجود له تحت `flutter_test`.
+class _FakePicker implements AttachmentPicker {
+  List<PickedFile> answer = const [];
+
+  @override
+  Future<List<PickedFile>> pick(
+    AttachmentSource source, {
+    List<String> extensions = AttachmentPicker.defaultExtensions,
+  }) async => answer;
 }
 
 /// «طلب تصميم» — and the one question it did not used to ask.
@@ -48,6 +65,7 @@ class _RecordingRepository implements DesignTicketRepository {
 /// Arrange - Act - Assert throughout.
 void main() {
   late _RecordingRepository repository;
+  late _FakePicker picker;
   late Session session;
 
   void signInWith(List<AppPermission> grants) => session.adopt(
@@ -61,8 +79,10 @@ void main() {
 
   setUp(() {
     repository = _RecordingRepository();
+    picker = _FakePicker();
     session = Session();
     sl.registerSingleton<Session>(session);
+    sl.registerSingleton<AttachmentPicker>(picker);
     sl.registerLazySingleton<CreateDesignTicket>(() => CreateDesignTicket(repository));
   });
 
@@ -152,5 +172,54 @@ void main() {
       find.textContaining('المرفقات تُضاف بعد إنشاء التذكرة'),
       findsNothing,
     );
+  });
+
+  // A PDF rather than a photo: a picked image is drawn from its path on the device, and there is
+  // no such file under `flutter_test`.
+  const menu = PickedFile(path: '/tmp/menu.pdf', name: 'menu.pdf', sizeBytes: 2048);
+
+  Future<void> pickMenu(WidgetTester tester) async {
+    picker.answer = const [menu];
+    await tester.tap(find.byIcon(AppIcons.attach));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مستندات'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a file picked on the form travels with the request', (tester) async {
+    // Arrange
+    signInWith([AppPermission.manageDesignTickets]);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'تصميم شعار');
+    await tester.enterText(find.byType(TextFormField).at(1), 'شعار في المنتصف');
+    await pickMenu(tester);
+
+    // Act
+    await tester.ensureVisible(find.text('إرسال الطلب'));
+    await tester.tap(find.text('إرسال الطلب'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('menu.pdf'), findsOneWidget);
+    expect(repository.sentFiles.map((file) => file.name), ['menu.pdf']);
+  });
+
+  testWidgets('a picked file can be taken off before sending', (tester) async {
+    // Arrange
+    signInWith([AppPermission.manageDesignTickets]);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await pickMenu(tester);
+
+    // Act
+    await tester.tap(find.byIcon(AppIcons.close));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('menu.pdf'), findsNothing);
+    expect(find.text('المرفقات (0 من 10)'), findsOneWidget);
   });
 }

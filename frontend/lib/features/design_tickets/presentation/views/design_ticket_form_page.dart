@@ -1,10 +1,17 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/local_files.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
@@ -30,8 +37,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **It opens on the pool, and that is a real answer rather than an empty one.** «لا أعرف من
 /// الفارغ الآن» is the ordinary case; left there, every designer is told and the first to accept
 /// takes it.
+///
+/// **المرفقاتُ تُختار هنا وتصل مع الطلب**، فيُبلَّغ المصمّم بتذكرةٍ فيها شعارُها. والصفُّ صفُّ
+/// «تذكرة داخلية جديدة» نفسه، ويقبل PDF كما تقبله شاشة التذكرة.
 class DesignTicketFormPage extends StatefulWidget {
   const DesignTicketFormPage({required this.customer, super.key});
+
+  /// كـ`media.design_tickets.max_files_on_create` على الخادم، وما زاد يُرفق من شاشة التذكرة.
+  static const int maxFiles = 10;
 
   /// Whose artwork this is. The form cannot be opened without one.
   final Customer customer;
@@ -51,6 +64,9 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   /// row says so in words rather than sitting blank.
   int? _designerId;
   String? _designerName;
+
+  /// بالترتيب الذي اختيرت به، وهو ترتيبها على التذكرة.
+  final List<PickedFile> _files = [];
 
   @override
   void dispose() {
@@ -74,6 +90,22 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
     });
   }
 
+  Future<void> _addFile() async {
+    final source = await showAttachmentSheet(context: context, title: 'إضافة مرفق');
+    if (source == null || !mounted) return;
+
+    final picked = await sl<AttachmentPicker>().pick(
+      source,
+      // كقائمة شاشة التذكرة، وهي `config('media.design_tickets.mimes')`.
+      extensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'],
+    );
+    if (picked.isEmpty || !mounted) return;
+
+    setState(() {
+      _files.addAll(picked.take(DesignTicketFormPage.maxFiles - _files.length));
+    });
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -84,6 +116,7 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
       title: _title.text,
       description: _description.text,
       assignedDesignerId: _designerId,
+      files: List<PickedFile>.of(_files),
     );
 
     if (!mounted) return;
@@ -143,6 +176,22 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
                 onTap: _pickDesigner,
               ),
             ],
+            SizedBox(height: 18.h),
+            Text(
+              'المرفقات (${_files.length} من ${DesignTicketFormPage.maxFiles})',
+              style: context.textTheme.labelLarge,
+            ),
+            SizedBox(height: 8.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                for (final file in _files)
+                  _PickedFileTile(file: file, onRemove: () => setState(() => _files.remove(file))),
+                if (_files.length < DesignTicketFormPage.maxFiles)
+                  _AddFileTile(onTap: () => unawaited(_addFile())),
+              ],
+            ),
             SizedBox(height: 24.h),
             AppButton(
               label: 'إرسال الطلب',
@@ -196,6 +245,100 @@ class _DesignerRow extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurface),
+        ),
+      ),
+    );
+  }
+}
+
+/// مرفقٌ اختير ولم يُرسل بعد: الصورةُ نفسها، أو PDF باسمه — وعليه ما يُزيله.
+class _PickedFileTile extends StatelessWidget {
+  const _PickedFileTile({required this.file, required this.onRemove});
+
+  final PickedFile file;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final isPdf = file.name.toLowerCase().endsWith('.pdf');
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12.r),
+          child: isPdf
+              ? Container(
+                  width: 76.w,
+                  height: 76.w,
+                  padding: EdgeInsets.all(6.w),
+                  color: scheme.surfaceContainerLow,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(AppIcons.pdf, color: scheme.onSurfaceVariant),
+                      SizedBox(height: 4.h),
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                )
+              : Image(
+                  image: LocalFiles.image(file.path),
+                  width: 76.w,
+                  height: 76.w,
+                  fit: BoxFit.cover,
+                ),
+        ),
+        PositionedDirectional(
+          top: -8.h,
+          end: -8.w,
+          child: Material(
+            color: scheme.surface,
+            shape: CircleBorder(side: BorderSide(color: scheme.outlineVariant)),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: Padding(
+                padding: EdgeInsets.all(4.w),
+                child: Icon(AppIcons.close, size: 16.sp, semanticLabel: 'إزالة المرفق'),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddFileTile extends StatelessWidget {
+  const _AddFileTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Semantics(
+      button: true,
+      label: 'إضافة مرفق',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          width: 76.w,
+          height: 76.w,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Icon(AppIcons.attach, color: scheme.onSurfaceVariant),
         ),
       ),
     );

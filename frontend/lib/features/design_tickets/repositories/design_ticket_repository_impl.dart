@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/local_files.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -111,21 +112,34 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     String? instructions,
     int? orderId,
     int? assignedDesignerId,
+    List<PickedFile> files = const [],
   }) {
+    final fields = <String, dynamic>{
+      'customer_id': customerId,
+      'title': title.trim(),
+      'description': description.trim(),
+      // Omitted rather than sent empty: `nullable|string` reads `''` as a present-but-blank
+      // value, which would store an empty paragraph where «لا توجد تعليمات» was meant.
+      if (instructions != null && instructions.trim().isNotEmpty)
+        'instructions': instructions.trim(),
+      'order_id': ?orderId,
+      'assigned_designer_id': ?assignedDesignerId,
+    };
+
     return safeRequest<DesignTicket>(
-      () => _dio.post(
+      () async => _dio.post(
         DesignTicketEndpoints.index,
-        data: <String, dynamic>{
-          'customer_id': customerId,
-          'title': title.trim(),
-          'description': description.trim(),
-          // Omitted rather than sent empty: `nullable|string` reads `''` as a present-but-blank
-          // value, which would store an empty paragraph where «لا توجد تعليمات» was meant.
-          if (instructions != null && instructions.trim().isNotEmpty)
-            'instructions': instructions.trim(),
-          'order_id': ?orderId,
-          'assigned_designer_id': ?assignedDesignerId,
-        },
+        // JSON بلا مرفقات كما كان، وmultipart بها. و`multiCompatible` يكتب `files[]=` لكلّ ملف:
+        // الصيغةُ الافتراضية تكرّر المفتاح بلا قوسين، وPHP يُبقي آخرها (RULES §٦، القاعدة ٧).
+        data: files.isEmpty
+            ? fields
+            : FormData.fromMap({
+                ...fields,
+                'files': [
+                  for (final file in files)
+                    await LocalFiles.multipart(file.path, filename: file.name),
+                ],
+              }, ListFormat.multiCompatible),
       ),
       parse: (data) => DesignTicket.fromJson(data! as Map<String, dynamic>),
     );

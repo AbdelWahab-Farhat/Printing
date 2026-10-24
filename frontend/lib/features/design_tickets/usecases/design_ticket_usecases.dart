@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
@@ -87,6 +88,7 @@ class CreateDesignTicket {
     String? instructions,
     int? orderId,
     int? assignedDesignerId,
+    List<PickedFile> files = const [],
   }) {
     return _repository.create(
       customerId: customerId,
@@ -95,6 +97,7 @@ class CreateDesignTicket {
       instructions: instructions,
       orderId: orderId,
       assignedDesignerId: assignedDesignerId,
+      files: files,
     );
   }
 }
