@@ -54,4 +54,6 @@ fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
 scripts/asc_env.local.sh
+# عنوانُ نسخة الويب على الخادم — scripts/release_web.sh
+scripts/web_deploy.local.sh
 *.p8

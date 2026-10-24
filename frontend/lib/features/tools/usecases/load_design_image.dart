@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
@@ -25,7 +25,7 @@ class LoadDesignImage {
     }
 
     try {
-      final bytes = await File(file.path).readAsBytes();
+      final bytes = await LocalFiles.readBytes(file.path);
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       codec.dispose();

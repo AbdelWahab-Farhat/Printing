@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:dayaa/core/chat/voice_note_view.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/voice/voice_playback.dart';
@@ -221,8 +221,12 @@ class _VoiceComposerRowState extends State<VoiceComposerRow> {
       return;
     }
 
-    if (!VoiceRecorder.fitsUpload(recording.path)) {
-      File(recording.path).deleteSync();
+    final fits = await VoiceRecorder.fitsUpload(recording.path);
+
+    if (!mounted) return;
+
+    if (!fits) {
+      LocalFiles.delete(recording.path);
       context.showError('الرسالة الصوتية أكبر من 6 ميغابايت');
 
       return;

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+  `lang` وحده بلا `dir="rtl"`: Flutter يرسم الاتجاه بنفسه، و`dir` على الصفحة يُزيح طبقةَ الوصولية
+  وحقولَ الكتابة الخفية التي يضعها Flutter فوق الرسم إلى خارج الشاشة.
+-->
+<html lang="ar">
+<head>
+  <!--
+    يُستبدل عند البناء بقيمة `--base-href`. النسخة تُنشر في جذر نطاقها، فيبقى «/».
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="دعاية — إدارة المطبعة: الطلبيات والعملاء والمخزون والحسابات.">
+  <!-- تطبيقٌ داخليٌّ للموظفين: لا شيء فيه لمحركات البحث. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f4fbfa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e1514" media="(prefers-color-scheme: dark)">
+
+  <!-- iOS: «أضف إلى الشاشة الرئيسية» -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="دعاية">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>دعاية</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!--
+    شاشةُ البداية قبل أن يُحمَّل Flutter: الشعار على لون التطبيق، كما على الهاتف. يزيلها
+    `FlutterNativeSplash.remove()` في main.dart بندائه `removeSplashFromWeb()` أدناه — وهو الاسم
+    الذي تنادي به الحزمة على الويب، فلا تُعدَّل main.dart للويب.
+  -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #f4fbfa; }
+    #splash {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: #f4fbfa;
+    }
+    #splash img { width: 112px; height: 112px; }
+    @media (prefers-color-scheme: dark) {
+      html, body, #splash { background: #0e1514; }
+    }
+  </style>
+  <script>
+    function removeSplashFromWeb() {
+      document.getElementById('splash')?.remove();
+    }
+  </script>
+</head>
+<body>
+  <div id="splash"><img src="icons/splash.png" alt="دعاية"></div>
+  <noscript dir="rtl">دعاية تحتاج JavaScript لتعمل. فعّله في المتصفّح ثم أعد تحميل الصفحة.</noscript>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

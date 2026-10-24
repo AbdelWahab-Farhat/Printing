@@ -58,9 +58,16 @@ class _SplashView extends StatelessWidget {
           listener: (context, state) {
             // `go`, not `push`: there must be nothing behind either destination for the back
             // button to return to — least of all this screen, which would re-run the check.
+            // الرابط الذي جاء به الموظف على الويب، إن جاء من رابط — انظر [Routes.returningTo].
+            final returnTo = Routes.returnTarget(GoRouterState.of(context).uri);
+
             switch (state) {
               case SplashSignedIn():
-                context.go(Routes.home);
+                if (returnTo == null) {
+                  context.go(Routes.home);
+                } else {
+                  AppRouter.openReturned(returnTo);
+                }
                 // **The terminated-launch case, and the only correct place for it.** The app was
                 // started by tapping a notification, and `getInitialMessage()` has been holding
                 // that route since. Reading it any earlier — in `main`, or on the notification
@@ -76,7 +83,14 @@ class _SplashView extends StatelessWidget {
                 // they may be a different employee on a shared phone, and opening the previous
                 // one's order behind the login screen is exactly the leak the sign-out release
                 // exists to prevent.
-                context.go(Routes.login);
+                //
+                // **إلا على الويب**، وهناك وحده يحمل المسارُ `from`: من فتح الرابط في متصفّحه هو
+                // من سيدخل، فيُحمل رابطه عبر شاشة الدخول.
+                context.go(
+                  returnTo == null
+                      ? Routes.login
+                      : Routes.returningTo(Routes.login, Uri.parse(returnTo)),
+                );
 
               default:
                 break;

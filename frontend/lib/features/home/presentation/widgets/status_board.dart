@@ -1,5 +1,6 @@
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/appear.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/home/models/home_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -45,7 +46,12 @@ class StatusBoard extends StatelessWidget {
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
+          crossAxisCount: WebFrame.columns(
+            context,
+            phone: 2,
+            minTileWidth: 200.w,
+            count: statuses.length,
+          ),
           mainAxisSpacing: 18.h,
           crossAxisSpacing: 18.w,
           // **Taller than its contents need, with the room left at the bottom.** A card sized to

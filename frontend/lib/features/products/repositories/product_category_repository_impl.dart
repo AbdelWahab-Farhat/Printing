@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -155,7 +156,7 @@ class ProductCategoryRepositoryImpl implements ProductCategoryRepository {
         // `fromFile` streams from disk. `fromBytes` would hold the whole picture in memory for
         // the length of the upload, which a mid-range phone kills the app for.
         data: FormData.fromMap(<String, dynamic>{
-          'image': await MultipartFile.fromFile(path, filename: filename),
+          'image': await LocalFiles.multipart(path, filename: filename),
         }),
         onSendProgress: onProgress,
       ),

@@ -17,6 +17,11 @@ import 'package:flutter/foundation.dart';
 /// **This class never decides whether notifications are wanted.** The stored preference is the
 /// caller's business; this only does what it is told, so there is one place to read for "what
 /// does the server think this device is" and no second opinion.
+///
+/// **على الويب لا إشعارات، وكلُّ ما هنا يصير لا شيء.** نسخةُ المتصفّح لا تُهيّئ Firebase أصلاً
+/// (لا خياراتِ ويب لها ولا Service Worker)، و`FirebaseMessaging.instance` يرمي على تطبيقٍ لم
+/// يُهيَّأ. فلا يُطلب، ويجيب كلُّ سؤالٍ هنا بما يقوله جهازٌ رفض الإشعارات: لا مسار، لا إذن، لا
+/// تسجيل — والجرسُ داخل التطبيق يعمل كما هو، فهو نقطةٌ عادية لا تدين لـFirebase بشيء.
 class PushService {
   PushService({
     required RegisterDeviceToken registerToken,
@@ -24,11 +29,13 @@ class PushService {
     FirebaseMessaging? messaging,
   })  : _registerToken = registerToken,
         _releaseToken = releaseToken,
-        _messaging = messaging ?? FirebaseMessaging.instance;
+        _messaging = messaging ?? (kIsWeb ? null : FirebaseMessaging.instance);
 
   final RegisterDeviceToken _registerToken;
   final ReleaseDeviceToken _releaseToken;
-  final FirebaseMessaging _messaging;
+
+  /// `null` على الويب وحده — انظر رأس الصنف.
+  final FirebaseMessaging? _messaging;
 
   StreamSubscription<String>? _tokenRefresh;
   StreamSubscription<RemoteMessage>? _foreground;
@@ -53,9 +60,12 @@ class PushService {
   Future<void> start() async {
     await stop();
 
+    final messaging = _messaging;
+    if (messaging == null) return;
+
     // FCM rotates tokens on its own schedule. A rotation the server never hears about is a
     // device that silently stops receiving anything, with no error anywhere.
-    _tokenRefresh = _messaging.onTokenRefresh.listen((token) {
+    _tokenRefresh = messaging.onTokenRefresh.listen((token) {
       if (_registered == null) return; // signed out — nothing to keep in step
       unawaited(_send(token));
     });
@@ -69,7 +79,7 @@ class PushService {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       // iOS can present a banner over the running app itself; Android cannot, which is the
       // whole of the platform difference here.
-      await _messaging.setForegroundNotificationPresentationOptions(
+      await messaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
         sound: true,
@@ -93,7 +103,7 @@ class PushService {
   /// there is a usable session; navigating a cold-start notification before that answer exists
   /// sends an unauthenticated user at an authenticated screen.
   Future<String?> initialRoute() async {
-    final message = await _messaging.getInitialMessage();
+    final message = await _messaging?.getInitialMessage();
 
     return _routeOf(message);
   }
@@ -104,9 +114,9 @@ class PushService {
   /// anything worth being notified about — is the reliable way to earn a permanent denial, and
   /// iOS will not ask twice.
   Future<bool> requestPermission() async {
-    final settings = await _messaging.requestPermission();
+    final settings = await _messaging?.requestPermission();
 
-    return _granted(settings.authorizationStatus);
+    return settings != null && _granted(settings.authorizationStatus);
   }
 
   /// Whether the OS currently allows notifications, without prompting.
@@ -115,9 +125,9 @@ class PushService {
   /// blocks everything, and a toggle that says yes while the OS says no stops the user looking
   /// for the real cause.
   Future<bool> hasOsPermission() async {
-    final settings = await _messaging.getNotificationSettings();
+    final settings = await _messaging?.getNotificationSettings();
 
-    return _granted(settings.authorizationStatus);
+    return settings != null && _granted(settings.authorizationStatus);
   }
 
   /// Registers this device. Call after sign-in and when the toggle goes on.
@@ -128,7 +138,7 @@ class PushService {
     final allowed = askPermission ? await requestPermission() : await hasOsPermission();
     if (!allowed) return false;
 
-    final token = await _messaging.getToken();
+    final token = await _messaging?.getToken();
     if (token == null) return false;
 
     await _send(token);
@@ -143,7 +153,7 @@ class PushService {
   /// server-side row then outlives the session, which is why the backend also drops a token the
   /// moment FCM reports it dead.
   Future<void> release() async {
-    final token = _registered ?? await _messaging.getToken();
+    final token = _registered ?? await _messaging?.getToken();
     _registered = null;
     if (token == null) return;
 

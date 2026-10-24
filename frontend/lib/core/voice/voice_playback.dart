@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -122,7 +122,10 @@ class VoicePlayback {
     required String? url,
     required bool Function() current,
   }) async {
-    if (localPath != null && File(localPath).existsSync()) return localPath;
+    if (localPath != null && LocalFiles.exists(localPath)) return localPath;
+
+    // على الويب لا قرص يُخزَّن فيه: تُسمع من رابطها مباشرةً، والمتصفّح يخزّنها بنفسه.
+    if (kIsWeb) return url;
 
     final cacheKey = _cacheKeyOf(key);
 
@@ -156,8 +159,10 @@ class VoicePlayback {
   Future<bool> _open(String path) async {
     try {
       final player = _ensurePlayer();
-      await _prepareSession();
-      duration.value = await player.setFilePath(path);
+      // جلسةُ الصوت أمرٌ للهاتف (السمّاعة، المكالمة)؛ المتصفّح لا يملك ما تضبطه.
+      if (!kIsWeb) await _prepareSession();
+      // على الويب المسار رابطٌ — blob لما سُجّل للتوّ، وإلا رابط الخادم.
+      duration.value = kIsWeb ? await player.setUrl(path) : await player.setFilePath(path);
       await player.setSpeed(speed.value);
       unawaited(player.play());
 

@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -613,7 +613,7 @@ class _Preview extends StatelessWidget {
     final size = 52.w;
 
     final child = switch ((picked, existingUrl)) {
-      (final PickedFile file, _) => Image.file(File(file.path), fit: BoxFit.cover),
+      (final PickedFile file, _) => Image(image: LocalFiles.image(file.path), fit: BoxFit.cover),
       (_, final String url) => Image.network(
         url,
         fit: BoxFit.cover,

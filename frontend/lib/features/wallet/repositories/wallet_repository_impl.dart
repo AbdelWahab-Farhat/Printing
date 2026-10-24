@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -74,7 +75,7 @@ class WalletRepositoryImpl implements WalletRepository {
           if (reference != null && reference.trim().isNotEmpty) 'reference': reference.trim(),
           if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
           if (receiptPath != null)
-            'receipt': await MultipartFile.fromFile(receiptPath, filename: receiptFilename ?? 'receipt'),
+            'receipt': await LocalFiles.multipart(receiptPath, filename: receiptFilename ?? 'receipt'),
         }),
       ),
       parse: (data) => WalletWrite.fromJson(data as Map<String, dynamic>),

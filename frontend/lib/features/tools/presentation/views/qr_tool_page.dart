@@ -1,13 +1,15 @@
-import 'dart:io';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/files/share_files.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/tools/models/qr_code_art.dart';
 import 'package:dayaa/features/tools/models/qr_ink.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
@@ -131,7 +133,7 @@ class _QrToolViewState extends State<_QrToolView> {
               ),
               SizedBox(height: 24.h),
               BlocBuilder<QrToolCubit, QrToolState>(
-                builder: (context, state) => switch (state) {
+                builder: (context, state) => WebFrame.media(switch (state) {
                   QrBlank() || QrToolFailure() => const _EmptyPreview(),
                   QrReady(:final art) => _Preview(
                     art: art,
@@ -139,7 +141,7 @@ class _QrToolViewState extends State<_QrToolView> {
                     transparentBackground: _transparentBackground,
                     isPicking: widget.isPicking,
                   ),
-                },
+                }),
               ),
             ],
           ),
@@ -268,7 +270,7 @@ Future<void> shareQrCodeImage(
 
   await result.fold(
     (failure) async => context.showFailure(failure),
-    (path) async => SharePlus.instance.share(
+    (path) async => shareFiles(
       ShareParams(
         files: [XFile(path, mimeType: 'image/png')],
         fileNameOverrides: const [SaveQrCodeImage.fileName],
@@ -317,8 +319,6 @@ class _AddToDesignsButtonState extends State<_AddToDesignsButton> {
     await result.fold(
       (failure) async => context.showFailure(failure),
       (path) async {
-        final file = File(path);
-
         // الحجم يُقرأ من القرص لا يُقدَّر: [DesignRules] ترفض قبل الرفع بناءً عليه، ورقمٌ
         // مخمَّن كان سيجعلها ترفض ما يقبله الخادم أو العكس.
         if (context.mounted) {
@@ -326,7 +326,7 @@ class _AddToDesignsButtonState extends State<_AddToDesignsButton> {
             PickedFile(
               path: path,
               name: SaveQrCodeImage.fileName,
-              sizeBytes: await file.length(),
+              sizeBytes: await LocalFiles.length(path),
             ),
           );
         }

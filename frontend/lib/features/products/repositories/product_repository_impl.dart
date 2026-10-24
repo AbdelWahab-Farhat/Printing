@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -92,7 +93,7 @@ class ProductRepositoryImpl implements ProductRepository {
         ProductEndpoints.index,
         data: FormData.fromMap(<String, dynamic>{
           ...product.toJson(),
-          'image': await MultipartFile.fromFile(
+          'image': await LocalFiles.multipart(
             image.path,
             filename: image.name,
           ),
@@ -126,7 +127,7 @@ class ProductRepositoryImpl implements ProductRepository {
       () async => _dio.post(
         ProductEndpoints.images(productId),
         data: FormData.fromMap(<String, dynamic>{
-          'image': await MultipartFile.fromFile(image.path, filename: image.name),
+          'image': await LocalFiles.multipart(image.path, filename: image.name),
         }),
         onSendProgress: onProgress,
       ),

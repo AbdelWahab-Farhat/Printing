@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -88,7 +89,7 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
                 ...fields,
                 'images': [
                   for (final image in images)
-                    await MultipartFile.fromFile(image.path, filename: image.name),
+                    await LocalFiles.multipart(image.path, filename: image.name),
                 ],
               }, ListFormat.multiCompatible),
       ),
@@ -121,7 +122,7 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
             ? fields
             : FormData.fromMap({
                 ...fields,
-                'file': await MultipartFile.fromFile(file.path, filename: file.name),
+                'file': await LocalFiles.multipart(file.path, filename: file.name),
                 'duration_seconds': ?message.durationSeconds,
                 'waveform': ?message.waveform,
               }, ListFormat.multiCompatible),

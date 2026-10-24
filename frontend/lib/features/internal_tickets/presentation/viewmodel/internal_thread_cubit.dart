@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:dayaa/core/voice/voice_recorder.dart';
@@ -147,13 +147,14 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
   }
 
   Future<bool> _postVoice(PendingVoice pending) async {
+    final size = await LocalFiles.length(pending.path);
     final sent = await _post(
       OutgoingInternalMessage(
         clientToken: pending.clientToken,
         file: PickedFile(
           path: pending.path,
           name: 'voice.m4a',
-          sizeBytes: File(pending.path).lengthSync(),
+          sizeBytes: size,
         ),
         durationSeconds: pending.durationSeconds,
         waveform: pending.waveform,
@@ -440,10 +441,7 @@ class InternalThreadCubit extends Cubit<InternalThreadState> {
     );
   }
 
-  static void _deleteFile(String path) {
-    final file = File(path);
-    if (file.existsSync()) file.deleteSync();
-  }
+  static void _deleteFile(String path) => LocalFiles.delete(path);
 
   /// ستّةَ عشرَ حرفاً ستّ‌عشرياً — رمزُ الإرسال، فريدٌ بما يكفي لتذكرةٍ واحدة.
   static String _randomToken() {

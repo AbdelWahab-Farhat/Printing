@@ -15,6 +15,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # نسخةُ المتصفّح: روابطُ بلا `#` (`usePathUrlStrategy` في main.dart). جزءٌ من Flutter نفسه،
+  # ويُعلَن لأن كودنا يستورده — وهو ما تطلبه `depend_on_referenced_packages`.
+  flutter_web_plugins:
+    sdk: flutter
 
   # ── state ────────────────────────────────────────────────────────────────────
   flutter_bloc: ^9.1.0 # Cubit — the ViewModel layer
@@ -97,6 +101,10 @@ dependencies:
   # `image_picker` is flutter.dev's own; `file_picker` is MIT.
   file_picker: ^11.0.3
   image_picker: ^1.2.3
+  # `XFile` نفسه الذي يُعيده المنتقيان أعلاه، ويُستورد باسمه لأن `LocalFiles` يصنع منه ملفاً على
+  # الويب: بايتاتٌ تصير رابط blob يُرفع ويُحفظ ويُعرض كما يُعامَل المسار على الهاتف. من فريق
+  # Flutter نفسه، وهو في البناء أصلاً عبر المنتقيين.
+  cross_file: ^0.3.5+4
   # Hands a design to whatever the phone already opens PDFs with.
   #
   # Deliberately not a PDF renderer: every one of them ships a native engine, and this app needs

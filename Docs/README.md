@@ -221,3 +221,9 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [VENDORS-AND-PURCHASE-ORDERS.md](vendors/VENDORS-AND-PURCHASE-ORDERS.md) | الموردون وأوامر الشراء — الجانب الذي كان ناقصاً (التطبيق). |
 | [VENDOR-PURCHASE-ORDERS-SECTION.md](vendors/VENDOR-PURCHASE-ORDERS-SECTION.md) | أوامر الشراء على شاشة المورد. |
+
+## [web/](web/)
+
+| Document | |
+|---|---|
+| [STAFF-WEB.md](web/STAFF-WEB.md) | نسخة الويب لتطبيق الموظفين: الروابط، ما جُرّب، ما يختلف عن الهاتف، والنشر — **CORS للصور ينتظر الموافقة**. |

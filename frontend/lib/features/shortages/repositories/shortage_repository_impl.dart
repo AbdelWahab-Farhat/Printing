@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -236,7 +237,7 @@ class ShortageRepositoryImpl implements ShortageRepository {
         ? body
         : FormData.fromMap(<String, dynamic>{
             ...body,
-            'receipt': await MultipartFile.fromFile(receipt.path, filename: receipt.name),
+            'receipt': await LocalFiles.multipart(receipt.path, filename: receipt.name),
           });
 
     return safeRequest<ShortageSupply>(

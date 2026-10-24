@@ -1,13 +1,12 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/features/tools/models/bag_preview_painter.dart';
 import 'package:dayaa/features/tools/models/bag_type.dart';
 import 'package:dayaa/features/tools/models/design_placement.dart';
 import 'package:flutter/rendering.dart' show Canvas, Size, debugPrint;
-import 'package:path_provider/path_provider.dart';
 
 /// يرسم المعاينة صورةً ويكتبها حيث تستطيع ورقة المشاركة — أو مكتبة التصاميم — أن تأخذها.
 ///
@@ -55,13 +54,13 @@ class SaveBagPreviewImage {
         return const Left(Failure.unexpected(message: 'تعذّر تجهيز صورة المعاينة'));
       }
 
-      final directory = await getTemporaryDirectory();
-      final file = File(
-        '${directory.path}/bag-preview-${DateTime.now().microsecondsSinceEpoch}.png',
+      return Right(
+        await LocalFiles.writeTemporary(
+          'bag-preview-${DateTime.now().microsecondsSinceEpoch}.png',
+          bytes.buffer.asUint8List(),
+          mimeType: 'image/png',
+        ),
       );
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-
-      return Right(file.path);
     } on Object catch (error, stack) {
       debugPrint('⚠️ صورة المعاينة لم تُكتب: $error\n$stack');
 

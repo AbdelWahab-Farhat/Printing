@@ -4,16 +4,19 @@ import 'dart:ui' as ui;
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/files/share_files.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/tools/models/bag_type.dart';
 import 'package:dayaa/features/tools/models/design_placement.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
 import 'package:dayaa/features/tools/presentation/widgets/bag_canvas.dart';
 import 'package:dayaa/features/tools/usecases/save_bag_preview_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -125,15 +128,17 @@ class _BagPreviewViewState extends State<_BagPreviewView> {
             SizedBox(height: 20.h),
             // مربّعٌ ثابت بنسبة صور الأكياس (كلها ١٢٠٠×١٢٠٠)، فلا تقفز الشاشة حين يُبدَّل
             // النوع ولا حين تصل صورته.
-            AspectRatio(
-              aspectRatio: 1,
-              child: BagCanvas(
+            WebFrame.media(
+              AspectRatio(
+                aspectRatio: 1,
+                child: BagCanvas(
                 bag: state.bag,
                 mockup: state.mockup,
                 design: state.design,
                 placement: _placement,
                 showGuides: _showGuides,
-                onPlacementChanged: (placement) => setState(() => _placement = placement),
+                  onPlacementChanged: (placement) => setState(() => _placement = placement),
+                ),
               ),
             ),
             SizedBox(height: 20.h),
@@ -216,7 +221,7 @@ class _ShareButton extends StatelessWidget {
 
     await result.fold(
       (failure) async => context.showFailure(failure),
-      (path) async => SharePlus.instance.share(
+      (path) async => shareFiles(
         ShareParams(
           files: [XFile(path, mimeType: 'image/png')],
           fileNameOverrides: const [SaveBagPreviewImage.fileName],
@@ -229,7 +234,8 @@ class _ShareButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      label: 'مشاركة المعاينة',
+      // على الويب تُنزَّل ولا تُشارَك — انظر `shareFiles`.
+      label: kIsWeb ? 'تنزيل المعاينة' : 'مشاركة المعاينة',
       icon: AppIcons.download,
       isLoading: isExporting,
       onPressed: () => _share(context),

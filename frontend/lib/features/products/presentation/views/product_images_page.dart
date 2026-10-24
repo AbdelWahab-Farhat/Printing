@@ -9,6 +9,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/models/product_image_rules.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_images_cubit.dart';
@@ -278,7 +279,7 @@ class _Grid extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 96.h),
             sliver: SliverGrid.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+                crossAxisCount: WebFrame.columns(context, phone: 2, minTileWidth: 190.w),
                 mainAxisSpacing: 12.h,
                 crossAxisSpacing: 12.w,
                 // Taller than square: the photograph is the square, and the two buttons live

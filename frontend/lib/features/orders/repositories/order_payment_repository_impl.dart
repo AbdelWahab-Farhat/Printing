@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -287,7 +288,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           // name claims no extension on purpose: the server sniffs the bytes and would record
           // a made-up `.pdf` as the original name of what might be a photograph.
           if (receiptPath != null)
-            'receipt': await MultipartFile.fromFile(
+            'receipt': await LocalFiles.multipart(
               receiptPath,
               filename: receiptFilename ?? 'receipt',
             ),

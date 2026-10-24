@@ -1,5 +1,6 @@
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -328,6 +329,32 @@ void main() {
     );
   });
 
+  test('an edit link opened without its record lands on the record, not on an empty form', () {
+    // Arrange — رابطٌ فُتح من جديد (تحديثٌ للصفحة على الويب) يصل بلا `extra`، والنموذج بلا سجلٍّ
+    // نموذجُ إنشاء: دورٌ ثانٍ أو عميلٌ ثانٍ.
+    String? redirectOf(String location) {
+      final route = matchedRoutes(location).whereType<GoRoute>().last;
+      final state = GoRouterState(
+        AppRouter.instance.configuration,
+        uri: Uri.parse(location),
+        matchedLocation: location,
+        fullPath: route.path,
+        pathParameters: {'id': location.split('/')[2]},
+        pageKey: const ValueKey<String>('edit'),
+      );
+
+      return route.redirect!(_NoContext(), state) as String?;
+    }
+
+    // Act
+    final role = redirectOf(Routes.editRole(4));
+    final customer = redirectOf(Routes.editCustomer(9));
+
+    // Assert
+    expect(role, Routes.role(4));
+    expect(customer, Routes.customer(9));
+  });
+
   test('the العملاء tab still resolves, and still inside the shell', () {
     // Arrange — the sibling path must not have been shadowed by the one above.
     const location = '/customers';
@@ -426,3 +453,6 @@ void main() {
     );
   });
 }
+
+/// المساران أعلاه لا يقرآن السياق؛ يكفيهما ما يُمرَّر في مكانه.
+class _NoContext extends Fake implements BuildContext {}

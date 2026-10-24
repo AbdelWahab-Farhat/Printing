@@ -1,6 +1,7 @@
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/appear.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/home/models/home_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -59,7 +60,13 @@ class SummaryTiles extends StatelessWidget {
       // Inside a scrolling column: it lays out at its natural height and lets the page scroll.
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
+      // على الويب صفٌّ واحدٌ بأربعتها — انظر [WebFrame.columns].
+      crossAxisCount: WebFrame.columns(
+        context,
+        phone: 2,
+        minTileWidth: 220.w,
+        count: tiles.length,
+      ),
       mainAxisSpacing: 12.h,
       crossAxisSpacing: 12.w,
       // Wide and shallow: the tile holds a word and a number stacked in the middle of it, and

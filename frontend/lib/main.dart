@@ -8,8 +8,11 @@ import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge
 import 'package:dayaa/firebase_options.dart';
 import 'package:dayaa/firebase_options_dev.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:go_router/go_router.dart';
 
 /// Start-up, in order, and nothing else.
 ///
@@ -27,6 +30,15 @@ Future<void> main() async {
   // Held, the two screens are one picture: same mark, same background, no seam.
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
+  // **على الويب: لكلّ شاشةٍ رابطُها كما هو، `/orders/52` لا `/#/orders/52`.** الرابطُ يُنسخ
+  // ويُرسل ويُفتح في تبويبٍ جديد ويبقى بعد التحديث — والخادمُ يجيب كلَّ مسارٍ لا ملفَّ له
+  // بـ`index.html` (Docs/web/STAFF-WEB.md). و`push` يكتب مساره في الشريط أيضاً، لا `go` وحده:
+  // بدونه يبقى الرابطُ رابطَ الشاشة التي تحتها، فيُنسخ رابطٌ لا يفتح ما يراه الموظف.
+  if (kIsWeb) {
+    usePathUrlStrategy();
+    GoRouter.optionURLReflectsImperativeAPIs = true;
+  }
+
   // Before `Injector.init`, because the container builds a `PushService` that reaches for
   // `FirebaseMessaging.instance` — and that throws rather than returning null on an app that was
   // never configured.
@@ -40,14 +52,20 @@ Future<void> main() async {
   // من حزمة `ly.dayaa.app.dev` يطلب تسجيلاً لدى تطبيقٍ لا يملك هذه الحزمة فيُرفَض — فتموت
   // الإشعاراتُ وحدَها بينما كلُّ شيءٍ آخر يعمل. و`google-services.json` لا يُنقذ: التهيئةُ
   // بخياراتٍ صريحةٍ هنا تَجُبّ ما فيه.
-  try {
-    await Firebase.initializeApp(
-      options: AppConfig.isDev
-          ? DevFirebaseOptions.currentPlatform
-          : DefaultFirebaseOptions.currentPlatform,
-    );
-  } on Exception catch (error) {
-    debugPrint('Firebase did not start; push is off for this run: $error');
+  //
+  // **ولا Firebase على الويب أصلاً**: لا خياراتِ ويب في `firebase_options.dart`، فـ
+  // `currentPlatform` يرمي `UnsupportedError` — خطأً لا استثناءً، فلا يلتقطه الـ`catch` أدناه
+  // ويوقف الإقلاع كلَّه. ونسخةُ المتصفّح بلا إشعارات: انظر [PushService].
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp(
+        options: AppConfig.isDev
+            ? DevFirebaseOptions.currentPlatform
+            : DefaultFirebaseOptions.currentPlatform,
+      );
+    } on Exception catch (error) {
+      debugPrint('Firebase did not start; push is off for this run: $error');
+    }
   }
 
   await Injector.init(
@@ -58,8 +76,15 @@ Future<void> main() async {
     // token would land there, HomeCubit would immediately ask `/auth/me`, and the app would 401
     // its way around in a circle — a shell rendering with no session, every gated control
     // silently absent and a card with nobody's name on it.
+    //
+    // على الويب يحمل معه الرابط المفتوح، فيعود إليه الموظف بعد أن يدخل — [Routes.returningTo].
     onUnauthorized: () async {
-      AppRouter.instance.go(Routes.login);
+      final router = AppRouter.instance;
+      router.go(
+        kIsWeb
+            ? Routes.returningTo(Routes.login, router.routeInformationProvider.value.uri)
+            : Routes.login,
+      );
     },
   );
 

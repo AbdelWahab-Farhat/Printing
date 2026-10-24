@@ -44,6 +44,7 @@ import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/record_vendor_cost.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/shortages/models/shortages_filter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -1515,9 +1516,10 @@ class _Actions extends StatelessWidget {
         //
         // No `permission`: it says nothing the reader is not already looking at, so a grant of
         // its own could only refuse somebody the screen has already shown everything to.
+        // على الويب تُنزَّل ولا تُشارَك — انظر `shareFiles` — فالاسم يقول ما يحدث.
         AppAction(
-          label: 'مشاركة الفاتورة',
-          icon: AppIcons.share,
+          label: kIsWeb ? 'تنزيل الفاتورة' : 'مشاركة الفاتورة',
+          icon: kIsWeb ? AppIcons.download : AppIcons.share,
           onTap: (context) => shareOrderInvoice(context, order),
         ),
 

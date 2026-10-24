@@ -13,6 +13,7 @@ import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/models/design_rules.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
@@ -219,7 +220,7 @@ class _Library extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
             sliver: SliverGrid.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+                crossAxisCount: WebFrame.columns(context, phone: 2, minTileWidth: 190.w),
                 mainAxisSpacing: 12.h,
                 crossAxisSpacing: 12.w,
                 // Slightly taller than square: the thumbnail is the square, and the name lives

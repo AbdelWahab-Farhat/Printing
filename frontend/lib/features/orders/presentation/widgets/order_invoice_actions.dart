@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/files/share_files.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -70,7 +71,7 @@ Future<void> shareOrderInvoice(BuildContext context, Order order) async {
 
   await result.fold(
     (failure) async => context.showFailure(failure),
-    (path) async => SharePlus.instance.share(
+    (path) async => shareFiles(
       ShareParams(
         files: [XFile(path, mimeType: 'application/pdf')],
         // What the person sees in the sheet, and what it is called wherever they save it.

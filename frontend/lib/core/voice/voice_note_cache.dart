@@ -48,6 +48,9 @@ class VoiceNoteCache {
 
   /// يحفظ تسجيلاً صُنع على هذا الهاتف تحت مفتاحه — فيشغّله صاحبه بلا أن ينزّله ثانيةً.
   Future<void> keep(String key, String localPath) async {
+    // على الويب لا مجلّد يُخزَّن فيه — الرسالة تُسمع من رابطها، انظر `VoicePlayback`.
+    if (kIsWeb) return;
+
     final source = File(localPath);
     if (!source.existsSync()) return;
 

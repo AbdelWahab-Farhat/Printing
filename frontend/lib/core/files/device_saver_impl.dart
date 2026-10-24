@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/device_saver.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 
 /// ينفّذ [DeviceSaver] بـ`file_saver`، ويجرّب مكاناً بعد مكان حتى يقبل الهاتف الملف.
 ///
@@ -16,14 +18,19 @@ import 'package:file_saver/file_saver.dart';
 /// - وأندرويد ٩ وما قبله بلا إذن تخزين: نافذة النظام «حفظ باسم» — لا تحتاج إذناً، وهي حفظٌ لا
 ///   مشاركة. لا نسأل الإذن نفسه: ذلك كودٌ أصليّ لهواتف قليلة، والنافذة تكفيها.
 ///
-/// [isIOS] و[plugin] يُمرَّران ليُختبر الترتيب على المنصّتين من جهازٍ واحد.
+/// - **وعلى الويب لا ترتيب**: لا «صور» ولا «ملفات» يصلها المتصفّح، فكلُّ ملفٍّ تنزيلٌ إلى مجلّد
+///   التنزيلات باسمه — وهو «الحفظ» الذي يعرفه من يعمل على حاسوب.
+///
+/// [isIOS] و[isWeb] و[plugin] يُمرَّرون ليُختبر الترتيب على المنصّات من جهازٍ واحد.
 class DeviceSaverImpl implements DeviceSaver {
-  DeviceSaverImpl({FileSaver? plugin, bool? isIOS})
+  DeviceSaverImpl({FileSaver? plugin, bool? isIOS, bool? isWeb})
     : _plugin = plugin ?? FileSaver.instance,
-      _isIOS = isIOS ?? Platform.isIOS;
+      _isWeb = isWeb ?? kIsWeb,
+      _isIOS = isIOS ?? (!kIsWeb && Platform.isIOS);
 
   final FileSaver _plugin;
   final bool _isIOS;
+  final bool _isWeb;
 
   static const _refused = Failure.unexpected(message: 'تعذّر حفظ الملف على الهاتف');
 
@@ -32,6 +39,8 @@ class DeviceSaverImpl implements DeviceSaver {
     required String path,
     required String mimeType,
   }) async {
+    if (_isWeb) return _download(path: path, mimeType: mimeType);
+
     final saved = await safePlatformCall(
       () => _plugin.saveToGallery(
         name: _nameOf(path),
@@ -53,6 +62,8 @@ class DeviceSaverImpl implements DeviceSaver {
     required String path,
     required String mimeType,
   }) async {
+    if (_isWeb) return _download(path: path, mimeType: mimeType);
+
     if (_isIOS) {
       final saved = await safePlatformCall(
         () => _plugin.saveFile(
@@ -90,6 +101,24 @@ class DeviceSaverImpl implements DeviceSaver {
     );
 
     return chosen.bimap((_) => _refused, (uri) => uri == null ? null : SavePlace.chosen);
+  }
+
+  /// تنزيلٌ من المتصفّح. [path] رابط blob صنعه [LocalFiles]، فالبايتات تُقرأ منه والاسم من سجلّه.
+  Future<Either<Failure, SavePlace?>> _download({
+    required String path,
+    required String mimeType,
+  }) async {
+    final saved = await safePlatformCall(
+      () async => _plugin.saveFile(
+        name: LocalFiles.nameOf(path),
+        bytes: await LocalFiles.readBytes(path),
+        includeExtension: false,
+        mimeType: MimeType.custom,
+        customMimeType: mimeType,
+      ),
+    );
+
+    return saved.bimap((_) => _refused, (_) => SavePlace.downloads);
   }
 
   /// `شعار المخبز.png` من `/tmp/…/شعار المخبز.png` — الاسم الذي سيراه صاحبه.

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/pop_result.dart';
+import 'package:dayaa/core/router/session_extra_codec.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
 import 'package:dayaa/features/access/models/role.dart';
@@ -129,6 +132,7 @@ import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:dayaa/features/warehouses/presentation/views/record_movement_page.dart';
 import 'package:dayaa/features/warehouses/presentation/views/stock_movements_page.dart';
 import 'package:dayaa/features/warehouses/presentation/views/warehouse_stocks_page.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -140,6 +144,33 @@ import 'package:latlong2/latlong.dart';
 abstract final class Routes {
   static const String splash = '/splash';
   static const String login = '/login';
+
+  /// [gate] — [splash] أو [login] — ومعه [target] ليُفتح بعده: `/login?from=%2Forders%2F52`.
+  ///
+  /// **للويب وحده**، حيث يصل الموظف من رابطٍ نسخه أو من تحديثٍ للصفحة، فيعود إلى ما فتحه لا
+  /// إلى الرئيسية. على الهاتف لا روابط تُفتح من خارج التطبيق، وما يُنسى عند الخروج يُنسى عمداً —
+  /// انظر `SplashSignedOut` في شاشة البداية.
+  static String returningTo(String gate, Uri target) {
+    final back = target.toString();
+    if (back == home || back.isEmpty) return gate;
+
+    return Uri(path: gate, queryParameters: {_returnParameter: back}).toString();
+  }
+
+  /// ما يُفتح بعد [splash] أو [login] إن جاء الموظف من رابط، وإلا `null`.
+  ///
+  /// **مسارٌ داخليٌّ وحده.** `from` نصٌّ في رابطٍ يكتبه أيُّ أحد، و`https://…` أو `//…` فيه كانا
+  /// سيُرسلان الموظف بعد دخوله إلى حيث يشاء كاتبُ الرابط. ولا يُعاد إلى البوابتين نفسيهما: رابطٌ
+  /// يدور على نفسه.
+  static String? returnTarget(Uri location) {
+    final from = location.queryParameters[_returnParameter];
+    if (from == null || !from.startsWith('/') || from.startsWith('//')) return null;
+    if (from.startsWith(splash) || from.startsWith(login)) return null;
+
+    return from;
+  }
+
+  static const String _returnParameter = 'from';
 
   /// The four tabs inside the shell. Each is the first location of its own branch, so
   /// `context.go(Routes.warehouse)` selects that tab rather than covering the shell.
@@ -646,10 +677,37 @@ abstract final class Routes {
 /// result carries its slot in the `extra` seat — see [PopResult] — and `payload` is that seat
 /// with the slot lifted off it.
 abstract final class AppRouter {
+  /// الأقسام الأربعة في الشريط السفلي — تُفتح بـ`go` كما هي، فلا شيء تحتها يُرجع إليه.
+  static const Set<String> _tabs = {Routes.home, Routes.orders, Routes.warehouse, Routes.customers};
+
+  /// يفتح [target] بعد البوابة — شاشة البداية أو الدخول — على الويب.
+  ///
+  /// **الأقسام الأربعة كما هي، وما عداها فوق الرئيسية.** شاشاتُ التفاصيل مسجّلةٌ في أعلى الموجّه
+  /// لا تحت `/`، فرابطٌ إليها يُفتح مباشرةً يبنيها وحدها: بلا سهم رجوع ولا طريقٍ إلى الرئيسية إلا
+  /// بكتابة العنوان. فتُفتح الرئيسية أولاً ثم تُدفع الشاشة فوقها، كأن الموظف وصلها بيده — والشريطُ
+  /// يبقى على رابطها.
+  ///
+  /// والدفعُ بعد الإطار لا معه: `push` يبني على ما يعرضه الموجّه الآن، وقبل أن يُعالَج `go` ذاك
+  /// هو شاشة البداية نفسها.
+  static void openReturned(String target) {
+    final path = Uri.parse(target).path;
+
+    if (_tabs.contains(path) || path == Routes.investorPortal) {
+      instance.go(target);
+
+      return;
+    }
+
+    instance.go(Routes.home);
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(instance.push<void>(target)));
+  }
+
   static final GoRouter instance = GoRouter(
     // Always the splash: it is the one place that decides whether there is a usable session,
     // so no other screen has to guess.
     initialLocation: Routes.splash,
+    // على الويب وحده: `extra` يبقى عبر زرَّي المتصفّح — انظر [SessionExtraCodec].
+    extraCodec: kIsWeb ? SessionExtraCodec() : null,
     routes: [
       GoRoute(
         path: Routes.splash,
@@ -1425,11 +1483,16 @@ abstract final class AppRouter {
         path: Routes.editEmployeePath,
         // `users.manage`, unlike the two above it: reading the list is one permission, and
         // correcting somebody's details is another.
-        redirect: (context, state) =>
-            sl<Session>().can(AppPermission.manageUsers) ? null : Routes.home,
-        builder: (context, state) {
+        redirect: (context, state) {
+          if (!sl<Session>().can(AppPermission.manageUsers)) return Routes.home;
+
           // The employee comes through `extra`, which a deep link cannot carry — so a pasted
           // URL lands on the screen that *can* fetch them rather than on an empty form.
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return state.payload == null && id != null ? Routes.employee(id) : null;
+        },
+        builder: (context, state) {
           final user = state.payload as AuthUser?;
 
           return user == null
@@ -1481,6 +1544,13 @@ abstract final class AppRouter {
             path: 'edit',
             // `extra` carries the role the user was just looking at, so the form opens with its
             // name and ticks already in place instead of fetching what the caller already held.
+            //
+            // **وبلا `extra` إلى الدور نفسه، لا إلى نموذجٍ فارغ.** النموذج بلا دورٍ نموذجُ «دور
+            // جديد»، فرابطُ تعديلٍ فُتح من جديد — تحديثٌ للصفحة على الويب — كان يصير إنشاءَ دورٍ
+            // ثانٍ باسمٍ فارغ. من صفحة الدور يُفتح التعديل ثانيةً بدوره كاملاً.
+            redirect: (context, state) => state.payload == null
+                ? Routes.role(int.parse(state.pathParameters['id']!))
+                : null,
             builder: (context, state) =>
                 RoleFormPage(role: state.payload as Role?),
           ),
@@ -1581,6 +1651,11 @@ abstract final class AppRouter {
         routes: [
           GoRoute(
             path: 'edit',
+            // بلا `extra` إلى صفحة العميل لا إلى «إضافة عميل» — السببُ نفسه الذي عند تعديل الدور:
+            // رابطُ تعديلٍ يُفتح من جديد كان سيُنشئ عميلاً ثانياً.
+            redirect: (context, state) => state.payload == null
+                ? Routes.customer(int.parse(state.pathParameters['id']!))
+                : null,
             builder: (context, state) =>
                 AddCustomerPage(customer: state.payload as Customer?),
           ),
@@ -1727,9 +1802,10 @@ abstract final class AppRouter {
       final session = sl<Session>();
 
       if (!session.isSignedIn) {
-        return sl<TokenStorage>().hasTokenInMemory
-            ? Routes.splash
-            : Routes.login;
+        final gate = sl<TokenStorage>().hasTokenInMemory ? Routes.splash : Routes.login;
+
+        // على الويب يعود بعدها إلى ما فتحه — انظر [Routes.returningTo].
+        return kIsWeb ? Routes.returningTo(gate, state.uri) : gate;
       }
 
       // **An investor never reaches the staff shell.** Placed after the sign-in check because a

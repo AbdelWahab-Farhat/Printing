@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/device_saver.dart';
 import 'package:dayaa/core/files/device_saver_impl.dart';
 import 'package:file_saver/file_saver.dart';
@@ -20,6 +24,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(MimeType.custom);
+    registerFallbackValue(Uint8List(0));
   });
 
   setUp(() {
@@ -211,6 +216,94 @@ void main() {
       expect(result.isLeft(), isTrue);
     });
   });
+
+  group('الويب', () {
+    When<Future<String>> browserDownload() => when(
+      () => plugin.saveFile(
+        name: any(named: 'name'),
+        bytes: any(named: 'bytes'),
+        includeExtension: any(named: 'includeExtension'),
+        mimeType: any(named: 'mimeType'),
+        customMimeType: any(named: 'customMimeType'),
+      ),
+    );
+
+    test('الصورة تُنزَّل باسمها وبايتاتها، لا إلى «الصور»', () async {
+      // Arrange
+      final image = await _temporaryFile('شعار المخبز.png', [1, 2, 3]);
+      browserDownload().thenAnswer((_) async => 'شعار المخبز.png');
+      final saver = DeviceSaverImpl(plugin: plugin, isIOS: false, isWeb: true);
+
+      // Act
+      final result = await saver.toPhotos(path: image, mimeType: 'image/png');
+
+      // Assert
+      expect(result, const Right<Failure, SavePlace?>(SavePlace.downloads));
+      final sent = verify(
+        () => plugin.saveFile(
+          name: captureAny(named: 'name'),
+          bytes: captureAny(named: 'bytes'),
+          includeExtension: false,
+          mimeType: MimeType.custom,
+          customMimeType: 'image/png',
+        ),
+      ).captured;
+      expect(sent, ['شعار المخبز.png', [1, 2, 3]]);
+      verifyNever(
+        () => plugin.saveToGallery(
+          name: any(named: 'name'),
+          filePath: any(named: 'filePath'),
+          includeExtension: any(named: 'includeExtension'),
+          mimeType: any(named: 'mimeType'),
+          customMimeType: any(named: 'customMimeType'),
+        ),
+      );
+    });
+
+    test('الملف يُنزَّل كذلك، بلا نافذة «حفظ باسم»', () async {
+      // Arrange
+      final pdf = await _temporaryFile('فاتورة-52.pdf', [9]);
+      browserDownload().thenAnswer((_) async => 'فاتورة-52.pdf');
+      final saver = DeviceSaverImpl(plugin: plugin, isIOS: false, isWeb: true);
+
+      // Act
+      final result = await saver.toFiles(path: pdf, mimeType: 'application/pdf');
+
+      // Assert
+      expect(result, const Right<Failure, SavePlace?>(SavePlace.downloads));
+      verifyNever(
+        () => plugin.saveAs(
+          name: any(named: 'name'),
+          filePath: any(named: 'filePath'),
+          includeExtension: any(named: 'includeExtension'),
+          mimeType: any(named: 'mimeType'),
+          customMimeType: any(named: 'customMimeType'),
+        ),
+      );
+    });
+
+    test('تنزيلٌ رفضه المتصفّح خطأٌ يُعرض', () async {
+      // Arrange
+      final pdf = await _temporaryFile('فاتورة-53.pdf', [9]);
+      browserDownload().thenThrow(const FileSystemFullError());
+      final saver = DeviceSaverImpl(plugin: plugin, isIOS: false, isWeb: true);
+
+      // Act
+      final result = await saver.toFiles(path: pdf, mimeType: 'application/pdf');
+
+      // Assert
+      expect(result.isLeft(), isTrue);
+    });
+  });
+}
+
+/// ملفٌّ حقيقيٌّ مؤقّت: على الويب يقرأ الحافظُ البايتاتِ بنفسه من المسار ويسلّمها للمتصفّح.
+Future<String> _temporaryFile(String name, List<int> bytes) async {
+  final directory = await Directory.systemTemp.createTemp('device_saver_web');
+  final file = File('${directory.path}/$name');
+  await file.writeAsBytes(bytes);
+
+  return file.path;
 }
 
 /// قرصٌ ممتلئ — أي رميةٍ من الإضافة لا نعرفها.

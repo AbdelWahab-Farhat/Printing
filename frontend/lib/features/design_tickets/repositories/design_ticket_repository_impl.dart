@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
@@ -262,7 +263,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
       () async => _dio.post(
         url,
         data: FormData.fromMap(<String, dynamic>{
-          'file': await MultipartFile.fromFile(path, filename: filename),
+          'file': await LocalFiles.multipart(path, filename: filename),
           if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
         }),
         onSendProgress: onProgress,

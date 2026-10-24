@@ -27,6 +27,7 @@ analyzer:
     - "lib/core/theme/text_theme.dart"
     - android/**
     - ios/**
+    - web/**
 
 linter:
   rules:

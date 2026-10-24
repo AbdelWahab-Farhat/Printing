@@ -3,6 +3,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/theme/text_theme.dart';
 import 'package:dayaa/core/theme/theme.dart';
 import 'package:dayaa/core/widgets/dismiss_keyboard.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,14 +17,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class DayaaApp extends StatelessWidget {
   const DayaaApp({super.key});
 
+  /// The reference device the designs were drawn on. Every `.w`/`.h`/`.sp` is relative to
+  /// this, so changing it silently rescales the entire app.
+  static const Size _designSize = Size(430, 932);
+
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      // The reference device the designs were drawn on. Every `.w`/`.h`/`.sp` is relative to
-      // this, so changing it silently rescales the entire app.
-      designSize: const Size(430, 932),
+      designSize: _designSize,
       minTextAdapt: true,
       builder: (context, _) {
+        // على الويب: العناصر بقياس الهاتف والشاشات بعرض النافذة — انظر [WebFrame].
+        WebFrame.configureScreenUtil(context, designSize: _designSize);
+
         final theme = MaterialTheme(createTextTheme(context, 'Cairo', 'Cairo'));
 
         return MaterialApp.router(
@@ -58,7 +64,9 @@ class DayaaApp extends StatelessWidget {
           // this must not close it when the widget goes.
           builder: (context, child) => BlocProvider<UnreadBadgeCubit>.value(
             value: sl<UnreadBadgeCubit>(),
-            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+            child: DismissKeyboard(
+              child: WebFrame.wrap(context, child ?? const SizedBox.shrink()),
+            ),
           ),
         );
       },

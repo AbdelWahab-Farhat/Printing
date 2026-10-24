@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
@@ -43,7 +44,7 @@ class CustomerDesignRepositoryImpl implements CustomerDesignRepository {
         // `fromFile` streams from disk. `fromBytes` would hold a 25 MB design in memory for the
         // length of the upload, and a mid-range phone kills the app for less.
         data: FormData.fromMap(<String, dynamic>{
-          'file': await MultipartFile.fromFile(path, filename: filename),
+          'file': await LocalFiles.multipart(path, filename: filename),
           // Omitted rather than sent empty: `nullable|string` on the server treats `''` as a
           // present-but-blank name, which would overwrite the filename fallback with nothing.
           if (label != null && label.trim().isNotEmpty) 'label': label.trim(),

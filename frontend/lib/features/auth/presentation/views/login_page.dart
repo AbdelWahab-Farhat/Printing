@@ -78,7 +78,13 @@ class _LoginViewState extends State<_LoginView> {
             switch (state) {
               case LoginSuccess(:final session):
                 context.showSuccess('مرحباً ${session.user.name}');
-                context.go(Routes.home);
+                // على الويب: الرابط الذي فُتح قبل الدخول — انظر [Routes.returningTo].
+                switch (Routes.returnTarget(GoRouterState.of(context).uri)) {
+                  case final target?:
+                    AppRouter.openReturned(target);
+                  case null:
+                    context.go(Routes.home);
+                }
 
               case LoginFailure(:final failure):
                 // Field-level errors are rendered under their inputs, so showing them again in

@@ -1,13 +1,12 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/features/tools/models/qr_code_art.dart';
 import 'package:dayaa/features/tools/models/qr_code_painter.dart';
 import 'package:flutter/rendering.dart' show Canvas, Color, Size, debugPrint;
-import 'package:path_provider/path_provider.dart';
 
 /// يرسم الرمز صورةً PNG ويكتبها حيث تستطيع ورقة المشاركة أن تأخذها.
 ///
@@ -63,11 +62,13 @@ class SaveQrCodeImage {
         return const Left(Failure.unexpected(message: 'تعذّر تجهيز صورة الرمز'));
       }
 
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/qr-${DateTime.now().microsecondsSinceEpoch}.png');
-      await file.writeAsBytes(bytes.buffer.asUint8List());
-
-      return Right(file.path);
+      return Right(
+        await LocalFiles.writeTemporary(
+          'qr-${DateTime.now().microsecondsSinceEpoch}.png',
+          bytes.buffer.asUint8List(),
+          mimeType: 'image/png',
+        ),
+      );
     } on Object catch (error, stack) {
       // واسعة عمداً: تحتها مُصيّرٌ ومُرمِّز صور ونظام ملفات، وأيٌّ من الثلاثة قد يكون من سقط.
       debugPrint('⚠️ صورة الرمز لم تُكتب: $error\n$stack');

@@ -1,7 +1,7 @@
-import 'dart:io';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
@@ -1420,8 +1420,8 @@ class _ImageField extends StatelessWidget {
                   size: 22.sp,
                 ),
               )
-            : Image.file(
-                File(image!.path),
+            : Image(
+                image: LocalFiles.image(image!.path),
                 fit: BoxFit.cover,
                 // The path can go stale — iOS copies a library pick into a cache the system may
                 // sweep — and a broken image with no fallback is a red crash box in a form.

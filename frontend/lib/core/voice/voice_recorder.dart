@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -57,6 +58,8 @@ abstract interface class VoiceRecorderEngine {
 /// هذا البناء أصلاً (`MissingPluginException`)، وميكروفونٌ قد يأخذه اتصالٌ هاتفيّ. كلُّ فشلٍ يصير
 /// جواباً — `false` أو `null` — فلا يرى ما فوقه استثناءً.
 class RecordPackageEngine implements VoiceRecorderEngine {
+  static const int _bitRate = 48000;
+
   final AudioRecorder _recorder = AudioRecorder();
 
   @override
@@ -72,10 +75,18 @@ class RecordPackageEngine implements VoiceRecorderEngine {
 
   /// AAC في حاوية MP4، أحاديّ، 48 kbps — كبريمولا: كلامٌ واضح بنحو ٦ كيلوبايت في الثانية، وصيغةٌ
   /// يشغّلها كل هاتف بلا مشغّلٍ إضافيّ.
+  ///
+  /// **وعلى الويب يُمرَّر عشرةُ أضعافه.** الحزمة تضع الرقم في `bitsPerSecond` أيضاً، وChrome يقرأ
+  /// ذاك معدّلاً للصوت والصورة معاً ويعطي الصوتَ عُشرَه — فكانت 48 تصير 5 kbps، كلاماً بالكاد
+  /// يُفهم. وإن أعطى متصفّحٌ آخر الصوتَ الرقمَ كلَّه، فـ[VoiceRecorder.fitsUpload] يردّ ما زاد قبل
+  /// الرفع.
   @override
   Future<bool> start(String path) async {
     try {
-      await _recorder.start(const RecordConfig(bitRate: 48000, numChannels: 1), path: path);
+      await _recorder.start(
+        const RecordConfig(bitRate: kIsWeb ? _bitRate * 10 : _bitRate, numChannels: 1),
+        path: path,
+      );
 
       return true;
     } on Object catch (error) {
@@ -223,7 +234,7 @@ class VoiceRecorder {
 
     final file = written ?? path;
 
-    if (duration < minDuration || !File(file).existsSync()) {
+    if (duration < minDuration || !LocalFiles.exists(file)) {
       _delete(file);
 
       return null;
@@ -255,11 +266,8 @@ class VoiceRecorder {
   }
 
   /// أيرسله الخادم؟ يُسأل هنا قبل الرفع، لا يُكتشف رفضاً على خطٍّ بطيء.
-  static bool fitsUpload(String path) {
-    final file = File(path);
-
-    return file.existsSync() && file.lengthSync() <= maxBytes;
-  }
+  static Future<bool> fitsUpload(String path) async =>
+      LocalFiles.exists(path) && await LocalFiles.length(path) <= maxBytes;
 
   Duration get _elapsed {
     final started = _startedAt;
@@ -279,6 +287,9 @@ class VoiceRecorder {
 
   /// مجلّدُ الدعم لا المستندات: المستنداتُ تُرى من تطبيق «الملفات»، وصوتُ زميلٍ لا مكان له هناك.
   Future<String> _newPath() async {
+    // المتصفّح يسجّل في الذاكرة ويُرجع رابط blob من [stop]؛ المسار المعطى يُهمَل هناك.
+    if (kIsWeb) return 'voice.m4a';
+
     final directory = Directory('${(await _folder()).path}/internal_voice');
     if (!directory.existsSync()) directory.createSync(recursive: true);
 
@@ -288,10 +299,7 @@ class VoiceRecorder {
     return '${directory.path}/$name.m4a';
   }
 
-  static void _delete(String path) {
-    final file = File(path);
-    if (file.existsSync()) file.deleteSync();
-  }
+  static void _delete(String path) => LocalFiles.delete(path);
 }
 
 /// يقلّص مستويات المسجّل إلى [bars] رقماً من ٠ إلى ١٠٠ — كدالة بريمولا نفسها.

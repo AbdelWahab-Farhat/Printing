@@ -1,6 +1,8 @@
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 // `image_picker` still exports a deprecated class of its own called `PickedFile`. Hidden rather
 // than prefixed: ours is the one every other file in the app means, and an import prefix here
 // would be the only place in the codebase where it needed one.
@@ -42,15 +44,29 @@ class AttachmentPickerImpl implements AttachmentPicker {
       allowedExtensions: extensions,
       // The bytes are never held in memory: a 25 MB design multiplied by a multi-select is how
       // an app gets killed for memory on a mid-range phone. Dio streams from the path instead.
-      withData: false,
+      //
+      // **إلا على الويب**، حيث لا مسار أصلاً: المتصفّح يعطي البايتات وحدها، فتصير رابط blob
+      // يحمل ما يحمله المسار على الهاتف — انظر [LocalFiles].
+      withData: kIsWeb,
     );
 
     if (result == null) return const [];
 
+    if (kIsWeb) {
+      return [
+        for (final file in result.files)
+          if (file.bytes case final bytes?)
+            PickedFile(
+              path: await LocalFiles.writeTemporary(file.name, bytes),
+              name: file.name,
+              sizeBytes: file.size,
+            ),
+      ];
+    }
+
     return [
       for (final file in result.files)
-        // Null on web only, where this app does not run — but a null path would be an upload
-        // of nothing, so it is dropped rather than forced.
+        // A null path would be an upload of nothing, so it is dropped rather than forced.
         if (file.path case final path?)
           PickedFile(path: path, name: file.name, sizeBytes: file.size),
     ];
@@ -72,6 +88,10 @@ class AttachmentPickerImpl implements AttachmentPicker {
   }
 
   /// `XFile` knows its size only by asking the file system, which is why this is async.
-  static Future<PickedFile> _fromXFile(XFile file) async =>
-      PickedFile(path: file.path, name: file.name, sizeBytes: await file.length());
+  static Future<PickedFile> _fromXFile(XFile file) async {
+    // على الويب المسار رابط blob بلا اسم، والاسمُ يُحفظ ليُنزَّل الملف به لاحقاً.
+    LocalFiles.rememberName(file.path, file.name);
+
+    return PickedFile(path: file.path, name: file.name, sizeBytes: await file.length());
+  }
 }

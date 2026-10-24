@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -63,7 +64,7 @@ class SupportRepositoryImpl implements SupportRepository {
         data: attachment == null
             ? {'body': text}
             : FormData.fromMap(<String, dynamic>{
-                'file': await MultipartFile.fromFile(attachment.path, filename: attachment.name),
+                'file': await LocalFiles.multipart(attachment.path, filename: attachment.name),
                 // يُحذف فارغاً ولا يُرسل نصاً فارغاً: التعليقُ اختياريٌّ مع الملف.
                 if (text != null && text.isNotEmpty) 'body': text,
               }),

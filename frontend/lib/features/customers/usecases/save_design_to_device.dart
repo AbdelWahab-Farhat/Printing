@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/device_saver.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// «تحميل»: يجلب التصميم ويحفظه على الهاتف حيث يجده صاحبه — **بلا ورقة مشاركة**.
@@ -63,6 +65,9 @@ class SaveDesignToDevice {
     return result.fold<Future<Either<Failure, String>>>(
       (failure) async => Left(failure),
       (bytes) async {
+        // على الويب لا مجلّد مؤقّت: الملف رابط blob يُنزَّل باسمه — انظر [LocalFiles].
+        if (kIsWeb) return Right(await LocalFiles.writeTemporary(fileNameFor(design), bytes));
+
         final directory = await _temporaryDirectory();
         final file = File('${directory.path}/${fileNameFor(design)}');
         await file.writeAsBytes(bytes);

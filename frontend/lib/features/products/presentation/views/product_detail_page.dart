@@ -12,6 +12,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
+import 'package:dayaa/core/widgets/web_frame.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/products/models/product.dart';
 import 'package:dayaa/features/products/presentation/viewmodel/product_detail_cubit.dart';
@@ -190,7 +191,8 @@ class _Body extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
       children: [
         if (product.images.isNotEmpty) ...[
-          ProductGallery(images: product.images),
+          // على الويب لا يتمدّد المربّع بعرض النافذة — انظر [WebFrame.media].
+          WebFrame.media(ProductGallery(images: product.images)),
           SizedBox(height: 12.h),
         ],
 

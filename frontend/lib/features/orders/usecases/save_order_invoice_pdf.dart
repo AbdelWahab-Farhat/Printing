@@ -1,14 +1,13 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/utils/arabic_pdf_font.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_invoice_pdf.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart';
 
 /// Draws the invoice and writes it somewhere the phone can hand to its own share sheet.
 ///
@@ -35,11 +34,13 @@ class SaveOrderInvoicePdf {
       final assets = _assets ??= await loadAssets();
       final bytes = await OrderInvoicePdf.build(order: order, assets: assets);
 
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/${OrderInvoicePdf.fileNameFor(order)}');
-      await file.writeAsBytes(bytes);
-
-      return Right(file.path);
+      return Right(
+        await LocalFiles.writeTemporary(
+          OrderInvoicePdf.fileNameFor(order),
+          bytes,
+          mimeType: 'application/pdf',
+        ),
+      );
     } on Object catch (error, stack) {
       // Broad on purpose: this touches the asset bundle, a font parser, an image decoder and a
       // filesystem, and any of the four can be what failed.

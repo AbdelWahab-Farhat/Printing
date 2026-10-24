@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
@@ -429,7 +429,12 @@ class _Thumbnail extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12.r),
-          child: Image.file(File(image.path), width: 76.w, height: 76.w, fit: BoxFit.cover),
+          child: Image(
+            image: LocalFiles.image(image.path),
+            width: 76.w,
+            height: 76.w,
+            fit: BoxFit.cover,
+          ),
         ),
         PositionedDirectional(
           top: -8.h,

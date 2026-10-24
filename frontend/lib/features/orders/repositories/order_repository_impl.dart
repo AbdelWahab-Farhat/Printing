@@ -2,6 +2,7 @@
 // uses). Hidden rather than prefixed, so the model keeps the name the domain calls it.
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
@@ -380,7 +381,7 @@ class OrderRepositoryImpl implements OrderRepository {
             // `fromFile` streams from disk rather than holding the file in memory. The fallback
             // name claims no extension on purpose: the server sniffs the bytes and would record
             // a made-up `.pdf` as the original name of what might be a photograph.
-            final PickedFile file => await MultipartFile.fromFile(
+            final PickedFile file => await LocalFiles.multipart(
               file.path,
               filename: file.name,
             ),

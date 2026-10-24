@@ -9,6 +9,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/features/auth/presentation/viewmodel/logout_cubit.dart';
 import 'package:dayaa/features/settings/presentation/viewmodel/settings_cubit.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -45,10 +46,14 @@ class _SettingsView extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
           children: [
-            const _SectionTitle('التنبيهات'),
-            SizedBox(height: 8.h),
-            const _NotificationsCard(),
-            SizedBox(height: 24.h),
+            // لا إشعاراتِ هاتفٍ في المتصفّح (انظر `PushService`)، فمفتاحُها هناك يَعِد بما لا
+            // يكون — والجرسُ في الرئيسية يعمل على الويب كما هو.
+            if (!kIsWeb) ...[
+              const _SectionTitle('التنبيهات'),
+              SizedBox(height: 8.h),
+              const _NotificationsCard(),
+              SizedBox(height: 24.h),
+            ],
 
             const _SectionTitle('عن التطبيق'),
             SizedBox(height: 8.h),

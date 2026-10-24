@@ -2,6 +2,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/auth/usecases/get_current_user.dart';
 import 'package:dayaa/features/auth/usecases/has_stored_session.dart';
 import 'package:dayaa/features/auth/usecases/logout.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -37,7 +38,10 @@ class SplashCubit extends Cubit<SplashState> {
        super(const SplashState.checking());
 
   /// Long enough to read the name, short enough not to feel like a delay.
-  static const Duration minimumDisplay = Duration(milliseconds: 1200);
+  ///
+  /// **وصفرٌ على الويب.** هناك تمرّ كلُّ صفحةٍ بهذه الشاشة: كلُّ رابطٍ يُفتح وكلُّ تحديث، لا
+  /// إقلاعُ التطبيق وحده — فثانيةٌ ونصف تُدفع كلَّ مرّةٍ يضغط فيها الموظف F5.
+  static const Duration minimumDisplay = kIsWeb ? Duration.zero : Duration(milliseconds: 1200);
 
   final HasStoredSession _hasStoredSession;
   final GetCurrentUser _getCurrentUser;
