@@ -9,7 +9,7 @@ use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\DTOs\RenderedNotification;
 
 /**
- * تذكيرٌ لمن يُنتظر ردّه في تذكرةٍ داخلية — كل ساعة، حتى ٢٤ مرة، كبريمولا.
+ * تذكيرٌ لمن يُنتظر ردّه في تذكرةٍ داخلية — مرّةً في اليوم، حتى ٢٤ يوماً.
  *
  * **إلى المنتظَر لا إلى الزميل الذي وُجّهت إليه**: صاحبُ التذكرة يُنتظر ردّه بقدر ما يُنتظر ردُّ
  * زميله. يحسبه `RemindAwaitedParties` ويحمله في الحمولة.

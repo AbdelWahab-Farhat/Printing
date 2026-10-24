@@ -7,9 +7,12 @@ namespace Tests\Feature\InternalTickets;
 use App\Domain\InternalTicket\Models\InternalTicket;
 use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\Models\Notification;
+use Carbon\CarbonImmutable;
+use Illuminate\Console\Scheduling\Schedule;
 
 /**
- * التذكير كل ساعة لمن يُنتظر ردّه — أوّله بعد ٦٠ دقيقة، ثم كل ساعة، و٢٤ مرة على الأكثر، كبريمولا.
+ * التذكير مرّةً في اليوم لمن يُنتظر ردّه — الساعة التاسعة بتوقيت طرابلس، لمن مرّت عليه ساعةٌ بلا ردّ،
+ * و٢٤ مرة على الأكثر.
  *
  * Arrange - Act - Assert في كل حالة.
  */
@@ -85,25 +88,44 @@ class InternalTicketReminderTest extends InternalTicketTestCase
         $this->assertSame([$me->id], $this->remindedUserIds());
     }
 
-    public function test_it_repeats_hourly_and_not_twice_in_one_hour(): void
+    public function test_it_reminds_once_a_day_not_every_hour(): void
     {
-        // Arrange
+        // Arrange — أوقاتٌ ثابتة بتوقيت طرابلس، فلا يعبر منتصفُ الليل بين النداءين صدفةً.
+        $this->travelTo(CarbonImmutable::parse('2026-10-24 08:00', 'Africa/Tripoli'));
         [, $mine] = $this->employee();
         [$colleague] = $this->employee();
         $ticket = $this->open($mine, $colleague);
-        $this->travel(61)->minutes();
+        $this->travelTo(CarbonImmutable::parse('2026-10-24 09:00', 'Africa/Tripoli'));
         $this->remind();
 
         // Act
-        $this->travel(10)->minutes();
+        $this->travelTo(CarbonImmutable::parse('2026-10-24 15:00', 'Africa/Tripoli'));
         $this->remind();
-        $sameHour = $ticket->refresh()->reminder_count;
-        $this->travel(50)->minutes();
+        $sameDay = $ticket->refresh()->reminder_count;
+        $this->travelTo(CarbonImmutable::parse('2026-10-25 09:00', 'Africa/Tripoli'));
         $this->remind();
 
         // Assert
-        $this->assertSame(1, $sameHour);
+        $this->assertSame(1, $sameDay);
         $this->assertSame(2, $ticket->refresh()->reminder_count);
+    }
+
+    public function test_the_day_is_tripolis_not_utcs(): void
+    {
+        // Arrange — ٠١:٠٠ و٢٣:٠٠ يومٌ واحد في طرابلس، ويومان في UTC (٢٣:٠٠ أمس و٢١:٠٠ اليوم).
+        $this->travelTo(CarbonImmutable::parse('2026-10-23 23:00', 'Africa/Tripoli'));
+        [, $mine] = $this->employee();
+        [$colleague] = $this->employee();
+        $ticket = $this->open($mine, $colleague);
+        $this->travelTo(CarbonImmutable::parse('2026-10-24 01:00', 'Africa/Tripoli'));
+        $this->remind();
+
+        // Act
+        $this->travelTo(CarbonImmutable::parse('2026-10-24 23:00', 'Africa/Tripoli'));
+        $this->remind();
+
+        // Assert
+        $this->assertSame(1, $ticket->refresh()->reminder_count);
     }
 
     public function test_it_stops_after_twenty_four(): void
@@ -168,5 +190,23 @@ class InternalTicketReminderTest extends InternalTicketTestCase
 
         // Assert
         $this->assertSame([], $this->remindedUserIds());
+    }
+
+    public function test_it_runs_daily_at_nine_tripoli_time_without_overlapping_itself(): void
+    {
+        // Arrange — الجدولُ يُبنى حين يبدأ Artisan، فيُقرأ بعد أن يبدأ لا قبله.
+        $this->artisan('schedule:list')->assertSuccessful();
+
+        // Act
+        $events = array_values(array_filter(
+            app(Schedule::class)->events(),
+            fn ($event): bool => str_contains((string) $event->command, 'internal-tickets:remind'),
+        ));
+
+        // Assert
+        $this->assertCount(1, $events);
+        $this->assertSame('0 9 * * *', $events[0]->expression);
+        $this->assertSame('Africa/Tripoli', $events[0]->timezone);
+        $this->assertTrue($events[0]->withoutOverlapping);
     }
 }

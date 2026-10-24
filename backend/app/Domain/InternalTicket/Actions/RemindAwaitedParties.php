@@ -11,12 +11,12 @@ use App\Domain\InternalTicket\Models\InternalTicket;
 use Illuminate\Support\Facades\DB;
 
 /**
- * يذكّر كلَّ مَن تأخّر ردّه في تذكرةٍ داخلية مفتوحة — يستدعيه المجدوِل كل ساعة.
+ * يذكّر كلَّ مَن تأخّر ردّه في تذكرةٍ داخلية مفتوحة — يستدعيه المجدوِل مرّةً في اليوم.
  *
  * **مَن يُنتظر** هو {@see InternalTicket::awaitsReplyFrom()} نفسه، فلا تختلف البطاقةُ والتذكير.
- * **ومتى**: مرّت `after_minutes` على آخر كلامٍ حيٍّ من الطرف الآخر — أو على آخر تذكير — وعددُ
- * التذكيرات دون `max`. والحسابُ بسماحة خمس دقائق: المجدوِل يعمل كل ساعة، والتذكيرُ الذي كُتب في
- * الثانية الثانية من دورةٍ كان سيفوت الدورة التالية بثانية.
+ * **ومتى**: مرّت `after_minutes` على آخر كلامٍ حيٍّ من الطرف الآخر، ولم تُذكَّر التذكرةُ في يومها —
+ * يومِ طرابلس لا يومِ UTC — وعددُ التذكيرات دون `max`. فنداءٌ ثانٍ في اليوم نفسه لا يكتب شيئاً،
+ * أيّاً كان مَن شغّله.
  *
  * **حسابٌ معطّل لا يُذكَّر**: لن يقرأ، والتذكيرُ ينفق عليه ميزانيته كلّها.
  *
@@ -24,8 +24,6 @@ use Illuminate\Support\Facades\DB;
  */
 final class RemindAwaitedParties
 {
-    private const SCHEDULER_SLACK_MINUTES = 5;
-
     /** @return int كم تذكيراً أُرسل */
     public function __invoke(): int
     {
@@ -35,9 +33,9 @@ final class RemindAwaitedParties
             return 0;
         }
 
-        $dueBefore = now()
-            ->subMinutes((int) config('internal_tickets.reminder.after_minutes'))
-            ->addMinutes(self::SCHEDULER_SLACK_MINUTES);
+        $dueBefore = now()->subMinutes((int) config('internal_tickets.reminder.after_minutes'));
+        $zone = (string) config('app.business_timezone', 'Africa/Tripoli');
+        $today = now($zone)->toDateString();
 
         $sent = 0;
 
@@ -45,7 +43,7 @@ final class RemindAwaitedParties
             ->with(['latestLiveMessage', 'opener', 'assignee'])
             ->where('status', InternalTicketStatus::InProgress)
             ->where('reminder_count', '<', $max)
-            ->each(function (InternalTicket $ticket) use ($dueBefore, &$sent): void {
+            ->each(function (InternalTicket $ticket) use ($dueBefore, $zone, $today, &$sent): void {
                 $awaited = $this->awaitedParty($ticket);
 
                 if ($awaited === null || ! $awaited->is_active || $awaited->trashed()) {
@@ -53,11 +51,12 @@ final class RemindAwaitedParties
                 }
 
                 $lastWord = $ticket->latestLiveMessage?->created_at ?? $ticket->created_at;
-                $anchor = $ticket->last_reminder_at !== null && $ticket->last_reminder_at->greaterThan($lastWord)
-                    ? $ticket->last_reminder_at
-                    : $lastWord;
 
-                if ($anchor === null || $anchor->greaterThan($dueBefore)) {
+                if ($lastWord === null || $lastWord->greaterThan($dueBefore)) {
+                    return;
+                }
+
+                if ($ticket->last_reminder_at?->copy()->setTimezone($zone)->toDateString() === $today) {
                     return;
                 }
 
