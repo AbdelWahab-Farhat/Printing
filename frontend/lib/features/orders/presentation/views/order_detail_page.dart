@@ -30,7 +30,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_deposit_card.da
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_item_card.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_items_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_ready_message_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
@@ -967,7 +967,7 @@ class _Body extends StatelessWidget {
   /// Null for anybody without `customers.view` — see [OrderCustomerCard].
   final Future<void> Function()? onOpenCustomer;
 
-  /// Null for anybody without `products.view` — see [OrderItemCard].
+  /// Null for anybody without `products.view` — see [OrderItemsSection].
   final void Function(OrderItem item)? onOpenProduct;
 
   /// Whether what the job cost us is drawn at all — see the call site for which grant answers
@@ -1209,12 +1209,12 @@ class _Body extends StatelessWidget {
                 SizedBox(height: 16.h),
                 _Section(
                   title: 'البنود',
-                  child: _Items(
+                  child: OrderItemsSection(
                     items: order.items!,
-                    // What is being printed, in the slot the catalogue photograph holds — see
-                    // [Order.artwork]. Null on a كيس سادة, and the product is shown as before.
-                    artworkUrl: order.artwork?.fileUrl,
-                    // The lines' own sum, under the lines — see [_Items].
+                    // ما يُطبع، فوق البنود — انظر [Order.artworks]. فارغةٌ على كيسٍ سادة، فتُرسم
+                    // صورة المنتج كما كانت.
+                    artworkUrls: [for (final design in order.artworks) design.fileUrl!],
+                    // مجموع البنود نفسها، تحتها — انظر [OrderItemsSection].
                     weight: order.weightLabel,
                     showCosts: showCosts,
                     showOutsourcingCosts: showOutsourcingCosts,
@@ -1688,102 +1688,6 @@ class _CarrierOutOfSync extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-/// The lines, and what they weigh together.
-///
-/// **The weight belongs here and nowhere else on the screen.** It is not a fact about the order
-/// the way its number or its customer is — it is the sum of what the warehouse recorded against
-/// these lines, and the order itself stopped carrying a weight of its own when `weight_kg` was
-/// dropped. Under «الحساب» it would sit among the money and read as another figure on the
-/// invoice; in the header it would claim to be true of orders that have never been near a scale.
-class _Items extends StatelessWidget {
-  const _Items({
-    required this.items,
-    required this.weight,
-    required this.artworkUrl,
-    required this.showCosts,
-    required this.showOutsourcingCosts,
-    required this.onScrap,
-    required this.onVendorCost,
-    required this.linesAwaitingVendorCost,
-    required this.onOpenProduct,
-  });
-
-  final List<OrderItem> items;
-
-  /// The order's artwork, drawn on every line in place of the product photograph — see
-  /// [OrderItemCard.artworkUrl].
-  final String? artworkUrl;
-
-  /// «12.5 كجم», or null on an order with no weight to state — see [Order.totalWeight],
-  /// where null covers both «nothing here is weighed» and «nothing has been weighed yet». The
-  /// server decides which; the screen only draws the line when there is one.
-  final String? weight;
-
-  /// Whether each line says what it cost to make, under what it is charged at.
-  final bool showCosts;
-
-  /// Whether a وسيط line says what the vendor charges — see [OrderLineCosts].
-  final bool showOutsourcingCosts;
-
-  /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
-  final Future<void> Function(BuildContext context, OrderItem item)? onScrap;
-
-  /// Offered only on the lines in [linesAwaitingVendorCost].
-  final Future<void> Function(BuildContext context, OrderItem item)? onVendorCost;
-  final List<int> linesAwaitingVendorCost;
-
-  /// Null for anybody without `products.view` — see [OrderItemCard].
-  final void Function(OrderItem item)? onOpenProduct;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final (index, item) in items.indexed) ...[
-          if (index > 0) SizedBox(height: 10.h),
-          OrderItemCard(
-            item: item,
-            showCosts: showCosts,
-            artworkUrl: artworkUrl,
-            showOutsourcingCosts: showOutsourcingCosts,
-            // Only for a line whose product came with the payload: a card with nothing to open
-            // is the arrow onto a 403 in another costume.
-            onOpenProduct: onOpenProduct == null ? null : () => onOpenProduct!(item),
-            onScrap: onScrap == null ? null : () => onScrap!(context, item).ignore(),
-            onVendorCost: onVendorCost == null || !linesAwaitingVendorCost.contains(item.id)
-                ? null
-                : () => onVendorCost!(context, item).ignore(),
-          ),
-        ],
-        if (weight case final label?) ...[
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.h),
-            child: Divider(height: 1, color: context.colorScheme.outlineVariant),
-          ),
-          Row(
-            children: [
-              Text(
-                'وزن الطلبية',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              // No `textDirection` override: «12.5 كجم» is a number *and* an Arabic word,
-              // and forcing the run left-to-right would put the unit on the wrong side of it.
-              // The overrides elsewhere on this screen are for bare figures.
-              Text(
-                label,
-                style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ],
-      ],
     );
   }
 }

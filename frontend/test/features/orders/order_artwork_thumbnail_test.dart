@@ -1,10 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
-import 'package:dayaa/features/orders/presentation/widgets/order_item_card.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_items_section.dart';
 import 'package:dayaa/features/products/models/product.dart';
-import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -229,60 +229,93 @@ void main() {
 
     const photo = ProductImage(id: 7, url: 'https://files.test/bag.png');
 
+    /// الرابط الذي يرسمه الشريط فوق البنود، أو null حين لا صورة فيه.
+    String? drawnUrl(WidgetTester tester) {
+      final images = find.byType(CachedNetworkImage);
+      if (images.evaluate().isEmpty) return null;
+
+      return tester.widget<CachedNetworkImage>(images).imageUrl;
+    }
+
     testWidgets('draws the artwork in place of the catalogue photograph', (tester) async {
       // Arrange
       await tester.pumpWidget(
         host(
-          OrderItemCard(
-            item: line(image: photo),
+          OrderItemsSection(
+            items: [line(image: photo)],
             showCosts: false,
-            artworkUrl: 'https://files.test/artwork-1.png',
+            artworkUrls: const ['https://files.test/artwork-1.png'],
           ),
         ),
       );
 
       // Act
-      final thumbnail = tester.widget<ProductThumbnail>(find.byType(ProductThumbnail));
+      final url = drawnUrl(tester);
 
-      // Assert — one square, showing what is being printed rather than the same white bag
-      // every printed order in the shop would otherwise show.
-      expect(thumbnail.url, 'https://files.test/artwork-1.png');
+      // Assert — what is being printed, rather than the same white bag every printed order in
+      // the shop would otherwise show.
+      expect(url, 'https://files.test/artwork-1.png');
+    });
+
+    testWidgets('the newest version, when the order carries several', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        host(
+          OrderItemsSection(
+            items: [line(image: photo)],
+            showCosts: false,
+            artworkUrls: const ['https://files.test/artwork-1.png', 'https://files.test/artwork-2.png'],
+          ),
+        ),
+      );
+
+      // Act
+      final url = drawnUrl(tester);
+
+      // Assert
+      expect(url, 'https://files.test/artwork-2.png');
     });
 
     testWidgets('falls back to the product when there is no artwork', (tester) async {
       // Arrange — a كيس سادة, or a printed order whose file has not arrived yet.
-      await tester.pumpWidget(host(OrderItemCard(item: line(image: photo), showCosts: false)));
+      await tester.pumpWidget(host(OrderItemsSection(items: [line(image: photo)], showCosts: false)));
 
       // Act
-      final thumbnail = tester.widget<ProductThumbnail>(find.byType(ProductThumbnail));
+      final url = drawnUrl(tester);
 
       // Assert
-      expect(thumbnail.url, 'https://files.test/bag.png');
+      expect(url, 'https://files.test/bag.png');
     });
 
     testWidgets('a product with no photograph still shows the artwork', (tester) async {
-      // Arrange — the square used to be drawn only when the product had a picture, so an
-      // unphotographed product hid a design nobody could otherwise see on this screen.
+      // Arrange
       await tester.pumpWidget(
         host(
-          OrderItemCard(
-            item: line(),
+          OrderItemsSection(
+            items: [line()],
             showCosts: false,
-            artworkUrl: 'https://files.test/artwork-1.png',
+            artworkUrls: const ['https://files.test/artwork-1.png'],
           ),
         ),
       );
 
-      // Act - Assert
-      expect(find.byType(ProductThumbnail), findsOneWidget);
+      // Act
+      final url = drawnUrl(tester);
+
+      // Assert
+      expect(url, 'https://files.test/artwork-1.png');
     });
 
-    testWidgets('a line with neither draws no square at all', (tester) async {
+    testWidgets('a line with neither draws no picture at all', (tester) async {
       // Arrange
-      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+      await tester.pumpWidget(host(OrderItemsSection(items: [line()], showCosts: false)));
 
-      // Act - Assert — unchanged: an empty grey box beside the name says nothing.
-      expect(find.byType(ProductThumbnail), findsNothing);
+      // Act
+      final url = drawnUrl(tester);
+
+      // Assert — the banner still names the product; an empty grey box would say nothing.
+      expect(url, isNull);
+      expect(find.text('كيس شحن مطبوع'), findsOneWidget);
     });
   });
 }

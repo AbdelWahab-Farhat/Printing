@@ -387,6 +387,10 @@ abstract final class AppIcons {
   static IconData get pdf =>
       _pick(Icons.picture_as_pdf_outlined, CupertinoIcons.doc_richtext);
 
+  /// يفتح الصورة على الشاشة كلّها — سهمان إلى الزاويتين، لا عدسةٌ تَعِد بتكبيرٍ في مكانها.
+  static IconData get enlarge =>
+      _pick(Icons.open_in_full_rounded, CupertinoIcons.arrow_up_left_arrow_down_right);
+
   /// Hands the file to whatever the phone already opens it with.
   static IconData get openExternal =>
       _pick(Icons.open_in_new_rounded, CupertinoIcons.arrow_up_right_square);

@@ -1,18 +1,15 @@
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_item_card.dart';
-import 'package:dayaa/features/products/models/product.dart';
-import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// One line of an order, as a card that names the product and opens it.
+/// بندٌ واحد من الطلبية، سطراً تحت صورة التصميم: المقاس وكم قطعة، لا أكثر.
 ///
-/// A line used to be two lines of text: what it is, and what it costs. The product it was sold
-/// from was a name on the invoice and nothing more — anybody who wanted the size chart, the
-/// price tiers or the photograph went to the products tab and searched for a word they had just
-/// read. The line now carries the product's own card, and the card is the door.
+/// كان البند بطاقةً تحمل صورة المنتج واسمه وسعر القطعة وتفصيل التكلفة وزرّ التلف. الاسم والصورة
+/// صعدا إلى الشريط فوق التصميم — المنتج واحدٌ لبنودٍ كثيرة — وما يحتاجه من يدقّق فاتورةً (المبلغ،
+/// سعر القطعة، التكلفة) أو يسجّل تلفاً صار في ورقة «⋯» البند نفسه.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -42,18 +39,15 @@ void main() {
     String? shortage,
     String? billable,
     String? cogs,
-    String? code,
-    ProductImage? image,
     String? warehouseShortage,
     bool weighed = false,
+    bool priced = true,
   }) => OrderItem(
     id: 11,
     productId: 7,
     productVariantId: 2,
     productName: 'أكياس الشحن السادة',
     variantLabel: 'سادة',
-    productCode: code,
-    productImage: image,
     pricingUnitLabel: 'كجم',
     quantity: '100.000',
     shortageQuantity: shortage,
@@ -64,220 +58,225 @@ void main() {
     // weight still unknown; pass `warehouseShortage` too for one somebody has since stated.
     isStockedInAnotherUnit: weighed || warehouseShortage != null,
     billableQuantity: billable,
-    unitPrice: '32.000',
-    lineTotal: shortage == null ? '3200.00' : '2400.00',
+    unitPrice: priced ? '32.000' : null,
+    lineTotal: !priced ? null : (shortage == null ? '3200.00' : '2400.00'),
     materialCost: cogs == null ? null : '100.00',
     cogs: cogs,
   );
 
-  testWidgets('the product names itself on the line it was sold on', (tester) async {
-    // Arrange
-    await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+  /// يفتح ورقة البند من زرّ «⋯»، كما يفعل من يقرأ الشاشة.
+  Future<void> openOptions(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('خيارات البند'));
+    await tester.pumpAndSettle();
+  }
 
-    // Act
-    await tester.pump();
+  group('السطر', () {
+    testWidgets('المقاس وكم قطعة، والمنتج لا يتكرّر عليه', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
 
-    // Assert — the product and the variant are two facts, not one string with a dash in it.
-    expect(find.text('أكياس الشحن السادة'), findsOneWidget);
-    expect(find.text('سادة'), findsOneWidget);
+      // Act
+      await tester.pump();
+
+      // Assert — اسم المنتج على الشريط فوق الصورة، مرةً لكل البنود.
+      expect(find.text('سادة'), findsOneWidget);
+      expect(find.text('100 كجم'), findsOneWidget);
+      expect(find.text('أكياس الشحن السادة'), findsNothing);
+    });
+
+    testWidgets('لا مال على السطر، ولو لمن يملك التكلفة', (tester) async {
+      // Arrange — السطر لمن يطبع: المقاس وكم قطعة. المبلغ والتكلفة في ورقة «⋯».
+      await tester.pumpWidget(host(OrderItemCard(item: line(cogs: '150.00'), showCosts: true)));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.textContaining('3,200'), findsNothing);
+      expect(find.textContaining('التكلفة'), findsNothing);
+    });
   });
 
-  testWidgets('the catalogue row shows its own face on the line', (tester) async {
-    // Arrange — the code people say down the phone, and the one photograph.
-    const image = ProductImage(id: 3, url: 'https://example.test/bag.jpg', isPrimary: true);
+  group('the shortage stays on the line it is missing from', () {
+    testWidgets('what is missing is said on the line it is missing from', (tester) async {
+      // Arrange
+      final item = line(shortage: '25.000', billable: '75.000');
+      await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
+
+      // Act
+      await tester.pump();
+
+      // Assert — the press makes what is left, and «ناقص من كم» is answered on the same line.
+      expect(find.text('75 كجم'), findsOneWidget);
+      expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
+    });
+
+    testWidgets('a line stocked in another unit says what has to be bought', (tester) async {
+      // Arrange — sold by the kilo off a pile counted by the piece, so the gap is two numbers.
+      final item = line(shortage: '25.000', billable: '75.000', warehouseShortage: '6.000');
+      await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
+
+      // Act
+      await tester.pump();
+
+      // Assert — the invoice's figure and the warehouse's, one under the other.
+      expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
+      expect(find.text('ناقص من المخزن: 6 قطعة — هذا ما يُشترى'), findsOneWidget);
+    });
+
+    testWidgets('a line whose weight nobody knows yet says so', (tester) async {
+      // Arrange — sold by the kilo off a piece-counted pile, and nobody has stated the weight.
+      final item = line(shortage: '25.000', billable: '75.000', weighed: true);
+      await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء'), findsOneWidget);
+    });
+
+    testWidgets('a line stocked in its own unit says it once', (tester) async {
+      // Arrange — the ordinary case: the server sends no second figure, because there is not one.
+      final item = line(shortage: '25.000', billable: '75.000');
+      await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
+      expect(find.textContaining('من المخزن:'), findsNothing);
+    });
+  });
+
+  group('ورقة «⋯»', () {
+    testWidgets('فيها المبلغ، وسعر القطعة الذي يُدقَّق به', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.text('100 كجم × 32'), findsOneWidget);
+      expect(find.text('3,200'), findsOneWidget);
+    });
+
+    testWidgets('بندٌ لم يُسعَّر يقول ذلك مكان السعر', (tester) async {
+      // Arrange — منتجٌ «حسب الطلب» قبل أن يسعّره المراجع.
+      await tester.pumpWidget(host(OrderItemCard(item: line(priced: false), showCosts: false)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.text('100 كجم غير مسعّر'), findsOneWidget);
+      expect(find.text('—'), findsOneWidget);
+    });
+
+    testWidgets('وتفصيل التكلفة لمن يملكها', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(OrderItemCard(item: line(cogs: '150.00'), showCosts: true)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.text('التكلفة 150 — مواد 100'), findsOneWidget);
+    });
+
+    testWidgets('ولا تكلفة فيها لمن لا يملكها', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(OrderItemCard(item: line(cogs: '150.00'), showCosts: false)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.textContaining('التكلفة'), findsNothing);
+    });
+
+    testWidgets('الضغط على السطر يفتحها كذلك', (tester) async {
+      // Arrange — the row is the bigger target, and a thumb at the press finds it first.
+      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+
+      // Act
+      await tester.tap(find.text('100 كجم'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('100 كجم × 32'), findsOneWidget);
+    });
+
+    testWidgets('تسجيل التلف منها، وتُغلق بعده', (tester) async {
+      // Arrange
+      var scraps = 0;
+      await tester.pumpWidget(
+        host(OrderItemCard(item: line(), showCosts: false, onScrap: () => scraps++)),
+      );
+      await openOptions(tester);
+
+      // Act
+      await tester.tap(find.text('تسجيل تلف'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(scraps, 1);
+      expect(find.text('تسجيل تلف'), findsNothing);
+    });
+
+    testWidgets('لا تلف معروض، لا صفّ له', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.text('تسجيل تلف'), findsNothing);
+    });
+
+    testWidgets('فتح المنتج منها', (tester) async {
+      // Arrange
+      var opened = 0;
+      await tester.pumpWidget(
+        host(OrderItemCard(item: line(), showCosts: false, onOpenProduct: () => opened++)),
+      );
+      await openOptions(tester);
+
+      // Act
+      await tester.tap(find.text('فتح المنتج'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(opened, 1);
+    });
+
+    testWidgets('بلا `products.view` لا يُعرض فتح المنتج', (tester) async {
+      // Arrange — a door onto a 403 is worse than no door.
+      await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
+
+      // Act
+      await openOptions(tester);
+
+      // Assert
+      expect(find.text('فتح المنتج'), findsNothing);
+    });
+  });
+
+  testWidgets('تكلفة المورد الناقصة تبقى ظاهرةً على السطر', (tester) async {
+    // Arrange — ربح الطلبية مجهولٌ حتى تُسجَّل، فهي مهمّةٌ معلّقة لا خيارٌ يُخفى في ورقة.
+    var recorded = 0;
     await tester.pumpWidget(
-      host(OrderItemCard(item: line(code: 'P7', image: image), showCosts: false)),
+      host(OrderItemCard(item: line(), showCosts: false, onVendorCost: () => recorded++)),
     );
 
     // Act
-    await tester.pump();
+    await tester.tap(find.text('تسجيل تكلفة المورد'));
+    await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('P7'), findsOneWidget);
-    expect(find.byType(ProductThumbnail), findsOneWidget);
-  });
-
-  testWidgets('a product with no photograph leaves the slot empty', (tester) async {
-    // Arrange — most of the catalogue, most of the time. A tinted glyph on every line would put
-    // the same shape down the whole column until the eye learned to skip it.
-    await tester.pumpWidget(host(OrderItemCard(item: line(code: 'P7'), showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert
-    expect(find.byType(ProductThumbnail), findsNothing);
-    expect(find.text('P7'), findsOneWidget);
-  });
-
-  testWidgets('a line whose product did not come with it still reads', (tester) async {
-    // Arrange — the list payload carries no product, and neither does an older server.
-    await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert — the snapshot alone, which is what an invoice is made of anyway.
-    expect(find.text('أكياس الشحن السادة'), findsOneWidget);
-    expect(find.byType(ProductThumbnail), findsNothing);
-  });
-
-  testWidgets('the three numbers an invoice is checked by are still on the line', (tester) async {
-    // Arrange
-    await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert
-    expect(find.text('100 كجم × 32'), findsOneWidget);
-    expect(find.text('3,200'), findsOneWidget);
-  });
-
-  testWidgets('a tap opens the product', (tester) async {
-    // Arrange
-    var opened = 0;
-    await tester.pumpWidget(
-      host(OrderItemCard(item: line(), showCosts: false, onOpenProduct: () => opened++)),
-    );
-
-    // Act
-    await tester.tap(find.text('أكياس الشحن السادة'));
-    await tester.pump();
-
-    // Assert
-    expect(opened, 1);
-  });
-
-  testWidgets('without a way in, nothing on the card offers one', (tester) async {
-    // Arrange — somebody without `products.view` reads the line and is promised no screen that
-    // would answer 403.
-    await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert
-    expect(find.byKey(OrderItemCard.chevronKey), findsNothing);
-  });
-
-  testWidgets('a way in is advertised by the chevron', (tester) async {
-    // Arrange
-    await tester.pumpWidget(
-      host(OrderItemCard(item: line(), showCosts: false, onOpenProduct: () {})),
-    );
-
-    // Act
-    await tester.pump();
-
-    // Assert
-    expect(find.byKey(OrderItemCard.chevronKey), findsOneWidget);
-  });
-
-  testWidgets('recording a scrap does not also walk off to the product', (tester) async {
-    // Arrange — the button sits inside a card that navigates, and a foreman reporting a spoiled
-    // bag must not land on the catalogue instead.
-    var opened = 0;
-    var scraps = 0;
-    await tester.pumpWidget(
-      host(
-        OrderItemCard(
-          item: line(),
-          showCosts: false,
-          onOpenProduct: () => opened++,
-          onScrap: () => scraps++,
-        ),
-      ),
-    );
-
-    // Act
-    await tester.tap(find.text('تسجيل تلف'));
-    await tester.pump();
-
-    // Assert
-    expect(scraps, 1);
-    expect(opened, 0);
-  });
-
-  testWidgets('no scrap on offer draws no button', (tester) async {
-    // Arrange
-    await tester.pumpWidget(host(OrderItemCard(item: line(), showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert
-    expect(find.text('تسجيل تلف'), findsNothing);
-  });
-
-  testWidgets('what is missing is said on the line it is missing from', (tester) async {
-    // Arrange
-    final item = line(shortage: '25.000', billable: '75.000');
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert — priced on what is left, and «ناقص من كم» answered on the same line.
-    expect(find.text('75 كجم × 32'), findsOneWidget);
-    expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
-  });
-
-  testWidgets('a line stocked in another unit says what has to be bought', (tester) async {
-    // Arrange — sold by the kilo off a pile counted by the piece, so the gap is two numbers.
-    final item = line(shortage: '25.000', billable: '75.000', warehouseShortage: '6.000');
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert — the invoice's figure and the warehouse's, one under the other: the first is what
-    // the customer stops paying for, the second is what somebody has to go and buy.
-    expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
-    expect(find.text('ناقص من المخزن: 6 قطعة — هذا ما يُشترى'), findsOneWidget);
-  });
-
-  testWidgets('a line whose weight nobody knows yet says so', (tester) async {
-    // Arrange — sold by the kilo off a piece-counted pile, and nobody has stated the weight: the
-    // ordinary state of a fresh shortage, since the missing goods cannot be put on a scale.
-    final item = line(shortage: '25.000', billable: '75.000', weighed: true);
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert — named rather than left blank: this gap is what stops a purchase being recorded,
-    // and a buyer refused elsewhere with nothing said here would have nowhere to look.
-    expect(find.text('الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء'), findsOneWidget);
-  });
-
-  testWidgets('a line stocked in its own unit says it once', (tester) async {
-    // Arrange — the ordinary case: the server sends no second figure, because there is not one.
-    final item = line(shortage: '25.000', billable: '75.000');
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
-
-    // Act
-    await tester.pump();
-
-    // Assert — restating the same gap in the same unit would read as a second problem.
-    expect(find.text('ناقص: 25 من 100 كجم — غير محتسب'), findsOneWidget);
-    expect(find.textContaining('من المخزن:'), findsNothing);
-  });
-
-  testWidgets('what the line cost is drawn only for those who may read it', (tester) async {
-    // Arrange
-    final item = line(cogs: '150.00');
-
-    // Act — first without the grant, then with it.
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: false)));
-    await tester.pump();
-    final hidden = find.textContaining('التكلفة').evaluate().isEmpty;
-
-    await tester.pumpWidget(host(OrderItemCard(item: item, showCosts: true)));
-    await tester.pump();
-
-    // Assert
-    expect(hidden, isTrue);
-    expect(find.textContaining('التكلفة'), findsOneWidget);
+    expect(recorded, 1);
   });
 }

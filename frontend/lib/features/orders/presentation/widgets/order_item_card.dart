@@ -3,353 +3,319 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_line_costs.dart';
-import 'package:dayaa/features/products/presentation/widgets/product_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// One line of an order — the product it was sold from, and the way back to it.
+/// بندٌ واحد من الطلبية، سطراً تحت صورة التصميم: المقاس وكم قطعة، لا أكثر.
 ///
-/// A line used to be two lines of text inside the section: what it is, and what it costs. The
-/// product itself was a name on an invoice, so anybody who wanted the size chart, the price
-/// tiers or the photograph left for the products tab and searched for a word they had just
-/// read. The line carries the catalogue's own card now, and the card is the door.
+/// **لمن يطبع.** المقاس والكمية وحدهما على السطر، لأنهما ما تُضبط عليه المطبعة. اسم المنتج
+/// وصورته على الشريط فوق البنود (`OrderProductBanner`)، مرةً لكل مقاساته.
 ///
-/// **The picture is the live product's; the words are the invoice's.** `product_name` and
-/// `variant_label` are the snapshot taken when the order was placed and are what an old order
-/// must keep saying — a product renamed since must not rewrite an invoice. The code and the
-/// photograph come from the catalogue row as it stands today, which is right for an affordance
-/// whose whole purpose is to open that row.
+/// **والمال في ورقة «⋯» البند**: المبلغ وسعر القطعة الذي يُدقَّق به، والتكلفة وتفصيلها لمن
+/// يملكها، ومعها «فتح المنتج» و«تسجيل تلف». مجموع الطلبية في «الحساب» تحت البنود كما كان.
+/// والسطر كلّه يفتح الورقة نفسها: هو الهدف الأكبر لإصبعٍ عند المطبعة.
 ///
-/// **A slot only a real photograph fills.** `ProductCard` learned this on the catalogue screen:
-/// a tinted glyph standing in for every product without an image put the same shape on every
-/// row until the eye skipped the column. An empty slot says as much and costs nothing.
-///
-/// **The chevron appears only when there is somewhere to go.** [onOpenProduct] is null for
-/// anybody without `products.view`, and an arrow promising a screen that answers 403 is worse
-/// than no arrow.
+/// **ما ينقص البند يبقى عليه.** «ناقص» و«غير مُستلَم» وزرّ «تسجيل تكلفة المورد» حقائق عن هذا
+/// البند أو مهامٌّ معلّقة عليه، لا تفاصيل تُطوى في ورقة.
 class OrderItemCard extends StatelessWidget {
   const OrderItemCard({
     required this.item,
     required this.showCosts,
     this.showOutsourcingCosts = false,
-    this.artworkUrl,
     this.onOpenProduct,
     this.onScrap,
     this.onVendorCost,
     super.key,
   });
 
-  /// Lets a test assert on the affordance rather than on an icon that may be replaced.
-  static const Key chevronKey = Key('order-item-card-chevron');
-
   final OrderItem item;
 
-  /// Whether the line says what it cost to make, under what it is charged at.
+  /// هل يقول السطر كم كلّف صنعه — `reports.pnl.view`.
   final bool showCosts;
 
-  /// Whether a وسيط line says what the vendor charges — a different grant from [showCosts], see
-  /// [OrderLineCosts].
+  /// هل تقول ورقة بند الوسيط ما يتقاضاه المورد — صلاحيةٌ غير [showCosts]، انظر [OrderLineCosts].
   final bool showOutsourcingCosts;
 
-  /// What is being printed on these bags, drawn in the slot the catalogue photograph would
-  /// otherwise hold — see `Order.artwork`, which is what decides it.
-  ///
-  /// **The order's, not the line's.** The artwork belongs to the order, and every line of it is
-  /// the same job in another size. Null on a كيس سادة and on anything this screen cannot draw,
-  /// and then the product's own photograph is shown exactly as before.
-  final String? artworkUrl;
-
-  /// Null without `products.view`, and on a payload that did not carry the product.
+  /// null بلا `products.view`، أو على حمولةٍ لم تحمل المنتج.
   final VoidCallback? onOpenProduct;
 
-  /// Null when scrapping is not on offer — no grant, or an order with no shelf behind it yet.
+  /// null حين لا تلف معروض — لا صلاحية، أو طلبيةٌ لا رفّ خلفها بعد.
   final VoidCallback? onScrap;
 
-  /// Null unless this وسيط line went past «جاهزة» without a vendor cost and the reader holds
-  /// `products.view_cost` — the server names the lines, see `Order.linesAwaitingVendorCost`.
+  /// null إلا على بند وسيطٍ تجاوز «جاهزة» بلا تكلفة مورد، لقارئٍ يملك `products.view_cost` —
+  /// الخادم يسمّي البنود، انظر `Order.linesAwaitingVendorCost`.
   final VoidCallback? onVendorCost;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final corner = BorderRadius.circular(16.r);
+    final text = context.textTheme;
+    final big = text.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: scheme.onSurface);
+    final quiet = text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
 
-    return Material(
-      color: scheme.surfaceContainerLowest,
-      borderRadius: corner,
-      child: InkWell(
-        onTap: onOpenProduct,
-        borderRadius: corner,
-        child: Container(
-          padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 10.h),
-          decoration: BoxDecoration(
-            borderRadius: corner,
-            // A hairline instead of a shadow: this card sits *inside* «البنود», and a drop
-            // shadow within a panel reads as a bug rather than as depth.
-            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Identity(
-                item: item,
-                showChevron: onOpenProduct != null,
-                artworkUrl: artworkUrl,
-              ),
-              SizedBox(height: 10.h),
-              // Separates what was bought from what it costs — the two questions this card
-              // answers, and the only rule drawn on it.
-              Divider(height: 1, thickness: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
-              SizedBox(height: 10.h),
-              _Figures(
-                item: item,
-                showCosts: showCosts,
-                showOutsourcingCosts: showOutsourcingCosts,
-              ),
-              // A text button rather than an arm on the dial: the dial acts on the *order*, and
-              // «أي بند تلف؟» is a question the line itself is the answer to. It is the same
-              // shape «إلغاء الدفعة» takes on a ledger row, for the same reason — and its own
-              // tap never reaches the card underneath it, so a foreman reporting a spoiled bag
-              // does not land on the catalogue.
-              if (onScrap case final scrap?)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton.icon(
-                    onPressed: scrap,
-                    icon: Icon(AppIcons.delete, size: 16.sp),
-                    label: const Text('تسجيل تلف'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: scheme.error,
-                      visualDensity: VisualDensity.compact,
+    return InkWell(
+      onTap: () => _openOptions(context),
+      borderRadius: BorderRadius.circular(12.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: _SizeLabel(item.variantLabel, style: big),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      // الكمية المحتسبة، كما كانت: بندٌ نقص ربعه تطبع المطبعة ثلاثة أرباعه، و«ناقص»
+                      // تحته يقول من كم.
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: item.pricedQuantity.grouped, style: big),
+                            TextSpan(text: ' ${item.pricingUnitLabel}', style: quiet),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  _Gaps(item: item),
+                  // على السطر لا في الورقة: الرقم الناقص لبندٍ واحد، وربح الطلبية مجهولٌ حتى يُعطى.
+                  if (onVendorCost case final record?)
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        onPressed: record,
+                        icon: Icon(AppIcons.edit, size: 16.sp),
+                        label: const Text('تسجيل تكلفة المورد'),
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                      ),
                     ),
-                  ),
-                ),
-              // On the line for the same reason as the scrap button above: the missing figure
-              // belongs to one line, and the order's profit stays unknown until it is given.
-              if (onVendorCost case final record?)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton.icon(
-                    onPressed: record,
-                    icon: Icon(AppIcons.edit, size: 16.sp),
-                    label: const Text('تسجيل تكلفة المورد'),
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                  ),
-                ),
-            ],
-          ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'خيارات البند',
+              onPressed: () => _openOptions(context),
+              icon: Icon(AppIcons.more, color: scheme.onSurfaceVariant),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  /// يُغلق الورقة **ثم** يُنادي: ورقة التلف تُفتح فوق الشاشة، لا فوق ورقةٍ في طريقها إلى الإغلاق.
+  Future<void> _openOptions(BuildContext context) async {
+    final action = await showModalBottomSheet<_LineAction>(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (sheetContext) => _LineSheet(
+        item: item,
+        showCosts: showCosts,
+        showOutsourcingCosts: showOutsourcingCosts,
+        mayOpenProduct: onOpenProduct != null,
+        mayScrap: onScrap != null,
+      ),
+    );
+
+    switch (action) {
+      case _LineAction.openProduct:
+        onOpenProduct?.call();
+      case _LineAction.scrap:
+        onScrap?.call();
+      case null:
+        break;
+    }
+  }
 }
 
-/// What was sold: the picture, the code, the name and the size.
-class _Identity extends StatelessWidget {
-  const _Identity({required this.item, required this.showChevron, this.artworkUrl});
+/// المقاس كما يُقرأ: «25*35» من اليسار إلى اليمين.
+///
+/// **في سطرٍ عربيٍّ تنقلب الأرقام المفصولة برمز**: «25*35» تُرسم «35*25»، والعرض والطول هما ما
+/// تُضبط عليه المطبعة. فالمقاس الذي لا حرف عربياً فيه يُرسم من اليسار، و«سادة» أو «أسود 25*35»
+/// يبقيان على اتجاه الشاشة.
+class _SizeLabel extends StatelessWidget {
+  const _SizeLabel(this.label, {required this.style});
 
-  final OrderItem item;
-  final bool showChevron;
+  static final _arabic = RegExp('[؀-ۿ]');
 
-  /// See [OrderItemCard.artworkUrl].
-  final String? artworkUrl;
+  final String label;
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final image = item.productImage;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // **Drawn for the artwork too, not only for a photograph.** The slot used to appear only
-        // when the catalogue had a picture, which hid the design on every product nobody had
-        // photographed — and the design is the one picture that is about *this* order.
-        if (image != null || artworkUrl != null) ...[
-          ProductThumbnail(image: image, imageUrl: artworkUrl, side: 52.w, radius: 12.r),
-          SizedBox(width: 10.w),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  // Same as on the catalogue row: the code is what one colleague says to
-                  // another — «عندك P7؟» — so it leads, in the one colour on the card. Absent
-                  // on a payload that did not carry the product, and the name simply moves up.
-                  if (item.productCode case final code?) ...[
-                    Text(
-                      code,
-                      textDirection: TextDirection.ltr,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                  ],
-                  Flexible(
-                    child: Text(
-                      item.productName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-              // The size, on its own line rather than joined to the name with a dash: it is a
-              // different fact, and «٢٥*٣٥» is the one people scan a four-line order for.
-              Text(
-                item.variantLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ],
-          ),
-        ),
-        if (showChevron) ...[
-          SizedBox(width: 6.w),
-          Icon(AppIcons.forward, key: OrderItemCard.chevronKey, size: 18.sp, color: scheme.outline),
-        ],
-      ],
+    return Text(
+      label,
+      style: style,
+      textDirection: _arabic.hasMatch(label) ? null : TextDirection.ltr,
     );
   }
 }
 
-/// What it costs: the rate it was priced at, what is missing from it, and the line's own total.
-class _Figures extends StatelessWidget {
-  const _Figures({
-    required this.item,
-    required this.showCosts,
-    required this.showOutsourcingCosts,
-  });
+/// ما ينقص البند، تحت مبلغه — لأن الاثنين يجيبان «لماذا يُحتسب أقلّ مما طُلب؟».
+class _Gaps extends StatelessWidget {
+  const _Gaps({required this.item});
 
   final OrderItem item;
-  final bool showCosts;
-  final bool showOutsourcingCosts;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final error = context.textTheme.bodySmall?.copyWith(
+      color: scheme.error,
+      fontWeight: FontWeight.w700,
+    );
+    final muted = context.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                // The quantity, its unit and the rate it was priced at — the three numbers
-                // somebody checking an invoice reads together.
-                //
-                // **The quantity here is the one being charged for**, so the line's own
-                // arithmetic comes out right on screen: «٢٠٠ قطعة × ١٫٥٥٠» beside «٣١٠٫٠٠».
-                // Printing the ordered 300 against a total built on 200 would make every short
-                // line look like a pricing error.
-                //
-                // A line the shop has not quoted yet keeps its quantity and says so where the
-                // «× السعر» half would be: the order is real and the reviewer needs to see it.
-                '${item.pricedQuantity.grouped} ${item.pricingUnitLabel} '
-                '${item.isPriced ? "× ${item.unitPriceOrZero.grouped}" : awaitingQuoteLabel}',
-                style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              item.isPriced ? item.lineTotalOrZero.grouped : '—',
-              textDirection: TextDirection.ltr,
-              style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
-        // On the line it is missing from, because that is the only place the number means
-        // anything: «ناقص ٤٠» of *which* size. What was ordered is said here too — it is no
-        // longer on the line above, and «ناقص من كم» is the question that follows «ناقص».
+        // على البند الذي نقص منه، لأنه المكان الوحيد الذي يعني فيه الرقم شيئاً: «ناقص ٤٠» من *أي*
+        // مقاس. وما طُلب يُقال معه، لأن «ناقص من كم» هو السؤال التالي.
         if (item.hasShortage) ...[
           SizedBox(height: 4.h),
           Text(
             'ناقص: ${item.shortageQuantity!.grouped} من ${item.quantity.grouped} '
             '${item.pricingUnitLabel} — غير محتسب',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: scheme.error,
-              fontWeight: FontWeight.w700,
-            ),
+            style: error,
           ),
-
-          // **The same gap in the unit the warehouse counts**, directly under the invoice's
-          // figure, because the two are read together: the line above says what the customer
-          // stops paying for, and this says what has to be bought to close it. On the sizes
-          // where the two units agree the server sends nothing here and the row does not appear
-          // — one gap, one line, exactly as before.
-          //
-          // Muted rather than the error colour above it: the red line is the money the order is
-          // losing, and repeating that weight for a restatement of the same fact would read as a
-          // second problem. The same choice «غير مُستلَم» below makes.
+          // **الفجوة نفسها بوحدة المخزن**، تحت رقم الفاتورة مباشرة: الأول ما يتوقّف الزبون عن دفعه،
+          // وهذا ما يُشترى لسدّه. وحيث تتّفق الوحدتان لا يرسل الخادم شيئاً ولا يظهر السطر.
           if (item.shortageWarehouseQuantity case final weighed?) ...[
             SizedBox(height: 2.h),
             Text(
               'ناقص من المخزن: ${weighed.grouped} ${item.stockUnitLabel ?? ''} — هذا ما يُشترى',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: scheme.error,
-                fontWeight: FontWeight.w700,
-              ),
+              style: error,
             ),
           ]
-          // **Said out loud rather than left blank.** Nobody can weigh bags that are missing, so
-          // this gap is the ordinary state of a fresh shortage rather than an oversight — but it
-          // is also what stops a purchase being recorded against it, and a buyer refused on the
-          // «النواقص» screen with nothing said here would have nowhere to look. Naming it makes
-          // the next step obvious.
+          // **يُقال ولا يُترك فارغاً.** لا أحد يزن أكياساً غائبة، فهذه حال كل نقصٍ جديد — لكنها ما
+          // يمنع تسجيل شرائه، ومشترٍ يُرفض في «النواقص» ولا شيء هنا لن يعرف أين ينظر.
           else if (item.needsAWarehouseShortage) ...[
             SizedBox(height: 2.h),
-            Text(
-              'الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text('الوزن من المخزن غير محدد — حدِّده قبل تسجيل الشراء', style: muted),
           ],
         ],
-        // Under the shortage, because both answer «why is this line charging less than it
-        // ordered?» and they can both be true at once: an order short fifty, whose customer then
-        // took only two hundred of the two hundred and fifty that existed.
-        //
-        // Deliberately *not* in the error colour the shortage above wears. A shortage is our
-        // failure; this is the customer's choice, recorded — the same weight, a calmer colour.
-        // And the word for what became of the goods is the server's, never one worked out here
-        // from the product's heading.
+        // تحت النقص، لأنهما قد يصدقان معاً. وبلون أهدأ: النقص تقصيرنا، وهذا اختيار الزبون مسجَّلاً.
+        // والكلمة لمصير البضاعة كلمة الخادم، لا تُستنتج هنا.
         if (item.wasPartlyLeftBehind) ...[
           SizedBox(height: 4.h),
           Text(
             'غير مُستلَم: ${item.undeliveredQuantity!.grouped} ${item.pricingUnitLabel}'
             '${item.undeliveredDispositionLabel == null ? '' : ' — ${item.undeliveredDispositionLabel}'}',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-        // Under the price it is being charged at, quietly — see [OrderLineCosts] for why an
-        // uncosted line draws nothing here rather than «لم يُحتسب بعد».
-        if (showCosts || showOutsourcingCosts) ...[
-          SizedBox(height: 4.h),
-          OrderLineCosts(
-            item: item,
-            showProduction: showCosts,
-            showOutsourcing: showOutsourcingCosts,
+            style: muted,
           ),
         ],
       ],
+    );
+  }
+}
+
+enum _LineAction { openProduct, scrap }
+
+/// ورقة «⋯» البند: ما يُدقَّق به المبلغ، وما يُفعل بالبند.
+///
+/// **تُمرَّر ولا تفيض**، كورقة الدفعة: هاتفٌ قصير أو خطٌّ مكبَّر يُسقط «تسجيل تلف» خارج الشاشة.
+class _LineSheet extends StatelessWidget {
+  const _LineSheet({
+    required this.item,
+    required this.showCosts,
+    required this.showOutsourcingCosts,
+    required this.mayOpenProduct,
+    required this.mayScrap,
+  });
+
+  final OrderItem item;
+  final bool showCosts;
+  final bool showOutsourcingCosts;
+  final bool mayOpenProduct;
+  final bool mayScrap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 8.h),
+            ListTile(
+              title: _SizeLabel(
+                item.variantLabel,
+                style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(item.productName),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          // الكمية المحتسبة والسعر، فيخرج حساب البند صحيحاً أمام العين: «٧٥ × ٣٢»
+                          // بجانب «٢٤٠٠». وبندٌ لم يُسعَّر بعد يقول ذلك مكان «× السعر».
+                          '${item.pricedQuantity.grouped} ${item.pricingUnitLabel} '
+                          '${item.isPriced ? "× ${item.unitPriceOrZero.grouped}" : awaitingQuoteLabel}',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        item.isPriced ? item.lineTotalOrZero.grouped : '—',
+                        textDirection: TextDirection.ltr,
+                        style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  if (showCosts || showOutsourcingCosts) ...[
+                    SizedBox(height: 4.h),
+                    OrderLineCosts(
+                      item: item,
+                      showProduction: showCosts,
+                      showOutsourcing: showOutsourcingCosts,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (mayOpenProduct || mayScrap) const Divider(height: 1),
+            if (mayOpenProduct)
+              ListTile(
+                leading: Icon(AppIcons.products),
+                title: const Text('فتح المنتج'),
+                trailing: Icon(AppIcons.forward, size: 18.sp, color: scheme.outline),
+                onTap: () => Navigator.of(context).pop(_LineAction.openProduct),
+              ),
+            if (mayScrap)
+              ListTile(
+                leading: Icon(AppIcons.delete, color: scheme.error),
+                title: Text('تسجيل تلف', style: TextStyle(color: scheme.error)),
+                onTap: () => Navigator.of(context).pop(_LineAction.scrap),
+              ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
     );
   }
 }
