@@ -61,6 +61,16 @@ enum ChatAttachmentKind: string
         };
     }
 
+    /** سطرُ الرسالة التي لا كلام فيها، بعدد صورها: «صورة»، «صورتان»، «3 صور». */
+    public static function imagesLabel(int $count): string
+    {
+        return match (true) {
+            $count <= 1 => self::Image->label(),
+            $count === 2 => 'صورتان',
+            default => "{$count} صور",
+        };
+    }
+
     /** حدُّ الحجم بالكيلوبايت لهذا النوع — الصوت حدّه أصغر، والسبب في config/media.php. */
     public function maxKilobytes(): int
     {

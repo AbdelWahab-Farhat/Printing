@@ -59,6 +59,51 @@ class InternalTicketMessageTest extends InternalTicketTestCase
             ->assertJsonPath('data.last_message.kind', 'image');
     }
 
+    public function test_several_photos_go_out_as_one_message_in_the_order_they_were_picked(): void
+    {
+        // Arrange — كبريمولا: الصورُ وتعليقُها رسالةٌ واحدة.
+        [, $mine] = $this->employee();
+        [$colleague, $theirs] = $this->employee();
+        $ticket = $this->open($mine, $colleague);
+
+        // Act
+        $response = $this->post(
+            "/api/v1/internal-tickets/{$ticket->id}/messages",
+            ['files' => [$this->image('a.jpg'), $this->image('b.jpg')]],
+            $theirs + ['Accept' => 'application/json'],
+        );
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonCount(2, 'data.messages')
+            ->assertJsonCount(2, 'data.messages.1.attachments')
+            ->assertJsonPath('data.messages.1.attachments.0.name', 'a.jpg')
+            ->assertJsonPath('data.messages.1.attachments.1.name', 'b.jpg')
+            ->assertJsonPath('data.last_message.preview', 'صورتان')
+            ->assertJsonPath('data.last_message.kind', 'image');
+        $this->assertSame(2, InternalTicketAttachment::query()->count());
+    }
+
+    public function test_an_album_is_photos_only_and_ten_at_most(): void
+    {
+        // Arrange
+        [, $mine] = $this->employee();
+        [$colleague, $theirs] = $this->employee();
+        $ticket = $this->open($mine, $colleague);
+        $eleven = array_map(fn (int $i) => $this->image("p{$i}.jpg"), range(1, 11));
+        $headers = $theirs + ['Accept' => 'application/json'];
+        $url = "/api/v1/internal-tickets/{$ticket->id}/messages";
+
+        // Act
+        $withVoice = $this->post($url, ['files' => [$this->image(), $this->voice()]], $headers);
+        $tooMany = $this->post($url, ['files' => $eleven], $headers);
+
+        // Assert
+        $withVoice->assertUnprocessable()
+            ->assertJsonPath('errors', ['files.1' => ['الصورة يجب أن تكون JPG أو PNG أو WEBP']]);
+        $tooMany->assertUnprocessable()->assertJsonPath('errors.files.0', 'عشر صور على الأكثر في الرسالة');
+    }
+
     public function test_a_voice_note_keeps_its_length_and_waveform(): void
     {
         // Arrange

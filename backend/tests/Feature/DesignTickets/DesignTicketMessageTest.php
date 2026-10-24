@@ -175,6 +175,50 @@ class DesignTicketMessageTest extends DesignTicketTestCase
             ->assertJsonPath('errors.body.0', 'اكتب رسالتك أو أرفق صورة أو رسالة صوتية');
     }
 
+    public function test_several_photos_go_out_as_one_message_in_the_order_they_were_picked(): void
+    {
+        // Arrange — كبريمولا: الصورُ وتعليقُها رسالةٌ واحدة.
+        [$employee, $employeeHeaders] = $this->employee();
+        [$designer] = $this->designer();
+        $ticket = $this->conversationBetween($employee, $designer);
+
+        // Act
+        $response = $this->say($ticket, $employeeHeaders, [
+            'body' => 'الوجهان والجانب',
+            'files' => [$this->image('front.png'), $this->image('back.png'), $this->image('side.png')],
+        ]);
+
+        // Assert
+        $response->assertCreated()
+            ->assertJsonCount(1, 'data.messages')
+            ->assertJsonPath('data.messages.0.body', 'الوجهان والجانب')
+            ->assertJsonCount(3, 'data.messages.0.attachments')
+            ->assertJsonPath('data.messages.0.attachments.0.name', 'front.png')
+            ->assertJsonPath('data.messages.0.attachments.1.name', 'back.png')
+            ->assertJsonPath('data.messages.0.attachments.2.name', 'side.png')
+            ->assertJsonPath('data.messages.0.attachments.2.kind', 'image');
+        $this->assertSame(3, DesignTicketMessageAttachment::query()->count());
+    }
+
+    public function test_an_album_is_photos_only_and_ten_at_most(): void
+    {
+        // Arrange
+        [$employee, $employeeHeaders] = $this->employee();
+        [$designer] = $this->designer();
+        $ticket = $this->conversationBetween($employee, $designer);
+        $eleven = array_map(fn (int $i) => $this->image("p{$i}.png"), range(1, 11));
+
+        // Act
+        $withVoice = $this->say($ticket, $employeeHeaders, ['files' => [$this->image(), $this->voice()]]);
+        $tooMany = $this->say($ticket, $employeeHeaders, ['files' => $eleven]);
+
+        // Assert
+        $withVoice->assertUnprocessable()
+            ->assertJsonPath('errors', ['files.1' => ['الصورة يجب أن تكون JPG أو PNG أو WEBP']]);
+        $tooMany->assertUnprocessable()->assertJsonPath('errors.files.0', 'عشر صور على الأكثر في الرسالة');
+        $this->assertSame(0, DesignTicketMessage::query()->count());
+    }
+
     public function test_a_retry_with_the_same_token_returns_the_same_message(): void
     {
         // Arrange — الشبكة انقطعت بعد أن وصل الطلب وقبل أن يصل الجواب.

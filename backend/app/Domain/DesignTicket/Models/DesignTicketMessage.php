@@ -154,7 +154,7 @@ class DesignTicketMessage extends Model
 
         return match ($this->attachments->first()?->kind) {
             ChatAttachmentKind::Voice => '🎤 '.ChatAttachmentKind::Voice->label(),
-            ChatAttachmentKind::Image => ChatAttachmentKind::Image->label(),
+            ChatAttachmentKind::Image => ChatAttachmentKind::imagesLabel($this->attachments->count()),
             null => '',
         };
     }

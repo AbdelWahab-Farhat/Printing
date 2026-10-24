@@ -217,6 +217,8 @@ return [
         'voice_max_seconds' => 300,
         // ما يرسمه التطبيق تحت الرسالة الصوتية: ٤٨ عموداً، كبريمولا.
         'waveform_bars' => 48,
+        // ألبومٌ في رسالةٍ واحدة (`files[]`)، كبريمولا: عشرُ صورٍ على الأكثر.
+        'max_images_per_message' => 10,
     ],
 
     'internal_ticket_attachments' => [

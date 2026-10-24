@@ -155,11 +155,9 @@ class InternalTicketMessage extends Model
             return $this->body;
         }
 
-        $first = $this->attachments->first();
-
-        return match ($first?->kind) {
+        return match ($this->attachments->first()?->kind) {
             ChatAttachmentKind::Voice => '🎤 '.ChatAttachmentKind::Voice->label(),
-            ChatAttachmentKind::Image => ChatAttachmentKind::Image->label(),
+            ChatAttachmentKind::Image => ChatAttachmentKind::imagesLabel($this->attachments->count()),
             null => '',
         };
     }

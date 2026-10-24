@@ -21,7 +21,6 @@ use App\Domain\Notification\NotificationService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 
 /**
  * Design ticket conversation
@@ -78,19 +77,18 @@ class DesignTicketMessageController extends Controller
     /**
      * Post a message
      *
-     * نصٌّ، أو صورة، أو رسالة صوتية (`file` مع `duration_seconds` و`waveform`)، ويقتبس بـ
-     * `reply_to_message_id`. multipart حين يُرفق ملف. يُجاب بالمحادثة كلّها.
+     * نصٌّ، أو صور (`files[]` حتى عشر، رسالةٌ واحدة بتعليقها)، أو رسالة صوتية (`file` مع
+     * `duration_seconds` و`waveform`)، ويقتبس بـ`reply_to_message_id`. multipart حين يُرفق ملف.
+     * يُجاب بالمحادثة كلّها.
      */
     public function store(PostDesignTicketMessageRequest $request, DesignTicket $ticket): JsonResponse
     {
         $this->refuseUnlessVisibleTicket($request, $ticket);
 
-        $file = $request->file('file');
-
         $this->tickets->post(
             $ticket,
             $this->reader($request),
-            DesignTicketMessageData::fromArray($request->validated(), $file instanceof UploadedFile ? $file : null),
+            DesignTicketMessageData::fromArray($request->validated(), $request->attachedFiles()),
         );
 
         return $this->created(

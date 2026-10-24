@@ -181,21 +181,15 @@ class InternalTicketController extends Controller
     /**
      * Post a message
      *
-     * نصٌّ، أو صورة، أو رسالة صوتية (`file` مع `duration_seconds` و`waveform`)، ويقتبس بـ
-     * `reply_to_message_id`. multipart حين يُرفق ملف.
+     * نصٌّ، أو صور (`files[]` حتى عشر، رسالةٌ واحدة بتعليقها)، أو رسالة صوتية (`file` مع
+     * `duration_seconds` و`waveform`)، ويقتبس بـ`reply_to_message_id`. multipart حين يُرفق ملف.
      */
     public function reply(PostInternalMessageRequest $request, int $ticket): JsonResponse
     {
         $reader = $this->reader($request);
         $found = $this->tickets->findVisible($reader, $ticket);
 
-        $file = $request->file('file');
-
-        $this->tickets->post(
-            $found,
-            $reader,
-            InternalMessageData::fromArray($request->validated(), $file instanceof UploadedFile ? $file : null),
-        );
+        $this->tickets->post($found, $reader, InternalMessageData::fromArray($request->validated(), $request->attachedFiles()));
 
         return $this->created(new InternalTicketResource($found->refresh()->load(self::THREAD)), 'تم إرسال الرسالة');
     }

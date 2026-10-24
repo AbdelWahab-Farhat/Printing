@@ -45,20 +45,25 @@ final class PostDesignTicketMessage
             $this->assertQuotable($ticket, $data->replyToMessageId);
         }
 
-        // الملفُّ قبل المعاملة وخارجها — انظر StoreChatAttachment.
-        $stored = $data->file === null ? null : ($this->storeAttachment)(
-            (string) config('media.design_ticket_message_attachments.disk'),
-            "design-ticket-messages/{$ticket->getKey()}",
-            $data->file,
-            $data->durationSeconds,
-            $data->waveform,
+        // الملفاتُ قبل المعاملة وخارجها — انظر StoreChatAttachment.
+        $attachments = array_map(
+            fn ($file) => ($this->storeAttachment)(
+                (string) config('media.design_ticket_message_attachments.disk'),
+                "design-ticket-messages/{$ticket->getKey()}",
+                $file,
+                $data->durationSeconds,
+                $data->waveform,
+            ),
+            $data->files,
         );
 
-        [$message, $isNew] = $this->write($ticket, $author, $data, $stored);
+        [$message, $isNew] = $this->write($ticket, $author, $data, $attachments);
 
-        // طلبان بالرمز نفسه في اللحظة نفسها: سبق أحدهما، فيُمحى ملفُّ الآخر.
-        if (! $isNew && $stored !== null) {
-            Storage::disk((string) $stored['disk'])->delete((string) $stored['path']);
+        // طلبان بالرمز نفسه في اللحظة نفسها: سبق أحدهما، فتُمحى ملفاتُ الآخر.
+        if (! $isNew) {
+            foreach ($attachments as $stored) {
+                Storage::disk((string) $stored['disk'])->delete((string) $stored['path']);
+            }
         }
 
         return $message;
@@ -88,12 +93,12 @@ final class PostDesignTicketMessage
      * **صفُّ التذكرة مقفلٌ طوال الكتابة**، فتُكتب رسائلها واحدةً بعد واحدة، وتُقرأ حالتُها كما هي
      * ساعةَ الكتابة: تذكرةٌ اعتُمدت بين أول السطر وهذا لا يُكتب فيها.
      *
-     * @param  array<string, mixed>|null  $stored
+     * @param  list<array<string, mixed>>  $attachments
      * @return array{0: DesignTicketMessage, 1: bool} الرسالة، وهل كُتبت الآن
      */
-    private function write(DesignTicket $ticket, User $author, DesignTicketMessageData $data, ?array $stored): array
+    private function write(DesignTicket $ticket, User $author, DesignTicketMessageData $data, array $attachments): array
     {
-        return DB::transaction(function () use ($ticket, $author, $data, $stored): array {
+        return DB::transaction(function () use ($ticket, $author, $data, $attachments): array {
             $locked = DesignTicket::query()->whereKey($ticket->getKey())->lockForUpdate()->firstOrFail();
 
             if (! $locked->acceptsMessages()) {
@@ -112,7 +117,7 @@ final class PostDesignTicketMessage
             $message->client_token = $data->clientToken;
             $message->save();
 
-            if ($stored !== null) {
+            foreach ($attachments as $stored) {
                 $attachment = new DesignTicketMessageAttachment;
                 $attachment->message_id = $message->getKey();
                 $attachment->forceFill($stored);
