@@ -12,6 +12,9 @@ use App\Domain\DesignTicket\Exceptions\DesignTicketOrderBelongsToAnotherCustomer
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 /**
  * Opens a design request and puts it in front of a designer.
@@ -28,12 +31,20 @@ use App\Domain\Order\Models\Order;
  * **An order is optional and checked when given.** A ticket for one customer pointing at
  * another's order would put the approved artwork on an account the work was never done for.
  *
- * No transaction: one insert, and the event is dispatched after it. The code is allocated by the
- * model's `creating` hook, so every path that creates a ticket gets one.
+ * **التذكرة ومرفقاتها في معاملةٍ واحدة**: كلُّها أو لا شيء، فلا تبقى تذكرةٌ بنصف ملفاتها. وإن تعطّل
+ * شيءٌ بعد أن كُتبت بايتاتُ ملفٍّ على القرص، يُمحى مجلّدُ التذكرة كلُّه — رقمُها جديدٌ لم يُعطَ
+ * لغيرها، ولا يعود إليه تسلسلُ Postgres بعد التراجع، فليس فيه إلا ملفاتُ هذا الطلب.
+ *
+ * The event is dispatched after the commit, so «عندك طلبٌ جديد» arrives with the files already on
+ * the ticket. The code is allocated by the model's `creating` hook, so every path that creates a
+ * ticket gets one.
  */
 final class CreateDesignTicket
 {
-    public function __construct(private readonly CustomerService $customers) {}
+    public function __construct(
+        private readonly CustomerService $customers,
+        private readonly AttachDesignTicketFile $attachFile,
+    ) {}
 
     /**
      * @throws DesignTicketOrderBelongsToAnotherCustomer
@@ -53,24 +64,45 @@ final class CreateDesignTicket
             }
         }
 
-        $ticket = new DesignTicket([
-            'order_id' => $data->orderId,
-            'title' => $data->title,
-            'description' => $data->description,
-            'instructions' => $data->instructions,
-        ]);
+        $ticketId = null;
 
-        // Force-filled rather than mass-assigned, all of it: the customer and its snapshot must
-        // agree and neither may come from a body, the status is where every ticket starts, and
-        // the requester is the signed-in user — attribution nobody can set is attribution nobody
-        // can forge.
-        $ticket->forceFill([
-            'customer_id' => $customer->getKey(),
-            'customer_name' => $customer->name,
-            'status' => DesignTicketStatus::New,
-            'requested_by_user_id' => $actor?->getKey(),
-            'assigned_designer_id' => $data->assignedDesignerId,
-        ])->save();
+        try {
+            $ticket = DB::transaction(function () use ($data, $actor, $customer, &$ticketId): DesignTicket {
+                $ticket = new DesignTicket([
+                    'order_id' => $data->orderId,
+                    'title' => $data->title,
+                    'description' => $data->description,
+                    'instructions' => $data->instructions,
+                ]);
+
+                // Force-filled rather than mass-assigned, all of it: the customer and its snapshot
+                // must agree and neither may come from a body, the status is where every ticket
+                // starts, and the requester is the signed-in user — attribution nobody can set is
+                // attribution nobody can forge.
+                $ticket->forceFill([
+                    'customer_id' => $customer->getKey(),
+                    'customer_name' => $customer->name,
+                    'status' => DesignTicketStatus::New,
+                    'requested_by_user_id' => $actor?->getKey(),
+                    'assigned_designer_id' => $data->assignedDesignerId,
+                ])->save();
+
+                $ticketId = (int) $ticket->getKey();
+
+                foreach ($data->files as $file) {
+                    ($this->attachFile)($ticket, $file, $actor);
+                }
+
+                return $ticket;
+            });
+        } catch (Throwable $failure) {
+            if ($ticketId !== null) {
+                Storage::disk((string) config('media.design_tickets.disk'))
+                    ->deleteDirectory("design-tickets/{$ticketId}");
+            }
+
+            throw $failure;
+        }
 
         // After the write, and fired whether or not a designer was named: a ticket left in the
         // shared pool is news for every designer, which is exactly what a null id means to the

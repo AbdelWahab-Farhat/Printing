@@ -359,7 +359,7 @@ Every route under `auth:sanctum`, each with its own `can:`, as `routes/api.php` 
 |---|---|---|
 | `GET` | `/design-tickets` | `design_tickets.view` |
 | `GET` | `/design-tickets/summary` | `design_tickets.view` — status counters. **Declared before `{ticket}`**, or the router reads the word as an id (the trap already documented at `shortages/summary`) |
-| `POST` | `/design-tickets` | `design_tickets.manage` |
+| `POST` | `/design-tickets` | `design_tickets.manage` — مرفقاتُه معه في `files[]` (حتى عشرة، `multipart/form-data`): التذكرة وملفاتها كلُّها أو لا شيء، والتبليغ بعدها |
 | `GET` | `/design-tickets/{ticket}` | `design_tickets.view` + the §6.1 narrowing |
 | `PUT` | `/design-tickets/{ticket}` | `design_tickets.manage` — title, description, instructions, while it is open |
 | `PATCH` | `/design-tickets/{ticket}/designer` | `design_tickets.assign` — assign, reassign and unassign, **one action for all three** as `AssignShortage` is |

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\DesignTicket\DTOs;
 
+use Illuminate\Http\UploadedFile;
+
 /**
  * What an employee asked for, on the way in.
  *
@@ -14,9 +16,15 @@ namespace App\Domain\DesignTicket\DTOs;
  *
  * `assignedDesignerId` being null is «الطابور المشترك» and not missing data; see the column's own
  * comment on the migration.
+ *
+ * `files` مرفقاتُ الطلب مع إنشائه، بالترتيب الذي اختيرت به — تُحفظ «مرفقاتٍ» (brief) كالتي تُرفق
+ * من شاشة التذكرة بعدها.
  */
 final readonly class DesignTicketData
 {
+    /**
+     * @param  list<UploadedFile>  $files
+     */
     public function __construct(
         public int $customerId,
         public string $title,
@@ -24,12 +32,14 @@ final readonly class DesignTicketData
         public ?string $instructions = null,
         public ?int $orderId = null,
         public ?int $assignedDesignerId = null,
+        public array $files = [],
     ) {}
 
     /**
      * @param  array<string, mixed>  $data  already-validated request data
+     * @param  list<UploadedFile>  $files  بالترتيب الذي اختيرت به
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data, array $files = []): self
     {
         return new self(
             customerId: (int) $data['customer_id'],
@@ -42,6 +52,7 @@ final readonly class DesignTicketData
             assignedDesignerId: isset($data['assigned_designer_id']) && $data['assigned_designer_id'] !== ''
                 ? (int) $data['assigned_designer_id']
                 : null,
+            files: $files,
         );
     }
 

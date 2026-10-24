@@ -162,7 +162,7 @@ All under `/api/v1`, all requiring a Sanctum bearer token.
 |---|---|---|
 | GET | `design-tickets/summary` | `.view` |
 | GET | `design-tickets` | `.view` |
-| POST | `design-tickets` | `.manage` |
+| POST | `design-tickets` | `.manage` — `files[]` اختياري، حتى عشرة |
 | GET | `design-tickets/{ticket}` | `.view` |
 | PUT | `design-tickets/{ticket}` | `.manage` |
 | PATCH | `design-tickets/{ticket}/designer` | `.assign` |

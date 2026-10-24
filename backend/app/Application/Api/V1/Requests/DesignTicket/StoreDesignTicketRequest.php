@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Requests\DesignTicket;
 
 use App\Domain\Identity\Enums\PermissionName;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 class StoreDesignTicketRequest extends FormRequest
@@ -57,6 +58,16 @@ class StoreDesignTicketRequest extends FormRequest
                 'nullable', 'integer',
                 Rule::exists('users', 'id')->withoutTrashed(),
             ],
+            // مرفقاتُ الطلب مع إنشائه — الشعار، صورةُ كيسٍ مشابه — فتصل التذكرة إلى المصمّم كاملة.
+            // يُرسل حينها `multipart/form-data`. وقواعدُ كلِّ ملفٍّ قواعدُ
+            // `StoreDesignTicketAttachmentRequest` حرفاً بحرف، مكتوبةً هنا لا مستعارة (RULES §7).
+            'files' => ['nullable', 'array', 'max:'.config('media.design_tickets.max_files_on_create')],
+            'files.*' => [
+                'file',
+                'mimetypes:'.implode(',', (array) config('media.design_tickets.mimetypes')),
+                'mimes:'.implode(',', (array) config('media.design_tickets.mimes')),
+                'max:'.config('media.design_tickets.max_kilobytes'),
+            ],
         ];
     }
 
@@ -72,6 +83,11 @@ class StoreDesignTicketRequest extends FormRequest
             'title.required' => 'عنوان الطلب مطلوب',
             'description.required' => 'وصف طلب التصميم مطلوب',
             'assigned_designer_id.exists' => 'المصمم غير موجود',
+            'files.max' => 'لا تزيد المرفقات على :max',
+            'files.*.mimetypes' => 'الملف يجب أن يكون صورة أو PDF',
+            'files.*.mimes' => 'الملف يجب أن يكون صورة أو PDF',
+            'files.*.max' => 'حجم الملف يجب ألا يتجاوز '.
+                (int) (config('media.design_tickets.max_kilobytes') / 1024).' ميجابايت',
         ];
     }
 
@@ -87,7 +103,22 @@ class StoreDesignTicketRequest extends FormRequest
             'description' => 'وصف الطلب',
             'instructions' => 'الملاحظات والتعليمات',
             'assigned_designer_id' => 'المصمم',
+            'files' => 'المرفقات',
+            'files.*' => 'الملف',
         ];
+    }
+
+    /**
+     * المرفقات بالترتيب الذي اختيرت به.
+     *
+     * @return list<UploadedFile>
+     */
+    public function attachedFiles(): array
+    {
+        return array_values(array_filter(
+            (array) $this->file('files', []),
+            fn (mixed $file): bool => $file instanceof UploadedFile,
+        ));
     }
 
     /**

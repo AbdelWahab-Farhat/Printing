@@ -171,6 +171,10 @@ return [
         | ration a conversation.
         */
         'max_files_per_ticket' => (int) env('MEDIA_DESIGN_TICKET_MAX_FILES', 60),
+
+        // مرفقاتُ الطلب مع إنشائه (`files[]` على `POST design-tickets`): عشرةٌ على الأكثر، كألبوم
+        // المحادثة. وما زاد يُرفق من شاشة التذكرة بعدها.
+        'max_files_on_create' => 10,
     ],
 
     /*

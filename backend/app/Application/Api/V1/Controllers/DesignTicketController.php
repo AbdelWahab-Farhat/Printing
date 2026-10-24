@@ -124,7 +124,9 @@ class DesignTicketController extends Controller
      * every designer is told, and the first to accept claims it. Naming a designer needs
      * `design_tickets.assign` on top — routing work is a different job from asking for it.
      *
-     * Attachments are uploaded separately, so a ticket is never lost to a failed upload.
+     * **المرفقات تصل معه** في `files[]` (حتى عشرة، `multipart/form-data`)، فيُبلَّغ المصمّم بتذكرةٍ
+     * كاملة: التذكرة وملفاتها كلُّها أو لا شيء، وملفٌّ مرفوضٌ يردّ الطلب كلَّه بـ422 — والنموذج في
+     * التطبيق باقٍ بما كُتب فيه. وما جاء بعدها يُرفق من `POST /attachments` كما كان.
      */
     public function store(StoreDesignTicketRequest $request): JsonResponse
     {
@@ -138,7 +140,10 @@ class DesignTicketController extends Controller
             unset($data['assigned_designer_id']);
         }
 
-        $ticket = $this->tickets->create(DesignTicketData::fromArray($data), $request->user());
+        $ticket = $this->tickets->create(
+            DesignTicketData::fromArray($data, $request->attachedFiles()),
+            $request->user(),
+        );
 
         return $this->created(
             new DesignTicketResource($this->loadForDisplay($request, $ticket)),
