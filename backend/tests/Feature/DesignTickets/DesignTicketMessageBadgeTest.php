@@ -11,7 +11,7 @@ use App\Domain\Identity\Models\User;
 /**
  * شارةُ المحادثة — كم ردّاً لم يقرأه *هذا* القارئ على *هذه* التذكرة.
  *
- * **لا جدولَ جديد تحتها: الجواب هو صفوفُ الإشعارات نفسها.** كلُّ تعليقٍ يُنشئ صفَّ إشعارٍ واحداً،
+ * **لا جدولَ جديد تحتها: الجواب هو صفوفُ الإشعارات نفسها.** كلُّ رسالةٍ تُنشئ صفَّ إشعارٍ واحداً،
  * و`read_at` فيه لكلِّ شخصٍ على حدة — فالشارةُ عدٌّ، وحالةُ «قرأتُ الخيط» هي عينُها حالةُ «قرأتُ
  * الجرس». ولهذا يؤكّد آخِرُ اختبارٍ هنا أنّ فتح المحادثة يُنزل رقمَ الجرس أيضاً: لو انفصلا لصار
  * الرقمُ فوق الجرس كذبةً صغيرةً تتكرّر.
@@ -21,7 +21,7 @@ use App\Domain\Identity\Models\User;
  *
  * Arrange - Act - Assert في كل اختبار.
  */
-class DesignTicketCommentBadgeTest extends DesignTicketTestCase
+class DesignTicketMessageBadgeTest extends DesignTicketTestCase
 {
     public function test_the_badge_counts_what_the_other_side_wrote_and_nothing_else(): void
     {
@@ -101,7 +101,7 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
 
         // Act
         $cleared = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments/read",
+            "/api/v1/design-tickets/{$ticket->id}/messages/read",
             [],
             $employeeHeaders,
         );
@@ -128,7 +128,7 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
         $this->reply($untouched, 'عن الثانية', $designerHeaders);
 
         // Act
-        $this->postJson("/api/v1/design-tickets/{$read->id}/comments/read", [], $employeeHeaders)
+        $this->postJson("/api/v1/design-tickets/{$read->id}/messages/read", [], $employeeHeaders)
             ->assertOk();
 
         // Assert — والجرسُ ما يزال يحمل خبرَ التذكرة التي لم تُفتح.
@@ -149,8 +149,8 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
         $ticket = $this->conversation($employee, $designer);
 
         // Act
-        $first = $this->postJson("/api/v1/design-tickets/{$ticket->id}/comments/read", [], $employeeHeaders);
-        $second = $this->postJson("/api/v1/design-tickets/{$ticket->id}/comments/read", [], $employeeHeaders);
+        $first = $this->postJson("/api/v1/design-tickets/{$ticket->id}/messages/read", [], $employeeHeaders);
+        $second = $this->postJson("/api/v1/design-tickets/{$ticket->id}/messages/read", [], $employeeHeaders);
 
         // Assert
         $first->assertOk()->assertJsonPath('data.unread_comments_count', 0);
@@ -169,7 +169,7 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
 
         // Act
         $response = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments/read",
+            "/api/v1/design-tickets/{$ticket->id}/messages/read",
             [],
             $stranger,
         );
@@ -183,9 +183,7 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
      */
     private function conversation(User $employee, User $designer): DesignTicket
     {
-        return DesignTicket::factory()
-            ->acceptedBy((int) $designer->getKey())
-            ->create(['requested_by_user_id' => $employee->getKey()]);
+        return $this->conversationBetween($employee, $designer);
     }
 
     /**
@@ -196,10 +194,6 @@ class DesignTicketCommentBadgeTest extends DesignTicketTestCase
      */
     private function reply(DesignTicket $ticket, string $body, array $headers): void
     {
-        $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => $body],
-            $headers,
-        )->assertCreated();
+        $this->say($ticket, $headers, ['body' => $body])->assertCreated();
     }
 }

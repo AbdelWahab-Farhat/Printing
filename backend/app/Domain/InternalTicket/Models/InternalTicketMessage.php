@@ -6,7 +6,7 @@ namespace App\Domain\InternalTicket\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Identity\Models\User;
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
+use App\Support\Media\ChatAttachmentKind;
 use Carbon\CarbonInterface;
 use Database\Factories\InternalTicketMessageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -158,8 +158,8 @@ class InternalTicketMessage extends Model
         $first = $this->attachments->first();
 
         return match ($first?->kind) {
-            InternalAttachmentKind::Voice => '🎤 '.InternalAttachmentKind::Voice->label(),
-            InternalAttachmentKind::Image => InternalAttachmentKind::Image->label(),
+            ChatAttachmentKind::Voice => '🎤 '.ChatAttachmentKind::Voice->label(),
+            ChatAttachmentKind::Image => ChatAttachmentKind::Image->label(),
             null => '',
         };
     }

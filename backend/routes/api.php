@@ -13,6 +13,7 @@ use App\Application\Api\V1\Controllers\CustomerDesignController;
 use App\Application\Api\V1\Controllers\CustomerWalletController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
+use App\Application\Api\V1\Controllers\DesignTicketMessageController;
 use App\Application\Api\V1\Controllers\ExpenseCategoryController;
 use App\Application\Api\V1\Controllers\EzonePayWebhookController;
 use App\Application\Api\V1\Controllers\FakeEzonePayController;
@@ -1228,6 +1229,25 @@ Route::prefix('v1')->group(function (): void {
             ->parameters(['design-tickets' => 'ticket'])
             ->middleware('can:design_tickets.view')
             ->scoped();
+
+        // ── محادثة التذكرة ─────────────────────────────────────────────────────────────────
+        // على محرّك التذاكر الداخلية: نصٌّ وصورٌ وصوت — DESIGN-TICKET-CHAT. والملاحظاتُ أعلاه
+        // باقيةٌ للنسخة القديمة من التطبيق، تقرؤها ولا تكتب. **وخلف الإذن نفسه**: مَن يرى التذكرة
+        // يكتب فيها، والتضييقُ إلى التذكرة في المتحكّم. و`scopeBindings`: رسالةُ تذكرةٍ أخرى ٤٠٤.
+        Route::middleware('can:design_tickets.view')
+            ->prefix('design-tickets/{ticket}/messages')
+            ->name('design-tickets.messages.')
+            ->whereNumber('ticket')
+            ->scopeBindings()
+            ->group(function (): void {
+                Route::get('/', [DesignTicketMessageController::class, 'index'])->name('index');
+                Route::post('/', [DesignTicketMessageController::class, 'store'])->name('store');
+                Route::post('read', [DesignTicketMessageController::class, 'read'])->name('read');
+                Route::patch('{message}', [DesignTicketMessageController::class, 'update'])
+                    ->whereNumber('message')->name('update');
+                Route::delete('{message}', [DesignTicketMessageController::class, 'destroy'])
+                    ->whereNumber('message')->name('destroy');
+            });
 
         // ── shortages ───────────────────────────────────────────────────────────────────
         // What the shop is short of, written by hand or generated from an order line entering

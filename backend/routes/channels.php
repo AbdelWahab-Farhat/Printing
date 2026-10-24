@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Customer\Models\Customer;
+use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Models\InternalTicket;
@@ -42,6 +43,20 @@ Broadcast::channel(
     fn ($user, string $ticketId): bool => $user instanceof User
         && ctype_digit($ticketId)
         && (InternalTicket::query()->find((int) $ticketId)?->isVisibleTo($user) ?? false),
+    ['guards' => ['sanctum']],
+);
+
+/*
+ * محادثةُ تذكرة تصميم: يسمعها مَن يراها، بالقاعدة نفسها التي تحرس `GET design-tickets/{id}/messages`
+ * — إذنُ القسم، ثم إمّا رؤيةُ التذاكر كلّها وإمّا أن تكون هذه منها (DesignTicket::isVisibleTo).
+ */
+Broadcast::channel(
+    'design-tickets.{ticketId}',
+    fn ($user, string $ticketId): bool => $user instanceof User
+        && ctype_digit($ticketId)
+        && $user->can(PermissionName::ViewDesignTickets->value)
+        && (($ticket = DesignTicket::query()->find((int) $ticketId)) !== null)
+        && ($user->can(PermissionName::ViewAllDesignTickets->value) || $ticket->isVisibleTo($user)),
     ['guards' => ['sanctum']],
 );
 

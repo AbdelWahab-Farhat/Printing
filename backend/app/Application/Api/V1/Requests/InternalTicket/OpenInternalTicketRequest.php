@@ -49,7 +49,7 @@ class OpenInternalTicketRequest extends FormRequest
             'images.*' => [
                 'file',
                 'mimetypes:image/jpeg,image/png,image/webp',
-                'max:'.config('media.internal_ticket_attachments.image_max_kilobytes'),
+                'max:'.config('media.chat_attachments.image_max_kilobytes'),
             ],
         ];
     }
@@ -80,7 +80,7 @@ class OpenInternalTicketRequest extends FormRequest
             'images.max' => 'أربع صور على الأكثر',
             'images.*.mimetypes' => 'الصورة يجب أن تكون JPG أو PNG أو WEBP',
             'images.*.max' => 'الصورة لا يمكن أن تتجاوز '
-                .(int) ((int) config('media.internal_ticket_attachments.image_max_kilobytes') / 1024).' ميغابايت',
+                .(int) ((int) config('media.chat_attachments.image_max_kilobytes') / 1024).' ميغابايت',
         ];
     }
 

@@ -15,7 +15,7 @@ use App\Domain\Identity\Enums\PermissionName;
  */
 class DesignTicketHistoryTest extends DesignTicketTestCase
 {
-    public function test_the_history_covers_the_ticket_its_files_and_its_comments(): void
+    public function test_the_history_covers_the_ticket_its_files_and_its_conversation(): void
     {
         // Arrange — a whole ticket, then read its log as an auditor.
         [, $employee] = $this->employee();
@@ -32,11 +32,8 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
                 ->json('data.id'),
         );
         $this->ticketAwaitingReview($ticket, $designer);
-        $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'الزبون يريدها اليوم'],
-            $employee,
-        )->assertCreated();
+        $this->say($ticket, $employee, ['body' => 'الزبون يريدها اليوم', 'file' => $this->image()])
+            ->assertCreated();
 
         $version = $ticket->versions()->sole();
         $this->postJson(
@@ -50,17 +47,19 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
 
         // Assert — the ticket's own changes plus the rows it owns. «من رفع النسخة؟» and «متى طلب
         // التعديل؟» are the questions this endpoint exists for, and neither lives on the ticket
-        // row, which is why `auditTrailSubjects()` reaches into the files and the comments.
+        // row, which is why `auditTrailSubjects()` reaches into the files and the conversation.
         $response->assertOk();
 
         $subjects = collect($response->json('data'))->pluck('subject_type')->unique();
         $this->assertTrue($subjects->contains('design_ticket'));
         $this->assertTrue($subjects->contains('design_ticket_file'));
+        $this->assertTrue($subjects->contains('design_ticket_message'));
+        $this->assertTrue($subjects->contains('design_ticket_message_attachment'));
     }
 
     public function test_the_conversation_lives_on_the_ticket(): void
     {
-        // Arrange — one `use HasComments` line and four routes, and this works.
+        // Arrange — the conversation is the internal tickets' engine now (DESIGN-TICKET-CHAT).
         [, $employee] = $this->employee();
         [$designerUser, $designer] = $this->designer();
         $customer = $this->customer();
@@ -74,28 +73,20 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
         );
 
         // Act — both sides write, because anyone who may read a ticket may write on it.
-        $fromEmployee = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'الشعار في المرفقات'],
-            $employee,
-        );
-        $fromDesigner = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'وصلني، أبدأ اليوم'],
-            $designer,
-        );
-        $list = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $designer);
+        $fromEmployee = $this->say($ticket, $employee, ['body' => 'الشعار في المرفقات']);
+        $fromDesigner = $this->say($ticket, $designer, ['body' => 'وصلني، أبدأ اليوم']);
+        $thread = $this->getJson("/api/v1/design-tickets/{$ticket->id}/messages", $designer);
 
-        // Assert — newest first, and attributed to whoever actually wrote each one.
+        // Assert — oldest first, as a conversation reads, and attributed to whoever wrote each.
         $fromEmployee->assertCreated();
         $fromDesigner->assertCreated();
-        $list->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.body', 'وصلني، أبدأ اليوم')
-            ->assertJsonPath('data.0.author.id', $designerUser->id);
+        $thread->assertOk()
+            ->assertJsonCount(2, 'data.messages')
+            ->assertJsonPath('data.messages.1.body', 'وصلني، أبدأ اليوم')
+            ->assertJsonPath('data.messages.1.author.id', $designerUser->id);
     }
 
-    public function test_a_comment_on_a_ticket_the_reader_cannot_see_is_refused(): void
+    public function test_the_conversation_of_a_ticket_the_reader_cannot_see_is_refused(): void
     {
         // Arrange
         [, $employee] = $this->employee();
@@ -112,7 +103,7 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
         );
 
         // Act
-        $response = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $theirs);
+        $response = $this->getJson("/api/v1/design-tickets/{$ticket->id}/messages", $theirs);
 
         // Assert — the ticket itself is a 404 to this reader, so its conversation must be too.
         // The route's own `can:design_tickets.view` would have let this through.

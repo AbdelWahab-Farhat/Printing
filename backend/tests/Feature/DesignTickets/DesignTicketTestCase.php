@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\DesignTickets;
 
 use App\Domain\Customer\Models\Customer;
+use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -115,6 +117,60 @@ abstract class DesignTicketTestCase extends TestCase
             'title' => 'تصميم كيس شحن — أسود',
             'description' => 'ضع الشعار في المنتصف وأضف رقم الهاتف أسفله.',
         ], $overrides);
+    }
+
+    /**
+     * رسالةٌ صوتية كما يكتبها المسجّل: AAC في m4a. والحجم بالكيلوبايت، لاختبار الحدّ.
+     */
+    protected function voice(int $kilobytes = 60): File
+    {
+        return UploadedFile::fake()->create('voice-note.m4a', $kilobytes, 'audio/mp4');
+    }
+
+    /**
+     * تذكرةٌ طرفاها معروفان: طلبها هذا الموظف، وأخذها هذا المصمّم — محادثةٌ قائمة.
+     */
+    protected function conversationBetween(User $requester, User $designer): DesignTicket
+    {
+        return DesignTicket::factory()
+            ->acceptedBy((int) $designer->getKey())
+            ->create(['requested_by_user_id' => $requester->getKey()]);
+    }
+
+    /**
+     * رسالةٌ في محادثة التذكرة، من نقطة النهاية الحقيقية — multipart حين يُرفق ملف.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     */
+    protected function say(DesignTicket $ticket, array $headers, array $payload): TestResponse
+    {
+        return $this->post(
+            "/api/v1/design-tickets/{$ticket->getKey()}/messages",
+            $payload,
+            $headers + ['Accept' => 'application/json'],
+        );
+    }
+
+    /**
+     * تأخذ التذكرة إلى «مكتمل» من نقاط النهاية: قُبلت، ورُفعت نسخة، واعتُمدت.
+     *
+     * @param  array<string, string>  $employeeHeaders  مَن يراجع
+     * @param  array<string, string>  $designerHeaders  مَن يرسم
+     */
+    protected function approveThroughTheFlow(
+        DesignTicket $ticket,
+        array $employeeHeaders,
+        array $designerHeaders,
+    ): void {
+        $this->ticketAwaitingReview($ticket, $designerHeaders);
+
+        $version = $ticket->versions()->sole();
+        $this->postJson(
+            "/api/v1/design-tickets/{$ticket->getKey()}/versions/{$version->id}/review",
+            ['verdict' => DesignSubmissionStatus::Approved->value],
+            $employeeHeaders,
+        )->assertOk();
     }
 
     /**

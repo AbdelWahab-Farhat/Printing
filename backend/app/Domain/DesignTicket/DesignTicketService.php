@@ -10,13 +10,19 @@ use App\Domain\DesignTicket\Actions\AttachDesignTicketFile;
 use App\Domain\DesignTicket\Actions\CancelDesignTicket;
 use App\Domain\DesignTicket\Actions\CreateDesignTicket;
 use App\Domain\DesignTicket\Actions\DeleteDesignTicketAttachment;
+use App\Domain\DesignTicket\Actions\EditDesignTicketMessage;
+use App\Domain\DesignTicket\Actions\MarkDesignTicketRead;
+use App\Domain\DesignTicket\Actions\PostDesignTicketMessage;
+use App\Domain\DesignTicket\Actions\RetractDesignTicketMessage;
 use App\Domain\DesignTicket\Actions\ReviewDesignVersion;
 use App\Domain\DesignTicket\Actions\SubmitDesignVersion;
 use App\Domain\DesignTicket\Actions\UpdateDesignTicket;
 use App\Domain\DesignTicket\DTOs\DesignTicketData;
+use App\Domain\DesignTicket\DTOs\DesignTicketMessageData;
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\DesignTicket\Models\DesignTicketMessage;
 use App\Domain\DesignTicket\Queries\DesignTicketFilters;
 use App\Domain\DesignTicket\Queries\DesignTicketListQuery;
 use App\Domain\DesignTicket\Queries\DesignTicketStatusCountsQuery;
@@ -50,6 +56,10 @@ final class DesignTicketService
         private readonly DeleteDesignTicketAttachment $deleteAttachment,
         private readonly SubmitDesignVersion $submitVersion,
         private readonly ReviewDesignVersion $reviewVersion,
+        private readonly PostDesignTicketMessage $postMessage,
+        private readonly EditDesignTicketMessage $editMessage,
+        private readonly RetractDesignTicketMessage $retractMessage,
+        private readonly MarkDesignTicketRead $markRead,
     ) {}
 
     /**
@@ -127,5 +137,27 @@ final class DesignTicketService
         ?User $actor = null,
     ): DesignTicketFile {
         return ($this->reviewVersion)($ticket, $version, $verdict, $note, $actor);
+    }
+
+    // ─────────────────────────────── the conversation ───────────────────────────────
+
+    public function post(DesignTicket $ticket, User $author, DesignTicketMessageData $data): DesignTicketMessage
+    {
+        return ($this->postMessage)($ticket, $author, $data);
+    }
+
+    public function editMessage(DesignTicketMessage $message, User $editor, string $body): DesignTicketMessage
+    {
+        return ($this->editMessage)($message, $editor, $body);
+    }
+
+    public function retractMessage(DesignTicketMessage $message, User $author): DesignTicketMessage
+    {
+        return ($this->retractMessage)($message, $author);
+    }
+
+    public function markRead(DesignTicket $ticket, User $reader, ?int $upToMessageId = null): void
+    {
+        ($this->markRead)($ticket, $reader, $upToMessageId);
     }
 }

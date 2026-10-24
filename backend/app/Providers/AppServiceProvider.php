@@ -2,15 +2,16 @@
 
 namespace App\Providers;
 
+use App\Application\Realtime\Listeners\BroadcastDesignConversationChange;
 use App\Application\Realtime\Listeners\BroadcastInternalTicketChange;
 use App\Application\Realtime\Listeners\BroadcastTicketChange;
 use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Carrier\Actions\BuildNawrisPayload;
 use App\Domain\Carrier\Actions\ResolveNawrisDestination;
 use App\Domain\Carrier\Support\NawrisClient;
-use App\Domain\Comment\Events\CommentPosted;
 use App\Domain\Customer\Queries\CustomerOrderActivity;
 use App\Domain\Delivery\DeliveryService;
+use App\Domain\DesignTicket\Events\DesignConversationChanged;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
@@ -34,7 +35,7 @@ use App\Domain\Notification\Listeners\NotifyCustomerWhenWalletToppedUp;
 use App\Domain\Notification\Listeners\NotifyOnInternalTicketActivity;
 use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
-use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
+use App\Domain\Notification\Listeners\NotifyWhenDesignTicketMessageIsPosted;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
 use App\Domain\Notification\Listeners\NotifyWhenInternalTicketReplyIsOverdue;
 use App\Domain\Notification\Listeners\NotifyWhenOrderDepositIsChosen;
@@ -288,11 +289,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(DesignTicketAssigned::class, NotifyWhenDesignTicketIsAssigned::class);
         Event::listen(DesignTicketProgressed::class, NotifyWhenDesignTicketProgresses::class);
 
-        // **والملاحظاتُ تُعلن، والإشعاراتُ تُصغي** — والحدثُ عامٌّ عن كلِّ ما يُعلَّق عليه، لأن
-        // «كُتبت ملاحظة» واقعةٌ عن الملاحظات لا عن التصميم. والغربلةُ — «التذاكرُ وحدها اليوم» —
-        // في المستمِع، فتُضاف ملاحظاتُ العميل يوماً بمستمِعٍ ثانٍ لا بحدثٍ ثانٍ ولا بتعديلٍ في
-        // سياق الملاحظات. مُدرَجٌ وبعد الإيداع كجيرانه.
-        Event::listen(CommentPosted::class, NotifyWhenDesignTicketIsCommentedOn::class);
+        // **ومحادثةُ التذكرة بترتيب التذاكر الداخلية** (DESIGN-TICKET-CHAT §٥): السياقُ يُعلن،
+        // والبثُّ ينقل إلى المحادثة، والجرسُ يصغي للرسالة الجديدة وحدها. كانت ملاحظاتٍ تُعلن
+        // `CommentPosted`؛ والملاحظاتُ اليوم لا يُعلن عنها شيء. مُدرَجٌ وبعد الإيداع كجيرانه.
+        Event::listen(DesignConversationChanged::class, BroadcastDesignConversationChange::class);
+        Event::listen(DesignConversationChanged::class, NotifyWhenDesignTicketMessageIsPosted::class);
 
         /*
          * **الدعمُ يُعلن، والبثُّ الحيّ ينقل** — الاتجاه نفسه مرةً أخرى: سياقُ Support لا يعرف أن

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\DesignTickets;
 
-use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 
@@ -13,15 +12,14 @@ use App\Domain\Identity\Enums\PermissionName;
  *
  * **التذكرة التي انتهت سجلُّ ما اتُّفق عليه، والسجلُّ الذي يمكن أن يُضاف إليه ليس سجلّاً.**
  * و{@see DesignTicketStatus::isClosed()} تقولها صراحةً أصلاً — «لا شيء بعدهما يُرسم ولا يُراجع
- * ولا يُقال» — وكان ثلثا تلك الجملة مطبَّقَين من البداية والثالث لا: كان المصمّم يواصل الكتابة
- * تحت تصميمٍ معتمَد، وكان لكلا الطرفين أن يعيد كتابة ما وعد به صامتاً قبل الاعتماد.
+ * ولا يُقال».
  *
  * **النهايتان كلتاهما، والجميع.** «ملغى» تُغلقها للسبب الذي تُغلقها له «مكتمل»: الطلب انتهى.
- * والتجميد ليس صلاحية — فالمشرف يُرفض أيضاً، لأن المحميّ هنا حالُ التذكرة لا مِلكيّةُ جملة.
+ * والتجميد ليس صلاحية — فمَن يرى التذاكر كلّها يُرفض أيضاً، لأن المحميّ هنا حالُ التذكرة.
  *
- * والتطبيق يُخبَر قبل أن يرسم شيئاً: `meta.can_comment` على القائمة، و`can_edit` / `can_delete`
- * بـfalse على كل صفّ. وهذا الملف يؤكّد النصفين — الرايات التي تُخفي الأزرار، والرفض الذي هو
- * القاعدة فعلاً.
+ * والتطبيق يُخبَر قبل أن يرسم شيئاً: `can_reply` و`closed_note` على المحادثة، و`can_edit` /
+ * `can_delete` بـfalse على كل رسالة. وهذا الملف يؤكّد النصفين — الأعلام التي تُخفي الصندوق
+ * والأزرار، والرفض الذي هو القاعدة فعلاً. **ورفضُ الحال ٤٢٢ لا ٤٠٣**: لم يُرفض أحدٌ لِمن هو.
  *
  * Arrange - Act - Assert في كل اختبار.
  */
@@ -34,46 +32,38 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
         [$designerUser] = $this->designer();
         $ticket = $this->ticketFor($employee, $designerUser->id);
 
-        // Act — تُكتب ثم يقرؤها كاتبها، وملاحظتُه له يعيد كتابتها ما دامت التذكرة مفتوحة.
-        $written = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'الشعار في المرفقات'],
-            $employee,
-        );
-        $list = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $employee);
+        // Act
+        $written = $this->say($ticket, $employee, ['body' => 'الشعار في المرفقات']);
+        $thread = $this->getJson("/api/v1/design-tickets/{$ticket->id}/messages", $employee);
 
         // Assert — الحالة العادية، تُقال ليعني المغلقُ أدناه شيئاً.
         $written->assertCreated();
-        $list->assertOk()
-            ->assertJsonPath('meta.can_comment', true)
-            ->assertJsonPath('meta.closed_note', null)
-            ->assertJsonPath('data.0.can_edit', true);
+        $thread->assertOk()
+            ->assertJsonPath('data.can_reply', true)
+            ->assertJsonPath('data.closed_note', null)
+            ->assertJsonPath('data.messages.0.can_edit', true);
     }
 
     public function test_an_approved_ticket_takes_no_more_messages(): void
     {
-        // Arrange — المقصود كلّه: «اعتُمد التصميم» هو نهاية المحادثة، للمصمّم الذي رسمه وللموظف
-        // الذي طلب.
+        // Arrange — «اعتُمد التصميم» هو نهاية المحادثة، للمصمّم الذي رسمه وللموظف الذي طلب.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
-        $ticket = $this->approvedTicket($employee, $designer);
+        $ticket = $this->ticketFor($employee);
+        $this->approveThroughTheFlow($ticket, $employee, $designer);
 
         // Act
-        $fromEmployee = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'وكمان غيّر اللون'],
-            $employee,
-        );
-        $fromDesigner = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'تمام'],
-            $designer,
-        );
+        $fromEmployee = $this->say($ticket, $employee, ['body' => 'وكمان غيّر اللون']);
+        $fromDesigner = $this->say($ticket, $designer, ['file' => $this->voice()]);
+        $thread = $this->getJson("/api/v1/design-tickets/{$ticket->id}/messages", $employee);
 
         // Assert — 422 وكلماتُ التذكرة نفسها، فيعرض التطبيق السبب بدل «حدث خطأ ما».
         $fromEmployee->assertStatus(422);
         $fromDesigner->assertStatus(422)
             ->assertJsonPath('message', 'اعتُمد التصميم وأُغلقت المحادثة');
+        $thread->assertOk()
+            ->assertJsonPath('data.can_reply', false)
+            ->assertJsonPath('data.closed_note', 'اعتُمد التصميم وأُغلقت المحادثة');
     }
 
     public function test_a_cancelled_ticket_takes_no_more_messages(): void
@@ -90,11 +80,7 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
         )->assertOk();
 
         // Act
-        $response = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'ليش تلغى؟'],
-            $employee,
-        );
+        $response = $this->say($ticket, $employee, ['body' => 'ليش تلغى؟']);
 
         // Assert
         $response->assertStatus(422)
@@ -103,76 +89,57 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
 
     public function test_the_messages_already_in_a_closed_ticket_freeze(): void
     {
-        // Arrange — كُتبت والتذكرة مفتوحة، بيد كاتبها الذي كان يستطيع إعادة كتابتها بحريّةٍ قبل
-        // ساعة.
+        // Arrange — كُتبت والتذكرة مفتوحة، بيد كاتبها، وما تزال في مهلة العشرين دقيقة.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
         $ticket = $this->ticketFor($employee);
 
-        $comment = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'اتفقنا على الأسود'],
-            $employee,
-        )->assertCreated()->json('data.id');
+        $message = $this->say($ticket, $employee, ['body' => 'اتفقنا على الأسود'])
+            ->assertCreated()->json('data.messages.0.id');
 
-        $this->close($ticket, $employee, $designer);
+        $this->approveThroughTheFlow($ticket, $employee, $designer);
 
         // Act
         $rewritten = $this->patchJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments/{$comment}",
+            "/api/v1/design-tickets/{$ticket->id}/messages/{$message}",
             ['body' => 'لا، اتفقنا على الأبيض'],
             $employee,
         );
         $removed = $this->deleteJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments/{$comment}",
+            "/api/v1/design-tickets/{$ticket->id}/messages/{$message}",
             [],
             $employee,
         );
-        $list = $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $employee);
+        $thread = $this->getJson("/api/v1/design-tickets/{$ticket->id}/messages", $employee);
 
         // Assert — ما اتُّفق عليه قبل الاعتماد يبقى كما كُتب.
-        $rewritten->assertStatus(422);
+        $rewritten->assertStatus(422)->assertJsonPath('message', 'اعتُمد التصميم وأُغلقت المحادثة');
         $removed->assertStatus(422);
-        $list->assertOk()
-            ->assertJsonPath('meta.can_comment', false)
-            ->assertJsonPath('meta.closed_note', 'اعتُمد التصميم وأُغلقت المحادثة')
-            ->assertJsonPath('data.0.can_edit', false)
-            ->assertJsonPath('data.0.can_delete', false);
+        $thread->assertOk()
+            ->assertJsonPath('data.messages.0.body', 'اتفقنا على الأسود')
+            ->assertJsonPath('data.messages.0.can_edit', false)
+            ->assertJsonPath('data.messages.0.can_delete', false)
+            ->assertJsonPath('data.messages.0.mutation_block_reason', 'اعتُمد التصميم وأُغلقت المحادثة');
     }
 
-    public function test_even_a_moderator_is_refused_after_the_sign_off(): void
+    public function test_even_a_reader_of_every_ticket_is_refused_after_the_sign_off(): void
     {
-        // Arrange — `comments.moderate` سلطةٌ على إعادة كتابة جملة زميل، لا على إعادة فتح تذكرةٍ
-        // منتهية. والتجميد عن حال التذكرة.
+        // Arrange — رؤيةُ التذاكر كلّها ليست سلطةً على إعادة فتح تذكرةٍ منتهية.
         [, $employee] = $this->employee();
         [, $designer] = $this->designer();
-        [, $moderator] = $this->actor(
+        [, $manager] = $this->actor(
             PermissionName::ViewDesignTickets,
             PermissionName::ViewAllDesignTickets,
             PermissionName::ModerateComments,
         );
         $ticket = $this->ticketFor($employee);
-
-        $comment = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments",
-            ['body' => 'اتفقنا على الأسود'],
-            $employee,
-        )->assertCreated()->json('data.id');
-
-        $this->close($ticket, $employee, $designer);
+        $this->approveThroughTheFlow($ticket, $employee, $designer);
 
         // Act
-        $response = $this->deleteJson(
-            "/api/v1/design-tickets/{$ticket->id}/comments/{$comment}",
-            [],
-            $moderator,
-        );
+        $response = $this->say($ticket, $manager, ['body' => 'ملاحظة أخيرة']);
 
         // Assert
         $response->assertStatus(422);
-        $this->getJson("/api/v1/design-tickets/{$ticket->id}/comments", $moderator)
-            ->assertOk()
-            ->assertJsonPath('data.0.can_delete', false);
     }
 
     /**
@@ -191,35 +158,5 @@ class DesignTicketClosedConversationTest extends DesignTicketTestCase
                 $employee,
             )->assertCreated()->json('data.id'),
         );
-    }
-
-    /**
-     * @param  array<string, string>  $employee
-     * @param  array<string, string>  $designer
-     */
-    private function approvedTicket(array $employee, array $designer): DesignTicket
-    {
-        $ticket = $this->ticketFor($employee);
-        $this->close($ticket, $employee, $designer);
-
-        return $ticket;
-    }
-
-    /**
-     * تأخذ التذكرة إلى «مكتمل»: قُبلت، ورُفعت نسخة، واعتُمدت.
-     *
-     * @param  array<string, string>  $employee
-     * @param  array<string, string>  $designer
-     */
-    private function close(DesignTicket $ticket, array $employee, array $designer): void
-    {
-        $this->ticketAwaitingReview($ticket, $designer);
-
-        $version = $ticket->versions()->sole();
-        $this->postJson(
-            "/api/v1/design-tickets/{$ticket->id}/versions/{$version->id}/review",
-            ['verdict' => DesignSubmissionStatus::Approved->value],
-            $employee,
-        )->assertOk();
     }
 }

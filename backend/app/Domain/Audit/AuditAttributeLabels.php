@@ -791,6 +791,10 @@ final class AuditAttributeLabels
             'completed_at' => 'وقت إغلاق التذكرة',
             'approved_customer_design_id' => 'التصميم المعتمد في حساب الزبون',
             'cancellation_reason' => 'سبب الإلغاء',
+            // خارج السجلّ (`DesignTicket::attributesNeverWorthLogging()`)، ومسمّاةٌ لأن الاختبار
+            // يسأل عن كلّ عمود — ولأن الاسم الصحيح لا يكلّف شيئاً لو دخلت يوماً.
+            'requester_read_message_id' => 'قرأ الطالب حتى الرسالة',
+            'designer_read_message_id' => 'قرأ المصمم حتى الرسالة',
         ],
         'design_ticket_file' => [
             'design_ticket_id' => 'التذكرة',
@@ -974,6 +978,26 @@ final class AuditAttributeLabels
         ],
 
         'internal_ticket_attachment' => [
+            'message_id' => 'الرسالة',
+            'kind' => 'صنف المرفق',
+            'filename' => 'اسم المرفق',
+            'duration_seconds' => 'مدة الرسالة الصوتية (ثوانٍ)',
+            'waveform' => 'موجة الصوت',
+        ],
+
+        // محادثة تذكرة التصميم — على شكل التذاكر الداخلية، وبأسمائها (DESIGN-TICKET-CHAT).
+        'design_ticket_message' => [
+            'design_ticket_id' => 'التذكرة',
+            'user_id' => 'كتبها',
+            'body' => 'نص الرسالة',
+            'reply_to_message_id' => 'ردّاً على الرسالة',
+            'client_token' => 'رمز الإرسال',
+            'edited_at' => 'عُدّلت في',
+            'original_body' => 'النص الأول',
+            'retracted_at' => 'حُذفت في',
+        ],
+
+        'design_ticket_message_attachment' => [
             'message_id' => 'الرسالة',
             'kind' => 'صنف المرفق',
             'filename' => 'اسم المرفق',

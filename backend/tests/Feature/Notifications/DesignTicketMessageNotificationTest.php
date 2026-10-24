@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Notifications;
 
-use App\Domain\Audit\Enums\AuditSubject;
 use App\Domain\Comment\Actions\PostComment;
-use App\Domain\Comment\Events\CommentPosted;
-use App\Domain\Comment\Models\Comment;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\DesignTicket\Actions\PostDesignTicketMessage;
+use App\Domain\DesignTicket\DTOs\DesignTicketMessageData;
+use App\Domain\DesignTicket\Enums\DesignConversationChange;
+use App\Domain\DesignTicket\Events\DesignConversationChanged;
 use App\Domain\DesignTicket\Models\DesignTicket;
+use App\Domain\DesignTicket\Models\DesignTicketMessage;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Enums\NotificationType;
-use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsCommentedOn;
+use App\Domain\Notification\Listeners\NotifyWhenDesignTicketMessageIsPosted;
 use App\Domain\Notification\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -28,12 +30,13 @@ use Tests\TestCase;
  * خارجهما فيسمعان معاً. ولو كُتب الحكمُ بسؤال «مَن الكاتب؟» لسقط الفرعُ الثالثُ صامتاً — ولهذا
  * له اختبارٌ باسمه.
  *
- * **والحدثُ عامٌّ والغربلةُ في المستمِع**، فاختبارُ الملاحظة على عميلٍ يؤكّد أن شيئاً لم يُعلَن.
- * وهو الاختبارُ الذي يسقط أولَ مرّةٍ يُنقل فيها الرأيُ من المستمِع إلى سياق الملاحظات.
+ * **صارت المحادثةُ رسائلَ لا ملاحظات** (DESIGN-TICKET-CHAT)، والإشعارُ بقي كما هو: النوعُ
+ * نفسه والجملةُ نفسها والوجهةُ نفسها، فلا تتغيّر الشارةُ ولا الجرسُ ولا إشعاراتُ الأمس. واختبارُ
+ * الملاحظة على عميلٍ باقٍ: الملاحظاتُ لم تعد تُعلن شيئاً، ولا يجوز أن تعود.
  *
  * Arrange - Act - Assert في كل اختبار.
  */
-class DesignTicketCommentNotificationTest extends TestCase
+class DesignTicketMessageNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -119,18 +122,17 @@ class DesignTicketCommentNotificationTest extends TestCase
 
     public function test_the_same_reply_announced_twice_is_one_notification(): void
     {
-        // Arrange — مهمّةٌ في الطابور أُعيدت محاولتُها. المفتاحُ معرِّفُ التعليق، وهذا كلُّ ما
+        // Arrange — مهمّةٌ في الطابور أُعيدت محاولتُها. المفتاحُ معرِّفُ الرسالة، وهذا كلُّ ما
         // يمنعه.
         [$ticket, , $designer] = $this->conversation();
 
         // Act — ردٌّ واحد، ثم إعلانُه ثانيةً بمعرِّفه نفسه كما تفعل مهمّةٌ أُعيدت محاولتُها.
-        $comment = $this->reply($ticket, $designer);
+        $message = $this->reply($ticket, $designer);
 
-        app(NotifyWhenDesignTicketIsCommentedOn::class)->handle(new CommentPosted(
-            commentId: (int) $comment->getKey(),
-            commentableType: AuditSubject::DesignTicket->value,
-            commentableId: (int) $ticket->getKey(),
-            authorId: (int) $designer->getKey(),
+        app(NotifyWhenDesignTicketMessageIsPosted::class)->handle(new DesignConversationChanged(
+            ticketId: (int) $ticket->getKey(),
+            change: DesignConversationChange::MessagePosted,
+            messageId: (int) $message->getKey(),
         ));
 
         // Assert
@@ -162,8 +164,7 @@ class DesignTicketCommentNotificationTest extends TestCase
 
     public function test_a_note_on_a_customer_announces_nothing(): void
     {
-        // Arrange — الحدثُ عامٌّ عن كلِّ ما يُعلَّق عليه، والرأيُ في المستمِع. هذا الاختبار هو
-        // الذي يسقط يوم يُنقل الرأيُ إلى سياق الملاحظات.
+        // Arrange — ملاحظاتُ العميل باقيةٌ ملاحظات، ولم تكن خبراً لأحدٍ قط.
         $customer = Customer::factory()->create();
         $author = User::factory()->create(['is_active' => true]);
 
@@ -172,6 +173,23 @@ class DesignTicketCommentNotificationTest extends TestCase
 
         // Assert
         $this->assertSame(0, Notification::query()->count());
+    }
+
+    public function test_an_edit_or_a_deletion_announces_nothing(): void
+    {
+        // Arrange — كالتذاكر الداخلية: التعديلُ والسحبُ يُبثّان حيّاً ولا يُوقظان أحداً.
+        [$ticket, , $designer] = $this->conversation();
+        $message = $this->reply($ticket, $designer);
+
+        // Act
+        app(NotifyWhenDesignTicketMessageIsPosted::class)->handle(new DesignConversationChanged(
+            ticketId: (int) $ticket->getKey(),
+            change: DesignConversationChange::MessageEdited,
+            messageId: (int) $message->getKey(),
+        ));
+
+        // Assert
+        $this->assertSame(1, Notification::query()->count());
     }
 
     public function test_the_endpoint_carries_a_reply_all_the_way_to_the_other_side(): void
@@ -187,7 +205,7 @@ class DesignTicketCommentNotificationTest extends TestCase
 
         // Act
         $response = $this->postJson(
-            "/api/v1/design-tickets/{$ticket->getKey()}/comments",
+            "/api/v1/design-tickets/{$ticket->getKey()}/messages",
             ['body' => 'الشعار في المرفقات'],
             ['Authorization' => 'Bearer '.$requester->createToken('test')->plainTextToken],
         );
@@ -225,7 +243,7 @@ class DesignTicketCommentNotificationTest extends TestCase
     /**
      * ردٌّ يُكتب على التذكرة.
      *
-     * **ولا يُشغَّل المستمِعُ هنا باليد.** الفعلُ يُطلق `CommentPosted`، والمستمِعُ مسجَّل،
+     * **ولا يُشغَّل المستمِعُ هنا باليد.** الفعلُ يُطلق `DesignConversationChanged`، والمستمِعُ مسجَّل،
      * والطابورُ في الاختبارات `sync` — فالطريقُ الحقيقيُّ هو الذي يُقاس، وتشغيلُه مرّةً ثانية
      * كان سينشر خبرَين عن ردٍّ واحد.
      */
@@ -233,8 +251,8 @@ class DesignTicketCommentNotificationTest extends TestCase
         DesignTicket $ticket,
         User $author,
         string $body = 'تمام، جاري التعديل',
-    ): Comment {
-        return app(PostComment::class)->handle($ticket, $body, $author);
+    ): DesignTicketMessage {
+        return app(PostDesignTicketMessage::class)($ticket, $author, new DesignTicketMessageData(body: $body));
     }
 
     /**

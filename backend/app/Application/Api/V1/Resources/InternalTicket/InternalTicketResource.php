@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources\InternalTicket;
 
 use App\Domain\Identity\Models\User;
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
 use App\Domain\InternalTicket\Models\InternalTicket;
+use App\Support\Media\ChatAttachmentKind;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -132,7 +132,7 @@ class InternalTicketResource extends JsonResource
             // ما يرسمه الصفّ أيقونةً قبل المعاينة.
             'kind' => match (true) {
                 $first === null => 'text',
-                $first->kind === InternalAttachmentKind::Voice => 'voice',
+                $first->kind === ChatAttachmentKind::Voice => 'voice',
                 default => 'image',
             },
             'duration_seconds' => $first?->duration_seconds,

@@ -14,6 +14,7 @@ use App\Domain\InternalTicket\Exceptions\QuotedMessageNotInTicket;
 use App\Domain\InternalTicket\Models\InternalTicket;
 use App\Domain\InternalTicket\Models\InternalTicketAttachment;
 use App\Domain\InternalTicket\Models\InternalTicketMessage;
+use App\Support\Media\StoreChatAttachment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
  */
 final class PostInternalMessage
 {
-    public function __construct(private readonly StoreInternalAttachment $storeAttachment) {}
+    public function __construct(private readonly StoreChatAttachment $storeAttachment) {}
 
     public function __invoke(
         InternalTicket $ticket,
@@ -57,9 +58,15 @@ final class PostInternalMessage
             $this->assertQuotable($ticket, $data->replyToMessageId);
         }
 
-        // الملفاتُ قبل المعاملة وخارجها — انظر StoreInternalAttachment.
+        // الملفاتُ قبل المعاملة وخارجها — انظر StoreChatAttachment.
         $attachments = array_map(
-            fn ($file) => ($this->storeAttachment)((int) $ticket->getKey(), $file, $data->durationSeconds, $data->waveform),
+            fn ($file) => ($this->storeAttachment)(
+                (string) config('media.internal_ticket_attachments.disk'),
+                "internal-ticket-attachments/{$ticket->getKey()}",
+                $file,
+                $data->durationSeconds,
+                $data->waveform,
+            ),
             $data->files,
         );
 

@@ -22,6 +22,8 @@ use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\DesignTicket\Models\DesignTicketMessage;
+use App\Domain\DesignTicket\Models\DesignTicketMessageAttachment;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Models\InternalTicket;
@@ -181,6 +183,9 @@ enum AuditSubject: string
     // and neither of them lives on the ticket row.
     case DesignTicket = 'design_ticket';
     case DesignTicketFile = 'design_ticket_file';
+    // محادثة التذكرة، على شكل التذاكر الداخلية — DESIGN-TICKET-CHAT.
+    case DesignTicketMessage = 'design_ticket_message';
+    case DesignTicketMessageAttachment = 'design_ticket_message_attachment';
 
     // What the shop shows its customers
     case Billboard = 'billboard';
@@ -285,6 +290,8 @@ enum AuditSubject: string
             self::Shortage => Shortage::class,
             self::DesignTicket => DesignTicket::class,
             self::DesignTicketFile => DesignTicketFile::class,
+            self::DesignTicketMessage => DesignTicketMessage::class,
+            self::DesignTicketMessageAttachment => DesignTicketMessageAttachment::class,
             self::ShortageSupply => ShortageSupply::class,
             self::Billboard => Billboard::class,
             self::SupportTicket => SupportTicket::class,
@@ -367,6 +374,8 @@ enum AuditSubject: string
             self::Shortage => 'نقص',
             self::DesignTicket => 'تذكرة تصميم',
             self::DesignTicketFile => 'ملف تذكرة تصميم',
+            self::DesignTicketMessage => 'رسالة تذكرة تصميم',
+            self::DesignTicketMessageAttachment => 'مرفق رسالة تذكرة تصميم',
             self::ShortageSupply => 'عملية توفير',
             self::Billboard => 'لوحة إعلانات',
             self::SupportTicket => 'تذكرة دعم',

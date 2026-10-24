@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\InternalTicket\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
+use App\Support\Media\ChatAttachmentKind;
 use Database\Factories\InternalTicketAttachmentFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * صورةٌ أو رسالةٌ صوتية في رسالةٍ داخلية.
  *
- * **لا شيء فيه قابلٌ للتعبئة.** كلُّ عمودٍ يختمه `StoreInternalAttachment` مما قرأه من الملف
+ * **لا شيء فيه قابلٌ للتعبئة.** كلُّ عمودٍ يختمه `StoreChatAttachment` مما قرأه من الملف
  * نفسه: نوعٌ أو مسارٌ يختاره المرسل هو بالضبط ما يُمنع. والمدّة والموجة من الهاتف، للعرض وحده.
  *
  * **سحبُ الرسالة لا يمسح ملفّها.** تختفي من العرض وتبقى على القرص للتدقيق، كبريمولا.
@@ -34,7 +34,7 @@ class InternalTicketAttachment extends Model
     protected function casts(): array
     {
         return [
-            'kind' => InternalAttachmentKind::class,
+            'kind' => ChatAttachmentKind::class,
             'size_bytes' => 'integer',
             'width_px' => 'integer',
             'height_px' => 'integer',

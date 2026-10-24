@@ -45,16 +45,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `approved_by_user_id` and `approved_customer_design_id` are records of things that happened,
  * and a request body that could set them could claim somebody else took the job.
  *
- * **Comments come from {@see HasComments} and the history from {@see Auditable}.** Between them
- * they are the brief's entire «سجل التذكرة» section — who created it, who accepted, the messages,
- * the files, the versions, the change requests, who approved, and when it closed — for two lines.
+ * **The history comes from {@see Auditable}**: who created it, who accepted, the messages, the
+ * files, the versions, the change requests, who approved, and when it closed.
+ *
+ * **The conversation is {@see messages()}**, on the internal tickets' engine — text, photos and
+ * voice notes (DESIGN-TICKET-CHAT). It used to be {@see HasComments}, text only, because it was
+ * built before anything else existed; those old notes stay readable for the old app, and nothing
+ * may be written on them any more.
  */
 #[UseFactory(DesignTicketFactory::class)]
 #[Fillable(['order_id', 'title', 'description', 'instructions'])]
 class DesignTicket extends Model implements Commentable, HasAuditTrail
 {
     /** @use HasFactory<DesignTicketFactory> */
-    use Auditable, CascadesSoftDeletes, HasComments, HasFactory, SoftDeletes;
+    use Auditable, CascadesSoftDeletes, HasComments, HasFactory, SoftDeletes {
+        Auditable::attributesNeverWorthLogging as everyModelsNoise;
+    }
 
     /**
      * The code is allocated here rather than in the action that creates one, for the reason
@@ -72,6 +78,17 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
                 $ticket->code = $identifier->code;
             }
         });
+
+        // **المصمّمُ الجديد لم يقرأ شيئاً.** هنا لا في `AssignDesignTicket` وحده، لأن «المصمّم»
+        // يتغيّر من أكثر من طريق — الإسنادُ، والإعادةُ إلى الصفّ، والقبول — وصفرُ المؤشّر يجب أن
+        // يتبعه في كلّها، وإلا رأى الطالبُ ✓✓ على كلامٍ لم يقرأه مَن يعمل عليها الآن.
+        static::updating(function (self $ticket): void {
+            $before = $ticket->getOriginal('accepted_by_user_id') ?? $ticket->getOriginal('assigned_designer_id');
+
+            if ($before !== $ticket->designerId() && ! $ticket->isDirty('designer_read_message_id')) {
+                $ticket->designer_read_message_id = null;
+            }
+        });
     }
 
     /**
@@ -83,6 +100,11 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
             'status' => DesignTicketStatus::class,
             'accepted_at' => 'datetime',
             'completed_at' => 'datetime',
+            'requested_by_user_id' => 'integer',
+            'assigned_designer_id' => 'integer',
+            'accepted_by_user_id' => 'integer',
+            'requester_read_message_id' => 'integer',
+            'designer_read_message_id' => 'integer',
         ];
     }
 
@@ -95,31 +117,51 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     }
 
     /**
-     * هل بقي ما يُقال عليها — {@see Commentable}.
+     * هل بقي ما يُقال في محادثتها.
      *
      * **الثلثُ الثالث من جملةٍ كتبتها هذه الشيفرة أصلاً.** `DesignTicketStatus::isClosed()` تقول
-     * عن «مكتمل» و«ملغى» إنه «لا شيء بعدهما يُرسم ولا يُراجع ولا يُقال»، وكان الثلثان الأولان
-     * مطبَّقَين من اليوم الأول والثالث لا. والتذكرة التي اعتُمدت هي سجلُّ ما اتُّفق عليه، والسجلُّ
-     * الذي يستطيع أحدٌ أن يضيف إليه — أو أن يعيد كتابته صامتاً — ليس سجلّاً.
+     * عن «مكتمل» و«ملغى» إنه «لا شيء بعدهما يُرسم ولا يُراجع ولا يُقال». والتذكرة التي اعتُمدت
+     * هي سجلُّ ما اتُّفق عليه، والسجلُّ الذي يستطيع أحدٌ أن يضيف إليه — أو أن يعيد كتابته صامتاً —
+     * ليس سجلّاً.
      *
-     * و*حالُ* التذكرة هي التي تُغلقها، لا صلاحية أبداً: والمشرف يُرفض هو أيضاً.
+     * و*حالُ* التذكرة هي التي تُغلقها، لا صلاحية أبداً: ومَن يرى التذاكر كلّها يُرفض هو أيضاً.
      */
-    public function acceptsComments(): bool
+    public function acceptsMessages(): bool
     {
         return $this->isOpen();
     }
 
     /**
      * أيَّ نهايتيها بلغت، لأنهما تعنيان شيئين مختلفين لمن يمسك الهاتف — وهو التمييز نفسه الذي
-     * يصنعه {@see DesignTicketIsClosed}.
+     * يصنعه {@see DesignTicketIsClosed}. و`null` ما دامت مفتوحة.
      */
-    public function commentsClosedNote(): ?string
+    public function conversationClosedNote(): ?string
     {
         return match ($this->status) {
             DesignTicketStatus::Completed => 'اعتُمد التصميم وأُغلقت المحادثة',
             DesignTicketStatus::Cancelled => 'أُلغيت التذكرة وأُغلقت المحادثة',
             default => null,
         };
+    }
+
+    /**
+     * الملاحظاتُ القديمة تُقرأ ولا يُكتب فيها أبداً — {@see Commentable}.
+     *
+     * **صارت المحادثةُ رسائل** (DESIGN-TICKET-CHAT)، والملاحظاتُ تبقى لنسخة التطبيق القديمة
+     * وحدها: تقرؤها، ومكانَ الصندوق «حدّث التطبيق». ولو بقيت تكتب لكتبت ما لا يراه زميلُها في
+     * المحادثة الجديدة (السؤال ٣).
+     */
+    public function acceptsComments(): bool
+    {
+        return false;
+    }
+
+    /**
+     * النهايةُ إن انتهت، وإلا «حدّث التطبيق» — ما تقرؤه النسخةُ القديمة مكانَ الصندوق.
+     */
+    public function commentsClosedNote(): ?string
+    {
+        return $this->conversationClosedNote() ?? 'حدّث التطبيق لتكتب في المحادثة';
     }
 
     /** Whether somebody has taken it. The fact, not the intention — see the column's comment. */
@@ -326,10 +368,70 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
         return $this->belongsTo(CustomerDesign::class, 'approved_customer_design_id');
     }
 
+    // ──────────────────────────────── the conversation ────────────────────────────────
+
+    /**
+     * ما قاله الطالبُ والمصمّمُ ومَن يرى التذكرة، أقدمُه أولاً كما تُقرأ المحادثة.
+     *
+     * بـ`id` لا `created_at`، للسبب الذي يرتّب به `files()`. و`chaperone` تعطي كلَّ رسالةٍ تذكرتَها
+     * بلا استعلام: موردُ الرسالة يسأل التذكرة هل ما تزال مفتوحة.
+     *
+     * @return HasMany<DesignTicketMessage, $this>
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(DesignTicketMessage::class)->orderBy('id')->chaperone('ticket');
+    }
+
+    /**
+     * مَن يعمل عليها فعلاً: مَن قبلها، أو مَن أُسندت إليه قبل القبول. الحسابُ نفسه الذي يسمّي به
+     * الإشعارُ «المصمّم».
+     */
+    public function designerId(): ?int
+    {
+        $id = $this->accepted_by_user_id ?? $this->assigned_designer_id;
+
+        return $id === null ? null : (int) $id;
+    }
+
+    /** طرفا المحادثة: الطالب، والمصمّم. ومَن سواهما يقرأ ويكتب ولا ✓✓ له ولا عليه. */
+    public function isParty(?User $user): bool
+    {
+        return $user !== null && $this->readCursorColumnFor((int) $user->getKey()) !== null;
+    }
+
+    /** الطرفُ الآخر عند هذا القارئ، أو `null` لمن ليس طرفاً. */
+    public function counterpartIdOf(?User $user): ?int
+    {
+        return match ($user === null ? null : $this->readCursorColumnFor((int) $user->getKey())) {
+            'requester_read_message_id' => $this->designerId(),
+            'designer_read_message_id' => $this->requested_by_user_id === null ? null : (int) $this->requested_by_user_id,
+            default => null,
+        };
+    }
+
+    /** آخرُ رسالةٍ رآها هذا الطرف. */
+    public function readUpToFor(?int $userId): ?int
+    {
+        $column = $userId === null ? null : $this->readCursorColumnFor($userId);
+
+        return $column === null ? null : $this->{$column};
+    }
+
+    /** عمودُ مؤشّر هذا الموظف، أو `null` لمن ليس طرفاً. الطالبُ أولاً إن كان هو المصمّمَ أيضاً. */
+    public function readCursorColumnFor(int $userId): ?string
+    {
+        return match (true) {
+            $this->requested_by_user_id !== null && (int) $this->requested_by_user_id === $userId => 'requester_read_message_id',
+            $this->designerId() === $userId => 'designer_read_message_id',
+            default => null,
+        };
+    }
+
     // ───────────────────────── soft deletes and the audit trail ─────────────────────────
 
     /**
-     * The files and the conversation go with it.
+     * The files and the conversation — the old notes and the messages — go with it.
      *
      * The `Shortage` calculation rather than the `Order` one: nothing outside this row reads a
      * ticket's files or its comments, so following the parent costs nothing, and leaving them
@@ -343,7 +445,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
      */
     public function softDeleteCascades(): array
     {
-        return ['files', 'comments'];
+        return ['files', 'comments', 'messages'];
     }
 
     /**
@@ -363,6 +465,22 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
                 ->pluck('id')->all(),
             (new Comment)->getMorphClass() => $this->comments()
                 ->withTrashed()->pluck('id')->all(),
+            (new DesignTicketMessage)->getMorphClass() => $this->messages()
+                ->withTrashed()->pluck('id')->all(),
+            (new DesignTicketMessageAttachment)->getMorphClass() => DesignTicketMessageAttachment::query()
+                ->withTrashed()
+                ->whereIn('message_id', $this->messages()->withTrashed()->select('id'))
+                ->pluck('id')->all(),
         ];
+    }
+
+    /**
+     * مؤشّرا القراءة ليسا قصّةً تُروى: كلُّ فتحٍ للمحادثة كان سيكتب سطراً في سجلّ التذكرة.
+     *
+     * @return list<string>
+     */
+    protected function attributesNeverWorthLogging(): array
+    {
+        return [...$this->everyModelsNoise(), 'requester_read_message_id', 'designer_read_message_id'];
     }
 }

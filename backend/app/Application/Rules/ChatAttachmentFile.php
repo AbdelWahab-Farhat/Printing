@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Application\Rules;
 
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
+use App\Support\Media\ChatAttachmentKind;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
 
 /**
- * مرفقُ تذكرةٍ داخلية: صورة، أو رسالة صوتية — كقاعدة `TicketAttachmentFile` في بريمولا.
+ * مرفقُ رسالةٍ في محادثة الموظفين — تذكرةٌ داخلية أو تذكرةُ تصميم: صورة، أو رسالة صوتية. كقاعدة
+ * `TicketAttachmentFile` في بريمولا.
  *
  * **قاعدةٌ لا `mimes:` و`max:`**، لأن للنوعين حدّين مختلفين (config/media.php)، و`max:` واحدةٌ لا
  * تقول ذلك. **والنوعُ هو المقروء من البايتات** (`getMimeType()` بـfinfo)، لا ما ادّعاه الهاتف — فليس
- * فحصُ «audio/» شكلياً. ولماذا يُقبل `video/mp4` صوتاً: {@see InternalAttachmentKind::fromMimeType()}.
+ * فحصُ «audio/» شكلياً. ولماذا يُقبل `video/mp4` صوتاً: {@see ChatAttachmentKind::fromMimeType()}.
  */
-final class InternalTicketAttachmentFile implements ValidationRule
+final class ChatAttachmentFile implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -28,8 +29,8 @@ final class InternalTicketAttachmentFile implements ValidationRule
         $mimeType = (string) $value->getMimeType();
 
         $kind = match (true) {
-            in_array($mimeType, InternalAttachmentKind::IMAGE_MIME_TYPES, true) => InternalAttachmentKind::Image,
-            InternalAttachmentKind::isVoiceMimeType($mimeType) => InternalAttachmentKind::Voice,
+            in_array($mimeType, ChatAttachmentKind::IMAGE_MIME_TYPES, true) => ChatAttachmentKind::Image,
+            ChatAttachmentKind::isVoiceMimeType($mimeType) => ChatAttachmentKind::Voice,
             default => null,
         };
 
@@ -42,7 +43,7 @@ final class InternalTicketAttachmentFile implements ValidationRule
         if ($value->getSize() / 1024 > $kind->maxKilobytes()) {
             $fail(sprintf(
                 '%s لا يمكن أن تتجاوز %s ميغابايت',
-                $kind === InternalAttachmentKind::Image ? 'الصورة' : 'الرسالة الصوتية',
+                $kind === ChatAttachmentKind::Image ? 'الصورة' : 'الرسالة الصوتية',
                 (int) ($kind->maxKilobytes() / 1024),
             ));
         }

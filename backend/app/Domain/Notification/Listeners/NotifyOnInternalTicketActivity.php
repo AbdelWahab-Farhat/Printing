@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Notification\Listeners;
 
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
 use App\Domain\InternalTicket\Enums\InternalTicketChange;
 use App\Domain\InternalTicket\Events\InternalTicketChanged;
 use App\Domain\InternalTicket\Models\InternalTicket;
@@ -12,6 +11,7 @@ use App\Domain\InternalTicket\Models\InternalTicketMessage;
 use App\Domain\Notification\DTOs\PendingNotification;
 use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\NotificationService;
+use App\Support\Media\ChatAttachmentKind;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
@@ -101,8 +101,8 @@ final class NotifyOnInternalTicketActivity implements ShouldQueue
         }
 
         return match ($message->attachments->first()?->kind) {
-            InternalAttachmentKind::Voice => 'voice',
-            InternalAttachmentKind::Image => 'image',
+            ChatAttachmentKind::Voice => 'voice',
+            ChatAttachmentKind::Image => 'image',
             null => 'text',
         };
     }

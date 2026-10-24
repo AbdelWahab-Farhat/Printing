@@ -2,23 +2,27 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\InternalTicket\Enums;
+namespace App\Support\Media;
 
 use InvalidArgumentException;
 
 /**
- * ما في رسالةٍ داخلية غير الكلام: صورة، أو رسالة صوتية. لا PDF ولا ملفات، كبريمولا (السؤال ٢ في
- * §١١ من التصميم، بافتراضه).
+ * ما في رسالة محادثةٍ بين الموظفين غير الكلام: صورة، أو رسالة صوتية. لا PDF ولا ملفات، كبريمولا
+ * (السؤال ٢ في §١١ من INTERNAL-TICKETS-DESIGN، بافتراضه).
  *
- * **مستقلٌّ عن `AttachmentKind` في الدعم** للسبب الذي جعل ذاك مستقلاً عن `DesignKind`: سياقان لا
- * يعرف أحدهما الآخر، والقائمتان مختلفتان أصلاً — هناك PDF وهنا صوت.
+ * **محادثتان على هذا الشيء الواحد**: التذاكر الداخلية، ومحادثة تذكرة التصميم
+ * (DESIGN-TICKET-CHAT). كانت الثانية نصّاً فقط لأنها بُنيت قبله، والغايةُ من نقله إلى هنا أن ما
+ * تقبله إحداهما تقبله الأخرى، بالحدود نفسها.
+ *
+ * **ومستقلٌّ عن `AttachmentKind` في الدعم** للسبب الذي جعل ذاك مستقلاً عن `DesignKind`: هناك PDF
+ * وهنا صوت، والقائمتان مختلفتان أصلاً.
  */
-enum InternalAttachmentKind: string
+enum ChatAttachmentKind: string
 {
     case Image = 'image';
     case Voice = 'voice';
 
-    /** الصور التي تقبلها التذاكر الداخلية، بأنواعها المقروءة من البايتات. */
+    /** الصور التي تقبلها المحادثة، بأنواعها المقروءة من البايتات. */
     public const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
     /**
@@ -61,8 +65,8 @@ enum InternalAttachmentKind: string
     public function maxKilobytes(): int
     {
         return match ($this) {
-            self::Image => (int) config('media.internal_ticket_attachments.image_max_kilobytes'),
-            self::Voice => (int) config('media.internal_ticket_attachments.voice_max_kilobytes'),
+            self::Image => (int) config('media.chat_attachments.image_max_kilobytes'),
+            self::Voice => (int) config('media.chat_attachments.voice_max_kilobytes'),
         };
     }
 }

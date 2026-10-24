@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Domain\InternalTicket\Enums\InternalAttachmentKind;
 use App\Domain\InternalTicket\Models\InternalTicketAttachment;
 use App\Domain\InternalTicket\Models\InternalTicketMessage;
+use App\Support\Media\ChatAttachmentKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -26,7 +26,7 @@ class InternalTicketAttachmentFactory extends Factory
     {
         return [
             'message_id' => InternalTicketMessage::factory(),
-            'kind' => InternalAttachmentKind::Image,
+            'kind' => ChatAttachmentKind::Image,
             'disk' => 'local',
             'path' => 'internal-ticket-attachments/'.Str::uuid()->toString().'.jpg',
             'filename' => 'photo.jpg',
@@ -40,7 +40,7 @@ class InternalTicketAttachmentFactory extends Factory
     public function voice(int $seconds = 12): static
     {
         return $this->state(fn () => [
-            'kind' => InternalAttachmentKind::Voice,
+            'kind' => ChatAttachmentKind::Voice,
             'path' => 'internal-ticket-attachments/'.Str::uuid()->toString().'.m4a',
             'filename' => 'voice.m4a',
             'mime_type' => 'audio/mp4',

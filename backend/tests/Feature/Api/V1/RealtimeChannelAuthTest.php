@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Domain\Customer\Models\Customer;
+use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Enums\RoleName;
 use App\Domain\Identity\Models\User;
@@ -328,6 +329,56 @@ class RealtimeChannelAuthTest extends TestCase
 
         // Assert
         $response->assertOk();
+    }
+
+    public function test_whoever_sees_a_design_ticket_may_listen_to_its_conversation(): void
+    {
+        // Arrange — طرفاها، ومَن يرى التذاكر كلّها، والغريبُ الذي يرى بعضها وليست هذه منها.
+        [$requester, $requesterHeaders] = $this->employee();
+        [$designer, $designerHeaders] = $this->employee();
+        [$manager, $managerHeaders] = $this->employee();
+        [$stranger, $strangerHeaders] = $this->employee();
+        foreach ([$requester, $designer, $stranger] as $user) {
+            $user->givePermissionTo(PermissionName::ViewDesignTickets->value);
+        }
+        $manager->givePermissionTo([
+            PermissionName::ViewDesignTickets->value,
+            PermissionName::ViewAllDesignTickets->value,
+        ]);
+        $ticket = DesignTicket::factory()
+            ->acceptedBy((int) $designer->getKey())
+            ->create(['requested_by_user_id' => $requester->getKey()]);
+        $channel = "private-design-tickets.{$ticket->id}";
+        $listen = fn (array $headers) => $this->withHeaders($headers)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => $channel,
+        ]);
+
+        // Act
+        $asRequester = $listen($requesterHeaders);
+        $asDesigner = $listen($designerHeaders);
+        $asManager = $listen($managerHeaders);
+        $asStranger = $listen($strangerHeaders);
+
+        // Assert
+        $asRequester->assertOk()->assertExactJson(['auth' => $this->signatureFor($channel)]);
+        $asDesigner->assertOk();
+        $asManager->assertOk();
+        $asStranger->assertForbidden();
+    }
+
+    public function test_a_design_conversation_needs_the_design_tickets_grant(): void
+    {
+        // Arrange — طالبُ التذكرة نفسه، وقد سُحبت منه صلاحيةُ قسم التصميم.
+        [$requester, $headers] = $this->employee();
+        $ticket = DesignTicket::factory()->create(['requested_by_user_id' => $requester->getKey()]);
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/broadcasting/auth', [
+            'socket_id' => self::SOCKET_ID, 'channel_name' => "private-design-tickets.{$ticket->id}",
+        ]);
+
+        // Assert
+        $response->assertForbidden();
     }
 
     public function test_an_employee_listens_to_their_own_staff_channel_only(): void

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\InternalTicket;
 
-use App\Application\Rules\InternalTicketAttachmentFile;
+use App\Application\Rules\ChatAttachmentFile;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -27,11 +27,11 @@ class PostInternalMessageRequest extends FormRequest
     {
         return [
             'body' => ['nullable', 'required_without:file', 'string', 'max:5000'],
-            'file' => ['nullable', 'file', new InternalTicketAttachmentFile],
+            'file' => ['nullable', 'file', new ChatAttachmentFile],
             // حتى خمس دقائق، كبريمولا.
-            'duration_seconds' => ['nullable', 'integer', 'min:0', 'max:'.config('media.internal_ticket_attachments.voice_max_seconds')],
+            'duration_seconds' => ['nullable', 'integer', 'min:0', 'max:'.config('media.chat_attachments.voice_max_seconds')],
             // ٤٨ عموداً من ٠ إلى ١٠٠.
-            'waveform' => ['nullable', 'array', 'max:'.config('media.internal_ticket_attachments.waveform_bars')],
+            'waveform' => ['nullable', 'array', 'max:'.config('media.chat_attachments.waveform_bars')],
             'waveform.*' => ['integer', 'min:0', 'max:100'],
             // من التذكرة نفسها — يحرسه الفعل، لأن `exists:` لا يعرف أيّ محادثة.
             'reply_to_message_id' => ['nullable', 'integer'],
