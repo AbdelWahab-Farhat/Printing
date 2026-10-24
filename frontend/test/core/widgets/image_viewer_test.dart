@@ -53,6 +53,40 @@ void main() {
     expect(find.text('2 / 3'), findsOneWidget);
   });
 
+  testWidgets('«تحميل» is offered only to a caller that can save', (tester) async {
+    // Arrange - Act — صورة منتج أو واصلٌ لا يُحمَّل من هنا؛ زرٌّ لا يفعل شيئاً أسوأ من غيابه.
+    await tester.pumpWidget(host(const ImageViewerPage(urls: ['https://x/1.png'])));
+    await tester.pump();
+
+    // Assert
+    expect(find.byTooltip('تحميل'), findsNothing);
+  });
+
+  testWidgets('«تحميل» saves the picture on screen, not the one it opened on', (tester) async {
+    // Arrange
+    int? saved;
+    await tester.pumpWidget(
+      host(
+        ImageViewerPage(
+          urls: const ['https://x/1.png', 'https://x/2.png'],
+          onSave: (index) => saved = index,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.fling(find.byType(PageView), const Offset(400, 0), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    // Act
+    await tester.tap(find.byTooltip('تحميل'));
+    await tester.pump();
+
+    // Assert — سُحب إلى الثانية، فالثانية هي ما يريده.
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(saved, 1);
+  });
+
   testWidgets('an index past the end is pulled back rather than thrown', (tester) async {
     // Arrange — a caller whose list and index came from two different reads.
     final key = GlobalKey<NavigatorState>();

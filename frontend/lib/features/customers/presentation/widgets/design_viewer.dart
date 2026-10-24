@@ -6,6 +6,7 @@ import 'package:dayaa/core/files/device_saver.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,7 +37,7 @@ Future<void> showDesign(BuildContext context, CustomerDesign design) async {
 /// **بلا `try`/`catch` وبلا عارض PDF.** كل عارضٍ على pub.dev يحمل محرّكاً أصلياً لمشكلةٍ حلّها
 /// النظام، وكل خطوةٍ هنا تجيب ولا ترمي — رابطٌ لا يُقرأ `null`، ورابطٌ لا يفتحه شيء `false` —
 /// فلا تُثنى قاعدة الحدّ الوحيدة في التطبيق من أجل راحة.
-Future<void> openDesignExternally(BuildContext context, CustomerDesign design) async {
+Future<void> openDesignExternally(BuildContext context, DesignFile design) async {
   final url = design.fileUrl;
   final uri = url == null ? null : Uri.tryParse(url);
 
@@ -59,7 +60,14 @@ Future<void> openDesignExternally(BuildContext context, CustomerDesign design) a
 ///
 /// والرابط الموقَّع تنتهي صلاحيته، فيُجلب بما تحمله الشاشة **الآن** — ولذلك يُمرَّر التصميم لا
 /// عنوانٌ محفوظ.
-Future<void> saveDesign(BuildContext context, CustomerDesign design) async {
+///
+/// [what] ما يُسمّى به الملف في الإشعار: مرفق تذكرة التصميم شعارٌ أو صورة كيسٍ مشابه، و«حُفظ
+/// التصميم» عنه كلامٌ عن شيءٍ آخر.
+Future<void> saveDesign(
+  BuildContext context,
+  DesignFile design, {
+  String what = 'التصميم',
+}) async {
   final result = await sl<SaveDesignToDevice>()(design);
 
   if (!context.mounted) return;
@@ -69,10 +77,10 @@ Future<void> saveDesign(BuildContext context, CustomerDesign design) async {
     if (place == null) return;
 
     context.showSuccess(switch (place) {
-      SavePlace.photos => 'حُفظ التصميم في الصور',
-      SavePlace.downloads => 'حُفظ التصميم في التنزيلات',
-      SavePlace.files => 'حُفظ التصميم في «الملفات»',
-      SavePlace.chosen => 'حُفظ التصميم',
+      SavePlace.photos => 'حُفظ $what في الصور',
+      SavePlace.downloads => 'حُفظ $what في التنزيلات',
+      SavePlace.files => 'حُفظ $what في «الملفات»',
+      SavePlace.chosen => 'حُفظ $what',
     });
   });
 }

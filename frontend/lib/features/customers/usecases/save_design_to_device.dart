@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/device_saver.dart';
-import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -17,6 +17,8 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// واسم الملف هو ما سيراه صاحبه في «الصور» و«الملفات»، فيُبنى من اسم التصميم لا من رقمه —
 /// «شعار المخبز.png» يُعثر عليه بعد أسبوع و`design-41` لا.
+///
+/// ويأخذ [DesignFile] لا تصميماً بعينه: مرفقات تذكرة التصميم تُحفظ به أيضاً، بالقاعدة نفسها.
 class SaveDesignToDevice {
   SaveDesignToDevice(
     this._repository,
@@ -29,7 +31,7 @@ class SaveDesignToDevice {
   final Future<Directory> Function() _temporaryDirectory;
 
   /// أين حُفظ — أو `null` حين أغلق صاحبه نافذة «حفظ باسم».
-  Future<Either<Failure, SavePlace?>> call(CustomerDesign design) async {
+  Future<Either<Failure, SavePlace?>> call(DesignFile design) async {
     final fetched = await fetch(design);
 
     return fetched.fold<Future<Either<Failure, SavePlace?>>>(
@@ -48,7 +50,7 @@ class SaveDesignToDevice {
   ///
   /// والرابط الموقَّع تنتهي صلاحيته، فيُجلب بما تحمله الشاشة **الآن** — ولذلك يُمرَّر التصميم لا
   /// عنوانٌ محفوظ.
-  Future<Either<Failure, String>> fetch(CustomerDesign design) async {
+  Future<Either<Failure, String>> fetch(DesignFile design) async {
     final url = design.fileUrl;
 
     if (url == null || url.isEmpty) {
@@ -74,7 +76,7 @@ class SaveDesignToDevice {
   ///
   /// عامٌّ وثابت لأنه صافٍ، ولأنه القاعدة الوحيدة في اسم التصميم المحفوظ؛ فيختبره الاختبار
   /// مباشرةً لا عبر كتابة ملف.
-  static String fileNameFor(CustomerDesign design) {
+  static String fileNameFor(DesignFile design) {
     // `/` و`\` تُنهيان جزءاً من المسار، واسمٌ كلّه علامات يترك اسم ملفٍ فارغاً — وكلاهما كتابةٌ
     // تفشل بخطأٍ لا يستطيع أحدٌ أن يفعل به شيئاً.
     final safe = design.label
@@ -92,7 +94,7 @@ class SaveDesignToDevice {
   /// «الصور» والمعرض يقرآن الملف بنوعه، ويعرضه «الملفات» بامتداده؛ فإن اختلفا كان ملفاً `.jpg`
   /// يُعامَل كـPNG. والامتداد هو ما يبقى مع الملف، فهو الحَكَم. وهو أيضاً ما يقرّر «الصور» أم
   /// «التنزيلات»: كل `image/*` صورة.
-  static String mimeTypeFor(CustomerDesign design) {
+  static String mimeTypeFor(DesignFile design) {
     final name = fileNameFor(design).toLowerCase();
 
     if (name.endsWith('.png')) return 'image/png';
@@ -107,7 +109,7 @@ class SaveDesignToDevice {
   ///
   /// والترتيب مقصود: الامتداد الذي كان لملف العميل هو ما تنتظره المطبعة، وتخمينُ `.png` لملف
   /// `.jpg` ينتج ملفاً ترفض بعضُ الأدوات فتحه.
-  static String _extensionFor(CustomerDesign design) {
+  static String _extensionFor(DesignFile design) {
     final original = design.originalFilename;
 
     if (original != null && original.contains('.')) {
@@ -120,7 +122,7 @@ class SaveDesignToDevice {
       'image/jpeg' || 'image/jpg' => '.jpg',
       'image/webp' => '.webp',
       'application/pdf' => '.pdf',
-      _ => design.kind == DesignKind.pdf ? '.pdf' : '.png',
+      _ => design.isPdf ? '.pdf' : '.png',
     };
   }
 }

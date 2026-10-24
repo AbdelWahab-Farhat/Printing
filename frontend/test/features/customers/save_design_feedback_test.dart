@@ -91,6 +91,35 @@ void main() {
     });
   }
 
+  testWidgets('ما ليس تصميماً يُسمّى باسمه — مرفق تذكرة يقول «حُفظ المرفق»', (tester) async {
+    // Arrange
+    when(() => save(any())).thenAnswer((_) async => const Right(SavePlace.photos));
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(430, 932),
+        builder: (context, _) => MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => saveDesign(context, design, what: 'المرفق'),
+                child: const Text('تحميل'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    await tester.tap(find.text('تحميل'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('حُفظ المرفق في الصور'), findsOneWidget);
+
+    await letTheToastGo(tester);
+  });
+
   testWidgets('من أغلق نافذة «حفظ باسم» لا يرى شيئاً', (tester) async {
     // Arrange
     when(() => save(any())).thenAnswer((_) async => const Right(null));

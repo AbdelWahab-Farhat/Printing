@@ -1,3 +1,4 @@
+import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'customer_design.freezed.dart';
@@ -33,7 +34,7 @@ enum DesignKind {
 /// never stored, never put in a shortcut, and a screen holding one for an hour must reload
 /// rather than reuse it.
 @freezed
-abstract class CustomerDesign with _$CustomerDesign {
+abstract class CustomerDesign with _$CustomerDesign implements DesignFile {
   const factory CustomerDesign({
     required int id,
     @JsonKey(name: 'customer_id') required int customerId,
@@ -72,6 +73,9 @@ abstract class CustomerDesign with _$CustomerDesign {
 
   /// Whether this app can draw the file itself.
   bool get isImage => kind == DesignKind.image;
+
+  @override
+  bool get isPdf => kind == DesignKind.pdf;
 
   /// What to draw in the grid, or null when there is nothing to draw and the tile should show
   /// a glyph instead of a broken image.

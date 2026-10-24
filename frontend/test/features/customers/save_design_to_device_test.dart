@@ -7,6 +7,7 @@ import 'package:dayaa/core/files/device_saver.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -276,6 +277,47 @@ void main() {
       verifyNever(
         () => saver.toFiles(path: any(named: 'path'), mimeType: any(named: 'mimeType')),
       );
+    });
+  });
+
+  // مرفقات تذكرة التصميم تُحفظ بالصنف نفسه: الملف واحدٌ في الشكلين، والقاعدة واحدة.
+  group('a design ticket\'s file', () {
+    DesignTicketFile ticketFile({DesignKind fileKind = DesignKind.image, String? mimeType}) =>
+        DesignTicketFile(
+          id: 7,
+          designTicketId: 2,
+          kind: DesignTicketFileKind.brief,
+          kindLabel: 'مرفق',
+          label: 'شعار مساح',
+          fileKind: fileKind,
+          fileKindLabel: fileKind == DesignKind.pdf ? 'ملف PDF' : 'صورة',
+          mimeType: mimeType,
+          fileUrl: 'https://files.example/brief.png?signature=abc',
+        );
+
+    test('a picture goes to «الصور» under its own name', () async {
+      // Arrange
+      fileArrives();
+
+      // Act
+      final result = await save(ticketFile(mimeType: 'image/png'));
+
+      // Assert
+      expect(result.getOrElse(() => null), SavePlace.photos);
+      verify(
+        () => saver.toPhotos(path: '${temp.path}/شعار مساح.png', mimeType: 'image/png'),
+      ).called(1);
+    });
+
+    test('a PDF with no type on it is still saved as a PDF', () async {
+      // Arrange — لا امتداد ولا نوع؛ ما يبقى هو صنفه الذي قرّره الخادم من بايتات الملف.
+      final subject = ticketFile(fileKind: DesignKind.pdf);
+
+      // Act
+      final name = SaveDesignToDevice.fileNameFor(subject);
+
+      // Assert
+      expect(name, 'شعار مساح.pdf');
     });
   });
 

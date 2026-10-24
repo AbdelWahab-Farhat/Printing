@@ -21,11 +21,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// [cacheKeys] mirrors [urls] when given, so a picture already fetched for a thumbnail is not
 /// downloaded a second time at full size. It is ignored when the two lengths disagree — a
 /// mismatched key is worse than none, because it would serve the wrong image out of the cache.
+///
+/// [onSave] يضع «تحميل» فوق الصورة، ويُنادى برقم الصورة **المعروضة الآن** لا التي فُتح عليها.
+/// اختياريٌّ لأن الحفظ ليس للعارض أن يعرفه: مرفقٌ على تذكرة يُحفظ، وصورة منتجٍ لا.
 Future<void> openImageViewer(
   BuildContext context, {
   required List<String> urls,
   int initialIndex = 0,
   List<String>? cacheKeys,
+  ValueChanged<int>? onSave,
 }) {
   if (urls.isEmpty) return Future<void>.value();
 
@@ -36,6 +40,7 @@ Future<void> openImageViewer(
         urls: urls,
         initialIndex: initialIndex.clamp(0, urls.length - 1),
         cacheKeys: cacheKeys?.length == urls.length ? cacheKeys : null,
+        onSave: onSave,
       ),
     ),
   );
@@ -47,12 +52,14 @@ class ImageViewerPage extends StatefulWidget {
     required this.urls,
     this.initialIndex = 0,
     this.cacheKeys,
+    this.onSave,
     super.key,
   });
 
   final List<String> urls;
   final int initialIndex;
   final List<String>? cacheKeys;
+  final ValueChanged<int>? onSave;
 
   @override
   State<ImageViewerPage> createState() => _ImageViewerPageState();
@@ -178,24 +185,43 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
               style: IconButton.styleFrom(backgroundColor: Colors.black45),
             ),
           ),
-          // «٢ / ٥», and only where there is more than one — a counter over a single picture
-          // says nothing and covers part of it.
-          if (widget.urls.length > 1)
-            PositionedDirectional(
-              top: MediaQuery.paddingOf(context).top + 16.h,
-              end: 16.w,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                child: Text(
-                  '${_current + 1} / ${widget.urls.length}',
-                  style: context.textTheme.bodyMedium?.copyWith(color: Colors.white),
-                ),
+          PositionedDirectional(
+            top: MediaQuery.paddingOf(context).top + 8.h,
+            end: 8.w,
+            // بارتفاع زرّ الإغلاق المقابل، فيقع العدّاد على خطّه — بزرّ «تحميل» أو بدونه.
+            child: SizedBox(
+              height: kMinInteractiveDimension,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // «٢ / ٥», and only where there is more than one — a counter over a single
+                  // picture says nothing and covers part of it.
+                  if (widget.urls.length > 1)
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                      child: Text(
+                        '${_current + 1} / ${widget.urls.length}',
+                        style: context.textTheme.bodyMedium?.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  // في الطرف، كزرّ «تحميل» في عارض تصاميم العميل.
+                  if (widget.onSave case final onSave?) ...[
+                    SizedBox(width: 8.w),
+                    IconButton(
+                      tooltip: 'تحميل',
+                      onPressed: () => onSave(_current),
+                      icon: Icon(AppIcons.download, color: Colors.white),
+                      style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                    ),
+                  ],
+                ],
               ),
             ),
+          ),
         ],
       ),
     );

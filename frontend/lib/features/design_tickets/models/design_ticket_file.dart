@@ -1,4 +1,5 @@
 import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'design_ticket_file.freezed.dart';
@@ -47,7 +48,7 @@ enum DesignSubmissionStatus {
 /// bucket production uses, it is a signed link that expires. Never store it, never put it in a
 /// shortcut, and reload rather than reuse one a screen has held for an hour.
 @freezed
-abstract class DesignTicketFile with _$DesignTicketFile {
+abstract class DesignTicketFile with _$DesignTicketFile implements DesignFile {
   const factory DesignTicketFile({
     required int id,
     @JsonKey(name: 'design_ticket_id') required int designTicketId,
@@ -116,6 +117,10 @@ abstract class DesignTicketFile with _$DesignTicketFile {
   bool get needsChanges => status == DesignSubmissionStatus.changesRequested;
 
   bool get isApproved => status == DesignSubmissionStatus.approved;
+
+  /// من [fileKind] لا من [kind]: ذاك «مرفق» أم «نسخة»، وهذا ما في الملف نفسه.
+  @override
+  bool get isPdf => fileKind == DesignKind.pdf;
 
   /// What a thumbnail may draw, if anything.
   ///

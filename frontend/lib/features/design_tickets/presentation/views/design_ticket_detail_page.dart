@@ -17,6 +17,7 @@ import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_attachments.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/edit_ticket_sheet.dart';
@@ -395,7 +396,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                 _Brief(ticket: ticket),
                 if (ticket.attachments.isNotEmpty) ...[
                   SizedBox(height: 16.h),
-                  _Attachments(
+                  DesignTicketAttachments(
                     files: ticket.attachments,
                     // Null hides the delete affordance rather than drawing one that refuses:
                     // `canManage` is already false on a closed ticket and for a designer.
@@ -627,47 +628,6 @@ class _Brief extends StatelessWidget {
           SizedBox(height: 6.h),
           Text(instructions, style: text.bodyMedium),
         ],
-      ],
-    );
-  }
-}
-
-class _Attachments extends StatelessWidget {
-  const _Attachments({required this.files, this.onRemove});
-
-  final List<DesignTicketFile> files;
-
-  /// Null when this reader may not remove one — see the call site.
-  final void Function(DesignTicketFile file)? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = context.textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('المرفقات', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-        SizedBox(height: 8.h),
-        SizedBox(
-          height: 76.h,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: files.length,
-            separatorBuilder: (_, _) => SizedBox(width: 8.w),
-            itemBuilder: (context, index) {
-              final file = files[index];
-
-              return GestureDetector(
-                // A long press rather than a badge on every tile: removing a reference file is
-                // rare, and an X on each thumbnail would put a destructive tap next to the one
-                // people actually make, which is opening it.
-                onLongPress: onRemove == null ? null : () => onRemove!(file),
-                child: DesignTicketFileThumbnail(file: file, size: 72),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
