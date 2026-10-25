@@ -648,6 +648,11 @@ class OrderService
      */
     public function loadForDisplay(Order $order): Order
     {
+        // «الزائد» بجانب «المدفوع»: يُقرأ من الدفعات، فيُختم هنا لا لكلّ صفٍّ في قائمة. ويُزامَن مع
+        // الأصل كما يفعل `loadSum`، فلا يراه حفظٌ لاحق تعديلاً على عمودٍ غير موجود.
+        $order->forceFill(['excess_revenue_amount' => $order->excessRevenueAmount()])
+            ->syncOriginalAttribute('excess_revenue_amount');
+
         return $order->load([
             'customer', 'shop', 'city', 'region', 'creator',
             // Who said the customer had been told — a name on the order screen, and the only

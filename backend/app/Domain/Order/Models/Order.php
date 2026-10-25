@@ -33,6 +33,7 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
+use App\Domain\Order\OrderService;
 use App\Domain\Order\Support\Money;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -463,6 +464,34 @@ class Order extends Model implements HasAuditTrail
         );
 
         return Money::round(bcsub((string) $this->grand_total, $covered, 8));
+    }
+
+    /**
+     * ما دفعه الزبون فوق الطلبية — «الزائد» بجانب «المدفوع» على شاشتها.
+     *
+     * **يُقرأ من الدفعات لا من عمود.** منذ ٢٠٢٦-١٠-٠٧ صار الزائدُ إيراداً للمحلّ ساعةَ الدفعة، فلا
+     * يُجمع على الطلبية و`excess_amount` يبقى صفراً؛ والباقي منه «منها زائد» على كلّ دفعة. الدفعةُ
+     * تزيده بزائدها، والردُّ القديم الذي أخذ من الزائد ينقصه بما أخذ — القاعدةُ التي يقرأ بها
+     * {@see OrderPayment::contributions()} الصفوفَ نفسها. والقيدُ المعكوس لا يُحسب.
+     *
+     * استعلامٌ لكلّ طلبية، فلا يُسأل لصفوف قائمة — {@see OrderService::loadForDisplay()} يختمه.
+     */
+    public function excessRevenueAmount(): string
+    {
+        $entries = $this->payments()
+            ->whereIn('type', [OrderPaymentType::Payment->value, OrderPaymentType::Refund->value])
+            ->where('excess_amount', '>', 0)
+            ->whereDoesntHave('reversal')
+            ->get();
+
+        $total = '0';
+        foreach ($entries as $entry) {
+            $total = $entry->type === OrderPaymentType::Refund
+                ? bcsub($total, (string) $entry->excess_amount, 8)
+                : bcadd($total, (string) $entry->excess_amount, 8);
+        }
+
+        return Money::round($total);
     }
 
     public function paymentStatus(): PaymentStatus

@@ -329,6 +329,9 @@ class OrderPaymentController extends Controller
             // What the customer paid beyond the order and is owed back. **صفرٌ منذ ٢٠٢٦-١٠-٠٧**:
             // الزائدُ إيرادٌ ساعةَ الدفعة، ويبقى المفتاحُ لأنّ التطبيقات المنشورة تقرؤه.
             'excess_amount' => (string) $order->excess_amount,
+            // ما دفعه الزبون فوق الطلبية وصار إيراداً — «الزائد» بجانب «المدفوع». See
+            // Order::excessRevenueAmount().
+            'excess_revenue_amount' => $order->excessRevenueAmount(),
             'remaining_amount' => $order->remainingAmount(),
             'payment_status' => $order->paymentStatus()->value,
             'payment_status_label' => $order->paymentStatus()->label(),

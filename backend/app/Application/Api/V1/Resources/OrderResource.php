@@ -200,6 +200,9 @@ class OrderResource extends JsonResource
             // owed back until it is refunded or kept. It closes nothing, so `remaining_amount`
             // ignores it, and it is never part of `paid_amount`, so the sale stays 99.
             'excess_amount' => (string) $this->excess_amount,
+            // ما دفعه الزبون فوق الطلبية وصار إيراداً — «الزائد» بجانب «المدفوع». على شاشة الطلبية
+            // وحدها: يُقرأ من الدفعات، فيغيب عن صفوف القائمة بدل أن يكلّف استعلاماً لكلّ صفّ.
+            'excess_revenue_amount' => $this->whenHas('excess_revenue_amount'),
             'remaining_amount' => $this->remainingAmount(),
             'payment_status' => $this->paymentStatus()->value,
             'payment_status_label' => $this->paymentStatus()->label(),
