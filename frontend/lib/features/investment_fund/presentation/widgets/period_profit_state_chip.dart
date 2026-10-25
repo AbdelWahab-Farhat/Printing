@@ -1,3 +1,4 @@
+import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:flutter/material.dart';
@@ -36,14 +37,56 @@ class PeriodProfitStateChip extends StatelessWidget {
   }
 }
 
-/// لونا الحالة — للشريحة، ولنقطة المرشّح وحافة بطاقة المجموع، فلا يتعلّم القارئُ مفتاحين.
+/// لونا الحالة — للشريحة. ونقطتُها على البلاطة والصفّ من [periodProfitStateDot]، بالدرجة القويّة
+/// من اللون نفسِه، فلا يتعلّم القارئُ مفتاحين.
+///
+/// **«بانتظار انتهاء الفترة» كهرمانيّة** (2026-10-25، تصميم ب): الرماديُّ المخضرّ كان لا يُفرَّق
+/// عن تركوازِ «استُلم» على شاشةٍ داكنة، والكهرمانُ في هذا التطبيق معناه «لم يحن بعد».
 (Color, Color) periodProfitStateColors(BuildContext context, PeriodProfitState state) {
   final scheme = context.colorScheme;
 
   return switch (state) {
     PeriodProfitState.released => (scheme.primaryContainer, scheme.onPrimaryContainer),
     PeriodProfitState.awaitingPayment => (scheme.errorContainer, scheme.onErrorContainer),
-    PeriodProfitState.awaitingPeriodEnd => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+    PeriodProfitState.awaitingPeriodEnd => (scheme.warnContainer, scheme.onWarnContainer),
     PeriodProfitState.awaitingDelivery => (scheme.tertiaryContainer, scheme.onTertiaryContainer),
   };
+}
+
+/// نقطةُ الحالة — على بلاطة المجموع وأمام صفِّ الطلبية.
+Color periodProfitStateDot(BuildContext context, PeriodProfitState state) {
+  final scheme = context.colorScheme;
+
+  return switch (state) {
+    PeriodProfitState.released => scheme.primary,
+    PeriodProfitState.awaitingPayment => scheme.error,
+    PeriodProfitState.awaitingPeriodEnd => scheme.warn,
+    PeriodProfitState.awaitingDelivery => scheme.tertiary,
+  };
+}
+
+/// نقطةُ الحالة مرسومة: ممتلئةٌ لما في الدفتر، و**حلقةٌ لـ«قيد التسليم»** — توقّعٌ لا صفَّ له، فلا
+/// يُرسم كما يُرسم المقيَّد.
+class PeriodProfitStateDot extends StatelessWidget {
+  const PeriodProfitStateDot({required this.state, this.size, super.key});
+
+  final PeriodProfitState state;
+  final double? size;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = periodProfitStateDot(context, state);
+    final side = size ?? 10.r;
+    final ring = state == PeriodProfitState.awaitingDelivery;
+
+    return Container(
+      width: side,
+      height: side,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ring ? null : color,
+        border: ring ? Border.all(color: color, width: 2) : null,
+      ),
+    );
+  }
 }

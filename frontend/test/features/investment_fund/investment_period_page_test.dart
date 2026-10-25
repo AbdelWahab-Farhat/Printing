@@ -204,14 +204,48 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — الاسمان مرّتين: مرّةً في سجلّ الفترة ومرّةً داخل الطلبية، وهما رقمان مختلفان
-    // متى تعدّدت الطلبيات.
-    expect(find.text('طلبية ORD-0091'), findsOneWidget);
-    expect(find.text('تم الاستلام'), findsOneWidget);
+    // Assert — الرقمُ بلا «طلبية» قبله، والعميلُ وحالتُها سطرٌ تحته. والاسمان مرّتين: مرّةً في
+    // «المستثمرون» بوحدته، ومرّةً سطراً تحت الطلبية — رقمان مختلفان متى تعدّدت الطلبيات.
+    expect(find.text('ORD-0091'), findsOneWidget);
+    expect(find.text('طلبية ORD-0091'), findsNothing);
     expect(find.textContaining('مطعم البركة'), findsOneWidget);
-    expect(find.text('نصيب المستثمرين'), findsOneWidget);
-    expect(find.text('562.5 د.ل'), findsNWidgets(2));
-    expect(find.text('187.5 د.ل'), findsNWidgets(2));
+    expect(find.textContaining('تم الاستلام'), findsOneWidget);
+    expect(find.text('562.5 د.ل'), findsOneWidget);
+    expect(find.text('187.5 د.ل'), findsOneWidget);
+    expect(find.textContaining('562.5'), findsNWidgets(2));
+    expect(find.textContaining('187.5'), findsNWidgets(2));
+  });
+
+  testWidgets('one partner alone is not repeated under the order', (tester) async {
+    // Arrange — سطرُ الشركاء تحت الطلبية يقسم رقمَها؛ وشريكٌ واحد يأخذه كلَّه، فسطرُه تكرار.
+    await register(
+      const PeriodOrders(
+        period: _period,
+        orders: [
+          PeriodOrder(
+            orderId: 91,
+            code: 'ORD-0091',
+            status: 'delivered',
+            statusLabel: 'تم الاستلام',
+            grandTotal: '3000.00',
+            investorsTotal: '640.00',
+            investors: [PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '640.00')],
+          ),
+        ],
+        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '640.00'),
+      ),
+    );
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert — مرّةً في المجموع، ومرّةً على الطلبية.
+    expect(find.text('640 د.ل'), findsNWidgets(2));
+    expect(find.textContaining('أحمد'), findsNothing);
   });
 
   testWidgets('the pool is the figure the server sent, over the orders it came from', (
@@ -247,10 +281,10 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('ربح المستثمرين من طلبيات الفترة'), findsOneWidget);
+    // Assert — والعددُ على البلاطات تحته، لا جملةً تحت الرقم.
+    expect(find.text('ربح المستثمرين'), findsOneWidget);
     expect(find.text('905.55 د.ل'), findsOneWidget);
-    expect(find.text('من 2 طلبية'), findsOneWidget);
+    expect(find.text('من 2 طلبية'), findsNothing);
   });
 
   testWidgets('a correction keeps its minus instead of reading as a payment', (tester) async {
@@ -282,10 +316,12 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('رُدَّ من نصيب المستثمرين'), findsOneWidget);
-    expect(find.text('-300 د.ل'), findsNWidgets(3));
-    expect(find.text('نصيب المستثمرين'), findsNothing);
+    // Assert — في المجموع وعلى الطلبية، أحمرَ بإشارته؛ ولا جملةَ تشرحه.
+    final amounts = find.text('-300 د.ل');
+    expect(amounts, findsNWidgets(2));
+    final error = Theme.of(tester.element(amounts.last)).colorScheme.error;
+    expect(tester.widget<Text>(amounts.last).style?.color, error);
+    expect(find.text('رُدَّ من نصيب المستثمرين'), findsNothing);
   });
 
   testWidgets('a period that paid nobody says so rather than drawing an empty list', (
@@ -305,7 +341,7 @@ void main() {
     );
   });
 
-  testWidgets('the frozen figures of a closed period ride its header', (tester) async {
+  testWidgets('the frozen figures of a closed period sit under its window', (tester) async {
     // Arrange — بها وُزّع المال، ولا تُعاد قراءتُها من الدفاتر بعد اليوم.
     await register(const PeriodOrders(period: _period));
 
@@ -313,11 +349,11 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    // الرمزُ في الشريط وفي الترويسة، والحالةُ شريحةٌ بجانبه في الترويسة.
-    expect(find.text('الفترة P7'), findsNWidgets(2));
+    // Assert — الرمزُ في الشريط وحده، والنافذةُ والحصّةُ سطرٌ بجانب شريحة الحالة.
+    expect(find.text('الفترة P7'), findsOneWidget);
     expect(find.widgetWithText(PeriodStatusChip, 'مغلقة'), findsOneWidget);
-    expect(find.text('2026-09-01 ← 2026-09-30'), findsOneWidget);
+    expect(find.textContaining('1 – 30 سبتمبر 2026'), findsOneWidget);
+    expect(find.textContaining('حصة المستثمرين'), findsOneWidget);
     expect(find.text('صافي الربح'), findsOneWidget);
     expect(find.text('9,000 د.ل'), findsOneWidget);
   });
@@ -399,8 +435,9 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — الشريطُ يأخذ رمزَ الفترة كما وصلت، لا ما فُتحت به الشاشة.
     expect(find.text('الفترة P8'), findsOneWidget);
+    expect(find.text('الفترة P7'), findsNothing);
     expect(find.widgetWithText(PeriodStatusChip, 'قيد الإغلاق'), findsOneWidget);
     expect(find.text('تنتظر طلبيتين'), findsOneWidget);
   });
@@ -479,19 +516,24 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — بطاقتان بسؤال المالك (2026-10-21): ما استُلم وما ينتظر، كلٌّ ببطاقته وشريحته؛
-    // وسببُ الانتظار في «قيد الإغلاق» التحصيلُ وحده. و«قيد التسليم» تحتهما.
-    expect(find.text('استُلم ربحها'), findsNWidgets(2));
-    expect(find.text('ربحها في الانتظار'), findsNWidgets(2));
-    expect(find.text('حتى يُحصَّل ثمنها'), findsOneWidget);
-    expect(find.text('حتى تنتهي الفترة'), findsNothing);
-    expect(find.text('قيد التسليم'), findsNWidgets(2));
-    expect(find.text('50 د.ل'), findsNWidgets(3));
-    expect(find.text('70 د.ل'), findsNWidgets(3));
+    // Assert — ثلاثُ بلاطاتٍ بسؤال المالك (2026-10-21) وتصميم ب (2026-10-25): ما استُلم، وما
+    // ينتظر، وما في الطريق — كلٌّ برقمه بلا وحدة وعددِ طلبياته. والبلاطاتُ هي المرشّح، فلا
+    // صفَّ شرائح يكرّر أسماءها.
+    expect(find.text('استُلم ربحها'), findsOneWidget);
+    expect(find.text('في الانتظار'), findsOneWidget);
+    expect(find.text('قيد التسليم'), findsOneWidget);
+    expect(find.byType(FilterOptionChip), findsNothing);
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('70'), findsOneWidget);
+    expect(find.text('50 د.ل'), findsOneWidget);
+    expect(find.text('70 د.ل'), findsOneWidget);
+    expect(find.text('طلبية واحدة'), findsNWidgets(2));
+    expect(find.text('لا طلبيات'), findsOneWidget);
   });
 
-  testWidgets('an open period waits for its end, and nothing has been received yet', (tester) async {
-    // Arrange
+  testWidgets('no sentence explains a tile — its name does', (tester) async {
+    // Arrange — «ملاحظاتك الغبية»: سببُ الانتظار، و«ليس في المجموع أعلاه»، و«يُفرج عنه…» —
+    // بلاطةُ «قيد التسليم» مخطّطةٌ بلا لون فتُقرأ خارج المجموع دون أن تُقال.
     await register(
       PeriodOrders(
         period: closing.copyWith(status: 'open', statusLabel: 'مفتوحة'),
@@ -512,9 +554,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('حتى تنتهي الفترة'), findsOneWidget);
-    expect(find.text('يُفرج عنه بعد انتهاء الفترة'), findsOneWidget);
+    expect(find.text('حتى تنتهي الفترة'), findsNothing);
+    expect(find.text('يُفرج عنه بعد انتهاء الفترة'), findsNothing);
     expect(find.text('حتى يُحصَّل ثمنها'), findsNothing);
+    expect(find.text('متوقَّع عند التسليم — ليس في المجموع أعلاه'), findsNothing);
   });
 
   testWidgets('tapping a state shows only its orders, and tapping again shows all', (
@@ -528,29 +571,51 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Act — البطاقةُ الكبيرة نفسُها تصفّي.
-    await tester.tap(find.text('ربحها في الانتظار').first);
+    // Act — البلاطةُ تصفّي.
+    await tester.tap(find.text('في الانتظار'));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('طلبية ORD-0092'), findsOneWidget);
-    expect(find.text('طلبية ORD-0091'), findsNothing);
+    expect(find.text('ORD-0092'), findsOneWidget);
+    expect(find.text('ORD-0091'), findsNothing);
 
-    // Act — لمسُ المرشّح نفسِه يُطفئه، من شريحته هذه المرّة.
-    await tester.tap(find.widgetWithText(FilterOptionChip, 'ربحها في الانتظار'));
+    // Act — ولمسُها ثانيةً يُطفئها.
+    await tester.tap(find.text('في الانتظار'));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('طلبية ORD-0091'), findsOneWidget);
-    expect(find.text('طلبية ORD-0092'), findsOneWidget);
+    expect(find.text('ORD-0091'), findsOneWidget);
+    expect(find.text('ORD-0092'), findsOneWidget);
 
     // Act — والمستلَمُ وحده.
-    await tester.tap(find.widgetWithText(FilterOptionChip, 'استُلم ربحها'));
+    await tester.tap(find.text('استُلم ربحها'));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('طلبية ORD-0091'), findsOneWidget);
-    expect(find.text('طلبية ORD-0092'), findsNothing);
+    expect(find.text('ORD-0091'), findsOneWidget);
+    expect(find.text('ORD-0092'), findsNothing);
+  });
+
+  testWidgets('the sort menu turns the list round', (tester) async {
+    // Arrange — صفُّ شرائح الترتيب صار زرّاً واحداً بجانب العنوان.
+    await register(
+      const PeriodOrders(period: closing, orders: [released, held], totals: closingTotals),
+    );
+    await tall(tester);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    double top(String code) => tester.getTopLeft(find.text(code)).dy;
+    final newestFirst = top('ORD-0092') < top('ORD-0091');
+
+    // Act
+    await tester.tap(find.byTooltip('ترتيب'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('الأقدم'));
+    await tester.pumpAndSettle();
+
+    // Assert — بلا يومٍ يُرتَّبان برقمهما: الأحدثُ 92 أوّلاً، والأقدمُ 91.
+    expect(newestFirst, isTrue);
+    expect(top('ORD-0091') < top('ORD-0092'), isTrue);
   });
 
   testWidgets('the search finds an order by its customer', (tester) async {
@@ -567,8 +632,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('طلبية ORD-0092'), findsOneWidget);
-    expect(find.text('طلبية ORD-0091'), findsNothing);
+    expect(find.text('ORD-0092'), findsOneWidget);
+    expect(find.text('ORD-0091'), findsNothing);
   });
 
   testWidgets('an order on the road with no cost yet says so instead of a zero', (tester) async {
@@ -603,13 +668,13 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
+    // Assert — مكانَ الرقم على الطلبية، وسطرُ عدٍّ على بلاطتها.
     expect(find.text('لم يُسعَّر بعد'), findsOneWidget);
     expect(find.text('منها طلبية واحدة لم تُسعَّر'), findsOneWidget);
-    expect(find.text('نصيب المستثمرين'), findsNothing);
+    expect(find.text('يُحسب ربحها حين تصير جاهزة'), findsNothing);
   });
 
-  testWidgets('a priced order on the road shows what each partner will get', (tester) async {
+  testWidgets('a priced order on the road shows what it will give', (tester) async {
     // Arrange
     await register(
       const PeriodOrders(
@@ -647,10 +712,12 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — مرّةً في البطاقة، ومرّةً تحت الشريك، ومرّةً في بطاقة المجموع.
-    expect(find.text('ربح متوقّع عند التسليم'), findsOneWidget);
-    expect(find.text('2,250 د.ل'), findsNWidgets(3));
+    // Assert — على الطلبية بوحدته، وعلى بلاطة «قيد التسليم» بلاها، وتحت الشريك؛ ولا جملةَ
+    // «ربح متوقّع» — البلاطةُ ونقطةُ الصفّ تقولانها.
+    expect(find.text('2,250 د.ل'), findsOneWidget);
+    expect(find.text('2,250'), findsOneWidget);
     expect(find.text('في الطريق 2,250'), findsOneWidget);
+    expect(find.text('ربح متوقّع عند التسليم'), findsNothing);
   });
 
   testWidgets('an unpaid order in an open period warns that its profit will be held', (
@@ -683,8 +750,8 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('غير محصّلة'), findsOneWidget);
+    // Assert — في سطر العميل والحالة، بلون الخطأ.
+    expect(find.textContaining('غير محصّلة'), findsOneWidget);
   });
 
   testWidgets('each partner sees what reached the wallet and what waits', (tester) async {
@@ -713,6 +780,36 @@ void main() {
 
     // Assert
     expect(find.text('استُلم 50 · ينتظر 70'), findsOneWidget);
+  });
+
+  testWidgets('a partner whose whole share waits is not told twice', (tester) async {
+    // Arrange — «ينتظر 1,050.41» تحت «1,050.41 د.ل» كان الرقمَ نفسَه مرّتين.
+    await register(
+      PeriodOrders(
+        period: closing.copyWith(status: 'open', statusLabel: 'مفتوحة'),
+        orders: const [held],
+        investors: const [
+          PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '70.00', pending: '70.00'),
+        ],
+        totals: const PeriodOrdersTotals(
+          orders: 1,
+          investorsTotal: '70.00',
+          byState: PeriodStatesTotals(
+            awaitingPeriodEnd: PeriodStateTotal(orders: 1, amount: '70.00'),
+          ),
+        ),
+      ),
+    );
+    await tall(tester);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('المستثمرون'), findsOneWidget);
+    expect(find.text('أحمد'), findsOneWidget);
+    expect(find.text('ينتظر 70'), findsNothing);
   });
 
   testWidgets('a refusal is shown in the server words, with a way back', (tester) async {

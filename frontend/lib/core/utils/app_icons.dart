@@ -682,6 +682,11 @@ abstract final class AppIcons {
   static IconData get sortOldest =>
       _pick(Icons.arrow_upward_rounded, CupertinoIcons.arrow_up);
 
+  /// قائمةُ ترتيبٍ بأكثر من وجهين — «الأحدث» و«الأقدم» و«الأعلى ربحاً» في طلبيات الفترة. سهمان
+  /// متعاكسان: هنا قائمةٌ تُفتح، لا زرٌّ يقلب القائمة كما [sortNewest].
+  static IconData get sortBy =>
+      _pick(Icons.swap_vert_rounded, CupertinoIcons.arrow_up_arrow_down);
+
   /// «مستعجل» — speed, not alarm.
   ///
   /// Deliberately **not** [error]'s exclamation mark, which already stands for «نواقص» on the

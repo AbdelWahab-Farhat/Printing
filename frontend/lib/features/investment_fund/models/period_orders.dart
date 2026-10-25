@@ -102,7 +102,7 @@ enum PeriodProfitState {
 /// توقّعٌ محسوبٌ لا صفَّ له في الدفتر، فلا تُجمع مع ما فيه.
 enum PeriodOrdersFilter {
   received('استُلم ربحها', {PeriodProfitState.released}),
-  waiting('ربحها في الانتظار', {
+  waiting('في الانتظار', {
     PeriodProfitState.awaitingPayment,
     PeriodProfitState.awaitingPeriodEnd,
   }),
