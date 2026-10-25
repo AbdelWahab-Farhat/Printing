@@ -166,14 +166,7 @@ class InternalTicketController extends Controller
         $this->tickets->markRead($found, $reader, $lastLoaded === null ? null : (int) $lastLoaded);
 
         // مَن فتح المحادثة قرأ أجراسها، كما في الدعم وتعليقات التصميم.
-        foreach (self::BELLS as $type) {
-            $notifications->markSubjectAsRead(
-                AuditSubject::InternalTicket->value,
-                (int) $found->getKey(),
-                (int) $reader->getKey(),
-                $type,
-            );
-        }
+        $this->silenceBells($found->getKey(), $reader, $notifications);
 
         return $this->success(new InternalTicketResource($found->refresh()->load(self::THREAD)));
     }
@@ -248,6 +241,33 @@ class InternalTicketController extends Controller
     }
 
     /**
+     * Mark seen from the home card
+     *
+     * «قرأتُها» بجانب «رد»: تخرج التذكرةُ من بطاقة الرئيسية ويسكت تذكيرُها حتى يكتب الزميل من
+     * جديد، وتُقرأ حتى `up_to_message_id` — آخرِ رسالةٍ كانت على البطاقة. لطرفيها وحدهما.
+     */
+    public function seen(Request $request, int $ticket, NotificationService $notifications): JsonResponse
+    {
+        $validated = $request->validate([
+            'up_to_message_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $reader = $this->reader($request);
+        $found = $this->tickets->findVisible($reader, $ticket);
+
+        $this->tickets->markSeen(
+            $found,
+            $reader,
+            isset($validated['up_to_message_id']) ? (int) $validated['up_to_message_id'] : null,
+        );
+
+        // قرأها من البطاقة كما لو فتحها: أجراسُها له تُطفأ.
+        $this->silenceBells($found->getKey(), $reader, $notifications);
+
+        return $this->successMessage('تم');
+    }
+
+    /**
      * Close a ticket
      *
      * نهائيّ، ولطرفيها والمدير. إغلاقُ المغلقة لا يكتب شيئاً ولا يُعدّ خطأ.
@@ -290,6 +310,18 @@ class InternalTicketController extends Controller
             $this->tickets->findVisible($this->reader($request), $ticket),
             $audit,
         );
+    }
+
+    private function silenceBells(int|string $ticketId, User $reader, NotificationService $notifications): void
+    {
+        foreach (self::BELLS as $type) {
+            $notifications->markSubjectAsRead(
+                AuditSubject::InternalTicket->value,
+                (int) $ticketId,
+                (int) $reader->getKey(),
+                $type,
+            );
+        }
     }
 
     private function reader(Request $request): User

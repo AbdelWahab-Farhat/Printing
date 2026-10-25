@@ -66,6 +66,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->dailyAt((string) config('internal_tickets.reminder.at'))
             ->timezone((string) config('app.business_timezone', 'Africa/Tripoli'))
             ->withoutOverlapping();
+
+        // وتُغلق التذكرةُ التي لم يكتب فيها أحدُ الطرفين ثلاثة أيام — كل ساعة، فتُغلق خلال ساعةٍ من
+        // تمام المدة. انظر CloseSilentInternalTickets.
+        $schedule->command('internal-tickets:close-silent')->hourly()->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there

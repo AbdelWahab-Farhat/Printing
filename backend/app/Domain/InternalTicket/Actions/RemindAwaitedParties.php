@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * يذكّر كلَّ مَن تأخّر ردّه في تذكرةٍ داخلية مفتوحة — يستدعيه المجدوِل مرّةً في اليوم.
  *
- * **مَن يُنتظر** هو {@see InternalTicket::awaitsReplyFrom()} نفسه، فلا تختلف البطاقةُ والتذكير.
+ * **مَن يُنتظر** هو {@see InternalTicket::awaitsReplyOnHomeFrom()} نفسه، فلا تختلف البطاقةُ والتذكير:
+ * مَن علّمها «قرأتُها» لا يُذكَّر بها حتى يكتب زميلُه من جديد (قرارُ المالك ٢٠٢٦-١٠-٢٥).
  * **ومتى**: مرّت `after_minutes` على آخر كلامٍ حيٍّ من الطرف الآخر، ولم تُذكَّر التذكرةُ في يومها —
  * يومِ طرابلس لا يومِ UTC — وعددُ التذكيرات دون `max`. فنداءٌ ثانٍ في اليوم نفسه لا يكتب شيئاً،
  * أيّاً كان مَن شغّله.
@@ -81,7 +82,7 @@ final class RemindAwaitedParties
     private function awaitedParty(InternalTicket $ticket): ?User
     {
         foreach ([$ticket->assignee, $ticket->opener] as $party) {
-            if ($party !== null && $ticket->awaitsReplyFrom($party)) {
+            if ($party !== null && $ticket->awaitsReplyOnHomeFrom($party)) {
                 return $party;
             }
         }

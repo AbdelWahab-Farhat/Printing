@@ -96,6 +96,8 @@ class InternalTicketResource extends JsonResource
             'last_message_at' => $this->last_message_at?->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),
             'closed_by' => $this->whenLoaded('closer', fn (): ?array => $this->closer === null ? null : self::person($this->closer)),
+            // أُغلقت لأن أحداً لم يكتب ثلاثة أيام — لا اسمَ عليها، فيقول التطبيقُ ذلك بدل «أغلقها فلان».
+            'closed_for_silence' => $this->closedForSilence(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

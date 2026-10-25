@@ -46,6 +46,8 @@ final class TransferInternalTicket
 
         $ticket->opened_by = $newOwnerId;
         $ticket->opener_read_message_id = null;
+        // و«قرأتُها» كانت لصاحبها القديم: الجديدُ لم يرَ شيئاً، فتبدأ على بطاقته.
+        $ticket->opener_seen_message_id = null;
         $ticket->reminder_count = 0;
         $ticket->last_reminder_at = null;
         $ticket->save();

@@ -326,6 +326,7 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('{ticket}/messages/{message}', [InternalTicketController::class, 'retractMessage'])
                 ->whereNumber(['ticket', 'message'])->name('messages.destroy');
             Route::post('{ticket}/read', [InternalTicketController::class, 'read'])->whereNumber('ticket')->name('read');
+            Route::post('{ticket}/seen', [InternalTicketController::class, 'seen'])->whereNumber('ticket')->name('seen');
             Route::post('{ticket}/close', [InternalTicketController::class, 'close'])->whereNumber('ticket')->name('close');
             Route::patch('{ticket}/transfer', [InternalTicketController::class, 'transfer'])
                 ->whereNumber('ticket')->name('transfer');

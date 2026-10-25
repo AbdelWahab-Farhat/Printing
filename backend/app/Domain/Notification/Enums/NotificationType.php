@@ -12,6 +12,7 @@ use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
 use App\Domain\Notification\Definitions\InternalTicketAwaitsYourReply;
+use App\Domain\Notification\Definitions\InternalTicketClosedAfterSilence;
 use App\Domain\Notification\Definitions\InternalTicketMessagePosted;
 use App\Domain\Notification\Definitions\InternalTicketOpenedForYou;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
@@ -117,6 +118,12 @@ enum NotificationType: string
      */
     case InternalTicketReminder = 'internal_ticket.reminder';
 
+    /**
+     * أُغلقت تذكرةٌ داخلية لأن أحداً من طرفيها لم يكتب ثلاثة أيام، إلى الطرفين معاً —
+     * {@see InternalTicketClosedAfterSilence}.
+     */
+    case InternalTicketClosedForSilence = 'internal_ticket.closed_for_silence';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -144,6 +151,7 @@ enum NotificationType: string
             self::InternalTicketOpened => InternalTicketOpenedForYou::class,
             self::InternalTicketMessage => InternalTicketMessagePosted::class,
             self::InternalTicketReminder => InternalTicketAwaitsYourReply::class,
+            self::InternalTicketClosedForSilence => InternalTicketClosedAfterSilence::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -182,6 +190,7 @@ enum NotificationType: string
             self::InternalTicketOpened => 'task',
             self::InternalTicketMessage => 'comment',
             self::InternalTicketReminder => 'comment',
+            self::InternalTicketClosedForSilence => 'task',
             self::Announcement => 'announcement',
         };
     }
@@ -204,6 +213,7 @@ enum NotificationType: string
             self::InternalTicketOpened => 'تذكرة داخلية جديدة',
             self::InternalTicketMessage => 'رسالة في تذكرة داخلية',
             self::InternalTicketReminder => 'تذكير بتذكرة داخلية',
+            self::InternalTicketClosedForSilence => 'تذكرة داخلية أُغلقت لعدم الرد',
             self::Announcement => 'إشعار عام',
         };
     }

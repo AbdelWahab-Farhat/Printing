@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Identity\Models\User;
+use App\Domain\InternalTicket\Actions\CloseSilentInternalTickets;
 use App\Domain\InternalTicket\Enums\InternalTicketPriority;
 use App\Domain\InternalTicket\Enums\InternalTicketStatus;
 use App\Domain\Order\Models\Order;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * هنا على الصف، لا على مسارٍ بإذن. ومديرٌ ليس طرفاً يقرأ ولا يكتب (السؤال ٥ في §١١، بافتراضه).
  *
  * **لا شيء يحدّد الأطراف أو الحالة قابلٌ للتعبئة**: `opened_by` و`assignee_id` و`status` و`code`
- * ومؤشّرا القراءة تختمها الأفعال وحدها، فلا يحرّكها جسمُ طلب.
+ * ومؤشّرا القراءة ومؤشّرا «قرأتُها» تختمها الأفعال وحدها، فلا يحرّكها جسمُ طلب.
  */
 #[UseFactory(InternalTicketFactory::class)]
 #[Fillable(['title', 'priority', 'category_id', 'customer_id', 'order_id'])]
@@ -50,6 +51,8 @@ class InternalTicket extends Model implements HasAuditTrail
             'assignee_id' => 'integer',
             'opener_read_message_id' => 'integer',
             'assignee_read_message_id' => 'integer',
+            'opener_seen_message_id' => 'integer',
+            'assignee_seen_message_id' => 'integer',
             'last_message_at' => 'datetime',
             'closed_at' => 'datetime',
             'last_reminder_at' => 'datetime',
@@ -198,6 +201,28 @@ class InternalTicket extends Model implements HasAuditTrail
     }
 
     /**
+     * رقمُ آخر رسالةٍ علّمها هذا الطرف بـ«قرأتُها» من بطاقة الرئيسية، أو `null`.
+     */
+    public function seenUpToFor(int $userId): ?int
+    {
+        return match ($userId) {
+            $this->opened_by => $this->opener_seen_message_id,
+            $this->assignee_id => $this->assignee_seen_message_id,
+            default => null,
+        };
+    }
+
+    /** عمودُ مؤشّر «قرأتُها» لهذا الطرف. */
+    public function seenCursorColumnFor(int $userId): ?string
+    {
+        return match ($userId) {
+            $this->opened_by => 'opener_seen_message_id',
+            $this->assignee_id => 'assignee_seen_message_id',
+            default => null,
+        };
+    }
+
+    /**
      * هل تنتظر هذه التذكرة ردَّ هذا الموظف؟ مفتوحة، وهو طرفٌ فيها، وآخرُ كلامٍ حيٍّ فيها لزميله.
      *
      * **مِن جهتَي التذكرة كلتيهما**، كبريمولا: صاحبُ التذكرة يُنتظر ردّه بقدر ما يُنتظر ردُّ من
@@ -219,6 +244,35 @@ class InternalTicket extends Model implements HasAuditTrail
         }
 
         return (int) $lastAuthor !== (int) $user->getKey();
+    }
+
+    /**
+     * هل تنتظر ردَّه **على بطاقة الرئيسية**؟ تنتظره، ولم يعلّمها «قرأتُها» منذ آخر كلامٍ حيٍّ فيها.
+     *
+     * **رسالةٌ جديدة من زميله تعيدها** — رقمُها أكبر من المؤشّر — وهذا قرارُ المالك (٢٠٢٦-١٠-٢٥).
+     * ومنه البطاقةُ وتذكيرُ الصباح، فلا يختلفان: ما أخرجه من بطاقته لا يوقظه به التذكير. والقائمةُ
+     * لا تسأله — فيها تبقى «بانتظار ردّك» كما هي.
+     *
+     * يقرأ `latestLiveMessage`، فيحمّلها المستدعي.
+     */
+    public function awaitsReplyOnHomeFrom(User $user): bool
+    {
+        if (! $this->awaitsReplyFrom($user)) {
+            return false;
+        }
+
+        $seen = $this->seenUpToFor((int) $user->getKey());
+
+        return $seen === null || (int) ($this->latestLiveMessage?->getKey() ?? 0) > $seen;
+    }
+
+    /**
+     * أُغلقت لأن أحداً من الطرفين لم يكتب ثلاثة أيام — {@see CloseSilentInternalTickets}. لا اسمَ
+     * عليها: الإغلاقُ بيد أحدٍ يكتب `closed_by` دائماً.
+     */
+    public function closedForSilence(): bool
+    {
+        return ! $this->status->isOpen() && $this->closed_by === null;
     }
 
     /**

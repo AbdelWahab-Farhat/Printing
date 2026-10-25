@@ -8,6 +8,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Actions\CloseInternalTicket;
 use App\Domain\InternalTicket\Actions\EditInternalMessage;
 use App\Domain\InternalTicket\Actions\MarkInternalTicketRead;
+use App\Domain\InternalTicket\Actions\MarkInternalTicketSeen;
 use App\Domain\InternalTicket\Actions\OpenInternalTicket;
 use App\Domain\InternalTicket\Actions\PostInternalMessage;
 use App\Domain\InternalTicket\Actions\RetractInternalMessage;
@@ -45,6 +46,7 @@ class InternalTicketService
         private readonly CloseInternalTicket $close,
         private readonly TransferInternalTicket $transfer,
         private readonly MarkInternalTicketRead $markRead,
+        private readonly MarkInternalTicketSeen $markSeen,
         private readonly InternalTicketListQuery $list,
         private readonly InternalTicketColleaguesQuery $colleagues,
     ) {}
@@ -91,8 +93,9 @@ class InternalTicketService
     {
         $open = $this->list->openFor($reader);
 
+        // ما علّمتُه «قرأتُها» خرج من بطاقتي حتى يكتب زميلي من جديد — والأرقامُ تتبع البطاقة.
         $awaiting = $open
-            ->filter(fn (InternalTicket $ticket) => $ticket->awaitsReplyFrom($reader))
+            ->filter(fn (InternalTicket $ticket) => $ticket->awaitsReplyOnHomeFrom($reader))
             // الأحدثُ بكلام الزميل أولاً — هو ما يُجاب عنه — والرقمُ يكسر التعادل كي لا يتبدّل
             // الترتيب بين طلبين لردّين في الثانية نفسها.
             ->sortByDesc(fn (InternalTicket $ticket) => [
@@ -171,5 +174,11 @@ class InternalTicketService
     public function markRead(InternalTicket $ticket, User $reader, ?int $upToMessageId = null): void
     {
         ($this->markRead)($ticket, $reader, $upToMessageId);
+    }
+
+    /** «قرأتُها» من بطاقة الرئيسية: تخرج منها حتى يكتب الزميل من جديد، وتُقرأ معها. */
+    public function markSeen(InternalTicket $ticket, User $reader, ?int $upToMessageId = null): void
+    {
+        ($this->markSeen)($ticket, $reader, $upToMessageId);
     }
 }

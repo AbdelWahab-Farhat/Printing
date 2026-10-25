@@ -16,6 +16,7 @@ use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Events\InternalTicketChanged;
+use App\Domain\InternalTicket\Events\InternalTicketClosedForSilence;
 use App\Domain\InternalTicket\Events\InternalTicketReplyOverdue;
 use App\Domain\Inventory\Events\StockCreditedBack;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
@@ -37,6 +38,7 @@ use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketMessageIsPosted;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
+use App\Domain\Notification\Listeners\NotifyWhenInternalTicketClosesForSilence;
 use App\Domain\Notification\Listeners\NotifyWhenInternalTicketReplyIsOverdue;
 use App\Domain\Notification\Listeners\NotifyWhenOrderDepositIsChosen;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
@@ -321,6 +323,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(InternalTicketChanged::class, BroadcastInternalTicketChange::class);
         Event::listen(InternalTicketChanged::class, NotifyOnInternalTicketActivity::class);
         Event::listen(InternalTicketReplyOverdue::class, NotifyWhenInternalTicketReplyIsOverdue::class);
+        Event::listen(InternalTicketClosedForSilence::class, NotifyWhenInternalTicketClosesForSilence::class);
 
         // «تم شحن محفظتك» — CUSTOMER-WALLET §٥.
         Event::listen(WalletToppedUpOnline::class, NotifyCustomerWhenWalletToppedUp::class);

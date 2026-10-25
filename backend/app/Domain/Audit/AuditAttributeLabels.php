@@ -959,6 +959,8 @@ final class AuditAttributeLabels
             'customer_id' => 'العميل',
             'opener_read_message_id' => 'قرأ صاحبها حتى الرسالة',
             'assignee_read_message_id' => 'قرأ الزميل حتى الرسالة',
+            'opener_seen_message_id' => 'علّمها صاحبها مقروءة حتى الرسالة',
+            'assignee_seen_message_id' => 'علّمها الزميل مقروءة حتى الرسالة',
             'last_message_at' => 'آخر رسالة',
             'closed_at' => 'أُغلقت في',
             'closed_by' => 'أغلقها',
