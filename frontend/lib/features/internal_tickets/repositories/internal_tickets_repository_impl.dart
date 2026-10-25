@@ -149,6 +149,17 @@ class InternalTicketsRepositoryImpl implements InternalTicketsRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> markSeen(int id, {int? upToMessageId}) {
+    return safeRequest(
+      () => _dio.post<Map<String, dynamic>>(
+        InternalTicketEndpoints.seen(id),
+        data: {'up_to_message_id': ?upToMessageId},
+      ),
+      parse: (_) => unit,
+    );
+  }
+
+  @override
   Future<Either<Failure, InternalTicket>> close(int id) {
     return safeRequest(
       () => _dio.post<Map<String, dynamic>>(InternalTicketEndpoints.close(id)),

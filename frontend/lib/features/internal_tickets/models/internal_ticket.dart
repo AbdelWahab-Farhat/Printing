@@ -155,6 +155,9 @@ abstract class InternalTicket with _$InternalTicket {
     @JsonKey(name: 'last_message_at') DateTime? lastMessageAt,
     @JsonKey(name: 'closed_at') DateTime? closedAt,
     @JsonKey(name: 'closed_by') ChatPerson? closedBy,
+
+    /// أُغلقت لأن أحداً من الطرفين لم يكتب ثلاثة أيام — لا اسمَ عليها.
+    @JsonKey(name: 'closed_for_silence') @Default(false) bool closedForSilence,
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _InternalTicket;
 

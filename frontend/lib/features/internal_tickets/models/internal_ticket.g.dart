@@ -145,6 +145,7 @@ _InternalTicket _$InternalTicketFromJson(
   closedBy: json['closed_by'] == null
       ? null
       : ChatPerson.fromJson(json['closed_by'] as Map<String, dynamic>),
+  closedForSilence: json['closed_for_silence'] as bool? ?? false,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -179,6 +180,7 @@ Map<String, dynamic> _$InternalTicketToJson(_InternalTicket instance) =>
       'last_message_at': instance.lastMessageAt?.toIso8601String(),
       'closed_at': instance.closedAt?.toIso8601String(),
       'closed_by': instance.closedBy?.toJson(),
+      'closed_for_silence': instance.closedForSilence,
       'created_at': instance.createdAt?.toIso8601String(),
     };
 

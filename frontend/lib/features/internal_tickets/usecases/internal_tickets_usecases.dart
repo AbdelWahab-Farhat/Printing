@@ -101,6 +101,16 @@ class MarkInternalTicketRead {
       _repository.markRead(id, upToMessageId: upToMessageId);
 }
 
+/// «تمت القراءة» بجانب «رد» في بطاقة الرئيسية.
+class MarkInternalTicketSeen {
+  const MarkInternalTicketSeen(this._repository);
+
+  final InternalTicketsRepository _repository;
+
+  Future<Either<Failure, Unit>> call(int id, {int? upToMessageId}) =>
+      _repository.markSeen(id, upToMessageId: upToMessageId);
+}
+
 class CloseInternalTicket {
   const CloseInternalTicket(this._repository);
 

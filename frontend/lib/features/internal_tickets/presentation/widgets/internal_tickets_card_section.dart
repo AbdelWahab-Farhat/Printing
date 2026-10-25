@@ -14,8 +14,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 /// تذاكرُ الموظفين التي تنتظر ردّي، **على بطاقة الموظف نفسها** تحت رأسها — كبطاقة بريمولا تماماً،
-/// طلبُ المالك ٢٠٢٦-١٠-٢٣. كلُّ صفٍّ يُجاب من مكانه بـ«رد»، وفي ذيلها «عرض كل التذاكر» و«تذكرة
-/// جديدة».
+/// طلبُ المالك ٢٠٢٦-١٠-٢٣. كلُّ صفٍّ يُجاب من مكانه بـ«رد»، أو يُخرج منها بـ✓✓ بجانبه («تمت القراءة»،
+/// ٢٠٢٦-١٠-٢٥) حتى يكتب الزميل من جديد. وفي ذيلها «عرض كل التذاكر» و«تذكرة جديدة».
 ///
 /// **بلا عنوانٍ ولا عدّادات**: الصفوفُ تقول ما هي ومَن ينتظر. والمغلقةُ وما ينتظر زميلاً ليست هنا —
 /// هي على بُعد ضغطة.
@@ -34,6 +34,15 @@ class InternalTicketsCardSection extends StatefulWidget {
 class _InternalTicketsCardSectionState extends State<InternalTicketsCardSection> {
   /// ردٌّ واحدٌ مفتوحٌ في كل مرة: فتحُ ردِّ صفٍّ يغلق غيره.
   int? _replyingTo;
+
+  /// الصفُّ يخرج فوراً؛ وإن لم تصل العلامة عاد مكانه وقيل لماذا.
+  Future<void> _markSeen(int id) async {
+    if (_replyingTo == id) setState(() => _replyingTo = null);
+
+    final failure = await context.read<InternalTicketsHomeCubit>().markSeen(id);
+
+    if (failure != null && mounted) context.showFailure(failure);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +69,7 @@ class _InternalTicketsCardSectionState extends State<InternalTicketsCardSection>
               ].take(InternalTicketsCardSection.maxRows).toList(),
               replyingTo: _replyingTo,
               onToggleReply: (id) => setState(() => _replyingTo = _replyingTo == id ? null : id),
+              onSeen: (id) => unawaited(_markSeen(id)),
               onSent: () {
                 setState(() => _replyingTo = null);
                 context.showSuccess('أُرسل الردّ');
@@ -174,12 +184,14 @@ class _TicketList extends StatelessWidget {
     required this.rows,
     this.replyingTo,
     this.onToggleReply,
+    this.onSeen,
     this.onSent,
   });
 
   final List<InternalTicket> rows;
   final int? replyingTo;
   final ValueChanged<int>? onToggleReply;
+  final ValueChanged<int>? onSeen;
   final VoidCallback? onSent;
 
   @override
@@ -201,6 +213,7 @@ class _TicketList extends StatelessWidget {
               ticket: ticket,
               replying: replyingTo == ticket.id,
               onToggleReply: () => onToggleReply?.call(ticket.id),
+              onSeen: () => onSeen?.call(ticket.id),
               onSent: onSent,
             ),
           ],
@@ -220,12 +233,13 @@ class _TicketList extends StatelessWidget {
 }
 
 /// تذكرةٌ واحدة على البطاقة: عمّا هي، ومع مَن، ومنذ متى تنتظر، وآخرُ ما قيل. وفي طرفها الحالةُ فوق
-/// و«رد» تحت، يفتح حقلاً تحت الصفّ نفسه.
+/// و«رد» تحت، يفتح حقلاً تحت الصفّ نفسه، وبجانبه ✓✓ يُخرج الصفَّ من البطاقة.
 class _TicketRow extends StatelessWidget {
   const _TicketRow({
     required this.ticket,
     required this.replying,
     this.onToggleReply,
+    this.onSeen,
     this.onSent,
     super.key,
   });
@@ -233,6 +247,7 @@ class _TicketRow extends StatelessWidget {
   final InternalTicket ticket;
   final bool replying;
   final VoidCallback? onToggleReply;
+  final VoidCallback? onSeen;
   final VoidCallback? onSent;
 
   @override
@@ -269,7 +284,14 @@ class _TicketRow extends StatelessWidget {
                       label: ticket.statusLabel.isEmpty ? ticket.status.label : ticket.statusLabel,
                     ),
                     if (ticket.awaitingMyReply)
-                      _ReplyButton(name: name, expanded: replying, onTap: onToggleReply),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _SeenButton(onTap: onSeen),
+                          SizedBox(width: 8.w),
+                          _ReplyButton(name: name, expanded: replying, onTap: onToggleReply),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -643,6 +665,43 @@ class _ReplyButton extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «تمت القراءة» — ✓✓ بجانب «رد»: قرأتُ ولا ردّ عندي، فيخرج الصفُّ من البطاقة حتى يكتب الزميل من
+/// جديد. دائرةٌ زجاجية بحبر البطاقة كـ«تذكرة جديدة»، لا مصمتةٌ كـ«رد»: «رد» هو الفعلُ الأول.
+class _SeenButton extends StatelessWidget {
+  const _SeenButton({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = _CardInk.of(context);
+    final size = 40.r;
+
+    return Tooltip(
+      message: 'تمت القراءة',
+      child: Semantics(
+        button: true,
+        label: 'تمت القراءة',
+        excludeSemantics: true,
+        child: _Pressable(
+          onTap: onTap,
+          child: Container(
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: ink.fillStrong,
+              shape: BoxShape.circle,
+              border: Border.all(color: ink.strong.withValues(alpha: 0.28)),
+            ),
+            child: Icon(AppIcons.readMark, size: 20.r, color: ink.strong),
           ),
         ),
       ),

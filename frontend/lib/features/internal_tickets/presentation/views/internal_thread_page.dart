@@ -304,7 +304,11 @@ class _ThreadViewState extends State<_ThreadView> {
                     me: me,
                     controller: _scroll,
                     canReply: ticket.canReply,
-                    closedNotice: ticket.status.isOpen ? null : 'أُغلقت التذكرة',
+                    closedNotice: ticket.status.isOpen
+                        ? null
+                        : ticket.closedForSilence
+                        ? 'أُغلقت التذكرة لعدم الردّ'
+                        : 'أُغلقت التذكرة',
                     readUpTo: ticket.readByOtherSideUpTo(me),
                     showsDelivery: ticket.isParty,
                     actions: ChatThreadActions(

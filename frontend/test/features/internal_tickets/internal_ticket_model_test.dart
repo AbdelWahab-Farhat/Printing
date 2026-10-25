@@ -111,6 +111,22 @@ void main() {
     expect(ticket.messages.last.mutationBlockReason, 'هذه الرسالة ليست لك');
   });
 
+  test('a ticket closed after three silent days says so; a server that does not say is not that', () {
+    // Arrange
+    final silent = serverTicket()
+      ..['status'] = 'closed'
+      ..['closed_by'] = null
+      ..['closed_for_silence'] = true;
+
+    // Act
+    final closed = InternalTicket.fromJson(silent);
+    final older = InternalTicket.fromJson(serverTicket());
+
+    // Assert
+    expect(closed.closedForSilence, isTrue);
+    expect(older.closedForSilence, isFalse);
+  });
+
   test('a status or kind this build has not heard of does not drop the ticket', () {
     // Arrange
     final json = serverTicket()

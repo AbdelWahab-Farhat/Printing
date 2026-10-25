@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/error/failure.dart';
@@ -33,11 +34,13 @@ class InternalTicketsHomeCubit extends Cubit<InternalTicketsHomeState> {
   InternalTicketsHomeCubit({
     required GetInternalTicketsHome get,
     required SendInternalMessage send,
+    required MarkInternalTicketSeen markSeen,
     required WatchInternalTickets watch,
     required int? me,
     String Function()? newToken,
   }) : _get = get,
        _send = send,
+       _markSeen = markSeen,
        _newToken = newToken ?? _timeToken,
        super(const InternalTicketsHomeState.loading()) {
     _live = [
@@ -48,6 +51,7 @@ class InternalTicketsHomeCubit extends Cubit<InternalTicketsHomeState> {
 
   final GetInternalTicketsHome _get;
   final SendInternalMessage _send;
+  final MarkInternalTicketSeen _markSeen;
   final String Function() _newToken;
   late final List<StreamSubscription<Object?>> _live;
   Timer? _timer;
@@ -109,6 +113,55 @@ class InternalTicketsHomeCubit extends Cubit<InternalTicketsHomeState> {
         return true;
       },
     );
+  }
+
+  /// «تمت القراءة» بجانب «رد»: **يخرج الصفُّ فوراً**، ثم يقول للخادم حتى آخر رسالةٍ كانت عليه —
+  /// رسالةٌ وصلت بعد رسم البطاقة لم يرها أحد. والخادمُ يعيدها حين يكتب الزميل من جديد.
+  ///
+  /// **وإن لم يصل يعود الصفُّ مكانه** ويُرجع الفشل لتقوله البطاقة. لا `lastFailure`: ذاك خطأُ حقل
+  /// الردّ، ولا حقلَ هنا. `null` حين نجح.
+  Future<Failure?> markSeen(int ticketId) async {
+    final current = state;
+    if (current is! InternalTicketsHomeLoaded) return null;
+
+    final rows = current.home.tickets;
+    final index = rows.indexWhere((row) => row.id == ticketId);
+    if (index < 0) return null;
+
+    final ticket = rows[index];
+
+    emit(
+      current.copyWith(
+        home: current.home.copyWith(
+          tickets: [...rows]..removeAt(index),
+          awaitingMyReply: math.max(0, current.home.awaitingMyReply - 1),
+        ),
+      ),
+    );
+
+    final result = await _markSeen(ticketId, upToMessageId: ticket.lastMessage?.id);
+
+    if (isClosed) return null;
+
+    return result.fold((failure) {
+      final after = state;
+
+      // إعادةُ قراءةٍ حيّة أعادتها في الأثناء — فلا تُضاف مرّتين.
+      if (after is InternalTicketsHomeLoaded && after.home.tickets.every((row) => row.id != ticketId)) {
+        final back = [...after.home.tickets]..insert(math.min(index, after.home.tickets.length), ticket);
+
+        emit(
+          after.copyWith(
+            home: after.home.copyWith(
+              tickets: back,
+              awaitingMyReply: after.home.awaitingMyReply + 1,
+            ),
+          ),
+        );
+      }
+
+      return failure;
+    }, (_) => null);
   }
 
   void _schedule() {

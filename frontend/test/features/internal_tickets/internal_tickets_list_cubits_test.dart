@@ -184,6 +184,7 @@ void main() {
     InternalTicketsHomeCubit build() => InternalTicketsHomeCubit(
       get: GetInternalTicketsHome(repository),
       send: SendInternalMessage(repository),
+      markSeen: MarkInternalTicketSeen(repository),
       watch: WatchInternalTickets(repository),
       me: 7,
       newToken: () => 'home-1',
@@ -234,6 +235,55 @@ void main() {
           verify(() => repository.send(4, captureAny())).captured.single as OutgoingChatMessage;
       expect(outgoing.body, 'تمام');
       verify(() => repository.home()).called(2);
+      await cubit.close();
+    });
+
+    test('the read mark takes the row off at once, up to the message that was on it', () async {
+      // Arrange
+      final waiting = ticket(4).copyWith(
+        awaitingMyReply: true,
+        lastMessage: const InternalLastMessage(id: 40, authorId: 9),
+      );
+      final withRows = home.copyWith(tickets: [ticket(3), waiting]);
+      when(() => repository.home()).thenAnswer((_) async => Right(withRows));
+      when(
+        () => repository.markSeen(any(), upToMessageId: any(named: 'upToMessageId')),
+      ).thenAnswer((_) async => const Right(unit));
+      final cubit = build();
+      await cubit.load();
+
+      // Act
+      final failed = await cubit.markSeen(4);
+
+      // Assert
+      expect(failed, isNull);
+      final state = cubit.state as InternalTicketsHomeLoaded;
+      expect(state.home.tickets.map((row) => row.id), [3]);
+      expect(state.home.awaitingMyReply, 1);
+      verify(() => repository.markSeen(4, upToMessageId: 40)).called(1);
+      verify(() => repository.home()).called(1);
+      await cubit.close();
+    });
+
+    test('a read mark that fails puts the row back where it was and says why', () async {
+      // Arrange
+      final withRows = home.copyWith(tickets: [ticket(3), ticket(4), ticket(5)]);
+      when(() => repository.home()).thenAnswer((_) async => Right(withRows));
+      when(
+        () => repository.markSeen(any(), upToMessageId: any(named: 'upToMessageId')),
+      ).thenAnswer((_) async => const Left(failure));
+      final cubit = build();
+      await cubit.load();
+
+      // Act
+      final failed = await cubit.markSeen(4);
+
+      // Assert
+      expect(failed, failure);
+      final state = cubit.state as InternalTicketsHomeLoaded;
+      expect(state.home.tickets.map((row) => row.id), [3, 4, 5]);
+      expect(state.home.awaitingMyReply, 2);
+      expect(state.lastFailure, isNull);
       await cubit.close();
     });
 

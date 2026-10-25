@@ -1606,6 +1606,9 @@ abstract final class Injector {
       ..registerLazySingleton<MarkInternalTicketRead>(
         () => MarkInternalTicketRead(sl<InternalTicketsRepository>()),
       )
+      ..registerLazySingleton<MarkInternalTicketSeen>(
+        () => MarkInternalTicketSeen(sl<InternalTicketsRepository>()),
+      )
       ..registerLazySingleton<CloseInternalTicket>(
         () => CloseInternalTicket(sl<InternalTicketsRepository>()),
       )
@@ -1627,6 +1630,7 @@ abstract final class Injector {
         () => InternalTicketsHomeCubit(
           get: sl<GetInternalTicketsHome>(),
           send: sl<SendInternalMessage>(),
+          markSeen: sl<MarkInternalTicketSeen>(),
           watch: sl<WatchInternalTickets>(),
           me: sl<Session>().user?.id,
         ),

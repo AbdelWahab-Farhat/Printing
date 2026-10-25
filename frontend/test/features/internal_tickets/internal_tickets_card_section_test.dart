@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/chat/chat_message.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/home/presentation/widgets/employee_card.dart';
@@ -68,9 +69,14 @@ void main() {
     when(() => repository.watchMine(any())).thenAnswer((_) => const Stream<int>.empty());
     when(() => repository.liveResumed).thenAnswer((_) => const Stream<void>.empty());
 
+    when(
+      () => repository.markSeen(any(), upToMessageId: any(named: 'upToMessageId')),
+    ).thenAnswer((_) async => const Right(unit));
+
     final cubit = InternalTicketsHomeCubit(
       get: GetInternalTicketsHome(repository),
       send: SendInternalMessage(repository),
+      markSeen: MarkInternalTicketSeen(repository),
       watch: WatchInternalTickets(repository),
       me: 7,
       newToken: () => 'token',
@@ -189,6 +195,49 @@ void main() {
         verify(() => repository.send(1, captureAny())).captured.single as OutgoingChatMessage;
     expect(sent.body, 'وصلت الصبح');
     expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('the read mark beside «رد» takes its row off the card, up to its last message', (
+    tester,
+  ) async {
+    // Arrange
+    final cubit = await arrange([waiting(1, 'الأكياس'), waiting(2, 'فاتورة المطبعة')]);
+    await tester.pumpWidget(host(cubit));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(inCard(find.byTooltip('تمت القراءة')).first);
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.markSeen(1, upToMessageId: 10)).called(1);
+    expect(inCard(find.text('الأكياس')), findsNothing);
+    expect(inCard(find.text('فاتورة المطبعة')), findsOneWidget);
+    expect(inCard(find.text('رد')), findsOneWidget);
+  });
+
+  testWidgets('a read mark that did not reach the server brings the row back and says why', (
+    tester,
+  ) async {
+    // Arrange
+    final cubit = await arrange([waiting(1, 'الأكياس')]);
+    when(
+      () => repository.markSeen(any(), upToMessageId: any(named: 'upToMessageId')),
+    ).thenAnswer((_) async => const Left(Failure.network(message: 'انقطع الاتصال')));
+    await tester.pumpWidget(host(cubit));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(inCard(find.byTooltip('تمت القراءة')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // Assert
+    expect(inCard(find.text('الأكياس')), findsOneWidget);
+    expect(find.text('انقطع الاتصال'), findsOneWidget);
+    // الرسالةُ تغيب بمؤقّتها، ولا يبقى شيءٌ منها بعد الاختبار.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('one reply is open at a time', (tester) async {

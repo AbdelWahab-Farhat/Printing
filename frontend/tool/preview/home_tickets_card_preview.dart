@@ -139,6 +139,7 @@ Future<void> main() async {
       final cubit = InternalTicketsHomeCubit(
         get: GetInternalTicketsHome(repository),
         send: SendInternalMessage(repository),
+        markSeen: MarkInternalTicketSeen(repository),
         watch: WatchInternalTickets(repository),
         me: 7,
       );

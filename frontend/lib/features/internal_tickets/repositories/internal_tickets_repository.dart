@@ -42,6 +42,10 @@ abstract interface class InternalTicketsRepository {
   /// لشاشةٍ مفتوحة وصلتها رسالةٌ حيّة: حتى [upToMessageId].
   Future<Either<Failure, Unit>> markRead(int id, {int? upToMessageId});
 
+  /// «تمت القراءة» من بطاقة الرئيسية، حتى [upToMessageId] — آخرِ رسالةٍ كانت على الصفّ. تخرج من
+  /// البطاقة ويسكت تذكيرُها حتى يكتب الزميل من جديد، وتُقرأ معها.
+  Future<Either<Failure, Unit>> markSeen(int id, {int? upToMessageId});
+
   Future<Either<Failure, InternalTicket>> close(int id);
 
   /// صاحبُها يسلّمها لموظفٍ آخر يحلّ محلّه.

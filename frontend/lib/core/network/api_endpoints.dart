@@ -851,6 +851,9 @@ abstract final class InternalTicketEndpoints {
 
   static String read(int id) => '/internal-tickets/$id/read';
 
+  /// «تمت القراءة» من بطاقة الرئيسية: تخرج منها حتى يكتب الزميل من جديد.
+  static String seen(int id) => '/internal-tickets/$id/seen';
+
   static String close(int id) => '/internal-tickets/$id/close';
 
   static String transfer(int id) => '/internal-tickets/$id/transfer';
