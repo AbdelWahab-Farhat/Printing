@@ -1534,14 +1534,21 @@ class _Actions extends StatelessWidget {
           onTap: onOpenPayments,
         ),
 
-        // «تذاكر الطلبية»، كبريمولا: ما قاله الموظفون بينهم عنها، و«تذكرة جديدة» فيها تحملها.
-        // بلا `permission` — التذاكرُ الداخلية لكل موظف، والخادمُ يُري كلَّ واحدٍ ما هو طرفٌ فيه.
+        // «فتح تذكرة» من الطلبية مباشرةً، كـ«فتح تذكرة فالطلب» في بريمولا — طلبُ المالك ٢٠٢٦-١٠-٢٥:
+        // كان هنا «تذاكر الموظفين» يفتح قائمةَ تذاكرها، فصار الذراعُ نفسُه يفتح تذكرة.
+        // النموذجُ يُفتح والطلبيةُ وعميلُها فيه، فتظهر التذكرةُ في قائمة العميل، ويُعرف أن الطلبية
+        // لهذا العميل فيُسقطها اختيارُ غيره. بلا `permission` — التذاكرُ الداخلية لكل موظف.
         AppAction(
-          label: 'تذاكر الموظفين',
-          icon: AppIcons.internalTickets,
+          label: 'فتح تذكرة',
+          icon: AppIcons.newInternalTicket,
           onTap: (context) => context.push(
-            Routes.internalTicketsFiltered,
-            extra: InternalTicketSubject(orderId: order.id, orderCode: order.code),
+            Routes.newInternalTicket,
+            extra: InternalTicketSubject(
+              orderId: order.id,
+              orderCode: order.code,
+              customerId: order.customer?.id,
+              customerName: order.customer?.name,
+            ),
           ),
         ),
 

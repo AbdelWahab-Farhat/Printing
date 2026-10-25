@@ -359,6 +359,10 @@ abstract final class AppIcons {
   static IconData get internalTickets =>
       _pick(Icons.forum_outlined, CupertinoIcons.chat_bubble_2);
 
+  /// «فتح تذكرة» من صفحةٍ تحملها — فقاعةٌ بزائد: تذكرةٌ جديدة، لا قائمةُ [internalTickets].
+  static IconData get newInternalTicket =>
+      _pick(Icons.add_comment_outlined, CupertinoIcons.plus_bubble);
+
   // ── choosing a file ────────────────────────────────────────────────────────
   // The three rows of the attachment sheet. Distinct glyphs on purpose: they sit side by side
   // and the icon is what is read, not the label under it.

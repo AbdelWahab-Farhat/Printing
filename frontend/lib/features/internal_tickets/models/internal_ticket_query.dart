@@ -42,8 +42,8 @@ abstract class InternalTicketQuery with _$InternalTicketQuery {
   };
 }
 
-/// ما تُفتح عليه القائمة من صفحة طلبيةٍ أو عميل: «تذاكر الطلبية #N»، كبريمولا — وزرُّ «تذكرة
-/// جديدة» فيها يحمل الطلبية أو العميل نفسه.
+/// ما تُفتح عليه القائمة من صفحة العميل: «تذاكر الموظفين عن …»، كبريمولا — و«فتح تذكرة» في
+/// صفحة الطلبية يحمل به الطلبيةَ وعميلَها إلى النموذج.
 @freezed
 abstract class InternalTicketSubject with _$InternalTicketSubject {
   const factory InternalTicketSubject({

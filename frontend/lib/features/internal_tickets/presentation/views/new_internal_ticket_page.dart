@@ -76,7 +76,7 @@ class _NewTicketViewState extends State<_NewTicketView> {
   /// ما تُربط به التذكرة — من صفحة الطلبية أو العميل، أو مختارٌ هنا.
   ({int id, String name})? _customer;
 
-  /// وعميلُها إن عُرف، كي يُسقطها اختيارُ عميلٍ غيره. من صفحة الطلبية لا يُعرف، فلا تسقط.
+  /// وعميلُها إن عُرف، كي يُسقطها اختيارُ عميلٍ غيره. صفحةُ الطلبية تُرسله معها.
   ({int id, String code, int? customerId})? _order;
 
   @override
@@ -86,7 +86,7 @@ class _NewTicketViewState extends State<_NewTicketView> {
     final subject = widget.subject;
     if (subject?.customerId case final id?) _setCustomer((id: id, name: subject?.customerName ?? ''));
     if (subject?.orderId case final id?) {
-      _setOrder((id: id, code: subject?.orderCode ?? '', customerId: null));
+      _setOrder((id: id, code: subject?.orderCode ?? '', customerId: subject?.customerId));
     }
   }
 

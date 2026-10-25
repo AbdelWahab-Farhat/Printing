@@ -243,6 +243,59 @@ void main() {
     expect(draft.customerId, isNull);
   });
 
+  testWidgets('opened from an order with its customer, both are filled in and travel together', (
+    tester,
+  ) async {
+    // Arrange
+    await arrange();
+    await tester.pumpWidget(
+      host(
+        subject: const InternalTicketSubject(
+          orderId: 55,
+          orderCode: '55',
+          customerId: 4,
+          customerName: 'متجر الأمل',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Act
+    final draft = await submit(tester);
+
+    // Assert
+    expect(find.widgetWithText(TextField, 'متجر الأمل'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '55'), findsOneWidget);
+    expect(draft.customerId, 4);
+    expect(draft.orderId, 55);
+  });
+
+  testWidgets('opened from an order, another customer drops it — it is known whose it is', (
+    tester,
+  ) async {
+    // Arrange — the order's own customer is 10; «متجر الأمل» (4) is somebody else.
+    await arrange();
+    await tester.pumpWidget(
+      host(
+        subject: const InternalTicketSubject(
+          orderId: 55,
+          orderCode: '55',
+          customerId: 10,
+          customerName: 'حساب تجريبي ٢',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Act
+    await pick(tester, 'العميل', 'متجر الأمل');
+    final draft = await submit(tester);
+
+    // Assert
+    expect(draft.customerId, 4);
+    expect(draft.orderId, isNull);
+  });
+
   testWidgets('a customer picked from the sheet travels with the ticket', (tester) async {
     // Arrange
     await arrange();
