@@ -76,7 +76,7 @@ is public, and a deployment map is reconnaissance. They live in the operator's o
 Tests, commit, push, deploy and verify, in that order:
 
 ```bash
-bin/deploy-test -m "رسالة الـcommit"   # stages your changes, asks, commits, pushes, deploys
+bin/deploy-test -m "fix(orders): …"    # stages your changes, asks, commits, pushes, deploys
 bin/deploy-test -y -m "…"              # the same without the confirmation
 bin/deploy-test --staged-only -m "…"   # commits only what is already staged
 bin/deploy-test --deploy-only          # deploys what is already pushed
