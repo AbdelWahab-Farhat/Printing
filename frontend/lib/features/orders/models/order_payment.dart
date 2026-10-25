@@ -411,6 +411,10 @@ abstract class PaymentSummary with _$PaymentSummary {
     /// refunded or kept. **Never part of «المدفوع»**, so that stays what the order was paid.
     @JsonKey(name: 'excess_amount') @Default('0.00') String excessAmount,
 
+    /// ما دفعه الزبون فوق الطلبية وصار إيراداً — «الزائد» بجانب «المدفوع». مجموعُ «منها زائد» على
+    /// الدفعات، يجمعه الخادم؛ وصفرٌ من خادمٍ قبله أو من صفٍّ في قائمة.
+    @JsonKey(name: 'excess_revenue_amount') @Default('0.00') String excessRevenueAmount,
+
     /// What is still owed. **Negative when the order is overpaid**, so the screen can say
     /// «زائد ٥٠» rather than flooring the fact away.
     @JsonKey(name: 'remaining_amount') required String remainingAmount,
@@ -452,6 +456,9 @@ abstract class PaymentSummary with _$PaymentSummary {
 
   /// Whether the order holds money the customer paid beyond it.
   bool get hasExcess => excessAmount != '0.00' && excessAmount.isNotEmpty;
+
+  /// Whether the customer paid anything beyond the order — the one case «الزائد» is drawn.
+  bool get hasExcessRevenue => excessRevenueAmount != '0.00' && excessRevenueAmount.isNotEmpty;
 
   /// Whether the customer's wallet holds anything to pay with.
   bool get hasWalletMoney =>

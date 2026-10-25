@@ -41,6 +41,19 @@ class OrderMoneyRow extends StatelessWidget {
               child: _Cell(label: 'المدفوع', value: summary.paidAmount, tone: scheme.primary),
             ),
             _Divider(color: scheme.outlineVariant),
+            // ما دُفع فوق الطلبية، بجانب «المدفوع» — طلبُ المالك ٢٠٢٦-١٠-٢٥. «المدفوع» يقف عند
+            // سعر الطلبية منذ صار الزائدُ إيراداً، فبلا هذه الخانة لا يُرى الزائدُ إلا في الدفعات.
+            // وتغيب حين لا زائد، وهو حالُ أغلب الطلبيات.
+            if (summary.hasExcessRevenue) ...[
+              Expanded(
+                child: _Cell(
+                  label: 'الزائد',
+                  value: summary.excessRevenueAmount,
+                  tone: scheme.tertiary,
+                ),
+              ),
+              _Divider(color: scheme.outlineVariant),
+            ],
             Expanded(
               child: _Cell(
                 label: 'المتبقي',
@@ -67,8 +80,8 @@ class OrderMoneyRow extends StatelessWidget {
 
         // What was forgiven, on its own line and only when there is any.
         //
-        // **Not a fourth cell in the row above.** Three money figures already share one line on
-        // a narrow phone; a fourth would shrink all of them for a number that is zero on almost
+        // **Not another cell in the row above.** Three money figures already share one line on
+        // a narrow phone; one more would shrink all of them for a number that is zero on almost
         // every order. Said in a sentence instead, where it can say what it means.
         if (summary.hasWriteOff) ...[
           SizedBox(height: 10.h),

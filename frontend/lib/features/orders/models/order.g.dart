@@ -87,6 +87,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
   carrierSettledAmount: json['carrier_settled_amount'] as String? ?? '0.00',
   excessAmount: json['excess_amount'] as String? ?? '0.00',
+  excessRevenueAmount: json['excess_revenue_amount'] as String? ?? '0.00',
   remainingAmount: json['remaining_amount'] as String? ?? '0.00',
   paymentStatus:
       $enumDecodeNullable(
@@ -236,6 +237,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'written_off_amount': instance.writtenOffAmount,
   'carrier_settled_amount': instance.carrierSettledAmount,
   'excess_amount': instance.excessAmount,
+  'excess_revenue_amount': instance.excessRevenueAmount,
   'remaining_amount': instance.remainingAmount,
   'payment_status': _$PaymentStatusEnumMap[instance.paymentStatus]!,
   'payment_status_label': instance.paymentStatusLabel,

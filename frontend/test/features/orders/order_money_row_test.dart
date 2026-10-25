@@ -40,6 +40,7 @@ void main() {
     String paid = '150.00',
     String remaining = '300.00',
     String writtenOff = '0.00',
+    String excessRevenue = '0.00',
     PaymentStatus status = PaymentStatus.partiallyPaid,
     String label = 'مدفوعة جزئياً',
     bool unrecorded = false,
@@ -48,6 +49,7 @@ void main() {
       grandTotal: '450.00',
       paidAmount: paid,
       writtenOffAmount: writtenOff,
+      excessRevenueAmount: excessRevenue,
       remainingAmount: remaining,
       paymentStatus: status,
       paymentStatusLabel: label,
@@ -174,6 +176,57 @@ void main() {
     // Assert — the pale fill, with its own readable ink on top.
     expect(chip.style?.color, scheme.onPaidContainer);
     expect(scheme.paidContainer, isNot(scheme.primaryContainer));
+  });
+
+  // ── what was paid beyond the order ─────────────────────────────────────────────────────
+
+  testWidgets('what was paid beyond the order is a fourth cell, beside «المدفوع»', (tester) async {
+    // Arrange — 470 handed over on 450: «المدفوع» stops at the order, and the 20 is revenue
+    await tester.pumpWidget(
+      host(
+        OrderMoneyRow(
+          summary: summary(
+            paid: '450.00',
+            remaining: '0.00',
+            excessRevenue: '20.00',
+            status: PaymentStatus.paid,
+            label: 'مدفوعة بالكامل',
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final paid = tester.getCenter(find.text('المدفوع')).dx;
+    final beyond = tester.getCenter(find.text('الزائد')).dx;
+    final remaining = tester.getCenter(find.text('المتبقي')).dx;
+
+    // Assert — right to left: السعر، المدفوع، الزائد، المتبقي
+    expect(find.text('20'), findsOneWidget);
+    expect(beyond, lessThan(paid));
+    expect(beyond, greaterThan(remaining));
+  });
+
+  testWidgets('an order paid exactly keeps its three cells', (tester) async {
+    // Arrange
+    await tester.pumpWidget(
+      host(
+        OrderMoneyRow(
+          summary: summary(
+            paid: '450.00',
+            remaining: '0.00',
+            status: PaymentStatus.paid,
+            label: 'مدفوعة بالكامل',
+          ),
+        ),
+      ),
+    );
+
+    // Act
+    final beyond = find.text('الزائد');
+
+    // Assert
+    expect(beyond, findsNothing);
   });
 
   // ── what was forgiven ──────────────────────────────────────────────────────────────────
