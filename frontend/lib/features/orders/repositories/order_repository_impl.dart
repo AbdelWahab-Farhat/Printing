@@ -385,6 +385,9 @@ class OrderRepositoryImpl implements OrderRepository {
               file.path,
               filename: file.name,
             ),
+            // لا قيمةَ منطقية في multipart: Dio يكتب `true` كلمةً، وقاعدة `boolean` في Laravel
+            // ترفضها. `1` و`0` هما ما تقرؤه نعم ولا — كما ترسل الدفعات `accept_overpayment`.
+            final bool value => value ? '1' : '0',
             final value => value,
           },
       },

@@ -137,6 +137,31 @@ void main() {
     expect(adapter.text, contains('bank_transfer'));
   });
 
+  test('a yes beside a receipt goes up as 1, the only yes multipart can carry', () async {
+    // Arrange — سؤال الزائد أُجيب بنعم على حوالةٍ معها الواصل: لا قيمةَ منطقية في multipart،
+    // فيكتب Dio `true` كلمةً، وترفضها قاعدة `boolean` بـ«التأكيد يجب أن يكون نعم أو لا».
+    final file = PickedFile(path: receipt.path, name: 'waseel.pdf', sizeBytes: 16);
+
+    // Act
+    await repository.changeStatus(
+      3,
+      status: OrderStatus.settled,
+      fields: {
+        'payment_amount': '180',
+        'payment_method': 'bank_transfer',
+        'payment_receipt': file,
+        'payment_accept_overpayment': true,
+      },
+    );
+
+    // Assert
+    final value = RegExp(
+      r'name="fields\[payment_accept_overpayment\]"\r\n\r\n(.*?)\r\n',
+    ).firstMatch(adapter.text)?.group(1);
+
+    expect(value, '1');
+  });
+
   test('the file travels under its own name, not a made-up one', () async {
     // Arrange — the server records this as `receipt_original_filename`, so an invented `.pdf`
     // on what is really a photograph would be a lie stored on the payment for good.
