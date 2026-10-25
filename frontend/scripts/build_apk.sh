@@ -42,7 +42,12 @@ PROD_URL=$(grep -E '^BASE_URL=' .env | cut -d= -f2- || true)
 
 # ── البناء ──
 info "▶ بناء APK (نكهة prod) — ${VERSION_NAME} (${VERSION_CODE})..."
-flutter build apk --release --flavor prod
+# اثنان مستقلّان: `--flavor prod` نكهةُ Gradle، تختار الحزمة (ly.dayaa.app لا .dev) واسمها
+# وأيقونتها؛ و`FLAVOR=prod` يختار ملفّ البيئة، أي الخادم (AppConfig). كلاهما prod هنا.
+#
+# التوقيع بمفتاح debug (android/app/build.gradle.kts)، ومفتاحُ debug لكل جهازٍ مختلف:
+# تحديثٌ يُبنى على جهازٍ آخر لا يُنصَّب فوق نسخةٍ قائمة.
+flutter build apk --release --flavor prod --dart-define=FLAVOR=prod
 
 APK="build/app/outputs/flutter-apk/app-prod-release.apk"
 [[ -f "$APK" ]] || fail "لم يُعثر على $APK"

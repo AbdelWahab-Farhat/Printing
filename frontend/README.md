@@ -36,25 +36,41 @@ release لا يمكن توجيهها إلى خادم التطوير بأي شي�
 
 ## البناء للنشر
 
+الإصدار كاملاً من الماك — الويب ثم iOS ثم APK، بالنسخة نفسها من `pubspec.yaml`:
+
 ```bash
-flutter build apk --release        # ملف APK واحد للتوزيع المباشر
-flutter build appbundle --release  # للنشر على Google Play
+./scripts/release_all.sh                   # ويب يُنشر، iOS للمراجعة، ثم APK
+./scripts/release_all.sh --cancel-pending  # نسخةٌ سابقة عالقة في المراجعة: تُسحب ثم تُرسل هذه
+./scripts/release_all.sh --upload-only     # iOS إلى TestFlight فقط
+./scripts/release_all.sh --from ios        # استئنافٌ بعد فشل — السكربت يطبع الأمر بنفسه
 ```
 
-يخرج الـ APK في `build/app/outputs/flutter-apk/app-release.apk`.
+يفحص كلَّ ما قد يُفشل أيَّ مرحلة قبل أن يُنشر شيء (رفعُ الويب، مفتاحُ App Store Connect، ملاحظاتُ
+الإصدار، حالةُ النسخة لدى Apple). **وإن كان في `frontend/` ما لم يُثبَّت، يبني من نسخةٍ نظيفة لـHEAD**
+في مجلّدٍ مؤقّت — الشجرةُ مشتركة، وما لم يُثبَّت ليس من الإصدار. `--in-place` يبني من الشجرة كما هي.
+
+أو APK وحده:
+
+```bash
+flutter build apk --release --flavor prod --dart-define=FLAVOR=prod        # للتوزيع المباشر
+flutter build appbundle --release --flavor prod --dart-define=FLAVOR=prod  # لـGoogle Play
+```
+
+يخرج الـ APK في `build/app/outputs/flutter-apk/app-prod-release.apk` (و`release_all.sh` —
+عبر `scripts/build_apk.sh` — يفحصه وينسخه إلى `~/Desktop/Dayaa-Staff-<النسخة>-prod.apk`).
 
 **تحقّق من الخادم داخل الحزمة قبل التوزيع** — الرابط يُحرَق داخل البناء، ونسخة موجّهة إلى خادم غير
 موجود تُثبَّت وتعمل ثم تفشل عند أول طلب، بلا أي رسالة تدلّ على السبب:
 
 ```bash
-unzip -p build/app/outputs/flutter-apk/app-release.apk assets/flutter_assets/.env | grep BASE_URL
+unzip -p build/app/outputs/flutter-apk/app-prod-release.apk assets/flutter_assets/.env | grep BASE_URL
 ```
 
 ### التثبيت على الجهاز
 
 ```bash
-adb devices                                                    # تأكد أن الجهاز متصل
-adb install -r build/app/outputs/flutter-apk/app-release.apk   # -r يستبدل نسخة قائمة
+adb devices                                                         # تأكد أن الجهاز متصل
+adb install -r build/app/outputs/flutter-apk/app-prod-release.apk   # -r يستبدل نسخة قائمة
 ```
 
 أو انسخ ملف الـ APK إلى الهاتف وافتحه (يتطلّب السماح بالتثبيت من مصادر غير المتجر).
@@ -84,15 +100,18 @@ dart run flutter_native_splash:create  # شاشة الإقلاع
 ## البناء
 
 ```bash
-flutter build apk --release --dart-define=FLAVOR=dev  # نسخة تجريبية على خادم التطوير
-flutter build apk --release                           # إنتاج (prod افتراضياً)
+flutter build apk --release --flavor dev --dart-define=FLAVOR=dev    # تجريبية على خادم التطوير
+flutter build apk --release --flavor prod --dart-define=FLAVOR=prod  # إنتاج
 ```
 
-⚠️ **لا تستعمل `--flavor`.** البيئة هنا `--dart-define` لا product flavor في Gradle —
-[AppConfig](lib/core/config/app_config.dart) يقرؤها وقت الترجمة ليختار ملف `.env`، فلا يمكن
-إقناع نسخة إنتاج بالتحدث إلى خادم التطوير. و`--flavor dev` يفشل بـ
-«Task 'assembleDevRelease' not found»، لأن `android/app/build.gradle.kts` لا يعرّف أي flavor
-ولا حاجة له بذلك.
+⚠️ **اثنان مستقلّان، ويُمرَّران معاً.** `--flavor` نكهة Gradle في
+[android/app/build.gradle.kts](android/app/build.gradle.kts): تختار الحزمة (`ly.dayaa.app` أو
+`ly.dayaa.app.dev`، فتُنصَّبان جنباً إلى جنب) واسمها وأيقونتها. و`--dart-define=FLAVOR` يختار ملف
+`.env`، أي الخادم — [AppConfig](lib/core/config/app_config.dart) يقرؤه وقت الترجمة، فلا يمكن
+إقناع نسخة إنتاج بالتحدث إلى خادم التطوير. أحدهما بلا الآخر يعطي حزمةً لا تطابق خادمها.
+
+⚠️ **التوقيع بمفتاح debug** (`signingConfigs.getByName("debug")`)، ومفتاح debug لكل جهازٍ مختلف:
+APK مبنيٌّ على جهازٍ آخر لا يُنصَّب فوق نسخةٍ قائمة إلا بحذفها أولاً.
 
 قبل أي دمج:
 

@@ -6,9 +6,10 @@
 #   2) iOS للمراجعة         → scripts/release_ios.sh
 #   3) APK                 → scripts/build_apk.sh
 #
-# منقولٌ عن primula/employee/scripts/release_all.sh. الفكرة كما هي: كلُّ فحصٍ قد يُفشل أيَّ مرحلة
-# يُنفَّذ *قبل* المرحلة الأولى، حتى لا تكتشف بعد ساعة بناء أن ملاحظات الإصدار ناقصة أو أن نسخةً
-# سابقة عالقة في مراجعة Apple.
+# منقولٌ عن primula/employee/scripts/release_all.sh، ومدموجٌ مع نسخة 039644ad (كُتبت على خادم
+# الإنتاج ولم تُدفع). الفكرة كما هي: كلُّ فحصٍ قد يُفشل أيَّ مرحلة يُنفَّذ *قبل* المرحلة الأولى —
+# إعدادُ رفع الويب والوصولُ إليه بـssh، ومفتاحُ App Store Connect وملاحظاتُ الإصدار، ونسخةٌ سابقة
+# عالقة في مراجعة Apple — حتى لا يُنشر الويب ثم يُكتشف أن iOS لا يُرسل.
 #
 # **والفرقُ الذي يستحقّ الذكر: يُبنى من HEAD لا من الشجرة.** هذه الشجرة تعمل فيها جلساتٌ عدّة معاً،
 # وما لم يُثبَّت فيها ليس من الإصدار. فإن كان في frontend/ ما لم يُثبَّت، تُبنى المراحل كلُّها من نسخةٍ
@@ -16,13 +17,15 @@
 # وأخواته)، ثم تُحذف. `--in-place` يبني هنا كما هي.
 #
 # الاستخدام:
-#   ./scripts/release_all.sh                      # الثلاثة بالترتيب
+#   ./scripts/release_all.sh                      # الويب يُنشر، iOS للمراجعة، ثم APK
 #   ./scripts/release_all.sh --yes                # بلا سؤال تأكيد
 #   ./scripts/release_all.sh --from ios           # استئناف من مرحلة iOS
-#   ./scripts/release_all.sh --skip-web           # تخطّي مرحلة (--skip-ios، --skip-android)
+#   ./scripts/release_all.sh --skip-web           # تخطّي مرحلة (--skip-ios، --skip-apk)
 #   ./scripts/release_all.sh --in-place           # البناء من الشجرة كما هي
-#   ./scripts/release_all.sh -- --cancel-pending  # ما بعد -- يُمرَّر لسكربت iOS
-#   ./scripts/release_all.sh -- --upload-only     # TestFlight فقط، بلا مراجعة
+#   ./scripts/release_all.sh --cancel-pending     # اسحب النسخة العالقة في المراجعة ثم أرسل
+#   ./scripts/release_all.sh --upload-only        # iOS إلى TestFlight فقط، بلا مراجعة
+#   ./scripts/release_all.sh --manual-release     # بعد موافقة Apple يبقى بانتظار زرّ «Release»
+#   ./scripts/release_all.sh -- <وسائط>           # ما بعد -- يُمرَّر لسكربت iOS كما هو
 # =====================================================================
 set -euo pipefail
 
@@ -55,9 +58,12 @@ while [[ $# -gt 0 ]]; do
       esac
       shift 2 ;;
     --in-place) IN_PLACE=true; shift ;;
+    # وسائطُ سكربت iOS، تُقبل هنا مباشرةً كما في نسخة الخادم
+    --upload-only|--manual-release|--skip-precheck|--cancel-pending|--force-cancel)
+                IOS_ARGS+=("$1"); shift ;;
     --yes|-y)   ASSUME_YES=true; shift ;;
     --)         shift; IOS_ARGS=("$@"); break ;;
-    -h|--help)  sed -n '2,26p' "$0"; exit 0 ;;
+    -h|--help)  sed -n '2,30p' "$0"; exit 0 ;;
     *) fail "وسيط غير معروف: $1 (استخدم --help)" ;;
   esac
 done
@@ -126,7 +132,6 @@ VERSION_NAME=${FULL_VERSION%+*}
 VERSION_CODE=${FULL_VERSION#*+}
 LOG_FILE="$LOG_DIR/release-${FULL_VERSION}-$(date +%Y%m%d-%H%M%S).log"
 NOTES="fastlane/metadata/ar-SA/release_notes.txt"
-WEB_ZIP="$HOME/Desktop/Dayaa-Staff-${VERSION_NAME}-web.zip"
 
 # =====================================================================
 # الفحوصات التمهيدية — كل ما قد يُفشل أي مرحلة، قبل أن نبدأ أياً منها
@@ -143,16 +148,16 @@ if [[ -z "$(git -C "$REPO_ROOT" branch -r --contains HEAD 2>/dev/null || true)" 
   warn "${COMMIT} لم يُدفع إلى origin — ادفعه قبل الإصدار أو بعده مباشرة"
 fi
 
-WEB_UPLOAD=false
 if [[ "$RUN_WEB" == true ]]; then
-  if [[ -f scripts/web_deploy.local.sh ]]; then
-    command -v ssh   >/dev/null || fail "ssh غير موجود — مطلوب لرفع الويب"
-    command -v rsync >/dev/null || fail "rsync غير موجود — مطلوب لرفع الويب"
-    WEB_UPLOAD=true
-    ok "✓ الويب: يُبنى ويُرفع (scripts/web_deploy.local.sh)"
-  else
-    warn "الويب: لا scripts/web_deploy.local.sh — يُبنى ويُفحص فقط، والناتج في ${WEB_ZIP/#$HOME/\~}"
-  fi
+  # release_web.sh بلا هذا الملف يبني ثم يخرج بنجاحٍ دون رفع — هنا يجب أن يكون فشلاً.
+  # shellcheck source=/dev/null
+  [[ -f scripts/web_deploy.local.sh ]] && source scripts/web_deploy.local.sh
+  [[ -n "${WEB_HOST:-}" && -n "${WEB_ROOT:-}" ]] \
+    || fail "لا WEB_HOST/WEB_ROOT في scripts/web_deploy.local.sh — الويب كان سيُبنى ولا يُرفع (أو --skip-web)"
+  command -v rsync >/dev/null || fail "rsync غير موجود — مطلوب لرفع الويب"
+  ssh -o BatchMode=yes -o ConnectTimeout=10 "$WEB_HOST" "test -d '$(dirname "$WEB_ROOT")'" \
+    || fail "لا وصول بـssh إلى $WEB_HOST:$(dirname "$WEB_ROOT")"
+  ok "✓ الويب: يُبنى ويُرفع إلى $WEB_HOST:$WEB_ROOT"
 fi
 
 if [[ "$RUN_ANDROID" == true ]]; then
@@ -163,6 +168,7 @@ if [[ "$RUN_ANDROID" == true ]]; then
 fi
 
 if [[ "$RUN_IOS" == true ]]; then
+  [[ "$(uname)" == Darwin ]] || fail "iOS يُبنى على الماك وحده — أو أضف --skip-ios"
   # shellcheck source=./asc_env.sh
   source scripts/asc_env.sh
   command -v fastlane >/dev/null || fail "fastlane غير مثبّت — brew install fastlane"
@@ -204,11 +210,7 @@ head1 "════════════════════════�
 head1 "  خطة الإصدار ${FULL_VERSION} — ${COMMIT}"
 head1 "═══════════════════════════════════════════════════════"
 if [[ "$RUN_WEB" == true ]]; then
-  if [[ "$WEB_UPLOAD" == true ]]; then
-    echo "  1) 🌐 الويب     → بناء + رفع"
-  else
-    echo "  1) 🌐 الويب     → بناء + فحص → ${WEB_ZIP/#$HOME/\~}"
-  fi
+  echo "  1) 🌐 الويب     → بناء + فحص + رفع إلى $WEB_HOST:$WEB_ROOT"
 else
   echo "  1) 🌐 الويب     → (متخطّى)"
 fi
@@ -310,19 +312,9 @@ run_stage() {
   fi
 }
 
-# بلا ملفّ رفع: الناتجُ يُحزم على سطح المكتب قبل أن تُحذف النسخة النظيفة ومعها build/web
-web_stage() {
-  ./scripts/release_web.sh || return $?
-  if [[ "$WEB_UPLOAD" == false ]]; then
-    rm -f "$WEB_ZIP"
-    ditto -c -k --keepParent build/web "$WEB_ZIP" || return $?
-    echo "✓ الويب محزوم: $WEB_ZIP"
-  fi
-}
-
 if [[ "$RUN_WEB" == true ]]; then
   RESUME_HINT="./scripts/release_all.sh"
-  run_stage "🌐 الويب      " web_stage || exit 1
+  run_stage "🌐 الويب      " ./scripts/release_web.sh || exit 1
 fi
 
 # iOS قبل الأندرويد عمداً: رفعُ البِلد يبدأ انتظار Apple، فكلّما بدأ أبكر انتهت المراجعة أبكر —
@@ -340,8 +332,7 @@ fi
 RESUME_HINT=""
 echo ""
 ok "🎉 تمّ الإصدار الكامل للنسخة ${VERSION_NAME} (build ${VERSION_CODE}) من ${COMMIT}"
-[[ "$RUN_WEB" == true && "$WEB_UPLOAD" == true ]] && ok "   🌐 رُفع الويب" || true
-[[ "$RUN_WEB" == true && "$WEB_UPLOAD" == false ]] && ok "   🌐 $WEB_ZIP — ارفعه بنفسك" || true
+[[ "$RUN_WEB" == true ]] && ok "   🌐 رُفع الويب إلى $WEB_HOST:$WEB_ROOT" || true
 [[ "$RUN_IOS" == true ]] && ok "   🍎 App Store Connect — https://appstoreconnect.apple.com/apps" || true
 [[ "$RUN_ANDROID" == true ]] && ok "   🤖 ~/Desktop/Dayaa-Staff-${VERSION_NAME}-prod.apk" || true
 warn "الخادم لا يُنشر من هنا: ssh <prod> printing-deploy قبل أن يصل التطبيق إلى أحد"
