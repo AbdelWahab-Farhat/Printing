@@ -49,7 +49,7 @@ fi
 # الفحص من داخل الناتج لا من الشجرة: ملفُّ البيئة المحزوم هو ما سيقرؤه المتصفّح فعلاً،
 # ونسخةٌ تُرفع وهي تشير إلى ماك المطوّر لا يكتشفها أحدٌ إلا موظفٌ يرى «تعذّر الاتصال».
 base_url="$(grep -E '^BASE_URL=' "$OUT/assets/.env" | cut -d= -f2- || true)"
-[[ "$base_url" == https://* ]] || fail "BASE_URL في البناء ليس https: «$base_url»"
+[[ "$base_url" == https://* ]] || fail "BASE_URL في البناء ليس https: «${base_url}»"
 grep -q 'removeSplashFromWeb' "$OUT/index.html" || fail "index.html بلا removeSplashFromWeb — main.dart يناديها"
 grep -q '"useLocalCanvasKit":true' "$OUT/flutter_bootstrap.js" \
   || fail "المحرّك يُجلب من gstatic — البناء بلا --no-web-resources-cdn"
@@ -64,7 +64,7 @@ if [[ -z "${WEB_HOST:-}" || -z "${WEB_ROOT:-}" ]]; then
   exit 0
 fi
 
-info "▸ رفعٌ إلى $WEB_HOST:$WEB_ROOT…"
+info "▸ رفعٌ إلى ${WEB_HOST}:${WEB_ROOT}…"
 # `--delete`: ملفُّ main.dart.js القديم لا يبقى بجانب الجديد. والمجلّد يُملأ أولاً ثم يُبدَّل،
 # فلا يرى موظفٌ يفتح الصفحة أثناء الرفع نصفَ نسخةٍ قديمة ونصفَ جديدة.
 rsync -az --delete "$OUT/" "$WEB_HOST:$WEB_ROOT.next/"
