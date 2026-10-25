@@ -53,10 +53,14 @@ APK="build/app/outputs/flutter-apk/app-prod-release.apk"
 [[ -f "$APK" ]] || fail "لم يُعثر على $APK"
 
 # ── التحقق من داخل الـ APK، لا من الشجرة ──
-BADGING=$("$AAPT2" dump badging "$APK" | head -1)
-BUILT_ID=$(sed -E "s/.*name='([^']*)'.*/\1/" <<<"$BADGING")
-BUILT_CODE=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<<"$BADGING")
-BUILT_NAME=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<<"$BADGING")
+# كلُّه ثم السطرُ الأول — لا `| head -1`: head يغلق الأنبوب بعد سطر، فيموت aapt2 بـSIGPIPE (141)
+# و`pipefail` يعدّه فشلاً بعد بناءٍ ناجح.
+BADGING_ALL=$("$AAPT2" dump badging "$APK")
+BADGING=${BADGING_ALL%%$'\n'*}
+# مرسوّةٌ بمسافةٍ قبلها: «.*name=» الجشعة تقع على compileSdkVersionCodename='16' في آخر السطر.
+BUILT_ID=$(sed -E "s/^package: name='([^']*)'.*/\1/" <<<"$BADGING")
+BUILT_CODE=$(sed -E "s/.* versionCode='([^']*)'.*/\1/" <<<"$BADGING")
+BUILT_NAME=$(sed -E "s/.* versionName='([^']*)'.*/\1/" <<<"$BADGING")
 BUILT_URL=$(unzip -p "$APK" 'assets/flutter_assets/.env' | grep -E '^BASE_URL=' | cut -d= -f2- || true)
 
 [[ "$BUILT_ID" == "$APP_ID" ]] || fail "معرّف الحزمة $BUILT_ID لا يطابق $APP_ID"
