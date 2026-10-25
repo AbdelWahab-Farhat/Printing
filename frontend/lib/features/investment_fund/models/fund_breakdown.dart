@@ -56,6 +56,11 @@ abstract class FundCashEntry with _$FundCashEntry {
   factory FundCashEntry.fromJson(Map<String, dynamic> json) => _$FundCashEntryFromJson(json);
 }
 
+/// «25*35» — بالفاصل الذي يكتب به الخادمُ اسمَ الرفّ ويعرضه المخزن. ولا شيء لمادّةٍ بلا مقاس:
+/// العرضُ والطولُ يُحفظان معاً أو لا يُحفظان.
+String? _sizeLabel(int? widthCm, int? heightCm) =>
+    widthCm != null && heightCm != null ? '$widthCm*$heightCm' : null;
+
 /// مادّةٌ على رفّ الصندوق: كم منها، وبكم كلّفت.
 @freezed
 abstract class FundShelfMaterial with _$FundShelfMaterial {
@@ -63,6 +68,8 @@ abstract class FundShelfMaterial with _$FundShelfMaterial {
     @JsonKey(name: 'stock_item_id') int? stockItemId,
     String? code,
     String? name,
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
     @JsonKey(name: 'unit_label') String? unitLabel,
     required String quantity,
 
@@ -72,8 +79,12 @@ abstract class FundShelfMaterial with _$FundShelfMaterial {
     @Default(0) int batches,
   }) = _FundShelfMaterial;
 
+  const FundShelfMaterial._();
+
   factory FundShelfMaterial.fromJson(Map<String, dynamic> json) =>
       _$FundShelfMaterialFromJson(json);
+
+  String? get sizeLabel => _sizeLabel(widthCm, heightCm);
 }
 
 /// بضاعةُ الصندوق على الرفّ — رقمُ اللوحة وموادُّه.
@@ -104,12 +115,18 @@ abstract class FundGoodsLine with _$FundGoodsLine {
     @JsonKey(name: 'stock_item_id') int? stockItemId,
     String? code,
     String? name,
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
     @JsonKey(name: 'unit_label') String? unitLabel,
     required String quantity,
     required String cost,
   }) = _FundGoodsLine;
 
+  const FundGoodsLine._();
+
   factory FundGoodsLine.fromJson(Map<String, dynamic> json) => _$FundGoodsLineFromJson(json);
+
+  String? get sizeLabel => _sizeLabel(widthCm, heightCm);
 }
 
 /// طلبيةٌ تحمل بضاعةَ الصندوق خارج الرفّ — في الطريق، أو عند عميلٍ لم يدفع.
@@ -156,6 +173,8 @@ abstract class FundOnOrderLine with _$FundOnOrderLine {
     @JsonKey(name: 'stock_item_id') int? stockItemId,
     String? code,
     String? name,
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
     @JsonKey(name: 'unit_label') String? unitLabel,
     @JsonKey(name: 'quantity_ordered') required String quantityOrdered,
     @JsonKey(name: 'quantity_received') required String quantityReceived,
@@ -165,7 +184,11 @@ abstract class FundOnOrderLine with _$FundOnOrderLine {
     required String value,
   }) = _FundOnOrderLine;
 
+  const FundOnOrderLine._();
+
   factory FundOnOrderLine.fromJson(Map<String, dynamic> json) => _$FundOnOrderLineFromJson(json);
+
+  String? get sizeLabel => _sizeLabel(widthCm, heightCm);
 }
 
 /// أمرُ شراءٍ خرج ثمنُه من الخزينة ولم تصل بضاعتُه — كلُّها أو بعضُها.

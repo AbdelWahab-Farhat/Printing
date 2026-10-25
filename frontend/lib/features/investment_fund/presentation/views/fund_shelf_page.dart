@@ -41,7 +41,7 @@ class FundShelfPage extends StatelessWidget {
   }
 }
 
-/// مادّةٌ على الرفّ: رمزُها واسمُها، وكمّيتُها بوحدتها، وتكلفتُها أكبرَ ما في السطر.
+/// مادّةٌ على الرفّ: رمزُها واسمُها ومقاسُها، وكمّيتُها بوحدتها، وتكلفتُها أكبرَ ما في السطر.
 class _MaterialRow extends StatelessWidget {
   const _MaterialRow({required this.material, super.key});
 
@@ -74,10 +74,9 @@ class _MaterialRow extends StatelessWidget {
                       SizedBox(width: 8.w),
                     ],
                     Flexible(
-                      child: Text(
-                        material.name ?? '—',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: FundMaterialName(
+                        name: material.name ?? '—',
+                        size: material.sizeLabel,
                         style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),

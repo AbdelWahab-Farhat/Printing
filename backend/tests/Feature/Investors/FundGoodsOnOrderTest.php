@@ -326,6 +326,8 @@ class FundGoodsOnOrderTest extends TestCase
             ->assertJsonCount(1, 'data.orders.0.lines')
             ->assertJsonPath('data.orders.0.lines.0.stock_item_id', $bags->id)
             ->assertJsonPath('data.orders.0.lines.0.name', 'كيس 25×35')
+            ->assertJsonPath('data.orders.0.lines.0.width_cm', $bags->width_cm)
+            ->assertJsonPath('data.orders.0.lines.0.height_cm', $bags->height_cm)
             ->assertJsonPath('data.orders.0.lines.0.unit_label', 'كجم')
             ->assertJsonPath('data.orders.0.lines.0.quantity_ordered', '500.000')
             ->assertJsonPath('data.orders.0.lines.0.quantity_received', '0.000')

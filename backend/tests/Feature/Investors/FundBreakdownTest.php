@@ -553,6 +553,34 @@ class FundBreakdownTest extends TestCase
         $this->assertSame($this->value()['stock_on_shelf'], $response->json('data.total'));
     }
 
+    public function test_the_shelf_carries_each_materials_size(): void
+    {
+        // Arrange — مقاسان من «أكياس الشحن» لا يفرّق بينهما غيرُ الرمز، ورولٌ بلا مقاس.
+        $fund = app(FundDeal::class)();
+        $small = StockItem::factory()->named('أكياس الشحن')->size(25, 35)->create(['unit' => PricingUnit::Kilogram]);
+        $large = StockItem::factory()->named('أكياس الشحن')->size(35, 45)->create(['unit' => PricingUnit::Kilogram]);
+        $rolls = StockItem::factory()->named('رول نايلون')->unsized()->create(['unit' => PricingUnit::Kilogram]);
+
+        StockBatch::factory()->create(['investor_deal_id' => $fund->id, 'stock_item_id' => $large->id, 'quantity_remaining' => '30.000', 'unit_cost' => '10.000', 'unit' => PricingUnit::Kilogram]);
+        StockBatch::factory()->create(['investor_deal_id' => $fund->id, 'stock_item_id' => $small->id, 'quantity_remaining' => '20.000', 'unit_cost' => '10.000', 'unit' => PricingUnit::Kilogram]);
+        StockBatch::factory()->create(['investor_deal_id' => $fund->id, 'stock_item_id' => $rolls->id, 'quantity_remaining' => '10.000', 'unit_cost' => '10.000', 'unit' => PricingUnit::Kilogram]);
+
+        // Act
+        $response = $this->withHeaders($this->viewer())->getJson('/api/v1/investment/fund/shelf');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonPath('data.materials.0.stock_item_id', $large->id)
+            ->assertJsonPath('data.materials.0.width_cm', 35)
+            ->assertJsonPath('data.materials.0.height_cm', 45)
+            ->assertJsonPath('data.materials.1.stock_item_id', $small->id)
+            ->assertJsonPath('data.materials.1.width_cm', 25)
+            ->assertJsonPath('data.materials.1.height_cm', 35)
+            ->assertJsonPath('data.materials.2.stock_item_id', $rolls->id)
+            ->assertJsonPath('data.materials.2.width_cm', null)
+            ->assertJsonPath('data.materials.2.height_cm', null);
+    }
+
     // ── بضاعة خرجت ────────────────────────────────────────────────────────────────────────
 
     /**
@@ -609,7 +637,7 @@ class FundBreakdownTest extends TestCase
     private function goodsOut(): array
     {
         $fund = app(FundDeal::class)();
-        $bags = StockItem::factory()->named('كيس 30×40')->create(['unit' => PricingUnit::Piece]);
+        $bags = StockItem::factory()->named('كيس 30×40')->size(30, 40)->create(['unit' => PricingUnit::Piece]);
         $batch = StockBatch::factory()->create(['investor_deal_id' => $fund->id, 'stock_item_id' => $bags->id]);
         $priced = StockBatch::factory()->create([
             'investor_deal_id' => $fund->id,
@@ -666,6 +694,8 @@ class FundBreakdownTest extends TestCase
             ->assertJsonPath('data.orders.0.cost', '300.00')
             ->assertJsonPath('data.orders.0.goods.0.stock_item_id', $bags->id)
             ->assertJsonPath('data.orders.0.goods.0.name', 'كيس 30×40')
+            ->assertJsonPath('data.orders.0.goods.0.width_cm', 30)
+            ->assertJsonPath('data.orders.0.goods.0.height_cm', 40)
             ->assertJsonPath('data.orders.0.goods.0.quantity', '30.000')
             ->assertJsonPath('data.orders.0.goods.0.unit_label', 'قطعة')
             ->assertJsonPath('data.orders.0.goods.0.cost', '300.00');

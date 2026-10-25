@@ -105,6 +105,34 @@ class FundSectionTitle extends StatelessWidget {
   }
 }
 
+/// اسمُ مادّةٍ ومقاسُها في سطرٍ واحد — «أكياس الشحن  25*35».
+///
+/// المقاسُ نصٌّ وحده من اليسار، كمقاس الرفّ في المخزن، فيُقرأ كما كُتب. وإن ضاق السطرُ قُصَّ
+/// الاسمُ لا المقاس: المقاسُ ما يفرّق «S1» عن «S2»، وكلاهما «أكياس الشحن».
+class FundMaterialName extends StatelessWidget {
+  const FundMaterialName({required this.name, this.size, this.style, super.key});
+
+  final String name;
+  final String? size;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+        ),
+        if (size case final size?) ...[
+          SizedBox(width: 6.w),
+          Text(size, textDirection: TextDirection.ltr, style: style),
+        ],
+      ],
+    );
+  }
+}
+
 /// خطٌّ رفيعٌ بين سطرين في جدول — لا فجوةُ بطاقتين.
 class FundHairline extends StatelessWidget {
   const FundHairline({super.key});

@@ -2,6 +2,7 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/investment_fund/models/fund_breakdown.dart';
+import 'package:dayaa/features/investment_fund/presentation/widgets/fund_detail_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -130,7 +131,7 @@ class FundGoodsOrderCard extends StatelessWidget {
   }
 }
 
-/// مادّةٌ واحدة داخل الطلبية: اسمُها، وكم أخذت منها، وبكم.
+/// مادّةٌ واحدة داخل الطلبية: اسمُها ومقاسُها، وكم أخذت منها، وبكم.
 class _GoodsLine extends StatelessWidget {
   const _GoodsLine({required this.line});
 
@@ -145,10 +146,9 @@ class _GoodsLine extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              line.name ?? line.code ?? '—',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: FundMaterialName(
+              name: line.name ?? line.code ?? '—',
+              size: line.sizeLabel,
               style: context.textTheme.bodyMedium,
             ),
           ),

@@ -59,13 +59,15 @@ final class FundGoodsOut
 
         $lines = (clone $draws)
             ->leftJoin('stock_items as si', 'si.id', '=', 'b.stock_item_id')
-            ->groupBy('o.id', 'b.stock_item_id', 'si.code', 'si.name', 'si.unit')
+            ->groupBy('o.id', 'b.stock_item_id', 'si.code', 'si.name', 'si.width_cm', 'si.height_cm', 'si.unit')
             ->orderBy('si.name')
             ->get([
                 'o.id as order_id',
                 'b.stock_item_id',
                 'si.code',
                 'si.name',
+                'si.width_cm',
+                'si.height_cm',
                 'si.unit',
                 DB::raw('sum(c.quantity) as quantity'),
                 DB::raw('sum(c.total_cost) as cost'),
@@ -84,6 +86,8 @@ final class FundGoodsOut
                 'stock_item_id' => $line->stock_item_id === null ? null : (int) $line->stock_item_id,
                 'code' => $line->code === null ? null : (string) $line->code,
                 'name' => $line->name === null ? null : (string) $line->name,
+                'width_cm' => $line->width_cm === null ? null : (int) $line->width_cm,
+                'height_cm' => $line->height_cm === null ? null : (int) $line->height_cm,
                 'unit' => $unit?->value,
                 'unit_label' => $unit?->label(),
                 'quantity' => (string) $line->quantity,

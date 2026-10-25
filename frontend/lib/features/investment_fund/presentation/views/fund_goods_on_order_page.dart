@@ -145,7 +145,7 @@ class _PurchaseCard extends StatelessWidget {
   }
 }
 
-/// مادّةٌ في الأمر: اسمُها، وكم بقي منها من أصل ما طُلب، وقيمةُ الباقي.
+/// مادّةٌ في الأمر: اسمُها ومقاسُها، وكم بقي منها من أصل ما طُلب، وقيمةُ الباقي.
 class _Line extends StatelessWidget {
   const _Line({required this.line});
 
@@ -165,10 +165,9 @@ class _Line extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  line.name ?? line.code ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                FundMaterialName(
+                  name: line.name ?? line.code ?? '—',
+                  size: line.sizeLabel,
                   style: context.textTheme.bodyMedium,
                 ),
                 Text(

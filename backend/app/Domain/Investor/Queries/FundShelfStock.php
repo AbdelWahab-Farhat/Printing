@@ -47,13 +47,15 @@ final class FundShelfStock
             ->leftJoin('stock_items as si', 'si.id', '=', 'b.stock_item_id')
             // طبقةٌ فرغت لا تساوي شيئاً على الرفّ؛ وسالبةٌ — لو وُجدت — تبقى، فالمجموعُ يحسبها.
             ->where('b.quantity_remaining', '<>', 0)
-            ->groupBy('b.stock_item_id', 'si.code', 'si.name', 'si.unit')
+            ->groupBy('b.stock_item_id', 'si.code', 'si.name', 'si.width_cm', 'si.height_cm', 'si.unit')
             ->orderByRaw('sum(b.quantity_remaining * b.unit_cost) desc')
             ->orderBy('si.name')
             ->get([
                 'b.stock_item_id',
                 'si.code',
                 'si.name',
+                'si.width_cm',
+                'si.height_cm',
                 'si.unit',
                 DB::raw('sum(b.quantity_remaining) as quantity'),
                 DB::raw('sum(b.quantity_remaining * b.unit_cost) as value'),
@@ -69,6 +71,8 @@ final class FundShelfStock
                 'stock_item_id' => $row->stock_item_id === null ? null : (int) $row->stock_item_id,
                 'code' => $row->code === null ? null : (string) $row->code,
                 'name' => $row->name === null ? null : (string) $row->name,
+                'width_cm' => $row->width_cm === null ? null : (int) $row->width_cm,
+                'height_cm' => $row->height_cm === null ? null : (int) $row->height_cm,
                 'unit' => $unit?->value,
                 'unit_label' => $unit?->label(),
                 'quantity' => (string) $row->quantity,

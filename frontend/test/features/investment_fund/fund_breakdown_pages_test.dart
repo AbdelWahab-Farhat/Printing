@@ -101,7 +101,9 @@ final _cash = Paginated<FundCashEntry>(
 
 const _bags = FundGoodsLine(
   stockItemId: 5,
-  name: 'كيس 30×40',
+  name: 'أكياس الشحن',
+  widthCm: 30,
+  heightCm: 40,
   unitLabel: 'قطعة',
   quantity: '30.000',
   cost: '300.00',
@@ -240,7 +242,9 @@ void main() {
               FundShelfMaterial(
                 stockItemId: 5,
                 code: 'B30',
-                name: 'كيس 30×40',
+                name: 'أكياس الشحن',
+                widthCm: 30,
+                heightCm: 40,
                 unitLabel: 'قطعة',
                 quantity: '500.000',
                 value: '5200.00',
@@ -263,15 +267,50 @@ void main() {
       await tester.pumpWidget(host(const FundShelfPage()));
       await tester.pumpAndSettle();
 
-      // Assert
+      // Assert — المقاسُ بجانب الاسم، والرولُ بلا مقاسٍ لا يُدّعى له مقاس.
       expect(find.text('6,200 د.ل'), findsOneWidget);
-      expect(find.text('كيس 30×40'), findsOneWidget);
+      expect(find.text('أكياس الشحن'), findsOneWidget);
+      expect(find.text('30*40'), findsOneWidget);
+      expect(find.textContaining('*'), findsOneWidget);
       expect(find.text('B30'), findsOneWidget);
       expect(find.text('500 قطعة'), findsOneWidget);
       expect(find.text('5,200 د.ل'), findsOneWidget);
       expect(find.text('رول نايلون'), findsOneWidget);
       expect(find.text('50 كجم'), findsOneWidget);
       expect(find.text('1,000 د.ل'), findsOneWidget);
+    });
+
+    testWidgets('a long name is cut short before the size is', (tester) async {
+      // Arrange
+      await register(
+        _FakeBreakdown(
+          shelfHeld: const FundShelf(
+            total: '100.00',
+            materials: [
+              FundShelfMaterial(
+                code: 'S2',
+                name: 'أكياس الشحن البلاستيكية المقوّاة بمقبضٍ مزدوجٍ ولونٍ مطبوعٍ على الوجهين',
+                widthCm: 25,
+                heightCm: 35,
+                unitLabel: 'كجم',
+                quantity: '10.000',
+                value: '100.00',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Act
+      await tester.pumpWidget(host(const FundShelfPage()));
+      await tester.pumpAndSettle();
+
+      // Assert — لا فيضَ في السطر، والمقاسُ كلُّه داخل الشاشة.
+      final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final size = tester.getRect(find.text('25*35'));
+      expect(tester.takeException(), isNull);
+      expect(size.left, greaterThanOrEqualTo(0));
+      expect(size.right, lessThanOrEqualTo(screenWidth));
     });
 
     testWidgets('an empty shelf says so instead of drawing a blank list', (tester) async {
@@ -337,7 +376,8 @@ void main() {
       expect(find.text('بضاعة خرجت ولم تُسلَّم'), findsWidgets);
       expect(find.text('طلبية ORD-12'), findsOneWidget);
       expect(find.text('جاري التوصيل'), findsOneWidget);
-      expect(find.text('كيس 30×40'), findsOneWidget);
+      expect(find.text('أكياس الشحن'), findsOneWidget);
+      expect(find.text('30*40'), findsOneWidget);
       expect(find.text('30 قطعة'), findsOneWidget);
       expect(find.text('300 د.ل'), findsWidgets);
       expect(find.text('المتبقي على العميل'), findsNothing);
@@ -415,7 +455,9 @@ void main() {
                 lines: const [
                   FundOnOrderLine(
                     stockItemId: 5,
-                    name: 'كيس 25×35',
+                    name: 'أكياس الشحن',
+                    widthCm: 25,
+                    heightCm: 35,
                     unitLabel: 'كجم',
                     quantityOrdered: '500.000',
                     quantityReceived: '300.000',
@@ -437,7 +479,8 @@ void main() {
       expect(find.text('بضاعة مشتراة لم تصل'), findsOneWidget);
       expect(find.text('أمر شراء #18'), findsOneWidget);
       expect(find.text('مصنع الشرق للأكياس · 30 أغسطس 2026'), findsOneWidget);
-      expect(find.text('كيس 25×35'), findsOneWidget);
+      expect(find.text('أكياس الشحن'), findsOneWidget);
+      expect(find.text('25*35'), findsOneWidget);
       expect(find.text('باقي 200 من 500 كجم'), findsOneWidget);
       expect(find.text('5,000 د.ل'), findsNWidgets(3));
     });

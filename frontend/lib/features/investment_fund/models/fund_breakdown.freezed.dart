@@ -347,7 +347,7 @@ as String?,
 /// @nodoc
 mixin _$FundShelfMaterial {
 
-@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'unit_label') String? get unitLabel; String get quantity;/// بالتكلفة المجمّدة يوم وصلت — ما يدخل به الرفُّ قيمةَ الصندوق.
+@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'width_cm') int? get widthCm;@JsonKey(name: 'height_cm') int? get heightCm;@JsonKey(name: 'unit_label') String? get unitLabel; String get quantity;/// بالتكلفة المجمّدة يوم وصلت — ما يدخل به الرفُّ قيمةَ الصندوق.
  String get value; int get batches;
 /// Create a copy of FundShelfMaterial
 /// with the given fields replaced by the non-null parameter values.
@@ -361,16 +361,16 @@ $FundShelfMaterialCopyWith<FundShelfMaterial> get copyWith => _$FundShelfMateria
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShelfMaterial&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.value, value) || other.value == value)&&(identical(other.batches, batches) || other.batches == batches));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShelfMaterial&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.value, value) || other.value == value)&&(identical(other.batches, batches) || other.batches == batches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantity,value,batches);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantity,value,batches);
 
 @override
 String toString() {
-  return 'FundShelfMaterial(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantity: $quantity, value: $value, batches: $batches)';
+  return 'FundShelfMaterial(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantity: $quantity, value: $value, batches: $batches)';
 }
 
 
@@ -381,7 +381,7 @@ abstract mixin class $FundShelfMaterialCopyWith<$Res>  {
   factory $FundShelfMaterialCopyWith(FundShelfMaterial value, $Res Function(FundShelfMaterial) _then) = _$FundShelfMaterialCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String value, int batches
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String value, int batches
 });
 
 
@@ -398,12 +398,14 @@ class _$FundShelfMaterialCopyWithImpl<$Res>
 
 /// Create a copy of FundShelfMaterial
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? value = null,Object? batches = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? value = null,Object? batches = null,}) {
   return _then(_self.copyWith(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,batches: null == batches ? _self.batches : batches // ignore: cast_nullable_to_non_nullable
@@ -492,10 +494,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundShelfMaterial() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
   return orElse();
 
 }
@@ -513,10 +515,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)  $default,) {final _that = this;
 switch (_that) {
 case _FundShelfMaterial():
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -533,10 +535,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String value,  int batches)?  $default,) {final _that = this;
 switch (_that) {
 case _FundShelfMaterial() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.value,_that.batches);case _:
   return null;
 
 }
@@ -547,13 +549,15 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// @nodoc
 @JsonSerializable()
 
-class _FundShelfMaterial implements FundShelfMaterial {
-  const _FundShelfMaterial({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'unit_label') this.unitLabel, required this.quantity, required this.value, this.batches = 0});
+class _FundShelfMaterial extends FundShelfMaterial {
+  const _FundShelfMaterial({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'unit_label') this.unitLabel, required this.quantity, required this.value, this.batches = 0}): super._();
   factory _FundShelfMaterial.fromJson(Map<String, dynamic> json) => _$FundShelfMaterialFromJson(json);
 
 @override@JsonKey(name: 'stock_item_id') final  int? stockItemId;
 @override final  String? code;
 @override final  String? name;
+@override@JsonKey(name: 'width_cm') final  int? widthCm;
+@override@JsonKey(name: 'height_cm') final  int? heightCm;
 @override@JsonKey(name: 'unit_label') final  String? unitLabel;
 @override final  String quantity;
 /// بالتكلفة المجمّدة يوم وصلت — ما يدخل به الرفُّ قيمةَ الصندوق.
@@ -573,16 +577,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShelfMaterial&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.value, value) || other.value == value)&&(identical(other.batches, batches) || other.batches == batches));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShelfMaterial&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.value, value) || other.value == value)&&(identical(other.batches, batches) || other.batches == batches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantity,value,batches);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantity,value,batches);
 
 @override
 String toString() {
-  return 'FundShelfMaterial(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantity: $quantity, value: $value, batches: $batches)';
+  return 'FundShelfMaterial(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantity: $quantity, value: $value, batches: $batches)';
 }
 
 
@@ -593,7 +597,7 @@ abstract mixin class _$FundShelfMaterialCopyWith<$Res> implements $FundShelfMate
   factory _$FundShelfMaterialCopyWith(_FundShelfMaterial value, $Res Function(_FundShelfMaterial) _then) = __$FundShelfMaterialCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String value, int batches
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String value, int batches
 });
 
 
@@ -610,12 +614,14 @@ class __$FundShelfMaterialCopyWithImpl<$Res>
 
 /// Create a copy of FundShelfMaterial
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? value = null,Object? batches = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? value = null,Object? batches = null,}) {
   return _then(_FundShelfMaterial(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,batches: null == batches ? _self.batches : batches // ignore: cast_nullable_to_non_nullable
@@ -904,7 +910,7 @@ as List<FundShelfMaterial>,
 /// @nodoc
 mixin _$FundGoodsLine {
 
-@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'unit_label') String? get unitLabel; String get quantity; String get cost;
+@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'width_cm') int? get widthCm;@JsonKey(name: 'height_cm') int? get heightCm;@JsonKey(name: 'unit_label') String? get unitLabel; String get quantity; String get cost;
 /// Create a copy of FundGoodsLine
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -917,16 +923,16 @@ $FundGoodsLineCopyWith<FundGoodsLine> get copyWith => _$FundGoodsLineCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundGoodsLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.cost, cost) || other.cost == cost));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundGoodsLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.cost, cost) || other.cost == cost));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantity,cost);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantity,cost);
 
 @override
 String toString() {
-  return 'FundGoodsLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantity: $quantity, cost: $cost)';
+  return 'FundGoodsLine(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantity: $quantity, cost: $cost)';
 }
 
 
@@ -937,7 +943,7 @@ abstract mixin class $FundGoodsLineCopyWith<$Res>  {
   factory $FundGoodsLineCopyWith(FundGoodsLine value, $Res Function(FundGoodsLine) _then) = _$FundGoodsLineCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String cost
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String cost
 });
 
 
@@ -954,12 +960,14 @@ class _$FundGoodsLineCopyWithImpl<$Res>
 
 /// Create a copy of FundGoodsLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? cost = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? cost = null,}) {
   return _then(_self.copyWith(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1047,10 +1055,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundGoodsLine() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.cost);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.cost);case _:
   return orElse();
 
 }
@@ -1068,10 +1076,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)  $default,) {final _that = this;
 switch (_that) {
 case _FundGoodsLine():
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.cost);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.cost);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1088,10 +1096,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel,  String quantity,  String cost)?  $default,) {final _that = this;
 switch (_that) {
 case _FundGoodsLine() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantity,_that.cost);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantity,_that.cost);case _:
   return null;
 
 }
@@ -1102,13 +1110,15 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// @nodoc
 @JsonSerializable()
 
-class _FundGoodsLine implements FundGoodsLine {
-  const _FundGoodsLine({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'unit_label') this.unitLabel, required this.quantity, required this.cost});
+class _FundGoodsLine extends FundGoodsLine {
+  const _FundGoodsLine({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'unit_label') this.unitLabel, required this.quantity, required this.cost}): super._();
   factory _FundGoodsLine.fromJson(Map<String, dynamic> json) => _$FundGoodsLineFromJson(json);
 
 @override@JsonKey(name: 'stock_item_id') final  int? stockItemId;
 @override final  String? code;
 @override final  String? name;
+@override@JsonKey(name: 'width_cm') final  int? widthCm;
+@override@JsonKey(name: 'height_cm') final  int? heightCm;
 @override@JsonKey(name: 'unit_label') final  String? unitLabel;
 @override final  String quantity;
 @override final  String cost;
@@ -1126,16 +1136,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundGoodsLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.cost, cost) || other.cost == cost));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundGoodsLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.cost, cost) || other.cost == cost));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantity,cost);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantity,cost);
 
 @override
 String toString() {
-  return 'FundGoodsLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantity: $quantity, cost: $cost)';
+  return 'FundGoodsLine(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantity: $quantity, cost: $cost)';
 }
 
 
@@ -1146,7 +1156,7 @@ abstract mixin class _$FundGoodsLineCopyWith<$Res> implements $FundGoodsLineCopy
   factory _$FundGoodsLineCopyWith(_FundGoodsLine value, $Res Function(_FundGoodsLine) _then) = __$FundGoodsLineCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String cost
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel, String quantity, String cost
 });
 
 
@@ -1163,12 +1173,14 @@ class __$FundGoodsLineCopyWithImpl<$Res>
 
 /// Create a copy of FundGoodsLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? cost = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantity = null,Object? cost = null,}) {
   return _then(_FundGoodsLine(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,cost: null == cost ? _self.cost : cost // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1760,7 +1772,7 @@ as List<FundGoodsOrder>,
 /// @nodoc
 mixin _$FundOnOrderLine {
 
-@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'unit_label') String? get unitLabel;@JsonKey(name: 'quantity_ordered') String get quantityOrdered;@JsonKey(name: 'quantity_received') String get quantityReceived;@JsonKey(name: 'quantity_remaining') String get quantityRemaining;/// التكلفةُ الواصلة لما لم يصل — ما يدخل به قيمةَ الصندوق.
+@JsonKey(name: 'stock_item_id') int? get stockItemId; String? get code; String? get name;@JsonKey(name: 'width_cm') int? get widthCm;@JsonKey(name: 'height_cm') int? get heightCm;@JsonKey(name: 'unit_label') String? get unitLabel;@JsonKey(name: 'quantity_ordered') String get quantityOrdered;@JsonKey(name: 'quantity_received') String get quantityReceived;@JsonKey(name: 'quantity_remaining') String get quantityRemaining;/// التكلفةُ الواصلة لما لم يصل — ما يدخل به قيمةَ الصندوق.
  String get value;
 /// Create a copy of FundOnOrderLine
 /// with the given fields replaced by the non-null parameter values.
@@ -1774,16 +1786,16 @@ $FundOnOrderLineCopyWith<FundOnOrderLine> get copyWith => _$FundOnOrderLineCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
 
 @override
 String toString() {
-  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
+  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
 }
 
 
@@ -1794,7 +1806,7 @@ abstract mixin class $FundOnOrderLineCopyWith<$Res>  {
   factory $FundOnOrderLineCopyWith(FundOnOrderLine value, $Res Function(FundOnOrderLine) _then) = _$FundOnOrderLineCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
 });
 
 
@@ -1811,12 +1823,14 @@ class _$FundOnOrderLineCopyWithImpl<$Res>
 
 /// Create a copy of FundOnOrderLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
   return _then(_self.copyWith(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
 as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
@@ -1906,10 +1920,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FundOnOrderLine() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
   return orElse();
 
 }
@@ -1927,10 +1941,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)  $default,) {final _that = this;
 switch (_that) {
 case _FundOnOrderLine():
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1947,10 +1961,10 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'stock_item_id')  int? stockItemId,  String? code,  String? name, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm, @JsonKey(name: 'unit_label')  String? unitLabel, @JsonKey(name: 'quantity_ordered')  String quantityOrdered, @JsonKey(name: 'quantity_received')  String quantityReceived, @JsonKey(name: 'quantity_remaining')  String quantityRemaining,  String value)?  $default,) {final _that = this;
 switch (_that) {
 case _FundOnOrderLine() when $default != null:
-return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
+return $default(_that.stockItemId,_that.code,_that.name,_that.widthCm,_that.heightCm,_that.unitLabel,_that.quantityOrdered,_that.quantityReceived,_that.quantityRemaining,_that.value);case _:
   return null;
 
 }
@@ -1961,13 +1975,15 @@ return $default(_that.stockItemId,_that.code,_that.name,_that.unitLabel,_that.qu
 /// @nodoc
 @JsonSerializable()
 
-class _FundOnOrderLine implements FundOnOrderLine {
-  const _FundOnOrderLine({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'quantity_ordered') required this.quantityOrdered, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, required this.value});
+class _FundOnOrderLine extends FundOnOrderLine {
+  const _FundOnOrderLine({@JsonKey(name: 'stock_item_id') this.stockItemId, this.code, this.name, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'quantity_ordered') required this.quantityOrdered, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, required this.value}): super._();
   factory _FundOnOrderLine.fromJson(Map<String, dynamic> json) => _$FundOnOrderLineFromJson(json);
 
 @override@JsonKey(name: 'stock_item_id') final  int? stockItemId;
 @override final  String? code;
 @override final  String? name;
+@override@JsonKey(name: 'width_cm') final  int? widthCm;
+@override@JsonKey(name: 'height_cm') final  int? heightCm;
 @override@JsonKey(name: 'unit_label') final  String? unitLabel;
 @override@JsonKey(name: 'quantity_ordered') final  String quantityOrdered;
 @override@JsonKey(name: 'quantity_received') final  String quantityReceived;
@@ -1988,16 +2004,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundOnOrderLine&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantityOrdered, quantityOrdered) || other.quantityOrdered == quantityOrdered)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,code,name,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
+int get hashCode => Object.hash(runtimeType,stockItemId,code,name,widthCm,heightCm,unitLabel,quantityOrdered,quantityReceived,quantityRemaining,value);
 
 @override
 String toString() {
-  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
+  return 'FundOnOrderLine(stockItemId: $stockItemId, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, unitLabel: $unitLabel, quantityOrdered: $quantityOrdered, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, value: $value)';
 }
 
 
@@ -2008,7 +2024,7 @@ abstract mixin class _$FundOnOrderLineCopyWith<$Res> implements $FundOnOrderLine
   factory _$FundOnOrderLineCopyWith(_FundOnOrderLine value, $Res Function(_FundOnOrderLine) _then) = __$FundOnOrderLineCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
+@JsonKey(name: 'stock_item_id') int? stockItemId, String? code, String? name,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm,@JsonKey(name: 'unit_label') String? unitLabel,@JsonKey(name: 'quantity_ordered') String quantityOrdered,@JsonKey(name: 'quantity_received') String quantityReceived,@JsonKey(name: 'quantity_remaining') String quantityRemaining, String value
 });
 
 
@@ -2025,12 +2041,14 @@ class __$FundOnOrderLineCopyWithImpl<$Res>
 
 /// Create a copy of FundOnOrderLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stockItemId = freezed,Object? code = freezed,Object? name = freezed,Object? widthCm = freezed,Object? heightCm = freezed,Object? unitLabel = freezed,Object? quantityOrdered = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? value = null,}) {
   return _then(_FundOnOrderLine(
 stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
+as String?,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String?,quantityOrdered: null == quantityOrdered ? _self.quantityOrdered : quantityOrdered // ignore: cast_nullable_to_non_nullable
 as String,quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
