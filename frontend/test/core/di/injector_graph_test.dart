@@ -1,4 +1,5 @@
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/store_update/store_update.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_thread_cubit.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/viewmodel/manufacturing_cost_rates_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
@@ -89,5 +90,13 @@ void main() {
     // Assert
     expect(cubit, isA<DesignTicketThreadCubit>());
     addTearDown(cubit.close);
+  });
+
+  test('builds the App Store update check the iPhone shell asks for', () {
+    // Act — `StoreUpdatePrompt` resolves it only on an iPhone, so no screen test ever does.
+    final update = sl<StoreUpdate>();
+
+    // Assert
+    expect(update, isA<StoreUpdate>());
   });
 }

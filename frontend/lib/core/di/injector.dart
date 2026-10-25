@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:dayaa/core/config/app_config.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/attachment_picker_impl.dart';
@@ -11,6 +13,7 @@ import 'package:dayaa/core/realtime/pusher_realtime_client.dart';
 import 'package:dayaa/core/realtime/realtime_client.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/core/store_update/store_update.dart';
 import 'package:dayaa/core/voice/voice_note_cache.dart';
 import 'package:dayaa/core/voice/voice_playback.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/add_employee_cubit.dart';
@@ -331,6 +334,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -407,6 +411,25 @@ abstract final class Injector {
       ..registerLazySingleton<AttachmentPicker>(AttachmentPickerImpl.new)
       // والعكس: وضعُ ملفٍّ على الهاتف حيث يجده صاحبه — «الصور» أو «التنزيلات» أو «الملفات».
       ..registerLazySingleton<DeviceSaver>(DeviceSaverImpl.new)
+      // «تحديث جديد» على آيفون. **بـDio غير المشترك** كمحرّك الخرائط: السؤال إلى Apple، وتوكن
+      // الموظف لا يُرسل إليها. ويُبنى على آيفون وحده — `StoreUpdatePrompt` لا يطلبه على غيره.
+      ..registerLazySingleton<StoreUpdate>(
+        () => StoreUpdate(
+          dio: Dio(
+            BaseOptions(
+              connectTimeout: AppConfig.connectTimeout,
+              receiveTimeout: AppConfig.receiveTimeout,
+            ),
+          ),
+          prefs: sl<SharedPreferences>(),
+          installed: () async {
+            final info = await PackageInfo.fromPlatform();
+
+            return (bundleId: info.packageName, version: info.version);
+          },
+          osVersion: kIsWeb ? '' : Platform.operatingSystemVersion,
+        ),
+      )
       // البثّ الحيّ. **واحدٌ للتطبيق كله**، لأنه يعدّ المستمعين على كل قناة: نسختان كانتا
       // ستفتحان مقبسين وتُدخلان القناة مرتين. ويفتح اتصاله مع أول شاشةٍ تستمع ويغلقه مع آخرها.
       ..registerLazySingleton<RealtimeClient>(

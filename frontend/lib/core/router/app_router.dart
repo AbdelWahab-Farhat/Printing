@@ -7,6 +7,7 @@ import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/router/session_extra_codec.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/storage/token_storage.dart';
+import 'package:dayaa/core/store_update/store_update_prompt.dart';
 import 'package:dayaa/features/access/models/role.dart';
 import 'package:dayaa/features/access/presentation/views/add_employee_page.dart';
 import 'package:dayaa/features/access/presentation/views/employee_detail_page.dart';
@@ -718,7 +719,8 @@ abstract final class AppRouter {
       // investor gets a page and no way out of it.
       GoRoute(
         path: Routes.investorPortal,
-        builder: (context, state) => const InvestorPortalPage(),
+        // «تحديث جديد» على آيفون للمستثمر أيضاً — انظر [StoreUpdatePrompt].
+        builder: (context, state) => const StoreUpdatePrompt(child: InvestorPortalPage()),
       ),
       // The staff screens, top level like every other detail screen in this file.
       GoRoute(
@@ -903,8 +905,9 @@ abstract final class AppRouter {
       // branch per tab. Each branch keeps its own stack, so switching tabs and coming back
       // lands where the user left off instead of rebuilding from the top.
       StatefulShellRoute.indexedStack(
+        // حول الإطار لا حول تبويب: يُبنى مرّةً ويبقى، فيُسأل App Store عند الدخول لا عند كل تبويب.
         builder: (context, state, navigationShell) =>
-            RootPage(navigationShell: navigationShell),
+            StoreUpdatePrompt(child: RootPage(navigationShell: navigationShell)),
         branches: [
           StatefulShellBranch(
             routes: [
