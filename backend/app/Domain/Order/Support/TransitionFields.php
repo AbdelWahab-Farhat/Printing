@@ -63,6 +63,16 @@ final class TransitionFields
     ];
 
     /**
+     * «اختيار حساب كل نوع عند التسوية» (§٢٤) — kind => the box asking which account the order's
+     * money of that kind goes to, offered for each kind it holds while the switch is on.
+     */
+    public const SETTLEMENT_PICKS = [
+        'cash' => 'settlement_cash_account_id',
+        'bank' => 'settlement_bank_account_id',
+        'wallet' => 'settlement_wallet_account_id',
+    ];
+
+    /**
      * What «انتظار العربون» asks for: the figure, and the way it is expected to arrive.
      *
      * **Keyed apart from the three above because they describe a different kind of thing.**
@@ -688,6 +698,10 @@ final class TransitionFields
      * and never reaches the account; the move is not refused over it, because the customer paid
      * in full and the order is settled either way.
      *
+     * **«اختيار حساب كل نوع عند التسوية» replaces the first box** (§٢٤): one box per kind of the
+     * order's money, custody counted under the kind it lands in, so nothing of one kind can be
+     * sent to an account of another.
+     *
      * @return list<TransitionField>
      */
     private static function settlement(Order $order, OrderStatus $target, ?User $actor): array
@@ -697,14 +711,27 @@ final class TransitionFields
         }
 
         $treasury = app(TreasuryService::class);
-        $settler = self::settler($order, $actor, $treasury);
         $held = $treasury->custodyOf((int) $order->getKey());
+        $total = Money::sum('0', ...array_column($held, 'amount'));
+
+        $picks = $treasury->settlementPicks(
+            (int) $order->getKey(),
+            $actor?->getKey() === null ? null : (int) $actor->getKey(),
+        );
+
+        if ($picks !== null) {
+            return [
+                ...self::picks($picks),
+                ...($held !== [] && $treasury->settings()->ask_carrier_fee ? [self::carrierFee($total)] : []),
+            ];
+        }
+
+        $settler = self::settler($order, $actor, $treasury);
 
         if ($held === []) {
             return $settler;
         }
 
-        $total = Money::sum('0', ...array_column($held, 'amount'));
         $where = implode('، ', array_map(
             fn (array $row) => DecimalText::trim($row['amount'])." ({$row['name']})",
             $held,
@@ -722,15 +749,44 @@ final class TransitionFields
                 hint: "في العهدة: {$where}",
             ),
             // Offered unless the owner switched it off in «إعدادات المالية».
-            ...($treasury->settings()->ask_carrier_fee ? [
-                TransitionField::number(
-                    key: self::SETTLEMENT_FEE,
-                    label: 'احتفظ به الناقل',
-                    required: false,
-                    max: (float) $total,
-                ),
-            ] : []),
+            ...($treasury->settings()->ask_carrier_fee ? [self::carrierFee($total)] : []),
         ];
+    }
+
+    private static function carrierFee(string $held): TransitionField
+    {
+        return TransitionField::number(
+            key: self::SETTLEMENT_FEE,
+            label: 'احتفظ به الناقل',
+            required: false,
+            max: (float) $held,
+        );
+    }
+
+    /**
+     * A required box per kind, opening on where the money would go untouched, listing only the
+     * kind's own accounts — the request is refused for anything else.
+     *
+     * @param  list<array{kind: string, kind_label: string, amount: string, sources: list<array{name: string, amount: string}>, accounts: list<array<string, mixed>>, suggested: ?string}>  $picks
+     * @return list<TransitionField>
+     */
+    private static function picks(array $picks): array
+    {
+        return array_map(function (array $kind) {
+            $from = implode('، ', array_map(
+                fn (array $row) => "{$row['name']} ".DecimalText::trim($row['amount']),
+                $kind['sources'],
+            ));
+
+            return TransitionField::treasuryAccount(
+                key: self::SETTLEMENT_PICKS[$kind['kind']],
+                label: "حساب {$kind['kind_label']}",
+                accounts: $kind['accounts'],
+                hint: "{$kind['kind_label']} الطلبية ".DecimalText::trim($kind['amount'])." — في: {$from}",
+                value: $kind['suggested'],
+                required: true,
+            );
+        }, $picks);
     }
 
     /**

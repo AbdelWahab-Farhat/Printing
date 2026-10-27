@@ -246,6 +246,7 @@ class TreasurySettings {
     this.lockedUntil,
     this.collections = const {},
     this.settleIntoSettler = false,
+    this.pickSettlementAccounts = false,
     this.pickupOffices = const [],
     this.onlineFeePayer,
   });
@@ -270,6 +271,10 @@ class TreasurySettings {
   /// التجميع. غائبٌ عند خادمٍ أقدم = مطفأ. §٢٢.
   final bool settleIntoSettler;
 
+  /// «اختيار حساب كل نوع عند التسوية» — شاشة التسوية تسأل حساباً لكل نوعٍ من مال الطلبية، من
+  /// حسابات النوع وحده، ويغلب ما سواه. غائبٌ عند خادمٍ أقدم = مطفأ. §٢٤.
+  final bool pickSettlementAccounts;
+
   /// «كاش كل مكتب استلام» — كل مكتب، وكاشه إن رُبط.
   final List<PickupOffice> pickupOffices;
 
@@ -289,6 +294,7 @@ class TreasurySettings {
     lockedUntil: lockedUntil,
     collections: collections,
     settleIntoSettler: settleIntoSettler,
+    pickSettlementAccounts: pickSettlementAccounts,
     pickupOffices: offices,
     onlineFeePayer: onlineFeePayer,
   );
@@ -307,6 +313,7 @@ class TreasurySettings {
         ),
     },
     settleIntoSettler: json['settle_into_settler'] == true,
+    pickSettlementAccounts: json['pick_settlement_accounts'] == true,
     pickupOffices: [
       for (final office in _maps(json['pickup_offices'])) PickupOffice.fromJson(office),
     ],

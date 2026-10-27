@@ -195,6 +195,7 @@ class SaveTreasurySettings {
     int? collectIntoId,
     bool clearCollectInto = false,
     bool? settleIntoSettler,
+    bool? pickSettlementAccounts,
     String? onlineFeePayer,
   }) => _repository.saveSettings(
     ownAccountFirst: ownAccountFirst,
@@ -208,6 +209,7 @@ class SaveTreasurySettings {
     collectIntoId: collectIntoId,
     clearCollectInto: clearCollectInto,
     settleIntoSettler: settleIntoSettler,
+    pickSettlementAccounts: pickSettlementAccounts,
     onlineFeePayer: onlineFeePayer,
   );
 }

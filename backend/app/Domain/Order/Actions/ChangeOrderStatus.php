@@ -308,6 +308,12 @@ final class ChangeOrderStatus
                         fn (string $key) => self::idIn($fields, $key),
                         TransitionFields::SETTLER_ACCOUNTS,
                     )),
+                    // «اختيار حساب كل نوع عند التسوية»: one account per kind (§٢٤).
+                    picks: array_filter(array_map(
+                        fn (string $key) => self::idIn($fields, $key),
+                        TransitionFields::SETTLEMENT_PICKS,
+                    )),
+                    pickFields: array_map(fn (string $key) => "fields.{$key}", TransitionFields::SETTLEMENT_PICKS),
                 );
             }
 

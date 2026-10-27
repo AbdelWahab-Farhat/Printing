@@ -98,7 +98,8 @@ abstract interface class TreasuryRepository {
   ///
   /// [collectKind] النوعُ الذي يخصّه [collectOn] و[collectIntoId] — «التجميع عند التسوية»؛
   /// و[clearCollectInto] يرسل هدفاً فارغاً فيعود إلى افتراضي النوع. و[settleIntoSettler]
-  /// «التسوية إلى حساب المسوّي» (§٢٢). و[onlineFeePayer] `customer` أو `shop` — «عمولة الدفع
+  /// «التسوية إلى حساب المسوّي» (§٢٢). و[pickSettlementAccounts] «اختيار حساب كل نوع عند
+  /// التسوية» (§٢٤). و[onlineFeePayer] `customer` أو `shop` — «عمولة الدفع
   /// الإلكتروني على» (CUSTOMER-WALLET §٥).
   Future<Either<Failure, TreasurySettings>> saveSettings({
     bool? ownAccountFirst,
@@ -112,6 +113,7 @@ abstract interface class TreasuryRepository {
     int? collectIntoId,
     bool clearCollectInto = false,
     bool? settleIntoSettler,
+    bool? pickSettlementAccounts,
     String? onlineFeePayer,
   });
 

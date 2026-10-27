@@ -48,6 +48,7 @@ final class SettleCustody
 
     /**
      * @param  array<string, int>  $choices  kind => the settler's account picked for it (§٢٢)
+     * @param  array<string, TreasuryAccount>  $picks  kind => the account picked for it (§٢٤)
      */
     public function __invoke(
         int $orderId,
@@ -60,6 +61,7 @@ final class SettleCustody
         string $feeField = 'settlement_fee',
         bool $applySettings = true,
         array $choices = [],
+        array $picks = [],
     ): ?TreasuryOperation {
         // قبل أي قراءة: قاعدةُ الطلب (min:0) تحمي الشاشة، لا نداءً من داخل الخادم. رسومٌ سالبة
         // كانت ستُخرج من العهدة أكثر مما فيها وتُدخل الحسابَ مالاً لم يوجد.
@@ -90,7 +92,7 @@ final class SettleCustody
         }
 
         $custodyAccounts = TreasuryAccount::query()->whereIn('id', array_keys($held))->get()->keyBy('id');
-        $destination = $this->destination($destinationId, $actorId, $custodyAccounts, $accountField, $applySettings, $choices);
+        $destination = $this->destination($destinationId, $actorId, $custodyAccounts, $accountField, $applySettings, $choices, $picks);
         $feeCategory = Money::isPositive($fee)
             ? ExpenseCategory::query()->where('code', ExpenseCategory::CARRIER_FEE)->first()
             : null;
@@ -158,8 +160,9 @@ final class SettleCustody
      * 3. the custody account's own «تُسوّى إلى», set in «إعدادات المالية»;
      * 4. the bank for Nawris's money (it pays by transfer), the cash box for a driver's.
      *
-     * Anything but a hand-picked account then goes on to the settler's own account of its kind
-     * when «التسوية إلى حساب المسوّي» is on (§٢٢), or else to its kind's collecting account when
+     * Anything but a hand-picked account then goes on to the account picked for its kind when
+     * «اختيار حساب كل نوع عند التسوية» is on (§٢٤), or to the settler's own account of its kind
+     * when «التسوية إلى حساب المسوّي» is (§٢٢), or else to its kind's collecting account when
      * «التجميع عند التسوية» is on for it (§١٨) — straight there, rather than landing in Ali's bank
      * only to be collected out of it a moment later.
      *
@@ -167,6 +170,7 @@ final class SettleCustody
      * @param  bool  $applySettings  false لاستيراد الطلبيات القديمة: «تُسوّى إلى» والتجميعُ
      *                               مفاتيحُ اليوم، والمالُ القديم سُجِّل في الافتراضيات (§١٧)
      * @param  array<string, int>  $choices  the settler's account picked per kind (§٢٢)
+     * @param  array<string, TreasuryAccount>  $picks  the account picked per kind (§٢٤)
      */
     private function destination(
         ?int $chosenId,
@@ -175,6 +179,7 @@ final class SettleCustody
         string $field,
         bool $applySettings,
         array $choices = [],
+        array $picks = [],
     ): TreasuryAccount {
         if ($chosenId !== null) {
             $account = TreasuryAccount::query()->findOrFail($chosenId);
@@ -192,7 +197,7 @@ final class SettleCustody
 
         $landing = $this->automatic($actorId, $custodyAccounts, $applySettings);
 
-        return $applySettings ? $this->collect->redirect($landing, $actorId, $choices) : $landing;
+        return $applySettings ? $this->collect->redirect($landing, $actorId, $choices, $picks) : $landing;
     }
 
     /**

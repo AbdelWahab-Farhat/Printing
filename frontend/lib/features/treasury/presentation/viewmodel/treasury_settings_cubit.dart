@@ -94,6 +94,7 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     String? lockedUntil,
     bool clearLock = false,
     bool? settleIntoSettler,
+    bool? pickSettlementAccounts,
     String? onlineFeePayer,
   }) => _after(
     () => _saveSettings(
@@ -104,6 +105,7 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
       lockedUntil: lockedUntil,
       clearLock: clearLock,
       settleIntoSettler: settleIntoSettler,
+      pickSettlementAccounts: pickSettlementAccounts,
       onlineFeePayer: onlineFeePayer,
     ),
   );

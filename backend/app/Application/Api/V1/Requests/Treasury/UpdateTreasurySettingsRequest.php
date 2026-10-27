@@ -36,6 +36,8 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'collect_wallet_into_id' => ['sometimes', 'nullable', 'integer', Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at')],
             // «التسوية إلى حساب المسوّي» (§٢٢).
             'settle_into_settler' => ['sometimes', 'boolean'],
+            // «اختيار حساب كل نوع عند التسوية» (§٢٤).
+            'pick_settlement_accounts' => ['sometimes', 'boolean'],
             // «عمولة الدفع الإلكتروني على» — CUSTOMER-WALLET §٥.
             'online_fee_payer' => ['sometimes', Rule::in(['customer', 'shop'])],
         ];
@@ -67,6 +69,7 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'collect_bank_into_id' => 'تُجمع المصارف في',
             'collect_wallet_into_id' => 'تُجمع المحافظ في',
             'settle_into_settler' => 'التسوية إلى حساب المسوّي',
+            'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
         ];
     }

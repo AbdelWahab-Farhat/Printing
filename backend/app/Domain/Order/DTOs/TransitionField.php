@@ -521,7 +521,8 @@ final class TransitionField
                     $presence,
                     'integer',
                     Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
-                    // A required pick is one of the accounts offered — the settler's own.
+                    // A required pick is one of the accounts offered — the settler's own (§٢٢), or
+                    // the kind's own (§٢٤).
                     $this->required ? Rule::in(array_column($this->options, 'value')) : null,
                 ])),
             ],
@@ -579,7 +580,7 @@ final class TransitionField
             TransitionFieldType::TreasuryAccount => [
                 "fields.{$this->key}.required" => "اختر {$this->label}",
                 "fields.{$this->key}.exists" => 'الحساب المختار غير موجود',
-                "fields.{$this->key}.in" => 'الحساب المختار ليس من حساباتك',
+                "fields.{$this->key}.in" => "الحساب المختار ليس مما يُختار في «{$this->label}»",
             ],
             TransitionFieldType::Confirmation => [
                 "fields.{$this->key}.boolean" => 'التأكيد يجب أن يكون نعم أو لا',

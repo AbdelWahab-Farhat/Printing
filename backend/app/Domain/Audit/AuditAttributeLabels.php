@@ -845,6 +845,7 @@ final class AuditAttributeLabels
             'collect_wallet' => 'تجميع المحافظ عند التسوية',
             'collect_wallet_into_id' => 'تُجمع المحافظ في',
             'settle_into_settler' => 'التسوية إلى حساب المسوّي',
+            'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
             'updated_by' => 'عدّلها',
         ],

@@ -294,6 +294,39 @@ void main() {
     verify(() => repository.saveSettings(settleIntoSettler: true)).called(1);
   });
 
+  testWidgets('«اختيار حساب كل نوع عند التسوية» starts off, says what it does, and saves alone — §٢٤', (
+    tester,
+  ) async {
+    // Arrange
+    when(() => repository.saveSettings(pickSettlementAccounts: true)).thenAnswer(
+      (_) async => const Right(
+        TreasurySettings(
+          ownAccountFirst: true,
+          blockOverdraft: true,
+          withdrawalNeedsReason: true,
+          askCarrierFee: true,
+          pickSettlementAccounts: true,
+        ),
+      ),
+    );
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    final tile = find.byKey(const ValueKey('pick-settlement-accounts'));
+    await tester.scrollUntilVisible(tile, 200);
+
+    // Act
+    final before = tester.widget<SwitchListTile>(
+      find.descendant(of: tile, matching: find.byType(SwitchListTile)),
+    );
+    await tester.tap(find.text('اختيار حساب كل نوع عند التسوية'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(before.value, isFalse);
+    expect(find.textContaining('كل نوع إلى حساب من نوعه'), findsOneWidget);
+    verify(() => repository.saveSettings(pickSettlementAccounts: true)).called(1);
+  });
+
   testWidgets('the expense categories are not on this page — they have their own', (tester) async {
     // Act
     await tester.pumpWidget(host());

@@ -250,6 +250,16 @@ class _Loaded extends StatelessWidget {
             value: settings.settleIntoSettler,
             onChanged: (v) => _run(context, () => cubit.saveSettings(settleIntoSettler: v)),
           ),
+          // §٢٤ — above both: a pick on the settle screen outranks them.
+          _Switch(
+            key: const ValueKey('pick-settlement-accounts'),
+            title: 'اختيار حساب كل نوع عند التسوية',
+            subtitle:
+                'شاشة «تم التسوية» تسأل إلى أي حساب يذهب كاش الطلبية، وإلى أي مصرف، وإلى أي محفظة — '
+                'كل نوع إلى حساب من نوعه، والاختيار يغلب ما فوقه وما تحته.',
+            value: settings.pickSettlementAccounts,
+            onChanged: (v) => _run(context, () => cubit.saveSettings(pickSettlementAccounts: v)),
+          ),
           for (final (label, kind) in const [
             ('النقد', AccountKind.cash),
             ('المصارف', AccountKind.bank),

@@ -631,6 +631,9 @@ final class TreasuryService
      *                                status screen
      * @param  array<string, int>  $settlerChoices  kind => the settler's account picked for it,
      *                                              where they hold several (§٢٢)
+     * @param  array<string, int>  $picks  kind => the account picked for it under «اختيار حساب
+     *                                     كل نوع عند التسوية» (§٢٤); ignored while that is off
+     * @param  array<string, string>  $pickFields  kind => where a refused pick is filed
      */
     public function settleCustody(
         int $orderId,
@@ -643,9 +646,13 @@ final class TreasuryService
         string $accountField = 'settlement_account_id',
         string $feeField = 'settlement_fee',
         array $settlerChoices = [],
+        array $picks = [],
+        array $pickFields = [],
     ): ?TreasuryOperation {
         // A past date only for the import of old orders, which were settled on their own day.
         $occurredAt ??= now();
+
+        $picked = $collect ? $this->checkedPicks($picks, $pickFields) : [];
 
         $settlement = ($this->settleCustody)(
             $orderId,
@@ -658,13 +665,56 @@ final class TreasuryService
             feeField: $feeField,
             applySettings: $collect,
             choices: $settlerChoices,
+            picks: $picked,
         );
 
         if ($collect) {
-            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId, $settlerChoices);
+            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId, $settlerChoices, $picked);
         }
 
         return $settlement;
+    }
+
+    /**
+     * The settle screen's picks as accounts, each an active, hand-pickable account of the kind it
+     * was picked for — the screen offers nothing else, and a request that names another is
+     * refused under its field rather than carrying a kind's money somewhere it does not belong.
+     * Nothing while the switch is off.
+     *
+     * @param  array<string, int>  $picks
+     * @param  array<string, string>  $fields
+     * @return array<string, TreasuryAccount>
+     */
+    private function checkedPicks(array $picks, array $fields): array
+    {
+        if ($picks === [] || ! TreasurySetting::current()->pick_settlement_accounts) {
+            return [];
+        }
+
+        $accounts = TreasuryAccount::query()->whereIn('id', array_values($picks))->get()->keyBy('id');
+        $checked = [];
+
+        foreach ($picks as $kind => $id) {
+            $field = $fields[$kind] ?? 'treasury_account_id';
+            $account = $accounts->get($id) ?? throw new OperationRefused('الحساب المختار غير موجود', $field);
+            $wanted = AccountKind::from($kind);
+
+            if (! $account->is_active) {
+                throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+            }
+
+            if ($account->system_code !== null) {
+                throw AccountDoesNotFitMethod::system((string) $account->name, $field);
+            }
+
+            if ($account->kind !== $wanted) {
+                throw new OperationRefused("«{$account->name}» ليس حساب {$wanted->label()} — مال كل نوع يذهب إلى حسابٍ من نوعه", $field);
+            }
+
+            $checked[$kind] = $account;
+        }
+
+        return $checked;
     }
 
     /**
@@ -687,24 +737,7 @@ final class TreasuryService
             return null;
         }
 
-        $sourcesByKind = [];
-
-        foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
-            $held = $this->orderMoney->of($orderId, $kind, [], true);
-            $names = TreasuryAccount::query()->whereIn('id', array_keys($held))->pluck('name', 'id');
-
-            foreach ($held as $accountId => $amount) {
-                $sourcesByKind[$kind->value][] = ['id' => $accountId, 'name' => (string) $names[$accountId], 'amount' => $amount];
-            }
-        }
-
-        $landing = $this->settleCustody->landingFor($orderId, $actorId);
-
-        if ($landing !== null) {
-            foreach ($this->custodyOf($orderId) as $row) {
-                $sourcesByKind[$landing->kind->value][] = ['id' => $row['account_id'], 'name' => $row['name'], 'amount' => $row['amount']];
-            }
-        }
+        $sourcesByKind = $this->orderMoneyByKind($orderId, $actorId);
 
         $plan = [];
 
@@ -734,6 +767,108 @@ final class TreasuryService
         }
 
         return $plan;
+    }
+
+    /**
+     * What «تم التسوية» asks under «اختيار حساب كل نوع عند التسوية» (§٢٤), kind by kind: how much
+     * of the kind the order holds and where, every account of the kind it may go to, and the one
+     * the box opens on — where it would go if nobody touched it. Null when the switch is off.
+     *
+     * The box opens on the settler's one account of the kind (§٢٢), else the kind's collecting
+     * account (§١٨), else the account the money already sits in when it sits in one, else the
+     * kind's default — a suggestion, which the person settling may change.
+     *
+     * @return ?list<array{kind: string, kind_label: string, amount: string, sources: list<array{name: string, amount: string}>, accounts: list<array{value: string, label: string, kind: string, methods: list<string>, is_default: bool}>, suggested: ?string}>
+     */
+    public function settlementPicks(int $orderId, ?int $actorId): ?array
+    {
+        if (! TreasurySetting::current()->pick_settlement_accounts) {
+            return null;
+        }
+
+        $sourcesByKind = $this->orderMoneyByKind($orderId, $actorId);
+        $plan = [];
+
+        foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
+            $sources = $sourcesByKind[$kind->value] ?? [];
+
+            if ($sources === []) {
+                continue;
+            }
+
+            $accounts = RequestMemo::remember(
+                "treasury.pickable-of:{$kind->value}",
+                fn (): array => array_map(self::pickerRow(...), TreasuryAccount::query()
+                    ->active()
+                    ->whereNull('system_code')
+                    ->where('kind', $kind->value)
+                    ->orderByDesc('is_default')
+                    ->orderBy('name')
+                    ->get()
+                    ->all()),
+            );
+
+            $offered = array_column($accounts, 'value');
+            $sittingIn = array_values(array_unique(array_column($sources, 'lands_in')));
+
+            $suggested = array_values(array_filter(
+                [
+                    $this->collectOrderMoney->settlersTarget($kind, $actorId)?->getKey(),
+                    $this->collectOrderMoney->targetFor($kind)?->getKey(),
+                    count($sittingIn) === 1 ? $sittingIn[0] : null,
+                    ...array_map(fn (array $row) => $row['is_default'] ? $row['value'] : null, $accounts),
+                ],
+                fn ($id) => $id !== null && in_array((string) $id, $offered, true),
+            ))[0] ?? null;
+
+            $plan[] = [
+                'kind' => $kind->value,
+                'kind_label' => $kind->label(),
+                'amount' => Money::sum('0', ...array_column($sources, 'amount')),
+                'sources' => array_map(fn (array $row) => ['name' => $row['name'], 'amount' => $row['amount']], $sources),
+                'accounts' => $accounts,
+                'suggested' => $suggested === null ? null : (string) $suggested,
+            ];
+        }
+
+        return $plan;
+    }
+
+    /**
+     * The order's money, by the kind it settles as: what sits in each cash, bank and wallet
+     * account, «لا يُجمع» ones included, and the custody under the kind of the account it would
+     * land in. `lands_in` is where a row's money is if nothing moves it — its own account, or for
+     * custody, that landing account.
+     *
+     * @return array<string, list<array{id: int, name: string, amount: string, lands_in: int}>>
+     */
+    private function orderMoneyByKind(int $orderId, ?int $actorId): array
+    {
+        $sourcesByKind = [];
+
+        foreach ([AccountKind::Cash, AccountKind::Bank, AccountKind::Wallet] as $kind) {
+            $held = $this->orderMoney->of($orderId, $kind, [], true);
+            $names = TreasuryAccount::query()->whereIn('id', array_keys($held))->pluck('name', 'id');
+
+            foreach ($held as $accountId => $amount) {
+                $sourcesByKind[$kind->value][] = ['id' => $accountId, 'name' => (string) $names[$accountId], 'amount' => $amount, 'lands_in' => $accountId];
+            }
+        }
+
+        $landing = $this->settleCustody->landingFor($orderId, $actorId);
+
+        if ($landing !== null) {
+            foreach ($this->custodyOf($orderId) as $row) {
+                $sourcesByKind[$landing->kind->value][] = [
+                    'id' => $row['account_id'],
+                    'name' => $row['name'],
+                    'amount' => $row['amount'],
+                    'lands_in' => (int) $landing->getKey(),
+                ];
+            }
+        }
+
+        return $sourcesByKind;
     }
 
     /**
