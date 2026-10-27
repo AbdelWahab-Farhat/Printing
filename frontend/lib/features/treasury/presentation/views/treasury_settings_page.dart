@@ -8,25 +8,25 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_settings_cubit.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_settings_explain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «إعدادات المالية» — everything the owner can decide about the treasury, in one place.
-/// TREASURY-DESIGN §١٦.
+/// «إعدادات المالية» — كلُّ ما يقرّره المالك في الخزينة، في مكانٍ واحد. TREASURY-DESIGN §١٦.
 ///
-/// Five sections, each saved the moment it changes:
+/// أربعُ بطاقات بحسب اللحظة التي يعمل فيها الإعداد، وكلُّ تغييرٍ يُحفظ لحظتَه:
 ///
-/// 1. **القواعد** — own account first, overdrafts, the withdrawal reason, the carrier's cut, and
-///    the lock date.
-/// 2. **الحساب الافتراضي لكل طريقة** — where «تلقائي» lands for cash, transfer and card, Libyana.
-/// 3. **أين تُسوّى العهدة** — where Nawris's and each driver's money goes at «تم التسوية».
-/// 4. **كاش كل مكتب استلام** — the cash box of each branch customers collect from (§١٩).
-/// 5. **التجميع عند التسوية** — per kind: on or off, where to, and which accounts keep their money
-///    (§١٨).
+/// 1. **الدفعة** — كاشُ كل مكتب استلام (§١٩)، والافتراضيُّ لكل طريقة، و«الحساب الشخصي أولاً».
+/// 2. **التسوية** — الاختيار على الشاشة (§٢٤)، ثم حساب المسوّي (§٢٢)، ثم «اجمع» (§١٨) — مرقّمةً
+///    بترتيب غلبتها — ثم أين تُسوّى كلُّ عهدة.
+/// 3. **الحماية** — الرصيد السالب، وسبب السحب، والقفل.
+/// 4. **الدفع الإلكتروني** — على من عمولة EzonePay.
 ///
-/// الحساباتُ كانت القسمَ السادس، وصارت في «الحسابات والكاش» وحدها: هناك تُفتح وتُعدَّل وتُضاف.
-/// تصنيفاتُ المصروفات كانت القسمَ السابع، وصارت شاشةً وحدها تحت «المالية» في الدرج.
+/// لا جملَ تحت المفاتيح: زرُّ ⓘ يفتح الشرح لمن يسأل. و«سؤال احتفظ به الناقل» لا يظهر هنا بطلب
+/// المالك (2026-10-27)؛ قيمتُه على الخادم كما هي.
+///
+/// الحساباتُ تُفتح وتُعدَّل وتُضاف في «الحسابات والكاش» وحدها، والتصنيفاتُ شاشةٌ تحت «المالية».
 class TreasurySettingsPage extends StatelessWidget {
   const TreasurySettingsPage({super.key});
 
@@ -111,257 +111,326 @@ class _Loaded extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: cubit.load,
       child: ListView(
-        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 48.h),
+        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 48.h),
         children: [
-          const _Heading('القواعد'),
-          _Switch(
-            title: 'الحساب الشخصي أولاً',
-            subtitle: 'الدفعة تنزل في حساب من يسجّلها إن كان له حساب يناسب الطريقة، قبل الافتراضي',
-            value: settings.ownAccountFirst,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(ownAccountFirst: v)),
-          ),
-          _Switch(
-            title: 'منع الرصيد السالب في العمليات اليدوية',
-            subtitle: 'السحب والمصروف والتحويل ودفعة المورد تُرفض إن لم يكفِ الرصيد',
-            value: settings.blockOverdraft,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(blockOverdraft: v)),
-          ),
-          _Switch(
-            title: 'السبب إجباري عند السحب',
-            subtitle: 'لا يُسجَّل سحبٌ بلا سبب مكتوب',
-            value: settings.withdrawalNeedsReason,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(withdrawalNeedsReason: v)),
-          ),
-          _Switch(
-            title: 'سؤال «احتفظ به الناقل» عند التسوية',
-            subtitle: 'خانة ما خصمه النورس، ويُسجَّل مصروف «رسوم شركة التوصيل»',
-            value: settings.askCarrierFee,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(askCarrierFee: v)),
-          ),
-          _LockTile(lockedUntil: settings.lockedUntil),
+          _Section(
+            title: 'الدفعة',
+            explain: TreasuryExplain.payment,
+            children: [
+              if (settings.pickupOffices.isNotEmpty) ...[
+                const _Overline('كاش المكتب عندما تكون الطلبية استلام مكتب'),
+                for (final office in settings.pickupOffices)
+                  _ChoiceTile(
+                    key: ValueKey('office-${office.cityId}'),
+                    title: _officeName(office.name),
+                    value: office.accountName ?? 'القاعدة العادية',
+                    onTap: () async {
+                      final boxes = [
+                        for (final a in active)
+                          if (a.kind == AccountKind.cash) a,
+                      ];
+                      final picked = await _pick<int>(
+                        context,
+                        title: 'كاش «${_officeName(office.name)}»',
+                        options: [(0, 'القاعدة العادية'), for (final a in boxes) (a.id, a.name)],
+                      );
 
-          const _Heading('الحساب الافتراضي لكل طريقة'),
-          const _Hint('حين يُترك «تلقائي» ولا يملك المسجِّل حساباً مناسباً، تنزل الدفعة هنا'),
-          for (final (label, kind) in const [
-            ('كاش', AccountKind.cash),
-            ('حوالة وبطاقة مصرفية', AccountKind.bank),
-            ('ليبيانا', AccountKind.wallet),
-          ])
-            _ChoiceTile(
-              title: label,
-              value:
-                  [
-                    for (final a in active)
-                      if (a.kind == kind && a.isDefault) a.name,
-                  ].firstOrNull ??
-                  '—',
-              onTap: () async {
-                // حسابُ النظام — «Ezone» محفظةٌ أيضاً — لا يكون افتراضياً: يملؤه EzonePay وحده.
-                final choices = [
-                  for (final a in active)
-                    if (a.kind == kind && !a.isSystem) a,
-                ];
-                final picked = await _pick<TreasuryAccount>(
-                  context,
-                  title: 'الافتراضي لـ$label',
-                  options: [for (final a in choices) (a, a.name)],
-                );
-
-                if (picked != null && context.mounted && !picked.isDefault) {
-                  await _run(context, () => cubit.makeDefault(picked));
-                }
-              },
-            ),
-
-          if (custody.isNotEmpty) ...[
-            const _Heading('أين تُسوّى العهدة'),
-            const _Hint(
-              'عند «تم التسوية» ينتقل مال العهدة إلى: ما يُختار على الشاشة، ثم حساب من يسوّي '
-              '(إن كانت «الحساب الشخصي أولاً» مفعّلة)، ثم ما يُحدَّد هنا، ثم المصرف للنورس والكاش للمندوب',
-            ),
-            for (final account in custody)
-              _ChoiceTile(
-                title: account.name,
-                value: account.settlesIntoName ?? 'القاعدة الافتراضية',
-                onTap: () async {
-                  final picked = await _pick<int>(
-                    context,
-                    title: 'تُسوّى «${account.name}» إلى',
-                    options: [(0, 'القاعدة الافتراضية'), for (final a in spendable) (a.id, a.name)],
-                  );
-
-                  if (picked != null && context.mounted) {
-                    await _run(
-                      context,
-                      () => cubit.setSettlesInto(account, picked == 0 ? null : picked),
-                    );
-                  }
-                },
-              ),
-          ],
-
-          if (settings.pickupOffices.isNotEmpty) ...[
-            const _Heading('كاش كل مكتب استلام'),
-            const _Hint(
-              'الكاش المقبوض والطلبية في «استلام مكتب» — عند التسليم أو من شاشة المدفوعات — ينزل '
-              'في كاش ذلك المكتب حين يُترك «تلقائي»، قبل حساب الموظف والكاش الافتراضي',
-            ),
-            for (final office in settings.pickupOffices)
-              _ChoiceTile(
-                key: ValueKey('office-${office.cityId}'),
-                title: office.name,
-                value: office.accountName ?? 'القاعدة العادية',
-                onTap: () async {
-                  final boxes = [
-                    for (final a in active)
-                      if (a.kind == AccountKind.cash) a,
-                  ];
-                  final picked = await _pick<int>(
-                    context,
-                    title: 'كاش «${office.name}»',
-                    options: [(0, 'القاعدة العادية'), for (final a in boxes) (a.id, a.name)],
-                  );
-
-                  if (picked != null && context.mounted && picked != (office.accountId ?? 0)) {
-                    await _run(
-                      context,
-                      () => cubit.setPickupOfficeBox(
-                        office,
-                        boxes.where((a) => a.id == picked).firstOrNull,
-                        state.accounts,
-                      ),
-                    );
-                  }
-                },
-              ),
-          ],
-
-          const _Heading('التجميع عند التسوية'),
-          const _Hint(
-            'عند «تم التسوية» ينتقل مال الطلبية من الحسابات المختارة  إلى حساب التجميع لنوعه',
-          ),
-          // §٢٢ — before collection, so it sits above the per-kind switches it outranks.
-          _Switch(
-            key: const ValueKey('settle-into-settler'),
-            title: 'التسوية إلى حساب المسوّي',
-            subtitle:
-            'عند «تم التسوية» ينتقل مال كل نوع إلى حساب من يسوّي من النوع نفسه'
-             ' اي نوعٌ ليس له فيه حساب يتبع التجميع، أو يبقى مكانه.',
-            value: settings.settleIntoSettler,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(settleIntoSettler: v)),
-          ),
-          // §٢٤ — above both: a pick on the settle screen outranks them.
-          _Switch(
-            key: const ValueKey('pick-settlement-accounts'),
-            title: 'اختيار حساب كل نوع عند التسوية',
-            subtitle:
-                'شاشة «تم التسوية» تسأل إلى أي حساب يذهب كاش الطلبية، وإلى أي مصرف، وإلى أي محفظة — '
-                'كل نوع إلى حساب من نوعه، والاختيار يغلب ما فوقه وما تحته.',
-            value: settings.pickSettlementAccounts,
-            onChanged: (v) => _run(context, () => cubit.saveSettings(pickSettlementAccounts: v)),
-          ),
-          for (final (label, kind) in const [
-            ('النقد', AccountKind.cash),
-            ('المصارف', AccountKind.bank),
-            ('ليبيانا', AccountKind.wallet),
-          ])
-            _CollectionTile(
-              key: ValueKey('collect-${kind.wire}'),
-              label: label,
-              kind: kind,
-              setting: settings.collectionOf(kind),
-              accounts: [
-                for (final a in active)
-                  if (a.kind == kind && !a.isSystem) a,
+                      if (picked != null && context.mounted && picked != (office.accountId ?? 0)) {
+                        await _run(
+                          context,
+                          () => cubit.setPickupOfficeBox(
+                            office,
+                            boxes.where((a) => a.id == picked).firstOrNull,
+                            state.accounts,
+                          ),
+                        );
+                      }
+                    },
+                  ),
               ],
-            ),
+              const _Overline('الافتراضي'),
+              for (final (label, kind) in const [
+                ('كاش', AccountKind.cash),
+                ('حوالة وبطاقة', AccountKind.bank),
+                ('ليبيانا', AccountKind.wallet),
+              ])
+                _ChoiceTile(
+                  title: label,
+                  value:
+                      [
+                        for (final a in active)
+                          if (a.kind == kind && a.isDefault) a.name,
+                      ].firstOrNull ??
+                      '—',
+                  onTap: () async {
+                    // حسابُ النظام — «Ezone» محفظةٌ أيضاً — لا يكون افتراضياً: يملؤه EzonePay وحده.
+                    final choices = [
+                      for (final a in active)
+                        if (a.kind == kind && !a.isSystem) a,
+                    ];
+                    final picked = await _pick<TreasuryAccount>(
+                      context,
+                      title: 'الافتراضي لـ$label',
+                      options: [for (final a in choices) (a, a.name)],
+                    );
 
-          if (settings.onlineFeePayer case final payer?) ...[
-            const _Heading('الدفع الإلكتروني'),
-            const _Hint(
-              'عمولة EzonePay تُسجَّل مصروفاً «عمولة الدفع الإلكتروني» في الحالتين. على الزبون: '
-              'يُخصم منه المبلغ والعمولة ويصل المحفظةَ ما طلبه. على المحلّ: يُخصم منه ما طلبه وحده',
-            ),
-            _ChoiceTile(
-              key: const ValueKey('online-fee-payer'),
-              title: 'العمولة على',
-              value: payer == 'shop' ? 'المحلّ' : 'الزبون',
-              onTap: () async {
-                final picked = await _pick<String>(
-                  context,
-                  title: 'عمولة الدفع الإلكتروني على',
-                  options: const [('customer', 'الزبون'), ('shop', 'المحلّ')],
-                );
+                    if (picked != null && context.mounted && !picked.isDefault) {
+                      await _run(context, () => cubit.makeDefault(picked));
+                    }
+                  },
+                ),
+              // آخرُ البطاقة بطلب المالك، والسطرُ الرماديّ تحته بطلبه أيضاً (2026-10-27).
+              _Switch(
+                title: 'الحساب الشخصي أولاً',
+                subtitle: 'تنزل الدفعة في حساب من سجّلها بدل الافتراضي، إن كان له حساب من نوعها',
+                value: settings.ownAccountFirst,
+                onChanged: (v) => _run(context, () => cubit.saveSettings(ownAccountFirst: v)),
+              ),
+            ],
+          ),
 
-                if (picked != null && context.mounted && picked != payer) {
-                  await _run(context, () => cubit.saveSettings(onlineFeePayer: picked));
-                }
-              },
-            ),
-          ],
+          _Section(
+            title: 'التسوية',
+            explain: TreasuryExplain.settlement,
+            children: [
+              // §٢٤ — يغلب ما تحته كلَّه.
+              _Switch(
+                key: const ValueKey('pick-settlement-accounts'),
+                step: '1',
+                title: 'اختيار الحساب عند التغيير لحالة التسوية',
+                explain: TreasuryExplain.pick,
+                value: settings.pickSettlementAccounts,
+                onChanged: (v) =>
+                    _run(context, () => cubit.saveSettings(pickSettlementAccounts: v)),
+              ),
+              // §٢٢ — قبل «اجمع»: نوعٌ ليس للمسوّي فيه حسابٌ يتبعه.
+              _Switch(
+                key: const ValueKey('settle-into-settler'),
+                step: '2',
+                title: 'إلى حساب المسوّي تلقائياً',
+                explain: TreasuryExplain.settler,
+                value: settings.settleIntoSettler,
+                onChanged: (v) => _run(context, () => cubit.saveSettings(settleIntoSettler: v)),
+              ),
+              const _Overline('التجميع', step: '3', explain: TreasuryExplain.collect),
+              for (final (label, kind) in const [
+                ('اجمع الكاش', AccountKind.cash),
+                ('اجمع الحوالات والبطاقات', AccountKind.bank),
+                ('اجمع ليبيانا', AccountKind.wallet),
+              ])
+                _CollectionTile(
+                  key: ValueKey('collect-${kind.wire}'),
+                  label: label,
+                  kind: kind,
+                  state: state,
+                ),
+              if (custody.isNotEmpty) ...[
+                const _Overline('العهدة'),
+                for (final account in custody)
+                  _ChoiceTile(
+                    title: account.name,
+                    value: account.settlesIntoName ?? 'تلقائي',
+                    onTap: () async {
+                      final picked = await _pick<int>(
+                        context,
+                        title: 'تُسوّى «${account.name}» إلى',
+                        options: [(0, 'تلقائي'), for (final a in spendable) (a.id, a.name)],
+                      );
+
+                      if (picked != null && context.mounted) {
+                        await _run(
+                          context,
+                          () => cubit.setSettlesInto(account, picked == 0 ? null : picked),
+                        );
+                      }
+                    },
+                  ),
+              ],
+            ],
+          ),
+
+          _Section(
+            title: 'الحماية',
+            children: [
+              _Switch(
+                title: 'منع الرصيد السالب',
+                value: settings.blockOverdraft,
+                onChanged: (v) => _run(context, () => cubit.saveSettings(blockOverdraft: v)),
+              ),
+              _Switch(
+                title: 'السبب إجباري عند السحب',
+                value: settings.withdrawalNeedsReason,
+                onChanged: (v) =>
+                    _run(context, () => cubit.saveSettings(withdrawalNeedsReason: v)),
+              ),
+              _LockTile(lockedUntil: settings.lockedUntil),
+            ],
+          ),
+
+          if (settings.onlineFeePayer case final payer?)
+            _Section(title: 'الدفع الإلكتروني', children: [_FeePayerTile(payer: payer)]),
         ],
       ),
     );
   }
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
+/// اسمُ المكتب بلا «إستلام مكتب(…)» حوله: المدنُ مسمّاةٌ هكذا في خريطة التوصيل، والعنوانُ فوقها
+/// يقول إنها مكاتب استلام.
+String _officeName(String name) =>
+    RegExp(r'\(([^)]+)\)').firstMatch(name)?.group(1)?.trim() ?? name;
+
+/// عنوانُ القسم، وزرُّ ⓘ لشرحه إن كان له شرح، ثم بطاقتُه بخطٍّ رفيع بين صفوفها.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.children, this.explain});
+
+  final String title;
+  final TreasuryExplain? explain;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final hairline = scheme.outlineVariant.withValues(alpha: 0.5);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(start: 4.w, top: 16.h, bottom: 4.h),
+          child: SizedBox(
+            height: 44.h,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: context.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.primary,
+                    ),
+                  ),
+                ),
+                if (explain case final explain?)
+                  _ExplainButton(tooltip: 'شرح: $title', topic: explain),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: hairline),
+          ),
+          // شفّافةٌ فوق لون البطاقة: بلاها يُرسم أثرُ اللمس تحت اللون فلا يُرى.
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, child) in children.indexed) ...[
+                  // العنوانُ الصغير يلتصق بصفوفه، فلا خطَّ تحته.
+                  if (i > 0 && children[i - 1] is! _Overline)
+                    Divider(height: 1, thickness: 1, color: hairline),
+                  child,
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// عنوانٌ صغير داخل البطاقة لمجموعة صفوف: «الافتراضي»، «التجميع»، «العهدة».
+class _Overline extends StatelessWidget {
+  const _Overline(this.text, {this.step, this.explain});
 
   final String text;
+  final String? step;
+  final TreasuryExplain? explain;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(top: 24.h, bottom: 4.h),
-    child: Text(
-      text,
-      style: context.textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w800,
-        color: context.colorScheme.primary,
-      ),
+    padding: EdgeInsetsDirectional.fromSTEB(16.w, 14.h, 8.w, 2.h),
+    child: Row(
+      children: [
+        if (step case final step?) ...[TreasuryStepMark(step), SizedBox(width: 12.w)],
+        Flexible(
+          child: Text(
+            text,
+            style: context.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        if (explain case final explain?) _ExplainButton(tooltip: 'ما معنى: $text', topic: explain),
+      ],
     ),
   );
 }
 
-class _Hint extends StatelessWidget {
-  const _Hint(this.text);
+class _ExplainButton extends StatelessWidget {
+  const _ExplainButton({required this.tooltip, required this.topic});
 
-  final String text;
+  final String tooltip;
+  final TreasuryExplain topic;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(bottom: 4.h),
-    child: Text(
-      text,
-      style: context.textTheme.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
-    ),
+  Widget build(BuildContext context) => IconButton(
+    tooltip: tooltip,
+    visualDensity: VisualDensity.compact,
+    iconSize: 20.r,
+    color: context.colorScheme.onSurfaceVariant,
+    icon: Icon(AppIcons.explain),
+    onPressed: () => showTreasuryExplain(context, topic),
   );
 }
 
 class _Switch extends StatelessWidget {
   const _Switch({
     required this.title,
-    required this.subtitle,
     required this.value,
     required this.onChanged,
+    this.subtitle,
+    this.step,
+    this.explain,
     super.key,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
+
+  /// ترتيبُ القاعدة بين أخواتها، حين يكون لترتيبها معنى.
+  final String? step;
+
+  final TreasuryExplain? explain;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) => SwitchListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(title),
-    subtitle: Text(subtitle),
+    contentPadding: EdgeInsetsDirectional.only(start: 16.w, end: 12.w),
+    secondary: step == null ? null : TreasuryStepMark(step!),
+    title: explain == null
+        ? Text(title)
+        : Row(
+            children: [
+              Flexible(child: Text(title)),
+              _ExplainButton(tooltip: 'ما معنى: $title', topic: explain!),
+            ],
+          ),
+    subtitle: subtitle == null ? null : Text(subtitle!),
     value: value,
     onChanged: onChanged,
   );
 }
 
+/// صفٌّ يُضغط فيفتح خياراته: الاسمُ عند البداية، والقيمةُ وسهمٌ عند النهاية.
 class _ChoiceTile extends StatelessWidget {
   const _ChoiceTile({required this.title, required this.value, required this.onTap, super.key});
 
@@ -371,94 +440,214 @@ class _ChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
+    contentPadding: EdgeInsetsDirectional.only(start: 16.w, end: 12.w),
     title: Text(title),
-    subtitle: Text(value),
-    trailing: Icon(AppIcons.edit),
+    trailing: _Value(value, end: Icon(AppIcons.forward, color: context.colorScheme.outline)),
     onTap: onTap,
   );
 }
 
-/// One kind's «التجميع عند التسوية»: the switch, and while it is on, the account it collects
-/// into and which of the kind's other accounts are left alone. TREASURY-DESIGN §١٨.
+/// القيمةُ الرمادية في آخر الصف، وما بعدها: سهمٌ، أو زرّ.
+class _Value extends StatelessWidget {
+  const _Value(this.value, {required this.end});
+
+  final String value;
+  final Widget end;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 180.w),
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      SizedBox(width: 4.w),
+      end,
+    ],
+  );
+}
+
+/// حساباتُ نوعٍ في «اجمع»: حساباتُه النشطة بلا حساب النظام، وما يُجمع فيه — المسمّى، وإلا
+/// الافتراضي — وما سواه، وهو ما يُختار في «من:».
+({
+  List<TreasuryAccount> all,
+  TreasuryAccount? named,
+  TreasuryAccount? fallback,
+  List<TreasuryAccount> others,
+})
+_collecting(TreasurySettingsLoaded state, AccountKind kind) {
+  final setting = state.settings.collectionOf(kind);
+  final all = [
+    for (final a in state.accounts)
+      if (a.isActive && a.kind == kind && !a.isSystem) a,
+  ];
+  final fallback = all.where((a) => a.isDefault).firstOrNull;
+  final named = all.where((a) => a.id == setting.intoId).firstOrNull;
+  final target = named ?? fallback;
+
+  return (
+    all: all,
+    named: named,
+    fallback: fallback,
+    others: [
+      for (final a in all)
+        if (a.id != target?.id) a,
+    ],
+  );
+}
+
+/// «اجمع» لنوعٍ واحد: المفتاح، وتحته «في:» و«من:». مطفأً يبقيان ظاهرين ولا يُفتحان، فيُعرف
+/// أين سيُجمع المال قبل التشغيل. TREASURY-DESIGN §١٨.
 class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     super.key,
     required this.label,
     required this.kind,
-    required this.setting,
-    required this.accounts,
+    required this.state,
   });
 
   final String label;
   final AccountKind kind;
-  final CollectionSetting setting;
-
-  /// The kind's active accounts.
-  final List<TreasuryAccount> accounts;
+  final TreasurySettingsLoaded state;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<TreasurySettingsCubit>();
-    final defaultAccount = accounts.where((a) => a.isDefault).firstOrNull;
-    final named = accounts.where((a) => a.id == setting.intoId).firstOrNull;
-    final target = named ?? defaultAccount;
-    final others = [
-      for (final a in accounts)
-        if (a.id != target?.id) a,
-    ];
+    final setting = state.settings.collectionOf(kind);
+    final (:all, :named, :fallback, :others) = _collecting(state, kind);
+    final collected = others.where((a) => a.isCollected).length;
+    final fallbackLabel = 'الافتراضي (${fallback?.name ?? '—'})';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Switch(
-          title: 'تجميع $label',
-          subtitle: setting.on
-              ? 'يُجمع مال الطلبية في «${target?.name ?? '—'}» عند التسوية'
-              : 'مال الطلبية يبقى حيث سُجِّل',
+        SwitchListTile(
+          contentPadding: EdgeInsetsDirectional.only(start: 16.w, end: 12.w),
+          title: Text(label),
           value: setting.on,
           onChanged: (v) => _run(context, () => cubit.saveCollection(kind, on: v)),
         ),
-        if (setting.on) ...[
-          _ChoiceTile(
-            title: 'يُجمع في',
-            value: named == null ? 'الافتراضي (${defaultAccount?.name ?? '—'})' : named.name,
-            onTap: () async {
-              final picked = await _pick<int>(
-                context,
-                title: 'يُجمع $label في',
-                options: [
-                  (0, 'الافتراضي (${defaultAccount?.name ?? '—'})'),
-                  for (final a in accounts) (a.id, a.name),
-                ],
-              );
+        Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(16.w, 0, 16.w, 12.h),
+          child: Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _PickChip(
+                key: ValueKey('collect-into-${kind.wire}'),
+                prefix: 'في:',
+                value: (named ?? fallback)?.name ?? '—',
+                onTap: !setting.on
+                    ? null
+                    : () async {
+                        final picked = await _pick<int>(
+                          context,
+                          title: '$label في',
+                          options: [(0, fallbackLabel), for (final a in all) (a.id, a.name)],
+                        );
 
-              if (picked != null && context.mounted) {
-                await _run(
-                  context,
-                  () => picked == 0
-                      ? cubit.saveCollection(kind, toDefault: true)
-                      : cubit.saveCollection(kind, intoId: picked),
-                );
-              }
-            },
+                        if (picked != null && context.mounted) {
+                          await _run(
+                            context,
+                            () => picked == 0
+                                ? cubit.saveCollection(kind, toDefault: true)
+                                : cubit.saveCollection(kind, intoId: picked),
+                          );
+                        }
+                      },
+              ),
+              if (others.isNotEmpty)
+                _PickChip(
+                  key: ValueKey('collect-from-${kind.wire}'),
+                  prefix: 'من:',
+                  value: switch (collected) {
+                    _ when collected == others.length => 'الكل',
+                    0 => 'لا شيء',
+                    _ => '$collected من ${others.length}',
+                  },
+                  onTap: !setting.on
+                      ? null
+                      : () => _collectFrom(context, title: '$label من', kind: kind),
+                ),
+            ],
           ),
-          for (final account in others)
-            CheckboxListTile(
-              key: ValueKey('collected-${account.id}'),
-              contentPadding: EdgeInsetsDirectional.only(start: 16.w),
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(account.name),
-              value: account.isCollected,
-              onChanged: (v) => _run(context, () => cubit.setCollected(account, v ?? true)),
-            ),
-        ],
+        ),
       ],
     );
   }
 }
 
-/// «مقفل حتى تاريخ» — pick a day to lock everything by hand up to it, or clear it.
+/// «في: …» و«من: …» تحت «اجمع» — رقاقةٌ تفتح خياراتها، ومعطّلةٌ والمفتاحُ مطفأ.
+class _PickChip extends StatelessWidget {
+  const _PickChip({required this.prefix, required this.value, required this.onTap, super.key});
+
+  final String prefix;
+  final String value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ActionChip(
+    onPressed: onTap,
+    label: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          prefix,
+          style: TextStyle(color: context.colorScheme.onSurfaceVariant),
+        ),
+        SizedBox(width: 4.w),
+        Text(value),
+        SizedBox(width: 2.w),
+        Icon(AppIcons.expand, size: 18.r),
+      ],
+    ),
+  );
+}
+
+/// «من:» — حساباتُ النوع غيرُ حساب التجميع، كلٌّ بمربّعه. المحذوفُ منها يبقى مالُه مكانه.
+/// الورقةُ تقرأ الحالة حيّةً، فيتبدّل المربّع حين يُحفظ.
+Future<void> _collectFrom(
+  BuildContext context, {
+  required String title,
+  required AccountKind kind,
+}) {
+  final cubit = context.read<TreasurySettingsCubit>();
+
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (_) => BlocBuilder<TreasurySettingsCubit, TreasurySettingsState>(
+      bloc: cubit,
+      builder: (context, state) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            _SheetTitle(title),
+            if (state case final TreasurySettingsLoaded loaded)
+              for (final account in _collecting(loaded, kind).others)
+                CheckboxListTile(
+                  key: ValueKey('collected-${account.id}'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(account.name),
+                  value: account.isCollected,
+                  onChanged: (v) => _run(context, () => cubit.setCollected(account, v ?? true)),
+                ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// «مقفل حتى» — يومٌ يُقفل كلُّ ما قبله من عمليات يدوية، أو «لا شيء».
 class _LockTile extends StatelessWidget {
   const _LockTile({required this.lockedUntil});
 
@@ -469,21 +658,20 @@ class _LockTile extends StatelessWidget {
     final cubit = context.read<TreasurySettingsCubit>();
 
     return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(AppIcons.locked),
-      title: const Text('مقفل حتى تاريخ'),
-      subtitle: Text(
-        lockedUntil == null
-            ? 'لا شيء مقفل — بعد جرد الشهر اختر آخر يوم فيه فلا تُسجَّل عملية يدوية بتاريخٍ قبله'
-            : 'لا تُسجَّل عملية يدوية ولا دفعة مورد بتاريخ $lockedUntil أو قبله',
-      ),
-      trailing: lockedUntil == null
-          ? null
-          : IconButton(
-              tooltip: 'فتح القفل',
-              icon: Icon(AppIcons.unlocked),
-              onPressed: () => _run(context, () => cubit.saveSettings(clearLock: true)),
-            ),
+      contentPadding: EdgeInsetsDirectional.only(start: 16.w, end: 12.w),
+      leading: Icon(AppIcons.locked, color: context.colorScheme.onSurfaceVariant),
+      title: const Text('مقفل حتى'),
+      trailing: switch (lockedUntil) {
+        null => _Value('لا شيء', end: Icon(AppIcons.forward, color: context.colorScheme.outline)),
+        final day => _Value(
+          day,
+          end: IconButton(
+            tooltip: 'فتح القفل',
+            icon: Icon(AppIcons.unlocked),
+            onPressed: () => _run(context, () => cubit.saveSettings(clearLock: true)),
+          ),
+        ),
+      },
       onTap: () async {
         final now = DateTime.now();
         final picked = await showDatePicker(
@@ -504,6 +692,56 @@ class _LockTile extends StatelessWidget {
   }
 }
 
+/// «العمولة على» — الزبون أو المحلّ بضغطةٍ واحدة. ما ليس «shop» يُقرأ «customer» كما كان.
+class _FeePayerTile extends StatelessWidget {
+  const _FeePayerTile({required this.payer});
+
+  final String payer;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<TreasurySettingsCubit>();
+    final current = payer == 'shop' ? 'shop' : 'customer';
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        children: [
+          Expanded(child: Text('العمولة على', style: context.textTheme.bodyLarge)),
+          SegmentedButton<String>(
+            key: const ValueKey('online-fee-payer'),
+            segments: const [
+              ButtonSegment(value: 'customer', label: Text('الزبون')),
+              ButtonSegment(value: 'shop', label: Text('المحلّ')),
+            ],
+            selected: {current},
+            onSelectionChanged: (picked) {
+              if (picked.first != current) {
+                _run(context, () => cubit.saveSettings(onlineFeePayer: picked.first));
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetTitle extends StatelessWidget {
+  const _SheetTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+    child: Text(
+      text,
+      style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+    ),
+  );
+}
+
 /// A short list of choices in a sheet — answers the value picked, or null for a dismissal.
 Future<T?> _pick<T>(
   BuildContext context, {
@@ -517,13 +755,7 @@ Future<T?> _pick<T>(
       child: ListView(
         shrinkWrap: true,
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
-            child: Text(
-              title,
-              style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
+          _SheetTitle(title),
           for (final (value, label) in options)
             ListTile(title: Text(label), onTap: () => Navigator.of(context).pop(value)),
         ],

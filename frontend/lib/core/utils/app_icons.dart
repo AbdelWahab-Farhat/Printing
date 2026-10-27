@@ -663,6 +663,14 @@ abstract final class AppIcons {
   static IconData get about =>
       _pick(Icons.info_outline_rounded, CupertinoIcons.info);
 
+  /// «ما معنى هذا؟» بجانب إعدادٍ أو قسم — يفتح شرحاً قصيراً. الشكلُ شكلُ [about]، والمعنى غيره:
+  /// ذاك عن التطبيق كله، وهذا عمّا بجانبه وحده.
+  static IconData get explain =>
+      _pick(Icons.info_outline_rounded, CupertinoIcons.info);
+
+  /// ما لا يدخل في شيء — سطرٌ في شرحٍ يقول «هذه لا تُحسب هنا».
+  static IconData get excluded => _pick(Icons.block_rounded, CupertinoIcons.nosign);
+
   /// The connection, not the server: a dropped line is a different problem from a refusal, and
   /// the two are fixed by different people.
   static IconData get offline =>

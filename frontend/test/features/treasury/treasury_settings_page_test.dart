@@ -40,6 +40,17 @@ void main() {
     isSpendable: true,
     balance: '0.00',
   );
+  const alisBank = TreasuryAccount(
+    id: 5,
+    name: 'مصرف علي',
+    kind: AccountKind.bank,
+    kindLabel: 'مصرف',
+    isDefault: false,
+    isActive: true,
+    isSystem: false,
+    isSpendable: true,
+    balance: '300.00',
+  );
   const nawris = TreasuryAccount(
     id: 4,
     name: 'النورس',
@@ -92,7 +103,15 @@ void main() {
     ),
   );
 
-  testWidgets('the page shows the switches, each method\'s default, and where Nawris settles', (
+  /// يمرّر حتى يُرى [finder] كاملاً على الشاشة: `scrollUntilVisible` يقف حين يُبنى الصفّ،
+  /// وقد يكون حينها تحت حافّة الشاشة فتضيع الضغطة.
+  Future<void> reveal(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(finder, 200);
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the page is four cards: «الدفعة», «التسوية», «الحماية», and each default', (
     tester,
   ) async {
     // Act
@@ -100,14 +119,39 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('الحساب الشخصي أولاً'), findsOneWidget);
-    expect(find.text('منع الرصيد السالب في العمليات اليدوية'), findsOneWidget);
-    expect(find.text('مقفل حتى تاريخ'), findsOneWidget);
+    expect(find.text('الدفعة'), findsOneWidget);
+    expect(find.text('الافتراضي'), findsOneWidget);
     expect(find.text('كاش'), findsOneWidget);
     expect(find.text('الكاش الرئيسي'), findsWidgets);
 
-    await tester.scrollUntilVisible(find.text('القاعدة الافتراضية'), 200);
-    expect(find.text('القاعدة الافتراضية'), findsOneWidget);
+    await reveal(tester, find.text('التسوية'));
+    expect(find.text('التسوية'), findsOneWidget);
+
+    await reveal(tester, find.text('تلقائي'));
+    expect(find.text('النورس'), findsOneWidget);
+
+    await reveal(tester, find.text('مقفل حتى'));
+    expect(find.text('الحماية'), findsOneWidget);
+    expect(find.text('لا شيء'), findsOneWidget);
+  });
+
+  testWidgets('«الحساب الشخصي أولاً» is the last row of «الدفعة» and says what it means', (
+    tester,
+  ) async {
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('الحساب الشخصي أولاً'));
+
+    // Assert
+    expect(
+      find.text('تنزل الدفعة في حساب من سجّلها بدل الافتراضي، إن كان له حساب من نوعها'),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.text('الحساب الشخصي أولاً')).dy,
+      greaterThan(tester.getTopLeft(find.text('ليبيانا')).dy),
+    );
   });
 
   testWidgets('switching a rule off saves only that switch', (tester) async {
@@ -124,33 +168,33 @@ void main() {
     );
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
+    await reveal(tester, find.text('منع الرصيد السالب'));
 
     // Act
-    await tester.tap(find.text('منع الرصيد السالب في العمليات اليدوية'));
+    await tester.tap(find.text('منع الرصيد السالب'));
     await tester.pumpAndSettle();
 
     // Assert
     verify(() => repository.saveSettings(blockOverdraft: false)).called(1);
   });
 
-  group('التجميع عند التسوية — §١٨', () {
-    const alisBank = TreasuryAccount(
-      id: 5,
-      name: 'مصرف علي',
-      kind: AccountKind.bank,
-      kindLabel: 'مصرف',
-      isDefault: false,
-      isActive: true,
-      isSystem: false,
-      isSpendable: true,
-      balance: '300.00',
-    );
+  group('اجمع — §١٨', () {
     const collectingBanks = TreasurySettings(
       ownAccountFirst: true,
       blockOverdraft: true,
       withdrawalNeedsReason: true,
       askCarrierFee: true,
       collections: {AccountKind.bank: CollectionSetting(on: true)},
+    );
+
+    void withAlisBank() => when(() => repository.accounts()).thenAnswer(
+      (_) async => const Right(
+        TreasuryAccounts(
+          accounts: [cashBox, bank, alisBank, nawris],
+          total: '400.00',
+          canViewAll: true,
+        ),
+      ),
     );
 
     testWidgets('switching a kind on saves that kind\'s switch alone', (tester) async {
@@ -160,10 +204,10 @@ void main() {
       ).thenAnswer((_) async => const Right(collectingBanks));
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('تجميع المصارف'), 200);
+      await reveal(tester, find.text('اجمع الحوالات والبطاقات'));
 
       // Act
-      await tester.tap(find.text('تجميع المصارف'));
+      await tester.tap(find.text('اجمع الحوالات والبطاقات'));
       await tester.pumpAndSettle();
 
       // Assert
@@ -172,41 +216,56 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('while on, it names the account and lets another keep its money', (tester) async {
+    testWidgets('while on, «في:» names the account and «من:» lets another keep its money', (
+      tester,
+    ) async {
       // Arrange
       when(() => repository.settings()).thenAnswer((_) async => const Right(collectingBanks));
-      when(() => repository.accounts()).thenAnswer(
-        (_) async => const Right(
-          TreasuryAccounts(
-            accounts: [cashBox, bank, alisBank, nawris],
-            total: '400.00',
-            canViewAll: true,
-          ),
-        ),
-      );
+      withAlisBank();
       when(
         () => repository.saveAccount(id: 5, name: 'مصرف علي', isCollected: false),
       ).thenAnswer((_) async => const Right(alisBank));
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('الافتراضي (المصرف)'), 200);
+      final into = find.byKey(const ValueKey('collect-into-bank'));
+      final from = find.byKey(const ValueKey('collect-from-bank'));
+      await reveal(tester, from);
 
       // Act
-      await tester.scrollUntilVisible(find.byKey(const ValueKey('collected-5')), 200);
-      await tester.ensureVisible(find.byKey(const ValueKey('collected-5')));
+      await tester.tap(from);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('collected-5')));
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('يُجمع مال الطلبية في «المصرف» عند التسوية'), findsOneWidget);
+      expect(find.descendant(of: into, matching: find.text('المصرف')), findsOneWidget);
+      expect(find.descendant(of: from, matching: find.text('الكل')), findsOneWidget);
       verify(
         () => repository.saveAccount(id: 5, name: 'مصرف علي', isCollected: false),
       ).called(1);
     });
+
+    testWidgets('while off, «في:» and «من:» still show but do not open', (tester) async {
+      // Arrange
+      withAlisBank();
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      final from = find.byKey(const ValueKey('collect-from-bank'));
+      await reveal(tester, from);
+
+      // Act
+      await tester.tap(from, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byKey(const ValueKey('collect-into-bank')), findsOneWidget);
+      expect(find.byKey(const ValueKey('collected-5')), findsNothing);
+    });
   });
 
-  testWidgets('each pickup branch shows its box, and picking one links it — §١٩', (tester) async {
+  testWidgets('each pickup office shows by its short name, and picking a box links it — §١٩', (
+    tester,
+  ) async {
     // Arrange
     const misrataBox = TreasuryAccount(
       id: 9,
@@ -226,7 +285,7 @@ void main() {
           blockOverdraft: true,
           withdrawalNeedsReason: true,
           askCarrierFee: true,
-          pickupOffices: [PickupOffice(cityId: 40, name: 'استلام مكتب مصراتة')],
+          pickupOffices: [PickupOffice(cityId: 40, name: 'إستلام مكتب(مصراتة)')],
         ),
       ),
     );
@@ -244,26 +303,22 @@ void main() {
     ).thenAnswer((_) async => const Right(misrataBox));
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('استلام مكتب مصراتة'), 200);
-    expect(find.text('كاش كل مكتب استلام'), findsOneWidget);
+    expect(find.text('كاش المكتب عندما تكون الطلبية استلام مكتب'), findsOneWidget);
 
     // Act
-    await tester.tap(find.text('استلام مكتب مصراتة'));
+    await tester.tap(find.text('مصراتة'));
     await tester.pumpAndSettle();
-    expect(find.text('كاش «استلام مكتب مصراتة»'), findsOneWidget);
+    expect(find.text('كاش «مصراتة»'), findsOneWidget);
     await tester.tap(find.text('كاش فرع مصراتة').last);
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('القاعدة العادية'), findsWidgets);
     verify(
       () => repository.saveAccount(id: 9, name: 'كاش فرع مصراتة', pickupCityId: 40),
     ).called(1);
   });
 
-  testWidgets('«التسوية إلى حساب المسوّي» starts off, says what it does, and saves alone — §٢٢', (
-    tester,
-  ) async {
+  testWidgets('«إلى حساب المسوّي تلقائياً» starts off and saves alone — §٢٢', (tester) async {
     // Arrange
     when(() => repository.saveSettings(settleIntoSettler: true)).thenAnswer(
       (_) async => const Right(
@@ -279,22 +334,21 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
     final tile = find.byKey(const ValueKey('settle-into-settler'));
-    await tester.scrollUntilVisible(tile, 200);
+    await reveal(tester, tile);
 
     // Act
     final before = tester.widget<SwitchListTile>(
       find.descendant(of: tile, matching: find.byType(SwitchListTile)),
     );
-    await tester.tap(find.text('التسوية إلى حساب المسوّي'));
+    await tester.tap(find.text('إلى حساب المسوّي تلقائياً'));
     await tester.pumpAndSettle();
 
     // Assert
     expect(before.value, isFalse);
-    expect(find.textContaining('الكاش إلى كاشه والمصرف إلى مصرفه'), findsOneWidget);
     verify(() => repository.saveSettings(settleIntoSettler: true)).called(1);
   });
 
-  testWidgets('«اختيار حساب كل نوع عند التسوية» starts off, says what it does, and saves alone — §٢٤', (
+  testWidgets('«اختيار الحساب عند التغيير لحالة التسوية» starts off and saves alone — §٢٤', (
     tester,
   ) async {
     // Arrange
@@ -312,28 +366,123 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
     final tile = find.byKey(const ValueKey('pick-settlement-accounts'));
-    await tester.scrollUntilVisible(tile, 200);
+    await reveal(tester, tile);
 
     // Act
     final before = tester.widget<SwitchListTile>(
       find.descendant(of: tile, matching: find.byType(SwitchListTile)),
     );
-    await tester.tap(find.text('اختيار حساب كل نوع عند التسوية'));
+    await tester.tap(find.text('اختيار الحساب عند التغيير لحالة التسوية'));
     await tester.pumpAndSettle();
 
     // Assert
     expect(before.value, isFalse);
-    expect(find.textContaining('كل نوع إلى حساب من نوعه'), findsOneWidget);
     verify(() => repository.saveSettings(pickSettlementAccounts: true)).called(1);
+  });
+
+  group('ⓘ — each one opens its own short explanation', () {
+    testWidgets('«الدفعة» lists every case in order', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('شرح: الدفعة'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('أين تنزل الدفعة؟'), findsOneWidget);
+      expect(find.text('كاش ذلك المكتب'), findsOneWidget);
+      expect(find.text('لا تدخل كاش المكتب'), findsOneWidget);
+    });
+
+    testWidgets('«إلى حساب المسوّي تلقائياً» says it follows the person, unlike «اجمع»', (
+      tester,
+    ) async {
+      // Arrange
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      final explain = find.byTooltip('ما معنى: إلى حساب المسوّي تلقائياً');
+      await reveal(tester, explain);
+
+      // Act
+      await tester.tap(explain);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('يتبع الشخص'), findsOneWidget);
+      expect(find.text('حساب واحد ثابت'), findsOneWidget);
+    });
+
+    testWidgets('«التجميع» says its money goes to the one account in «في:»', (tester) async {
+      // Arrange
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      final explain = find.byTooltip('ما معنى: التجميع');
+      await reveal(tester, explain);
+
+      // Act
+      await tester.tap(explain);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.textContaining('نفس الحساب مهما كان من يسوّي'), findsOneWidget);
+    });
+  });
+
+  testWidgets('the online fee is a two-way choice that saves the other side', (tester) async {
+    // Arrange
+    when(() => repository.settings()).thenAnswer(
+      (_) async => const Right(
+        TreasurySettings(
+          ownAccountFirst: true,
+          blockOverdraft: true,
+          withdrawalNeedsReason: true,
+          askCarrierFee: true,
+          onlineFeePayer: 'customer',
+        ),
+      ),
+    );
+    when(() => repository.saveSettings(onlineFeePayer: 'shop')).thenAnswer(
+      (_) async => const Right(
+        TreasurySettings(
+          ownAccountFirst: true,
+          blockOverdraft: true,
+          withdrawalNeedsReason: true,
+          askCarrierFee: true,
+          onlineFeePayer: 'shop',
+        ),
+      ),
+    );
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('المحلّ'));
+
+    // Act
+    await tester.tap(find.text('المحلّ'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.saveSettings(onlineFeePayer: 'shop')).called(1);
+  });
+
+  testWidgets('«احتفظ به الناقل» is not asked about on this page', (tester) async {
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('مقفل حتى'));
+
+    // Assert
+    expect(find.textContaining('احتفظ به الناقل'), findsNothing);
   });
 
   testWidgets('the expense categories are not on this page — they have their own', (tester) async {
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('تجميع ليبيانا'), 200);
+    await reveal(tester, find.text('مقفل حتى'));
 
-    // Assert — «تجميع ليبيانا» آخرُ ما في الصفحة الآن.
+    // Assert
     expect(find.text('تصنيفات المصروفات'), findsNothing);
     expect(find.text('تصنيف جديد'), findsNothing);
     verifyNever(() => repository.expenseCategories(activeOnly: false));
@@ -343,7 +492,7 @@ void main() {
     // Act
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('تجميع ليبيانا'), 200);
+    await reveal(tester, find.text('مقفل حتى'));
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
     await tester.pumpAndSettle();
 
