@@ -17,7 +17,9 @@ mixin _$CustomerDesign {
 
  int get id;@JsonKey(name: 'customer_id') int get customerId;/// What staff read to tell two designs apart. Never null: the server falls back to the
 /// filename, because a row with no name is one nobody dares print from.
- String get label; String? get notes;@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind get kind;/// The kind in Arabic, as the server words it. Shown instead of a switch over [kind] so an
+ String get label; String? get notes;/// «ألوان الطباعة» — the inks this artwork is printed in, and the source every order's copy
+/// is taken from. Empty when none are on record, and from a server that predates them.
+@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> get printColors;@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind get kind;/// The kind in Arabic, as the server words it. Shown instead of a switch over [kind] so an
 /// [DesignKind.unknown] still names itself.
 @JsonKey(name: 'kind_label') String get kindLabel;@JsonKey(name: 'mime_type') String? get mimeType;@JsonKey(name: 'original_filename') String? get originalFilename;@JsonKey(name: 'size_bytes') int? get sizeBytes;@JsonKey(name: 'width_px') int? get widthPx;@JsonKey(name: 'height_px') int? get heightPx;/// Generated per request — see the note on the class.
 @JsonKey(name: 'file_url') String? get fileUrl;/// A server-rendered first page for a PDF. Always null today; the key exists so that
@@ -35,16 +37,16 @@ $CustomerDesignCopyWith<CustomerDesign> get copyWith => _$CustomerDesignCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.label, label) || other.label == label)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.label, label) || other.label == label)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.printColors, printColors)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,customerId,label,notes,kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,createdAt);
+int get hashCode => Object.hash(runtimeType,id,customerId,label,notes,const DeepCollectionEquality().hash(printColors),kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,createdAt);
 
 @override
 String toString() {
-  return 'CustomerDesign(id: $id, customerId: $customerId, label: $label, notes: $notes, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, createdAt: $createdAt)';
+  return 'CustomerDesign(id: $id, customerId: $customerId, label: $label, notes: $notes, printColors: $printColors, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, createdAt: $createdAt)';
 }
 
 
@@ -55,7 +57,7 @@ abstract mixin class $CustomerDesignCopyWith<$Res>  {
   factory $CustomerDesignCopyWith(CustomerDesign value, $Res Function(CustomerDesign) _then) = _$CustomerDesignCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'customer_id') int customerId, String label, String? notes,@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind kind,@JsonKey(name: 'kind_label') String kindLabel,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'original_filename') String? originalFilename,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx,@JsonKey(name: 'file_url') String? fileUrl,@JsonKey(name: 'preview_url') String? previewUrl,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'customer_id') int customerId, String label, String? notes,@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> printColors,@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind kind,@JsonKey(name: 'kind_label') String kindLabel,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'original_filename') String? originalFilename,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx,@JsonKey(name: 'file_url') String? fileUrl,@JsonKey(name: 'preview_url') String? previewUrl,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -72,13 +74,14 @@ class _$CustomerDesignCopyWithImpl<$Res>
 
 /// Create a copy of CustomerDesign
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? label = null,Object? notes = freezed,Object? kind = null,Object? kindLabel = null,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? previewUrl = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? label = null,Object? notes = freezed,Object? printColors = null,Object? kind = null,Object? kindLabel = null,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? previewUrl = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String?,printColors: null == printColors ? _self.printColors : printColors // ignore: cast_nullable_to_non_nullable
+as List<PrintColor>,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as DesignKind,kindLabel: null == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
 as String,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
 as String?,originalFilename: freezed == originalFilename ? _self.originalFilename : originalFilename // ignore: cast_nullable_to_non_nullable
@@ -173,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomerDesign() when $default != null:
-return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
+return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.printColors,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
   return orElse();
 
 }
@@ -194,10 +197,10 @@ return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _CustomerDesign():
-return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
+return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.printColors,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +217,10 @@ return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'customer_id')  int customerId,  String label,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(unknownEnumValue: DesignKind.unknown)  DesignKind kind, @JsonKey(name: 'kind_label')  String kindLabel, @JsonKey(name: 'mime_type')  String? mimeType, @JsonKey(name: 'original_filename')  String? originalFilename, @JsonKey(name: 'size_bytes')  int? sizeBytes, @JsonKey(name: 'width_px')  int? widthPx, @JsonKey(name: 'height_px')  int? heightPx, @JsonKey(name: 'file_url')  String? fileUrl, @JsonKey(name: 'preview_url')  String? previewUrl, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomerDesign() when $default != null:
-return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
+return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.printColors,_that.kind,_that.kindLabel,_that.mimeType,_that.originalFilename,_that.sizeBytes,_that.widthPx,_that.heightPx,_that.fileUrl,_that.previewUrl,_that.createdAt);case _:
   return null;
 
 }
@@ -229,7 +232,7 @@ return $default(_that.id,_that.customerId,_that.label,_that.notes,_that.kind,_th
 @JsonSerializable()
 
 class _CustomerDesign extends CustomerDesign {
-  const _CustomerDesign({required this.id, @JsonKey(name: 'customer_id') required this.customerId, required this.label, this.notes, @JsonKey(unknownEnumValue: DesignKind.unknown) required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'preview_url') this.previewUrl, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _CustomerDesign({required this.id, @JsonKey(name: 'customer_id') required this.customerId, required this.label, this.notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(unknownEnumValue: DesignKind.unknown) required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'preview_url') this.previewUrl, @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors,super._();
   factory _CustomerDesign.fromJson(Map<String, dynamic> json) => _$CustomerDesignFromJson(json);
 
 @override final  int id;
@@ -238,6 +241,17 @@ class _CustomerDesign extends CustomerDesign {
 /// filename, because a row with no name is one nobody dares print from.
 @override final  String label;
 @override final  String? notes;
+/// «ألوان الطباعة» — the inks this artwork is printed in, and the source every order's copy
+/// is taken from. Empty when none are on record, and from a server that predates them.
+ final  List<PrintColor> _printColors;
+/// «ألوان الطباعة» — the inks this artwork is printed in, and the source every order's copy
+/// is taken from. Empty when none are on record, and from a server that predates them.
+@override@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> get printColors {
+  if (_printColors is EqualUnmodifiableListView) return _printColors;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_printColors);
+}
+
 @override@JsonKey(unknownEnumValue: DesignKind.unknown) final  DesignKind kind;
 /// The kind in Arabic, as the server words it. Shown instead of a switch over [kind] so an
 /// [DesignKind.unknown] still names itself.
@@ -267,16 +281,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.label, label) || other.label == label)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.label, label) || other.label == label)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._printColors, _printColors)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,customerId,label,notes,kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,createdAt);
+int get hashCode => Object.hash(runtimeType,id,customerId,label,notes,const DeepCollectionEquality().hash(_printColors),kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,createdAt);
 
 @override
 String toString() {
-  return 'CustomerDesign(id: $id, customerId: $customerId, label: $label, notes: $notes, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, createdAt: $createdAt)';
+  return 'CustomerDesign(id: $id, customerId: $customerId, label: $label, notes: $notes, printColors: $printColors, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, createdAt: $createdAt)';
 }
 
 
@@ -287,7 +301,7 @@ abstract mixin class _$CustomerDesignCopyWith<$Res> implements $CustomerDesignCo
   factory _$CustomerDesignCopyWith(_CustomerDesign value, $Res Function(_CustomerDesign) _then) = __$CustomerDesignCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'customer_id') int customerId, String label, String? notes,@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind kind,@JsonKey(name: 'kind_label') String kindLabel,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'original_filename') String? originalFilename,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx,@JsonKey(name: 'file_url') String? fileUrl,@JsonKey(name: 'preview_url') String? previewUrl,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id,@JsonKey(name: 'customer_id') int customerId, String label, String? notes,@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> printColors,@JsonKey(unknownEnumValue: DesignKind.unknown) DesignKind kind,@JsonKey(name: 'kind_label') String kindLabel,@JsonKey(name: 'mime_type') String? mimeType,@JsonKey(name: 'original_filename') String? originalFilename,@JsonKey(name: 'size_bytes') int? sizeBytes,@JsonKey(name: 'width_px') int? widthPx,@JsonKey(name: 'height_px') int? heightPx,@JsonKey(name: 'file_url') String? fileUrl,@JsonKey(name: 'preview_url') String? previewUrl,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -304,13 +318,14 @@ class __$CustomerDesignCopyWithImpl<$Res>
 
 /// Create a copy of CustomerDesign
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? label = null,Object? notes = freezed,Object? kind = null,Object? kindLabel = null,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? previewUrl = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? label = null,Object? notes = freezed,Object? printColors = null,Object? kind = null,Object? kindLabel = null,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? previewUrl = freezed,Object? createdAt = freezed,}) {
   return _then(_CustomerDesign(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String?,printColors: null == printColors ? _self._printColors : printColors // ignore: cast_nullable_to_non_nullable
+as List<PrintColor>,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as DesignKind,kindLabel: null == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
 as String,mimeType: freezed == mimeType ? _self.mimeType : mimeType // ignore: cast_nullable_to_non_nullable
 as String?,originalFilename: freezed == originalFilename ? _self.originalFilename : originalFilename // ignore: cast_nullable_to_non_nullable

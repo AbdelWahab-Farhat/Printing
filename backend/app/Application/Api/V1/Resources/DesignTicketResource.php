@@ -47,6 +47,8 @@ class DesignTicketResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'instructions' => $this->instructions,
+            // «ألوان الطباعة» the brief asks for. Always a list, empty when there are none.
+            'print_colors' => $this->print_colors ?? [],
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),

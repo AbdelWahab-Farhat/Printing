@@ -128,6 +128,7 @@ final class AuditAttributeLabels
             'design_ticket_id' => 'تذكرة التصميم',
             'designer_user_id' => 'المصمم',
             'approved_at' => 'تاريخ الاعتماد',
+            'print_colors' => 'ألوان الطباعة',
         ],
         'comment' => [
             'commentable_type' => 'نوع السجل',
@@ -425,6 +426,8 @@ final class AuditAttributeLabels
             'rejection_reason' => 'سبب الرفض',
             'reviewed_at' => 'تاريخ المراجعة',
             'reviewed_by' => 'راجعها',
+            // This order's copy — what the press reads, and what it was printed in.
+            'print_colors' => 'ألوان الطباعة',
         ],
         'order_status_transition' => [
             'order_id' => 'الطلبية',
@@ -791,6 +794,7 @@ final class AuditAttributeLabels
             'completed_at' => 'وقت إغلاق التذكرة',
             'approved_customer_design_id' => 'التصميم المعتمد في حساب الزبون',
             'cancellation_reason' => 'سبب الإلغاء',
+            'print_colors' => 'ألوان الطباعة المطلوبة',
             // خارج السجلّ (`DesignTicket::attributesNeverWorthLogging()`)، ومسمّاةٌ لأن الاختبار
             // يسأل عن كلّ عمود — ولأن الاسم الصحيح لا يكلّف شيئاً لو دخلت يوماً.
             'requester_read_message_id' => 'قرأ الطالب حتى الرسالة',
@@ -807,6 +811,7 @@ final class AuditAttributeLabels
             'reviewed_by' => 'راجعها',
             'uploaded_by_user_id' => 'رفعها',
             'note' => 'ملاحظة المصمم',
+            'print_colors' => 'ألوان الطباعة',
         ],
         'shortage_supply' => [
             'shortage_id' => 'النقص',

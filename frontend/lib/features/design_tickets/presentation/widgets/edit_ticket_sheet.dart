@@ -1,3 +1,5 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -7,7 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Correcting what was asked for, while the ticket is still open.
 ///
-/// **Three fields, and the absences are the decision.** The customer cannot be changed — files
+/// **Three fields and the print colors, and the absences are the decision.** The customer cannot be changed — files
 /// and a conversation hang off a ticket by the time anybody notices the wrong one was picked, so
 /// a mis-addressed ticket is cancelled and raised again, which leaves an honest record. The
 /// designer is its own sheet behind its own grant, because routing work is a different job from
@@ -30,11 +32,19 @@ Future<TicketEdit?> showEditTicketSheet({
 
 @immutable
 class TicketEdit {
-  const TicketEdit({required this.title, required this.description, this.instructions});
+  const TicketEdit({
+    required this.title,
+    required this.description,
+    required this.printColors,
+    this.instructions,
+  });
 
   final String title;
   final String description;
   final String? instructions;
+
+  /// «ألوان الطباعة» the brief asks for — the whole list, empty to clear them.
+  final List<PrintColor> printColors;
 }
 
 class _EditSheet extends StatefulWidget {
@@ -51,6 +61,7 @@ class _EditSheetState extends State<_EditSheet> {
   late final TextEditingController _description = TextEditingController(
     text: widget.ticket.description,
   );
+  late List<PrintColor> _colors = widget.ticket.printColors;
 
   @override
   void dispose() {
@@ -87,6 +98,11 @@ class _EditSheetState extends State<_EditSheet> {
               label: 'وصف الطلب والتعليمات',
               maxLines: 6,
             ),
+            SizedBox(height: 16.h),
+            PrintColorsField(
+              colors: _colors,
+              onChanged: (colors) => setState(() => _colors = colors),
+            ),
             SizedBox(height: 18.h),
             SizedBox(
               width: double.infinity,
@@ -96,7 +112,11 @@ class _EditSheetState extends State<_EditSheet> {
                 // the field, so nothing is blocked here — an empty box reaches a 422 that says
                 // which one, rather than a disabled button that says nothing.
                 onPressed: () => Navigator.of(context).pop(
-                  TicketEdit(title: _title.text, description: _description.text),
+                  TicketEdit(
+                    title: _title.text,
+                    description: _description.text,
+                    printColors: _colors,
+                  ),
                 ),
               ),
             ),

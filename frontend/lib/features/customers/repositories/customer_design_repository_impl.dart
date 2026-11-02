@@ -5,6 +5,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dio/dio.dart';
@@ -93,6 +94,24 @@ class CustomerDesignRepositoryImpl implements CustomerDesignRepository {
           'label': label.trim(),
           'notes': (notes?.trim().isEmpty ?? true) ? null : notes!.trim(),
         },
+      ),
+      parse: (data) => CustomerDesign.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, CustomerDesign>> setPrintColors(
+    int customerId,
+    int designId,
+    List<PrintColor> colors,
+  ) {
+    return safeRequest<CustomerDesign>(
+      // The one key, and `PATCH`: the server takes each field as `sometimes`, so the label and
+      // the notes stay as they are. An empty list is sent rather than omitted — it is how the
+      // colors are cleared.
+      () => _dio.patch(
+        CustomerEndpoints.design(customerId, designId),
+        data: <String, dynamic>{'print_colors': PrintColor.listToJson(colors)},
       ),
       parse: (data) => CustomerDesign.fromJson(data! as Map<String, dynamic>),
     );

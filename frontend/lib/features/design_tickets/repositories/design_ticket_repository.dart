@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
@@ -77,6 +78,7 @@ abstract interface class DesignTicketRepository {
     int? orderId,
     int? assignedDesignerId,
     List<PickedFile> files = const [],
+    List<PrintColor> printColors = const [],
   });
 
   /// Correcting the words.
@@ -84,11 +86,14 @@ abstract interface class DesignTicketRepository {
   /// **The customer cannot be changed and neither can the designer** — the first because files
   /// and a conversation hang off a ticket by the time anybody notices, the second because it is
   /// [assign] behind its own grant. Refused outright once the ticket is closed.
+  ///
+  /// [printColors] null leaves the requested colors as they are; an empty list clears them.
   Future<Either<Failure, DesignTicket>> update(
     int ticketId, {
     required String title,
     required String description,
     String? instructions,
+    List<PrintColor>? printColors,
   });
 
   /// Handing it to a designer, or returning it to the pool — `null` is the pool.
@@ -134,11 +139,15 @@ abstract interface class DesignTicketRepository {
   /// **The same call sends the first version and every revision** — a revision is a row, not a
   /// new ticket — and the version number is allocated by the server, never sent. Refused before
   /// the ticket has been accepted, and refused while another version is already under review.
+  ///
+  /// [printColors] are the inks the version was drawn in; the approved one's go into the
+  /// customer's library with the file.
   Future<Either<Failure, DesignTicketFile>> submitVersion(
     int ticketId, {
     required String path,
     required String filename,
     String? note,
+    List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   });
 

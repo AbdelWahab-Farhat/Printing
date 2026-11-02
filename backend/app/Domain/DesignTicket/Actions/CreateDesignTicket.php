@@ -73,6 +73,7 @@ final class CreateDesignTicket
                     'title' => $data->title,
                     'description' => $data->description,
                     'instructions' => $data->instructions,
+                    'print_colors' => $data->printColors,
                 ]);
 
                 // Force-filled rather than mass-assigned, all of it: the customer and its snapshot

@@ -127,8 +127,9 @@ final class DesignTicketService
         UploadedFile $file,
         User $designer,
         ?string $note = null,
+        ?array $printColors = null,
     ): DesignTicketFile {
-        return ($this->submitVersion)($ticket, $file, $designer, $note);
+        return ($this->submitVersion)($ticket, $file, $designer, $note, $printColors);
     }
 
     public function review(

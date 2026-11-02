@@ -7,6 +7,7 @@ import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
@@ -515,6 +516,24 @@ class OrderRepositoryImpl implements OrderRepository {
           if (rejectionReason != null && rejectionReason.isNotEmpty)
             'rejection_reason': rejectionReason,
         },
+      ),
+      parse: (_) {},
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> updateDesignColors(
+    int orderId,
+    int designId,
+    List<PrintColor> colors,
+  ) {
+    // Like the two above, the response is the version and the screen re-reads the order.
+    return safeRequest<void>(
+      () => _dio.patch(
+        OrderEndpoints.designColors(orderId, designId),
+        // Always sent, empty included: the server asks for the key to be present, so an empty
+        // list reads as «clear them» and an omission as a mistake.
+        data: <String, dynamic>{'print_colors': PrintColor.listToJson(colors)},
       ),
       parse: (_) {},
     );

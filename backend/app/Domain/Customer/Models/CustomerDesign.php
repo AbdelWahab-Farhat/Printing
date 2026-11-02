@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Customer\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Customer\Casts\AsPrintColors;
 use App\Domain\Customer\Enums\DesignKind;
 use App\Support\Media\HasStoredFile;
 use Database\Factories\CustomerDesignFactory;
@@ -35,7 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[UseFactory(CustomerDesignFactory::class)]
 #[Fillable([
     'disk', 'path', 'original_filename', 'mime_type', 'kind',
-    'size_bytes', 'checksum', 'width_px', 'height_px', 'label', 'notes',
+    'size_bytes', 'checksum', 'width_px', 'height_px', 'label', 'notes', 'print_colors',
 ])]
 class CustomerDesign extends Model
 {
@@ -52,6 +53,8 @@ class CustomerDesign extends Model
             'size_bytes' => 'integer',
             'width_px' => 'integer',
             'height_px' => 'integer',
+            // «ألوان الطباعة» — the source every order's copy is taken from. See PrintColors.
+            'print_colors' => AsPrintColors::class,
         ];
     }
 
@@ -61,6 +64,25 @@ class CustomerDesign extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Whether an employee has put a code on any of the print colors.
+     *
+     * **The moment the customer's say ends.** A customer chooses each ink's name and swatch from
+     * their app; the code — what the press matches — is staff's to write. Once one is written
+     * the list is a confirmed answer, and a customer edit would throw that work away, so the app
+     * shows it read-only from then on. PRINT-COLORS.md §8.
+     */
+    public function printColorsAreConfirmed(): bool
+    {
+        foreach ($this->print_colors ?? [] as $color) {
+            if ($color['code'] !== null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** A name to show when the uploader did not give one. */

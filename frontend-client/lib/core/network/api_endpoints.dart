@@ -58,6 +58,9 @@ abstract final class DesignEndpoints {
   static const String store = '/client/designs';
 
   static String design(int id) => '/client/designs/$id';
+
+  /// «ألوان الطباعة» — names and swatches, until our team writes the codes.
+  static String colors(int id) => '/client/designs/$id/colors';
 }
 
 /// Where an order can be sent.

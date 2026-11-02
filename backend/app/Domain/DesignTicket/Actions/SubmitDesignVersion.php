@@ -46,6 +46,9 @@ final class SubmitDesignVersion
     public function __construct(private readonly StoreUploadedFile $storeFile) {}
 
     /**
+     * @param  array<int, mixed>|null  $printColors  the inks this version was drawn in, already
+     *                                               validated — see PrintColors
+     *
      * @throws DesignTicketIsClosed
      * @throws DesignTicketNotAcceptedYet
      * @throws DesignTicketBelongsToAnotherDesigner
@@ -56,6 +59,7 @@ final class SubmitDesignVersion
         UploadedFile $file,
         User $designer,
         ?string $note = null,
+        ?array $printColors = null,
     ): DesignTicketFile {
         if (! $ticket->isOpen()) {
             throw DesignTicketIsClosed::make($ticket->status);
@@ -85,14 +89,14 @@ final class SubmitDesignVersion
             "design-tickets/{$ticket->getKey()}",
         );
 
-        return DB::transaction(function () use ($ticket, $stored, $designer, $note): DesignTicketFile {
+        return DB::transaction(function () use ($ticket, $stored, $designer, $note, $printColors): DesignTicketFile {
             // withTrashed: a removed version still used its number, and reusing it would collide
             // with the partial unique index the moment that row were restored.
             $nextVersion = (int) $ticket->files()->withTrashed()
                 ->where('kind', DesignTicketFileKind::Submission)
                 ->max('version') + 1;
 
-            $version = $ticket->files()->make(['note' => $note]);
+            $version = $ticket->files()->make(['note' => $note, 'print_colors' => $printColors]);
 
             $version->forceFill([
                 'kind' => DesignTicketFileKind::Submission,

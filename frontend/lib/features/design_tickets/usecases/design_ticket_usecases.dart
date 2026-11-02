@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
@@ -89,6 +90,7 @@ class CreateDesignTicket {
     int? orderId,
     int? assignedDesignerId,
     List<PickedFile> files = const [],
+    List<PrintColor> printColors = const [],
   }) {
     return _repository.create(
       customerId: customerId,
@@ -98,6 +100,7 @@ class CreateDesignTicket {
       orderId: orderId,
       assignedDesignerId: assignedDesignerId,
       files: files,
+      printColors: printColors,
     );
   }
 }
@@ -113,12 +116,14 @@ class UpdateDesignTicket {
     required String title,
     required String description,
     String? instructions,
+    List<PrintColor>? printColors,
   }) {
     return _repository.update(
       ticketId,
       title: title,
       description: description,
       instructions: instructions,
+      printColors: printColors,
     );
   }
 }
@@ -196,6 +201,7 @@ class SubmitDesignVersion {
     required String path,
     required String filename,
     String? note,
+    List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   }) {
     return _repository.submitVersion(
@@ -203,6 +209,7 @@ class SubmitDesignVersion {
       path: path,
       filename: filename,
       note: note,
+      printColors: printColors,
       onProgress: onProgress,
     );
   }

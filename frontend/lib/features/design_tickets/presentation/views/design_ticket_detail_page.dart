@@ -4,6 +4,9 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -150,9 +153,27 @@ class _DesignTicketDetailView extends StatelessWidget {
         return;
       }
 
+      // «ألوان الطباعة» this version was drawn in — started from the last version's, or from
+      // what the brief asked for, so a round with no change in ink is one tap. Dismissing the
+      // sheet calls the upload off, the way backing out of the picker does.
+      final ticket = cubit.state.ticket;
+      final previous = ticket?.latestVersion?.printColors ?? const <PrintColor>[];
+      final colors = await showPrintColorsSheet(
+        context: context,
+        initial: previous.isNotEmpty ? previous : ticket?.printColors ?? const [],
+        subtitle: 'الألوان التي رُسمت بها هذه النسخة، برموزها',
+        confirmLabel: 'إرسال للمراجعة',
+      );
+
+      if (colors == null || !context.mounted) return;
+
       await _run(
         context,
-        () => cubit.submit(path: picked.first.path, filename: picked.first.name),
+        () => cubit.submit(
+          path: picked.first.path,
+          filename: picked.first.name,
+          printColors: colors,
+        ),
         'تم إرسال التصميم للمراجعة',
       );
 
@@ -262,6 +283,7 @@ class _DesignTicketDetailView extends StatelessWidget {
         title: edit.title,
         description: edit.description,
         instructions: edit.instructions,
+        printColors: edit.printColors,
       ),
       'تم تحديث الطلب',
     );
@@ -648,6 +670,14 @@ class _Brief extends StatelessWidget {
         if (ticket.instructions case final instructions? when instructions.isNotEmpty) ...[
           SizedBox(height: 6.h),
           Text(instructions, style: text.bodyMedium),
+        ],
+        // What the customer asked the inks to be. Under the request, because it is part of it;
+        // each version below says what it was actually drawn in.
+        if (ticket.printColors.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          Text('ألوان الطباعة المطلوبة', style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+          SizedBox(height: 6.h),
+          PrintColorsView(colors: ticket.printColors),
         ],
       ],
     );

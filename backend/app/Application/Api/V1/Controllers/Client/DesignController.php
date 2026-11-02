@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Controllers\Client;
 
 use App\Application\Api\V1\Requests\Client\Design\StoreClientDesignRequest;
+use App\Application\Api\V1\Requests\Client\Design\UpdateClientDesignColorsRequest;
 use App\Application\Api\V1\Requests\Client\Design\UpdateClientDesignRequest;
 use App\Application\Api\V1\Resources\Client\CustomerDesignSummaryResource;
 use App\Application\Controller;
+use App\Domain\Customer\Actions\ChooseDesignColors;
 use App\Domain\Customer\Actions\DeleteCustomerDesign;
 use App\Domain\Customer\Actions\UploadCustomerDesign;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\Customer\Support\PrintColors;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +44,7 @@ class DesignController extends Controller
     public function __construct(
         private readonly UploadCustomerDesign $uploadDesign,
         private readonly DeleteCustomerDesign $deleteDesign,
+        private readonly ChooseDesignColors $chooseColors,
     ) {}
 
     /**
@@ -74,6 +78,8 @@ class DesignController extends Controller
             // `notes` is deliberately not forwarded: it is what staff write to each other about
             // a design, and nothing a customer sends may land in it.
             notes: null,
+            // Names and swatches; a code is staff's to write, so none survives from here.
+            printColors: PrintColors::withoutCodes($request->validated('print_colors')),
         );
 
         $resource = new CustomerDesignSummaryResource($design);
@@ -95,6 +101,23 @@ class DesignController extends Controller
         $owned->update(['label' => $request->string('label')->toString()]);
 
         return $this->success(new CustomerDesignSummaryResource($owned->refresh()), 'تم تحديث التصميم');
+    }
+
+    /**
+     * Choose a design's print colors
+     *
+     * «ألوان الطباعة» — a name and a swatch for each ink (`hex`, `#RRGGBB`). Send an empty list to
+     * clear them. Any `code` is ignored: our team writes the code the press matches. Refused with
+     * 422 once it has — `print_colors_locked` on the design says so in advance.
+     */
+    public function colors(UpdateClientDesignColorsRequest $request, int $design): JsonResponse
+    {
+        $updated = ($this->chooseColors)(
+            $this->ownedDesign($request, $design),
+            $request->validated('print_colors'),
+        );
+
+        return $this->success(new CustomerDesignSummaryResource($updated), 'تم حفظ ألوان الطباعة');
     }
 
     /**

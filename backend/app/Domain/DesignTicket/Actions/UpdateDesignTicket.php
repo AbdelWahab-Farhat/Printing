@@ -39,7 +39,7 @@ final class UpdateDesignTicket
 
         $ticket->update(array_intersect_key(
             $attributes,
-            array_flip(['title', 'description', 'instructions']),
+            array_flip(['title', 'description', 'instructions', 'print_colors']),
         ));
 
         return $ticket->refresh();

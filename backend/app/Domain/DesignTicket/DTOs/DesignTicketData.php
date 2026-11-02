@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\DesignTicket\DTOs;
 
+use App\Domain\Customer\Support\PrintColors;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -24,6 +25,7 @@ final readonly class DesignTicketData
 {
     /**
      * @param  list<UploadedFile>  $files
+     * @param  list<array{name: string, code: string|null, hex: string|null}>|null  $printColors
      */
     public function __construct(
         public int $customerId,
@@ -33,6 +35,7 @@ final readonly class DesignTicketData
         public ?int $orderId = null,
         public ?int $assignedDesignerId = null,
         public array $files = [],
+        public ?array $printColors = null,
     ) {}
 
     /**
@@ -53,6 +56,7 @@ final readonly class DesignTicketData
                 ? (int) $data['assigned_designer_id']
                 : null,
             files: $files,
+            printColors: PrintColors::normalise($data['print_colors'] ?? null),
         );
     }
 

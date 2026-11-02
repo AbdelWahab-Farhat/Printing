@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 
 /// What the app can do about a customer's artwork.
@@ -47,6 +48,14 @@ abstract interface class CustomerDesignRepository {
     required String label,
     String? notes,
   });
+
+  /// Replaces the design's «ألوان الطباعة». An empty list clears them; the label and notes are
+  /// left as they are.
+  Future<Either<Failure, CustomerDesign>> setPrintColors(
+    int customerId,
+    int designId,
+    List<PrintColor> colors,
+  );
 
   /// The file's own bytes, for saving it onto the phone.
   ///

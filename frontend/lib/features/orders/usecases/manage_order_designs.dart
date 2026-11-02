@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 
 /// Proposing the next version of the artwork.
@@ -42,4 +43,18 @@ class ReviewOrderDesign {
       rejectionReason: trimmed != null && trimmed.isNotEmpty ? trimmed : null,
     );
   }
+}
+
+/// Corrects «ألوان الطباعة» on one version, for this order alone.
+///
+/// The version holds a copy of its design's colors, so this leaves the customer's library as it
+/// is. An empty list clears them. Refused once the order is at the press — the colors lock with
+/// the artwork.
+class UpdateOrderDesignColors {
+  const UpdateOrderDesignColors(this._repository);
+
+  final OrderRepository _repository;
+
+  Future<Either<Failure, void>> call(int orderId, int designId, List<PrintColor> colors) =>
+      _repository.updateDesignColors(orderId, designId, colors);
 }

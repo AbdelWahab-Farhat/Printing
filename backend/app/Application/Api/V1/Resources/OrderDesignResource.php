@@ -34,6 +34,11 @@ class OrderDesignResource extends JsonResource
             'rejection_reason' => $this->rejection_reason,
             'notes' => $this->notes,
 
+            // «ألوان الطباعة» — this order's copy, which is what the press reads; not
+            // `design.print_colors`, which may have been edited since. Always a list, empty when
+            // there are none.
+            'print_colors' => $this->print_colors ?? [],
+
             'customer_design_id' => $this->customer_design_id,
             'design' => new CustomerDesignResource($this->whenLoaded('customerDesign')),
 

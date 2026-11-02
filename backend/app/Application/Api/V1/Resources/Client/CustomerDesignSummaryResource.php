@@ -12,7 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * A design as its own owner sees it.
  *
- * **Two fields short of {@see CustomerDesignResource}, and both absences are the point.**
+ * **Two fields short of {@see CustomerDesignResource}, and both absences are the point.** (The
+ * print colors are not one of them: the customer chose them and sees them, codes included.)
  *
  * `notes` is where staff write to each other about a piece of artwork — «العميل ما عجبه اللون،
  * خليه يعيد». It is the same category of text as a customer's comments, which
@@ -39,6 +40,14 @@ class CustomerDesignSummaryResource extends JsonResource
             // Never null: the upload action falls back to the filename, because a design with no
             // name is one nobody dares print from.
             'label' => $this->displayName(),
+
+            // «ألوان الطباعة» — the customer's names and swatches, with the codes our team wrote
+            // beside them, shown so they can see what will be printed. Always a list.
+            'print_colors' => $this->print_colors ?? [],
+
+            // True once our team has written any code, and from then on the customer may not
+            // change them. The endpoint refuses past that point; this lets the app say so first.
+            'print_colors_locked' => $this->printColorsAreConfirmed(),
 
             // `image` or `pdf` — whether the app can draw this itself or must hand it to the
             // system viewer. A decided value, not a mime type for the client to interpret.

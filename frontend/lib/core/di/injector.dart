@@ -95,6 +95,7 @@ import 'package:dayaa/features/customers/usecases/get_customers.dart';
 import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/save_design_to_device.dart';
 import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/customers/usecases/update_customer.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
@@ -1134,6 +1135,9 @@ abstract final class Injector {
       )
       ..registerLazySingleton<ReviewOrderDesign>(
         () => ReviewOrderDesign(sl<OrderRepository>()),
+      )
+      ..registerLazySingleton<UpdateOrderDesignColors>(
+        () => UpdateOrderDesignColors(sl<OrderRepository>()),
       )
       // Handing an order to Nawris. Its own repository for the same reason the payments one is
       // separate: `carrier.manage` is a different grant from `orders.manage`, and the routes sit
@@ -2299,6 +2303,9 @@ abstract final class Injector {
       ..registerLazySingleton<UploadCustomerDesign>(
         () => UploadCustomerDesign(sl<CustomerDesignRepository>()),
       )
+      ..registerLazySingleton<SetCustomerDesignColors>(
+        () => SetCustomerDesignColors(sl<CustomerDesignRepository>()),
+      )
       ..registerLazySingleton<RenameCustomerDesign>(
         () => RenameCustomerDesign(sl<CustomerDesignRepository>()),
       )
@@ -2317,6 +2324,7 @@ abstract final class Injector {
           getDesigns: sl<GetCustomerDesigns>(),
           uploadDesign: sl<UploadCustomerDesign>(),
           renameDesign: sl<RenameCustomerDesign>(),
+          setDesignColors: sl<SetCustomerDesignColors>(),
           deleteDesign: sl<DeleteCustomerDesign>(),
         ),
       )

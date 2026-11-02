@@ -884,18 +884,26 @@ class Order extends Model implements HasAuditTrail
      */
     public function designsAreEditable(): bool
     {
-        return in_array(
-            $this->status,
-            [
-                OrderStatus::Requested,
-                OrderStatus::New,
-                OrderStatus::AwaitingDeposit,
-                OrderStatus::DepositPaid,
-                OrderStatus::ReadyToPrint,
-                OrderStatus::Designing,
-            ],
-            true,
-        );
+        return in_array($this->status, self::designEditableStatuses(), true);
+    }
+
+    /**
+     * The statuses {@see designsAreEditable()} answers yes in — as a list, for the one reader
+     * that has to ask it of many orders in one query: a design's print colors carried onto every
+     * order still open to the artwork (`RefreshOrderDesignColors`).
+     *
+     * @return list<OrderStatus>
+     */
+    public static function designEditableStatuses(): array
+    {
+        return [
+            OrderStatus::Requested,
+            OrderStatus::New,
+            OrderStatus::AwaitingDeposit,
+            OrderStatus::DepositPaid,
+            OrderStatus::ReadyToPrint,
+            OrderStatus::Designing,
+        ];
     }
 
     /**

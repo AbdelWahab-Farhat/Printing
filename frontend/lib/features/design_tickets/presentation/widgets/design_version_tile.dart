@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
@@ -136,6 +137,12 @@ class DesignVersionTile extends StatelessWidget {
                     ),
                 ],
               ),
+              // The inks the designer says this version was drawn in — what the reviewer checks
+              // before approving, and what goes into the customer's library with the file.
+              if (version.printColors.isNotEmpty) ...[
+                SizedBox(height: 10.h),
+                PrintColorsView(colors: version.printColors),
+              ],
               // The reviewer's words, headed and coloured by **the verdict they came with**.
               //
               // This box was red and headed «المطلوب تعديله» on any note at all, so a version

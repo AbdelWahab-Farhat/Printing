@@ -27,6 +27,10 @@ class CustomerDesignResource extends JsonResource
             'label' => $this->displayName(),
             'notes' => $this->notes,
 
+            // «ألوان الطباعة» — `{name, code, hex}` each; `code` is what the press matches and
+            // `hex` only a swatch. Always a list, empty when there are none.
+            'print_colors' => $this->print_colors ?? [],
+
             // `image` or `pdf` — whether the app can draw this itself or must hand it to the
             // system viewer. Sent as a decided value rather than a mime type for the client to
             // interpret.

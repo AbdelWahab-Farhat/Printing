@@ -101,6 +101,19 @@ enum TransitionFieldType: string
      */
     case Notice = 'notice';
 
+    /**
+     * **«ألوان الطباعة» shown once more on the way to the press** — read, never answered.
+     *
+     * A {@see Notice} with the colors attached, as `colors`, so the app draws swatches and codes
+     * rather than a sentence. Offered on the move into «قيد الطباعة» only, and only when the
+     * artwork has colors on record: that move is the last moment they can be corrected, because
+     * the order's copy locks with the artwork. Carries no value and earns no rule.
+     *
+     * An app that predates the type draws it as an unknown field — a note, not a gap — and the
+     * move goes through as before.
+     */
+    case PrintColors = 'print_colors';
+
     case Warehouse = 'warehouse';
 
     /**

@@ -11,6 +11,7 @@ import 'package:dayaa/features/customers/repositories/customer_design_repository
 import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
 import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -70,6 +71,7 @@ void main() {
       getDesigns: GetCustomerDesigns(repository),
       uploadDesign: UploadCustomerDesign(repository),
       renameDesign: RenameCustomerDesign(repository),
+      setDesignColors: SetCustomerDesignColors(repository),
       deleteDesign: DeleteCustomerDesign(repository),
     );
 

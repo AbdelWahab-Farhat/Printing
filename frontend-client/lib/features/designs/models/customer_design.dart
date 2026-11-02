@@ -1,3 +1,4 @@
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'customer_design.freezed.dart';
@@ -42,6 +43,16 @@ abstract class CustomerDesign with _$CustomerDesign {
     /// Never null: the server falls back to the filename, because a design with no name is one
     /// nobody dares print from.
     required String label,
+
+    /// «ألوان الطباعة» — the names and swatches the customer chose, with the code our team
+    /// wrote beside each once it has. Empty when there are none, and from an older server.
+    @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> printColors,
+
+    /// True once our team has written a code: from then on the colors are read-only here, and a
+    /// change goes through «تواصل معنا». The server refuses an edit past that point anyway.
+    @JsonKey(name: 'print_colors_locked') @Default(false) bool printColorsLocked,
 
     /// `image` or `pdf`, already decided. Sent alongside [kindLabel] so this app keeps no
     /// translation table of its own.

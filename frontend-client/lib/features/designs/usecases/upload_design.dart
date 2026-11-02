@@ -1,10 +1,11 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/picked_file.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
 
-/// Add a file to the library.
+/// Add a file to the library, with the print colors the customer chose for it, if any.
 class UploadDesign {
   const UploadDesign(this._repository);
 
@@ -13,5 +14,6 @@ class UploadDesign {
   Future<Either<Failure, CustomerDesign>> call({
     required PickedFile file,
     String? label,
-  }) => _repository.upload(file: file, label: label);
+    List<PrintColor> printColors = const [],
+  }) => _repository.upload(file: file, label: label, printColors: printColors);
 }

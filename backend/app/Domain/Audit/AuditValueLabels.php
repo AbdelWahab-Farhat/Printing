@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Audit;
 
 use App\Domain\Audit\Enums\AuditSubject;
+use App\Domain\Customer\Casts\AsPrintColors;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\OrderStatus;
 use BackedEnum;
@@ -171,6 +173,13 @@ final class AuditValueLabels
         mixed $value,
         AuditReferenceNames $names,
     ): ?string {
+        // «ألوان الطباعة» — the one array that has a sentence, and it is found through the cast like
+        // every other translation here: «أحمر الشعار (PANTONE 186 C)، أسود» instead of the JSON.
+        // Before the generic refusal below, which would otherwise take it.
+        if (($model->getCasts()[$column] ?? null) === AsPrintColors::class) {
+            return PrintColors::describe(is_string($value) ? json_decode($value, true) : $value);
+        }
+
         // «—» for null and «فارغ» for a cleared field are the app's job and it already does
         // them. An array is a `casts()` payload — features, properties — and has no one label.
         if ($value === null || $value === '' || is_array($value) || is_bool($value)) {

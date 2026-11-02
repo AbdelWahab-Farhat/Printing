@@ -87,7 +87,31 @@ final class TransitionField
          * @var array{key: string, above: string}|null
          */
         public readonly ?array $confirmWhen = null,
+        /**
+         * The inks a {@see TransitionFieldType::PrintColors} reminder shows. Empty on every other
+         * type, and then left out of {@see toArray()} altogether.
+         *
+         * @var list<array{name: string, code: string|null, hex: string|null}>
+         */
+        public readonly array $colors = [],
     ) {}
+
+    /**
+     * «ألوان الطباعة» once more before the press — {@see TransitionFieldType::PrintColors}.
+     *
+     * @param  list<array{name: string, code: string|null, hex: string|null}>  $colors
+     */
+    public static function printColors(string $key, string $label, string $hint, array $colors): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::PrintColors,
+            label: $label,
+            required: false,
+            hint: $hint,
+            colors: $colors,
+        );
+    }
 
     /**
      * A yes the app asks for at the moment of sending, and only when another answer crossed a
@@ -403,6 +427,8 @@ final class TransitionField
             'max_kilobytes' => $this->maxKilobytes,
             // When a confirmation is asked — `{key, above}` — and null on everything else.
             'confirm_when' => $this->confirmWhen,
+            // On the print-colors reminder alone, so no other field in the bag grows a key.
+            ...($this->type === TransitionFieldType::PrintColors ? ['colors' => $this->colors] : []),
         ];
     }
 
@@ -437,6 +463,7 @@ final class TransitionField
         return match ($this->type) {
             // لا شيء: جملةٌ تُقرأ لا تُرسَل، فقاعدةٌ عليها قاعدةٌ على ما لا يصل.
             TransitionFieldType::Notice => [],
+            TransitionFieldType::PrintColors => [],
 
             // A yes or nothing. What it permits is the domain's to decide, not this rule's.
             TransitionFieldType::Confirmation => [
@@ -537,6 +564,7 @@ final class TransitionField
         return match ($this->type) {
             // لا رسائلَ لحقلٍ بلا قواعد — ولا يصل هنا إلا لأن الطلب يمشي على الحقول كلّها.
             TransitionFieldType::Notice => [],
+            TransitionFieldType::PrintColors => [],
 
             TransitionFieldType::CustomerDesigns => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",

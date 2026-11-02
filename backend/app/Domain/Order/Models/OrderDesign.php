@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Customer\Casts\AsPrintColors;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderDesignStatus;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * and the status moves only through review, which has a reason to enforce.
  */
 #[UseFactory(OrderDesignFactory::class)]
-#[Fillable(['customer_design_id', 'notes'])]
+#[Fillable(['customer_design_id', 'notes', 'print_colors'])]
 class OrderDesign extends Model
 {
     /** @use HasFactory<OrderDesignFactory> */
@@ -43,6 +44,9 @@ class OrderDesign extends Model
             'status' => OrderDesignStatus::class,
             'version' => 'integer',
             'reviewed_at' => 'datetime',
+            // A copy of the design's colors, taken when it was attached, and what the press reads.
+            // It stops moving with the artwork itself — see Order::designsAreEditable().
+            'print_colors' => AsPrintColors::class,
         ];
     }
 

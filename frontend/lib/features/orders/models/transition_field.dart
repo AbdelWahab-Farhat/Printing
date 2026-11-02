@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'transition_field.freezed.dart';
@@ -33,6 +34,15 @@ enum TransitionFieldType {
   /// يستطيع أن يفترق عمّا يفعله الزرّ لأن المعاينة والفعل يقرآن المصدر نفسه.
   @JsonValue('notice')
   notice,
+
+  /// «ألوان الطباعة» once more on the way to the press — read, never answered.
+  ///
+  /// A [notice] with the inks attached in [TransitionField.colors], so the screen draws swatches
+  /// and codes rather than a sentence. The server offers it on the move into «قيد الطباعة» only
+  /// when the artwork has colors on record: that move is the last moment they can be corrected,
+  /// because the order's copy locks with the artwork as it lands. See PRINT-COLORS.md.
+  @JsonValue('print_colors')
+  printColors,
 
   /// One of the carriers the business maintains.
   ///
@@ -184,6 +194,12 @@ abstract class TransitionField with _$TransitionField {
     /// When a [TransitionFieldType.confirmation] is asked: the answer to `key` went past
     /// `above`. Null on every other kind.
     @JsonKey(name: 'confirm_when') TransitionFieldThreshold? confirmWhen,
+
+    /// The inks a [TransitionFieldType.printColors] reminder shows. Absent — and so empty — on
+    /// every other kind.
+    @JsonKey(fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> colors,
   }) = _TransitionField;
 
   const TransitionField._();

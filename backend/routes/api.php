@@ -561,6 +561,11 @@ Route::prefix('v1')->group(function (): void {
             ->scopeBindings()
             ->middleware('can:orders.designs.manage')->name('orders.designs.review');
 
+        // «ألوان الطباعة» on one version — the order's own copy, under the artwork's lock.
+        Route::patch('orders/{order}/designs/{design}/colors', [OrderController::class, 'updateDesignColors'])
+            ->scopeBindings()
+            ->middleware('can:orders.designs.manage')->name('orders.designs.colors');
+
         // Bags spoiled producing one line. Guarded by inventory.manage rather than an orders.*
         // permission — it draws stock and posts a FIFO cost the same way a fulfillment does, so
         // it is squarely part of the stock ledger regardless of which controller the route lives

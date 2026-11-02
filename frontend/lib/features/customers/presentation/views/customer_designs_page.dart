@@ -4,6 +4,8 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -390,6 +392,11 @@ class _DesignTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
+        // Dots only — the tile is too small to name each ink; the options sheet opens them.
+        if (design.printColors.isNotEmpty) ...[
+          SizedBox(height: 4.h),
+          PrintColorDots(colors: design.printColors),
+        ],
       ],
     );
   }
@@ -562,6 +569,17 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
                 onTap: () => Navigator.of(sheetContext).pop(_DesignAction.rename),
               ),
               ListTile(
+                leading: Icon(AppIcons.printColors),
+                title: const Text('ألوان الطباعة'),
+                subtitle: design.printColors.isEmpty
+                    ? null
+                    : Padding(
+                        padding: EdgeInsets.only(top: 4.h),
+                        child: PrintColorDots(colors: design.printColors),
+                      ),
+                onTap: () => Navigator.of(sheetContext).pop(_DesignAction.colors),
+              ),
+              ListTile(
                 leading: Icon(AppIcons.delete, color: context.colorScheme.error),
                 title: Text('حذف', style: TextStyle(color: context.colorScheme.error)),
                 onTap: () => Navigator.of(sheetContext).pop(_DesignAction.delete),
@@ -585,12 +603,37 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
       await _previewOnBag(context, design);
     case _DesignAction.rename:
       await _rename(context, cubit, design);
+    case _DesignAction.colors:
+      await _editColors(context, cubit, design);
     case _DesignAction.delete:
       await _delete(context, cubit, design);
   }
 }
 
-enum _DesignAction { open, save, preview, rename, delete }
+enum _DesignAction { open, save, preview, rename, colors, delete }
+
+/// «ألوان الطباعة» on the design itself — and so on every order still waiting to print it.
+Future<void> _editColors(
+  BuildContext context,
+  CustomerDesignsCubit cubit,
+  CustomerDesign design,
+) async {
+  final colors = await showPrintColorsSheet(
+    context: context,
+    initial: design.printColors,
+    subtitle: 'تصل إلى الطلبيات التي لم تبدأ طباعتها بعد',
+  );
+  if (colors == null || !context.mounted) return;
+
+  final failure = await cubit.setColors(design.id, colors);
+  if (!context.mounted) return;
+
+  if (failure == null) {
+    context.showSuccess('تم تحديث ألوان الطباعة');
+  } else {
+    context.showFailure(failure);
+  }
+}
 
 /// يفتح معاينة الكيس وعليها هذا التصميم.
 ///
