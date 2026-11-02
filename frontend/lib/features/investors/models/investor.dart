@@ -22,6 +22,13 @@ abstract class Investor with _$Investor {
 
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
 
+    /// **«إعادة استثمار الأرباح تلقائياً»** — §١٤. مُشغَّلاً، يُعيد الخادمُ ربحَه المتاح للسحب إلى
+    /// الصندوق كلَّ ساعةٍ ونافذةُ الاكتتاب مفتوحة. مُطفأٌ افتراضياً، وخادمٌ أقدم لا يرسله.
+    @JsonKey(name: 'auto_reinvest_profit') @Default(false) bool autoReinvestProfit,
+
+    /// متى شُغِّل — فارغٌ وهو مُطفأ.
+    @JsonKey(name: 'auto_reinvest_since') DateTime? autoReinvestSince,
+
     /// Whether he has an account he can sign in with.
     @JsonKey(name: 'has_login') @Default(false) bool hasLogin,
 

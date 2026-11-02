@@ -19,6 +19,8 @@ class _MockGetInvestor extends Mock implements GetInvestor {}
 
 class _MockRecordWalletEntry extends Mock implements RecordWalletEntry {}
 
+class _MockSetAutoReinvest extends Mock implements SetAutoReinvest {}
+
 /// صفحةُ المستثمر في «أ · لمحة واحدة» — الاتجاهُ الذي اختاره المالك 2026-09-25.
 ///
 /// رأسُ ماله كلُّه في البطاقة الكبيرة وأين هو تحته، وربحُه وبوّاباتُه الثلاث معاً، ثم فتراتُه —
@@ -37,6 +39,7 @@ void main() {
         () => InvestorDetailCubit(
           getInvestor: getInvestor,
           recordWalletEntry: _MockRecordWalletEntry(),
+          setAutoReinvest: _MockSetAutoReinvest(),
         ),
       );
   });

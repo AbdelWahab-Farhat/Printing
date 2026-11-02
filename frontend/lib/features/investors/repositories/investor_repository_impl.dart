@@ -68,6 +68,20 @@ class InvestorRepositoryImpl implements InvestorRepository {
   }
 
   @override
+  Future<Either<Failure, Investor>> setAutoReinvest({
+    required int investorId,
+    required bool enabled,
+  }) {
+    return safeRequest<Investor>(
+      () => _dio.patch(
+        InvestorEndpoints.autoReinvest(investorId),
+        data: <String, dynamic>{'enabled': enabled},
+      ),
+      parse: (data) => Investor.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Unit>> recordWalletEntry({
     required int investorId,
     required String type,

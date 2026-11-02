@@ -28,6 +28,10 @@ class InvestorResource extends JsonResource
             'notes' => $this->notes,
             'is_active' => (bool) $this->is_active,
 
+            // «إعادة استثمار الأرباح تلقائياً» — §١٤. `since` is null while it is off.
+            'auto_reinvest_profit' => (bool) $this->auto_reinvest_profit,
+            'auto_reinvest_since' => $this->auto_reinvest_since?->toIso8601String(),
+
             // Whether he can sign in. A fact about the row rather than a role name, so renaming
             // the role cannot change what the app believes.
             'has_login' => $this->user_id !== null,

@@ -535,6 +535,8 @@ final class AuditAttributeLabels
             'name' => 'اسم المستثمر',
             'user_id' => 'حساب الدخول',
             'created_by' => 'أضافه',
+            'auto_reinvest_profit' => 'إعادة استثمار الأرباح تلقائياً',
+            'auto_reinvest_since' => 'إعادة الاستثمار مفعّلة منذ',
         ],
         'investor_deal' => [
             'product_id' => 'المنتج',

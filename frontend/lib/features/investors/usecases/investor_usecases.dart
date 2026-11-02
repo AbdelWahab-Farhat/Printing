@@ -53,6 +53,15 @@ class CreateInvestor {
   }) => _repository.createInvestor(name: name.trim(), phone: phone?.trim(), notes: notes?.trim());
 }
 
+class SetAutoReinvest {
+  const SetAutoReinvest(this._repository);
+
+  final InvestorRepository _repository;
+
+  Future<Either<Failure, Investor>> call({required int investorId, required bool enabled}) =>
+      _repository.setAutoReinvest(investorId: investorId, enabled: enabled);
+}
+
 class RecordWalletEntry {
   const RecordWalletEntry(this._repository);
 

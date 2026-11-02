@@ -939,6 +939,7 @@ abstract final class Injector {
       ..registerLazySingleton<RecordWalletEntry>(
         () => RecordWalletEntry(sl<InvestorRepository>()),
       )
+      ..registerLazySingleton<SetAutoReinvest>(() => SetAutoReinvest(sl<InvestorRepository>()))
       ..registerLazySingleton<GetInvestorDeals>(() => GetInvestorDeals(sl<InvestorRepository>()))
       ..registerLazySingleton<GetInvestorDeal>(() => GetInvestorDeal(sl<InvestorRepository>()))
       ..registerLazySingleton<GetDealOrders>(() => GetDealOrders(sl<InvestorRepository>()))
@@ -966,6 +967,7 @@ abstract final class Injector {
         () => InvestorDetailCubit(
           getInvestor: sl<GetInvestor>(),
           recordWalletEntry: sl<RecordWalletEntry>(),
+          setAutoReinvest: sl<SetAutoReinvest>(),
         ),
       )
       ..registerFactory<InvestorStatementCubit>(

@@ -935,6 +935,9 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('investors/{investor}/activation', [InvestorController::class, 'activation'])
             ->middleware('can:investors.manage')->name('investors.activation');
 
+        Route::patch('investors/{investor}/auto-reinvest', [InvestorController::class, 'autoReinvest'])
+            ->middleware('can:investors.manage')->name('investors.auto-reinvest');
+
         Route::get('investors/{investor}/statement', [InvestorController::class, 'statement'])
             ->middleware('can:investors.view')->name('investors.statement');
 

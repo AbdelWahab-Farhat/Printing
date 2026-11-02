@@ -21,6 +21,8 @@ class _MockGetInvestor extends Mock implements GetInvestor {}
 
 class _MockRecordWalletEntry extends Mock implements RecordWalletEntry {}
 
+class _MockSetAutoReinvest extends Mock implements SetAutoReinvest {}
+
 class _MockGetProfitSources extends Mock implements GetProfitSources {}
 
 /// «مصدر الربح» — كلُّ بوّابةٍ على بطاقة الأرباح تُفتح صفحةً على ما صنعها: ملخّصٌ يقسم الرقمَ على
@@ -51,6 +53,7 @@ void main() {
         () => InvestorDetailCubit(
           getInvestor: getInvestor,
           recordWalletEntry: _MockRecordWalletEntry(),
+          setAutoReinvest: _MockSetAutoReinvest(),
         ),
       )
       ..registerFactory<ProfitSourcesCubit>(() => ProfitSourcesCubit(getSources: getSources));

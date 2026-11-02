@@ -15,6 +15,7 @@ use App\Domain\Investor\Actions\RecordDealExpense;
 use App\Domain\Investor\Actions\RecordFundExpense;
 use App\Domain\Investor\Actions\RecordWalletEntry;
 use App\Domain\Investor\Actions\ReverseDealExpense;
+use App\Domain\Investor\Actions\SetAutoReinvest;
 use App\Domain\Investor\Actions\SetInvestorActivation;
 use App\Domain\Investor\Actions\UnwindDealEarningsForOrder;
 use App\Domain\Investor\Actions\UpdateInvestor;
@@ -57,6 +58,7 @@ final class InvestorService
         private readonly CreateInvestor $createInvestor,
         private readonly UpdateInvestor $updateInvestor,
         private readonly SetInvestorActivation $setActivation,
+        private readonly SetAutoReinvest $setAutoReinvest,
         private readonly FundPurchaseOrder $fundPurchaseOrder,
         private readonly CloseInvestorDeal $closeDeal,
         private readonly RecordWalletEntry $recordEntry,
@@ -92,6 +94,11 @@ final class InvestorService
     public function setInvestorActivation(Investor $investor, bool $isActive): Investor
     {
         return ($this->setActivation)($investor, $isActive);
+    }
+
+    public function setAutoReinvest(Investor $investor, bool $enabled): Investor
+    {
+        return ($this->setAutoReinvest)($investor, $enabled);
     }
 
     /** The investor behind a signed-in user, or null — the whole of the portal's scoping. */
