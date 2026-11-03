@@ -377,4 +377,22 @@ void main() {
     // Assert — a charge of nothing is the absence of a fact, like every other zero here.
     expect(message, isNot(contains('التكلفة الإضافية')));
   });
+
+  test('the ready message is the owner\u2019s words with the invoice number in them', () {
+    // Arrange
+    final order = orderWith(status: OrderStatus.ready);
+
+    // Act
+    final message = OrderMessage.readyOf(order);
+
+    // Assert — the whole text, because it is copied word for word from what the shop sends.
+    expect(
+      message,
+      'أهلا وسهلا بيك ، يومك طيب إن شاء الله\n'
+      '\n'
+      'طلبيتك رقم الفاتورة : [ 55 ] جاهزة للاستلام من مكتب شركة بريمولا .\n'
+      '\n'
+      'ساعات الدوام من الساعة 10 صباحا حتى 10 مساء .',
+    );
+  });
 }

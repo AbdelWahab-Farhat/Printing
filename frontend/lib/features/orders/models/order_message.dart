@@ -5,9 +5,10 @@ import 'package:dayaa/features/orders/models/order_status.dart';
 
 /// The order written out as a message, for a reader who does not have the app.
 ///
-/// **This is the only text in the project written for the customer rather than for staff.** It
-/// is what «نسخ الفاتورة» puts on the clipboard and what «مشاركة الفاتورة» hands to the phone's
-/// own share sheet — one text, so the two doors can never disagree about what an order says.
+/// **These are the only texts in the project written for the customer rather than for staff.**
+/// [of] is what «نسخ الفاتورة» puts on the clipboard and what «مشاركة الفاتورة» hands to the
+/// phone's own share sheet — one text, so the two doors can never disagree about what an order
+/// says. [readyOf] is the short one that follows it, once the bags are made.
 ///
 /// ## Why it is sections
 ///
@@ -59,6 +60,17 @@ class OrderMessage {
         if (section.isNotEmpty) section,
     ].join('\n\n');
   }
+
+  /// «رسالة الجاهزية» — what «نسخ الرسالة» puts on the clipboard once the order has been made.
+  ///
+  /// **The owner's own wording, spacing and all** (طلب المستخدم، 2026-10-28): it is the
+  /// greeting the shop was already sending by hand, and a customer who has had it before should
+  /// recognise it. Only the invoice number is the order's.
+  static String readyOf(Order order) => [
+    'أهلا وسهلا بيك ، يومك طيب إن شاء الله',
+    'طلبيتك رقم الفاتورة : [ ${order.code} ] جاهزة للاستلام من مكتب شركة بريمولا .',
+    'ساعات الدوام من الساعة 10 صباحا حتى 10 مساء .',
+  ].join('\n\n');
 
   /// What an email app writes on the subject line when the share sheet lands there.
   ///

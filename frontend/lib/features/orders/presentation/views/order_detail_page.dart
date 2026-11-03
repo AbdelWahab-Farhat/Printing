@@ -1122,11 +1122,20 @@ class _Body extends StatelessWidget {
               // **والبطاقة لا تُرسم إلا حين يكون فيها اثنان.** قبل «جاهزة» لا علامة أصلاً —
               // الخادم يقول ذلك بـ`readyMessageApplies` لا مقارنةٌ بحالةٍ تُكتب هنا — فيبقى
               // الزرّ وحده كما كان، لا صندوقاً حول زرٍّ واحد.
+              //
+              // **و«نسخ الرسالة» بجانبه، على القاعدة نفسها** (طلب المستخدم، 2026-10-28): رسالة
+              // الجاهزية تولد حين تولد العلامة، فلا تُعرَض قبل «جاهزة» ولا تغيب بعدها.
               if (order.readyMessageApplies)
                 _Section(
                   child: Column(
                     children: [
-                      CopyInvoiceButton(order: order),
+                      Row(
+                        children: [
+                          Expanded(child: CopyInvoiceButton(order: order)),
+                          SizedBox(width: 12.w),
+                          Expanded(child: CopyReadyMessageButton(order: order)),
+                        ],
+                      ),
                       // فاصلٌ صغير: `contentPadding` صفرٌ على المفتاح عمداً حتى يحاذي حافة
                       // البطاقة، فبغير هذا السطر يلتصق بالزرّ فوقه.
                       SizedBox(height: 4.h),

@@ -46,6 +46,34 @@ class CopyInvoiceButton extends StatelessWidget {
   }
 }
 
+/// «نسخ الرسالة» — the ready message on the clipboard, beside the invoice button and over the
+/// switch that records it was sent.
+///
+/// Copies rather than sends, for every reason [CopyInvoiceButton] gives. **And it does not tick
+/// «تم إرسال رسالة الجاهزية للزبون» by itself:** a copy is not a send, and that switch is somebody
+/// vouching that the customer was actually told.
+///
+/// «نسخ الرسالة» and not «نسخ رسالة الجاهزية»: the card is split in two, and the longer label
+/// does not fit its half. The chat bubble it wears is the switch's own, right under it.
+class CopyReadyMessageButton extends StatelessWidget {
+  const CopyReadyMessageButton({required this.order, super.key});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton.tonal(
+      label: 'نسخ الرسالة',
+      icon: AppIcons.readyMessage,
+      onPressed: () {
+        unawaited(Clipboard.setData(ClipboardData(text: OrderMessage.readyOf(order))));
+
+        context.showSuccess('تم نسخ رسالة الجاهزية', details: 'ألصقها في محادثة الزبون');
+      },
+    );
+  }
+}
+
 /// Draws the official invoice and hands the **file** to whatever the phone sends files with.
 ///
 /// **A PDF, not the text.** The button above already sends the words; this is the document —

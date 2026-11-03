@@ -1,15 +1,18 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/widgets/app_snackbar.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_message.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
@@ -20,6 +23,7 @@ import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -199,6 +203,61 @@ void main() {
     expect(find.text('تم إرسال رسالة الجاهزية للزبون'), findsNothing);
     expect(find.byType(SwitchListTile), findsNothing);
     expect(find.text('نسخ الفاتورة'), findsOneWidget);
+    expect(find.byType(CopyReadyMessageButton), findsNothing);
+  });
+
+  testWidgets('a ready order puts «نسخ الرسالة» beside «نسخ الفاتورة»', (tester) async {
+    // Arrange — the ready message is born when the switch is, so it follows the same answer from
+    // the server rather than a status compared here.
+    await sign(['orders.view', 'orders.ready_message'], order());
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+    final invoice = tester.getRect(find.byType(CopyInvoiceButton));
+    final message = tester.getRect(find.byType(CopyReadyMessageButton));
+    final mark = tester.getRect(find.byType(SwitchListTile));
+
+    // Assert — one row of two halves, and the switch under both.
+    expect(message.top, invoice.top);
+    expect(message.width, moreOrLessEquals(invoice.width));
+    expect(mark.top, greaterThan(message.bottom));
+  });
+
+  testWidgets('pressing it copies the ready message and leaves the switch alone', (tester) async {
+    // Arrange — a copy is not a send: the mark stays somebody vouching that the customer was told.
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+      call,
+    ) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+
+      return null;
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await sign(['orders.view', 'orders.ready_message'], order());
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byType(CopyReadyMessageButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Assert
+    expect(copied, OrderMessage.readyOf(order()));
+    expect(find.text('تم نسخ رسالة الجاهزية'), findsOneWidget);
+    expect(theSwitch(tester).value, isFalse);
+    verifyNever(() => repository.confirmReadyMessage(any(), sent: any(named: 'sent')));
+    resetSnackBars();
+    await tester.pump();
   });
 
   testWidgets('it stays after the parcel has left', (tester) async {
