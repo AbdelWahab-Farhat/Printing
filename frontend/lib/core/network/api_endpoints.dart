@@ -570,6 +570,9 @@ abstract final class OrderEndpoints {
 
   static String show(int orderId) => '/orders/$orderId';
 
+  /// «التذاكر المرتبطة» — تذاكرُ الموظفين والتصميم والعملاء التي تحمل هذه الطلبية، كلٌّ بنوعه.
+  static String tickets(int orderId) => '/orders/$orderId/tickets';
+
   /// Putting an archived order back in the shop. A POST for the reason [status] and [reinstate]
   /// are: the order's history gains a row.
   ///

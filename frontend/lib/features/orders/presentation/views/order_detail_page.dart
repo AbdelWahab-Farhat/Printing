@@ -24,6 +24,7 @@ import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deposit_card.dart';
@@ -33,6 +34,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions
 import 'package:dayaa/features/orders/presentation/widgets/order_items_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_money_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_ready_message_switch.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_tickets_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_timeline.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_totals.dart';
 import 'package:dayaa/features/orders/presentation/widgets/record_scrap_sheet.dart';
@@ -1279,6 +1281,12 @@ class _Body extends StatelessWidget {
                   // door onto the same room.
                   child: OrderDesignsSection(designs: order.designs!),
                 ),
+              ],
+              // «التذاكر المرتبطة» — طلبُها وحده، ورأسُها منها: بلا عنوانٍ هنا، لأن «إضافة تذكرة» في
+              // ذلك الرأس. ويُرسم حيث رُبط مكعّبُه فقط، كـ`PurchaseOrderPaymentsSection`.
+              if (sl.isRegistered<OrderTicketsCubit>()) ...[
+                SizedBox(height: 16.h),
+                _Section(child: OrderTicketsSection(order: order)),
               ],
               if (order.transitions != null && order.transitions!.isNotEmpty) ...[
                 SizedBox(height: 16.h),

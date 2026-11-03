@@ -10,6 +10,7 @@ import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/order_ticket.dart';
 import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/models/production_cost_entry.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
@@ -81,6 +82,9 @@ abstract interface class OrderRepository {
   Future<Either<Failure, OrderCounts>> archivedStatusCounts({String? search, int? customerId});
 
   Future<Either<Failure, Order>> order(int orderId);
+
+  /// التذاكرُ المرتبطة بالطلبية، المفتوحةُ أولاً — وما لا يراه القارئ في قائمة نوعه لا يأتي هنا.
+  Future<Either<Failure, List<OrderTicket>>> orderTickets(int orderId);
 
   /// Archives an order, and answers with it as the server left it — trashed.
   ///

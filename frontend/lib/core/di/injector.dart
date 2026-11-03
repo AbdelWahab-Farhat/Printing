@@ -181,6 +181,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_settlement_cubit.dart';
@@ -196,6 +197,7 @@ import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_archived_orders.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/get_order_counts.dart';
+import 'package:dayaa/features/orders/usecases/get_order_tickets.dart';
 import 'package:dayaa/features/orders/usecases/get_orders.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
@@ -1087,6 +1089,7 @@ abstract final class Injector {
       ..registerLazySingleton<DeleteOrder>(() => DeleteOrder(sl<OrderRepository>()))
       ..registerLazySingleton<RestoreOrder>(() => RestoreOrder(sl<OrderRepository>()))
       ..registerLazySingleton<GetOrder>(() => GetOrder(sl<OrderRepository>()))
+      ..registerLazySingleton<GetOrderTickets>(() => GetOrderTickets(sl<OrderRepository>()))
       // No repository: the invoice is the order the screen already has, drawn. Registered all
       // the same so it is one object per app — it caches the two parsed TrueType faces the PDF
       // embeds, and parsing those per invoice is what makes a share sheet feel slow.
@@ -1291,6 +1294,9 @@ abstract final class Injector {
           confirmReadyMessage: sl<ConfirmReadyMessage>(),
           confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
         ),
+      )
+      ..registerFactory<OrderTicketsCubit>(
+        () => OrderTicketsCubit(getTickets: sl<GetOrderTickets>()),
       )
       // The move screen fetches the order itself rather than being handed one: it is reachable
       // by deep link, and a screen that only works when another filled its hands has a hidden

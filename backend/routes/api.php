@@ -33,6 +33,7 @@ use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
 use App\Application\Api\V1\Controllers\OrderPaymentReviewController;
 use App\Application\Api\V1\Controllers\OrderPaymentSettlementController;
+use App\Application\Api\V1\Controllers\OrderTicketController;
 use App\Application\Api\V1\Controllers\PermissionController;
 use App\Application\Api\V1\Controllers\ProductCategoryController;
 use App\Application\Api\V1\Controllers\ProductController;
@@ -472,6 +473,13 @@ Route::prefix('v1')->group(function (): void {
             ->withTrashed()
             ->middleware(['can:orders.view', ArchivedOrdersNeedTheArchiveGrant::class])
             ->name('orders.show');
+
+        // «التذاكر المرتبطة» تحت الطلبية، بحارسَي `show` نفسيهما: تُقرأ حيث تُقرأ الطلبية، أرشيفاً
+        // كانت أو لا. وما وراء ذلك قاعدةُ كلّ نوع — انظر OrderTicketsQuery.
+        Route::get('orders/{order}/tickets', [OrderTicketController::class, 'index'])
+            ->withTrashed()
+            ->middleware(['can:orders.view', ArchivedOrdersNeedTheArchiveGrant::class])
+            ->name('orders.tickets.index');
 
         Route::apiResource('orders', OrderController::class)
             ->only(['store', 'update'])

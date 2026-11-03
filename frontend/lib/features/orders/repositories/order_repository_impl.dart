@@ -14,6 +14,7 @@ import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
+import 'package:dayaa/features/orders/models/order_ticket.dart';
 import 'package:dayaa/features/orders/models/orders_sort.dart';
 import 'package:dayaa/features/orders/models/production_cost_entry.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
@@ -188,6 +189,16 @@ class OrderRepositoryImpl implements OrderRepository {
     return safeRequest<Order>(
       () => _dio.get(OrderEndpoints.show(orderId)),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<OrderTicket>>> orderTickets(int orderId) {
+    return safeRequest<List<OrderTicket>>(
+      () => _dio.get(OrderEndpoints.tickets(orderId)),
+      parse: (data) => (data as List<dynamic>)
+          .map((row) => OrderTicket.fromJson(row as Map<String, dynamic>))
+          .toList(),
     );
   }
 
