@@ -20,6 +20,11 @@ sealed class CustomerDesignsState with _$CustomerDesignsState {
     /// Ids of designs being renamed or removed right now. A set rather than a single id
     /// because two rows can be worked on at once and each has to show its own state.
     @Default(<int>{}) Set<int> busy,
+
+    /// التصميم الذي تبيّن أن الملف المرفوع موجودٌ فيه أصلاً — فالخادم ردّه بدل نسخةٍ ثانية.
+    /// تقرأه الشاشة حين يتغيّر لتقول «هذا التصميم محفوظ مسبقاً»، ويُفرَّغ مع كل ملفٍ يُضاف كي
+    /// يُقال ذلك ثانيةً لو رُفع الملف نفسه مرّةً أخرى.
+    CustomerDesign? alreadySaved,
   }) = CustomerDesignsLoaded;
 
   const factory CustomerDesignsState.failure(Failure failure) = CustomerDesignsFailure;

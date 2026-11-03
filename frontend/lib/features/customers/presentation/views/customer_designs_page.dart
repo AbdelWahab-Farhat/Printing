@@ -117,7 +117,13 @@ class _DesignsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<CustomerDesignsCubit>();
 
-    return BlocBuilder<CustomerDesignsCubit, CustomerDesignsState>(
+    return BlocConsumer<CustomerDesignsCubit, CustomerDesignsState>(
+      // الملف موجودٌ عند العميل: الخادم ردّ تصميمه بلا نسخةٍ ثانية، والبطاقة صعدت إلى الأول.
+      listenWhen: (previous, current) =>
+          current is CustomerDesignsLoaded &&
+          current.alreadySaved != null &&
+          (previous is! CustomerDesignsLoaded || previous.alreadySaved != current.alreadySaved),
+      listener: (context, _) => context.showInfo('هذا التصميم محفوظ مسبقاً'),
       builder: (context, state) => PopScope(
         // Leaving mid-upload cancels it silently — the request dies with the Cubit. Asking
         // first is the difference between "I cancelled it" and "it just did not work".

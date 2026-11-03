@@ -89,7 +89,7 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
     ];
     if (fresh.isEmpty) return;
 
-    emit(current.copyWith(uploads: [...current.uploads, ...fresh]));
+    emit(current.copyWith(uploads: [...current.uploads, ...fresh], alreadySaved: null));
 
     await _drain();
   }
@@ -109,6 +109,7 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
           // distinguishes "passed null" from "not passed".
           (upload) => upload.copyWith(failure: null, sent: 0),
         ),
+        alreadySaved: null,
       ),
     );
 
@@ -270,6 +271,11 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
             for (final it in current.uploads)
               if (it.id != upload.id) it,
           ],
+          // معرّفٌ في القائمة قبل الرفع = ملفٌّ يملكه العميل أصلاً. لا رمزُ الرد 200: إعادة
+          // المحاولة بعد انقطاعٍ وصل فيه الطلب الأول تأتي بـ200 أيضاً، والملف عند الموظف جديد.
+          alreadySaved: current.designs.any((it) => it.id == design.id)
+              ? design
+              : current.alreadySaved,
         ),
       ),
     );

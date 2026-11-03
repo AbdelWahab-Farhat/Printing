@@ -296,6 +296,56 @@ void main() {
     expect((cubit.state as CustomerDesignsLoaded).designs, const [logo, flyer]);
   });
 
+  test('re-uploading a file the customer already has says which design it is', () async {
+    // Arrange
+    when(() => repository.designs(7)).thenAnswer((_) async => const Right([flyer, logo]));
+    whenUploading((_) async => const Right(logo));
+    await cubit.load();
+
+    // Act
+    await cubit.add([pickedLogo]);
+
+    // Assert
+    expect((cubit.state as CustomerDesignsLoaded).alreadySaved, logo);
+  });
+
+  test('a new file is not reported as one already saved', () async {
+    // Arrange
+    whenUploading((_) async => const Right(flyer));
+    await cubit.load();
+
+    // Act
+    await cubit.add([pickedFlyer]);
+
+    // Assert
+    expect((cubit.state as CustomerDesignsLoaded).alreadySaved, isNull);
+  });
+
+  test('the same file sent twice in a row is reported twice', () async {
+    // Arrange — the screen reacts to the field changing, so it has to clear between the two.
+    when(() => repository.designs(7)).thenAnswer((_) async => const Right([logo]));
+    whenUploading((_) async => const Right(logo));
+    await cubit.load();
+    final reported = <CustomerDesign?>[];
+    final subscription = cubit.stream.listen(
+      (state) => reported.add((state as CustomerDesignsLoaded).alreadySaved),
+    );
+
+    // Act
+    await cubit.add([pickedLogo]);
+    await cubit.add([pickedLogo]);
+    // The stream delivers on a later microtask; let the last state arrive before stopping.
+    await Future<void>.delayed(Duration.zero);
+    await subscription.cancel();
+
+    // Assert — `logo` appears twice with a null between, never as one unchanged run.
+    final changes = <CustomerDesign?>[
+      for (var i = 0; i < reported.length; i++)
+        if (i == 0 || reported[i] != reported[i - 1]) reported[i],
+    ];
+    expect(changes.where((it) => it == logo), hasLength(2));
+  });
+
   test('renaming replaces the design where it stands', () async {
     // Arrange
     const renamed = CustomerDesign(

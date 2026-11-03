@@ -244,6 +244,42 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('uploading a file the customer already has says so', (tester) async {
+    // Arrange — the server answers a known file with the design it already holds.
+    session.adopt(userWith(['customers.view', 'customers.manage']));
+    picker.answer = const [
+      PickedFile(path: '/tmp/flyer.pdf', name: 'flyer.pdf', sizeBytes: 2048),
+    ];
+    when(
+      () => repository.upload(
+        any(),
+        path: any(named: 'path'),
+        filename: any(named: 'filename'),
+        label: any(named: 'label'),
+        notes: any(named: 'notes'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => const Right(flyer));
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await openDial(tester);
+    await tester.tap(find.text('إضافة تصميم'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مستندات'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('هذا التصميم محفوظ مسبقاً'), findsOneWidget);
+    expect(find.text('المنشور النهائي'), findsWidgets);
+
+    // The toast holds a dismissal timer of its own; let it run out before the tree goes.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('backing out of the picker uploads nothing and says nothing', (tester) async {
     // Arrange — a person changing their mind is an ordinary ending.
     session.adopt(userWith(['customers.view', 'customers.manage']));

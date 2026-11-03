@@ -122,11 +122,11 @@ return failure(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy,  CustomerDesign? alreadySaved)?  loaded,TResult Function( Failure failure)?  failure,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CustomerDesignsLoading() when loading != null:
 return loading();case CustomerDesignsLoaded() when loaded != null:
-return loaded(_that.designs,_that.uploads,_that.busy);case CustomerDesignsFailure() when failure != null:
+return loaded(_that.designs,_that.uploads,_that.busy,_that.alreadySaved);case CustomerDesignsFailure() when failure != null:
 return failure(_that.failure);case _:
   return orElse();
 
@@ -145,11 +145,11 @@ return failure(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy,  CustomerDesign? alreadySaved)  loaded,required TResult Function( Failure failure)  failure,}) {final _that = this;
 switch (_that) {
 case CustomerDesignsLoading():
 return loading();case CustomerDesignsLoaded():
-return loaded(_that.designs,_that.uploads,_that.busy);case CustomerDesignsFailure():
+return loaded(_that.designs,_that.uploads,_that.busy,_that.alreadySaved);case CustomerDesignsFailure():
 return failure(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -164,11 +164,11 @@ return failure(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function( List<CustomerDesign> designs,  List<DesignUpload> uploads,  Set<int> busy,  CustomerDesign? alreadySaved)?  loaded,TResult? Function( Failure failure)?  failure,}) {final _that = this;
 switch (_that) {
 case CustomerDesignsLoading() when loading != null:
 return loading();case CustomerDesignsLoaded() when loaded != null:
-return loaded(_that.designs,_that.uploads,_that.busy);case CustomerDesignsFailure() when failure != null:
+return loaded(_that.designs,_that.uploads,_that.busy,_that.alreadySaved);case CustomerDesignsFailure() when failure != null:
 return failure(_that.failure);case _:
   return null;
 
@@ -213,7 +213,7 @@ String toString() {
 
 
 class CustomerDesignsLoaded implements CustomerDesignsState {
-  const CustomerDesignsLoaded({required final  List<CustomerDesign> designs, final  List<DesignUpload> uploads = const <DesignUpload>[], final  Set<int> busy = const <int>{}}): _designs = designs,_uploads = uploads,_busy = busy;
+  const CustomerDesignsLoaded({required final  List<CustomerDesign> designs, final  List<DesignUpload> uploads = const <DesignUpload>[], final  Set<int> busy = const <int>{}, this.alreadySaved}): _designs = designs,_uploads = uploads,_busy = busy;
   
 
  final  List<CustomerDesign> _designs;
@@ -245,6 +245,10 @@ class CustomerDesignsLoaded implements CustomerDesignsState {
   return EqualUnmodifiableSetView(_busy);
 }
 
+/// التصميم الذي تبيّن أن الملف المرفوع موجودٌ فيه أصلاً — فالخادم ردّه بدل نسخةٍ ثانية.
+/// تقرأه الشاشة حين يتغيّر لتقول «هذا التصميم محفوظ مسبقاً»، ويُفرَّغ مع كل ملفٍ يُضاف كي
+/// يُقال ذلك ثانيةً لو رُفع الملف نفسه مرّةً أخرى.
+ final  CustomerDesign? alreadySaved;
 
 /// Create a copy of CustomerDesignsState
 /// with the given fields replaced by the non-null parameter values.
@@ -256,16 +260,16 @@ $CustomerDesignsLoadedCopyWith<CustomerDesignsLoaded> get copyWith => _$Customer
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoaded&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._uploads, _uploads)&&const DeepCollectionEquality().equals(other._busy, _busy));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoaded&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._uploads, _uploads)&&const DeepCollectionEquality().equals(other._busy, _busy)&&(identical(other.alreadySaved, alreadySaved) || other.alreadySaved == alreadySaved));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_uploads),const DeepCollectionEquality().hash(_busy));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_uploads),const DeepCollectionEquality().hash(_busy),alreadySaved);
 
 @override
 String toString() {
-  return 'CustomerDesignsState.loaded(designs: $designs, uploads: $uploads, busy: $busy)';
+  return 'CustomerDesignsState.loaded(designs: $designs, uploads: $uploads, busy: $busy, alreadySaved: $alreadySaved)';
 }
 
 
@@ -276,11 +280,11 @@ abstract mixin class $CustomerDesignsLoadedCopyWith<$Res> implements $CustomerDe
   factory $CustomerDesignsLoadedCopyWith(CustomerDesignsLoaded value, $Res Function(CustomerDesignsLoaded) _then) = _$CustomerDesignsLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<CustomerDesign> designs, List<DesignUpload> uploads, Set<int> busy
+ List<CustomerDesign> designs, List<DesignUpload> uploads, Set<int> busy, CustomerDesign? alreadySaved
 });
 
 
-
+$CustomerDesignCopyWith<$Res>? get alreadySaved;
 
 }
 /// @nodoc
@@ -293,16 +297,29 @@ class _$CustomerDesignsLoadedCopyWithImpl<$Res>
 
 /// Create a copy of CustomerDesignsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? designs = null,Object? uploads = null,Object? busy = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? designs = null,Object? uploads = null,Object? busy = null,Object? alreadySaved = freezed,}) {
   return _then(CustomerDesignsLoaded(
 designs: null == designs ? _self._designs : designs // ignore: cast_nullable_to_non_nullable
 as List<CustomerDesign>,uploads: null == uploads ? _self._uploads : uploads // ignore: cast_nullable_to_non_nullable
 as List<DesignUpload>,busy: null == busy ? _self._busy : busy // ignore: cast_nullable_to_non_nullable
-as Set<int>,
+as Set<int>,alreadySaved: freezed == alreadySaved ? _self.alreadySaved : alreadySaved // ignore: cast_nullable_to_non_nullable
+as CustomerDesign?,
   ));
 }
 
+/// Create a copy of CustomerDesignsState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CustomerDesignCopyWith<$Res>? get alreadySaved {
+    if (_self.alreadySaved == null) {
+    return null;
+  }
 
+  return $CustomerDesignCopyWith<$Res>(_self.alreadySaved!, (value) {
+    return _then(_self.copyWith(alreadySaved: value));
+  });
+}
 }
 
 /// @nodoc
