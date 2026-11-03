@@ -3,11 +3,14 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/device_saver.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
+import 'package:dayaa_client/core/print_colors/print_colors_view.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
 import 'package:dayaa_client/core/widgets/dismiss_keyboard.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/presentation/viewmodel/designs_cubit.dart';
 import 'package:dayaa_client/features/designs/presentation/views/designs_page.dart';
+import 'package:dayaa_client/features/designs/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa_client/features/designs/presentation/widgets/design_viewer.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
 import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
@@ -253,6 +256,67 @@ void main() {
       // Assert
       expect(find.text('حذف «شعار المتجر»؟'), findsOneWidget);
       verifyNever(() => repository.remove(any()));
+    });
+  });
+
+  group('البطاقة', () {
+    const inked = CustomerDesign(
+      id: 3,
+      label: 'كيس رمضان',
+      kind: DesignKind.pdf,
+      kindLabel: 'PDF',
+      originalFilename: 'ramadan.pdf',
+      sizeBytes: 1048576,
+      fileUrl: briefUrl,
+      printColors: [
+        PrintColor(name: 'أحمر', hex: '#E4002B'),
+        PrintColor(name: 'أسود', hex: '#000000'),
+      ],
+    );
+
+    testWidgets('الألوان بجانب سطر النوع والحجم، لا في سطرٍ تحته', (tester) async {
+      // Arrange
+      await arrange(tester);
+      when(() => repository.list()).thenAnswer((_) async => const Right([inked]));
+
+      // Act
+      await openPage(tester);
+
+      // Assert — نفس السطر: المركزان على ارتفاعٍ واحد.
+      final meta = tester.getCenter(find.text('PDF · 1.0 م.ب'));
+      final dots = tester.getCenter(find.byType(PrintColorDots));
+      expect(dots.dy, moreOrLessEquals(meta.dy, epsilon: 1));
+    });
+
+    testWidgets('الصورة مربّعة وبالحجم نفسه، عليها ألوانٌ أو لا', (tester) async {
+      // Arrange — الثانية بلونين: كانت صورتها تقصر بسطر النقاط.
+      await arrange(tester);
+      when(() => repository.list()).thenAnswer((_) async => const Right([brief, inked]));
+
+      // Act
+      await openPage(tester);
+
+      // Assert
+      final plain = tester.getSize(find.byType(DesignThumbnail).at(0));
+      final coloured = tester.getSize(find.byType(DesignThumbnail).at(1));
+      expect(plain.width, moreOrLessEquals(plain.height));
+      expect(coloured, plain);
+    });
+
+    testWidgets('خطّ النظام المكبَّر يطيل النصّ ولا يفيض ولا يقصّر الصورة', (tester) async {
+      // Arrange
+      await arrange(tester);
+      when(() => repository.list()).thenAnswer((_) async => const Right([brief, inked]));
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      // Act
+      await openPage(tester);
+
+      // Assert
+      expect(tester.takeException(), isNull);
+      final image = tester.getSize(find.byType(DesignThumbnail).first);
+      expect(image.width, moreOrLessEquals(image.height));
     });
   });
 }

@@ -133,6 +133,29 @@ void main() {
     });
   });
 
+  group('PrintColorDots', () {
+    testWidgets('past [max] it stops drawing and counts the rest', (tester) async {
+      // Arrange — ستة ألوان في سطرٍ واحد بجانب الحجم تفيض عن البطاقة.
+      const six = [red, white, red, white, red, white];
+
+      // Act
+      await tester.pumpWidget(host(const PrintColorDots(colors: six, max: 4)));
+
+      // Assert
+      expect(find.byType(PrintColorSwatch), findsNWidgets(4));
+      expect(find.text('+2'), findsOneWidget);
+    });
+
+    testWidgets('within [max] every ink is drawn and nothing is counted', (tester) async {
+      // Arrange / Act
+      await tester.pumpWidget(host(const PrintColorDots(colors: [red, white], max: 4)));
+
+      // Assert
+      expect(find.byType(PrintColorSwatch), findsNWidgets(2));
+      expect(find.textContaining('+'), findsNothing);
+    });
+  });
+
   // الورقة أطول من شاشة الاختبار الافتراضية (٨٠٠×٦٠٠)، فتُفتح على مقاس الهاتف المرجعي.
   void phone(WidgetTester tester) {
     tester.view

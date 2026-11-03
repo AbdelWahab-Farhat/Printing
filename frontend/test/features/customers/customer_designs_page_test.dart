@@ -3,11 +3,14 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
+import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
@@ -363,5 +366,71 @@ void main() {
     // pending when the tree is torn down fails the test. Let it run out.
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
+  });
+
+  group('the tile', () {
+    const inked = CustomerDesign(
+      id: 3,
+      customerId: 7,
+      label: 'الشعار',
+      kind: DesignKind.pdf,
+      kindLabel: 'PDF',
+      sizeBytes: 1048576,
+      fileUrl: 'https://cdn.example.com/logo.pdf',
+      printColors: [
+        PrintColor(name: 'أحمر', hex: '#E4002B'),
+        PrintColor(name: 'أسود', hex: '#000000'),
+      ],
+    );
+
+    testWidgets('the colours sit on the size line, not on a line of their own', (tester) async {
+      // Arrange
+      when(() => repository.designs(7)).thenAnswer((_) async => const Right([inked]));
+      session.adopt(userWith(['customers.view']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert — نفس السطر: المركزان على ارتفاعٍ واحد.
+      final meta = tester.getCenter(find.text('PDF · 1 ميجابايت'));
+      final dots = tester.getCenter(find.byType(PrintColorDots));
+      expect(dots.dy, moreOrLessEquals(meta.dy, epsilon: 1));
+    });
+
+    testWidgets('every image is square and the same size, colours or not', (tester) async {
+      // Arrange — الأولى بلا ألوان والثانية بلونين: كانت الثانية تقصر بسطر النقاط.
+      when(() => repository.designs(7)).thenAnswer((_) async => const Right([flyer, inked]));
+      session.adopt(userWith(['customers.view']));
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      final plain = tester.getSize(find.byType(DesignThumbnail).at(0));
+      final coloured = tester.getSize(find.byType(DesignThumbnail).at(1));
+      expect(plain.width, moreOrLessEquals(plain.height));
+      expect(coloured, plain);
+    });
+
+    testWidgets('a big system font grows the text, never the page past its edge', (
+      tester,
+    ) async {
+      // Arrange — الشبكة كانت تُثبّت نسبة البطاقة، فيأكل الخطّ المكبَّر الصورة أو يفيض.
+      when(() => repository.designs(7)).thenAnswer((_) async => const Right([flyer, inked]));
+      session.adopt(userWith(['customers.view']));
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(tester.takeException(), isNull);
+      final image = tester.getSize(find.byType(DesignThumbnail).first);
+      expect(image.width, moreOrLessEquals(image.height));
+    });
   });
 }

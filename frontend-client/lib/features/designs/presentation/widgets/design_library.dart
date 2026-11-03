@@ -84,23 +84,42 @@ class SliverDesignGrid extends StatelessWidget {
 
   final List<CustomerDesign> designs;
 
+  /// صفوفٌ من اثنين لا `SliverGrid`: الشبكة تُثبّت نسبة البطاقة، فما تحت الصورة يأكل منها —
+  /// بطاقةٌ عليها ألوان كانت صورتها أقصر من جارتها، وخطّ النظام المكبَّر يقصّرها أكثر. هنا
+  /// الصورة مربّعةٌ بعرض العمود دائماً، والنصّ يأخذ ما يحتاجه تحتها.
   @override
   Widget build(BuildContext context) {
-    return SliverGrid.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12.h,
-        crossAxisSpacing: 12.w,
-        childAspectRatio: 0.78,
-      ),
-      itemCount: designs.length,
-      itemBuilder: (context, index) => _DesignCard(
-        design: designs[index],
-        onOpen: () => showDesign(context, designs[index]),
-        onOptions: () => _showOptions(context, designs[index]),
-      ),
+    return SliverList.separated(
+      itemCount: (designs.length / 2).ceil(),
+      separatorBuilder: (context, index) => SizedBox(height: 12.h),
+      itemBuilder: (context, row) {
+        final first = row * 2;
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _card(context, designs[first])),
+              SizedBox(width: 12.w),
+              // نصفٌ فارغ لا بطاقةٌ ممدودة: التصميم الوحيد في آخر صفّ يبقى بعرض أخواته.
+              Expanded(
+                child: first + 1 < designs.length
+                    ? _card(context, designs[first + 1])
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+
+  Widget _card(BuildContext context, CustomerDesign design) => _DesignCard(
+    key: ValueKey(design.id),
+    design: design,
+    onOpen: () => showDesign(context, design),
+    onOptions: () => _showOptions(context, design),
+  );
 }
 
 enum _DesignAction { save, rename, colors, remove }
@@ -391,6 +410,7 @@ class _DesignCard extends StatelessWidget {
     required this.design,
     required this.onOpen,
     required this.onOptions,
+    super.key,
   });
 
   final CustomerDesign design;
@@ -407,7 +427,8 @@ class _DesignCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
+          AspectRatio(
+            aspectRatio: 1,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -452,22 +473,30 @@ class _DesignCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      // «PNG · 1.2 م.ب» — يرسمه التصميم، والرقمان في ردّ القائمة أصلاً.
-                      if (design.metaLine case final meta?) ...[
+                      if (design.metaLine != null || design.printColors.isNotEmpty) ...[
                         SizedBox(height: 2.h),
-                        Text(
-                          meta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                        Row(
+                          children: [
+                            // «PNG · 1.2 م.ب» — يرسمه التصميم، والرقمان في ردّ القائمة أصلاً.
+                            if (design.metaLine case final meta?)
+                              Flexible(
+                                child: Text(
+                                  meta,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            // نقاطٌ فقط بجانب الحجم لا في سطرٍ تحته — البطاقة أصغر من أن تسمّي
+                            // كل لون، والخيارات تفتحها. أربعٌ ثم «+n»، كي لا يلتفّ السطر.
+                            if (design.printColors.isNotEmpty) ...[
+                              if (design.metaLine != null) SizedBox(width: 6.w),
+                              PrintColorDots(colors: design.printColors, max: 4),
+                            ],
+                          ],
                         ),
-                      ],
-                      // نقاطٌ فقط — البطاقة أصغر من أن تسمّي كل لون، والخيارات تفتحها.
-                      if (design.printColors.isNotEmpty) ...[
-                        SizedBox(height: 4.h),
-                        PrintColorDots(colors: design.printColors),
                       ],
                     ],
                   ),

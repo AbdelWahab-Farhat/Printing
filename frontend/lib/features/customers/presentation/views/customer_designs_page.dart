@@ -220,29 +220,41 @@ class _Library extends StatelessWidget {
         else
           SliverPadding(
             padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 96.h),
-            sliver: SliverGrid.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: WebFrame.columns(context, phone: 2, minTileWidth: 190.w),
-                mainAxisSpacing: 12.h,
-                crossAxisSpacing: 12.w,
-                // Slightly taller than square: the thumbnail is the square, and the name lives
-                // under it rather than over the artwork, which is the one thing on the tile
-                // that must not be covered.
-                childAspectRatio: 0.78,
-              ),
-              itemCount: state.designs.length,
-              itemBuilder: (context, index) {
-                final design = state.designs[index];
-
-                return _DesignTile(
-                  key: ValueKey(design.id),
-                  design: design,
-                  isBusy: state.busy.contains(design.id),
-                );
-              },
-            ),
+            sliver: _rows(context),
           ),
       ],
+    );
+  }
+
+  /// صفوفٌ لا `SliverGrid`، كمرفقات تذكرة التصميم: الشبكة تُثبّت نسبة البطاقة، فما تحت الصورة
+  /// يأكل منها — بطاقةٌ عليها ألوان كانت صورتها أقصر من جارتها، وخطّ النظام المكبَّر يقصّرها
+  /// أكثر. هنا الصورة مربّعةٌ بعرض العمود دائماً، والنصّ يأخذ ما يحتاجه تحتها.
+  Widget _rows(BuildContext context) {
+    final columns = WebFrame.columns(context, phone: 2, minTileWidth: 190.w);
+    final designs = state.designs;
+
+    return SliverList.separated(
+      itemCount: (designs.length / columns).ceil(),
+      separatorBuilder: (context, index) => SizedBox(height: 12.h),
+      itemBuilder: (context, row) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var column = 0; column < columns; column++) ...[
+            if (column > 0) SizedBox(width: 12.w),
+            // نصفٌ فارغ لا بطاقةٌ ممدودة: التصميم الوحيد في آخر صفّ يبقى بعرض أخواته.
+            Expanded(
+              child: switch (row * columns + column) {
+                final index when index < designs.length => _DesignTile(
+                  key: ValueKey(designs[index].id),
+                  design: designs[index],
+                  isBusy: state.busy.contains(designs[index].id),
+                ),
+                _ => const SizedBox.shrink(),
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -342,7 +354,8 @@ class _DesignTile extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
+        AspectRatio(
+          aspectRatio: 1,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -383,20 +396,27 @@ class _DesignTile extends StatelessWidget {
           style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         SizedBox(height: 2.h),
-        Text(
-          // The server's own name for the kind, so a format this build has never heard of still
-          // says what it is. The size beside it is what tells a 40 KB placeholder from the real
-          // print file at a glance.
-          [design.kindLabel, ?design.sizeLabel].join(' · '),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                // The server's own name for the kind, so a format this build has never heard of
+                // still says what it is. The size beside it is what tells a 40 KB placeholder
+                // from the real print file at a glance.
+                [design.kindLabel, ?design.sizeLabel].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+            // نقاطٌ فقط بجانب الحجم لا في سطرٍ تحته — البطاقة أصغر من أن تسمّي كل لون، والخيارات
+            // تفتحها. أربعٌ ثم «+n»، كي لا يلتفّ السطر.
+            if (design.printColors.isNotEmpty) ...[
+              SizedBox(width: 6.w),
+              PrintColorDots(colors: design.printColors, max: 4),
+            ],
+          ],
         ),
-        // Dots only — the tile is too small to name each ink; the options sheet opens them.
-        if (design.printColors.isNotEmpty) ...[
-          SizedBox(height: 4.h),
-          PrintColorDots(colors: design.printColors),
-        ],
       ],
     );
   }

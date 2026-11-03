@@ -108,19 +108,35 @@ class PrintColorChip extends StatelessWidget {
 
 /// صفٌّ من النقاط وحدها — لبطاقةٍ أصغر من أن تسمّي كل لون. لا شيء حين لا ألوان.
 class PrintColorDots extends StatelessWidget {
-  const PrintColorDots({required this.colors, super.key});
+  const PrintColorDots({required this.colors, this.max, super.key});
 
   final List<PrintColor> colors;
+
+  /// أكثر ما يُرسم من نقاط، والباقي عددٌ «+2» بعدها — لسطرٍ ضيّقٍ لا يحتمل أن يلتفّ، كسطر الحجم
+  /// في بطاقة التصميم. Null يرسمها كلها.
+  final int? max;
 
   @override
   Widget build(BuildContext context) {
     if (colors.isEmpty) return const SizedBox.shrink();
 
+    final shown = max == null ? colors : colors.take(max!).toList();
+    final rest = colors.length - shown.length;
+
     return Wrap(
       spacing: 3.w,
       runSpacing: 3.h,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        for (final color in colors) PrintColorSwatch(color: color, size: 12.r),
+        for (final color in shown) PrintColorSwatch(color: color, size: 12.r),
+        if (rest > 0)
+          Text(
+            '+$rest',
+            textDirection: TextDirection.ltr,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }

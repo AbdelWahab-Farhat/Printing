@@ -288,6 +288,29 @@ void main() {
     expect(code.textDirection, TextDirection.ltr);
   });
 
+  group('PrintColorDots', () {
+    testWidgets('بعد [max] يتوقّف الرسم ويُعدّ الباقي', (tester) async {
+      // Arrange — ستة ألوان في سطرٍ واحد بجانب الحجم تفيض عن البطاقة.
+      final six = List.filled(6, red);
+
+      // Act
+      await tester.pumpWidget(host(PrintColorDots(colors: six, max: 4)));
+
+      // Assert
+      expect(find.byType(PrintColorSwatch), findsNWidgets(4));
+      expect(find.text('+2'), findsOneWidget);
+    });
+
+    testWidgets('ضمن [max] تُرسم الألوان كلها ولا يُعدّ شيء', (tester) async {
+      // Arrange / Act
+      await tester.pumpWidget(host(const PrintColorDots(colors: [red, red], max: 4)));
+
+      // Assert
+      expect(find.byType(PrintColorSwatch), findsNWidgets(2));
+      expect(find.textContaining('+'), findsNothing);
+    });
+  });
+
   group('DesignsCubit.setColors', () {
     late _MockDesignRepository repository;
 
