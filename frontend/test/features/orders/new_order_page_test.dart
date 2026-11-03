@@ -1,13 +1,22 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/customers/models/customer_design.dart';
+import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
+import 'package:dayaa/features/customers/repositories/customer_design_repository.dart';
 import 'package:dayaa/features/customers/repositories/customer_repository.dart';
+import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/get_customer.dart';
+import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
+import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/set_customer_activation.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
+import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
@@ -35,6 +44,8 @@ class _MockOrderRepository extends Mock implements OrderRepository {}
 class _MockProductRepository extends Mock implements ProductRepository {}
 
 class _FakeNewOrder extends Fake implements NewOrder {}
+
+class _MockDesignRepository extends Mock implements CustomerDesignRepository {}
 
 void main() {
   late _MockCustomerRepository customers;
@@ -536,5 +547,102 @@ void main() {
     expect(action, findsOneWidget);
     final heading = tester.getCenter(find.text('البنود')).dy;
     expect(tester.getCenter(action).dy, moreOrLessEquals(heading, epsilon: 12));
+  });
+
+  // «ألوان الطباعة» تحت التصميم المختار: تُحفظ على التصميم نفسه، والطلبية تنسخها عند إنشائها.
+  group('print colours on a chosen design', () {
+    late _MockDesignRepository designs;
+
+    const flyer = CustomerDesign(
+      id: 2,
+      customerId: 7,
+      label: 'المنشور النهائي',
+      kind: DesignKind.pdf,
+      kindLabel: 'PDF',
+    );
+    const red = PrintColor(name: 'أحمر الشعار', code: 'PANTONE 186 C');
+    // ما تُدخله الورقة اليوم: الاسم وكود اللون — لا خانة لرمز المطبعة.
+    const typed = PrintColor(name: 'أحمر الشعار', hex: '#E4002B');
+
+    setUp(() {
+      designs = _MockDesignRepository();
+
+      sl
+        ..registerFactoryParam<CustomerDesignsCubit, int, void>(
+          (customerId, _) => CustomerDesignsCubit(
+            customerId: customerId,
+            getDesigns: GetCustomerDesigns(designs),
+            uploadDesign: UploadCustomerDesign(designs),
+            renameDesign: RenameCustomerDesign(designs),
+            setDesignColors: SetCustomerDesignColors(designs),
+            deleteDesign: DeleteCustomerDesign(designs),
+          ),
+        )
+        ..registerLazySingleton<SetCustomerDesignColors>(() => SetCustomerDesignColors(designs));
+    });
+
+    /// يفتح «تصميم العميل» ويختار [label] من مكتبة العميل.
+    Future<void> choose(WidgetTester tester, String label) async {
+      await tester.tap(find.text('تصميم العميل'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('اختيار التصميم'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تم (1)'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('colours added under the design are saved on the design itself', (
+      tester,
+    ) async {
+      // Arrange
+      session.adopt(userWith(['orders.manage', 'customers.view', 'customers.manage']));
+      when(() => designs.designs(7)).thenAnswer((_) async => const Right([flyer]));
+      when(
+        () => designs.setPrintColors(7, 2, [typed]),
+      ).thenAnswer((_) async => Right(flyer.copyWith(printColors: [typed])));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await choose(tester, 'المنشور النهائي');
+
+      // Act — below the fold on the test screen.
+      await tester.ensureVisible(find.text('إضافة ألوان الطباعة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('إضافة ألوان الطباعة'));
+      await tester.pumpAndSettle();
+      // الورقة تُفتح على خانةٍ فارغة واحدة لتصميمٍ بلا ألوان.
+      await tester.enterText(find.widgetWithText(TextField, 'اسم اللون (اختياري)'), 'أحمر الشعار');
+      await tester.enterText(find.widgetWithText(TextField, 'كود اللون'), '#E4002B');
+      await tester.pump();
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+
+      // Assert — on the design, so this order copies them when it is created, and so do later ones.
+      verify(() => designs.setPrintColors(7, 2, [typed])).called(1);
+      expect(find.text('أحمر الشعار'), findsOneWidget);
+      expect(find.text('تعديل الألوان'), findsOneWidget);
+    });
+
+    testWidgets('the colours a design already has show under it, read-only without the grant', (
+      tester,
+    ) async {
+      // Arrange — changing a design is «إضافة وتعديل العملاء», the same grant its upload needs.
+      session.adopt(userWith(['orders.manage', 'customers.view']));
+      when(
+        () => designs.designs(7),
+      ).thenAnswer((_) async => Right([flyer.copyWith(printColors: [red])]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await choose(tester, 'المنشور النهائي');
+
+      // Assert
+      expect(find.text('أحمر الشعار'), findsOneWidget);
+      expect(find.text('PANTONE 186 C'), findsOneWidget);
+      expect(find.text('تعديل الألوان'), findsNothing);
+      expect(find.text('إضافة ألوان الطباعة'), findsNothing);
+    });
   });
 }

@@ -1,5 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -12,6 +14,7 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/orders/models/default_destination.dart';
 import 'package:dayaa/features/orders/models/one_bench.dart';
 import 'package:dayaa/features/orders/models/vendor_requirement.dart';
@@ -155,6 +158,10 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// is not thereby allowed to take money off an invoice.
   bool get _mayCharge => sl<Session>().can(AppPermission.addOrderAdditionalCost);
 
+  /// «ألوان الطباعة» تُكتب على تصميم العميل نفسه، فتعديلُها تعديلٌ للعميل — الإذنُ نفسه الذي يرفع
+  /// به التصميم من المنتقي.
+  bool get _mayColorDesigns => sl<Session>().can(AppPermission.manageCustomers);
+
   /// What the customer is being charged beyond the products, as the sheet last answered.
   ///
   /// **Held here rather than sent**, which is the one thing that differs from «تعديل الطلبية»:
@@ -247,6 +254,28 @@ class _NewOrderViewState extends State<_NewOrderView> {
     // A refusal about the artwork disappears as the selection changes, rather than lingering
     // under a picker that no longer holds what was refused.
     context.read<TakeOrderCubit>().clearFailure();
+  }
+
+  /// «ألوان الطباعة» لتصميمٍ مختار — تُحفظ على التصميم في مكتبة العميل، لا على هذه الطلبية.
+  ///
+  /// الطلبية لم تُنشأ بعد، والخادم ينسخ ألوان التصميم إليها ساعةَ إنشائها؛ فما يُحفظ هنا يصل
+  /// إليها وإلى كلّ طلبيةٍ بعدها بهذا التصميم. والجوابُ التصميمُ بعد الحفظ، فيُبدَّل في القائمة.
+  Future<void> _editDesignColors(CustomerDesign design) async {
+    final colors = await showPrintColorsSheet(context: context, initial: design.printColors);
+    if (colors == null || !mounted) return;
+
+    final result = await sl<SetCustomerDesignColors>()(design.customerId, design.id, colors);
+    if (!mounted) return;
+
+    result.fold(
+      (failure) => context.showFailure(failure),
+      (saved) => setState(
+        () => _designs = [
+          for (final kept in _designs)
+            if (kept.id == saved.id) saved else kept,
+        ],
+      ),
+    );
   }
 
   /// Charges the customer for something no line on the order describes — «تغليف خاص»، «نقل».
@@ -805,6 +834,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
             for (final design in _designs)
               _ChosenDesign(
                 design: design,
+                onEditColors: _mayColorDesigns ? () => _editDesignColors(design) : null,
                 onRemove: () => setState(
                   () => _designs = [
                     for (final kept in _designs)
@@ -861,15 +891,20 @@ class _NewOrderViewState extends State<_NewOrderView> {
 ///
 /// Removing here unpicks the file from this order. Nothing leaves the customer's library — it
 /// is their property, and this screen never had the right to delete it.
+///
+/// «ألوان الطباعة» تحت الملف الذي تخصّه، كما في «تعديل الطلبية»: الحبرُ ونسخةُ الملف في نظرةٍ
+/// واحدة. والزرّ يغيب بلا [onEditColors] — من لا يملك تعديل العميل يرى الألوان ولا يغيّرها.
 class _ChosenDesign extends StatelessWidget {
-  const _ChosenDesign({required this.design, required this.onRemove});
+  const _ChosenDesign({required this.design, required this.onRemove, this.onEditColors});
 
   final CustomerDesign design;
   final VoidCallback onRemove;
+  final VoidCallback? onEditColors;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
+    final onEditColors = this.onEditColors;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
@@ -879,24 +914,45 @@ class _ChosenDesign extends StatelessWidget {
           color: scheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(14.r),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DesignThumbnail(design: design, size: 40),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Text(
-                design.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                DesignThumbnail(design: design, size: 40),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    design.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onRemove,
+                  icon: Icon(AppIcons.close, size: 20.sp),
+                  color: scheme.onSurfaceVariant,
+                  tooltip: 'إزالة من الطلبية',
+                ),
+              ],
+            ),
+            if (design.printColors.isNotEmpty)
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: 8.h, end: 8.w),
+                child: PrintColorsView(colors: design.printColors),
               ),
-            ),
-            IconButton(
-              onPressed: onRemove,
-              icon: Icon(AppIcons.close, size: 20.sp),
-              color: scheme.onSurfaceVariant,
-              tooltip: 'إزالة من الطلبية',
-            ),
+            if (onEditColors != null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  icon: Icon(AppIcons.printColors, size: 18.r),
+                  label: Text(
+                    design.printColors.isEmpty ? 'إضافة ألوان الطباعة' : 'تعديل الألوان',
+                  ),
+                  onPressed: onEditColors,
+                ),
+              ),
           ],
         ),
       ),
