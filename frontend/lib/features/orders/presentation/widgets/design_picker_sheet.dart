@@ -1,5 +1,6 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -278,14 +279,28 @@ class _DesignRow extends StatelessWidget {
                 DesignThumbnail(design: design, size: 44),
                 SizedBox(width: 12.w),
                 Expanded(
-                  child: Text(
-                    design.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isChosen ? scheme.onPrimaryContainer : scheme.onSurface,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        design.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isChosen ? scheme.onPrimaryContainer : scheme.onSurface,
+                        ),
+                      ),
+                      // ألوان الطباعة تحت الاسم: يُختار التصميم وألوانه أمام العين، فلا يُفتح
+                      // ليُعرف أيّ نسخةٍ هي.
+                      if (design.printColors.isNotEmpty) ...[
+                        SizedBox(height: 4.h),
+                        PrintColorsLine(
+                          colors: design.printColors,
+                          textColor: isChosen ? scheme.onPrimaryContainer : null,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 if (isChosen)

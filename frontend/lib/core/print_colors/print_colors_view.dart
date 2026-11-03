@@ -132,3 +132,46 @@ class PrintColorDots extends StatelessWidget {
     );
   }
 }
+
+/// الألوان سطراً تحت اسمٍ في صف — نقطة كل لون واسمه، بلا كبسولة: لصفٍّ له خلفيته (صفٌّ مختار
+/// في قائمة)، حيث تذوب الكبسولة في لونه. لا شيء حين لا ألوان.
+///
+/// لونٌ حُفظ بلا اسم اسمُه كودُه (`#E4002B`)، فيُكتب من اليسار كما يُكتب كل كود.
+class PrintColorsLine extends StatelessWidget {
+  const PrintColorsLine({required this.colors, this.textColor, super.key});
+
+  final List<PrintColor> colors;
+
+  /// لون الأسماء — لون الصف المختار حين يكون عليه، وإلا `onSurfaceVariant`.
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    if (colors.isEmpty) return const SizedBox.shrink();
+
+    final style = context.textTheme.bodyMedium?.copyWith(
+      color: textColor ?? context.colorScheme.onSurfaceVariant,
+    );
+
+    return Wrap(
+      spacing: 12.w,
+      runSpacing: 4.h,
+      children: [
+        for (final color in colors)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PrintColorSwatch(color: color, size: 14.r),
+              SizedBox(width: 5.w),
+              Text(
+                color.name,
+                // بلا حرفٍ ذي اتجاه (`#000000`) فهو كود، والكود من اليسار.
+                textDirection: color.name.readingDirection ?? TextDirection.ltr,
+                style: style,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
