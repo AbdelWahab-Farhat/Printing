@@ -39,6 +39,9 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-37-PRINT-COLORS.md](changes/PR-37-PRINT-COLORS.md) | «ألوان الطباعة» على التصاميم والطلبيات والتذاكر. |
+| [PR-36-AUTO-REINVEST-PROFIT.md](changes/PR-36-AUTO-REINVEST-PROFIT.md) | إعادة استثمار ربح المستثمر في الصندوق تلقائياً. |
+| [PR-35-CUSTOMER-STAGE-REGROUP.md](changes/PR-35-CUSTOMER-STAGE-REGROUP.md) | مراحل الطلبية عند الزبون، وإرسال الطلبية مرة وحدة. |
 | [PR-34-NAWRIS-CARRIER-FEE.md](changes/PR-34-NAWRIS-CARRIER-FEE.md) | نورس: الدفعة على قد اللي حصّله المندوب، والتعديل المرفوض ما يضيعش. |
 | [PR-33-INVESTOR-PROFIT-SOURCES.md](changes/PR-33-INVESTOR-PROFIT-SOURCES.md) | «مصدر الربح» — من وين جا كل رقم في أرباح المستثمر، وطلبيات الفترة بحالة ربحها. |
 | [PR-31-INTERNAL-TICKETS.md](changes/PR-31-INTERNAL-TICKETS.md) | «تذاكر الموظفين» — موظف يكتب لزميله. |
