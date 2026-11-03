@@ -56,6 +56,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // الذي بعده، والنداءُ الذي لا يجد ما يفعله لا يكتب شيئاً. انظر RollInvestmentPeriods.
         $schedule->command('investment:roll-periods')->hourly()->withoutOverlapping();
 
+        // وبعده إعادةُ استثمار الأرباح لمن شغّل زرَّها — بعده لا قبله، فربحُ الفترة التي أُقفلت
+        // للتوّ يدخل نافذةَ التي فُتحت في الساعة نفسها. لا يكتب شيئاً خارج النافذة. §١٤.
+        $schedule->command('investment:reinvest-profit')->hourly()->withoutOverlapping();
+
         // الشحن الإلكتروني: كلُّ محاولةٍ معلّقة تُسأل عنها EzonePay — webhook ضاع لا يُضيّع مالاً.
         // لا يفعل شيئاً والدفع الإلكتروني مطفأ. انظر ReconcileOnlinePayments.
         $schedule->command('payments:reconcile')->everyFiveMinutes()->withoutOverlapping();

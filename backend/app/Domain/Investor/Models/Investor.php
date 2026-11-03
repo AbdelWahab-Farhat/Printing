@@ -7,6 +7,7 @@ namespace App\Domain\Investor\Models;
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
+use App\Domain\Investor\Actions\SetAutoReinvest;
 use Database\Factories\InvestorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -43,6 +44,10 @@ class Investor extends Model implements HasAuditTrail
     {
         return [
             'is_active' => 'boolean',
+            // Not fillable: the switch has its own door ({@see SetAutoReinvest}), which stamps
+            // `auto_reinvest_since` with it. An edit form posting the flag would skip the stamp.
+            'auto_reinvest_profit' => 'boolean',
+            'auto_reinvest_since' => 'datetime',
         ];
     }
 

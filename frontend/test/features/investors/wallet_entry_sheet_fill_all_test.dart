@@ -57,6 +57,7 @@ void main() {
     cubit = InvestorDetailCubit(
       getInvestor: GetInvestor(investors),
       recordWalletEntry: RecordWalletEntry(investors),
+      setAutoReinvest: SetAutoReinvest(investors),
     );
   });
 

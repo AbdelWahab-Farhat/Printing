@@ -2,12 +2,14 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/permission_gate.dart';
 import 'package:dayaa/features/investors/models/fund_share.dart';
 import 'package:dayaa/features/investors/models/investor.dart';
@@ -171,6 +173,8 @@ class _Body extends StatelessWidget {
             figures: investor.profitFigures,
             available: balances.wallet.profit,
           ),
+          SizedBox(height: 12.h),
+          _AutoReinvestTile(investor: investor, available: balances.wallet.profit),
 
           // **فتراتُه في مكان الصفقات، ولا صفقةَ بعدها** — قرارُ المالك 2026-09-25: «عرض الفترات
           // بدلا من الصفقات»، والقديمةُ «سوف تغلق وتضاف لربحه ومالناش علاقة بيها».
@@ -459,6 +463,98 @@ class _ProfitCard extends StatelessWidget {
     }
 
     return InvestorMoneyTile(label: 'أرباح متاحة للسحب', amount: available);
+  }
+}
+
+/// **«إعادة استثمار الأرباح تلقائياً»** — زرُّه تحت بطاقة الأرباح، لأنه يقرّر مصيرَ «متاحة للسحب».
+/// CONTINUOUS-FUND-DESIGN §١٤.
+///
+/// **الزرُّ لا يحرّك مالاً.** يكتب الحالةَ وحدها، والخادمُ يُعيد الربحَ في نافذة الاكتتاب التالية —
+/// فالسطرُ تحته يقول ذلك، ولا تتغيّر أرقامُ البطاقة لحظةَ الضغط. ومن يقرأ المستثمرين ولا يديرهم
+/// يرى الحالةَ ولا يقلبها.
+class _AutoReinvestTile extends StatefulWidget {
+  const _AutoReinvestTile({required this.investor, required this.available});
+
+  final Investor investor;
+
+  /// ربحُ محفظته المتاح — يُذكر في التأكيد، لأنه أوّلُ ما سيُعاد.
+  final String available;
+
+  @override
+  State<_AutoReinvestTile> createState() => _AutoReinvestTileState();
+}
+
+class _AutoReinvestTileState extends State<_AutoReinvestTile> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool enabled) async {
+    if (enabled) {
+      // فوق الصفر: لا سالبَ ولا «0.00» — أيُّ رقمٍ غيرُ الصفر يكفي ليُذكر.
+      final hasProfit =
+          !widget.available.startsWith('-') && RegExp('[1-9]').hasMatch(widget.available);
+      final waiting = hasProfit
+          ? 'ربحُه المتاح الآن (${widget.available.grouped} د.ل) وكلُّ ربحٍ يُفرَج عنه بعده'
+          : 'كلُّ ربحٍ يُفرَج عنه من الآن';
+      final confirmed = await showCustomDialog(
+        context: context,
+        title: 'إعادة استثمار الأرباح تلقائياً',
+        description:
+            '$waiting يعود إلى الصندوق عند فتح نافذة الاكتتاب، ويشتري وحداتٍ بسعر يومها، '
+            'ويُحبس كأيّ اشتراك. وما يُفرَج عنه بعد إغلاق النافذة يبقى متاحاً للسحب حتى التالية.',
+        confirmLabel: 'تشغيل',
+      );
+
+      if (confirmed != true || !mounted) return;
+    }
+
+    setState(() => _busy = true);
+    final failure = await context.read<InvestorDetailCubit>().setAutoReinvest(
+      investorId: widget.investor.id,
+      enabled: enabled,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (failure != null) {
+      context.showFailure(failure);
+    } else if (!enabled) {
+      context.showInfo(
+        'أُوقفت إعادة الاستثمار',
+        details: 'الوحدات التي اشتُريت بأرباحه تبقى في الصندوق',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final on = widget.investor.autoReinvestProfit;
+    final since = widget.investor.autoReinvestSince;
+    final canManage = sl<Session>().can(AppPermission.manageInvestors);
+
+    return Material(
+      color: scheme.surfaceContainer,
+      borderRadius: BorderRadius.circular(14.r),
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        value: on,
+        onChanged: canManage && !_busy ? _toggle : null,
+        title: Text(
+          'إعادة استثمار الأرباح تلقائياً',
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          on
+              ? [
+                  if (since != null) 'مفعّلة منذ ${since.toLocal().dayLabel}',
+                  'تعود أرباحه إلى الصندوق في نافذة الاكتتاب',
+                ].join(' · ')
+              : 'أرباحه تبقى متاحة للسحب',
+          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+      ),
+    );
   }
 }
 

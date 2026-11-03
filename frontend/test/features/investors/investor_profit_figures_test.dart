@@ -14,6 +14,8 @@ class _MockGetInvestor extends Mock implements GetInvestor {}
 
 class _MockRecordWalletEntry extends Mock implements RecordWalletEntry {}
 
+class _MockSetAutoReinvest extends Mock implements SetAutoReinvest {}
+
 /// الأرقامُ الثلاثة على صفحة المستثمر — §٠.٨ من مواصفة الصندوق.
 ///
 /// المديرُ يرى ما يراه صاحبُ المال على بوابته: مجموعَ الربح وبوّاباتِه الثلاث — **قيد التسليم**،
@@ -32,6 +34,7 @@ void main() {
         () => InvestorDetailCubit(
           getInvestor: getInvestor,
           recordWalletEntry: _MockRecordWalletEntry(),
+          setAutoReinvest: _MockSetAutoReinvest(),
         ),
       );
   });

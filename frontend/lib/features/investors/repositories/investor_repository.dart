@@ -25,6 +25,13 @@ abstract class InvestorRepository {
     String? notes,
   });
 
+  /// Turns «إعادة استثمار الأرباح تلقائياً» on or off. Moves no money itself: the server's
+  /// hourly sweep reads it while the subscription window is open.
+  Future<Either<Failure, Investor>> setAutoReinvest({
+    required int investorId,
+    required bool enabled,
+  });
+
   /// One movement of his money. Only the four types a person may record are ever sent — an
   /// earning is written by the order that produced it, and offering it on a form would be
   /// offering somebody the chance to invent one.

@@ -32,6 +32,9 @@ abstract final class InvestorEndpoints {
   static String wallet(int id) => '/investors/$id/wallet';
   static String statement(int id) => '/investors/$id/statement';
 
+  /// زرُّ «إعادة استثمار الأرباح تلقائياً» — `PATCH {enabled}`.
+  static String autoReinvest(int id) => '/investors/$id/auto-reinvest';
+
   /// One gate of his profit card, opened — `?gate=awaiting_delivery|pending|available`.
   static String profitSources(int id) => '/investors/$id/profit-sources';
   static String walletReversal(int id, int entryId) => '/investors/$id/wallet/$entryId/reversal';

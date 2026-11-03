@@ -8,6 +8,7 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Investor\InvestorProfitSourcesRequest;
 use App\Application\Api\V1\Requests\Investor\InvestorStatementRequest;
+use App\Application\Api\V1\Requests\Investor\SetAutoReinvestRequest;
 use App\Application\Api\V1\Requests\Investor\StoreInvestorRequest;
 use App\Application\Api\V1\Requests\Investor\StoreWalletEntryRequest;
 use App\Application\Api\V1\Requests\Investor\UpdateInvestorRequest;
@@ -168,6 +169,25 @@ class InvestorController extends Controller
         return $this->success(
             new InvestorResource($this->investors->setInvestorActivation($investor, (bool) $request->validated('is_active'))),
             'تم تحديث حالة المستثمر',
+        );
+    }
+
+    /**
+     * Turn automatic profit reinvestment on or off
+     *
+     * While on, `investment:reinvest-profit` moves his withdrawable profit back into the fund
+     * every hour the subscription window is open: profit becomes capital, then buys units at that
+     * day's price with the period's normal lock. Profit released outside the window waits as
+     * withdrawable profit. Turning it off affects future profit only; units already bought stay.
+     * `auto_reinvest_since` is stamped when it is turned on and cleared when it is turned off.
+     */
+    public function autoReinvest(SetAutoReinvestRequest $request, Investor $investor): JsonResponse
+    {
+        $enabled = (bool) $request->validated('enabled');
+
+        return $this->success(
+            new InvestorResource($this->investors->setAutoReinvest($investor, $enabled)),
+            $enabled ? 'سيُعاد استثمار أرباحه تلقائياً' : 'أُوقفت إعادة الاستثمار التلقائية',
         );
     }
 
