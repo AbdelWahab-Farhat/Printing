@@ -621,7 +621,6 @@ Future<void> _editColors(
   final colors = await showPrintColorsSheet(
     context: context,
     initial: design.printColors,
-    subtitle: 'تصل إلى الطلبيات التي لم تبدأ طباعتها بعد',
   );
   if (colors == null || !context.mounted) return;
 

@@ -78,7 +78,6 @@ class OrderDesignsSection extends StatelessWidget {
     final colors = await showPrintColorsSheet(
       context: context,
       initial: design.printColors,
-      subtitle: 'لهذه الطلبية وحدها — تصميم العميل في مكتبته يبقى كما هو',
     );
 
     if (colors == null) return;

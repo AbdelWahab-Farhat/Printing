@@ -1,6 +1,8 @@
 import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/print_colors/print_colors_editor.dart';
 import 'package:dayaa/core/print_colors/print_colors_view.dart';
+import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -118,13 +120,40 @@ void main() {
       // Assert
       expect(code.textDirection, TextDirection.ltr);
     });
+
+    testWidgets('a colour with no press code says nothing about it', (
+      tester,
+    ) async {
+      // Arrange / Act
+      await tester.pumpWidget(host(const PrintColorsView(colors: [white])));
+
+      // Assert — the box is gone, so a missing code is no longer something to flag.
+      expect(find.text('أبيض'), findsOneWidget);
+      expect(find.text('بلا رمز'), findsNothing);
+    });
   });
 
+  // الورقة أطول من شاشة الاختبار الافتراضية (٨٠٠×٦٠٠)، فتُفتح على مقاس الهاتف المرجعي.
+  void phone(WidgetTester tester) {
+    tester.view
+      ..physicalSize = const Size(430 * 3, 932 * 3)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+  }
+
+  Finder field(String label) => find.widgetWithText(TextField, label);
+
+  Future<void> save(WidgetTester tester) async {
+    await tester.tap(find.widgetWithText(AppButton, 'حفظ'));
+    await tester.pumpAndSettle();
+  }
+
   group('PrintColorsField', () {
-    testWidgets('a colour is added through the dialog with its name and code', (
+    testWidgets('a colour is added with its name and its colour code — no box for a press code', (
       tester,
     ) async {
       // Arrange
+      phone(tester);
       List<PrintColor>? changed;
       await tester.pumpWidget(
         host(
@@ -138,26 +167,19 @@ void main() {
       // Act
       await tester.tap(find.text('إضافة لون'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, 'اسم اللون'),
-        'أحمر الشعار',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'رمز اللون'),
-        'PANTONE 186 C',
-      );
+      expect(find.text('رمز المطبعة'), findsNothing);
+      await tester.enterText(field('اسم اللون (اختياري)'), 'أحمر الشعار');
+      await tester.enterText(field('كود اللون'), '#E4002B');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'حفظ'));
-      await tester.pumpAndSettle();
+      await save(tester);
 
-      // Assert — no swatch chosen, so none is sent.
-      expect(changed, [
-        const PrintColor(name: 'أحمر الشعار', code: 'PANTONE 186 C'),
-      ]);
+      // Assert
+      expect(changed, [const PrintColor(name: 'أحمر الشعار', hex: '#E4002B')]);
     });
 
-    testWidgets('a colour with no name cannot be saved', (tester) async {
+    testWidgets('the name and the colour code share one row', (tester) async {
       // Arrange
+      phone(tester);
       await tester.pumpWidget(
         host(PrintColorsField(colors: const [], onChanged: (_) {})),
       );
@@ -165,21 +187,92 @@ void main() {
       // Act
       await tester.tap(find.text('إضافة لون'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, 'رمز اللون'),
-        'PANTONE 186 C',
-      );
-      await tester.pump();
 
-      // Assert — the server would refuse it, and this says so before the round trip.
-      final save = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'حفظ'),
-      );
-      expect(save.onPressed, isNull);
+      // Assert — side by side, the name on the reading edge.
+      final name = tester.getRect(field('اسم اللون (اختياري)'));
+      final code = tester.getRect(field('كود اللون'));
+      expect(name.center.dy, code.center.dy);
+      expect(name.left, greaterThan(code.right));
     });
 
-    testWidgets('a typed swatch is tidied into #RRGGBB', (tester) async {
+    testWidgets('a press code already on record survives an edit', (tester) async {
+      // Arrange — written before the box was hidden.
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [red],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+      await tester.tap(find.text('أحمر الشعار'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.enterText(field('اسم اللون (اختياري)'), 'أحمر');
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [
+        const PrintColor(name: 'أحمر', code: 'PANTONE 186 C', hex: '#E4002B'),
+      ]);
+    });
+
+    testWidgets('a colour with no name is saved under its colour code', (
+      tester,
+    ) async {
       // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+
+      // Act — the name is optional.
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('كود اللون'), '#E4002B');
+      await tester.pump();
+      await save(tester);
+
+      // Assert — the server wants a name, so the code stands in for it and is what the chip shows.
+      expect(changed, [const PrintColor(name: '#E4002B', hex: '#E4002B')]);
+    });
+
+    testWidgets('reopened, a colour saved under its code shows an empty name box', (
+      tester,
+    ) async {
+      // Arrange
+      phone(tester);
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [PrintColor(name: '#E4002B', hex: '#E4002B')],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Act
+      await tester.tap(find.text('#E4002B'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final name = tester.widget<TextField>(field('اسم اللون (اختياري)'));
+      expect(name.controller?.text, isEmpty);
+    });
+
+    testWidgets('a typed colour code is tidied into #RRGGBB', (tester) async {
+      // Arrange
+      phone(tester);
       List<PrintColor>? changed;
       await tester.pumpWidget(
         host(
@@ -193,20 +286,150 @@ void main() {
       // Act — typed without the hash, in lower case.
       await tester.tap(find.text('إضافة لون'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextField, 'اسم اللون'),
-        'أزرق',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'رمز العيّنة'),
-        '0033a0',
-      );
+      await tester.enterText(field('اسم اللون (اختياري)'), 'أزرق');
+      await tester.enterText(field('كود اللون'), '0033a0');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'حفظ'));
-      await tester.pumpAndSettle();
+      await save(tester);
 
       // Assert
       expect(changed?.single.hex, '#0033A0');
+    });
+
+    testWidgets('the picker gives the colour its swatch and writes its code', (
+      tester,
+    ) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('اسم اللون (اختياري)'), 'أحمر');
+
+      // Act — the top-left corner is the full colour in an Arabic screen.
+      final area = find.byKey(AppColorPicker.saturationKey);
+      await tester.tapAt(tester.getTopLeft(area) + const Offset(1, 1));
+      await tester.pump();
+
+      // Assert — the code box follows the picker, and the swatch is saved.
+      final typed = tester.widget<TextField>(field('كود اللون'));
+      expect(typed.controller?.text, matches(RegExp(r'^#[0-9A-F]{6}$')));
+      await save(tester);
+      expect(changed?.single.hex, typed.controller?.text);
+    });
+
+    testWidgets('one sheet edits every colour on the design, each slot its own', (
+      tester,
+    ) async {
+      // Arrange — two colours on record; the sheet opens on the one tapped.
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [red, white],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+      await tester.tap(find.text('أبيض'));
+      await tester.pumpAndSettle();
+      final name = tester.widget<TextField>(field('اسم اللون (اختياري)'));
+      expect(name.controller?.text, 'أبيض');
+
+      // Act — back to the first, then a third colour.
+      await tester.tap(find.bySemanticsLabel('اللون 1'));
+      await tester.pump();
+      expect(name.controller?.text, 'أحمر الشعار');
+      await tester.tap(find.byTooltip('إضافة لون'));
+      await tester.pump();
+      await tester.enterText(field('اسم اللون (اختياري)'), 'ذهبي');
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [red, white, const PrintColor(name: 'ذهبي')]);
+    });
+
+    testWidgets('the selected colour is removed from inside the sheet', (
+      tester,
+    ) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [red, white],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+      await tester.tap(find.text('أحمر الشعار'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('حذف هذا اللون'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [white]);
+    });
+
+    testWidgets('a slot left empty is dropped rather than sent', (
+      tester,
+    ) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [red],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+
+      // Act — «إضافة لون», then a change of mind.
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+      await save(tester);
+
+      // Assert
+      expect(changed, [red]);
+    });
+
+    testWidgets('«إلغاء» leaves the colours as they were', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(
+          PrintColorsField(
+            colors: const [red],
+            onChanged: (colors) => changed = colors,
+          ),
+        ),
+      );
+      await tester.tap(find.text('أحمر الشعار'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('اسم اللون (اختياري)'), 'أحمر');
+
+      // Act
+      await tester.tap(find.widgetWithText(AppButton, 'إلغاء'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(changed, isNull);
     });
 
     testWidgets('a chip is removed by its own button', (tester) async {
@@ -242,6 +465,36 @@ void main() {
 
       // Assert
       expect(find.text('إضافة لون'), findsNothing);
+    });
+  });
+
+  group('showPrintColorsSheet', () {
+    testWidgets('a design with no colours opens on one empty slot, and saves none', (
+      tester,
+    ) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? saved;
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  saved = await showPrintColorsSheet(context: context, initial: const []),
+              child: const Text('افتح'),
+            ),
+          ),
+        ),
+      );
+
+      // Act
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('اللون 1'), findsOneWidget);
+      await save(tester);
+
+      // Assert — an empty list, not null: «حفظ» was pressed.
+      expect(saved, isEmpty);
     });
   });
 }

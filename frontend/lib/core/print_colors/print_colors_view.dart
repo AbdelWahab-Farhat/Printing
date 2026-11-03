@@ -90,29 +90,22 @@ class PrintColorChip extends StatelessWidget {
           Flexible(
             child: Text(
               color.name,
-              textDirection: color.name.readingDirection,
+              // لونٌ حُفظ بلا اسم اسمُه كودُه، ولا حرف ذا اتجاهٍ فيه — يُكتب من اليسار.
+              textDirection: color.name.readingDirection ?? TextDirection.ltr,
               style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(width: 6.w),
-          if (code != null)
+          // رمز المطبعة يُعرض إن كُتب قبل أن تُخفى خانته، ولا يُنبَّه على غيابه: لا مكان لكتابته
+          // بعد اليوم، فكانت «بلا رمز» الحمراء ستلازم كل لونٍ جديد.
+          if (code != null) ...[
+            SizedBox(width: 6.w),
             Text(
               code,
               textDirection: TextDirection.ltr,
               style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
-            )
-          else
-            // Said, not left blank: a customer chooses a name and a swatch in their app, and the
-            // code — what the press matches — is ours to add. A swatch alone is exactly what must
-            // not be printed from.
-            Text(
-              'بلا رمز',
-              style: text.labelMedium?.copyWith(
-                color: scheme.error,
-                fontWeight: FontWeight.w700,
-              ),
             ),
+          ],
           ?trailing,
         ],
       ),

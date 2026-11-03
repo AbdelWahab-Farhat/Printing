@@ -248,7 +248,8 @@ Future<void> _editColors(BuildContext context, CustomerDesign design) async {
   await cubit.setColors(id: design.id, colors: colors);
 }
 
-/// الألوان بعد أن اعتمدها فريقنا: تُقرأ برموزها، ولا تُعدَّل من هنا.
+/// الألوان بعد أن اعتمدها فريقنا: تُقرأ ولا تُعدَّل من هنا. بلا سطرٍ يشرح ذلك — أزاله صاحب
+/// التطبيق (٢٠٢٦-١١-٠٣) مع خانة رمز المطبعة؛ الورقة لا تعرض زرّ تعديلٍ، وهذا يكفي.
 class _LockedColors extends StatelessWidget {
   const _LockedColors({required this.colors});
 
@@ -256,7 +257,6 @@ class _LockedColors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
     final text = context.textTheme;
 
     return SafeArea(
@@ -270,19 +270,6 @@ class _LockedColors extends StatelessWidget {
             Text('ألوان الطباعة', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
             SizedBox(height: 12.h),
             PrintColorsView(colors: colors),
-            SizedBox(height: 14.h),
-            Row(
-              children: [
-                Icon(AppIcons.locked, size: 16.r, color: scheme.onSurfaceVariant),
-                SizedBox(width: 6.w),
-                Expanded(
-                  child: Text(
-                    'اعتمد فريقنا هذه الألوان برموزها — لتغييرها تواصل معنا',
-                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),

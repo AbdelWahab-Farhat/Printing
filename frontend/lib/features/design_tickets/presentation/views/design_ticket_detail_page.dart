@@ -161,7 +161,6 @@ class _DesignTicketDetailView extends StatelessWidget {
       final colors = await showPrintColorsSheet(
         context: context,
         initial: previous.isNotEmpty ? previous : ticket?.printColors ?? const [],
-        subtitle: 'الألوان التي رُسمت بها هذه النسخة، برموزها',
         confirmLabel: 'إرسال للمراجعة',
       );
 
