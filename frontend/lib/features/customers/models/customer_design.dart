@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -44,6 +45,12 @@ abstract class CustomerDesign with _$CustomerDesign implements DesignFile {
     required String label,
 
     String? notes,
+
+    /// «ألوان الطباعة» — the inks this artwork is printed in, and the source every order's copy
+    /// is taken from. Empty when none are on record, and from a server that predates them.
+    @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> printColors,
 
     @JsonKey(unknownEnumValue: DesignKind.unknown) required DesignKind kind,
 

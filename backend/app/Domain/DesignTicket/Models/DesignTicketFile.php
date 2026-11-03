@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DesignTicket\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\Customer\Casts\AsPrintColors;
 use App\Domain\Customer\Enums\DesignKind;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
@@ -32,7 +33,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * afterwards would have meant filtering an endpoint that works today. On approval,
  * `PromoteApprovedDesign` copies the winner across.
  *
- * **Nothing here is fillable but the two free-text fields.** The media columns are written from a
+ * **Nothing here is fillable but what the uploader says about the file** — the note and the print
+ * colors. The media columns are written from a
  * {@see StoredFile}, which is produced from the bytes rather than the request;
  * `kind`, `version` and `status` are the row's identity and its verdict, and a request body that
  * could set them could number a version itself or mark its own work approved.
@@ -42,7 +44,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * system's own viewer.
  */
 #[UseFactory(DesignTicketFileFactory::class)]
-#[Fillable(['note'])]
+#[Fillable(['note', 'print_colors'])]
 class DesignTicketFile extends Model
 {
     /** @use HasFactory<DesignTicketFileFactory> */
@@ -62,6 +64,9 @@ class DesignTicketFile extends Model
             'height_px' => 'integer',
             'version' => 'integer',
             'reviewed_at' => 'datetime',
+            // What the designer says a version was drawn in. Submissions only; the approved
+            // one's colors go into the customer's library with the file.
+            'print_colors' => AsPrintColors::class,
         ];
     }
 

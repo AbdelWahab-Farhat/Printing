@@ -5,6 +5,7 @@ import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
@@ -113,6 +114,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     int? orderId,
     int? assignedDesignerId,
     List<PickedFile> files = const [],
+    List<PrintColor> printColors = const [],
   }) {
     final fields = <String, dynamic>{
       'customer_id': customerId,
@@ -124,6 +126,9 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
         'instructions': instructions.trim(),
       'order_id': ?orderId,
       'assigned_designer_id': ?assignedDesignerId,
+      // Omitted when empty, like the instructions. In the multipart body `FormData.fromMap`
+      // flattens it to `print_colors[0][name]`, which is the shape PHP reads back as a list.
+      if (printColors.isNotEmpty) 'print_colors': PrintColor.listToJson(printColors),
     };
 
     return safeRequest<DesignTicket>(
@@ -151,6 +156,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     required String title,
     required String description,
     String? instructions,
+    List<PrintColor>? printColors,
   }) {
     return safeRequest<DesignTicket>(
       () => _dio.put(
@@ -160,6 +166,9 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
           'description': description.trim(),
           if (instructions != null && instructions.trim().isNotEmpty)
             'instructions': instructions.trim(),
+          // Sent empty to clear them, and left out to leave them — the server reads the key as
+          // `sometimes`.
+          if (printColors != null) 'print_colors': PrintColor.listToJson(printColors),
         },
       ),
       parse: (data) => DesignTicket.fromJson(data! as Map<String, dynamic>),
@@ -231,6 +240,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     required String path,
     required String filename,
     String? note,
+    List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   }) {
     return _upload(
@@ -238,6 +248,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
       path: path,
       filename: filename,
       note: note,
+      printColors: printColors,
       onProgress: onProgress,
     );
   }
@@ -279,6 +290,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     required String path,
     required String filename,
     String? note,
+    List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   }) {
     return safeRequest<DesignTicketFile>(
@@ -287,7 +299,9 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
         data: FormData.fromMap(<String, dynamic>{
           'file': await LocalFiles.multipart(path, filename: filename),
           if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
-        }),
+          // `print_colors[0][name]` once flattened — only ever on a version; a brief has none.
+          if (printColors.isNotEmpty) 'print_colors': PrintColor.listToJson(printColors),
+        }, ListFormat.multiCompatible),
         onSendProgress: onProgress,
       ),
       parse: (data) => DesignTicketFile.fromJson(data! as Map<String, dynamic>),

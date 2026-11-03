@@ -4,6 +4,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -32,6 +33,7 @@ class _RecordingRepository implements DesignTicketRepository {
     int? orderId,
     int? assignedDesignerId,
     List<PickedFile> files = const [],
+    List<PrintColor> printColors = const [],
   }) async {
     wasCalled = true;
     sentDesignerId = assignedDesignerId;
@@ -139,6 +141,19 @@ void main() {
     expect(find.text('المصمم'), findsNothing);
   });
 
+  /// The form is a lazy list, and «ألوان الطباعة» pushed the button past what it builds — so it
+  /// is scrolled to, the way a thumb reaches it, rather than asked for by `ensureVisible`.
+  Future<void> scrollToSend(WidgetTester tester) async {
+    // A phone-tall screen, so the whole form is laid out and the button is on it — dragging
+    // the list lands on the multi-line box, which scrolls itself instead.
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('إرسال الطلب'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('leaving it on the pool sends no designer at all', (tester) async {
     // Arrange
     signInWith([AppPermission.manageDesignTickets, AppPermission.assignDesignTickets]);
@@ -148,6 +163,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), 'شعار في المنتصف');
 
     // Act
+    await scrollToSend(tester);
     await tester.tap(find.text('إرسال الطلب'));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 4));
@@ -196,7 +212,7 @@ void main() {
     await pickMenu(tester);
 
     // Act
-    await tester.ensureVisible(find.text('إرسال الطلب'));
+    await scrollToSend(tester);
     await tester.tap(find.text('إرسال الطلب'));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 4));

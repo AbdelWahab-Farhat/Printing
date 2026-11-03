@@ -8,6 +8,7 @@ use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\Order\Actions\AddOrderDesign;
+use App\Domain\Order\Actions\RefreshOrderDesignColors;
 
 /**
  * Puts the approved artwork onto the customer's account.
@@ -34,11 +35,20 @@ use App\Domain\Order\Actions\AddOrderDesign;
  *
  * Nothing here touches the order. Attaching the design to one is {@see AddOrderDesign}'s job and
  * a deliberate second step — see DESIGN-TICKETS-DESIGN.md §12 Q5.
+ *
+ * **The print colors travel with the file** — the approved version's, or the brief's when the
+ * version carries none (a designer on an app that predates the field). On a design already in
+ * the library they fill an empty list and never overwrite one: somebody wrote those colors
+ * against this exact file, and a re-approval is not a reason to replace their answer.
  */
 final class PromoteApprovedDesign
 {
+    public function __construct(private readonly RefreshOrderDesignColors $refreshOrders) {}
+
     public function __invoke(DesignTicket $ticket, DesignTicketFile $version): CustomerDesign
     {
+        $colors = $version->print_colors ?? $ticket->print_colors;
+
         $existing = CustomerDesign::query()
             ->where('customer_id', $ticket->customer_id)
             ->where('checksum', $version->checksum)
@@ -56,6 +66,14 @@ final class PromoteApprovedDesign
                 ])->save();
             }
 
+            if ($existing->print_colors === null && $colors !== null) {
+                $existing->print_colors = $colors;
+                $existing->save();
+
+                // An order already holding this file holds an empty copy of its colors.
+                ($this->refreshOrders)($existing, null);
+            }
+
             return $existing->refresh();
         }
 
@@ -71,6 +89,7 @@ final class PromoteApprovedDesign
             'height_px' => $version->height_px,
             'label' => $ticket->title,
             'notes' => $version->note,
+            'print_colors' => $colors,
         ]);
 
         $design->customer()->associate($ticket->customer_id);

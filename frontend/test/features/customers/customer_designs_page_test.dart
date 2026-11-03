@@ -12,6 +12,7 @@ import 'package:dayaa/features/customers/repositories/customer_design_repository
 import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
 import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -80,6 +81,7 @@ void main() {
           getDesigns: GetCustomerDesigns(repository),
           uploadDesign: UploadCustomerDesign(repository),
           renameDesign: RenameCustomerDesign(repository),
+          setDesignColors: SetCustomerDesignColors(repository),
           deleteDesign: DeleteCustomerDesign(repository),
         ),
       );
@@ -336,6 +338,9 @@ void main() {
 
     // Act
     await tester.tap(find.byTooltip('خيارات التصميم'));
+    await tester.pumpAndSettle();
+    // The last row of a sheet that scrolls — «ألوان الطباعة» pushed it past the fold here.
+    await tester.ensureVisible(find.text('حذف'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حذف'));
     await tester.pumpAndSettle();

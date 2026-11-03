@@ -38,6 +38,8 @@ class DesignTicketFileResource extends JsonResource
 
             'label' => $this->displayName(),
             'note' => $this->note,
+            // The inks a version was drawn in — empty on a brief, and on a version sent without.
+            'print_colors' => $this->print_colors ?? [],
 
             // `image` or `pdf` — whether the app can draw this itself or must hand it to the
             // system viewer. The same key `CustomerDesignResource` publishes, so the same widget

@@ -38,6 +38,7 @@ final class UploadCustomerDesign
     public function __construct(private readonly StoreUploadedFile $storeFile) {}
 
     /**
+     * @param  array<int, mixed>|null  $printColors  already validated — see PrintColors
      * @return array{0: CustomerDesign, 1: bool} the design, and whether it was created now
      */
     public function __invoke(
@@ -45,6 +46,7 @@ final class UploadCustomerDesign
         UploadedFile $file,
         ?string $label = null,
         ?string $notes = null,
+        ?array $printColors = null,
     ): array {
         // Answered before anything is written: a retry must cost nothing and change nothing.
         // The checksum is recomputed here rather than taken from a stored file, because the
@@ -81,6 +83,7 @@ final class UploadCustomerDesign
             'height_px' => $kind === DesignKind::Image ? $stored->heightPx : null,
             'label' => $label ?? pathinfo($stored->originalFilename, PATHINFO_FILENAME),
             'notes' => $notes,
+            'print_colors' => $printColors,
         ]);
 
         return [$design, true];

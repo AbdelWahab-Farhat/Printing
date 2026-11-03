@@ -39,6 +39,9 @@ _DesignTicket _$DesignTicketFromJson(
   title: json['title'] as String,
   description: json['description'] as String,
   instructions: json['instructions'] as String?,
+  printColors: json['print_colors'] == null
+      ? const <PrintColor>[]
+      : PrintColor.listFromJson(json['print_colors']),
   status: $enumDecode(
     _$DesignTicketStatusEnumMap,
     json['status'],
@@ -126,6 +129,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'title': instance.title,
       'description': instance.description,
       'instructions': instance.instructions,
+      'print_colors': PrintColor.listToJson(instance.printColors),
       'status': _$DesignTicketStatusEnumMap[instance.status]!,
       'status_label': instance.statusLabel,
       'is_open': instance.isOpen,

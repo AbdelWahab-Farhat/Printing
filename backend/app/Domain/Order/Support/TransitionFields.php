@@ -14,10 +14,12 @@ use App\Domain\Order\Actions\DeductOrderStock;
 use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\Actions\ReverseOrderStockDeduction;
 use App\Domain\Order\DTOs\TransitionField;
+use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\DecimalText;
@@ -153,6 +155,16 @@ final class TransitionFields
                 required: false,
                 hint: 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
             );
+        }
+
+        // «ألوان الطباعة» once more, on the way to the press — PRINT-COLORS.md. The last moment
+        // they can be corrected: the order's copy locks with the artwork as this move lands.
+        if ($target === OrderStatus::Printing) {
+            $reminder = self::printColors($order);
+
+            if ($reminder !== null) {
+                $fields[] = $reminder;
+            }
         }
 
         // **Accepting a customer's request for something a vendor makes.**
@@ -610,6 +622,54 @@ final class TransitionFields
             // الخسارةُ أولاً في العنوان كما هي أولاً في المتن: هي التي لا رجعةَ فيها.
             label: $lost === [] ? 'ما يعود إلى المخزن' : 'تحذير — بضاعةٌ لن تعود',
             hint: implode("\n", $body),
+        );
+    }
+
+    /**
+     * «ألوان الطباعة» of the artwork about to be printed — a reminder, never a question.
+     *
+     * **Which version:** the approved one; failing that, the newest that was not turned down.
+     * The short road «جديدة» → «قيد الطباعة» often carries a file nobody formally approved, and
+     * that file is still the one going on the press.
+     *
+     * The order's *copy* of the colors, not the design's, because that is what the order screen
+     * shows and what is locked once this move lands.
+     *
+     * Null when there is nothing to remind anyone of — no version, or no colors on it — so an
+     * order with no colors on record gets no box at all rather than an empty one.
+     */
+    private static function printColors(Order $order): ?TransitionField
+    {
+        $order->loadMissing('designs');
+
+        $versions = $order->designs->sortByDesc('version');
+
+        /** @var OrderDesign|null $version */
+        $version = $versions->first(fn (OrderDesign $design) => $design->status === OrderDesignStatus::Approved)
+            ?? $versions->first(fn (OrderDesign $design) => $design->status !== OrderDesignStatus::Rejected);
+
+        if ($version === null || $version->print_colors === null) {
+            return null;
+        }
+
+        $which = $version->status === OrderDesignStatus::Approved
+            ? "النسخة {$version->version} المعتمدة"
+            : "النسخة {$version->version}";
+
+        // A color the customer chose in their app arrives with a name and a swatch and no code,
+        // and a swatch is exactly what must not be printed from. Said here, not enforced: the
+        // move stays open, because only the person at the press knows whether it can wait.
+        $missingCode = array_filter($version->print_colors, fn (array $color) => $color['code'] === null);
+
+        $hint = $missingCode === []
+            ? 'طابِق الرمز لا لون الشاشة. تُقفل الألوان بعد الانتقال إلى «قيد الطباعة»'
+            : 'لون بلا رمز — أضف الرمز قبل الطباعة. تُقفل الألوان بعد الانتقال إلى «قيد الطباعة»';
+
+        return TransitionField::printColors(
+            key: 'print_colors_reminder',
+            label: "ألوان الطباعة — {$which}",
+            hint: $hint,
+            colors: $version->print_colors,
         );
     }
 

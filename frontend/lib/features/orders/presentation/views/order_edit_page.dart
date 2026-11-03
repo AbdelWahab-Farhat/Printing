@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -24,6 +25,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
+import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/update_order_invoice.dart';
 import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:flutter/material.dart';
@@ -169,6 +171,30 @@ class _OrderEditViewState extends State<_OrderEditView> {
     }
   }
 
+  /// «ألوان الطباعة» on one version, for this order alone.
+  ///
+  /// Straight to the use case and then a re-read, the way [_editAdditionalCost] goes: the answer
+  /// is the version, and the order is what the screen draws.
+  Future<void> _editDesignColors(OrderDesign design, List<PrintColor> colors) async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final result = await sl<UpdateOrderDesignColors>()(order.id, design.id, colors);
+    if (!mounted) return;
+
+    await result.fold(
+      (failure) async => context.showFailure(failure),
+      (_) async {
+        await cubit.load();
+        if (!mounted) return;
+
+        context.handBack(true);
+        context.showSuccess('تم تحديث ألوان الطباعة');
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<OrderDetailCubit>();
@@ -236,6 +262,11 @@ class _OrderEditViewState extends State<_OrderEditView> {
                       session.can(AppPermission.manageOrderDesigns)
                   ? _reviewDesign
                   : null,
+              onEditDesignColors:
+                  order.designsAreEditable &&
+                      session.can(AppPermission.manageOrderDesigns)
+                  ? _editDesignColors
+                  : null,
             ),
           );
         },
@@ -256,6 +287,7 @@ class _Form extends StatelessWidget {
     required this.onSaved,
     required this.onAddDesign,
     required this.onReviewDesign,
+    required this.onEditDesignColors,
   });
 
   final Order order;
@@ -287,6 +319,10 @@ class _Form extends StatelessWidget {
     String? rejectionReason,
   })?
   onReviewDesign;
+
+  /// «ألوان الطباعة» on one version, for this order alone. Null under the same rule as the two
+  /// above: the colors lock with the artwork.
+  final Future<void> Function(OrderDesign design, List<PrintColor> colors)? onEditDesignColors;
 
   /// «طلبية جديدة»'s own picker, with the sizes already on the order greyed out — the same
   /// size twice would be two lines the shelf and the invoice both have to add up.
@@ -532,6 +568,7 @@ class _Form extends StatelessWidget {
                               isApproved: false,
                               rejectionReason: reason,
                             ),
+                      onEditColors: onEditDesignColors,
                     ),
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -95,6 +96,11 @@ abstract class DesignTicket with _$DesignTicket {
     required String title,
     required String description,
     String? instructions,
+
+    /// «ألوان الطباعة» the brief asks for. A designer's version starts from these.
+    @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> printColors,
 
     @JsonKey(unknownEnumValue: DesignTicketStatus.unknown) required DesignTicketStatus status,
 

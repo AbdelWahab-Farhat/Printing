@@ -22,6 +22,9 @@ use App\Domain\Order\Models\OrderDesign;
  * **The version number is allocated, not counted.** `max(version) + 1` rather than
  * `count() + 1`, so removing version 2 does not make the next one a second version 3 — and
  * «التصميم الثالث» keeps meaning the file it meant in the conversation.
+ *
+ * **The print colors are the exception to "pointed at"** — they are copied onto the version,
+ * because unlike the file they can be edited after the fact. PRINT-COLORS.md.
  */
 final class AddOrderDesign
 {
@@ -63,6 +66,12 @@ final class AddOrderDesign
         $orderDesign = $order->designs()->make([
             'customer_design_id' => $design->getKey(),
             'notes' => $notes,
+            // **A copy, not a pointer** — the one thing on this row that is. The file cannot
+            // change under an order, but the design's colors can be edited, and an order printed
+            // last year must keep saying which inks it was printed in. While the order still
+            // accepts artwork, an edit to the design follows it here; see
+            // {@see RefreshOrderDesignColors}.
+            'print_colors' => $design->print_colors,
         ]);
 
         // Force-filled *before* the insert, not after: both columns are NOT NULL, and neither

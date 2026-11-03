@@ -11,6 +11,7 @@ import 'package:dayaa_client/features/delivery/usecases/list_cities.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/presentation/viewmodel/designs_cubit.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
+import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/designs/usecases/remove_design.dart';
 import 'package:dayaa_client/features/designs/usecases/rename_design.dart';
@@ -106,6 +107,7 @@ void main() {
           list: ListDesigns(designs),
           upload: UploadDesign(designs),
           rename: RenameDesign(designs),
+          chooseColors: ChooseDesignColors(designs),
           remove: RemoveDesign(designs),
         ),
       )

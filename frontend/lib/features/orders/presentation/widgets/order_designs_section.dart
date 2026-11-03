@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -37,6 +40,7 @@ class OrderDesignsSection extends StatelessWidget {
     this.onAdd,
     this.onApprove,
     this.onReject,
+    this.onEditColors,
     this.isWorking = false,
     super.key,
   });
@@ -51,6 +55,10 @@ class OrderDesignsSection extends StatelessWidget {
   /// Given the sentence the version was turned down for — the server insists on one.
   final Future<void> Function(OrderDesign design, String reason)? onReject;
 
+  /// Corrects one version's print colors for this order alone. Null when the order no longer
+  /// accepts artwork — the colors lock with it — or the user may not.
+  final Future<void> Function(OrderDesign design, List<PrintColor> colors)? onEditColors;
+
   /// Something is in flight. The buttons stop accepting a second tap; nothing else changes,
   /// because everything else on screen is still true.
   final bool isWorking;
@@ -64,6 +72,18 @@ class OrderDesignsSection extends StatelessWidget {
     if (reason == null) return;
 
     await onReject?.call(design, reason);
+  }
+
+  Future<void> _editColors(BuildContext context, OrderDesign design) async {
+    final colors = await showPrintColorsSheet(
+      context: context,
+      initial: design.printColors,
+      subtitle: 'لهذه الطلبية وحدها — تصميم العميل في مكتبته يبقى كما هو',
+    );
+
+    if (colors == null) return;
+
+    await onEditColors?.call(design, colors);
   }
 
   @override
@@ -173,6 +193,24 @@ class OrderDesignsSection extends StatelessWidget {
                     ),
                   ),
                 ],
+
+                // «ألوان الطباعة» — this order's copy, which is what the press reads. Under the
+                // file it belongs to, so «which inks, on which version» needs no second look.
+                if (design.printColors.isNotEmpty) ...[
+                  SizedBox(height: 10.h),
+                  PrintColorsView(colors: design.printColors),
+                ],
+                if (onEditColors != null && !design.isRejected)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      icon: Icon(AppIcons.printColors, size: 18.r),
+                      label: Text(
+                        design.printColors.isEmpty ? 'إضافة ألوان الطباعة' : 'تعديل الألوان',
+                      ),
+                      onPressed: isWorking ? null : () => _editColors(context, design),
+                    ),
+                  ),
 
                 // A version is judged once — the server refuses a second verdict — so the
                 // buttons belong only to the one still waiting for an answer.

@@ -18,6 +18,7 @@ use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderRequest;
 use App\Application\Api\V1\Requests\Order\UndoOrderDeliveryRequest;
 use App\Application\Api\V1\Requests\Order\UnsettleOrderRequest;
+use App\Application\Api\V1\Requests\Order\UpdateOrderDesignColorsRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderRequest;
 use App\Application\Api\V1\Resources\OrderDesignResource;
 use App\Application\Api\V1\Resources\OrderResource;
@@ -618,6 +619,30 @@ class OrderController extends Controller
         return $this->created(
             new OrderDesignResource($design->load('customerDesign')),
             'تم إضافة التصميم بنجاح',
+        );
+    }
+
+    /**
+     * Change a design's print colors on this order
+     *
+     * The version holds a copy of its design's colors, taken when it was attached; this changes
+     * that copy for this order alone and leaves the customer's library as it is. Send an empty
+     * list to clear them. Refused with 422 from «قيد الطباعة» onwards, like the artwork itself.
+     */
+    public function updateDesignColors(
+        UpdateOrderDesignColorsRequest $request,
+        Order $order,
+        OrderDesign $design,
+    ): JsonResponse {
+        $updated = $this->orders->updateDesignColors(
+            $order,
+            $design,
+            $request->validated('print_colors'),
+        );
+
+        return $this->success(
+            new OrderDesignResource($updated->load('customerDesign')),
+            'تم تحديث ألوان الطباعة',
         );
     }
 

@@ -1,9 +1,12 @@
+import 'package:dartz/dartz.dart' show Either;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/usecases/delete_customer_design.dart';
 import 'package:dayaa/features/customers/usecases/get_customer_designs.dart';
 import 'package:dayaa/features/customers/usecases/rename_customer_design.dart';
+import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/customers/usecases/upload_customer_design.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -30,11 +33,13 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
     required GetCustomerDesigns getDesigns,
     required UploadCustomerDesign uploadDesign,
     required RenameCustomerDesign renameDesign,
+    required SetCustomerDesignColors setDesignColors,
     required DeleteCustomerDesign deleteDesign,
   }) : _customerId = customerId,
        _getDesigns = getDesigns,
        _uploadDesign = uploadDesign,
        _renameDesign = renameDesign,
+       _setDesignColors = setDesignColors,
        _deleteDesign = deleteDesign,
        super(const CustomerDesignsState.loading());
 
@@ -42,6 +47,7 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
   final GetCustomerDesigns _getDesigns;
   final UploadCustomerDesign _uploadDesign;
   final RenameCustomerDesign _renameDesign;
+  final SetCustomerDesignColors _setDesignColors;
   final DeleteCustomerDesign _deleteDesign;
 
   /// One drain at a time. Not a lock over the network — the queue is in state — but the flag
@@ -127,13 +133,24 @@ class CustomerDesignsCubit extends Cubit<CustomerDesignsState> {
   }
 
   /// Renames one design. Returns null when it worked, and the failure when it did not.
-  Future<Failure?> rename(int designId, {required String label, String? notes}) async {
+  Future<Failure?> rename(int designId, {required String label, String? notes}) =>
+      _change(designId, () => _renameDesign(_customerId, designId, label: label, notes: notes));
+
+  /// Replaces one design's «ألوان الطباعة». Null when it worked, the failure when it did not.
+  Future<Failure?> setColors(int designId, List<PrintColor> colors) =>
+      _change(designId, () => _setDesignColors(_customerId, designId, colors));
+
+  /// One edit to one design: busy while it runs, and the row swapped for the server's answer.
+  Future<Failure?> _change(
+    int designId,
+    Future<Either<Failure, CustomerDesign>> Function() request,
+  ) async {
     final current = state;
     if (current is! CustomerDesignsLoaded || current.busy.contains(designId)) return null;
 
     emit(current.copyWith(busy: {...current.busy, designId}));
 
-    final result = await _renameDesign(_customerId, designId, label: label, notes: notes);
+    final result = await request();
     if (isClosed) return null;
 
     return result.fold(

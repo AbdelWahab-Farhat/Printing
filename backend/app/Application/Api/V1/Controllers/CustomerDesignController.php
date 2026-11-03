@@ -9,6 +9,7 @@ use App\Application\Api\V1\Requests\Customer\UpdateCustomerDesignRequest;
 use App\Application\Api\V1\Resources\CustomerDesignResource;
 use App\Application\Controller;
 use App\Domain\Customer\Actions\DeleteCustomerDesign;
+use App\Domain\Customer\Actions\UpdateCustomerDesign;
 use App\Domain\Customer\Actions\UploadCustomerDesign;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
@@ -42,6 +43,7 @@ class CustomerDesignController extends Controller
     public function __construct(
         private readonly UploadCustomerDesign $uploadDesign,
         private readonly DeleteCustomerDesign $deleteDesign,
+        private readonly UpdateCustomerDesign $updateDesign,
     ) {}
 
     /**
@@ -72,6 +74,7 @@ class CustomerDesignController extends Controller
             file: $request->file('file'),
             label: $request->string('label')->toString() ?: null,
             notes: $request->string('notes')->toString() ?: null,
+            printColors: $request->validated('print_colors'),
         );
 
         $resource = new CustomerDesignResource($design);
@@ -84,7 +87,9 @@ class CustomerDesignController extends Controller
     /**
      * Rename a design
      *
-     * Changes the label and the notes. The file itself cannot be swapped: an order points at a
+     * Changes the label, the notes and the print colors. A change to the colors also reaches every
+     * order still waiting to print this design, unless that order's copy was changed on its own.
+     * The file itself cannot be swapped: an order points at a
      * design, so replacing the bytes under a stable id would change what an old order says was
      * printed.
      */
@@ -93,9 +98,9 @@ class CustomerDesignController extends Controller
         Customer $customer,
         CustomerDesign $design,
     ): JsonResponse {
-        $design->update($request->only(['label', 'notes']));
+        $updated = ($this->updateDesign)($design, $request->validated());
 
-        return $this->success(new CustomerDesignResource($design->refresh()), 'تم تحديث التصميم');
+        return $this->success(new CustomerDesignResource($updated), 'تم تحديث التصميم');
     }
 
     /**

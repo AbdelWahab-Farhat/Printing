@@ -514,6 +514,9 @@ _OrderDesign _$OrderDesignFromJson(Map<String, dynamic> json) => _OrderDesign(
       : CustomerDesign.fromJson(json['design'] as Map<String, dynamic>),
   rejectionReason: json['rejection_reason'] as String?,
   notes: json['notes'] as String?,
+  printColors: json['print_colors'] == null
+      ? const <PrintColor>[]
+      : PrintColor.listFromJson(json['print_colors']),
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -529,6 +532,7 @@ Map<String, dynamic> _$OrderDesignToJson(_OrderDesign instance) =>
       'design': instance.design?.toJson(),
       'rejection_reason': instance.rejectionReason,
       'notes': instance.notes,
+      'print_colors': PrintColor.listToJson(instance.printColors),
       'created_at': instance.createdAt?.toIso8601String(),
     };
 

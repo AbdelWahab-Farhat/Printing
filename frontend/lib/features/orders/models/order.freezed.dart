@@ -3329,7 +3329,10 @@ mixin _$OrderDesign {
 /// Pointed at, never copied — so what is shown here is the same row the library shows, and
 /// `file_url` is the signed link the server minted for *this* request. Absent when the
 /// endpoint did not load the relation.
- CustomerDesign? get design;@JsonKey(name: 'rejection_reason') String? get rejectionReason; String? get notes;@JsonKey(name: 'created_at') DateTime? get createdAt;
+ CustomerDesign? get design;@JsonKey(name: 'rejection_reason') String? get rejectionReason; String? get notes;/// «ألوان الطباعة» — **this order's copy**, taken when the version was attached, and what
+/// the press reads. Not `design.printColors`, which may have been edited since: the copy
+/// follows the library only while the order still accepts artwork.
+@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> get printColors;@JsonKey(name: 'created_at') DateTime? get createdAt;
 /// Create a copy of OrderDesign
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3342,16 +3345,16 @@ $OrderDesignCopyWith<OrderDesign> get copyWith => _$OrderDesignCopyWithImpl<Orde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.design, design) || other.design == design)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.design, design) || other.design == design)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.printColors, printColors)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,version,status,statusLabel,isReviewed,design,rejectionReason,notes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,version,status,statusLabel,isReviewed,design,rejectionReason,notes,const DeepCollectionEquality().hash(printColors),createdAt);
 
 @override
 String toString() {
-  return 'OrderDesign(id: $id, version: $version, status: $status, statusLabel: $statusLabel, isReviewed: $isReviewed, design: $design, rejectionReason: $rejectionReason, notes: $notes, createdAt: $createdAt)';
+  return 'OrderDesign(id: $id, version: $version, status: $status, statusLabel: $statusLabel, isReviewed: $isReviewed, design: $design, rejectionReason: $rejectionReason, notes: $notes, printColors: $printColors, createdAt: $createdAt)';
 }
 
 
@@ -3362,7 +3365,7 @@ abstract mixin class $OrderDesignCopyWith<$Res>  {
   factory $OrderDesignCopyWith(OrderDesign value, $Res Function(OrderDesign) _then) = _$OrderDesignCopyWithImpl;
 @useResult
 $Res call({
- int id, int version, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_reviewed') bool isReviewed, CustomerDesign? design,@JsonKey(name: 'rejection_reason') String? rejectionReason, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, int version, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_reviewed') bool isReviewed, CustomerDesign? design,@JsonKey(name: 'rejection_reason') String? rejectionReason, String? notes,@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> printColors,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -3379,7 +3382,7 @@ class _$OrderDesignCopyWithImpl<$Res>
 
 /// Create a copy of OrderDesign
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? version = null,Object? status = null,Object? statusLabel = null,Object? isReviewed = null,Object? design = freezed,Object? rejectionReason = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? version = null,Object? status = null,Object? statusLabel = null,Object? isReviewed = null,Object? design = freezed,Object? rejectionReason = freezed,Object? notes = freezed,Object? printColors = null,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
@@ -3389,7 +3392,8 @@ as String,isReviewed: null == isReviewed ? _self.isReviewed : isReviewed // igno
 as bool,design: freezed == design ? _self.design : design // ignore: cast_nullable_to_non_nullable
 as CustomerDesign?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,printColors: null == printColors ? _self.printColors : printColors // ignore: cast_nullable_to_non_nullable
+as List<PrintColor>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -3487,10 +3491,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OrderDesign() when $default != null:
-return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.printColors,_that.createdAt);case _:
   return orElse();
 
 }
@@ -3508,10 +3512,10 @@ return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isRe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(name: 'created_at')  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _OrderDesign():
-return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.printColors,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3528,10 +3532,10 @@ return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isRe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int version,  String status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'is_reviewed')  bool isReviewed,  CustomerDesign? design, @JsonKey(name: 'rejection_reason')  String? rejectionReason,  String? notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors, @JsonKey(name: 'created_at')  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _OrderDesign() when $default != null:
-return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.createdAt);case _:
+return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isReviewed,_that.design,_that.rejectionReason,_that.notes,_that.printColors,_that.createdAt);case _:
   return null;
 
 }
@@ -3543,7 +3547,7 @@ return $default(_that.id,_that.version,_that.status,_that.statusLabel,_that.isRe
 @JsonSerializable()
 
 class _OrderDesign extends OrderDesign {
-  const _OrderDesign({required this.id, required this.version, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_reviewed') this.isReviewed = false, this.design, @JsonKey(name: 'rejection_reason') this.rejectionReason, this.notes, @JsonKey(name: 'created_at') this.createdAt}): super._();
+  const _OrderDesign({required this.id, required this.version, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_reviewed') this.isReviewed = false, this.design, @JsonKey(name: 'rejection_reason') this.rejectionReason, this.notes, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors,super._();
   factory _OrderDesign.fromJson(Map<String, dynamic> json) => _$OrderDesignFromJson(json);
 
 @override final  int id;
@@ -3559,6 +3563,19 @@ class _OrderDesign extends OrderDesign {
 @override final  CustomerDesign? design;
 @override@JsonKey(name: 'rejection_reason') final  String? rejectionReason;
 @override final  String? notes;
+/// «ألوان الطباعة» — **this order's copy**, taken when the version was attached, and what
+/// the press reads. Not `design.printColors`, which may have been edited since: the copy
+/// follows the library only while the order still accepts artwork.
+ final  List<PrintColor> _printColors;
+/// «ألوان الطباعة» — **this order's copy**, taken when the version was attached, and what
+/// the press reads. Not `design.printColors`, which may have been edited since: the copy
+/// follows the library only while the order still accepts artwork.
+@override@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> get printColors {
+  if (_printColors is EqualUnmodifiableListView) return _printColors;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_printColors);
+}
+
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 
 /// Create a copy of OrderDesign
@@ -3574,16 +3591,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.design, design) || other.design == design)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.design, design) || other.design == design)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._printColors, _printColors)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,version,status,statusLabel,isReviewed,design,rejectionReason,notes,createdAt);
+int get hashCode => Object.hash(runtimeType,id,version,status,statusLabel,isReviewed,design,rejectionReason,notes,const DeepCollectionEquality().hash(_printColors),createdAt);
 
 @override
 String toString() {
-  return 'OrderDesign(id: $id, version: $version, status: $status, statusLabel: $statusLabel, isReviewed: $isReviewed, design: $design, rejectionReason: $rejectionReason, notes: $notes, createdAt: $createdAt)';
+  return 'OrderDesign(id: $id, version: $version, status: $status, statusLabel: $statusLabel, isReviewed: $isReviewed, design: $design, rejectionReason: $rejectionReason, notes: $notes, printColors: $printColors, createdAt: $createdAt)';
 }
 
 
@@ -3594,7 +3611,7 @@ abstract mixin class _$OrderDesignCopyWith<$Res> implements $OrderDesignCopyWith
   factory _$OrderDesignCopyWith(_OrderDesign value, $Res Function(_OrderDesign) _then) = __$OrderDesignCopyWithImpl;
 @override @useResult
 $Res call({
- int id, int version, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_reviewed') bool isReviewed, CustomerDesign? design,@JsonKey(name: 'rejection_reason') String? rejectionReason, String? notes,@JsonKey(name: 'created_at') DateTime? createdAt
+ int id, int version, String status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'is_reviewed') bool isReviewed, CustomerDesign? design,@JsonKey(name: 'rejection_reason') String? rejectionReason, String? notes,@JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) List<PrintColor> printColors,@JsonKey(name: 'created_at') DateTime? createdAt
 });
 
 
@@ -3611,7 +3628,7 @@ class __$OrderDesignCopyWithImpl<$Res>
 
 /// Create a copy of OrderDesign
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? version = null,Object? status = null,Object? statusLabel = null,Object? isReviewed = null,Object? design = freezed,Object? rejectionReason = freezed,Object? notes = freezed,Object? createdAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? version = null,Object? status = null,Object? statusLabel = null,Object? isReviewed = null,Object? design = freezed,Object? rejectionReason = freezed,Object? notes = freezed,Object? printColors = null,Object? createdAt = freezed,}) {
   return _then(_OrderDesign(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
@@ -3621,7 +3638,8 @@ as String,isReviewed: null == isReviewed ? _self.isReviewed : isReviewed // igno
 as bool,design: freezed == design ? _self.design : design // ignore: cast_nullable_to_non_nullable
 as CustomerDesign?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,printColors: null == printColors ? _self._printColors : printColors // ignore: cast_nullable_to_non_nullable
+as List<PrintColor>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

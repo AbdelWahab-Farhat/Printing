@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -71,6 +72,7 @@ class TransitionFieldInput extends StatelessWidget {
         onChanged: onChanged,
       ),
       TransitionFieldType.notice => _Notice(field: field),
+      TransitionFieldType.printColors => _PrintColorsReminder(field: field),
       TransitionFieldType.number => _Number(
         field: field,
         value: value is String ? value! as String : '',
@@ -753,6 +755,57 @@ class _Notice extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// «ألوان الطباعة» once more before the press — a box to read, with nothing to fill in.
+///
+/// Calm rather than [_Notice]'s red: nothing irreversible is about to happen to the colors
+/// themselves. The one warning in it is the server's [TransitionField.hint] — match the code, not
+/// the screen; and after this move the colors can no longer be changed.
+class _PrintColorsReminder extends StatelessWidget {
+  const _PrintColorsReminder({required this.field});
+
+  final TransitionField field;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final text = context.textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(AppIcons.printColors, size: 18.r, color: scheme.primary),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  field.label,
+                  style: text.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          PrintColorsView(colors: field.colors),
+          if (field.hint case final hint? when hint.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            Text(hint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ],
+        ],
+      ),
     );
   }
 }

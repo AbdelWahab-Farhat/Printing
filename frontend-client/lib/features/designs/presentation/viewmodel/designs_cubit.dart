@@ -1,6 +1,8 @@
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/picked_file.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
+import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/designs/usecases/remove_design.dart';
 import 'package:dayaa_client/features/designs/usecases/rename_design.dart';
@@ -22,16 +24,19 @@ class DesignsCubit extends Cubit<DesignsState> {
     required ListDesigns list,
     required UploadDesign upload,
     required RenameDesign rename,
+    required ChooseDesignColors chooseColors,
     required RemoveDesign remove,
   }) : _list = list,
        _upload = upload,
        _rename = rename,
+       _chooseColors = chooseColors,
        _remove = remove,
        super(const DesignsState.loading());
 
   final ListDesigns _list;
   final UploadDesign _upload;
   final RenameDesign _rename;
+  final ChooseDesignColors _chooseColors;
   final RemoveDesign _remove;
 
   Future<void> load() async {
@@ -50,13 +55,17 @@ class DesignsCubit extends Cubit<DesignsState> {
   /// **A file already in the library is answered with the row that exists**, not a duplicate, so
   /// the guard below replaces rather than prepends: sending the same file twice must leave one
   /// entry, which is what makes a retry free.
-  Future<void> add({required PickedFile file, String? label}) async {
+  Future<void> add({
+    required PickedFile file,
+    String? label,
+    List<PrintColor> printColors = const [],
+  }) async {
     final current = _current;
     if (current == null) return;
 
     emit(DesignsState.loaded(current, isBusy: true));
 
-    final result = await _upload(file: file, label: label);
+    final result = await _upload(file: file, label: label, printColors: printColors);
 
     if (isClosed) return;
 
@@ -78,6 +87,29 @@ class DesignsCubit extends Cubit<DesignsState> {
     emit(DesignsState.loaded(current, isBusy: true));
 
     final result = await _rename(id: id, label: label);
+
+    if (isClosed) return;
+
+    emit(
+      result.fold(
+        (failure) => DesignsState.loaded(current, lastFailure: failure),
+        (design) => DesignsState.loaded([
+          for (final existing in current)
+            if (existing.id == design.id) design else existing,
+        ]),
+      ),
+    );
+  }
+
+  /// «ألوان الطباعة» — the names and swatches the customer chose. Refused by the server once our
+  /// team has written a code, and the refusal arrives as [DesignsState.loaded]'s `lastFailure`.
+  Future<void> setColors({required int id, required List<PrintColor> colors}) async {
+    final current = _current;
+    if (current == null) return;
+
+    emit(DesignsState.loaded(current, isBusy: true));
+
+    final result = await _chooseColors(id: id, colors: colors);
 
     if (isClosed) return;
 

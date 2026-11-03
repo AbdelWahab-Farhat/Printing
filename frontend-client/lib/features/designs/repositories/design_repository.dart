@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/files/picked_file.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 
 /// The customer's own artwork library.
@@ -18,9 +19,19 @@ abstract interface class DesignRepository {
   /// **Idempotent at the server.** Sending a file already held answers with the design that
   /// exists rather than storing a second copy — a dropped connection on a phone leaves this app
   /// unable to know whether the upload landed, so the retry has to be free.
+  ///
+  /// [printColors] are the names and swatches the customer chose; our team adds the codes.
   Future<Either<Failure, CustomerDesign>> upload({
     required PickedFile file,
     String? label,
+    List<PrintColor> printColors = const [],
+  });
+
+  /// Replaces the design's «ألوان الطباعة» — names and swatches; an empty list clears them.
+  /// Refused once our team has written a code ([CustomerDesign.printColorsLocked]).
+  Future<Either<Failure, CustomerDesign>> setColors({
+    required int id,
+    required List<PrintColor> colors,
   });
 
   /// Renames one. The file itself is never swapped — a new version is a new upload, because an

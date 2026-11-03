@@ -5,6 +5,8 @@ import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_editor.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -68,6 +70,9 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   /// بالترتيب الذي اختيرت به، وهو ترتيبها على التذكرة.
   final List<PickedFile> _files = [];
 
+  /// «ألوان الطباعة» the customer asked for. Optional; the designer's version starts from them.
+  List<PrintColor> _colors = const [];
+
   @override
   void dispose() {
     _title.dispose();
@@ -117,6 +122,7 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
       description: _description.text,
       assignedDesignerId: _designerId,
       files: List<PickedFile>.of(_files),
+      printColors: _colors,
     );
 
     if (!mounted) return;
@@ -176,6 +182,11 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
                 onTap: _pickDesigner,
               ),
             ],
+            SizedBox(height: 18.h),
+            PrintColorsField(
+              colors: _colors,
+              onChanged: (colors) => setState(() => _colors = colors),
+            ),
             SizedBox(height: 18.h),
             Text(
               'المرفقات (${_files.length} من ${DesignTicketFormPage.maxFiles})',

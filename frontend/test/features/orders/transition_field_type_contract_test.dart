@@ -83,6 +83,8 @@ const Set<String> _wireValues = {
   'file',
   'warehouse',
   'notice',
+  // «ألوان الطباعة» on the way to the press — read, never answered.
+  'print_colors',
   'vendor',
   'treasury_account',
   // Asked on sending rather than drawn — «تسجيل الزائد للزبون؟».

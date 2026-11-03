@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/models/design_file.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -69,6 +70,12 @@ abstract class DesignTicketFile with _$DesignTicketFile implements DesignFile {
 
     /// What the designer said when they sent it.
     String? note,
+
+    /// The inks a version was drawn in — empty on a brief, and on a version sent without them.
+    /// The approved version's go into the customer's library with the file.
+    @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> printColors,
 
     /// `image` or `pdf` — whether the app can draw this itself or must hand it to the system
     /// viewer. The same key and the same meaning as `CustomerDesign.kind`.

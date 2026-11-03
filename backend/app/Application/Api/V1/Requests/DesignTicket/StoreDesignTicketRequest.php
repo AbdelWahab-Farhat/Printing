@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\DesignTicket;
 
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
@@ -45,6 +46,12 @@ class StoreDesignTicketRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'instructions' => ['nullable', 'string', 'max:5000'],
+            // «ألوان الطباعة» the customer asked for — optional. The designer's version starts
+            // from these, and the approved one's go into the customer's library.
+            'print_colors' => ['nullable', 'array', 'max:'.PrintColors::MAX],
+            'print_colors.*.name' => ['required', 'string', 'max:'.PrintColors::NAME_MAX],
+            'print_colors.*.code' => ['nullable', 'string', 'max:'.PrintColors::CODE_MAX],
+            'print_colors.*.hex' => ['nullable', 'string', 'regex:'.PrintColors::HEX_PATTERN],
             /*
              * The designer this is addressed to. **Null is the shared pool**, which is a real
              * answer rather than a missing one: an employee who does not know who is free leaves
@@ -83,6 +90,9 @@ class StoreDesignTicketRequest extends FormRequest
             'title.required' => 'عنوان الطلب مطلوب',
             'description.required' => 'وصف طلب التصميم مطلوب',
             'assigned_designer_id.exists' => 'المصمم غير موجود',
+            'print_colors.max' => 'لا تزيد ألوان الطباعة على :max',
+            'print_colors.*.name.required' => 'اسم اللون مطلوب',
+            'print_colors.*.hex.regex' => 'لون العيّنة يجب أن يكون بصيغة #RRGGBB',
             'files.max' => 'لا تزيد المرفقات على :max',
             'files.*.mimetypes' => 'الملف يجب أن يكون صورة أو PDF',
             'files.*.mimes' => 'الملف يجب أن يكون صورة أو PDF',
@@ -103,6 +113,10 @@ class StoreDesignTicketRequest extends FormRequest
             'description' => 'وصف الطلب',
             'instructions' => 'الملاحظات والتعليمات',
             'assigned_designer_id' => 'المصمم',
+            'print_colors' => 'ألوان الطباعة',
+            'print_colors.*.name' => 'اسم اللون',
+            'print_colors.*.code' => 'رمز اللون',
+            'print_colors.*.hex' => 'لون العيّنة',
             'files' => 'المرفقات',
             'files.*' => 'الملف',
         ];

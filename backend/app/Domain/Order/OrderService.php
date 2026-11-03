@@ -28,6 +28,7 @@ use App\Domain\Order\Actions\UnsettleOrder;
 use App\Domain\Order\Actions\UnsettleOrderPayment;
 use App\Domain\Order\Actions\UpdateManufacturingCostRate;
 use App\Domain\Order\Actions\UpdateOrder;
+use App\Domain\Order\Actions\UpdateOrderDesignColors;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
 use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\ManufacturingCostRateData;
@@ -91,6 +92,7 @@ class OrderService
         private readonly ConfirmDepositReceipt $confirmDepositReceipt,
         private readonly AddOrderDesign $addDesign,
         private readonly ReviewOrderDesign $reviewDesign,
+        private readonly UpdateOrderDesignColors $updateDesignColors,
         private readonly RecordOrderPayment $recordPayment,
         private readonly RefundOrderPayment $refundPayment,
         private readonly PayOrderFromWallet $payFromWallet,
@@ -362,6 +364,14 @@ class OrderService
         ?User $actor = null,
     ): OrderDesign {
         return ($this->reviewDesign)($order, $design, $verdict, $reason, $actor);
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $colors
+     */
+    public function updateDesignColors(Order $order, OrderDesign $design, ?array $colors): OrderDesign
+    {
+        return ($this->updateDesignColors)($order, $design, $colors);
     }
 
     /**

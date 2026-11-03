@@ -19,6 +19,9 @@ _DesignTicketFile _$DesignTicketFileFromJson(
   kindLabel: json['kind_label'] as String,
   label: json['label'] as String,
   note: json['note'] as String?,
+  printColors: json['print_colors'] == null
+      ? const <PrintColor>[]
+      : PrintColor.listFromJson(json['print_colors']),
   fileKind: $enumDecode(
     _$DesignKindEnumMap,
     json['file_kind'],
@@ -63,6 +66,7 @@ Map<String, dynamic> _$DesignTicketFileToJson(_DesignTicketFile instance) =>
       'kind_label': instance.kindLabel,
       'label': instance.label,
       'note': instance.note,
+      'print_colors': PrintColor.listToJson(instance.printColors),
       'file_kind': _$DesignKindEnumMap[instance.fileKind]!,
       'file_kind_label': instance.fileKindLabel,
       'mime_type': instance.mimeType,

@@ -78,6 +78,9 @@ Route::prefix('v1/client')->name('client.')->group(function (): void {
         Route::post('designs', [DesignController::class, 'store'])->name('designs.store');
         Route::patch('designs/{design}', [DesignController::class, 'update'])
             ->whereNumber('design')->name('designs.update');
+        // «ألوان الطباعة» — names and swatches only, until our team writes the codes.
+        Route::put('designs/{design}/colors', [DesignController::class, 'colors'])
+            ->whereNumber('design')->name('designs.colors');
         Route::delete('designs/{design}', [DesignController::class, 'destroy'])
             ->whereNumber('design')->name('designs.destroy');
 

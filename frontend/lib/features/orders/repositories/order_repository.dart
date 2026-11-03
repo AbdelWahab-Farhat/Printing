@@ -3,6 +3,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
@@ -266,4 +267,11 @@ abstract interface class OrderRepository {
     required bool isApproved,
     String? rejectionReason,
   });
+
+  /// Replaces one version's «ألوان الطباعة» — this order's copy, not the library's.
+  Future<Either<Failure, void>> updateDesignColors(
+    int orderId,
+    int designId,
+    List<PrintColor> colors,
+  );
 }

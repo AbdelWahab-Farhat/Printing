@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\DesignTicket;
 
+use App\Domain\Customer\Support\PrintColors;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SubmitDesignVersionRequest extends FormRequest
@@ -41,6 +42,13 @@ class SubmitDesignVersionRequest extends FormRequest
             ],
             // What the designer wants to say with the version — «غيّرت الخط، قوليلي رأيك».
             'note' => ['nullable', 'string', 'max:2000'],
+            // The inks this version was drawn in — `print_colors[0][name]` in the multipart body.
+            // The app starts the list from the ticket's; the approved version's go into the
+            // customer's library with the file.
+            'print_colors' => ['nullable', 'array', 'max:'.PrintColors::MAX],
+            'print_colors.*.name' => ['required', 'string', 'max:'.PrintColors::NAME_MAX],
+            'print_colors.*.code' => ['nullable', 'string', 'max:'.PrintColors::CODE_MAX],
+            'print_colors.*.hex' => ['nullable', 'string', 'regex:'.PrintColors::HEX_PATTERN],
         ];
     }
 
@@ -55,6 +63,9 @@ class SubmitDesignVersionRequest extends FormRequest
             'file.mimes' => 'الملف يجب أن يكون صورة أو PDF',
             'file.max' => 'حجم الملف يجب ألا يتجاوز '.
                 (int) (config('media.design_tickets.max_kilobytes') / 1024).' ميجابايت',
+            'print_colors.max' => 'لا تزيد ألوان الطباعة على :max',
+            'print_colors.*.name.required' => 'اسم اللون مطلوب',
+            'print_colors.*.hex.regex' => 'لون العيّنة يجب أن يكون بصيغة #RRGGBB',
         ];
     }
 
@@ -66,6 +77,10 @@ class SubmitDesignVersionRequest extends FormRequest
         return [
             'file' => 'ملف التصميم',
             'note' => 'ملاحظة المصمم',
+            'print_colors' => 'ألوان الطباعة',
+            'print_colors.*.name' => 'اسم اللون',
+            'print_colors.*.code' => 'رمز اللون',
+            'print_colors.*.hex' => 'لون العيّنة',
         ];
     }
 }

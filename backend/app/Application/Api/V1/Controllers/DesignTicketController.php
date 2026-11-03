@@ -363,6 +363,7 @@ class DesignTicketController extends Controller
             $request->file('file'),
             $designer,
             $request->string('note')->toString() ?: null,
+            $request->validated('print_colors'),
         );
 
         return $this->created(

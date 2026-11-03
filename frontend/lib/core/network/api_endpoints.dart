@@ -634,6 +634,10 @@ abstract final class OrderEndpoints {
   static String reviewDesign(int orderId, int designId) =>
       '/orders/$orderId/designs/$designId/review';
 
+  /// «ألوان الطباعة» on one version — the order's own copy, under the artwork's lock.
+  static String designColors(int orderId, int designId) =>
+      '/orders/$orderId/designs/$designId/colors';
+
   /// Bags spoiled while the line was being produced. Guarded by `inventory.manage`, not by any
   /// `orders.*` grant — it draws stock off the order's shelf and posts its FIFO cost, so it
   /// belongs to the stock ledger the same way booking a shipment in does.

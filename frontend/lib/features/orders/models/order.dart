@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
@@ -1012,6 +1013,14 @@ abstract class OrderDesign with _$OrderDesign {
 
     @JsonKey(name: 'rejection_reason') String? rejectionReason,
     String? notes,
+
+    /// «ألوان الطباعة» — **this order's copy**, taken when the version was attached, and what
+    /// the press reads. Not `design.printColors`, which may have been edited since: the copy
+    /// follows the library only while the order still accepts artwork.
+    @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)
+    @Default(<PrintColor>[])
+    List<PrintColor> printColors,
+
     @JsonKey(name: 'created_at') DateTime? createdAt,
   }) = _OrderDesign;
 

@@ -235,6 +235,14 @@ abstract final class AppIcons {
   static IconData get designs =>
       _pick(Icons.palette_outlined, CupertinoIcons.paintbrush);
 
+  /// «ألوان الطباعة» — the inks a design is printed in. A drop of ink, not [designs]' palette:
+  /// the two sit side by side on the same design. The staff app uses the same pair.
+  static IconData get printColors =>
+      _pick(Icons.format_color_fill_rounded, CupertinoIcons.drop);
+
+  /// Something our team has settled and the customer can no longer change.
+  static IconData get locked => _pick(Icons.lock_outline_rounded, CupertinoIcons.lock);
+
   /// What was written on the record itself — «ملاحظات الطلبية».
   ///
   /// A page with lines on it, not [comments]' speech bubbles: this is one field filled in by

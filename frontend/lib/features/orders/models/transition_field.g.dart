@@ -48,6 +48,9 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
           : TransitionFieldThreshold.fromJson(
               json['confirm_when'] as Map<String, dynamic>,
             ),
+      colors: json['colors'] == null
+          ? const <PrintColor>[]
+          : PrintColor.listFromJson(json['colors']),
     );
 
 Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
@@ -69,6 +72,7 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'value': instance.value,
       'value_label': instance.valueLabel,
       'confirm_when': instance.confirmWhen?.toJson(),
+      'colors': PrintColor.listToJson(instance.colors),
     };
 
 const _$TransitionFieldTypeEnumMap = {
@@ -76,6 +80,7 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.number: 'number',
   TransitionFieldType.customerDesigns: 'customer_designs',
   TransitionFieldType.notice: 'notice',
+  TransitionFieldType.printColors: 'print_colors',
   TransitionFieldType.shippingCompany: 'shipping_company',
   TransitionFieldType.warehouse: 'warehouse',
   TransitionFieldType.paymentMethod: 'payment_method',

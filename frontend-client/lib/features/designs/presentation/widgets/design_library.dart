@@ -1,5 +1,8 @@
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/files/attachment_picker.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
+import 'package:dayaa_client/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa_client/core/print_colors/print_colors_view.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/validators.dart';
@@ -55,14 +58,20 @@ Future<void> addDesign(BuildContext context) async {
     return;
   }
 
-  final label = await showDialog<String>(
+  // الاسم، و«ألوان الطباعة» اختياريةً في النافذة نفسها — فلا خطوةٌ زائدة لمن لا يريدها، و«إنشاء»
+  // يبقى الزرّ الوحيد.
+  final named = await showDialog<_Named>(
     context: context,
-    builder: (_) => const _NameDialog(title: 'تصميم جديد', confirmLabel: 'إنشاء'),
+    builder: (_) => const _NameDialog(
+      title: 'تصميم جديد',
+      confirmLabel: 'إنشاء',
+      askColors: true,
+    ),
   );
 
-  if (label == null) return;
+  if (named == null) return;
 
-  await cubit.add(file: file, label: label);
+  await cubit.add(file: file, label: named.label, printColors: named.colors);
 }
 
 /// التصاميم شبكةً من عمودين، تُوضع داخل `CustomScrollView`.
@@ -94,7 +103,10 @@ class SliverDesignGrid extends StatelessWidget {
   }
 }
 
-enum _DesignAction { save, rename, remove }
+enum _DesignAction { save, rename, colors, remove }
+
+/// ما تُعيده [_NameDialog]: الاسم، والألوان حين سُئل عنها (وإلا فقائمةٌ فارغة).
+typedef _Named = ({String label, List<PrintColor> colors});
 
 /// ما يُفعل بالتصميم غير فتحه: تحميله وتسميته وحذفه، في ورقةٍ واحدة من زرّ البطاقة.
 Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
@@ -114,6 +126,8 @@ Future<void> _showOptions(BuildContext context, CustomerDesign design) async {
       await saveDesign(context, design);
     case _DesignAction.rename:
       await _rename(context, design);
+    case _DesignAction.colors:
+      await _editColors(context, design);
     case _DesignAction.remove:
       await _remove(context, design);
   }
@@ -173,6 +187,12 @@ class _OptionsSheet extends StatelessWidget {
                   onTap: () => choose(_DesignAction.rename),
                 ),
                 MenuRow(
+                  icon: AppIcons.printColors,
+                  label: 'ألوان الطباعة',
+                  value: design.printColors.isEmpty ? null : '${design.printColors.length}',
+                  onTap: () => choose(_DesignAction.colors),
+                ),
+                MenuRow(
                   icon: AppIcons.delete,
                   label: 'حذف',
                   isDestructive: true,
@@ -190,7 +210,7 @@ class _OptionsSheet extends StatelessWidget {
 Future<void> _rename(BuildContext context, CustomerDesign design) async {
   final cubit = context.read<DesignsCubit>();
 
-  final label = await showDialog<String>(
+  final named = await showDialog<_Named>(
     context: context,
     builder: (_) => _NameDialog(
       title: 'تسمية التصميم',
@@ -199,9 +219,75 @@ Future<void> _rename(BuildContext context, CustomerDesign design) async {
     ),
   );
 
-  if (label == null || label == design.label) return;
+  if (named == null || named.label == design.label) return;
 
-  await cubit.renameTo(id: design.id, label: label);
+  await cubit.renameTo(id: design.id, label: named.label);
+}
+
+/// «ألوان الطباعة» على تصميمٍ في المكتبة.
+///
+/// **حتى يكتب فريقنا الرمز فقط.** بعدها تُعرض الألوان برموزها ولا تُعدَّل، ويُقال للعميل أين
+/// يطلب التغيير — والخادم يرفض التعديل في الحالين.
+Future<void> _editColors(BuildContext context, CustomerDesign design) async {
+  final cubit = context.read<DesignsCubit>();
+
+  if (design.printColorsLocked) {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => _LockedColors(colors: design.printColors),
+    );
+
+    return;
+  }
+
+  final colors = await showPrintColorsSheet(context: context, initial: design.printColors);
+
+  if (colors == null) return;
+
+  await cubit.setColors(id: design.id, colors: colors);
+}
+
+/// الألوان بعد أن اعتمدها فريقنا: تُقرأ برموزها، ولا تُعدَّل من هنا.
+class _LockedColors extends StatelessWidget {
+  const _LockedColors({required this.colors});
+
+  final List<PrintColor> colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final text = context.textTheme;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ألوان الطباعة', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            SizedBox(height: 12.h),
+            PrintColorsView(colors: colors),
+            SizedBox(height: 14.h),
+            Row(
+              children: [
+                Icon(AppIcons.locked, size: 16.r, color: scheme.onSurfaceVariant),
+                SizedBox(width: 6.w),
+                Expanded(
+                  child: Text(
+                    'اعتمد فريقنا هذه الألوان برموزها — لتغييرها تواصل معنا',
+                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _remove(BuildContext context, CustomerDesign design) async {
@@ -233,11 +319,15 @@ class _NameDialog extends StatefulWidget {
     required this.title,
     required this.confirmLabel,
     this.initial = '',
+    this.askColors = false,
   });
 
   final String title;
   final String confirmLabel;
   final String initial;
+
+  /// «ألوان الطباعة» تحت الاسم — للتصميم الجديد وحده؛ أما القائم فله صفُّه في الخيارات.
+  final bool askColors;
 
   @override
   State<_NameDialog> createState() => _NameDialogState();
@@ -250,6 +340,8 @@ class _NameDialogState extends State<_NameDialog> {
     text: widget.initial,
   );
 
+  List<PrintColor> _colors = const [];
+
   @override
   void dispose() {
     _controller.dispose();
@@ -259,26 +351,42 @@ class _NameDialogState extends State<_NameDialog> {
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    Navigator.of(context).pop(_controller.text.trim());
+    Navigator.of(context).pop((label: _controller.text.trim(), colors: _colors));
   }
 
   @override
   Widget build(BuildContext context) {
+    final name = AppTextField(
+      controller: _controller,
+      label: 'الاسم',
+      autofocus: true,
+      validator: Validators.required,
+      // ما يقبله `label` على الخادم.
+      maxLength: 255,
+      textInputAction: TextInputAction.done,
+      // زرّ الإدخال هو زرّ التأكيد: لوحة المفاتيح مفتوحةٌ أصلاً على هذا الحقل.
+      onSubmitted: (_) => _save(),
+    );
+
     return AlertDialog(
       title: Text(widget.title),
+      scrollable: widget.askColors,
       content: Form(
         key: _formKey,
-        child: AppTextField(
-          controller: _controller,
-          label: 'الاسم',
-          autofocus: true,
-          validator: Validators.required,
-          // ما يقبله `label` على الخادم.
-          maxLength: 255,
-          textInputAction: TextInputAction.done,
-          // زرّ الإدخال هو زرّ التأكيد: لوحة المفاتيح مفتوحةٌ أصلاً على هذا الحقل.
-          onSubmitted: (_) => _save(),
-        ),
+        child: !widget.askColors
+            ? name
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  name,
+                  SizedBox(height: 12.h),
+                  PrintColorsField(
+                    colors: _colors,
+                    onChanged: (colors) => setState(() => _colors = colors),
+                  ),
+                ],
+              ),
       ),
       actions: [
         TextButton(
@@ -368,6 +476,11 @@ class _DesignCard extends StatelessWidget {
                             color: scheme.onSurfaceVariant,
                           ),
                         ),
+                      ],
+                      // نقاطٌ فقط — البطاقة أصغر من أن تسمّي كل لون، والخيارات تفتحها.
+                      if (design.printColors.isNotEmpty) ...[
+                        SizedBox(height: 4.h),
+                        PrintColorDots(colors: design.printColors),
                       ],
                     ],
                   ),

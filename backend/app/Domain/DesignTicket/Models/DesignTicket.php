@@ -10,6 +10,7 @@ use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Comment\Concerns\HasComments;
 use App\Domain\Comment\Contracts\Commentable;
 use App\Domain\Comment\Models\Comment;
+use App\Domain\Customer\Casts\AsPrintColors;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\DesignTicket\Actions\AllocateDesignTicketIdentifier;
@@ -54,7 +55,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * may be written on them any more.
  */
 #[UseFactory(DesignTicketFactory::class)]
-#[Fillable(['order_id', 'title', 'description', 'instructions'])]
+#[Fillable(['order_id', 'title', 'description', 'instructions', 'print_colors'])]
 class DesignTicket extends Model implements Commentable, HasAuditTrail
 {
     /** @use HasFactory<DesignTicketFactory> */
@@ -105,6 +106,8 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
             'accepted_by_user_id' => 'integer',
             'requester_read_message_id' => 'integer',
             'designer_read_message_id' => 'integer',
+            // The colors the brief asks for. A designer's version starts from these.
+            'print_colors' => AsPrintColors::class,
         ];
     }
 

@@ -44,6 +44,7 @@ import 'package:dayaa_client/features/delivery/usecases/list_cities.dart';
 import 'package:dayaa_client/features/designs/presentation/viewmodel/designs_cubit.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository_impl.dart';
+import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/designs/usecases/remove_design.dart';
 import 'package:dayaa_client/features/designs/usecases/rename_design.dart';
@@ -272,6 +273,7 @@ abstract final class Injector {
       ..registerLazySingleton(() => ListDesigns(sl<DesignRepository>()))
       ..registerLazySingleton(() => UploadDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => RenameDesign(sl<DesignRepository>()))
+      ..registerLazySingleton(() => ChooseDesignColors(sl<DesignRepository>()))
       ..registerLazySingleton(() => RemoveDesign(sl<DesignRepository>()))
       ..registerLazySingleton(() => SaveDesignToDevice(sl<DesignRepository>(), sl<DeviceSaver>()))
       ..registerFactory(
@@ -279,6 +281,7 @@ abstract final class Injector {
           list: sl<ListDesigns>(),
           upload: sl<UploadDesign>(),
           rename: sl<RenameDesign>(),
+          chooseColors: sl<ChooseDesignColors>(),
           remove: sl<RemoveDesign>(),
         ),
       );

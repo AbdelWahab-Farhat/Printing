@@ -12,6 +12,9 @@ _CustomerDesign _$CustomerDesignFromJson(Map<String, dynamic> json) =>
       customerId: (json['customer_id'] as num).toInt(),
       label: json['label'] as String,
       notes: json['notes'] as String?,
+      printColors: json['print_colors'] == null
+          ? const <PrintColor>[]
+          : PrintColor.listFromJson(json['print_colors']),
       kind: $enumDecode(
         _$DesignKindEnumMap,
         json['kind'],
@@ -36,6 +39,7 @@ Map<String, dynamic> _$CustomerDesignToJson(_CustomerDesign instance) =>
       'customer_id': instance.customerId,
       'label': instance.label,
       'notes': instance.notes,
+      'print_colors': PrintColor.listToJson(instance.printColors),
       'kind': _$DesignKindEnumMap[instance.kind]!,
       'kind_label': instance.kindLabel,
       'mime_type': instance.mimeType,
