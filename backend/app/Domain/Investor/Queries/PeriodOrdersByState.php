@@ -39,6 +39,13 @@ use Illuminate\Support\Facades\DB;
  * ولا يأتي المستثمرين منه بالتسليم شيء. ورقمُها من {@see ProfitAwaitingDelivery} لما بلغ «جاهزة»، وما
  * دونها يُعدّ ولا يُسعَّر (§١٢أ). **والمغلقةُ لا تعرضها**: لا تُغلق وفيها شيءٌ إلا بتجاوز، وربحُ ما
  * يصل بعد ذلك لا يقع فيها.
+ *
+ * ## وصافي كلِّ مستثمرٍ بعد مصاريف الفترة
+ *
+ * «وضّح للمستثمرين كم سيصبح ربحهم … تخصم الأرباح الكلية من المصروف الخاصة بالفترة ويظهر
+ * الإجمالي» (2026-10-28). المصروفُ نقص من المحافظ يومَ سُجِّل، والشاشةُ كانت تعرض ربحَ الطلبيات
+ * وحده. فلكلّ مستثمرٍ `expenses` — ما تحمّله، من {@see PeriodExpensesQuery::perInvestorIn()} فيجمع
+ * إلى رقم «المصاريف» نفسِه — و`net` = `amount` − `expenses`. و«في الطريق» خارجهما كما كان.
  */
 final class PeriodOrdersByState
 {
@@ -54,6 +61,7 @@ final class PeriodOrdersByState
         private readonly PeriodOrderIds $periodOrders,
         private readonly InvestorBalances $balances,
         private readonly ProfitAwaitingDelivery $awaitingDelivery,
+        private readonly PeriodExpensesQuery $expenses,
     ) {}
 
     /**
@@ -99,7 +107,9 @@ final class PeriodOrdersByState
         }
 
         $base = $this->orders->rows($perOrder, $inFlight);
-        $names = $this->namesOf($parts, $expected, $base['investors']);
+        $borne = $this->expenses->perInvestorIn($period);
+        $names = $this->namesOf($parts, $expected, $base['investors'], $borne);
+        $expensesTotal = Money::round($this->sum($borne));
 
         $rows = [];
 
@@ -117,11 +127,13 @@ final class PeriodOrdersByState
 
         return [
             'orders' => $rows,
-            'investors' => $this->perInvestor($base['investors'], $parts, $expected, $names),
+            'investors' => $this->perInvestor($base['investors'], $parts, $expected, $borne, $names),
             'totals' => [
                 // «من كم طلبيةٍ جاء ربحُ المستثمرين» — ما في الدفتر وحده، كما كان.
                 'orders' => count(array_filter($rows, fn (array $row): bool => $row['investors'] !== [])),
                 'investors_total' => $base['totals']['investors_total'],
+                'expenses_on_investors' => $expensesTotal,
+                'net' => Money::round(bcsub($base['totals']['investors_total'], $expensesTotal, 2)),
                 'by_state' => $this->totalsByState($rows),
             ],
         ];
@@ -253,10 +265,11 @@ final class PeriodOrdersByState
      * @param  list<array{investor_id: int, name: string, amount: string}>  $ledger
      * @param  array<int, array<string, array<int, string>>>  $parts
      * @param  array<int, array<int, string>|null>  $expected
+     * @param  array<int, string>  $borne  ما تحمّله كلٌّ من المصاريف
      * @param  array<int, string>  $names
      * @return list<array<string, mixed>>
      */
-    private function perInvestor(array $ledger, array $parts, array $expected, array $names): array
+    private function perInvestor(array $ledger, array $parts, array $expected, array $borne, array $names): array
     {
         $released = [];
         $pending = [];
@@ -288,17 +301,23 @@ final class PeriodOrdersByState
 
         $rows = [];
 
-        foreach (array_unique([...array_keys($taken), ...array_keys($released), ...array_keys($pending), ...array_keys($coming)]) as $investorId) {
+        // ومن تحمّل مصروفاً ولم يربح بعدُ شيئاً يُكتب كذلك: صافيه سالبٌ، وهو ما نقص من محفظته.
+        foreach (array_unique([...array_keys($taken), ...array_keys($released), ...array_keys($pending), ...array_keys($coming), ...array_keys($borne)]) as $investorId) {
+            $amount = $taken[$investorId] ?? '0.00';
+            $expenses = Money::round($borne[$investorId] ?? '0');
+
             $row = [
                 'investor_id' => (int) $investorId,
                 'name' => $names[$investorId] ?? '',
-                'amount' => $taken[$investorId] ?? '0.00',
+                'amount' => $amount,
                 'released' => Money::round($released[$investorId] ?? '0'),
                 'pending' => Money::round($pending[$investorId] ?? '0'),
                 'expected' => Money::round($coming[$investorId] ?? '0'),
+                'expenses' => $expenses,
+                'net' => Money::round(bcsub($amount, $expenses, 2)),
             ];
 
-            if ($row['amount'] === '0.00' && $row['released'] === '0.00' && $row['pending'] === '0.00' && $row['expected'] === '0.00') {
+            if ($row['amount'] === '0.00' && $row['released'] === '0.00' && $row['pending'] === '0.00' && $row['expected'] === '0.00' && $row['expenses'] === '0.00') {
                 continue;
             }
 
@@ -341,9 +360,10 @@ final class PeriodOrdersByState
      * @param  array<int, array<string, array<int, string>>>  $parts
      * @param  array<int, array<int, string>|null>  $expected
      * @param  list<array{investor_id: int, name: string, amount: string}>  $ledger
+     * @param  array<int, string>  $borne
      * @return array<int, string>
      */
-    private function namesOf(array $parts, array $expected, array $ledger): array
+    private function namesOf(array $parts, array $expected, array $ledger, array $borne): array
     {
         $names = [];
 
@@ -352,7 +372,7 @@ final class PeriodOrdersByState
         }
 
         $missing = [];
-        $groups = [...array_values($expected)];
+        $groups = [...array_values($expected), $borne];
 
         foreach ($parts as $states) {
             array_push($groups, ...array_values($states));

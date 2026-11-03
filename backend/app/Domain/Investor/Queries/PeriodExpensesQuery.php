@@ -167,6 +167,33 @@ final class PeriodExpensesQuery
     }
 
     /**
+     * ما تحمّله كلُّ مستثمرٍ من مصاريف هذه الفترة، بإشارته — السالبُ ردٌّ إليه.
+     *
+     * **جمعُ `chargesIn()` نفسِه** الذي يجمعه `investors_total`، فلا يخالف مجموعُ الصفوف في
+     * «الطلبيات» رقمَ «منها على المستثمرين» في «المصاريف».
+     *
+     * @return array<int, string> المستثمر ← المبلغ
+     */
+    public function perInvestorIn(InvestmentPeriod $period): array
+    {
+        $fundId = $this->fund->idOrNull();
+
+        if ($fundId === null) {
+            return [];
+        }
+
+        $shares = [];
+
+        foreach ($this->chargesIn((int) $period->getKey(), $fundId) as $rows) {
+            foreach ($rows as $investorId => $amount) {
+                $shares[$investorId] = bcadd($shares[$investorId] ?? '0', $amount, 8);
+            }
+        }
+
+        return $shares;
+    }
+
+    /**
      * ما تحمّله المستثمرون من المصاريف في هذه الفترة — سطرُ «منها على المستثمرين» في أرقامها.
      *
      * مجموعُ `investors_total` نفسُه بنداءٍ واحد لا بمشي الصفوف: سجلُّ الفترات يرسمه لكل فترةٍ

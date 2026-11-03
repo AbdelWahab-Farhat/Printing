@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
@@ -35,6 +37,9 @@ enum PeriodTab { orders, expenses }
 /// **تصميم ب (2026-10-25)**: «طريقة عرض سيئة» — الرقمُ نفسُه أربعَ مرّات، وأربعةُ ألوانِ بطاقات،
 /// وجملٌ تحت الأرقام. صار: سطرُ النافذة، فالمجموع، فثلاثُ بلاطاتٍ متساوية هي المرشّح، فقائمةٌ
 /// واحدة.
+///
+/// **والمجموعُ صافٍ بعد المصاريف (2026-10-28)**: «وضّح للمستثمرين كم سيصبح ربحهم … لإن هذا
+/// مربك». بطاقةُ الصافي مكانَه، والمستثمرون جدولاً: الربح، والمصاريف، والصافي.
 class InvestmentPeriodPage extends StatelessWidget {
   const InvestmentPeriodPage({
     required this.periodId,
@@ -92,7 +97,14 @@ class InvestmentPeriodPage extends StatelessWidget {
                   ),
                 },
               ),
-              PeriodExpensesTab(periodId: periodId),
+              // ومعه مجاميعُ الطلبيات متى وصلت، ليقول «المصاريف» صافيَ الربح بعدها بلا نداءٍ ثانٍ.
+              BlocBuilder<PeriodOrdersCubit, PeriodOrdersState>(
+                builder: (context, state) => PeriodExpensesTab(
+                  periodId: periodId,
+                  ordersTotals: state is PeriodOrdersLoaded ? state.held.totals : null,
+                  onReversed: () => unawaited(context.read<PeriodOrdersCubit>().load(periodId)),
+                ),
+              ),
             ],
           ),
         ),
@@ -149,9 +161,18 @@ class _Body extends StatelessWidget {
       children: [
         _Header(period: held.period),
         SizedBox(height: 16.h),
-        _Pool(totals: held.totals),
+        _NetCard(totals: held.totals),
         if (held.orders.isNotEmpty) ...[
           SizedBox(height: 16.h),
+          // البلاطاتُ تجمع إلى ربح الطلبيات لا إلى الصافي فوقها — فيُقال ذلك مرّةً فوقها.
+          Text(
+            'ربح الطلبيات حسب حالتها',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8.h),
           _Tiles(
             filters: _filtersFor(held),
             totals: held.totals.byState,
@@ -159,11 +180,11 @@ class _Body extends StatelessWidget {
             onTap: cubit.filterBy,
           ),
         ],
-        if (held.investors.isNotEmpty) ...[
+        if (_InvestorsTable.rowsOf(held.investors).isNotEmpty) ...[
           SizedBox(height: 16.h),
           _ListCard(
             title: 'المستثمرون',
-            rows: [for (final share in held.investors) _LedgerRow(share: share)],
+            rows: [_InvestorsTable(investors: held.investors, totals: held.totals)],
           ),
         ],
         SizedBox(height: 24.h),
@@ -290,40 +311,112 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// ما أخذه المستثمرون من طلبيات هذه الفترة — مجموعُ صفوفها هي لا رقمٌ ثانٍ.
+/// صافي ربح المستثمرين بعد مصاريف الفترة — «كم سيصبح ربحهم» (تصميم ب، 2026-10-28).
 ///
-/// **ويفترق عن «للمستثمرين» في أرقام الإقفال عن قصد**: ذاك ما أُفرِج عنه يوم أُقفلت، وهذا ما
-/// قُيِّد طلبيةً طلبية. يتساويان في الحال السويّة، ويفترقان حين تحمل الفترةُ خسارةً شُطبت من
-/// رأس المال.
-class _Pool extends StatelessWidget {
-  const _Pool({required this.totals});
+/// المصروفُ نقص من محافظهم يومَ سُجِّل، فربحُ الطلبيات وحده كان يُقرأ أكبرَ مما لهم. **الأرقامُ
+/// الثلاثة من الخادم** ولا يُطرح هنا شيء؛ الشريطُ وحده حسابُ عرض: كم بقي من ربح الطلبيات. ولمسُ
+/// البطاقة يفتح «المصاريف».
+///
+/// **ويفترق ربحُ الطلبيات عن «للمستثمرين» في أرقام الإقفال عن قصد**: ذاك ما أُفرِج عنه يوم
+/// أُقفلت، وهذا ما قُيِّد طلبيةً طلبية. يتساويان في الحال السويّة، ويفترقان حين تحمل الفترةُ
+/// خسارةً شُطبت من رأس المال.
+class _NetCard extends StatelessWidget {
+  const _NetCard({required this.totals});
 
   final PeriodOrdersTotals totals;
+
+  /// ما بقي من ربح الطلبيات بعد المصاريف، بين صفرٍ وواحد — و`null` حيث لا شيءَ يُقسم: لا ربح،
+  /// أو لا مصروف، أو ردٌّ زاد عليه.
+  double? get _kept {
+    final profit = double.tryParse(totals.investorsTotal) ?? 0;
+    final expenses = double.tryParse(totals.expensesOnInvestors) ?? 0;
+
+    if (profit <= 0 || expenses <= 0) return null;
+
+    return ((profit - expenses) / profit).clamp(0.0, 1.0);
+  }
+
+  String get _source {
+    final profit = totals.investorsTotal.grouped.isolated;
+    final expenses = totals.expensesOnInvestors;
+
+    if (_isZero(expenses)) return 'ربح الطلبيات $profit — لا مصاريف عليهم بعد';
+
+    return expenses.startsWith('-')
+        ? 'من ربح الطلبيات $profit ومعه ردُّ مصاريف ${expenses.substring(1).grouped.isolated}'
+        : 'من ربح الطلبيات $profit بعد مصاريف ${expenses.grouped.isolated}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final isNegative = totals.investorsTotal.startsWith('-');
+    final ink = scheme.onPrimaryContainer;
+    final kept = _kept;
+    final radius = BorderRadius.circular(20.r);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'ربح المستثمرين',
-          style: context.textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+    return Material(
+      color: scheme.primaryContainer,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () => DefaultTabController.of(context).animateTo(PeriodTab.expenses.index),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'صافي ربح المستثمرين',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: ink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${totals.net.grouped} د.ل',
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.headlineMedium?.copyWith(
+                  color: totals.net.startsWith('-') ? scheme.error : ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (kept != null) ...[
+                SizedBox(height: 10.h),
+                // الباقي من جهة البداية، وما أكلته المصاريف بعده.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: SizedBox(
+                    height: 8.h,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ColoredBox(color: scheme.error),
+                        FractionallySizedBox(
+                          alignment: AlignmentDirectional.centerStart,
+                          widthFactor: kept,
+                          child: ColoredBox(color: ink),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _source,
+                      style: context.textTheme.bodyMedium?.copyWith(color: ink),
+                    ),
+                  ),
+                  Icon(AppIcons.forward, size: 18.sp, color: ink),
+                ],
+              ),
+            ],
           ),
         ),
-        Text(
-          '${totals.investorsTotal.grouped} د.ل',
-          textDirection: TextDirection.ltr,
-          style: context.textTheme.headlineMedium?.copyWith(
-            color: isNegative ? scheme.error : scheme.onSurface,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -526,82 +619,150 @@ class _ListCard extends StatelessWidget {
   }
 }
 
-/// شريكٌ ومجموعُ ما أخذه من طلبيات الفترة.
-class _LedgerRow extends StatelessWidget {
-  const _LedgerRow({required this.share});
+bool _isZero(String amount) => (double.tryParse(amount) ?? 0) == 0;
 
-  final PeriodInvestorShare share;
+/// المستثمرون جدولاً: ربحُ كلٍّ من الطلبيات، وما تحمّله من المصاريف، وصافيه — وسطرُ المجموع
+/// تحتها هو البطاقةُ فوق (تصميم ب، 2026-10-28). **الأرقامُ من الخادم كما وصلت**، والصافي لا
+/// يُطرح هنا.
+///
+/// بلا «د.ل» في الخانات: أربعةُ أعمدةٍ على هاتفٍ لا تتّسع لها، والبطاقةُ فوقها تقولها. و«في
+/// الطريق» ليس عموداً: خارجُ الدفتر، وبلاطتُه فوق.
+class _InvestorsTable extends StatelessWidget {
+  const _InvestorsTable({required this.investors, required this.totals});
 
-  /// سؤالُ المستثمر نفسُه: «كم وصلني من هذه الفترة، وكم بقي» — ما ليس صفراً وحده.
-  ///
-  /// **وجزءٌ واحدٌ من الدفتر لا يُكتب**: هو الرقمُ نفسُه على يساره («ينتظر 1,050.41» تحت
-  /// «1,050.41 د.ل»). وما في الطريق يُكتب دائماً، لأنه ليس في ذلك الرقم.
-  String? get _split {
-    final released = !_isZero(share.released);
-    final pending = !_isZero(share.pending);
-    final expected = !_isZero(share.expected);
+  final List<PeriodInvestorShare> investors;
+  final PeriodOrdersTotals totals;
 
-    if (!expected && !(released && pending)) return null;
+  /// من له في الدفتر شيء — ربحٌ أو مصروف. ومن لا شيءَ له إلا في الطريق لا سطرَ له هنا.
+  static List<PeriodInvestorShare> rowsOf(List<PeriodInvestorShare> investors) => [
+    for (final share in investors)
+      if (!_isZero(share.amount) || !_isZero(share.expenses)) share,
+  ];
 
-    return [
-      if (released) 'استُلم ${share.released.grouped}',
-      if (pending) 'ينتظر ${share.pending.grouped}',
-      if (expected) 'في الطريق ${share.expected.grouped}',
-    ].join(' · ');
+  /// ما تحمّله بعلامة الطرح، وما رُدّ إليه بعلامة الجمع — العمودُ عمودُ ما يُطرح من الربح.
+  static String _charged(String amount) {
+    if (_isZero(amount)) return '0';
+
+    return amount.startsWith('-') ? '+${amount.substring(1).grouped}' : '-${amount.grouped}';
   }
-
-  static bool _isZero(String amount) => (double.tryParse(amount) ?? 0) == 0;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final split = _split;
-    final letters = share.name.trim().characters;
-    final initial = letters.isEmpty ? '؟' : letters.first;
+    final hairline = BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5));
+    final head = context.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    final plain = context.textTheme.bodyMedium;
+    final strong = plain?.copyWith(fontWeight: FontWeight.w800);
+
+    Color? signed(String amount, {Color? otherwise}) =>
+        amount.startsWith('-') ? scheme.error : otherwise;
+
+    Color chargedColor(String amount) => _isZero(amount)
+        ? scheme.onSurfaceVariant
+        : amount.startsWith('-')
+        ? scheme.primary
+        : scheme.error;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+      child: Table(
+        columnWidths: {
+          0: const FlexColumnWidth(),
+          1: FixedColumnWidth(72.w),
+          2: FixedColumnWidth(68.w),
+          3: FixedColumnWidth(72.w),
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         children: [
-          CircleAvatar(
-            radius: 18.r,
-            backgroundColor: scheme.secondaryContainer,
-            child: Text(
-              initial,
-              style: context.textTheme.bodyLarge?.copyWith(
-                color: scheme.onSecondaryContainer,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          TableRow(
+            children: [
+              _Cell('المستثمر', style: head),
+              _Cell('الربح', style: head, atEnd: true),
+              _Cell('المصاريف', style: head, atEnd: true),
+              _Cell('الصافي', style: head, atEnd: true),
+            ],
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          for (final share in rowsOf(investors))
+            TableRow(
+              decoration: BoxDecoration(border: Border(top: hairline)),
               children: [
-                Text(
-                  share.name,
-                  style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (split != null)
-                  Text(
-                    split,
-                    style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                _Cell(share.name, style: plain?.copyWith(fontWeight: FontWeight.w700)),
+                _Cell.figure(
+                  share.amount.grouped,
+                  style: plain?.copyWith(
+                    color: signed(share.amount, otherwise: scheme.onSurfaceVariant),
                   ),
+                ),
+                _Cell.figure(
+                  _charged(share.expenses),
+                  style: plain?.copyWith(color: chargedColor(share.expenses)),
+                ),
+                _Cell.figure(share.net.grouped, style: strong?.copyWith(color: signed(share.net))),
               ],
             ),
-          ),
-          SizedBox(width: 8.w),
-          Text(
-            '${share.amount.grouped} د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: share.amount.startsWith('-') ? scheme.error : null,
+          TableRow(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: scheme.outlineVariant, width: 1.5)),
             ),
+            children: [
+              _Cell('المجموع', style: strong),
+              _Cell.figure(
+                totals.investorsTotal.grouped,
+                style: plain?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: signed(totals.investorsTotal),
+                ),
+              ),
+              _Cell.figure(
+                _charged(totals.expensesOnInvestors),
+                style: plain?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: chargedColor(totals.expensesOnInvestors),
+                ),
+              ),
+              _Cell.figure(
+                totals.net.grouped,
+                style: strong?.copyWith(color: signed(totals.net, otherwise: scheme.primary)),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// خانةٌ في جدول المستثمرين: اسمٌ يلتفّ، أو رقمٌ في آخر خانته يصغر ولا يلتفّ.
+class _Cell extends StatelessWidget {
+  const _Cell(this.text, {this.style, this.atEnd = false}) : isFigure = false;
+
+  const _Cell.figure(this.text, {this.style}) : atEnd = true, isFigure = true;
+
+  final String text;
+  final TextStyle? style;
+  final bool atEnd;
+  final bool isFigure;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = Text(
+      text,
+      maxLines: isFigure ? 1 : null,
+      textDirection: isFigure ? TextDirection.ltr : null,
+      style: style,
+    );
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: 10.h, bottom: 10.h, end: atEnd ? 0 : 8.w),
+      child: atEnd
+          ? Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FittedBox(fit: BoxFit.scaleDown, child: label),
+            )
+          : label,
     );
   }
 }

@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/text_direction.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/features/investment_fund/models/period_expenses.dart';
+import 'package:dayaa/features/investment_fund/models/period_orders.dart';
 import 'package:dayaa/features/investment_fund/presentation/viewmodel/period_expenses_cubit.dart';
+import 'package:dayaa/features/investment_fund/presentation/views/investment_period_page.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/period_expense_card.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_dialogs.dart';
 import 'package:flutter/material.dart';
@@ -20,9 +24,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **والمجاميعُ كما وصلت.** الخادمُ يعرف أيُّ مصروفٍ يُعدّ في الفترة وأيُّها لا، وجمعُها هنا
 /// تعريفٌ ثانٍ يخالفه يوم يُعكَس سطر.
 class PeriodExpensesTab extends StatelessWidget {
-  const PeriodExpensesTab({required this.periodId, super.key});
+  const PeriodExpensesTab({required this.periodId, this.ordersTotals, this.onReversed, super.key});
 
   final int periodId;
+
+  /// مجاميعُ تبويب الطلبيات، ليُقال صافي الربح بعد المصاريف — `null` ما لم تصل.
+  final PeriodOrdersTotals? ordersTotals;
+
+  /// عُكس مصروف — فتغيّر الصافي، وعلى تبويب الطلبيات أن يسأل ثانية.
+  final VoidCallback? onReversed;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +48,7 @@ class PeriodExpensesTab extends StatelessWidget {
           PeriodExpensesFailure(:final failure) => _Retry(message: failure.message),
           PeriodExpensesLoaded(:final held) => RefreshIndicator(
             onRefresh: () => context.read<PeriodExpensesCubit>().load(),
-            child: _Body(held: held),
+            child: _Body(held: held, ordersTotals: ordersTotals, onReversed: onReversed),
           ),
         },
       ),
@@ -73,9 +83,11 @@ class _Retry extends StatelessWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.held});
+  const _Body({required this.held, this.ordersTotals, this.onReversed});
 
   final PeriodExpenses held;
+  final PeriodOrdersTotals? ordersTotals;
+  final VoidCallback? onReversed;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +100,7 @@ class _Body extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
       children: [
-        _Totals(totals: held.totals),
+        _Totals(totals: held.totals, orders: ordersTotals),
         SizedBox(height: 24.h),
         Text(
           'مصاريف الفترة',
@@ -153,29 +165,49 @@ class _Body extends StatelessWidget {
       return;
     }
 
+    onReversed?.call();
     context.showSuccess('عُكس المصروف — عاد المالُ إلى الخزينة ونقدِ الصندوق');
   }
 }
 
-/// مجموعُ الفترة: ما خرج من الصندوق، وما تحمّله المستثمرون منه.
+/// مجموعُ الفترة: ما خرج من الصندوق، وما تحمّله المستثمرون منه — وتحته صافي ربحهم بعده متى
+/// وصلت مجاميعُ الطلبيات، يفتح لمسُه «الطلبيات».
+///
+/// **الثلاثةُ في ذلك السطر من نداء الطلبيات وحده** — ربحُها ومصاريفُها وصافيها — فلا يُطرح رقمٌ
+/// من نداءٍ من رقمٍ من غيره.
 class _Totals extends StatelessWidget {
-  const _Totals({required this.totals});
+  const _Totals({required this.totals, this.orders});
 
   final PeriodExpensesTotals totals;
+  final PeriodOrdersTotals? orders;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final onInvestors = totals.investorsTotal;
     final refunded = onInvestors.startsWith('-');
+    final orders = this.orders;
+    final radius = BorderRadius.circular(16.r);
+
+    return Material(
+      color: scheme.primaryContainer,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          _spent(context, onInvestors: onInvestors, refunded: refunded),
+          if (orders != null) _Net(orders: orders),
+        ],
+      ),
+    );
+  }
+
+  Widget _spent(BuildContext context, {required String onInvestors, required bool refunded}) {
+    final scheme = context.colorScheme;
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
       child: Column(
         children: [
           Text(
@@ -199,6 +231,65 @@ class _Totals extends StatelessWidget {
             style: context.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «صافي ربح المستثمرين بعدها» — سطرُ الطريق من المصروف إلى ما بقي لهم.
+class _Net extends StatelessWidget {
+  const _Net({required this.orders});
+
+  final PeriodOrdersTotals orders;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final ink = scheme.onPrimaryContainer;
+    final expenses = orders.expensesOnInvestors;
+    final charged = expenses.startsWith('-')
+        ? '+ ${expenses.substring(1).grouped.isolated}'
+        : '− ${expenses.grouped.isolated}';
+
+    return InkWell(
+      onTap: () => DefaultTabController.of(context).animateTo(PeriodTab.orders.index),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 16.w),
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.18),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'صافي ربح المستثمرين بعدها',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'ربح الطلبيات ${orders.investorsTotal.grouped.isolated} $charged',
+                    style: context.textTheme.bodySmall?.copyWith(color: ink),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              '${orders.net.grouped} د.ل',
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.titleLarge?.copyWith(
+                color: orders.net.startsWith('-') ? scheme.error : ink,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Icon(AppIcons.forward, size: 18.sp, color: ink),
+          ],
+        ),
       ),
     );
   }

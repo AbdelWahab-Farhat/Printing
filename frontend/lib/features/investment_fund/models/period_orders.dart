@@ -22,6 +22,11 @@ abstract class PeriodInvestorShare with _$PeriodInvestorShare {
 
     /// ربحُ طلبياتٍ في الطريق، لم يدخل [amount] بعد لأن لا صفَّ له في الدفتر.
     @Default('0.00') String expected,
+
+    /// في سجلّ الفترة وحده: ما تحمّله من مصاريفها، وصافيه بعدها ([amount] ناقصاً هذا) — كلاهما
+    /// من الخادم وبإشارته؛ السالبُ في [expenses] ردٌّ إليه.
+    @Default('0.00') String expenses,
+    @Default('0.00') String net,
   }) = _PeriodInvestorShare;
 
   factory PeriodInvestorShare.fromJson(Map<String, dynamic> json) =>
@@ -197,6 +202,12 @@ abstract class PeriodOrdersTotals with _$PeriodOrdersTotals {
   const factory PeriodOrdersTotals({
     @Default(0) int orders,
     @JsonKey(name: 'investors_total') @Default('0.00') String investorsTotal,
+
+    /// ما تحمّله المستثمرون من مصاريف الفترة — «منها على المستثمرين» في تبويبها، الرقمُ نفسُه.
+    @JsonKey(name: 'expenses_on_investors') @Default('0.00') String expensesOnInvestors,
+
+    /// صافي ربحهم بعدها: [investorsTotal] ناقصاً [expensesOnInvestors]، كما طرحه الخادم.
+    @Default('0.00') String net,
     @JsonKey(name: 'by_state') @Default(PeriodStatesTotals()) PeriodStatesTotals byState,
   }) = _PeriodOrdersTotals;
 

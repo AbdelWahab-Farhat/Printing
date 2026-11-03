@@ -17,6 +17,8 @@ use App\Domain\Investor\Models\Investor;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealExpense;
 use App\Domain\Investor\Models\InvestorDealShare;
+use App\Domain\Investor\Models\InvestorWalletEntry;
+use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
@@ -343,5 +345,41 @@ class PeriodExpensesTest extends TestCase
 
         // Assert
         $response->assertForbidden();
+    }
+
+    public function test_the_period_orders_give_each_investor_his_net_after_the_expenses(): void
+    {
+        // Arrange — «كم سيصبح ربحهم … تخصم الأرباح من المصروف ويظهر الإجمالي» (2026-10-28).
+        // سالم ربح ٣٠٠ من طلبية، وخالد لم يربح بعد؛ وشحنُ ٤٠٠ يحمّلهما ١٢٠ و٨٠.
+        $period = $this->september();
+        Carbon::setTestNow('2026-09-10 09:00:00');
+        $headers = $this->bookkeeper();
+        $this->fundExpense($headers, '400');
+
+        $profit = new InvestorWalletEntry(['amount' => '300.00', 'occurred_at' => now()]);
+        $profit->investor_id = $this->big->id;
+        $profit->investor_deal_id = InvestorDeal::factory()->create()->id;
+        $profit->type = WalletEntryType::Profit;
+        $profit->source_type = 'order';
+        $profit->source_id = (int) Order::factory()->create(['grand_total' => '900.00', 'paid_amount' => '900.00'])->id;
+        $profit->source_sequence = 1;
+        $profit->investment_period_id = $period->id;
+        $profit->save();
+
+        // Act
+        $response = $this->getJson("/api/v1/investment/periods/{$period->id}/orders", $headers)->assertOk();
+
+        // Assert — ومن لم يربح له سطرٌ بصافيه السالب؛ والمجموعُ رقمُ «المصاريف» نفسُه.
+        $investors = collect($response->json('data.investors'))->keyBy('name');
+        $this->assertSame(['300.00', '120.00', '180.00'], [
+            $investors['سالم']['amount'], $investors['سالم']['expenses'], $investors['سالم']['net'],
+        ]);
+        $this->assertSame(['0.00', '80.00', '-80.00'], [
+            $investors['خالد']['amount'], $investors['خالد']['expenses'], $investors['خالد']['net'],
+        ]);
+        $response->assertJsonPath('data.totals.investors_total', '300.00')
+            ->assertJsonPath('data.totals.expenses_on_investors', '200.00')
+            ->assertJsonPath('data.totals.net', '100.00');
+        $this->expensesOf($headers, $period)->assertJsonPath('data.totals.investors_total', '200.00');
     }
 }

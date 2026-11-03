@@ -188,10 +188,10 @@ void main() {
           ),
         ],
         investors: [
-          PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '562.50'),
-          PeriodInvestorShare(investorId: 2, name: 'سالم', amount: '187.50'),
+          PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '562.50', net: '562.50'),
+          PeriodInvestorShare(investorId: 2, name: 'سالم', amount: '187.50', net: '187.50'),
         ],
-        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '750.00'),
+        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '750.00', net: '750.00'),
       ),
     );
 
@@ -204,16 +204,17 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — الرقمُ بلا «طلبية» قبله، والعميلُ وحالتُها سطرٌ تحته. والاسمان مرّتين: مرّةً في
-    // «المستثمرون» بوحدته، ومرّةً سطراً تحت الطلبية — رقمان مختلفان متى تعدّدت الطلبيات.
+    // Assert — الرقمُ بلا «طلبية» قبله، والعميلُ وحالتُها سطرٌ تحته. ونصيبُ كلٍّ في جدول
+    // «المستثمرون» ربحاً وصافياً (لا مصروف هنا فيتساويان)، ومرّةً سطراً تحت الطلبية — رقمان
+    // مختلفان متى تعدّدت الطلبيات.
     expect(find.text('ORD-0091'), findsOneWidget);
     expect(find.text('طلبية ORD-0091'), findsNothing);
     expect(find.textContaining('مطعم البركة'), findsOneWidget);
     expect(find.textContaining('تم الاستلام'), findsOneWidget);
-    expect(find.text('562.5 د.ل'), findsOneWidget);
-    expect(find.text('187.5 د.ل'), findsOneWidget);
-    expect(find.textContaining('562.5'), findsNWidgets(2));
-    expect(find.textContaining('187.5'), findsNWidgets(2));
+    expect(find.text('562.5'), findsNWidgets(2));
+    expect(find.text('187.5'), findsNWidgets(2));
+    expect(find.textContaining('562.5'), findsNWidgets(3));
+    expect(find.textContaining('187.5'), findsNWidgets(3));
   });
 
   testWidgets('one partner alone is not repeated under the order', (tester) async {
@@ -232,7 +233,7 @@ void main() {
             investors: [PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '640.00')],
           ),
         ],
-        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '640.00'),
+        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '640.00', net: '640.00'),
       ),
     );
     tester.view.physicalSize = const Size(800, 2400);
@@ -248,10 +249,11 @@ void main() {
     expect(find.textContaining('أحمد'), findsNothing);
   });
 
-  testWidgets('the pool is the figure the server sent, over the orders it came from', (
+  testWidgets('the net is the figure the server sent, over the orders it came from', (
     tester,
   ) async {
-    // Arrange — المجموعُ يصل محسوباً؛ جمعُه هنا تعريفٌ ثانٍ يخالف الخادمَ يوم يُعكَس صفّ.
+    // Arrange — المجموعُ يصل محسوباً؛ جمعُه أو طرحُه هنا تعريفٌ ثانٍ يخالف الخادمَ يوم يُعكَس
+    // صفّ. فالصافي أدناه لا يساوي الطرحَ عمداً.
     await register(
       const PeriodOrders(
         period: _period,
@@ -273,7 +275,12 @@ void main() {
             investorsTotal: '155.55',
           ),
         ],
-        totals: PeriodOrdersTotals(orders: 2, investorsTotal: '905.55'),
+        totals: PeriodOrdersTotals(
+          orders: 2,
+          investorsTotal: '905.55',
+          expensesOnInvestors: '200.00',
+          net: '700.00',
+        ),
       ),
     );
 
@@ -282,8 +289,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — والعددُ على البلاطات تحته، لا جملةً تحت الرقم.
-    expect(find.text('ربح المستثمرين'), findsOneWidget);
-    expect(find.text('905.55 د.ل'), findsOneWidget);
+    expect(find.text('صافي ربح المستثمرين'), findsOneWidget);
+    expect(find.text('700 د.ل'), findsOneWidget);
+    expect(find.text('705.55 د.ل'), findsNothing);
     expect(find.text('من 2 طلبية'), findsNothing);
   });
 
@@ -304,7 +312,7 @@ void main() {
             investors: [PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '-300.00')],
           ),
         ],
-        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '-300.00'),
+        totals: PeriodOrdersTotals(orders: 1, investorsTotal: '-300.00', net: '-300.00'),
       ),
     );
 
@@ -493,6 +501,7 @@ void main() {
   const closingTotals = PeriodOrdersTotals(
     orders: 2,
     investorsTotal: '120.00',
+    net: '120.00',
     byState: PeriodStatesTotals(
       released: PeriodStateTotal(orders: 1, amount: '50.00'),
       awaitingPayment: PeriodStateTotal(orders: 1, amount: '70.00'),
@@ -712,12 +721,13 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert — على الطلبية بوحدته، وعلى بلاطة «قيد التسليم» بلاها، وتحت الشريك؛ ولا جملةَ
-    // «ربح متوقّع» — البلاطةُ ونقطةُ الصفّ تقولانها.
+    // Assert — على الطلبية بوحدته، وعلى بلاطة «قيد التسليم» بلاها؛ ولا جملةَ «ربح متوقّع» —
+    // البلاطةُ ونقطةُ الصفّ تقولانها. وشريكٌ لا شيءَ له إلا في الطريق لا سطرَ له في الجدول:
+    // الجدولُ ما في الدفتر (تصميم ب، 2026-10-28).
     expect(find.text('2,250 د.ل'), findsOneWidget);
     expect(find.text('2,250'), findsOneWidget);
-    expect(find.text('في الطريق 2,250'), findsOneWidget);
     expect(find.text('ربح متوقّع عند التسليم'), findsNothing);
+    expect(find.text('المستثمرون'), findsNothing);
   });
 
   testWidgets('an unpaid order in an open period warns that its profit will be held', (
@@ -754,8 +764,13 @@ void main() {
     expect(find.textContaining('غير محصّلة'), findsOneWidget);
   });
 
-  testWidgets('each partner sees what reached the wallet and what waits', (tester) async {
-    // Arrange
+  // ───────────── صافي الربح بعد مصاريف الفترة — تصميم ب (2026-10-28) ─────────────
+
+  testWidgets('each partner reads what the orders gave, what the expenses took, and what is left', (
+    tester,
+  ) async {
+    // Arrange — «وضّح للمستثمرين كم سيصبح ربحهم … تخصم الأرباح من المصروف ويظهر الإجمالي».
+    // صافي سالم لا يساوي الطرحَ عمداً: الجدولُ يرسم ما حسبه الخادم ولا يطرح.
     await register(
       const PeriodOrders(
         period: closing,
@@ -764,12 +779,24 @@ void main() {
           PeriodInvestorShare(
             investorId: 1,
             name: 'أحمد',
-            amount: '120.00',
-            released: '50.00',
-            pending: '70.00',
+            amount: '1189.99',
+            expenses: '299.55',
+            net: '890.44',
+          ),
+          PeriodInvestorShare(
+            investorId: 2,
+            name: 'سالم',
+            amount: '527.31',
+            expenses: '132.74',
+            net: '394.00',
           ),
         ],
-        totals: closingTotals,
+        totals: PeriodOrdersTotals(
+          orders: 2,
+          investorsTotal: '1717.30',
+          expensesOnInvestors: '432.29',
+          net: '1285.01',
+        ),
       ),
     );
     await tall(tester);
@@ -778,25 +805,86 @@ void main() {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('استُلم 50 · ينتظر 70'), findsOneWidget);
+    // Assert — رأسُ الجدول، وسطرٌ لكلٍّ بأعمدته الثلاثة، وسطرُ المجموع يساوي البطاقةَ فوقه.
+    for (final head in ['المستثمر', 'الربح', 'المصاريف', 'الصافي', 'المجموع']) {
+      expect(find.text(head), findsWidgets);
+    }
+    expect(find.text('1,189.99'), findsOneWidget);
+    expect(find.text('-299.55'), findsOneWidget);
+    expect(find.text('890.44'), findsOneWidget);
+    expect(find.text('394'), findsOneWidget);
+    expect(find.text('-432.29'), findsOneWidget);
+    expect(find.text('1,285.01'), findsOneWidget);
+    expect(find.text('1,285.01 د.ل'), findsOneWidget);
+
+    final charged = find.text('-299.55');
+    final error = Theme.of(tester.element(charged)).colorScheme.error;
+    expect(tester.widget<Text>(charged).style?.color, error);
   });
 
-  testWidgets('a partner whose whole share waits is not told twice', (tester) async {
-    // Arrange — «ينتظر 1,050.41» تحت «1,050.41 د.ل» كان الرقمَ نفسَه مرّتين.
+  testWidgets('the net card says where its figure came from, and opens the expenses', (
+    tester,
+  ) async {
+    // Arrange
     await register(
-      PeriodOrders(
-        period: closing.copyWith(status: 'open', statusLabel: 'مفتوحة'),
-        orders: const [held],
-        investors: const [
-          PeriodInvestorShare(investorId: 1, name: 'أحمد', amount: '70.00', pending: '70.00'),
-        ],
-        totals: const PeriodOrdersTotals(
-          orders: 1,
-          investorsTotal: '70.00',
-          byState: PeriodStatesTotals(
-            awaitingPeriodEnd: PeriodStateTotal(orders: 1, amount: '70.00'),
+      const PeriodOrders(
+        period: closing,
+        orders: [released, held],
+        totals: PeriodOrdersTotals(
+          orders: 2,
+          investorsTotal: '2583.54',
+          expensesOnInvestors: '650.29',
+          net: '1933.25',
+        ),
+      ),
+    );
+    await tall(tester);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('صافي ربح المستثمرين'));
+    await tester.pumpAndSettle();
+
+    // Assert — الصافي، ومن أين جاء، ولمسُه نقل إلى «المصاريف».
+    expect(find.text('ربح المستثمرين'), findsNothing);
+    expect(find.textContaining('2,583.54'), findsWidgets);
+    expect(find.textContaining('650.29'), findsWidgets);
+    expect(find.text('لا مصاريف على الصندوق في هذه الفترة'), findsOneWidget);
+    expect(find.text('صافي ربح المستثمرين بعدها'), findsOneWidget);
+    expect(find.text('1,933.25 د.ل'), findsWidgets);
+  });
+
+  testWidgets('a refund reads as a plus, and a partner who only bore an expense keeps a row', (
+    tester,
+  ) async {
+    // Arrange — عكسُ مصروفٍ ردٌّ إلى المحفظة لا مصروفٌ آخر؛ ومن انضمّ ولم يربح بعدُ نقص من
+    // محفظته نصيبُه، فصافيه سالبٌ ويُرى.
+    await register(
+      const PeriodOrders(
+        period: closing,
+        orders: [released],
+        investors: [
+          PeriodInvestorShare(
+            investorId: 1,
+            name: 'أحمد',
+            amount: '50.00',
+            expenses: '-20.00',
+            net: '70.00',
           ),
+          PeriodInvestorShare(
+            investorId: 3,
+            name: 'عمر',
+            amount: '0.00',
+            expenses: '15.00',
+            net: '-15.00',
+          ),
+        ],
+        totals: PeriodOrdersTotals(
+          orders: 1,
+          investorsTotal: '50.00',
+          expensesOnInvestors: '-5.00',
+          net: '55.00',
         ),
       ),
     );
@@ -807,9 +895,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('المستثمرون'), findsOneWidget);
-    expect(find.text('أحمد'), findsOneWidget);
-    expect(find.text('ينتظر 70'), findsNothing);
+    expect(find.text('+20'), findsOneWidget);
+    expect(find.text('عمر'), findsOneWidget);
+
+    // بلا ربحٍ يساوي صافيه ما تحمّله: «-15» في عمود المصاريف وفي عمود الصافي، وكلاهما أحمر.
+    final lost = find.text('-15');
+    expect(lost, findsNWidgets(2));
+    final error = Theme.of(tester.element(lost.first)).colorScheme.error;
+    for (final element in lost.evaluate()) {
+      expect((element.widget as Text).style?.color, error);
+    }
+    expect(find.textContaining('ردُّ مصاريف'), findsOneWidget);
   });
 
   testWidgets('a refusal is shown in the server words, with a way back', (tester) async {

@@ -14,6 +14,8 @@ _PeriodInvestorShare _$PeriodInvestorShareFromJson(Map<String, dynamic> json) =>
       released: json['released'] as String? ?? '0.00',
       pending: json['pending'] as String? ?? '0.00',
       expected: json['expected'] as String? ?? '0.00',
+      expenses: json['expenses'] as String? ?? '0.00',
+      net: json['net'] as String? ?? '0.00',
     );
 
 Map<String, dynamic> _$PeriodInvestorShareToJson(
@@ -25,6 +27,8 @@ Map<String, dynamic> _$PeriodInvestorShareToJson(
   'released': instance.released,
   'pending': instance.pending,
   'expected': instance.expected,
+  'expenses': instance.expenses,
+  'net': instance.net,
 };
 
 _PeriodOrder _$PeriodOrderFromJson(Map<String, dynamic> json) => _PeriodOrder(
@@ -158,6 +162,8 @@ _PeriodOrdersTotals _$PeriodOrdersTotalsFromJson(Map<String, dynamic> json) =>
     _PeriodOrdersTotals(
       orders: (json['orders'] as num?)?.toInt() ?? 0,
       investorsTotal: json['investors_total'] as String? ?? '0.00',
+      expensesOnInvestors: json['expenses_on_investors'] as String? ?? '0.00',
+      net: json['net'] as String? ?? '0.00',
       byState: json['by_state'] == null
           ? const PeriodStatesTotals()
           : PeriodStatesTotals.fromJson(
@@ -169,6 +175,8 @@ Map<String, dynamic> _$PeriodOrdersTotalsToJson(_PeriodOrdersTotals instance) =>
     <String, dynamic>{
       'orders': instance.orders,
       'investors_total': instance.investorsTotal,
+      'expenses_on_investors': instance.expensesOnInvestors,
+      'net': instance.net,
       'by_state': instance.byState.toJson(),
     };
 
