@@ -383,21 +383,6 @@ class _DesignTicketDetailView extends StatelessWidget {
           appBar: AppBar(
             title: Text(ticket.code),
             actions: [
-              // «الرد داخل التذكرة» — behind the same grant as reading it, because writing a note
-              // is part of doing the work rather than a privilege over it.
-              IconButton(
-                tooltip: 'المحادثة',
-                onPressed: () => _openConversation(context, ticket),
-                // الشارةُ رقمٌ لا نقطة، كشارة الجرس بجوارها: ردٌّ واحد ونوبةُ ذهابٍ وإياب في
-                // عطلةٍ طويلة ليسا خبراً واحداً، والسقفُ «+99» يمنع الشريط من إعادة التوزيع.
-                icon: Badge(
-                  isLabelVisible: ticket.unreadComments > 0,
-                  label: Text(
-                    ticket.unreadComments > 99 ? '+99' : '${ticket.unreadComments}',
-                  ),
-                  child: Icon(AppIcons.comments),
-                ),
-              ),
               if (ticket.canManage)
                 IconButton(
                   tooltip: 'تعديل الطلب',
@@ -423,10 +408,29 @@ class _DesignTicketDetailView extends StatelessWidget {
                 ),
             ],
           ),
+          // «الرد داخل التذكرة» — زرٌّ عائمٌ باسمه، لا أيقونةٌ في الشريط. كان فقاعتين بين
+          // «تعديل» و«إلغاء» و«السجل» فلم يعرف أحدٌ أنّ للتذكرة محادثة؛ والعائمُ يبقى ظاهراً
+          // مهما نزلت الصفحة، كـ«اسأل عن الطلبية» في تطبيق العميل. خلف إذن القراءة نفسه، لأنّ
+          // كتابة ردٍّ جزءٌ من العمل لا امتيازٌ فوقه.
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'fab-design-ticket-chat',
+            onPressed: () => _openConversation(context, ticket),
+            // الشارةُ رقمٌ لا نقطة: ردٌّ واحد ونوبةُ ذهابٍ وإياب في عطلةٍ طويلة ليسا خبراً
+            // واحداً، والسقفُ «+99» يمنع الزرّ من أن يتّسع.
+            icon: Badge(
+              isLabelVisible: ticket.unreadComments > 0,
+              label: Text(
+                ticket.unreadComments > 99 ? '+99' : '${ticket.unreadComments}',
+              ),
+              child: Icon(AppIcons.comments),
+            ),
+            label: const Text('المحادثة'),
+          ),
           body: RefreshIndicator(
             onRefresh: cubit.load,
             child: ListView(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
+              // ٩٦ في الأسفل لا ٣٢: آخرُ زرٍّ في الصفحة يُسحب فوق الزرّ العائم لا تحته.
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 96.h),
               children: [
                 _Header(ticket: ticket),
                 SizedBox(height: 16.h),
