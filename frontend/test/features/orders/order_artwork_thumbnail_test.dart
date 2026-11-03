@@ -41,10 +41,13 @@ void main() {
     );
   }
 
+  /// أُرفقت كلّها مع إنشاء الطلبية، في الثانية نفسها، ما لم يُعطَ [addedAt] — وجوهُ كيسٍ واحد، لا
+  /// مسودّةٌ وتصحيحها. انظر `OrderDesignVersions.current`.
   OrderDesign version(
     int number, {
     String status = 'approved',
     CustomerDesign? file,
+    DateTime? addedAt,
   }) {
     return OrderDesign(
       id: number,
@@ -52,6 +55,7 @@ void main() {
       status: status,
       statusLabel: status,
       design: file ?? design(id: number, url: 'https://files.test/artwork-$number.png'),
+      createdAt: addedAt ?? DateTime(2026, 10, 24, 20, 24, 17),
     );
   }
 
@@ -177,6 +181,43 @@ void main() {
       // Assert
       expect(artworks.map((design) => design.fileUrl), [
         'https://files.test/artwork-1.png',
+        'https://files.test/artwork-3.png',
+      ]);
+    });
+
+    test('ونسخةٌ أُضيفت بعدها تحلّ محلّ ما قبلها — طلبُ المالك ٢٠٢٦-١٠-٢٨', () {
+      // Arrange — وجهان مع الإنشاء، ثم تصحيحٌ بعد أربعة أيام.
+      final order = orderWith(
+        designs: [
+          version(3, status: 'proposed', addedAt: DateTime(2026, 10, 28, 20, 25, 10)),
+          version(2, status: 'proposed'),
+          version(1, status: 'proposed'),
+        ],
+      );
+
+      // Act
+      final artworks = order.artworks;
+
+      // Assert
+      expect(artworks.map((design) => design.fileUrl), ['https://files.test/artwork-3.png']);
+    });
+
+    test('ووجهان أُضيفا معاً بعد الإنشاء يحلّان معاً محلّ ما قبلهما', () {
+      // Arrange — التصحيحُ وجهان، أُرفق الثاني بعد الأول بدقيقة.
+      final order = orderWith(
+        designs: [
+          version(3, addedAt: DateTime(2026, 10, 28, 20, 26, 10)),
+          version(2, addedAt: DateTime(2026, 10, 28, 20, 25, 10)),
+          version(1),
+        ],
+      );
+
+      // Act
+      final artworks = order.artworks;
+
+      // Assert
+      expect(artworks.map((design) => design.fileUrl), [
+        'https://files.test/artwork-2.png',
         'https://files.test/artwork-3.png',
       ]);
     });

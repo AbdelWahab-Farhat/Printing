@@ -507,11 +507,16 @@ abstract class Order with _$Order {
   ///
   /// **A list, because an order is not always one picture.** «التصميم الأول» and «الثاني» on the
   /// same job are the logo and the back of the bag as often as they are a draft and its
-  /// correction — the table cannot tell the two apart and neither can this getter — so the ones
+  /// correction. The table cannot tell the two apart, but *when* they were added can: versions
+  /// attached together are faces of one job, and a version added later replaces what came
+  /// before it — see [OrderDesignVersions.current], which is where this list starts. The ones
   /// that survive the filters below are all shown, side by side, in the order they were sent.
   /// Ascending, which is that order: see the numbering in `AttachOrderDesigns`.
   ///
-  /// Three things drop a version, and none of them is a special case in a screen:
+  /// **A replaced version never survives** (2026-10-28): the press was shown the draft beside
+  /// its correction and could not tell which one to print.
+  ///
+  /// Three more things drop a version, and none of them is a special case in a screen:
   ///
   /// - **A كيس سادة carries no design at all.** Nothing is printed, so there is nothing to show
   ///   but the product, which is exactly what it showed before.
@@ -530,8 +535,7 @@ abstract class Order with _$Order {
     if (versions == null || versions.isEmpty) return const [];
 
     final drawable =
-        versions
-            .where((version) => !version.isRejected)
+        versions.current
             .where((version) => version.design?.kind == DesignKind.image)
             .where((version) => (version.design?.fileUrl ?? '').isNotEmpty)
             .toList()
@@ -1031,6 +1035,59 @@ abstract class OrderDesign with _$OrderDesign {
   bool get isApproved => status == 'approved';
 
   bool get isRejected => status == 'rejected';
+}
+
+/// ما يُطبع الآن من نسخ التصميم، وما سبقه — طلبُ المالك ٢٠٢٦-١٠-٢٨: «بعد ما نعدّلو يبقى حتى
+/// القديم، فالمسؤول على الطباعة ما يعرفش أي منهم».
+///
+/// **الحاليةُ أحدثُ نسخةٍ غير مرفوضة، ومعها كلُّ نسخةٍ أُضيفت معها** — في حدود [together].
+/// والمعيةُ هي الفرق كلّه: طلبيةٌ تُنشأ بتصميمين يُرفقان في اللحظة نفسها هما وجها الكيس أو الشعارُ
+/// وظهره، لا مسودةٌ وتصحيحُها، فيبقيان «الحالية» كلاهما. ونسخةٌ أُضيفت بعد ذلك بساعةٍ أو بيوم تصحيحٌ،
+/// فما قبلها «سابقة». على الإنتاج ٢٠٢٦-١٠-٢٨: ثلاث عشرة طلبيةً بنسختين أُرفقتا مع إنشائها في الثانية
+/// نفسها، واثنتان فقط (١٤٧٠ و١٤٧٤) أُضيفت نسختُهما الثانية بعد أيام.
+///
+/// **والمرفوضةُ سابقةٌ دائماً**، ولا تُحتسب «أحدث»: ما رفضه العميل ليس ما يُطبع. وإن رُفضت كلُّها
+/// فلا حاليةَ أصلاً — [OrderDesignVersions.current] فارغة والكلُّ في [OrderDesignVersions.previous].
+///
+/// الترتيبُ داخل كلٍّ منهما ترتيبُ القائمة نفسها — الخادم يرسل الأحدث أولاً.
+extension OrderDesignVersions on List<OrderDesign> {
+  /// كم بين نسختين لتُعدّا «أُضيفتا معاً». الإرفاقُ عند الإنشاء يقع في ثانيةٍ واحدة أو يعبر حدَّها،
+  /// والتصحيحُ يأتي بعد دقائق على الأقل.
+  static const together = Duration(minutes: 2);
+
+  /// النسخُ التي تُطبع الآن.
+  List<OrderDesign> get current {
+    final live = where((version) => !version.isRejected).toList();
+
+    if (live.isEmpty) return const [];
+
+    final newest = live.reduce((a, b) => a.version >= b.version ? a : b);
+
+    return [
+      for (final version in live)
+        if (identical(version, newest) || _addedWith(version, newest)) version,
+    ];
+  }
+
+  /// ما سبق [current]: نسخٌ استُبدلت، والمرفوضة.
+  List<OrderDesign> get previous {
+    final now = current;
+
+    return [
+      for (final version in this)
+        if (!now.contains(version)) version,
+    ];
+  }
+
+  /// بلا وقتٍ لإحداهما لا يُحكم بالمعية: تبقى الأحدثُ وحدها حالية.
+  static bool _addedWith(OrderDesign version, OrderDesign newest) {
+    final at = version.createdAt;
+    final newestAt = newest.createdAt;
+
+    if (at == null || newestAt == null) return false;
+
+    return newestAt.difference(at).abs() <= together;
+  }
 }
 
 /// The member of staff behind a move.

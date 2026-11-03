@@ -58,13 +58,21 @@ void main() {
     );
   }
 
-  OrderDesign version(int number, {String status = 'approved', CustomerDesign? file}) {
+  /// أُرفقت كلّها مع إنشاء الطلبية، في الثانية نفسها — وجوهُ كيسٍ واحد، لا مسودّةٌ وتصحيحها.
+  /// انظر `OrderDesignVersions.current`.
+  OrderDesign version(
+    int number, {
+    String status = 'approved',
+    CustomerDesign? file,
+    DateTime? addedAt,
+  }) {
     return OrderDesign(
       id: number,
       version: number,
       status: status,
       statusLabel: status,
       design: file ?? design(id: number, url: 'https://files.test/artwork-$number.png'),
+      createdAt: addedAt ?? DateTime(2026, 10, 24, 20, 24, 17),
     );
   }
 
@@ -146,6 +154,25 @@ void main() {
       ).first,
     );
     expect(single.size, lessThan(56));
+  });
+
+  testWidgets('a version added later replaces the one before it on the cover', (tester) async {
+    // Arrange — الطلبية ١٤٧٠: نسخةٌ مع الإنشاء، وتصحيحُها بعد أربعة أيام.
+    final order = orderWith(
+      items: [line(1, 'أكياس مطبوعة')],
+      designs: [
+        version(2, status: 'proposed', addedAt: DateTime(2026, 10, 28, 20, 25, 10)),
+        version(1, status: 'proposed'),
+      ],
+    );
+    await tester.pumpWidget(host(OrderCard(order: order)));
+
+    // Act
+    await tester.pump();
+
+    // Assert — التصحيح وحده.
+    final covers = tester.widgetList<DesignThumbnail>(find.byType(DesignThumbnail)).toList();
+    expect(covers.map((cover) => cover.design.fileUrl), ['https://files.test/artwork-2.png']);
   });
 
   testWidgets('a rejected version is not what the shop is printing', (tester) async {
