@@ -9,10 +9,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **لا يتحرك.** يُرسم حيث تقف الطلبية الآن، ولا يملأ نفسه أمام العين كلما فُتحت الرئيسية.
 ///
 /// ولقارئ الشاشة جملةٌ واحدة بدل خمس كلماتٍ متفرقة: «الخطوة ٣ من ٥: الإنتاج».
+///
+/// **[pickup] يسمّي الخطوة الأخيرة «استلام مكتب»** بدل «التوصيل» — انظر `OrderStep.labelFor`.
 class OrderProgressBar extends StatelessWidget {
-  const OrderProgressBar({required this.step, super.key});
+  const OrderProgressBar({required this.step, this.pickup = false, super.key});
 
   final OrderStep step;
+  final bool pickup;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,7 @@ class OrderProgressBar extends StatelessWidget {
     }
 
     return Semantics(
-      label: 'الخطوة ${step.index + 1} من ${steps.length}: ${step.label}',
+      label: 'الخطوة ${step.index + 1} من ${steps.length}: ${step.labelFor(pickup: pickup)}',
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,14 +60,18 @@ class OrderProgressBar extends StatelessWidget {
                 for (final each in steps) ...[
                   if (each.index > 0) SizedBox(width: 4.w),
                   Expanded(
-                    child: Text(
-                      each.label,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: labelColor(each),
-                        fontWeight: each == step ? FontWeight.w800 : FontWeight.w600,
+                    // **يصغر ليتّسع، لا يُقصّ**: «استلام مكتب» أطول من عمودها على هاتفٍ ضيّق،
+                    // و«استلام مـ…» لا تقول شيئاً.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        each.labelFor(pickup: pickup),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: labelColor(each),
+                          fontWeight: each == step ? FontWeight.w800 : FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

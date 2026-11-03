@@ -8,6 +8,7 @@ import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_progress.dart';
 import 'package:dayaa_client/features/orders/presentation/views/order_progress_bar.dart';
 import 'package:dayaa_client/features/orders/presentation/views/stage_pill.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/ask_about_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -74,7 +75,15 @@ class ActiveOrderCard extends StatelessWidget {
         ),
         if (order.stage.step case final step?) ...[
           SizedBox(height: 14.h),
-          OrderProgressBar(step: step),
+          OrderProgressBar(
+            step: step,
+            pickup: isPickupOrder(fulfilmentType: order.fulfilmentType, stage: order.stage),
+          ),
+        ],
+        // «نواقص» و«مرفوضة»: أول القائمة، وتحتها ما يُسأل به (طلب المستخدم، 2026-10-23).
+        if (order.stage.needsAttention) ...[
+          SizedBox(height: 14.h),
+          AttentionNote(id: order.id, code: order.code, hint: order.stageHint),
         ],
       ],
     );
@@ -82,8 +91,10 @@ class ActiveOrderCard extends StatelessWidget {
     void open() => context.push(Routes.order(order.id));
 
     // الشعرة البرتقالية على الطلبية التي تريدك: «بانتظار المراجعة» خطوتها للعميل — بأن ينتظر —
-    // و«قيد التصميم» قد يُطلب منه فيها شيء.
-    return order.stage == OrderStage.underReview || order.stage == OrderStage.designing
+    // و«قيد التصميم» قد يُطلب منه فيها شيء، و«نواقص» و«مرفوضة» خبرٌ قد يسأل عنه.
+    return order.stage == OrderStage.underReview ||
+            order.stage == OrderStage.designing ||
+            order.stage.needsAttention
         ? AppCard.accent(onTap: open, child: body)
         : AppCard(onTap: open, child: body);
   }

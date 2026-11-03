@@ -20,9 +20,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// ends up wearing the same orange as «بانتظار المراجعة».
 ({Color background, Color foreground}) stageTone(ColorScheme scheme, OrderStage stage) {
   return switch (stage) {
-    // Something is waiting on us, or on you.
+    // Something is waiting on us, or on you — or is news you may want to ask us about.
+    // **«نواقص» and «مرفوضة» here, not the error colour** (2026-10-23): they are drawn first to be
+    // seen, and red would make the shop's problem, or its answer, look like the customer's fault.
     OrderStage.underReview ||
     OrderStage.awaitingDeposit ||
+    OrderStage.shortage ||
+    OrderStage.rejected ||
     OrderStage.designing => (
       background: scheme.attentionContainer,
       foreground: scheme.onAttentionContainer,
@@ -37,6 +41,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
     // Moving, and close.
     OrderStage.ready ||
+    OrderStage.officePickup ||
     OrderStage.onTheWay => (
       background: scheme.pendingContainer,
       foreground: scheme.onPendingContainer,
@@ -51,12 +56,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
     // Over, and not well — but not an error either: a returned order is a thing that happens,
     // not a failure the customer should be alarmed by. Neutral, like «ملغاة».
-    // **«مرفوضة» is neutral too, and deliberately not the error colour.** A refusal is already
-    // the least welcome thing this screen says; painting it red would make the shop's answer
-    // look like the customer did something wrong. The sentence under it does the explaining.
     OrderStage.returned ||
     OrderStage.cancelled ||
-    OrderStage.rejected ||
     OrderStage.unknown => (
       background: scheme.surfaceContainerHigh,
       foreground: scheme.onSurfaceVariant,
@@ -67,16 +68,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// أيقونة المرحلة: أيقونة حالة الورشة المقابلة لها في تطبيق الموظفين (`OrderStatusChip.iconFor`
 /// هناك)، فيرى العميل الشكل الذي يراه الموظف (طلب المستخدم، 2026-09-25).
 ///
-/// **حين تجمع المرحلة حالاتٍ عدة تُؤخذ أيقونة أولاها:** «قيد التجهيز» تبدأ بـ«جديدة»، و«قيد
-/// الإنتاج» بالمطبعة، و«مرتجعة» بأول الرواجع. ولا `default`: مرحلةٌ تُضاف توقف البناء هنا حتى
-/// تُعطى شكلها.
+/// **حين تجمع المرحلة حالاتٍ عدة تُؤخذ أيقونة أولاها:** «بانتظار المراجعة» تبدأ بالطلب،
+/// و«قيد الإنتاج» بالمطبعة، و«مرتجعة» بأول الرواجع. **إلا «قيد التجهيز»**: أولاها «عربون
+/// مدفوع»، وأكثر الطلبيات لا عربون لها، فأيقونتها المخزن، أيقونة «جاهزة للطباعة» التي تمرّ بها
+/// كل طلبية. ولا `default`: مرحلةٌ تُضاف توقف البناء هنا حتى تُعطى شكلها.
 IconData stageIcon(OrderStage stage) => switch (stage) {
   OrderStage.underReview => AppIcons.comments,
   OrderStage.awaitingDeposit => AppIcons.awaitingDeposit,
-  OrderStage.preparing => AppIcons.statusNew,
+  OrderStage.preparing => AppIcons.warehouse,
+  OrderStage.shortage => AppIcons.error,
   OrderStage.designing => AppIcons.designs,
   OrderStage.producing => AppIcons.printedProduct,
   OrderStage.ready => AppIcons.activate,
+  OrderStage.officePickup => AppIcons.officePickup,
   OrderStage.onTheWay => AppIcons.outForDelivery,
   OrderStage.delivered => AppIcons.ordersReceived,
   OrderStage.returned => AppIcons.returnedCourier,

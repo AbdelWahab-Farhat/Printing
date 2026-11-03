@@ -50,7 +50,10 @@ class OrderCard extends StatelessWidget {
           // طلبيةٌ انتهت — وصلت أو رجعت أو أُلغيت — لا خطوات أمامها، كبطاقة الرئيسية.
           if (step != null) ...[
             SizedBox(height: 14.h),
-            OrderProgressBar(step: step),
+            OrderProgressBar(
+              step: step,
+              pickup: isPickupOrder(fulfilmentType: order.fulfilmentType, stage: order.stage),
+            ),
           ],
           SizedBox(height: 14.h),
           // غائرٌ خطوةً عن البطاقة: لون الصفحة تحت الأرقام، فيُقرأ المال كتلةً واحدة.

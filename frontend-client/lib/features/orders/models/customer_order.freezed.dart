@@ -951,7 +951,10 @@ as DateTime?,
 /// @nodoc
 mixin _$CustomerOrderDetail {
 
- int get id; String get code;@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage get stage;@JsonKey(name: 'stage_label') String get stageLabel;@JsonKey(name: 'is_open') bool get isOpen;@JsonKey(name: 'stage_hint') String? get stageHint;/// Why the shop would not take this request.
+ int get id; String get code;@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage get stage;@JsonKey(name: 'stage_label') String get stageLabel;@JsonKey(name: 'is_open') bool get isOpen;@JsonKey(name: 'stage_hint') String? get stageHint;/// Taken by the shop: past «بانتظار المراجعة» and not refused — what decides whether the
+/// order takes money. **Not the stage**: «جديدة» reads «بانتظار المراجعة» since 2026-10-23 and
+/// takes money all the same. Null from a server older than the field.
+@JsonKey(name: 'is_reviewed') bool? get isReviewed;/// Why the shop would not take this request.
 ///
 /// **The only reason string that reaches this app.** An order's `cancellation_reason` is
 /// written for the accountant about something the shop took and wrote off, and it stays on
@@ -959,7 +962,8 @@ mixin _$CustomerOrderDetail {
 /// every order that was not refused.
 @JsonKey(name: 'rejection_reason') String? get rejectionReason;/// The snapshot the order carries, not a live lookup — a renamed district must not rewrite
 /// where an old order said it was headed.
-@JsonKey(name: 'city_name') String? get cityName;@JsonKey(name: 'region_name') String? get regionName;@JsonKey(name: 'address_details') String? get addressDetails;@JsonKey(name: 'recipient_name') String? get recipientName;@JsonKey(name: 'recipient_phone') String? get recipientPhone;@JsonKey(name: 'fulfilment_type_label') String? get fulfilmentTypeLabel; List<OrderLine> get items;/// Every number here is one the customer is owed an answer about. What the goods cost the
+@JsonKey(name: 'city_name') String? get cityName;@JsonKey(name: 'region_name') String? get regionName;@JsonKey(name: 'address_details') String? get addressDetails;@JsonKey(name: 'recipient_name') String? get recipientName;@JsonKey(name: 'recipient_phone') String? get recipientPhone;/// `delivery` أو `office_pickup` — يسمّي به الشريط خطوته الأخيرة (انظر `OrderStep.labelFor`).
+@JsonKey(name: 'fulfilment_type') String? get fulfilmentType;@JsonKey(name: 'fulfilment_type_label') String? get fulfilmentTypeLabel; List<OrderLine> get items;/// Every number here is one the customer is owed an answer about. What the goods cost the
 /// shop is not among them and never arrives.
 @JsonKey(name: 'items_total') String? get itemsTotal;@JsonKey(name: 'delivery_price') String? get deliveryPrice;@JsonKey(name: 'design_fee') String? get designFee; String? get discount;/// **Null while the shop has not quoted every line.**
 ///
@@ -993,16 +997,16 @@ $CustomerOrderDetailCopyWith<CustomerOrderDetail> get copyWith => _$CustomerOrde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&const DeepCollectionEquality().equals(other.timeline, timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&const DeepCollectionEquality().equals(other.timeline, timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentTypeLabel,const DeepCollectionEquality().hash(items),itemsTotal,deliveryPrice,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,const DeepCollectionEquality().hash(timeline),placedAt,unreadNotesCount]);
+int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,isReviewed,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(items),itemsTotal,deliveryPrice,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,const DeepCollectionEquality().hash(timeline),placedAt,unreadNotesCount]);
 
 @override
 String toString() {
-  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
+  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, isReviewed: $isReviewed, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
 }
 
 
@@ -1013,7 +1017,7 @@ abstract mixin class $CustomerOrderDetailCopyWith<$Res>  {
   factory $CustomerOrderDetailCopyWith(CustomerOrderDetail value, $Res Function(CustomerOrderDetail) _then) = _$CustomerOrderDetailCopyWithImpl;
 @useResult
 $Res call({
- int id, String code,@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage stage,@JsonKey(name: 'stage_label') String stageLabel,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'stage_hint') String? stageHint,@JsonKey(name: 'rejection_reason') String? rejectionReason,@JsonKey(name: 'city_name') String? cityName,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'address_details') String? addressDetails,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel, List<OrderLine> items,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'design_fee') String? designFee, String? discount, String? total,@JsonKey(name: 'paid_amount') String? paidAmount, String? balance,@JsonKey(name: 'deposit_due') String? depositDue,@JsonKey(name: 'deposit_expected') String? depositExpected,@JsonKey(name: 'deposit_at_office') bool depositAtOffice,@JsonKey(name: 'deposit_offer') DepositOffer? depositOffer,@JsonKey(name: 'is_awaiting_quote') bool isAwaitingQuote, List<OrderTimelineEntry> timeline,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'unread_notes_count') int unreadNotesCount
+ int id, String code,@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage stage,@JsonKey(name: 'stage_label') String stageLabel,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'stage_hint') String? stageHint,@JsonKey(name: 'is_reviewed') bool? isReviewed,@JsonKey(name: 'rejection_reason') String? rejectionReason,@JsonKey(name: 'city_name') String? cityName,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'address_details') String? addressDetails,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'fulfilment_type') String? fulfilmentType,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel, List<OrderLine> items,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'design_fee') String? designFee, String? discount, String? total,@JsonKey(name: 'paid_amount') String? paidAmount, String? balance,@JsonKey(name: 'deposit_due') String? depositDue,@JsonKey(name: 'deposit_expected') String? depositExpected,@JsonKey(name: 'deposit_at_office') bool depositAtOffice,@JsonKey(name: 'deposit_offer') DepositOffer? depositOffer,@JsonKey(name: 'is_awaiting_quote') bool isAwaitingQuote, List<OrderTimelineEntry> timeline,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'unread_notes_count') int unreadNotesCount
 });
 
 
@@ -1030,7 +1034,7 @@ class _$CustomerOrderDetailCopyWithImpl<$Res>
 
 /// Create a copy of CustomerOrderDetail
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? rejectionReason = freezed,Object? cityName = freezed,Object? regionName = freezed,Object? addressDetails = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? designFee = freezed,Object? discount = freezed,Object? total = freezed,Object? paidAmount = freezed,Object? balance = freezed,Object? depositDue = freezed,Object? depositExpected = freezed,Object? depositAtOffice = null,Object? depositOffer = freezed,Object? isAwaitingQuote = null,Object? timeline = null,Object? placedAt = freezed,Object? unreadNotesCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? isReviewed = freezed,Object? rejectionReason = freezed,Object? cityName = freezed,Object? regionName = freezed,Object? addressDetails = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? fulfilmentType = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? designFee = freezed,Object? discount = freezed,Object? total = freezed,Object? paidAmount = freezed,Object? balance = freezed,Object? depositDue = freezed,Object? depositExpected = freezed,Object? depositAtOffice = null,Object? depositOffer = freezed,Object? isAwaitingQuote = null,Object? timeline = null,Object? placedAt = freezed,Object? unreadNotesCount = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -1038,12 +1042,14 @@ as String,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to
 as OrderStage,stageLabel: null == stageLabel ? _self.stageLabel : stageLabel // ignore: cast_nullable_to_non_nullable
 as String,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,stageHint: freezed == stageHint ? _self.stageHint : stageHint // ignore: cast_nullable_to_non_nullable
-as String?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
+as String?,isReviewed: freezed == isReviewed ? _self.isReviewed : isReviewed // ignore: cast_nullable_to_non_nullable
+as bool?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
 as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,regionName: freezed == regionName ? _self.regionName : regionName // ignore: cast_nullable_to_non_nullable
 as String?,addressDetails: freezed == addressDetails ? _self.addressDetails : addressDetails // ignore: cast_nullable_to_non_nullable
 as String?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
 as String?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recipientPhone // ignore: cast_nullable_to_non_nullable
+as String?,fulfilmentType: freezed == fulfilmentType ? _self.fulfilmentType : fulfilmentType // ignore: cast_nullable_to_non_nullable
 as String?,fulfilmentTypeLabel: freezed == fulfilmentTypeLabel ? _self.fulfilmentTypeLabel : fulfilmentTypeLabel // ignore: cast_nullable_to_non_nullable
 as String?,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<OrderLine>,itemsTotal: freezed == itemsTotal ? _self.itemsTotal : itemsTotal // ignore: cast_nullable_to_non_nullable
@@ -1158,10 +1164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'is_reviewed')  bool? isReviewed, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type')  String? fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomerOrderDetail() when $default != null:
-return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
+return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.isReviewed,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
   return orElse();
 
 }
@@ -1179,10 +1185,10 @@ return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'is_reviewed')  bool? isReviewed, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type')  String? fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)  $default,) {final _that = this;
 switch (_that) {
 case _CustomerOrderDetail():
-return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
+return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.isReviewed,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1199,10 +1205,10 @@ return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String code, @JsonKey(unknownEnumValue: OrderStage.unknown)  OrderStage stage, @JsonKey(name: 'stage_label')  String stageLabel, @JsonKey(name: 'is_open')  bool isOpen, @JsonKey(name: 'stage_hint')  String? stageHint, @JsonKey(name: 'is_reviewed')  bool? isReviewed, @JsonKey(name: 'rejection_reason')  String? rejectionReason, @JsonKey(name: 'city_name')  String? cityName, @JsonKey(name: 'region_name')  String? regionName, @JsonKey(name: 'address_details')  String? addressDetails, @JsonKey(name: 'recipient_name')  String? recipientName, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'fulfilment_type')  String? fulfilmentType, @JsonKey(name: 'fulfilment_type_label')  String? fulfilmentTypeLabel,  List<OrderLine> items, @JsonKey(name: 'items_total')  String? itemsTotal, @JsonKey(name: 'delivery_price')  String? deliveryPrice, @JsonKey(name: 'design_fee')  String? designFee,  String? discount,  String? total, @JsonKey(name: 'paid_amount')  String? paidAmount,  String? balance, @JsonKey(name: 'deposit_due')  String? depositDue, @JsonKey(name: 'deposit_expected')  String? depositExpected, @JsonKey(name: 'deposit_at_office')  bool depositAtOffice, @JsonKey(name: 'deposit_offer')  DepositOffer? depositOffer, @JsonKey(name: 'is_awaiting_quote')  bool isAwaitingQuote,  List<OrderTimelineEntry> timeline, @JsonKey(name: 'placed_at')  DateTime? placedAt, @JsonKey(name: 'unread_notes_count')  int unreadNotesCount)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomerOrderDetail() when $default != null:
-return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
+return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_that.stageHint,_that.isReviewed,_that.rejectionReason,_that.cityName,_that.regionName,_that.addressDetails,_that.recipientName,_that.recipientPhone,_that.fulfilmentType,_that.fulfilmentTypeLabel,_that.items,_that.itemsTotal,_that.deliveryPrice,_that.designFee,_that.discount,_that.total,_that.paidAmount,_that.balance,_that.depositDue,_that.depositExpected,_that.depositAtOffice,_that.depositOffer,_that.isAwaitingQuote,_that.timeline,_that.placedAt,_that.unreadNotesCount);case _:
   return null;
 
 }
@@ -1214,7 +1220,7 @@ return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_t
 @JsonSerializable()
 
 class _CustomerOrderDetail implements CustomerOrderDetail {
-  const _CustomerOrderDetail({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, @JsonKey(name: 'rejection_reason') this.rejectionReason, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'address_details') this.addressDetails, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, final  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'design_fee') this.designFee, this.discount, this.total, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'deposit_due') this.depositDue, @JsonKey(name: 'deposit_expected') this.depositExpected, @JsonKey(name: 'deposit_at_office') this.depositAtOffice = false, @JsonKey(name: 'deposit_offer') this.depositOffer, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, final  List<OrderTimelineEntry> timeline = const <OrderTimelineEntry>[], @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'unread_notes_count') this.unreadNotesCount = 0}): _items = items,_timeline = timeline;
+  const _CustomerOrderDetail({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, @JsonKey(name: 'is_reviewed') this.isReviewed, @JsonKey(name: 'rejection_reason') this.rejectionReason, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'address_details') this.addressDetails, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, final  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'design_fee') this.designFee, this.discount, this.total, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'deposit_due') this.depositDue, @JsonKey(name: 'deposit_expected') this.depositExpected, @JsonKey(name: 'deposit_at_office') this.depositAtOffice = false, @JsonKey(name: 'deposit_offer') this.depositOffer, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, final  List<OrderTimelineEntry> timeline = const <OrderTimelineEntry>[], @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'unread_notes_count') this.unreadNotesCount = 0}): _items = items,_timeline = timeline;
   factory _CustomerOrderDetail.fromJson(Map<String, dynamic> json) => _$CustomerOrderDetailFromJson(json);
 
 @override final  int id;
@@ -1223,6 +1229,10 @@ class _CustomerOrderDetail implements CustomerOrderDetail {
 @override@JsonKey(name: 'stage_label') final  String stageLabel;
 @override@JsonKey(name: 'is_open') final  bool isOpen;
 @override@JsonKey(name: 'stage_hint') final  String? stageHint;
+/// Taken by the shop: past «بانتظار المراجعة» and not refused — what decides whether the
+/// order takes money. **Not the stage**: «جديدة» reads «بانتظار المراجعة» since 2026-10-23 and
+/// takes money all the same. Null from a server older than the field.
+@override@JsonKey(name: 'is_reviewed') final  bool? isReviewed;
 /// Why the shop would not take this request.
 ///
 /// **The only reason string that reaches this app.** An order's `cancellation_reason` is
@@ -1237,6 +1247,8 @@ class _CustomerOrderDetail implements CustomerOrderDetail {
 @override@JsonKey(name: 'address_details') final  String? addressDetails;
 @override@JsonKey(name: 'recipient_name') final  String? recipientName;
 @override@JsonKey(name: 'recipient_phone') final  String? recipientPhone;
+/// `delivery` أو `office_pickup` — يسمّي به الشريط خطوته الأخيرة (انظر `OrderStep.labelFor`).
+@override@JsonKey(name: 'fulfilment_type') final  String? fulfilmentType;
 @override@JsonKey(name: 'fulfilment_type_label') final  String? fulfilmentTypeLabel;
  final  List<OrderLine> _items;
 @override@JsonKey() List<OrderLine> get items {
@@ -1301,16 +1313,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&const DeepCollectionEquality().equals(other._timeline, _timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&const DeepCollectionEquality().equals(other._timeline, _timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),itemsTotal,deliveryPrice,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,const DeepCollectionEquality().hash(_timeline),placedAt,unreadNotesCount]);
+int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,isReviewed,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),itemsTotal,deliveryPrice,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,const DeepCollectionEquality().hash(_timeline),placedAt,unreadNotesCount]);
 
 @override
 String toString() {
-  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
+  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, isReviewed: $isReviewed, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
 }
 
 
@@ -1321,7 +1333,7 @@ abstract mixin class _$CustomerOrderDetailCopyWith<$Res> implements $CustomerOrd
   factory _$CustomerOrderDetailCopyWith(_CustomerOrderDetail value, $Res Function(_CustomerOrderDetail) _then) = __$CustomerOrderDetailCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String code,@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage stage,@JsonKey(name: 'stage_label') String stageLabel,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'stage_hint') String? stageHint,@JsonKey(name: 'rejection_reason') String? rejectionReason,@JsonKey(name: 'city_name') String? cityName,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'address_details') String? addressDetails,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel, List<OrderLine> items,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'design_fee') String? designFee, String? discount, String? total,@JsonKey(name: 'paid_amount') String? paidAmount, String? balance,@JsonKey(name: 'deposit_due') String? depositDue,@JsonKey(name: 'deposit_expected') String? depositExpected,@JsonKey(name: 'deposit_at_office') bool depositAtOffice,@JsonKey(name: 'deposit_offer') DepositOffer? depositOffer,@JsonKey(name: 'is_awaiting_quote') bool isAwaitingQuote, List<OrderTimelineEntry> timeline,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'unread_notes_count') int unreadNotesCount
+ int id, String code,@JsonKey(unknownEnumValue: OrderStage.unknown) OrderStage stage,@JsonKey(name: 'stage_label') String stageLabel,@JsonKey(name: 'is_open') bool isOpen,@JsonKey(name: 'stage_hint') String? stageHint,@JsonKey(name: 'is_reviewed') bool? isReviewed,@JsonKey(name: 'rejection_reason') String? rejectionReason,@JsonKey(name: 'city_name') String? cityName,@JsonKey(name: 'region_name') String? regionName,@JsonKey(name: 'address_details') String? addressDetails,@JsonKey(name: 'recipient_name') String? recipientName,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'fulfilment_type') String? fulfilmentType,@JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel, List<OrderLine> items,@JsonKey(name: 'items_total') String? itemsTotal,@JsonKey(name: 'delivery_price') String? deliveryPrice,@JsonKey(name: 'design_fee') String? designFee, String? discount, String? total,@JsonKey(name: 'paid_amount') String? paidAmount, String? balance,@JsonKey(name: 'deposit_due') String? depositDue,@JsonKey(name: 'deposit_expected') String? depositExpected,@JsonKey(name: 'deposit_at_office') bool depositAtOffice,@JsonKey(name: 'deposit_offer') DepositOffer? depositOffer,@JsonKey(name: 'is_awaiting_quote') bool isAwaitingQuote, List<OrderTimelineEntry> timeline,@JsonKey(name: 'placed_at') DateTime? placedAt,@JsonKey(name: 'unread_notes_count') int unreadNotesCount
 });
 
 
@@ -1338,7 +1350,7 @@ class __$CustomerOrderDetailCopyWithImpl<$Res>
 
 /// Create a copy of CustomerOrderDetail
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? rejectionReason = freezed,Object? cityName = freezed,Object? regionName = freezed,Object? addressDetails = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? designFee = freezed,Object? discount = freezed,Object? total = freezed,Object? paidAmount = freezed,Object? balance = freezed,Object? depositDue = freezed,Object? depositExpected = freezed,Object? depositAtOffice = null,Object? depositOffer = freezed,Object? isAwaitingQuote = null,Object? timeline = null,Object? placedAt = freezed,Object? unreadNotesCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? isReviewed = freezed,Object? rejectionReason = freezed,Object? cityName = freezed,Object? regionName = freezed,Object? addressDetails = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? fulfilmentType = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? designFee = freezed,Object? discount = freezed,Object? total = freezed,Object? paidAmount = freezed,Object? balance = freezed,Object? depositDue = freezed,Object? depositExpected = freezed,Object? depositAtOffice = null,Object? depositOffer = freezed,Object? isAwaitingQuote = null,Object? timeline = null,Object? placedAt = freezed,Object? unreadNotesCount = null,}) {
   return _then(_CustomerOrderDetail(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -1346,12 +1358,14 @@ as String,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to
 as OrderStage,stageLabel: null == stageLabel ? _self.stageLabel : stageLabel // ignore: cast_nullable_to_non_nullable
 as String,isOpen: null == isOpen ? _self.isOpen : isOpen // ignore: cast_nullable_to_non_nullable
 as bool,stageHint: freezed == stageHint ? _self.stageHint : stageHint // ignore: cast_nullable_to_non_nullable
-as String?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
+as String?,isReviewed: freezed == isReviewed ? _self.isReviewed : isReviewed // ignore: cast_nullable_to_non_nullable
+as bool?,rejectionReason: freezed == rejectionReason ? _self.rejectionReason : rejectionReason // ignore: cast_nullable_to_non_nullable
 as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,regionName: freezed == regionName ? _self.regionName : regionName // ignore: cast_nullable_to_non_nullable
 as String?,addressDetails: freezed == addressDetails ? _self.addressDetails : addressDetails // ignore: cast_nullable_to_non_nullable
 as String?,recipientName: freezed == recipientName ? _self.recipientName : recipientName // ignore: cast_nullable_to_non_nullable
 as String?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recipientPhone // ignore: cast_nullable_to_non_nullable
+as String?,fulfilmentType: freezed == fulfilmentType ? _self.fulfilmentType : fulfilmentType // ignore: cast_nullable_to_non_nullable
 as String?,fulfilmentTypeLabel: freezed == fulfilmentTypeLabel ? _self.fulfilmentTypeLabel : fulfilmentTypeLabel // ignore: cast_nullable_to_non_nullable
 as String?,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<OrderLine>,itemsTotal: freezed == itemsTotal ? _self.itemsTotal : itemsTotal // ignore: cast_nullable_to_non_nullable
@@ -1664,7 +1678,9 @@ mixin _$NewOrder {
 @JsonKey(name: 'city_id') int get cityId; List<NewOrderLine> get items;@JsonKey(name: 'region_id') int? get regionId;@JsonKey(name: 'customer_shop_id') int? get customerShopId;@JsonKey(name: 'recipient_phone') String? get recipientPhone;@JsonKey(name: 'design_ids') List<int> get designIds;/// What the customer wants to say about the order. It lands in the order's note prefixed
 /// «ملاحظة العميل:», so whoever reviews it can see at a glance whose words they are.
 @JsonKey(name: 'customer_note') String? get customerNote;/// العربون الذي اختاره العميل في السلة. **بلا عربون تُرسل للمراجعة** كما كانت دائماً.
-@JsonKey(includeIfNull: false) CheckoutDeposit? get deposit;
+@JsonKey(includeIfNull: false) CheckoutDeposit? get deposit;/// مفتاح الطلبية حتى تصل: إرسالٌ انقطع بعد أن كتبها الخادم يُعاد بالمفتاح نفسه، فيُرجع الخادم
+/// الطلبيةَ الأولى بدل أن يكتب ثانية.
+@JsonKey(name: 'client_token', includeIfNull: false) String? get clientToken;
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1677,16 +1693,16 @@ $NewOrderCopyWith<NewOrder> get copyWith => _$NewOrderCopyWithImpl<NewOrder>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(designIds),customerNote,deposit);
+int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(designIds),customerNote,deposit,clientToken);
 
 @override
 String toString() {
-  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit)';
+  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit, clientToken: $clientToken)';
 }
 
 
@@ -1697,7 +1713,7 @@ abstract mixin class $NewOrderCopyWith<$Res>  {
   factory $NewOrderCopyWith(NewOrder value, $Res Function(NewOrder) _then) = _$NewOrderCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'city_id') int cityId, List<NewOrderLine> items,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'design_ids') List<int> designIds,@JsonKey(name: 'customer_note') String? customerNote,@JsonKey(includeIfNull: false) CheckoutDeposit? deposit
+@JsonKey(name: 'city_id') int cityId, List<NewOrderLine> items,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'design_ids') List<int> designIds,@JsonKey(name: 'customer_note') String? customerNote,@JsonKey(includeIfNull: false) CheckoutDeposit? deposit,@JsonKey(name: 'client_token', includeIfNull: false) String? clientToken
 });
 
 
@@ -1714,7 +1730,7 @@ class _$NewOrderCopyWithImpl<$Res>
 
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? cityId = null,Object? items = null,Object? regionId = freezed,Object? customerShopId = freezed,Object? recipientPhone = freezed,Object? designIds = null,Object? customerNote = freezed,Object? deposit = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? cityId = null,Object? items = null,Object? regionId = freezed,Object? customerShopId = freezed,Object? recipientPhone = freezed,Object? designIds = null,Object? customerNote = freezed,Object? deposit = freezed,Object? clientToken = freezed,}) {
   return _then(_self.copyWith(
 cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
@@ -1724,7 +1740,8 @@ as int?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recip
 as String?,designIds: null == designIds ? _self.designIds : designIds // ignore: cast_nullable_to_non_nullable
 as List<int>,customerNote: freezed == customerNote ? _self.customerNote : customerNote // ignore: cast_nullable_to_non_nullable
 as String?,deposit: freezed == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
-as CheckoutDeposit?,
+as CheckoutDeposit?,clientToken: freezed == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of NewOrder
@@ -1821,10 +1838,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit, @JsonKey(name: 'client_token', includeIfNull: false)  String? clientToken)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NewOrder() when $default != null:
-return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit);case _:
+return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit,_that.clientToken);case _:
   return orElse();
 
 }
@@ -1842,10 +1859,10 @@ return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit, @JsonKey(name: 'client_token', includeIfNull: false)  String? clientToken)  $default,) {final _that = this;
 switch (_that) {
 case _NewOrder():
-return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit);case _:
+return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit,_that.clientToken);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1862,10 +1879,10 @@ return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'city_id')  int cityId,  List<NewOrderLine> items, @JsonKey(name: 'region_id')  int? regionId, @JsonKey(name: 'customer_shop_id')  int? customerShopId, @JsonKey(name: 'recipient_phone')  String? recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds, @JsonKey(name: 'customer_note')  String? customerNote, @JsonKey(includeIfNull: false)  CheckoutDeposit? deposit, @JsonKey(name: 'client_token', includeIfNull: false)  String? clientToken)?  $default,) {final _that = this;
 switch (_that) {
 case _NewOrder() when $default != null:
-return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit);case _:
+return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_that.recipientPhone,_that.designIds,_that.customerNote,_that.deposit,_that.clientToken);case _:
   return null;
 
 }
@@ -1877,7 +1894,7 @@ return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_th
 @JsonSerializable()
 
 class _NewOrder implements NewOrder {
-  const _NewOrder({@JsonKey(name: 'city_id') required this.cityId, required final  List<NewOrderLine> items, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'design_ids') final  List<int> designIds = const <int>[], @JsonKey(name: 'customer_note') this.customerNote, @JsonKey(includeIfNull: false) this.deposit}): _items = items,_designIds = designIds;
+  const _NewOrder({@JsonKey(name: 'city_id') required this.cityId, required final  List<NewOrderLine> items, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'design_ids') final  List<int> designIds = const <int>[], @JsonKey(name: 'customer_note') this.customerNote, @JsonKey(includeIfNull: false) this.deposit, @JsonKey(name: 'client_token', includeIfNull: false) this.clientToken}): _items = items,_designIds = designIds;
   factory _NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);
 
 @override@JsonKey(name: 'city_id') final  int cityId;
@@ -1903,6 +1920,9 @@ class _NewOrder implements NewOrder {
 @override@JsonKey(name: 'customer_note') final  String? customerNote;
 /// العربون الذي اختاره العميل في السلة. **بلا عربون تُرسل للمراجعة** كما كانت دائماً.
 @override@JsonKey(includeIfNull: false) final  CheckoutDeposit? deposit;
+/// مفتاح الطلبية حتى تصل: إرسالٌ انقطع بعد أن كتبها الخادم يُعاد بالمفتاح نفسه، فيُرجع الخادم
+/// الطلبيةَ الأولى بدل أن يكتب ثانية.
+@override@JsonKey(name: 'client_token', includeIfNull: false) final  String? clientToken;
 
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
@@ -1917,16 +1937,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(_items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(_designIds),customerNote,deposit);
+int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(_items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(_designIds),customerNote,deposit,clientToken);
 
 @override
 String toString() {
-  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit)';
+  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit, clientToken: $clientToken)';
 }
 
 
@@ -1937,7 +1957,7 @@ abstract mixin class _$NewOrderCopyWith<$Res> implements $NewOrderCopyWith<$Res>
   factory _$NewOrderCopyWith(_NewOrder value, $Res Function(_NewOrder) _then) = __$NewOrderCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'city_id') int cityId, List<NewOrderLine> items,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'design_ids') List<int> designIds,@JsonKey(name: 'customer_note') String? customerNote,@JsonKey(includeIfNull: false) CheckoutDeposit? deposit
+@JsonKey(name: 'city_id') int cityId, List<NewOrderLine> items,@JsonKey(name: 'region_id') int? regionId,@JsonKey(name: 'customer_shop_id') int? customerShopId,@JsonKey(name: 'recipient_phone') String? recipientPhone,@JsonKey(name: 'design_ids') List<int> designIds,@JsonKey(name: 'customer_note') String? customerNote,@JsonKey(includeIfNull: false) CheckoutDeposit? deposit,@JsonKey(name: 'client_token', includeIfNull: false) String? clientToken
 });
 
 
@@ -1954,7 +1974,7 @@ class __$NewOrderCopyWithImpl<$Res>
 
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? cityId = null,Object? items = null,Object? regionId = freezed,Object? customerShopId = freezed,Object? recipientPhone = freezed,Object? designIds = null,Object? customerNote = freezed,Object? deposit = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? cityId = null,Object? items = null,Object? regionId = freezed,Object? customerShopId = freezed,Object? recipientPhone = freezed,Object? designIds = null,Object? customerNote = freezed,Object? deposit = freezed,Object? clientToken = freezed,}) {
   return _then(_NewOrder(
 cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
@@ -1964,7 +1984,8 @@ as int?,recipientPhone: freezed == recipientPhone ? _self.recipientPhone : recip
 as String?,designIds: null == designIds ? _self._designIds : designIds // ignore: cast_nullable_to_non_nullable
 as List<int>,customerNote: freezed == customerNote ? _self.customerNote : customerNote // ignore: cast_nullable_to_non_nullable
 as String?,deposit: freezed == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
-as CheckoutDeposit?,
+as CheckoutDeposit?,clientToken: freezed == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -137,6 +137,9 @@ final class CreateOrder
                 'additional_cost_note' => $data->additionalCostNote,
                 'placed_at' => now(),
                 'created_by' => $actor?->getKey(),
+                // On the row in the same write, so an order and its key are never apart: the
+                // unique index is what stops two copies of one request racing each other.
+                'client_token' => $data->clientToken,
             ]);
 
             $order->save();

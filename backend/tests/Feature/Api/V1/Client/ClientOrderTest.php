@@ -24,11 +24,11 @@ use Tests\TestCase;
  * That a customer sees only their own orders — with no customer id anywhere in the path, so the
  * confinement is the controller resolving through the token and nothing else.
  *
- * And that the workshop's nineteen statuses reach the app as eight stages. «قيد التصنيع»
- * announces that we did not make it ourselves; «نواقص» is our shelf being short; «انتظار
- * العربون» is the shop arguing about money through a status label. None of those belong on a
- * customer's phone, and `test_every_workshop_status_reaches_the_app_as_a_stage` is the sweep
- * that stops the next one added from getting there.
+ * And that the workshop's nineteen statuses reach the app as thirteen stages. «قيد التصنيع»
+ * announces that we did not make it ourselves; «جاهزة للطباعة» is our warehouse handing a job to
+ * our press. Neither belongs on a customer's phone, and
+ * `test_every_workshop_status_reaches_the_app_as_a_stage` is the sweep that stops the next one
+ * added from getting there.
  *
  * Arrange - Act - Assert throughout.
  */
@@ -108,13 +108,79 @@ class ClientOrderTest extends TestCase
         $me = $this->customer();
         $working = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Printing]);
         Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Ready]);
-        Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::OfficePickup]);
 
         // Act
         $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?open=1');
 
         // Assert
         $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $working->id);
+    }
+
+    public function test_an_order_waiting_at_the_counter_is_among_the_open_ones(): void
+    {
+        // Arrange — «استلام مكتب» is its own stage since 2026-10-23, not «جاهزة», so the home
+        // screen's `open=1` is what brings it — on a build that knows the stage and one that does
+        // not.
+        $me = $this->customer();
+        $pickup = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::OfficePickup]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?open=1');
+
+        // Assert
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $pickup->id);
+    }
+
+    public function test_a_refused_request_is_among_the_open_ones_though_it_is_closed(): void
+    {
+        // Arrange — the owner's call (2026-10-23): a refusal stays on the home screen, where the
+        // customer sees it and can ask us about it.
+        $me = $this->customer();
+        $refused = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::RequestRejected]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?open=1');
+
+        // Assert
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $refused->id)
+            ->assertJsonPath('data.0.is_open', false);
+    }
+
+    public function test_the_open_ones_put_a_shortage_and_a_refusal_first_then_the_counter(): void
+    {
+        // Arrange — older than the rest on purpose. The owner's order (2026-10-23): what the
+        // customer may want to ask about, then what waits for them at the counter, then the rest.
+        $me = $this->customer();
+        $pickup = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::OfficePickup]);
+        $short = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Shortage]);
+        $refused = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::RequestRejected]);
+        $printing = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Printing]);
+        $newest = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Requested]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?open=1');
+
+        // Assert — each group newest first within itself.
+        $this->assertSame(
+            [$refused->id, $short->id, $pickup->id, $newest->id, $printing->id],
+            array_column($response->assertOk()->json('data'), 'id'),
+        );
+    }
+
+    public function test_the_whole_list_keeps_its_plain_newest_first_order(): void
+    {
+        // Arrange — «طلباتي» is a history; only the home screen's `open=1` is about attention.
+        $me = $this->customer();
+        $short = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Shortage]);
+        $printing = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Printing]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders');
+
+        // Assert
+        $this->assertSame([$printing->id, $short->id], array_column($response->assertOk()->json('data'), 'id'));
     }
 
     public function test_a_ready_order_still_says_it_is_open(): void
@@ -134,20 +200,20 @@ class ClientOrderTest extends TestCase
 
     public function test_the_list_can_be_narrowed_to_one_stage(): void
     {
-        // Arrange — «جاهزة» is two workshop statuses, and «استلام مكتب» is the one a hand-kept
-        // list of statuses in the controller would have missed.
+        // Arrange — «قيد الإنتاج» is two workshop statuses, and «قيد التصنيع» is the one a
+        // hand-kept list of statuses in the controller would have missed.
         $me = $this->customer();
-        $ready = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Ready]);
-        $pickup = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::OfficePickup]);
-        Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Printing]);
+        $printing = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Printing]);
+        $manufacturing = Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Manufacturing]);
+        Order::factory()->create(['customer_id' => $me->id, 'status' => OrderStatus::Ready]);
 
         // Act
-        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?stage=ready');
+        $response = $this->withHeaders($this->bearerFor($me))->getJson('/api/v1/client/orders?stage=producing');
 
         // Assert
         $response->assertOk()->assertJsonCount(2, 'data');
         $this->assertEqualsCanonicalizing(
-            [$ready->id, $pickup->id],
+            [$printing->id, $manufacturing->id],
             array_column($response->json('data'), 'id'),
         );
     }
@@ -286,9 +352,11 @@ class ClientOrderTest extends TestCase
     public static function statusesAndTheStagesTheyRead(): array
     {
         return [
+            // The owner's table, 2026-10-23 — every status, so a move between stages shows here.
             'a request nobody has read' => [OrderStatus::Requested, CustomerOrderStage::UnderReview],
-            'taken by a clerk' => [OrderStatus::New, CustomerOrderStage::Preparing],
-            'our shelf came up short' => [OrderStatus::Shortage, CustomerOrderStage::Preparing],
+            'taken by a clerk' => [OrderStatus::New, CustomerOrderStage::UnderReview],
+            'refused at the door' => [OrderStatus::RequestRejected, CustomerOrderStage::Rejected],
+            'our shelf came up short' => [OrderStatus::Shortage, CustomerOrderStage::Shortage],
             'we are waiting on a deposit' => [OrderStatus::AwaitingDeposit, CustomerOrderStage::AwaitingDeposit],
             'the deposit is in' => [OrderStatus::DepositPaid, CustomerOrderStage::Preparing],
             'handed to the press' => [OrderStatus::ReadyToPrint, CustomerOrderStage::Preparing],
@@ -296,13 +364,44 @@ class ClientOrderTest extends TestCase
             'our own press' => [OrderStatus::Printing, CustomerOrderStage::Producing],
             'somebody else made it' => [OrderStatus::Manufacturing, CustomerOrderStage::Producing],
             'on the shelf' => [OrderStatus::Ready, CustomerOrderStage::Ready],
-            'waiting at the counter' => [OrderStatus::OfficePickup, CustomerOrderStage::Ready],
+            'waiting at the counter' => [OrderStatus::OfficePickup, CustomerOrderStage::OfficePickup],
             'with the courier' => [OrderStatus::OutForDelivery, CustomerOrderStage::OnTheWay],
+            'sent out again' => [OrderStatus::Resend, CustomerOrderStage::OnTheWay],
             'in their hands' => [OrderStatus::Delivered, CustomerOrderStage::Delivered],
             'and our books agree' => [OrderStatus::Settled, CustomerOrderStage::Delivered],
             'came back from the courier' => [OrderStatus::ReturnedCourier, CustomerOrderStage::Returned],
+            'came back from the carrier' => [OrderStatus::ReturnedCarrier, CustomerOrderStage::Returned],
+            'back on our shelf' => [OrderStatus::ReturnedOffice, CustomerOrderStage::Returned],
             'written off' => [OrderStatus::Cancelled, CustomerOrderStage::Cancelled],
         ];
+    }
+
+    /**
+     * @return array<string, array{OrderStatus, bool}>
+     */
+    public static function reviewedOrNot(): array
+    {
+        return [
+            'nobody has read it' => [OrderStatus::Requested, false],
+            'refused' => [OrderStatus::RequestRejected, false],
+            // «بانتظار المراجعة» to the customer, and it takes money all the same.
+            'taken, not started' => [OrderStatus::New, true],
+            'being made' => [OrderStatus::Printing, true],
+        ];
+    }
+
+    #[DataProvider('reviewedOrNot')]
+    public function test_an_opened_order_says_whether_the_shop_took_it(OrderStatus $status, bool $reviewed): void
+    {
+        // Arrange — the stage cannot say it since 2026-10-23: «جديدة» reads «بانتظار المراجعة».
+        $me = $this->customer();
+        $order = Order::factory()->create(['customer_id' => $me->id, 'status' => $status]);
+
+        // Act
+        $response = $this->withHeaders($this->bearerFor($me))->getJson("/api/v1/client/orders/{$order->id}");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.is_reviewed', $reviewed);
     }
 
     /**

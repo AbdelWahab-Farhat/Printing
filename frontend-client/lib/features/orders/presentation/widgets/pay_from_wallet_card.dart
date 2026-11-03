@@ -106,9 +106,11 @@ class _PayFromWalletCardState extends State<PayFromWalletCard> {
     final order = widget.order;
     final owed = order.balance;
 
+    // «جديدة» «بانتظار المراجعة» عند العميل منذ 2026-10-23، وتقبل الدفع — فالخادم يقول
+    // [CustomerOrderDetail.isReviewed]، والمرحلة جوابُ خادمٍ أقدم منه.
     return order.isOpen &&
         !order.isAwaitingQuote &&
-        order.stage != OrderStage.underReview &&
+        (order.isReviewed ?? order.stage != OrderStage.underReview) &&
         order.stage != OrderStage.rejected &&
         order.stage != OrderStage.cancelled &&
         owed != null &&

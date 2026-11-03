@@ -4,6 +4,7 @@ import 'package:dayaa_client/core/utils/dates.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_progress.dart';
 import 'package:dayaa_client/features/orders/presentation/views/stage_pill.dart';
+import 'package:dayaa_client/features/orders/presentation/widgets/ask_about_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -14,7 +15,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// **لا جملة تحت المرحلة.** كانت «نراجع طلبيتك ونؤكّدها…» (`stageHint`) تُكتب هنا، والخطوات
 /// تقولها الآن: أين الطلبية، وما مضى، وما بقي. ويبقى سبب الرفض، فهو كلام المتجر عن هذه الطلبية
-/// لا شرحٌ للمرحلة.
+/// لا شرحٌ للمرحلة. **وتحت «نواقص» و«مرفوضة» جملتها و«تواصل معنا»** ([AttentionNote]).
 class OrderStageCard extends StatelessWidget {
   const OrderStageCard({required this.order, super.key});
 
@@ -64,7 +65,12 @@ class OrderStageCard extends StatelessWidget {
 
           if (marks != null) ...[
             SizedBox(height: 16.h),
-            _Steps(marks: marks, reached: reachedSteps(order.timeline), tone: tone),
+            _Steps(
+              marks: marks,
+              reached: reachedSteps(order.timeline),
+              tone: tone,
+              pickup: isPickupOrder(fulfilmentType: order.fulfilmentType, stage: order.stage),
+            ),
           ],
 
           if (order.rejectionReason case final reason?) ...[
@@ -81,6 +87,17 @@ class OrderStageCard extends StatelessWidget {
               ),
             ),
           ],
+
+          // «نواقص» و«مرفوضة»: هنا الجملة، فهي ليست شرحاً للمرحلة بل دعوةٌ إلى السؤال.
+          if (order.stage.needsAttention) ...[
+            SizedBox(height: 14.h),
+            AttentionNote(
+              id: order.id,
+              code: order.code,
+              hint: order.stageHint,
+              color: tone.foreground,
+            ),
+          ],
         ],
       ),
     );
@@ -93,11 +110,19 @@ class OrderStageCard extends StatelessWidget {
 /// **لا يتحرك** — كشريط الرئيسية: يُرسم حيث تقف الطلبية الآن. ولقارئ الشاشة جملةٌ واحدة
 /// بدل عشر كلماتٍ متفرقة.
 class _Steps extends StatelessWidget {
-  const _Steps({required this.marks, required this.reached, required this.tone});
+  const _Steps({
+    required this.marks,
+    required this.reached,
+    required this.tone,
+    required this.pickup,
+  });
 
   final List<StepMark> marks;
   final Map<OrderStep, DateTime> reached;
   final ({Color background, Color foreground}) tone;
+
+  /// الأخيرة «استلام مكتب» بدل «التوصيل» — انظر `OrderStep.labelFor`.
+  final bool pickup;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +136,7 @@ class _Steps extends StatelessWidget {
       container: true,
       label: current < 0
           ? 'اكتملت الخطوات الخمس'
-          : 'الخطوة ${current + 1} من ${steps.length}: ${steps[current].label}',
+          : 'الخطوة ${current + 1} من ${steps.length}: ${steps[current].labelFor(pickup: pickup)}',
       child: ExcludeSemantics(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -140,7 +165,7 @@ class _Steps extends StatelessWidget {
                     for (final step in steps)
                       Expanded(
                         child: _Step(
-                          label: step.label,
+                          label: step.labelFor(pickup: pickup),
                           mark: marks[step.index],
                           reachedAt: reached[step],
                           ink: tone.foreground,
@@ -196,18 +221,21 @@ class _Step extends StatelessWidget {
       children: [
         _Dot(mark: mark, ink: ink, fill: fill),
         SizedBox(height: 7.h),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style?.copyWith(
-            fontWeight: switch (mark) {
-              StepMark.current => FontWeight.w800,
-              StepMark.done => FontWeight.w700,
-              StepMark.ahead => FontWeight.w600,
-            },
-            color: mark == StepMark.ahead ? quiet : ink,
+        // يصغر ليتّسع، لا يُقصّ — «استلام مكتب» أطول من عمودها على هاتفٍ ضيّق.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: style?.copyWith(
+              fontWeight: switch (mark) {
+                StepMark.current => FontWeight.w800,
+                StepMark.done => FontWeight.w700,
+                StepMark.ahead => FontWeight.w600,
+              },
+              color: mark == StepMark.ahead ? quiet : ink,
+            ),
           ),
         ),
         // يوم بلوغها وحده — السنة تسقط حين تكون هذه السنة، والساعة لا تتسع لها خمس خانات.

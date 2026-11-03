@@ -53,7 +53,11 @@ class ClientOrderDetailResource extends JsonResource
             'stage' => $stage->value,
             'stage_label' => $stage->label(),
             'is_open' => $stage->isOpen(),
-            // «قيد التجهيز — نجهّزها الآن» كذبٌ على طلبيةٍ تنتظر أن يختار صاحبها عربونها.
+            // **Taken by the shop** — past «بانتظار المراجعة» and not refused. The stage cannot
+            // say it since 2026-10-23: «جديدة» reads «بانتظار المراجعة» too, yet it takes money
+            // (`PayOrderFromWallet` refuses only these two). The wallet card asks this.
+            'is_reviewed' => ! in_array($this->status, [OrderStatus::Requested, OrderStatus::RequestRejected], true),
+            // «بانتظار المراجعة — نراجع طلبيتك» كذبٌ على طلبيةٍ تنتظر أن يختار صاحبها عربونها.
             'stage_hint' => $depositOffered ? 'قبلنا طلبيتك — اختر العربون لنبدأ العمل' : $stage->hint(),
 
             // **Why we would not take it — and `cancellation_reason` is deliberately not here.**
@@ -142,8 +146,8 @@ class ClientOrderDetailResource extends JsonResource
     /**
      * The stages this order reached, each at the moment it was first reached.
      *
-     * **Folded, not filtered.** Five workshop statuses read as «قيد التجهيز», so an order that
-     * walked all five shows one entry rather than five identical ones — and it carries the
+     * **Folded, not filtered.** Two workshop statuses read as «قيد التجهيز», so an order that
+     * walked both shows one entry rather than two identical ones — and it carries the
      * *first* of those moments, because that is when the order started being got ready. Keying
      * by stage value and skipping a repeat does both.
      *
@@ -161,7 +165,7 @@ class ClientOrderDetailResource extends JsonResource
             /** @var OrderStatusTransition $transition */
             $stage = CustomerOrderStage::forStatus($transition->to_status);
 
-            if ($offered && $stage === CustomerOrderStage::Preparing) {
+            if ($offered && $transition->to_status === OrderStatus::New) {
                 $stage = CustomerOrderStage::AwaitingDeposit;
             }
 

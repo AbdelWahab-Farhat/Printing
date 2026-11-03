@@ -571,5 +571,44 @@ void main() {
       expect(cubit.state, ready(step: CheckoutStep.details).copyWith(lastFailure: refusal));
       await cubit.close();
     });
+
+    test('a dropped connection is retried with the same key, so the shop gets it once', () async {
+      // Arrange — the reply was lost; the order may well be in.
+      when(
+        () => orders.place(any()),
+      ).thenAnswer((_) async => const Left(NetworkFailure(message: 'انتهت مهلة الاتصال')));
+      final cubit = build();
+      await cubit.load();
+      cubit.proceed();
+
+      // Act
+      await cubit.submit(recipientPhone: '0912345678');
+      await cubit.submit(recipientPhone: '0912345678');
+
+      // Assert
+      final sent = verify(() => orders.place(captureAny())).captured.cast<NewOrder>();
+      expect(sent.first.clientToken, isNotNull);
+      expect(sent.first.toJson()['client_token'], sent.first.clientToken);
+      expect(sent.last.clientToken, sent.first.clientToken);
+      await cubit.close();
+    });
+
+    test('a refusal means nothing was written, and the next try is a new order', () async {
+      // Arrange
+      const refusal = ServerFailure(message: 'المدينة غير موجودة', statusCode: 422);
+      when(() => orders.place(any())).thenAnswer((_) async => const Left(refusal));
+      final cubit = build();
+      await cubit.load();
+      cubit.proceed();
+
+      // Act
+      await cubit.submit(recipientPhone: '0912345678');
+      await cubit.submit(recipientPhone: '0912345678');
+
+      // Assert
+      final sent = verify(() => orders.place(captureAny())).captured.cast<NewOrder>();
+      expect(sent.last.clientToken, isNot(sent.first.clientToken));
+      await cubit.close();
+    });
   });
 }

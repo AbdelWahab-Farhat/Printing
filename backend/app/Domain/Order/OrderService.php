@@ -138,9 +138,12 @@ class OrderService
      *
      * [$openOnly] narrows to the orders still moving. The statuses are passed in rather than
      * decided here, because «still moving» is a question in the *customer's* vocabulary — see
-     * `CustomerOrderStage` — and this context does not know that vocabulary.
+     * `CustomerOrderStage` — and this context does not know that vocabulary. [$firstStatuses]
+     * is passed in for the same reason: groups of statuses, in rank order, whose orders come
+     * before the rest — newest first within each group.
      *
      * @param  list<string>|null  $onlyStatuses
+     * @param  list<list<string>>  $firstStatuses
      * @return LengthAwarePaginator<int, Order>
      */
     public function paginateForCustomer(
@@ -148,7 +151,10 @@ class OrderService
         int $perPage = 15,
         ?array $onlyStatuses = null,
         ?bool $depositOffered = null,
+        array $firstStatuses = [],
     ): LengthAwarePaginator {
+        $ranks = array_values(array_filter($firstStatuses, fn (array $group): bool => $group !== []));
+
         return Order::query()
             ->where('customer_id', $customerId)
             // **[$depositOffered] is «بانتظار العربون» before the deposit is chosen** — an accepted
@@ -170,6 +176,14 @@ class OrderService
             // The acceptance row, eager — each card asks `CustomerOrderStage::of()` without a
             // query of its own.
             ->withExists(['transitions as came_through_review' => fn ($t) => CheckoutDeposit::acceptance($t)])
+            ->when($ranks !== [], fn ($q) => $q->orderByRaw(
+                'case '.implode(' ', array_map(
+                    fn (array $group, int $rank): string => 'when status in ('.implode(', ', array_fill(0, count($group), '?')).") then {$rank}",
+                    $ranks,
+                    array_keys($ranks),
+                )).' else '.count($ranks).' end',
+                array_merge(...$ranks),
+            ))
             ->latest('id')
             ->paginate($perPage);
     }

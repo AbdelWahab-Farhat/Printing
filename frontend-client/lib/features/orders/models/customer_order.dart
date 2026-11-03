@@ -6,10 +6,10 @@ part 'customer_order.g.dart';
 
 /// Where an order has got to, in words a customer can act on.
 ///
-/// **Eight stages where the workshop has nineteen statuses, and the collapsing happens on the
-/// server.** «قيد التصنيع» would tell a customer we did not make their bags ourselves; «نواقص»
-/// that our shelf was empty. None of it reaches this app — see `CustomerOrderStage` in the
-/// backend. «بانتظار العربون» does, because it waits on the customer.
+/// **Thirteen stages where the workshop has nineteen statuses, and the collapsing happens on the
+/// server.** «قيد التصنيع» would tell a customer we did not make their bags ourselves. None of it
+/// reaches this app — see `CustomerOrderStage` in the backend. «بانتظار العربون» does, because
+/// it waits on the customer, and «نواقص» since 2026-10-23, because they may want to ask about it.
 ///
 /// So this enum is reading a decision, not making one, and it carries no mapping of its own.
 /// `unknown` exists only so a stage added after this build shipped cannot crash the list.
@@ -33,12 +33,21 @@ enum OrderStage {
   awaitingDeposit,
   @JsonValue('preparing')
   preparing,
+
+  /// The stock to start the job is not there — a stage of its own since 2026-10-23, drawn on top
+  /// of «طلبياتي الجارية» with a way to ask us about it. See [OrderStageAttention].
+  @JsonValue('shortage')
+  shortage,
   @JsonValue('designing')
   designing,
   @JsonValue('producing')
   producing,
   @JsonValue('ready')
   ready,
+
+  /// Waiting at one of our branches to be collected — «جاهزة» until 2026-10-23.
+  @JsonValue('office_pickup')
+  officePickup,
   @JsonValue('on_the_way')
   onTheWay,
   @JsonValue('delivered')
@@ -61,9 +70,17 @@ enum OrderStage {
   unknown,
 }
 
+/// «نواقص» و«مرفوضة»: خبرٌ قد يريد العميل أن يسألنا عنه (طلب المستخدم، 2026-10-23).
+///
+/// تُرسمان أولاً في «طلبياتي الجارية»، وتحت كلٍّ منهما «تواصل معنا». كـ`needsAttention()` في
+/// `CustomerOrderStage.php`، الذي يرتّب بها الخادم `open=1`.
+extension OrderStageAttention on OrderStage {
+  bool get needsAttention => this == OrderStage.shortage || this == OrderStage.rejected;
+}
+
 /// ما تُضيَّق إليه «طلباتي»: «كل الحالات»، ثم كل مرحلةٍ وحدها (طلب المستخدم، 2026-09-25).
 ///
-/// **المراحل العشر كلها، بترتيب ما تمرّ به الطلبية** — من «بانتظار المراجعة» إلى «تم الاستلام»،
+/// **المراحل كلها، بترتيب ما تمرّ به الطلبية** — من «بانتظار المراجعة» إلى «تم الاستلام»،
 /// ثم النهايات الثلاث الأخرى. كانت الاختيارات أربعاً تجمع المراحل في أسئلة («قيد التنفيذ»
 /// و«مكتملة»)، فلم يكن يُعرف منها أين طلبيةٌ بعينها. الآن كل اختيارٍ مرحلةٌ واحدة، تصل الخادم
 /// `stage=` بلغة التطبيق، ولا يتعلّم التطبيق حالات الورشة التسع عشرة. تُختار من ورقةٍ سفلية —
@@ -77,9 +94,11 @@ enum OrdersFilter {
   underReview(label: 'بانتظار المراجعة', stage: OrderStage.underReview),
   awaitingDeposit(label: 'بانتظار العربون', stage: OrderStage.awaitingDeposit),
   preparing(label: 'قيد التجهيز', stage: OrderStage.preparing),
+  shortage(label: 'نواقص', stage: OrderStage.shortage),
   designing(label: 'قيد التصميم', stage: OrderStage.designing),
   producing(label: 'قيد الإنتاج', stage: OrderStage.producing),
   ready(label: 'جاهزة', stage: OrderStage.ready),
+  officePickup(label: 'استلام مكتب', stage: OrderStage.officePickup),
   onTheWay(label: 'جاري التوصيل', stage: OrderStage.onTheWay),
   delivered(label: 'تم الاستلام', stage: OrderStage.delivered),
   returned(label: 'مرتجعة', stage: OrderStage.returned),
@@ -102,9 +121,11 @@ enum OrdersFilter {
     OrderStage.underReview => 'under_review',
     OrderStage.awaitingDeposit => 'awaiting_deposit',
     OrderStage.preparing => 'preparing',
+    OrderStage.shortage => 'shortage',
     OrderStage.designing => 'designing',
     OrderStage.producing => 'producing',
     OrderStage.ready => 'ready',
+    OrderStage.officePickup => 'office_pickup',
     OrderStage.onTheWay => 'on_the_way',
     OrderStage.delivered => 'delivered',
     OrderStage.returned => 'returned',
@@ -261,6 +282,11 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     @JsonKey(name: 'is_open') @Default(true) bool isOpen,
     @JsonKey(name: 'stage_hint') String? stageHint,
 
+    /// Taken by the shop: past «بانتظار المراجعة» and not refused — what decides whether the
+    /// order takes money. **Not the stage**: «جديدة» reads «بانتظار المراجعة» since 2026-10-23 and
+    /// takes money all the same. Null from a server older than the field.
+    @JsonKey(name: 'is_reviewed') bool? isReviewed,
+
     /// Why the shop would not take this request.
     ///
     /// **The only reason string that reaches this app.** An order's `cancellation_reason` is
@@ -276,6 +302,9 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     @JsonKey(name: 'address_details') String? addressDetails,
     @JsonKey(name: 'recipient_name') String? recipientName,
     @JsonKey(name: 'recipient_phone') String? recipientPhone,
+
+    /// `delivery` أو `office_pickup` — يسمّي به الشريط خطوته الأخيرة (انظر `OrderStep.labelFor`).
+    @JsonKey(name: 'fulfilment_type') String? fulfilmentType,
     @JsonKey(name: 'fulfilment_type_label') String? fulfilmentTypeLabel,
 
     @Default(<OrderLine>[]) List<OrderLine> items,
@@ -367,6 +396,10 @@ abstract class NewOrder with _$NewOrder {
 
     /// العربون الذي اختاره العميل في السلة. **بلا عربون تُرسل للمراجعة** كما كانت دائماً.
     @JsonKey(includeIfNull: false) CheckoutDeposit? deposit,
+
+    /// مفتاح الطلبية حتى تصل: إرسالٌ انقطع بعد أن كتبها الخادم يُعاد بالمفتاح نفسه، فيُرجع الخادم
+    /// الطلبيةَ الأولى بدل أن يكتب ثانية.
+    @JsonKey(name: 'client_token', includeIfNull: false) String? clientToken,
   }) = _NewOrder;
 
   factory NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);

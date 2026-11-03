@@ -84,6 +84,11 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
   /// مفتاح دفعة المحفظة حتى تنجح: إرسالٌ انقطع بعد أن دفع الخادم يُعاد بالمفتاح نفسه فلا يدفع ثانية.
   String? _depositToken;
 
+  /// مفتاح الطلبية نفسها حتى تصل، بالقاعدة نفسها: **ردٌّ ضاع بعد أن كتبها الخادم** يترك السلة ممتلئة،
+  /// فيضغط العميل «إرسال» ثانية — والمفتاح نفسه يُرجع الطلبية الأولى لا ثانيةً على طابور المراجعة.
+  /// ولا يتغيّر بتعديل السلة بعد انقطاع: إن كانت الأولى وصلت فهي طلبيته، وإن لم تصل كُتبت المعدّلة.
+  String? _orderToken;
+
   late final StreamSubscription<CartState> _cartChanges;
 
   /// رقم آخر تسعيرٍ طُلب. جوابٌ لسلةٍ أقدم يصل بعد جوابٍ أحدث لا يُكتب فوقه — تبديل المدينة
@@ -438,6 +443,7 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
         recipientPhone: _orNull(recipientPhone),
         customerNote: _orNull(note),
         deposit: deposit,
+        clientToken: _orderToken ??= uuidV4(),
       ),
     );
 
@@ -449,7 +455,10 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
     return result.fold(
       (failure) {
         // لم يُجب الخادم: لعلّه دفع، فالإعادة بالمفتاح نفسه. أجاب بالرفض: المحاولة التالية جديدة.
-        if (failure is! NetworkFailure) _depositToken = null;
+        if (failure is! NetworkFailure) {
+          _depositToken = null;
+          _orderToken = null;
+        }
 
         emit(current.copyWith(isSubmitting: false, lastFailure: failure));
 
@@ -459,6 +468,10 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
         // **السلة تفرغ حين يستلم المتجر الطلبية لا قبلها.** إرسالٌ فشل يتركها كما هي، فيصلح العميل
         // حقلاً ويعيد المحاولة بدل أن يبني ما كان قد اختاره من جديد.
         _cart.clear();
+
+        // وصلت: الطلبية التالية من هذه الشاشة طلبيةٌ أخرى بمفتاحَين جديدَين.
+        _orderToken = null;
+        _depositToken = null;
 
         emit(current.copyWith(isSubmitting: false, placed: order));
 
