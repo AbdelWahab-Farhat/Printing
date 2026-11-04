@@ -121,10 +121,16 @@ class PurchaseOrder extends Model implements HasAuditTrail
      */
     public function auditTrailSubjects(): array
     {
+        $costIds = $this->additionalCosts()->withTrashed()->pluck('id')->all();
+
         return [
             $this->getMorphClass() => [$this->getKey()],
             (new PurchaseOrderItem)->getMorphClass() => $this->items()->withTrashed()->pluck('id')->all(),
-            (new PurchaseOrderAdditionalCost)->getMorphClass() => $this->additionalCosts()->withTrashed()->pluck('id')->all(),
+            (new PurchaseOrderAdditionalCost)->getMorphClass() => $costIds,
+            (new PurchaseOrderCostRefund)->getMorphClass() => PurchaseOrderCostRefund::query()
+                ->whereIn('additional_cost_id', $costIds)
+                ->pluck('id')
+                ->all(),
         ];
     }
 }

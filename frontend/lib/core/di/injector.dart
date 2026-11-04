@@ -1767,6 +1767,12 @@ abstract final class Injector {
       ..registerLazySingleton<ReverseReceipt>(
         () => ReverseReceipt(sl<PurchaseOrderRepository>()),
       )
+      ..registerLazySingleton<RefundCost>(
+        () => RefundCost(sl<PurchaseOrderRepository>()),
+      )
+      ..registerLazySingleton<ReverseCostRefund>(
+        () => ReverseCostRefund(sl<PurchaseOrderRepository>()),
+      )
       ..registerFactory<PurchaseOrdersCubit>(
         () => PurchaseOrdersCubit(getOrders: sl<GetPurchaseOrders>()),
       )
@@ -1778,6 +1784,8 @@ abstract final class Injector {
           changeStatus: sl<ChangePurchaseOrderStatus>(),
           receiveArrival: sl<ReceivePurchaseOrderArrival>(),
           reverseReceiptUseCase: sl<ReverseReceipt>(),
+          refundCostUseCase: sl<RefundCost>(),
+          reverseCostRefundUseCase: sl<ReverseCostRefund>(),
         ),
       )
       // **ويحمل بابَ الصندوق معه**: أمرٌ يُنشأ ليشتريه الصندوق يُموَّل في الضغطة نفسِها، فلا

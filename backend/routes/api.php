@@ -40,6 +40,7 @@ use App\Application\Api\V1\Controllers\ProductController;
 use App\Application\Api\V1\Controllers\ProductImageController;
 use App\Application\Api\V1\Controllers\ProfitAndLossController;
 use App\Application\Api\V1\Controllers\PurchaseOrderController;
+use App\Application\Api\V1\Controllers\PurchaseOrderCostRefundController;
 use App\Application\Api\V1\Controllers\RealtimeAuthController;
 use App\Application\Api\V1\Controllers\RegionController;
 use App\Application\Api\V1\Controllers\RoleController;
@@ -817,6 +818,18 @@ Route::prefix('v1')->group(function (): void {
         // controller reads it off the caller for exactly that.
         Route::post('purchase-orders/{purchase_order}/receipt-reversal', [PurchaseOrderController::class, 'reverseReceipt'])
             ->middleware('can:inventory.manage')->name('purchase-orders.receipt-reversal');
+
+        // Money coming back on a cost paid outside the vendor's bill, cancelled orders included —
+        // PURCHASE-ORDER-ARRIVAL-COSTS.md §7. Scoped, so a cost or refund of another order is a 404.
+        // Both grants: the answer is the whole order, which `treasury.reverse` alone may not read.
+        Route::post('purchase-orders/{purchase_order}/additional-costs/{additional_cost}/refunds', [PurchaseOrderCostRefundController::class, 'store'])
+            ->scopeBindings()
+            ->middleware(['can:treasury.reverse', 'can:purchase_orders.view'])
+            ->name('purchase-orders.additional-costs.refunds.store');
+        Route::post('purchase-orders/{purchase_order}/additional-costs/{additional_cost}/refunds/{refund}/reversal', [PurchaseOrderCostRefundController::class, 'reverse'])
+            ->scopeBindings()
+            ->middleware(['can:treasury.reverse', 'can:purchase_orders.view'])
+            ->name('purchase-orders.additional-costs.refunds.reversal');
 
         // ── دفعات الموردين — TREASURY-DESIGN §٨ ────────────────────────────────────────────
         // Money out to a vendor, from a drawer that must hold it. Its own trio of grants: seeing

@@ -11,15 +11,20 @@ use App\Domain\PurchaseOrder\Actions\CountOldOrderAsDebt;
 use App\Domain\PurchaseOrder\Actions\CreatePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\RecordVendorPayment;
+use App\Domain\PurchaseOrder\Actions\RefundAdditionalCost;
+use App\Domain\PurchaseOrder\Actions\ReverseCostRefund;
 use App\Domain\PurchaseOrder\Actions\ReversePurchaseOrderReceipt;
 use App\Domain\PurchaseOrder\Actions\ReverseVendorPayment;
 use App\Domain\PurchaseOrder\Actions\SendPurchaseOrder;
 use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
 use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
+use App\Domain\PurchaseOrder\DTOs\RefundAdditionalCostData;
 use App\Domain\PurchaseOrder\DTOs\ReversePurchaseOrderReceiptData;
 use App\Domain\PurchaseOrder\DTOs\VendorPaymentData;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderCostRefund;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderFilters;
 use App\Domain\PurchaseOrder\Queries\PurchaseOrderListQuery;
@@ -54,6 +59,8 @@ class PurchaseOrderService
         private readonly ReverseVendorPayment $reverseVendorPayment,
         private readonly VendorPaymentSummary $vendorPaymentSummary,
         private readonly CountOldOrderAsDebt $countOldOrderAsDebt,
+        private readonly RefundAdditionalCost $refundAdditionalCost,
+        private readonly ReverseCostRefund $reverseRefund,
     ) {}
 
     /**
@@ -80,7 +87,10 @@ class PurchaseOrderService
     public function find(int $id): PurchaseOrder
     {
         return PurchaseOrder::query()
-            ->with(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount'])
+            ->with([
+                'vendor', 'warehouse', 'items.stockItem', 'stockArrivals',
+                'additionalCosts.treasuryAccount', 'additionalCosts.standingExpenses', 'additionalCosts.refunds.recorder',
+            ])
             ->findOrFail($id);
     }
 
@@ -122,6 +132,29 @@ class PurchaseOrderService
     public function reverseReceipt(PurchaseOrder $order, ReversePurchaseOrderReceiptData $data): PurchaseOrder
     {
         return ($this->reverseReceipt)($order, $data);
+    }
+
+    /**
+     * Brings money back on a cost paid from a drawer or owed to a manual payable. See
+     * {@see RefundAdditionalCost} for what it moves, and what it deliberately leaves alone.
+     */
+    public function refundCost(
+        PurchaseOrder $order,
+        PurchaseOrderAdditionalCost $cost,
+        RefundAdditionalCostData $data,
+    ): PurchaseOrderCostRefund {
+        return ($this->refundAdditionalCost)($order, $cost, $data);
+    }
+
+    /** Takes back a refund recorded in error — {@see ReverseCostRefund}. */
+    public function reverseCostRefund(
+        PurchaseOrder $order,
+        PurchaseOrderAdditionalCost $cost,
+        PurchaseOrderCostRefund $refund,
+        string $reason,
+        int $actorId,
+    ): PurchaseOrderCostRefund {
+        return ($this->reverseRefund)($order, $cost, $refund, $reason, $actorId);
     }
 
     // ── دفعات الموردين — TREASURY-DESIGN §٨ ──────────────────────────────────────────────

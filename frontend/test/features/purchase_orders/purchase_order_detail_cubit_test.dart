@@ -52,6 +52,8 @@ void main() {
       changeStatus: ChangePurchaseOrderStatus(repository),
       receiveArrival: ReceivePurchaseOrderArrival(repository),
       reverseReceiptUseCase: ReverseReceipt(repository),
+      refundCostUseCase: RefundCost(repository),
+      reverseCostRefundUseCase: ReverseCostRefund(repository),
     );
   });
 

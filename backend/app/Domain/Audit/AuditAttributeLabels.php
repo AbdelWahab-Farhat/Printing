@@ -535,6 +535,13 @@ final class AuditAttributeLabels
             'treasury_account_id' => 'دُفعت من',
             'recorded_by' => 'سجّلها',
         ],
+        'purchase_order_cost_refund' => [
+            'additional_cost_id' => 'التكلفة',
+            'reason' => 'سبب الاسترداد',
+            'reversed_at' => 'تاريخ التراجع',
+            'reversed_by' => 'تراجع عنه',
+            'reversal_reason' => 'سبب التراجع',
+        ],
         'investor' => [
             'name' => 'اسم المستثمر',
             'user_id' => 'حساب الدخول',

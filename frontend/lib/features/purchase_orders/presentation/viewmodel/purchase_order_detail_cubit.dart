@@ -21,11 +21,15 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
     required ChangePurchaseOrderStatus changeStatus,
     required ReceivePurchaseOrderArrival receiveArrival,
     required ReverseReceipt reverseReceiptUseCase,
+    required RefundCost refundCostUseCase,
+    required ReverseCostRefund reverseCostRefundUseCase,
   }) : _id = purchaseOrderId,
        _getOrder = getOrder,
        _changeStatus = changeStatus,
        _receiveArrival = receiveArrival,
        _reverseReceipt = reverseReceiptUseCase,
+       _refundCost = refundCostUseCase,
+       _reverseCostRefund = reverseCostRefundUseCase,
        super(const PurchaseOrderDetailState.loading());
 
   final int _id;
@@ -33,6 +37,8 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
   final ChangePurchaseOrderStatus _changeStatus;
   final ReceivePurchaseOrderArrival _receiveArrival;
   final ReverseReceipt _reverseReceipt;
+  final RefundCost _refundCost;
+  final ReverseCostRefund _reverseCostRefund;
 
   Future<void> load() async {
     // The order it already has is kept while the next read is in flight, so a pull-to-refresh
@@ -87,6 +93,21 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
   /// generic message.
   Future<Failure?> reverseReceipt({required String reason}) =>
       _write(() => _reverseReceipt(_id, reason: reason));
+
+  /// Brings money back on a cost. The [Failure] goes back to the sheet, which stays open to
+  /// print it — the server's sentence says what is left to refund.
+  Future<Failure?> refundCost(
+    int costId, {
+    required String amount,
+    required String reason,
+  }) => _write(() => _refundCost(_id, costId, amount: amount, reason: reason));
+
+  /// Takes back a refund recorded in error.
+  Future<Failure?> reverseCostRefund(
+    int costId,
+    int refundId, {
+    required String reason,
+  }) => _write(() => _reverseCostRefund(_id, costId, refundId, reason: reason));
 
   /// Runs a write, then re-reads the order.
   ///
