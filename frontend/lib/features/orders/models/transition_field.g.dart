@@ -21,6 +21,7 @@ _TransitionField _$TransitionFieldFromJson(Map<String, dynamic> json) =>
       hint: json['hint'] as String?,
       min: json['min'] as num?,
       max: json['max'] as num?,
+      whole: json['whole'] as bool? ?? false,
       options:
           (json['options'] as List<dynamic>?)
               ?.map(
@@ -64,6 +65,7 @@ Map<String, dynamic> _$TransitionFieldToJson(_TransitionField instance) =>
       'hint': instance.hint,
       'min': instance.min,
       'max': instance.max,
+      'whole': instance.whole,
       'options': instance.options.map((e) => e.toJson()).toList(),
       'required_if': instance.requiredIf?.toJson(),
       'extensions': instance.extensions,

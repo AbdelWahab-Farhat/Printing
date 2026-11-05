@@ -553,8 +553,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
                     controller: _discount,
                     label: 'قيمة الخصم',
                     hint: '0',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
+                    // Whole dinars, and safe to strip the point here: this box starts empty.
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹]'))],
                     errorText: submission.discountError,
                     onChanged: (_) => context.read<TakeOrderCubit>().clearFailure(),
                   ),
@@ -822,8 +823,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
             controller: _designFee,
             label: 'أجرة التصميم',
             hint: '0',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.deny(RegExp('[-+ ]'))],
+            // Whole dinars, like the discount, and starting empty for the same reason.
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹]'))],
             errorText: submission.designFeeError,
           ),
         ],

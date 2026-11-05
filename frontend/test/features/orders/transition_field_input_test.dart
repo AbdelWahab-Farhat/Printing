@@ -149,6 +149,40 @@ void main() {
     expect(find.text('1000.000'), findsNothing);
   });
 
+  testWidgets('a whole-dinar box takes no decimal point, and an ordinary one still does', (
+    tester,
+  ) async {
+    // Arrange
+    const deposit = TransitionField(
+      key: 'deposit_amount',
+      type: TransitionFieldType.number,
+      label: 'قيمة العربون',
+      whole: true,
+    );
+    const received = TransitionField(
+      key: 'payment_amount',
+      type: TransitionFieldType.number,
+      label: 'المبلغ المقبوض',
+    );
+
+    // Act
+    await tester.pumpWidget(host(input(deposit)));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '28.25');
+    await tester.pump();
+    final whole = tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
+    await tester.pumpWidget(host(input(received)));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), '28.25');
+    await tester.pump();
+    final ordinary = tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
+    // Assert
+    expect(whole, '2825');
+    expect(ordinary, '28.25');
+  });
+
   testWidgets('the warehouse a run comes off is a picker, not a note', (tester) async {
     // Arrange — exactly what the server sends for «قيد الطباعة» on an order whose stock has
     // never left a shelf. This is the field that used to fall through to «unknown», which made

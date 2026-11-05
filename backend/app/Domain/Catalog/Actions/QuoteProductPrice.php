@@ -12,6 +12,7 @@ use App\Domain\Catalog\Exceptions\VariantDoesNotBelongToProduct;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductPriceTier;
 use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Order\Support\Money;
 
 /**
  * Works out what a quantity of a variant costs.
@@ -67,7 +68,12 @@ final class QuoteProductPrice
             quantity: $this->normalise($quantity),
             unit: $product->pricing_unit,
             unitPrice: $this->normalise((string) $tier->unit_price),
-            total: bcmul((string) $tier->unit_price, $quantity, self::SCALE),
+            // Whole dinars, the rule the order line follows, or the quote and the line part ways.
+            total: bcadd(
+                Money::wholeDinars(bcmul((string) $tier->unit_price, $quantity, 6)),
+                '0',
+                self::SCALE,
+            ),
             appliedTierMinQuantity: $this->normalise((string) $tier->min_quantity),
             nextTierMinQuantity: $nextTier ? $this->normalise((string) $nextTier->min_quantity) : null,
             nextTierUnitPrice: $nextTier ? $this->normalise((string) $nextTier->unit_price) : null,
