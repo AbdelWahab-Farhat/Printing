@@ -526,6 +526,110 @@ class OrderTest extends TestCase
             ->assertJsonPath('data.grand_total', '280.00');
     }
 
+    public function test_a_line_is_billed_in_whole_dinars_with_the_fraction_dropped(): void
+    {
+        // Arrange — 301 × 1.100 is 331.10.
+        $headers = $this->clerk();
+        $payload = $this->payload();
+        $payload['items'][0]['quantity'] = '301';
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $payload);
+
+        // Assert — the price stays exact, the amounts do not carry the fraction.
+        $response->assertCreated()
+            ->assertJsonPath('data.items.0.unit_price', '1.100')
+            ->assertJsonPath('data.items.0.line_total', '331.00')
+            ->assertJsonPath('data.items_total', '331.00')
+            ->assertJsonPath('data.grand_total', '331.00');
+    }
+
+    public function test_a_discount_with_a_fraction_is_refused(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::DiscountOrders,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'discount' => '50.50',
+        ]));
+
+        // Assert
+        $response->assertStatus(422);
+        $this->assertSame(['الخصم بالدينار الكامل، بلا كسور'], $response->json('errors')['discount']);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_a_design_fee_and_an_additional_cost_with_a_fraction_are_refused(): void
+    {
+        // Arrange
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::AddOrderAdditionalCost,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'design_fee' => '10.25',
+            'additional_cost' => '5.75',
+            'additional_cost_reason' => AdditionalCostReason::cases()[0]->value,
+        ]));
+
+        // Assert
+        $response->assertStatus(422)->assertJsonValidationErrors(['design_fee', 'additional_cost'], 'errors');
+    }
+
+    public function test_an_amount_sent_back_with_empty_decimals_is_still_whole(): void
+    {
+        // Arrange — the apps send back what they were given, and that is `50.00`.
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::DiscountOrders,
+        );
+
+        // Act
+        $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
+            'discount' => '50.00',
+            'design_fee' => '10.00',
+        ]));
+
+        // Assert
+        $response->assertCreated();
+    }
+
+    public function test_a_fraction_already_on_an_order_does_not_refuse_its_edits(): void
+    {
+        // Arrange — every edit re-sends the discount, so one from before the rule has to pass.
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::DiscountOrders,
+        );
+        $payload = $this->payload();
+        $id = $this->withHeaders($headers)->postJson('/api/v1/orders', $payload)->assertCreated()->json('data.id');
+        Order::query()->whereKey($id)->update(['discount' => '12.50']);
+
+        // Act
+        $unchanged = $this->withHeaders($headers)->putJson("/api/v1/orders/{$id}", [
+            'city_id' => $payload['city_id'],
+            'discount' => '12.50',
+        ]);
+        $changed = $this->withHeaders($headers)->putJson("/api/v1/orders/{$id}", [
+            'city_id' => $payload['city_id'],
+            'discount' => '12.75',
+        ]);
+
+        // Assert
+        $unchanged->assertOk();
+        $changed->assertStatus(422);
+    }
+
     public function test_a_discount_larger_than_the_order_is_refused(): void
     {
         // Arrange

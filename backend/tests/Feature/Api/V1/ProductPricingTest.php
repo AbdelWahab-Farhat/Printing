@@ -99,9 +99,9 @@ class ProductPricingTest extends TestCase
         ];
     }
 
-    public function test_the_total_is_the_unit_price_times_the_quantity_exactly(): void
+    public function test_the_total_is_the_exact_product_with_the_fraction_dropped(): void
     {
-        // Arrange — 1.10 has no exact float representation; 1.10 × 300 must still be 330.
+        // Arrange — 1.10 × 299 is exactly 328.90, and a quote bills whole dinars like the line.
         $variant = $this->shippingBag();
         $headers = $this->auth();
 
@@ -114,7 +114,7 @@ class ProductPricingTest extends TestCase
         // Assert
         $response->assertOk()
             ->assertJsonPath('data.unit_price', '1.100')
-            ->assertJsonPath('data.total', '328.900');
+            ->assertJsonPath('data.total', '328.000');
     }
 
     public function test_money_is_returned_as_a_string_so_it_cannot_drift(): void

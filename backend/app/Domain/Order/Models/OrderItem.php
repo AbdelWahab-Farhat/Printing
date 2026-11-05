@@ -276,6 +276,9 @@ class OrderItem extends Model
      * **`unit_price` is never re-quoted for the smaller quantity.** A run of 300 earned the
      * 300-tier rate; delivering 200 of it is our failure, and looking the price up again would
      * charge the customer *more* per bag because we came up short.
+     *
+     * **In whole dinars** — see {@see Money::wholeDinars()}. Dropped here, on the line, so the
+     * lines still add up to the order's total and every report that sums them agrees with it.
      */
     public function deriveLineTotal(): ?string
     {
@@ -287,7 +290,7 @@ class OrderItem extends Model
             return null;
         }
 
-        return Money::round(bcmul((string) $this->unit_price, $this->billableQuantity(), 6));
+        return Money::wholeDinars(bcmul((string) $this->unit_price, $this->billableQuantity(), 6));
     }
 
     /**

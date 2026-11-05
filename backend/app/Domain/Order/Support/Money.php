@@ -29,6 +29,30 @@ final class Money
     }
 
     /**
+     * What a line is billed: its exact amount with the fraction dropped — owner, 2026-11-05.
+     *
+     * **Down, never up**, so nobody pays more than the listed price × the quantity. **And never
+     * down to nothing:** 0.80 for a single bag bills 1.00, because a line at 0.00 reads as goods
+     * given away. Only an amount that really is zero stays zero.
+     */
+    public static function wholeDinars(string $value): string
+    {
+        $whole = bcadd($value, '0', 0);
+
+        if (bccomp($whole, '0', 0) === 0 && bccomp($value, '0', 8) > 0) {
+            return bcadd('1', '0', self::SCALE);
+        }
+
+        return bcadd($whole, '0', self::SCALE);
+    }
+
+    /** Whether a decimal string has no fraction: `25.00` does, `25.50` does not. */
+    public static function isWhole(string $value): bool
+    {
+        return bccomp($value, bcadd($value, '0', 0), 8) === 0;
+    }
+
+    /**
      * A money amount as it arrived from a request, turned into a decimal string at two places.
      *
      * **Cast through a float and straight back out of it.** That looks like the mistake this

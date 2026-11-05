@@ -731,6 +731,7 @@ final class TransitionFields
                 max: (float) (string) $order->grand_total,
                 hint: "قيمة تقديرية — إجمالي الطلبية {$order->grand_total}",
                 value: $agreed,
+                whole: true,
             ),
             TransitionField::paymentMethod(
                 key: self::DEPOSIT_METHOD,
@@ -991,6 +992,9 @@ final class TransitionFields
                 // «مُسوّاة», and nothing at all on any other move. `TransitionField::number()`
                 // trims what it is handed, so this passes the column's own string.
                 value: $settling ? $remaining : $expected,
+                // **The عربون only.** The box at delivery and settlement takes the real remainder,
+                // and an order from before the whole-dinar rule can still owe a fraction.
+                whole: $target === OrderStatus::DepositPaid,
             ),
             TransitionField::paymentMethod(
                 key: self::PAYMENT_METHOD,

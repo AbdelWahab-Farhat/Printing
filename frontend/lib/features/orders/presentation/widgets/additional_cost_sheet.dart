@@ -230,6 +230,12 @@ class _AdditionalCostSheetState extends State<_AdditionalCostSheet> {
                     if (amount == null) return 'أدخل رقماً';
                     if (amount < 0) return 'التكلفة الإضافية لا تكون سالبة';
 
+                    // A charge from before the rule may stand as it is; a new figure may not.
+                    final isUnchanged =
+                        double.tryParse(widget.initial?.normalisedAmount ?? '') == amount;
+
+                    if (amount % 1 != 0 && !isUnchanged) return 'المبلغ بالدينار الكامل، بلا كسور';
+
                     return null;
                   },
                   onChanged: (_) => setState(() {}),

@@ -152,7 +152,7 @@ void main() {
   testWidgets('a charge is answered as it was typed, category and all', (tester) async {
     // Arrange
     final answer = await open(tester, order());
-    await tester.enterText(find.byType(TextFormField).first, '١٠٫٥');
+    await tester.enterText(find.byType(TextFormField).first, '١٠');
     await tester.tap(find.text('تغليف خاص'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).last, 'علبة كرتون مزدوجة');
@@ -163,9 +163,44 @@ void main() {
 
     // Assert — the digits are handed over exactly as the keyboard produced them: normalising
     // happens in one place, on the way to the server.
-    expect(answer()?.amount, '١٠٫٥');
+    expect(answer()?.amount, '١٠');
     expect(answer()?.reason, AdditionalCostReason.specialPackaging);
     expect(answer()?.note, 'علبة كرتون مزدوجة');
+  });
+
+  testWidgets('a new charge with a fraction is refused, however the keyboard wrote it', (
+    tester,
+  ) async {
+    // Arrange
+    final answer = await open(tester, order());
+    await tester.enterText(find.byType(TextFormField).first, '١٠٫٥');
+    await tester.tap(find.text('تغليف خاص'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).last, 'علبة كرتون مزدوجة');
+
+    // Act
+    await tester.tap(find.byType(AppButton));
+    await tester.pumpAndSettle();
+
+    // Assert — the sheet stays open and says why.
+    expect(find.text('المبلغ بالدينار الكامل، بلا كسور'), findsOneWidget);
+    expect(answer(), isNull);
+  });
+
+  testWidgets('a charge from before the rule may stand unchanged', (tester) async {
+    // Arrange — the server lets the same figure back in, so the sheet must not stop it first.
+    final answer = await open(
+      tester,
+      order(cost: '10.50', reason: AdditionalCostReason.transport),
+    );
+
+    // Act
+    await tester.tap(find.byType(AppButton));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('المبلغ بالدينار الكامل، بلا كسور'), findsNothing);
+    expect(answer()?.normalisedAmount, '10.5');
   });
 
   testWidgets('clearing the box answers with an empty amount and no category', (tester) async {

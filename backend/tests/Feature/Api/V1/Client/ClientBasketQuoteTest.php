@@ -114,7 +114,7 @@ class ClientBasketQuoteTest extends TestCase
             ->assertJsonPath('data.lines.0.unit_label', 'قطعة')
             ->assertJsonPath('data.lines.1.unit', 'kilogram')
             ->assertJsonPath('data.lines.1.unit_label', 'كجم')
-            ->assertJsonPath('data.lines.1.line_total', '112.50');
+            ->assertJsonPath('data.lines.1.line_total', '112.00');
     }
 
     /**

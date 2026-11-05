@@ -94,6 +94,11 @@ final class TransitionField
          * @var list<array{name: string, code: string|null, hex: string|null}>
          */
         public readonly array $colors = [],
+        /**
+         * A {@see TransitionFieldType::Number} that takes whole dinars only — the عربون boxes.
+         * `regex` rather than `integer`, which refuses the `25.00` an app sends back.
+         */
+        public readonly bool $whole = false,
     ) {}
 
     /**
@@ -191,6 +196,7 @@ final class TransitionField
         ?float $max = null,
         ?string $hint = null,
         ?string $value = null,
+        bool $whole = false,
     ): self {
         return new self(
             key: $key,
@@ -200,7 +206,14 @@ final class TransitionField
             hint: $hint,
             min: $min,
             max: $max,
-            value: $value === null ? null : DecimalText::trim($value),
+            // A whole box never opens on a fraction it would refuse: an عربون agreed before the
+            // rule opens on its whole dinars.
+            value: match (true) {
+                $value === null => null,
+                $whole => bcadd($value, '0', 0),
+                default => DecimalText::trim($value),
+            },
+            whole: $whole,
         );
     }
 
@@ -408,6 +421,9 @@ final class TransitionField
             'hint' => $this->hint,
             'min' => $this->min,
             'max' => $this->max,
+            // Whole dinars only. An app too old to know the key keeps its decimal keyboard, and
+            // the rule below still refuses a fraction with a sentence it can show.
+            'whole' => $this->whole,
             // What the box opens holding, and null for almost every field. An app too old to
             // know the key simply opens empty, which is what it did before the key existed.
             'value' => $this->value,
@@ -479,6 +495,7 @@ final class TransitionField
                     'numeric',
                     $this->min === null ? null : "min:{$this->min}",
                     $this->max === null ? null : "max:{$this->max}",
+                    $this->whole ? 'regex:/^\d+(\.0+)?$/' : null,
                 ])),
             ],
             TransitionFieldType::CustomerDesigns => [
@@ -577,6 +594,7 @@ final class TransitionField
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",
                 "fields.{$this->key}.numeric" => "{$this->label} يجب أن يكون رقماً",
                 "fields.{$this->key}.max" => "{$this->label} أكبر مما في الطلبية",
+                "fields.{$this->key}.regex" => "{$this->label} بالدينار الكامل، بلا كسور",
             ],
             TransitionFieldType::File => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوب",

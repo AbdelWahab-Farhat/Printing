@@ -40,12 +40,12 @@ class UpdateOrderRequest extends StoreOrderRequest
             'address_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
-            'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
-            'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('design_fee')],
+            'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('discount')],
 
             // The same three as on the way in — see StoreOrderRequest for why the reason is
             // required as soon as there is an amount to explain.
-            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('additional_cost')],
             'additional_cost_reason' => [
                 Rule::requiredIf(fn () => (float) $this->input('additional_cost', 0) > 0),
                 'nullable',

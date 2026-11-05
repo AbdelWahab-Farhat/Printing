@@ -7,6 +7,9 @@ namespace App\Application\Api\V1\Requests\Order;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\Money;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +44,7 @@ class StoreOrderRequest extends FormRequest
 
             // Only counted when design_source is in_house; sending it otherwise is harmless and
             // is kept rather than blanked, so flipping the source back does not lose the number.
-            'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('design_fee')],
 
             // The artwork, chosen from the customer's library as it is everywhere else — never
             // uploaded here. Whether each design is *this customer's* is a domain refusal with a
@@ -55,7 +58,7 @@ class StoreOrderRequest extends FormRequest
 
             // Guarded by `orders.discount` inside the domain, so a console command or a future
             // import cannot get past it either.
-            'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('discount')],
 
             // The charge going the other way, behind `orders.additional_cost` and guarded in the
             // domain for the same reason the discount is.
@@ -65,7 +68,7 @@ class StoreOrderRequest extends FormRequest
             // nobody can account for is what the field exists to prevent. A closed set, so the
             // column stays something a report can group by rather than four spellings of one
             // category.
-            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'additional_cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('additional_cost')],
             'additional_cost_reason' => [
                 Rule::requiredIf(fn () => (float) $this->input('additional_cost', 0) > 0),
                 'nullable',
@@ -125,6 +128,33 @@ class StoreOrderRequest extends FormRequest
             // phone before anything has been printed or weighed. One writer, at the one moment
             // the answer exists.
         ];
+    }
+
+    /**
+     * An order's own charges are in whole dinars, or a fraction comes back through them.
+     *
+     * **Not Laravel's `integer`:** the apps send back what they were given, and that refuses
+     * `25.00`. **And a fraction already on the order passes unchanged**, because every edit
+     * re-sends these three — an order from before the rule would otherwise refuse any edit at all.
+     */
+    protected function wholeDinars(string $column): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($column): void {
+            // Not numeric is the rule before this one's to say, and bcmath would throw on it.
+            if (! is_numeric($value)) {
+                return;
+            }
+
+            $amount = Money::normalize($value);
+            $order = $this->route('order');
+
+            if (Money::isWhole($amount)
+                || ($order instanceof Order && bccomp($amount, (string) $order->{$column}, Money::SCALE) === 0)) {
+                return;
+            }
+
+            $fail(':attribute بالدينار الكامل، بلا كسور');
+        };
     }
 
     /**
