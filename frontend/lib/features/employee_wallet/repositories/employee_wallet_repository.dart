@@ -13,7 +13,7 @@ abstract interface class EmployeeWalletRepository {
   /// محفظةُ القارئ نفسه — بلا صلاحية، وقراءةً فقط.
   Future<Either<Failure, EmployeeWallet>> myWallet();
 
-  /// [search] اسم الموظف أو هاتفه أو رمزه — لـ«حركات محافظ الموظفين» وحدها.
+  /// [search] اسم الموظف أو هاتفه أو رمزه — لتبويب «الموظفون» في «المعاملات المالية» وحده.
   Future<Either<Failure, Paginated<EmployeeWalletEntry>>> entries(
     EmployeeWalletLedger ledger, {
     required int page,

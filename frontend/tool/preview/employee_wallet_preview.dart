@@ -37,7 +37,6 @@ import 'package:dayaa/features/employee_wallet/presentation/viewmodel/credit_cat
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_entries_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
-import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_movements_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/my_wallet_page.dart';
 import 'package:dayaa/features/employee_wallet/repositories/employee_wallet_repository.dart';
@@ -52,9 +51,18 @@ import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_
 import 'package:dayaa/features/notifications/models/unread_count.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
+import 'package:dayaa/features/online_payments/models/online_payment_models.dart';
+import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payments_cubit.dart';
+import 'package:dayaa/features/online_payments/repositories/online_payment_repository.dart';
+import 'package:dayaa/features/online_payments/usecases/online_payment_usecases.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/repositories/treasury_repository.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
+import 'package:dayaa/features/wallet/models/wallet_models.dart';
+import 'package:dayaa/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
+import 'package:dayaa/features/wallet/presentation/views/wallet_transactions_page.dart';
+import 'package:dayaa/features/wallet/repositories/wallet_repository.dart';
+import 'package:dayaa/features/wallet/usecases/wallet_usecases.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -68,6 +76,10 @@ import 'package:mocktail/mocktail.dart';
 class _MockWallets extends Mock implements EmployeeWalletRepository {}
 
 class _MockTreasury extends Mock implements TreasuryRepository {}
+
+class _MockCustomerWallets extends Mock implements WalletRepository {}
+
+class _MockOnlinePayments extends Mock implements OnlinePaymentRepository {}
 
 class _MockAccess extends Mock implements AccessRepository {}
 
@@ -251,6 +263,8 @@ Future<void> main() async {
   setUpAll(() async {
     registerFallbackValue(const EmployeeWalletLedger.mine());
     registerFallbackValue(EmployeeWalletEntryFilter.all);
+    registerFallbackValue(WalletEntryFilter.all);
+    registerFallbackValue(IntentFilter.all);
     await _loadFonts();
   });
 
@@ -377,6 +391,68 @@ Future<void> main() async {
       when(tickets.load).thenAnswer((_) async {});
       when(tickets.close).thenAnswer((_) async {});
 
+      final customerWallets = _MockCustomerWallets();
+      final onlinePayments = _MockOnlinePayments();
+
+      when(
+        () => customerWallets.entries(
+          customerId: any(named: 'customerId'),
+          page: any(named: 'page'),
+          filter: any(named: 'filter'),
+          search: any(named: 'search'),
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer(
+        (_) async => Right(
+          Paginated(
+            items: [
+              CustomerWalletEntry(
+                id: 8,
+                customerId: 3,
+                customerName: 'حساب تجريبي',
+                type: 'order_payment',
+                typeLabel: 'دفع طلبية',
+                isIn: false,
+                amount: '231.00',
+                notes: 'الطلبية 1319',
+                occurredAt: DateTime(2026, 10, 20, 14, 57),
+              ),
+            ],
+            meta: const PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 1),
+          ),
+        ),
+      );
+      when(
+        () => onlinePayments.intents(
+          page: any(named: 'page'),
+          filter: any(named: 'filter'),
+          search: any(named: 'search'),
+        ),
+      ).thenAnswer(
+        (_) async => const Right(
+          Paginated(
+            items: [
+              PaymentIntent(
+                id: 4,
+                uuid: 'b1c2',
+                customerName: 'علي',
+                methodLabel: 'سداد',
+                status: IntentStatus.succeeded,
+                statusLabel: 'تم الشحن',
+                netAmount: '100.00',
+                grossAmount: '102.50',
+                customerFee: '2.50',
+                feePayerLabel: 'الزبون',
+                reference: 'DY-0004',
+              ),
+            ],
+            meta: PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 1),
+            extraMeta: {'enabled': true, 'ezone_balance': '21670.02'},
+          ),
+        ),
+      );
+
       final session = Session();
 
       void signIn(List<String> permissions) => session.adopt(
@@ -386,6 +462,19 @@ Future<void> main() async {
       // لا `Injector.reset()`: الأداة تعمل في عزلٍ جديد لم يُسجَّل فيه شيء بعد.
       sl
         ..registerSingleton<Session>(session)
+        ..registerFactoryParam<WalletEntriesCubit, int?, void>(
+          (customerId, _) => WalletEntriesCubit(
+            customerId: customerId,
+            getEntries: GetCustomerWalletEntries(customerWallets),
+            reverseEntry: ReverseCustomerWalletEntry(customerWallets),
+          ),
+        )
+        ..registerFactory<OnlinePaymentsCubit>(
+          () => OnlinePaymentsCubit(
+            getIntents: GetPaymentIntents(onlinePayments),
+            recheck: RecheckPaymentIntent(onlinePayments),
+          ),
+        )
         ..registerFactoryParam<EmployeeWalletCubit, int, void>(
           (userId, _) => EmployeeWalletCubit(
             userId: userId,
@@ -525,9 +614,14 @@ Future<void> main() async {
       await quiet();
       await shoot(deposit, 'ew-05-deposit-money');
 
-      await tester.tap(find.text('مستحق').last);
+      await tester.tap(find.text('مال مستحق'));
       await tester.pumpAndSettle();
       await shoot(deposit, 'ew-06-deposit-credit');
+
+      await tester.tap(find.byTooltip('الفرق بين مال مستلم ومال مستحق'));
+      await tester.pumpAndSettle();
+      await quiet();
+      await shoot(deposit, 'ew-14-deposit-explain');
 
       final withdraw = await draw(walletPage);
       await tester.tap(find.widgetWithText(AppButton, 'سحب'));
@@ -550,7 +644,23 @@ Future<void> main() async {
       await shoot(reverse, 'ew-09-reverse');
 
       await shoot(await draw(const MyWalletPage()), 'ew-10-my-wallet');
-      await shoot(await draw(const EmployeeWalletMovementsPage()), 'ew-11-movements');
+      await shoot(await draw(const WalletTransactionsPage()), 'ew-11-movements');
+
+      signIn([
+        ...manager,
+        AppPermission.viewCustomerWallets.wire,
+        AppPermission.viewOnlinePayments.wire,
+      ]);
+      final transactions = await draw(const WalletTransactionsPage());
+      await shoot(transactions, 'ew-15-transactions-customers');
+      await tester.tap(find.widgetWithText(Tab, 'الموظفون'));
+      await tester.pumpAndSettle();
+      await shoot(transactions, 'ew-16-transactions-employees');
+      await tester.tap(find.widgetWithText(Tab, 'الإلكترونية'));
+      await tester.pumpAndSettle();
+      await shoot(transactions, 'ew-17-transactions-online');
+      signIn(manager);
+
       await shoot(await draw(walletPage, dark: false), 'ew-12-wallet-light');
 
       signIn([AppPermission.viewOrders.wire]);

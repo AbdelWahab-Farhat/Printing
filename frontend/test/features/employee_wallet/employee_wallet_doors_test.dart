@@ -13,7 +13,6 @@ import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dar
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_entries_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
-import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_movements_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_wallet_tile.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
@@ -29,6 +28,7 @@ import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_
 import 'package:dayaa/features/notifications/models/unread_count.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
+import 'package:dayaa/features/wallet/presentation/views/wallet_transactions_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -48,7 +48,7 @@ class _MockGetUnreadCount extends Mock implements GetUnreadCount {}
 class _MockTickets extends MockCubit<InternalTicketsHomeState>
     implements InternalTicketsHomeCubit {}
 
-/// الأبواب إلى المحفظة: صفُّ صفحة الموظف، و«حركات محافظ الموظفين»، وسطرُ الرئيسية.
+/// الأبواب إلى المحفظة: صفُّ صفحة الموظف، وحركات الموظفين في «المعاملات المالية»، وسطرُ الرئيسية.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -229,23 +229,23 @@ void main() {
     });
   });
 
-  group('«حركات محافظ الموظفين»', () {
+  group('حركات الموظفين في «المعاملات المالية»', () {
     testWidgets('كل سطرٍ يقول لمن هو', (tester) async {
       // Arrange
       arrange();
 
       // Act
-      await pumpRouted(tester, (_) => const EmployeeWalletMovementsPage());
+      await pumpRouted(tester, (_) => const WalletTransactionsPage());
 
       // Assert
-      expect(find.text('حركات محافظ الموظفين'), findsOneWidget);
+      expect(find.text('المعاملات المالية'), findsOneWidget);
       expect(find.text('محمد عز الدين · كاش'), findsOneWidget);
     });
 
     testWidgets('تقرأ كل المحافظ، ويُبحث فيها بعد توقّف الكتابة', (tester) async {
       // Arrange
       arrange();
-      await pumpRouted(tester, (_) => const EmployeeWalletMovementsPage());
+      await pumpRouted(tester, (_) => const WalletTransactionsPage());
 
       // Act
       await tester.enterText(find.byType(TextField), 'محمد');
@@ -268,7 +268,7 @@ void main() {
     testWidgets('اللمسة تفتح محفظة الموظف باسمه', (tester) async {
       // Arrange
       arrange();
-      await pumpRouted(tester, (_) => const EmployeeWalletMovementsPage());
+      await pumpRouted(tester, (_) => const WalletTransactionsPage());
 
       // Act
       await tester.tap(find.text('محمد عز الدين · كاش'));

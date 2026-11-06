@@ -91,7 +91,7 @@ abstract final class EmployeeWalletEndpoints {
 
   static String adjustments(int userId) => '/users/$userId/wallet/adjustments';
 
-  /// «حركات محافظ الموظفين» — كل المحافظ في صفحة.
+  /// حركات الموظفين في «المعاملات المالية» — كل المحافظ في قائمة.
   static const String allEntries = '/employee-wallet-entries';
 
   static String reverse(int entryId) => '/employee-wallet-entries/$entryId/reverse';

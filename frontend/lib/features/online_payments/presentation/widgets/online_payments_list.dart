@@ -23,19 +23,33 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-/// «المدفوعات الإلكترونية» — كل محاولة شحن محفظةٍ عبر EzonePay، الأحدث أولاً.
-/// Docs/payments/CUSTOMER-WALLET.md §٥.
+/// المدفوعات الإلكترونية في «المعاملات المالية» — كل محاولة شحن محفظةٍ عبر EzonePay، الأحدث أولاً.
+/// Docs/payments/CUSTOMER-WALLET.md §٥. **بلا شريط**: الشاشةُ التي تحملها هي من يعنونها.
 ///
 /// في رأسها رصيد «Ezone» — ما تحمله EzonePay للمحلّ — و«تحويل إلى المصرف» لمن يسجّل عمليات
 /// الحسابات (الخطوة ٦). اللمسةُ تفتح المحاولة، و«إعادة التحقق» فيها.
-class OnlinePaymentsPage extends StatelessWidget {
-  const OnlinePaymentsPage({super.key});
+class OnlinePaymentsList extends StatelessWidget {
+  const OnlinePaymentsList({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<OnlinePaymentsCubit>()..load(),
       child: const _PaymentsView(),
+    );
+  }
+}
+
+/// «طرق الدفع وحدودها» — في شريط الشاشة التي تحمل القائمة، مع تبويبها وحده.
+class OnlinePaymentMethodsButton extends StatelessWidget {
+  const OnlinePaymentMethodsButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'طرق الدفع وحدودها',
+      icon: Icon(AppIcons.settings),
+      onPressed: () => context.push(Routes.onlinePaymentMethods),
     );
   }
 }
@@ -47,29 +61,20 @@ class _PaymentsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<OnlinePaymentsCubit>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('المدفوعات الإلكترونية'),
-        actions: [
-          IconButton(
-            tooltip: 'طرق الدفع وحدودها',
-            icon: Icon(AppIcons.settings),
-            onPressed: () => context.push(Routes.onlinePaymentMethods),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
-            builder: (context, _) => _Header(enabled: cubit.enabled, ezoneBalance: cubit.ezoneBalance),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-            child: SearchField(hint: 'ابحث بالمرجع أو اسم الزبون أو هاتفه', onChanged: cubit.search),
-          ),
-          BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
-            builder: (context, _) => Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+    return Column(
+      children: [
+        BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
+          builder: (context, _) => _Header(enabled: cubit.enabled, ezoneBalance: cubit.ezoneBalance),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+          child: SearchField(hint: 'ابحث بالمرجع أو اسم الزبون أو هاتفه', onChanged: cubit.search),
+        ),
+        BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
+          builder: (context, _) => Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
               child: Wrap(
                 spacing: 8.w,
                 runSpacing: 8.h,
@@ -84,30 +89,30 @@ class _PaymentsView extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
-              builder: (context, state) => PagedListView<PaymentIntent>(
-                state: state,
-                emptyMessage: 'لا محاولات شحن',
-                onLoadMore: cubit.loadMore,
-                onRefresh: cubit.refresh,
-                skeletonHeight: 96.h,
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                separatorBuilder: (context, index) => const FundHairline(),
-                itemBuilder: (context, intent, index) => PaymentIntentRow(
-                  key: ValueKey(intent.id),
+        ),
+        Expanded(
+          child: BlocBuilder<OnlinePaymentsCubit, OnlinePaymentsState>(
+            builder: (context, state) => PagedListView<PaymentIntent>(
+              state: state,
+              emptyMessage: 'لا محاولات شحن',
+              onLoadMore: cubit.loadMore,
+              onRefresh: cubit.refresh,
+              skeletonHeight: 96.h,
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              separatorBuilder: (context, index) => const FundHairline(),
+              itemBuilder: (context, intent, index) => PaymentIntentRow(
+                key: ValueKey(intent.id),
+                intent: intent,
+                onTap: () => showPaymentIntentSheet(
+                  context: context,
                   intent: intent,
-                  onTap: () => showPaymentIntentSheet(
-                    context: context,
-                    intent: intent,
-                    onRecheck: cubit.recheck,
-                  ),
+                  onRecheck: cubit.recheck,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

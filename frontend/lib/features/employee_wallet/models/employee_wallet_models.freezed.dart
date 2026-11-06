@@ -20,7 +20,7 @@ mixin _$EmployeeWalletEntry {
  String get type;@JsonKey(name: 'type_label') String get typeLabel;/// `in` يزيد المحفظة، و`out` ينقصها. **الخادم يقرّره**: العكسُ عكسُ ما يعكسه.
  String get direction;/// موجبٌ دائماً — الاتجاه في [direction].
  String get amount;/// غائبٌ عن سطر صاحب المحفظة: محفظتُه هو.
-@JsonKey(name: 'user_id') int? get userId;/// يُرسل في «حركات محافظ الموظفين» وحدها، فهي تجمع الموظفين كلهم.
+@JsonKey(name: 'user_id') int? get userId;/// يُرسل في «المعاملات المالية» وحدها، فهي تجمع الموظفين كلهم.
  EmployeeWalletPerson? get user;/// الإيداع والسحب وحدهما.
 @JsonKey(name: 'method_label') String? get methodLabel;/// المستحق وحده.
 @JsonKey(name: 'category_name', readValue: _categoryName) String? get categoryName; String? get notes;@JsonKey(name: 'occurred_at', fromJson: _localDate) DateTime? get occurredAt;/// عُكس — يُرسم مشطوباً.
@@ -260,7 +260,7 @@ class _EmployeeWalletEntry extends EmployeeWalletEntry {
 @override final  String amount;
 /// غائبٌ عن سطر صاحب المحفظة: محفظتُه هو.
 @override@JsonKey(name: 'user_id') final  int? userId;
-/// يُرسل في «حركات محافظ الموظفين» وحدها، فهي تجمع الموظفين كلهم.
+/// يُرسل في «المعاملات المالية» وحدها، فهي تجمع الموظفين كلهم.
 @override final  EmployeeWalletPerson? user;
 /// الإيداع والسحب وحدهما.
 @override@JsonKey(name: 'method_label') final  String? methodLabel;

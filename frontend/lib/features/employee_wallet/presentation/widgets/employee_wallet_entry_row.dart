@@ -19,7 +19,7 @@ class EmployeeWalletEntryRow extends StatelessWidget {
 
   final EmployeeWalletEntry entry;
 
-  /// «حركات محافظ الموظفين» تجمعهم كلهم، فيقول كل سطرٍ لمن هو.
+  /// «المعاملات المالية» تجمعهم كلهم، فيقول كل سطرٍ لمن هو.
   final bool showEmployee;
 
   /// يفتح محفظة الموظف من الصفحة الجامعة.

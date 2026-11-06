@@ -194,34 +194,22 @@ class _RootDrawerState extends State<RootDrawer> {
       title: 'المالية',
       icon: _SectionIcon.treasury,
       items: [
-        // **أولَ القسم وبلا صلاحية**: كل موظفٍ يقرأ محفظته. ومن لا يصل هذه القائمة — المصمم — له
-        // السطر فوق طابوره. EMPLOYEE-WALLET-DESIGN §٥.
-        _Link(icon: _LinkIcon.wallet, label: 'محفظتي', route: Routes.myWallet),
         _Link(
           icon: _LinkIcon.treasury,
           label: 'الحسابات والكاش',
           route: Routes.treasury,
         ),
-        // «المعاملات المالية» — حركات محافظ العملاء كلهم. Docs/payments/CUSTOMER-WALLET.md.
+        // «المعاملات المالية» — حركات العملاء والموظفين والمدفوعات الإلكترونية، كلٌّ بصلاحيته.
+        // واحدةٌ تكفي للصف، والشاشة تعرض ما تملكه. Docs/payments/CUSTOMER-WALLET.md.
         _Link(
           icon: _LinkIcon.wallet,
           label: 'المعاملات المالية',
           route: Routes.walletTransactions,
-          permission: AppPermission.viewCustomerWallets,
-        ),
-        // نظيرُها للموظفين، خلف صلاحيتهم. EMPLOYEE-WALLET-DESIGN §٥.
-        _Link(
-          icon: _LinkIcon.employees,
-          label: 'حركات محافظ الموظفين',
-          route: Routes.employeeWalletMovements,
-          permission: AppPermission.viewEmployeeWallets,
-        ),
-        // «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، ورصيد «Ezone». CUSTOMER-WALLET §٥.
-        _Link(
-          icon: _LinkIcon.onlinePayments,
-          label: 'المدفوعات الإلكترونية',
-          route: Routes.onlinePayments,
-          permission: AppPermission.viewOnlinePayments,
+          anyOf: [
+            AppPermission.viewCustomerWallets,
+            AppPermission.viewEmployeeWallets,
+            AppPermission.viewOnlinePayments,
+          ],
         ),
         // «تسوية الدفعات» خرجت من هنا — صارت «مراجعة وتسوية الدفعات» تحت «حالات الدفع» في
         // الرئيسية، قرار صاحب العمل ٢٠٢٦-١٠-٠٨.
@@ -462,7 +450,7 @@ class _Section {
   /// The rows this account may open. Empty means the heading itself is not drawn.
   List<_Link> itemsFor(Session session) => [
     for (final item in items)
-      if (item.shown && (item.permission == null || session.can(item.permission!))) item,
+      if (item.shown && item.isOpenTo(session)) item,
   ];
 }
 
@@ -473,6 +461,7 @@ class _Link {
     required this.label,
     required this.route,
     this.permission,
+    this.anyOf = const [],
     this.shown = true,
   });
 
@@ -484,8 +473,15 @@ class _Link {
   /// read — a form somewhere cannot be filled in without them.
   final AppPermission? permission;
 
+  /// لشاشةٍ تجمع قوائم، لكلٍّ صلاحيته: واحدةٌ من هذه تكفي، مكان [permission].
+  final List<AppPermission> anyOf;
+
   /// Whether the row is offered at all, permissions aside. See [showManufacturingCostRates].
   final bool shown;
+
+  bool isOpenTo(Session session) => anyOf.isNotEmpty
+      ? session.canAny(anyOf)
+      : permission == null || session.can(permission!);
 }
 
 /// The glyphs, behind an enum because [AppIcons] resolves per platform at runtime and the rows
@@ -533,13 +529,11 @@ enum _LinkIcon {
   orderArchive,
   treasury,
   wallet,
-  onlinePayments,
   expense;
 
   IconData get data => switch (this) {
     _LinkIcon.treasury => AppIcons.treasury,
     _LinkIcon.wallet => AppIcons.wallet,
-    _LinkIcon.onlinePayments => AppIcons.mobileWallet,
     _LinkIcon.expense => AppIcons.expense,
     _LinkIcon.products => AppIcons.products,
     _LinkIcon.productCategory => AppIcons.productCategory,

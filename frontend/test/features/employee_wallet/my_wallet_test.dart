@@ -216,7 +216,7 @@ void main() {
 
       // Assert
       final node = tester.getSemantics(find.byType(MyWalletRow));
-      expect(node, containsSemantics(isButton: true, hasTapAction: true));
+      expect(node, isSemantics(isButton: true, hasTapAction: true));
       expect(node.label, contains('محفظتي'));
       expect(node.label, contains('1,500 د.ل'));
       semantics.dispose();

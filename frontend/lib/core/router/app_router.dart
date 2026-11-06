@@ -35,7 +35,6 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_thread_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
-import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_movements_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/my_wallet_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
@@ -73,7 +72,6 @@ import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manuf
 import 'package:dayaa/features/notifications/presentation/views/compose_announcement_page.dart';
 import 'package:dayaa/features/notifications/presentation/views/notifications_page.dart';
 import 'package:dayaa/features/online_payments/presentation/views/online_payment_methods_page.dart';
-import 'package:dayaa/features/online_payments/presentation/views/online_payments_page.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
 import 'package:dayaa/features/orders/presentation/views/archived_orders_page.dart';
@@ -573,14 +571,8 @@ abstract final class Routes {
 
   static String employeeWallet(int id) => '/employees/$id/wallet';
 
-  /// «حركات محافظ الموظفين» — كل المحافظ، تحت «المالية».
-  static const String employeeWalletMovements = '/employee-wallet-movements';
-
   /// «محفظتي» — لكل موظف بلا صلاحية. **الخادم يكتب هذا المسار في الإشعار**، فلا يتغيّر وحده.
   static const String myWallet = '/my-wallet';
-
-  /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، تحت «المالية». CUSTOMER-WALLET §٥.
-  static const String onlinePayments = '/online-payments';
 
   /// «طرق الدفع الإلكتروني» وحدودها.
   static const String onlinePaymentMethods = '/online-payments/methods';
@@ -853,25 +845,19 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: Routes.walletTransactions,
+        // شاشةٌ واحدة لثلاثة سجلّات، وكلٌّ بصلاحيته: واحدةٌ تكفي، والشاشة تعرض ما تملكه.
         redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewCustomerWallets) ? null : Routes.home,
+            sl<Session>().canAny(const [
+              AppPermission.viewCustomerWallets,
+              AppPermission.viewEmployeeWallets,
+              AppPermission.viewOnlinePayments,
+            ])
+            ? null
+            : Routes.home,
         builder: (context, state) => const WalletTransactionsPage(),
       ),
-      // «حركات محافظ الموظفين» محروسةٌ هنا كما على صفّها. و«محفظتي» بلا حارس: كل موظفٍ يقرأ محفظته،
-      // والمصمم يصلها وهو خارج إطار التطبيق.
-      GoRoute(
-        path: Routes.employeeWalletMovements,
-        redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewEmployeeWallets) ? null : Routes.home,
-        builder: (context, state) => const EmployeeWalletMovementsPage(),
-      ),
+      // «محفظتي» بلا حارس: كل موظفٍ يقرأ محفظته، والمصمم يصلها وهو خارج إطار التطبيق.
       GoRoute(path: Routes.myWallet, builder: (context, state) => const MyWalletPage()),
-      GoRoute(
-        path: Routes.onlinePayments,
-        redirect: (context, state) =>
-            sl<Session>().can(AppPermission.viewOnlinePayments) ? null : Routes.home,
-        builder: (context, state) => const OnlinePaymentsPage(),
-      ),
       GoRoute(
         path: Routes.onlinePaymentMethods,
         redirect: (context, state) =>

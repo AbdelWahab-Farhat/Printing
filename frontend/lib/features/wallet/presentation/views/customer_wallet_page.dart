@@ -10,7 +10,6 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
-import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/investment_fund/presentation/widgets/fund_detail_body.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
@@ -20,6 +19,7 @@ import 'package:dayaa/features/wallet/presentation/viewmodel/customer_wallet_cub
 import 'package:dayaa/features/wallet/presentation/viewmodel/wallet_entries_cubit.dart';
 import 'package:dayaa/features/wallet/presentation/widgets/adjust_wallet_sheet.dart';
 import 'package:dayaa/features/wallet/presentation/widgets/top_up_sheet.dart';
+import 'package:dayaa/features/wallet/presentation/widgets/wallet_entry_filters.dart';
 import 'package:dayaa/features/wallet/presentation/widgets/wallet_entry_row.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/day_header.dart';
 import 'package:flutter/material.dart';
@@ -118,7 +118,7 @@ class _WalletView extends StatelessWidget {
                   footer: _Actions.showsAny ? _Actions(balance: balance) : null,
                 ),
               ),
-              _TypeBar(selected: entries.filter, onSelect: entries.narrowTo),
+              WalletEntryFilters(selected: entries.filter, onSelect: entries.narrowTo),
               if (entries.from case final from?)
                 if (entries.to case final to?)
                   Padding(
@@ -153,36 +153,6 @@ class _WalletView extends StatelessWidget {
     if (picked == null) return;
 
     await entries.between(picked.start, picked.end);
-  }
-}
-
-/// الكلُّ ثم الأنواع — **تلتفّ ولا تُمرَّر**، كرقائق سجلّ المستثمر: فلترٌ لا يُرى لا يُسأل.
-class _TypeBar extends StatelessWidget {
-  const _TypeBar({required this.selected, required this.onSelect});
-
-  final WalletEntryFilter selected;
-  final Future<void> Function(WalletEntryFilter) onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 6.h),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: Wrap(
-          spacing: 8.w,
-          runSpacing: 8.h,
-          children: [
-            for (final filter in WalletEntryFilter.values)
-              FilterOptionChip(
-                label: filter.label,
-                isSelected: filter == selected,
-                onTap: () => unawaited(onSelect(filter)),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

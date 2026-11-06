@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «حركات محافظ الموظفين» — كل المحافظ في صفحة، الأحدث أولاً، يُبحث فيها باسم الموظف أو هاتفه أو
-/// رمزه، وتُقصر على نوع. نظير «المعاملات المالية» للعملاء.
+/// حركات الموظفين في «المعاملات المالية» — كل المحافظ في قائمة، الأحدث أولاً، يُبحث فيها باسم الموظف
+/// أو هاتفه أو رمزه، وتُقصر على نوع. **بلا شريط**: الشاشةُ التي تحملها هي من يعنونها.
 ///
 /// **للقراءة**: اللمسةُ تفتح محفظة الموظف، وهناك يُسحب ويُعدَّل ويُلغى — في سياق رصيده.
-class EmployeeWalletMovementsPage extends StatelessWidget {
-  const EmployeeWalletMovementsPage({super.key});
+class EmployeeWalletMovements extends StatelessWidget {
+  const EmployeeWalletMovements({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,25 +48,22 @@ class _MovementsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cubit = context.read<EmployeeWalletEntriesCubit>();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('حركات محافظ الموظفين')),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
-            child: SearchField(hint: 'ابحث باسم الموظف أو هاتفه أو رمزه', onChanged: cubit.search),
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+          child: SearchField(hint: 'ابحث باسم الموظف أو هاتفه أو رمزه', onChanged: cubit.search),
+        ),
+        const EmployeeWalletFilters(),
+        Expanded(
+          child: EmployeeWalletEntryList(
+            emptyMessage: 'لا حركات',
+            showEmployee: true,
+            onRefresh: cubit.refresh,
+            onOpen: _openWallet,
           ),
-          const EmployeeWalletFilters(),
-          Expanded(
-            child: EmployeeWalletEntryList(
-              emptyMessage: 'لا حركات',
-              showEmployee: true,
-              onRefresh: cubit.refresh,
-              onOpen: _openWallet,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

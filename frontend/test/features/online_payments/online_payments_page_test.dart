@@ -3,11 +3,13 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/filter_option_chip.dart';
+import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/investors/presentation/widgets/investor_money_tile.dart';
 import 'package:dayaa/features/online_payments/models/online_payment_models.dart';
 import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payments_cubit.dart';
-import 'package:dayaa/features/online_payments/presentation/views/online_payments_page.dart';
+import 'package:dayaa/features/online_payments/presentation/widgets/online_payments_list.dart';
 import 'package:dayaa/features/online_payments/repositories/online_payment_repository.dart';
 import 'package:dayaa/features/online_payments/usecases/online_payment_usecases.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +86,7 @@ void main() {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: OnlinePaymentsPage(),
+          home: Scaffold(body: OnlinePaymentsList()),
         ),
       ),
     );
@@ -101,6 +103,19 @@ void main() {
     expect(tester.widget<InvestorMoneyTile>(tile).amount, '1250.00');
     expect(find.text('علي'), findsOneWidget);
     expect(find.text('100 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('the chips start at the edge of the search field', (tester) async {
+    // Arrange
+    const permissions = ['payments.online.view'];
+
+    // Act
+    await open(tester, permissions: permissions);
+
+    // Assert
+    final search = tester.getRect(find.byType(SearchField));
+    final first = tester.getRect(find.byType(FilterOptionChip).first);
+    expect(first.right, moreOrLessEquals(search.right, epsilon: 0.5));
   });
 
   testWidgets('a reader of online payments alone is not offered «تحويل إلى المصرف»', (tester) async {

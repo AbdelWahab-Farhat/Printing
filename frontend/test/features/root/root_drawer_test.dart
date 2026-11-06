@@ -52,8 +52,7 @@ void main() {
     '/treasury',
     '/treasury/settings',
     '/treasury/expense-categories',
-    '/my-wallet',
-    '/employee-wallet-movements',
+    '/wallet-transactions',
   ];
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -451,7 +450,7 @@ void main() {
     expect(find.text('تصنيفات المصروفات'), findsNothing);
   });
 
-  testWidgets('«محفظتي» لكل موظف بلا صلاحية، و«حركات محافظ الموظفين» خلف صلاحيتها', (tester) async {
+  testWidgets('«محفظتي» ليست في القائمة، ولا «المعاملات المالية» بلا صلاحية', (tester) async {
     // Arrange
     await arrange([]);
     await open(tester);
@@ -460,12 +459,12 @@ void main() {
     await tester.tap(find.text('المالية'));
     await tester.pumpAndSettle();
 
-    // Assert
-    expect(find.text('محفظتي'), findsOneWidget);
-    expect(find.text('حركات محافظ الموظفين'), findsNothing);
+    // Assert — مدخلُها سطرُ الرئيسية وسطرُ المصمم، طلبُ صاحب العمل ٢٠٢٦-١١-٠٧.
+    expect(find.text('محفظتي'), findsNothing);
+    expect(find.text('المعاملات المالية'), findsNothing);
   });
 
-  testWidgets('من يرى المحافظ يجد حركاتها تحت «المالية»', (tester) async {
+  testWidgets('من يرى محافظ الموظفين وحدها يصل إلى «المعاملات المالية»', (tester) async {
     // Arrange
     await arrange(['users.wallet.view']);
     await open(tester);
@@ -473,11 +472,39 @@ void main() {
     // Act
     await tester.tap(find.text('المالية'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('حركات محافظ الموظفين'));
+    await tester.tap(find.text('المعاملات المالية'));
     await tester.pumpAndSettle();
 
     // Assert — the drawer closed behind it, and no route was missing.
     expect(tester.takeException(), isNull);
+    expect(find.text('المعاملات المالية'), findsNothing);
+  });
+
+  testWidgets('صفٌّ واحد لمن يملك الثلاث، فالبقية تبويباتٌ فيه', (tester) async {
+    // Arrange
+    await arrange(['customers.wallet.view', 'users.wallet.view', 'payments.online.view']);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('المعاملات المالية'), findsOneWidget);
     expect(find.text('حركات محافظ الموظفين'), findsNothing);
+    expect(find.text('المدفوعات الإلكترونية'), findsNothing);
+  });
+
+  testWidgets('من يرى المدفوعات الإلكترونية وحدها يجد «المعاملات المالية»', (tester) async {
+    // Arrange
+    await arrange(['payments.online.view']);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('المعاملات المالية'), findsOneWidget);
   });
 }

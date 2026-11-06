@@ -46,7 +46,7 @@ abstract class EmployeeWalletEntry with _$EmployeeWalletEntry {
     /// غائبٌ عن سطر صاحب المحفظة: محفظتُه هو.
     @JsonKey(name: 'user_id') int? userId,
 
-    /// يُرسل في «حركات محافظ الموظفين» وحدها، فهي تجمع الموظفين كلهم.
+    /// يُرسل في «المعاملات المالية» وحدها، فهي تجمع الموظفين كلهم.
     EmployeeWalletPerson? user,
 
     /// الإيداع والسحب وحدهما.
@@ -148,7 +148,7 @@ abstract class EmployeeCreditDraft with _$EmployeeCreditDraft {
   }) = _EmployeeCreditDraft;
 }
 
-/// أيُّ سجلٍّ يُقرأ: محفظةُ موظف، أو «حركات محافظ الموظفين» كلها، أو «محفظتي».
+/// أيُّ سجلٍّ يُقرأ: محفظةُ موظف، أو المحافظ كلها في «المعاملات المالية»، أو «محفظتي».
 @freezed
 sealed class EmployeeWalletLedger with _$EmployeeWalletLedger {
   const factory EmployeeWalletLedger.of(int userId) = EmployeeWalletLedgerOf;

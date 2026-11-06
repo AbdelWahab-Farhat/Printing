@@ -89,15 +89,48 @@ void main() {
     expect(target, isNull);
   });
 
-  testWidgets('«حركات محافظ الموظفين» خلف صلاحيتها', (tester) async {
+  testWidgets('«المعاملات المالية» تعود إلى الرئيسية بلا صلاحية', (tester) async {
     // Arrange
-    const path = Routes.employeeWalletMovements;
+    const path = Routes.walletTransactions;
 
     // Act
     final target = await redirectFor(tester, path);
 
     // Assert
     expect(target, Routes.home);
+  });
+
+  testWidgets('«المعاملات المالية» تُفتح بصلاحية الموظفين وحدها', (tester) async {
+    // Arrange
+    const path = Routes.walletTransactions;
+
+    // Act
+    final target = await redirectFor(tester, path, permissions: const ['users.wallet.view']);
+
+    // Assert
+    expect(target, isNull);
+  });
+
+  testWidgets('«المعاملات المالية» تُفتح بصلاحية العملاء وحدها', (tester) async {
+    // Arrange
+    const path = Routes.walletTransactions;
+
+    // Act
+    final target = await redirectFor(tester, path, permissions: const ['customers.wallet.view']);
+
+    // Assert
+    expect(target, isNull);
+  });
+
+  testWidgets('«المعاملات المالية» تُفتح بصلاحية المدفوعات الإلكترونية وحدها', (tester) async {
+    // Arrange
+    const path = Routes.walletTransactions;
+
+    // Act
+    final target = await redirectFor(tester, path, permissions: const ['payments.online.view']);
+
+    // Assert
+    expect(target, isNull);
   });
 
   test('الإشعار يفتح مساراً يعرفه التطبيق', () {
