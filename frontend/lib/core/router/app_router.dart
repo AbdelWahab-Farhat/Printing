@@ -35,6 +35,9 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_d
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_thread_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_page.dart';
+import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_movements_page.dart';
+import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_page.dart';
+import 'package:dayaa/features/employee_wallet/presentation/views/my_wallet_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/internal_tickets/presentation/views/internal_thread_page.dart';
@@ -565,6 +568,17 @@ abstract final class Routes {
   /// «المعاملات المالية» — كل المحافظ، تحت «المالية».
   static const String walletTransactions = '/wallet-transactions';
 
+  /// «محفظة الموظف» — خلف `users.wallet.view`. Docs/employees/EMPLOYEE-WALLET-DESIGN.md.
+  static const String employeeWalletPath = '/employees/:id/wallet';
+
+  static String employeeWallet(int id) => '/employees/$id/wallet';
+
+  /// «حركات محافظ الموظفين» — كل المحافظ، تحت «المالية».
+  static const String employeeWalletMovements = '/employee-wallet-movements';
+
+  /// «محفظتي» — لكل موظف بلا صلاحية. **الخادم يكتب هذا المسار في الإشعار**، فلا يتغيّر وحده.
+  static const String myWallet = '/my-wallet';
+
   /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، تحت «المالية». CUSTOMER-WALLET §٥.
   static const String onlinePayments = '/online-payments';
 
@@ -843,6 +857,15 @@ abstract final class AppRouter {
             sl<Session>().can(AppPermission.viewCustomerWallets) ? null : Routes.home,
         builder: (context, state) => const WalletTransactionsPage(),
       ),
+      // «حركات محافظ الموظفين» محروسةٌ هنا كما على صفّها. و«محفظتي» بلا حارس: كل موظفٍ يقرأ محفظته،
+      // والمصمم يصلها وهو خارج إطار التطبيق.
+      GoRoute(
+        path: Routes.employeeWalletMovements,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewEmployeeWallets) ? null : Routes.home,
+        builder: (context, state) => const EmployeeWalletMovementsPage(),
+      ),
+      GoRoute(path: Routes.myWallet, builder: (context, state) => const MyWalletPage()),
       GoRoute(
         path: Routes.onlinePayments,
         redirect: (context, state) =>
@@ -1501,6 +1524,19 @@ abstract final class AppRouter {
           return user == null
               ? const _UnknownEmployee()
               : EmployeeFormPage(user: user);
+        },
+      ),
+      // خلف `users.wallet.view` لا `users.view`: من يصرف الرواتب قد لا يدير الحسابات.
+      GoRoute(
+        path: Routes.employeeWalletPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewEmployeeWallets) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null
+              ? const _UnknownEmployee()
+              : EmployeeWalletPage(userId: id, employeeName: state.payload as String?);
         },
       ),
       GoRoute(

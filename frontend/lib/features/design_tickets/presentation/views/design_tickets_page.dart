@@ -14,6 +14,8 @@ import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tickets_cubit.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_card.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -47,21 +49,51 @@ class DesignTicketsPage extends StatelessWidget {
   /// هنا شريطٌ ثانٍ. وكلُّ ما عداه باقٍ كما هو، ومنه زرُّ «طلب تصميم».
   final bool embedded;
 
+  /// **Whether this screen is somebody's whole app.**
+  ///
+  /// The router sends an account that may take design work and cannot read orders straight
+  /// here from `/`, so a designer never reaches the home shell — and the drawer, which is the
+  /// only door to «الإعدادات» and therefore the only door to «تسجيل الخروج», lives on that
+  /// shell. A designer had no way to sign out at all. The same condition the redirect uses,
+  /// because it is the same question asked from the other side.
+  static bool get _isTheirWholeApp {
+    final session = sl<Session>();
+
+    return session.can(AppPermission.acceptDesignTickets) && !session.can(AppPermission.viewOrders);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<DesignTicketsCubit>(
-      create: (_) => sl<DesignTicketsCubit>()..start(filter),
-        child: _DesignTicketsView(title: filter?.title ?? 'تذاكر التصميم', embedded: embedded),
+    final showsWallet = _isTheirWholeApp && !embedded;
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<DesignTicketsCubit>(create: (_) => sl<DesignTicketsCubit>()..start(filter)),
+        // هنا لا في السطر، كي يعيد سحبُ التحديث قراءته مع الطابور.
+        if (showsWallet) BlocProvider<MyWalletCubit>(create: (_) => sl<MyWalletCubit>()..load()),
+      ],
+      child: _DesignTicketsView(
+        title: filter?.title ?? 'تذاكر التصميم',
+        embedded: embedded,
+        showsWallet: showsWallet,
+      ),
     );
   }
 }
 
 class _DesignTicketsView extends StatefulWidget {
-  const _DesignTicketsView({required this.title, required this.embedded});
+  const _DesignTicketsView({
+    required this.title,
+    required this.embedded,
+    required this.showsWallet,
+  });
 
   final String title;
 
   final bool embedded;
+
+  /// سطرُ «محفظتي» فوق الطابور: من هذه الشاشةُ تطبيقُه كلُّه لا يصل إلى الرئيسية ولا إلى القائمة.
+  final bool showsWallet;
 
   @override
   State<_DesignTicketsView> createState() => _DesignTicketsViewState();
@@ -148,18 +180,8 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<DesignTicketsCubit>();
-    final session = sl<Session>();
-    final mayManage = session.can(AppPermission.manageDesignTickets);
-
-    // **Whether this screen is somebody's whole app.**
-    //
-    // The router sends an account that may take design work and cannot read orders straight
-    // here from `/`, so a designer never reaches the home shell — and the drawer, which is the
-    // only door to «الإعدادات» and therefore the only door to «تسجيل الخروج», lives on that
-    // shell. A designer had no way to sign out at all. The same condition the redirect uses,
-    // because it is the same question asked from the other side.
-    final isTheirWholeApp =
-        session.can(AppPermission.acceptDesignTickets) && !session.can(AppPermission.viewOrders);
+    final mayManage = sl<Session>().can(AppPermission.manageDesignTickets);
+    final isTheirWholeApp = DesignTicketsPage._isTheirWholeApp;
 
     return Scaffold(
       appBar: widget.embedded
@@ -187,6 +209,12 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
           : null,
       body: Column(
         children: [
+          // السطرُ نفسه الذي على الرئيسية — الخيار «أ»، ٢٠٢٦-١١-٠٦.
+          if (widget.showsWallet)
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 4.h),
+              child: const MyWalletRow.strip(),
+            ),
           Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 10.h),
             child: Row(
@@ -247,7 +275,12 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
                   _ => 'لا توجد تذاكر تصميم',
                 },
                 onLoadMore: cubit.loadMore,
-                onRefresh: cubit.refresh,
+                onRefresh: () async {
+                  await Future.wait([
+                    cubit.refresh(),
+                    if (widget.showsWallet) context.read<MyWalletCubit>().load(),
+                  ]);
+                },
                 skeletonHeight: 112.h,
                 itemBuilder: (context, ticket, index) => DesignTicketCard(
                   key: ValueKey(ticket.id),

@@ -74,6 +74,34 @@ abstract final class WalletEndpoints {
   static String reverse(int entryId) => '/wallet-entries/$entryId/reverse';
 }
 
+/// «محفظة الموظف» — Docs/employees/EMPLOYEE-WALLET-DESIGN.md §٧. تُودَع فيها الأموال ويُسجَّل فيها
+/// ما للموظف، ويُسحب منها لمن يملك الصلاحية.
+abstract final class EmployeeWalletEndpoints {
+  /// الرصيد، و`can_move`، و`salary` لمن يملك رؤيته.
+  static String wallet(int userId) => '/users/$userId/wallet';
+
+  /// سجلّ محفظة الموظف، الأحدث أولاً.
+  static String entries(int userId) => '/users/$userId/wallet/entries';
+
+  static String deposits(int userId) => '/users/$userId/wallet/deposits';
+
+  static String credits(int userId) => '/users/$userId/wallet/credits';
+
+  static String withdrawals(int userId) => '/users/$userId/wallet/withdrawals';
+
+  static String adjustments(int userId) => '/users/$userId/wallet/adjustments';
+
+  /// «حركات محافظ الموظفين» — كل المحافظ في صفحة.
+  static const String allEntries = '/employee-wallet-entries';
+
+  static String reverse(int entryId) => '/employee-wallet-entries/$entryId/reverse';
+
+  /// محفظةُ القارئ نفسه — بلا صلاحية.
+  static const String myWallet = '/my-wallet';
+
+  static const String myEntries = '/my-wallet/entries';
+}
+
 /// «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay. Docs/payments/CUSTOMER-WALLET.md §٥.
 abstract final class OnlinePaymentEndpoints {
   /// كل محاولات الشحن، الأحدث أولاً. `meta.enabled` و`meta.ezone_balance`.

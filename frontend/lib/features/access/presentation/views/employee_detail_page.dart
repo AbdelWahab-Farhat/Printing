@@ -15,6 +15,8 @@ import 'package:dayaa/features/access/presentation/widgets/assign_roles_sheet.da
 import 'package:dayaa/features/access/presentation/widgets/set_password_sheet.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_wallet_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,10 +43,21 @@ class EmployeeDetailPage extends StatelessWidget {
 
   final int userId;
 
+  static bool get _showsWallet => sl<Session>().can(AppPermission.viewEmployeeWallets);
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<EmployeeDetailCubit>(
-      create: (_) => sl<EmployeeDetailCubit>(param1: userId)..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<EmployeeDetailCubit>(
+          create: (_) => sl<EmployeeDetailCubit>(param1: userId)..load(),
+        ),
+        // هنا لا في الصفّ، كي يعيد سحبُ التحديث قراءته مع الموظف.
+        if (_showsWallet)
+          BlocProvider<EmployeeWalletCubit>(
+            create: (_) => sl<EmployeeWalletCubit>(param1: userId)..load(),
+          ),
+      ],
       child: const _EmployeeDetailView(),
     );
   }
@@ -105,7 +118,10 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
             onRetry: cubit.load,
           ),
           _ => RefreshIndicator(
-            onRefresh: cubit.load,
+            onRefresh: () => Future.wait([
+              cubit.load(),
+              if (EmployeeDetailPage._showsWallet) context.read<EmployeeWalletCubit>().load(),
+            ]),
             child: _Body(user: state.user!, isChanging: state.isChanging),
           ),
         },
@@ -147,6 +163,12 @@ class _Body extends StatelessWidget {
         if (sl<Session>().can(AppPermission.manageUserSalaries)) ...[
           SizedBox(height: 14.h),
           _SalaryCard(user: user),
+        ],
+
+        // باقٍ لموظفٍ موقوف: إيقافُ الحساب لا يمسّ رصيده، ويبقى صرفه ممكناً.
+        if (EmployeeDetailPage._showsWallet) ...[
+          SizedBox(height: 14.h),
+          EmployeeWalletTile(userId: user.id, employeeName: user.name),
         ],
       ],
     );

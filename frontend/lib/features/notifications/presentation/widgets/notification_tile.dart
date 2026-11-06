@@ -75,6 +75,7 @@ class NotificationTile extends StatelessWidget {
         'task' => AppIcons.task,
         'design' => AppIcons.designs,
         'comment' => AppIcons.comments,
+        'wallet' => AppIcons.wallet,
         // The same glyph as the fallback today, named anyway: when a megaphone is added to
         // AppIcons it changes here, in one place, rather than being hunted for.
         'announcement' => AppIcons.notifications,

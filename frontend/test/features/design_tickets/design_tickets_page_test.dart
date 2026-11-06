@@ -15,6 +15,11 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
+import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
+import 'package:dayaa/features/employee_wallet/repositories/employee_wallet_repository.dart';
+import 'package:dayaa/features/employee_wallet/usecases/employee_wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -103,6 +108,21 @@ class _StubRepository implements DesignTicketRepository {
   Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// محفظةٌ تعدّ كم مرةً قُرئت.
+class _StubWallets implements EmployeeWalletRepository {
+  int reads = 0;
+
+  @override
+  Future<Either<Failure, EmployeeWallet>> myWallet() async {
+    reads++;
+
+    return const Right(EmployeeWallet(balance: '1500.00'));
+  }
+
+  @override
+  Object noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// تذاكر التصميم — the band above the list.
 ///
 /// **One filter, beside the search box.** The screen shipped with two rows of chips above the
@@ -113,6 +133,8 @@ class _StubRepository implements DesignTicketRepository {
 /// Arrange - Act - Assert throughout.
 void main() {
   late _StubRepository repository;
+
+  late _StubWallets wallets;
 
   late Session session;
 
@@ -128,8 +150,10 @@ void main() {
 
   setUp(() {
     repository = _StubRepository();
+    wallets = _StubWallets();
     session = Session();
     sl.registerSingleton<Session>(session);
+    sl.registerFactory<MyWalletCubit>(() => MyWalletCubit(getWallet: GetMyWallet(wallets)));
     sl.registerFactory<DesignTicketsCubit>(
       () => DesignTicketsCubit(
         getTickets: GetDesignTickets(repository),
@@ -185,6 +209,82 @@ void main() {
     // Assert
     expect(find.byType(AppBar), findsNothing);
     expect(find.text('تذاكر التصميم'), findsNothing);
+  });
+
+  group('«محفظتي» فوق الطابور', () {
+    /// من لا يقرأ الطلبيات لا يصل إلى الرئيسية ولا إلى القائمة الجانبية، فهذه شاشتُه كلها.
+    const designer = [
+      AppPermission.viewDesignTickets,
+      AppPermission.acceptDesignTickets,
+      AppPermission.submitDesignTickets,
+    ];
+
+    testWidgets('المصمم يراها برصيدها', (tester) async {
+      // Arrange
+      signInWith(designer);
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(MyWalletRow), findsOneWidget);
+      expect(find.text('محفظتي'), findsOneWidget);
+      expect(find.text('1,500 د.ل'), findsOneWidget);
+    });
+
+    testWidgets('موظفٌ فتح التذاكر من داخل التطبيق لا يراها، فبابها عنده', (tester) async {
+      // Arrange
+      signInWith([...designer, AppPermission.viewOrders]);
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(MyWalletRow), findsNothing);
+      expect(wallets.reads, 0);
+    });
+
+    testWidgets('داخل تبويب «تصميم» لا تُرسم', (tester) async {
+      // Arrange
+      signInWith(designer);
+
+      // Act
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(430, 932),
+          builder: (context, _) => const MaterialApp(
+            locale: Locale('ar'),
+            supportedLocales: [Locale('ar')],
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: DesignTicketsPage(embedded: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(MyWalletRow), findsNothing);
+    });
+
+    testWidgets('سحب التحديث يعيد قراءة الرصيد مع الطابور', (tester) async {
+      // Arrange
+      signInWith(designer);
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.fling(find.text('تصميم كيس عصري'), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(wallets.reads, 2);
+    });
   });
 
   testWidgets('the designer queues are gone from the screen', (tester) async {

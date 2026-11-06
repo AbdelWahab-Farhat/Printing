@@ -587,19 +587,30 @@ class ExpenseCategory {
     required this.requiresEmployee,
     required this.isActive,
     required this.isSystem,
+    this.code,
   });
 
   final int id;
   final String name;
+
+  /// ما يعرف به الكودُ تصنيفَ النظام، ولو أعاد الناس تسميته. فارغٌ لما أضافوه هم.
+  final String? code;
 
   /// «سلفة موظف» — لا معنى لها بلا الموظف الذي سُلِّمت إليه.
   final bool requiresEmployee;
   final bool isActive;
   final bool isSystem;
 
+  /// «رواتب» — اختيارُها على «مستحق» يقترح راتب الموظف. EMPLOYEE-WALLET-DESIGN §٩ س٣.
+  bool get isSalary => code == 'salary';
+
+  /// يصلح لمستحق موظف: ما أضافه الناس، و«رواتب» وحدها من تصنيفات النظام — قاعدة الخادم نفسها.
+  bool get fitsEmployeeCredit => !isSystem || isSalary;
+
   factory ExpenseCategory.fromJson(Map<String, dynamic> json) => ExpenseCategory(
     id: (json['id'] as num).toInt(),
     name: _string(json['name']),
+    code: _stringOrNull(json['code']),
     requiresEmployee: json['requires_employee'] == true,
     isActive: json['is_active'] != false,
     isSystem: json['is_system'] == true,

@@ -15,8 +15,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// The code is tappable because it is the one thing here that gets *typed somewhere else*: into
 /// a paper form, a message, another system. Copying it beats re-reading it off the screen.
 ///
-/// **[bottom] تحت الرأس، على البطاقة نفسها**، كبطاقة موظف بريمولا: تذاكرُ الموظفين التي تنتظر ردّه
-/// (`InternalTicketsCardSection`) — طلبُ المالك ٢٠٢٦-١٠-٢٣.
+/// **[bottom] تحت الرأس، على البطاقة نفسها**، كبطاقة موظف بريمولا: سطرُ «محفظتي» (`MyWalletRow`)،
+/// وتذاكرُ الموظفين التي تنتظر ردّه (`InternalTicketsCardSection`) — طلبُ المالك ٢٠٢٦-١٠-٢٣.
 class EmployeeCard extends StatelessWidget {
   const EmployeeCard({required this.user, this.action, this.bottom, super.key});
 

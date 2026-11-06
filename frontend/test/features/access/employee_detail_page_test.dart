@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
@@ -9,6 +10,11 @@ import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
+import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_wallet_tile.dart';
+import 'package:dayaa/features/employee_wallet/repositories/employee_wallet_repository.dart';
+import 'package:dayaa/features/employee_wallet/usecases/employee_wallet_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -29,8 +35,11 @@ import 'package:mocktail/mocktail.dart';
 /// Arrange - Act - Assert throughout.
 class _MockAccessRepository extends Mock implements AccessRepository {}
 
+class _MockWalletRepository extends Mock implements EmployeeWalletRepository {}
+
 void main() {
   late _MockAccessRepository repository;
+  late _MockWalletRepository wallets;
 
   const employee = AuthUser(
     id: 4,
@@ -68,10 +77,26 @@ void main() {
           setPassword: SetUserPassword(repository),
           setActivation: SetUserActivation(repository),
         ),
+      )
+      ..registerFactoryParam<EmployeeWalletCubit, int, void>(
+        (userId, _) => EmployeeWalletCubit(
+          userId: userId,
+          getWallet: GetEmployeeWallet(wallets),
+          deposit: DepositToEmployeeWallet(wallets),
+          credit: CreditEmployeeWallet(wallets),
+          withdraw: WithdrawFromEmployeeWallet(wallets),
+          adjust: AdjustEmployeeWallet(wallets),
+        ),
       );
   }
 
-  setUp(() => repository = _MockAccessRepository());
+  setUp(() {
+    repository = _MockAccessRepository();
+    wallets = _MockWalletRepository();
+    when(
+      () => wallets.wallet(4),
+    ).thenAnswer((_) async => const Right(EmployeeWallet(balance: '1500.00')));
+  });
 
   tearDown(() => sl.reset());
 
@@ -137,6 +162,81 @@ void main() {
     // Assert — a badge on every screen stops being read, which is the whole reason the stopped
     // one is worth drawing.
     expect(find.textContaining('موقوف'), findsNothing);
+  });
+
+  // ─────────────────────────── the wallet ───────────────────────────
+
+  testWidgets('صفّ المحفظة لمن يملك رؤيتها، برصيدها', (tester) async {
+    // Arrange
+    arrange(reader(permissions: [AppPermission.viewUsers, AppPermission.viewEmployeeWallets]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(EmployeeWalletTile), findsOneWidget);
+    expect(find.text('رصيد المحفظة'), findsOneWidget);
+    expect(find.text('1,500 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('لا صفّ ولا طلب لمن لا يملك رؤيتها', (tester) async {
+    // Arrange
+    arrange(reader(permissions: [AppPermission.viewUsers]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(EmployeeWalletTile), findsNothing);
+    verifyNever(() => wallets.wallet(any()));
+  });
+
+  testWidgets('الموظف الموقوف باقٍ صفُّ محفظته، فمالُه باقٍ', (tester) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.viewEmployeeWallets]),
+      shown: employee.copyWith(isActive: false),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(EmployeeWalletTile), findsOneWidget);
+  });
+
+  testWidgets('فشل قراءة الرصيد لا يُسقط الصفحة: الصفّ يبقى بلا رقم', (tester) async {
+    // Arrange
+    when(() => wallets.wallet(4)).thenAnswer(
+      (_) async => const Left(Failure.network(message: FailureMessages.noConnection)),
+    );
+    arrange(reader(permissions: [AppPermission.viewUsers, AppPermission.viewEmployeeWallets]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('محمد عز الدين'), findsWidgets);
+    expect(find.byType(EmployeeWalletTile), findsOneWidget);
+    expect(find.textContaining('د.ل'), findsNothing);
+  });
+
+  testWidgets('سحب التحديث يعيد قراءة الرصيد مع الموظف', (tester) async {
+    // Arrange
+    arrange(reader(permissions: [AppPermission.viewUsers, AppPermission.viewEmployeeWallets]));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => wallets.wallet(4)).called(2);
   });
 
   // ─────────────────────────── the wage ───────────────────────────

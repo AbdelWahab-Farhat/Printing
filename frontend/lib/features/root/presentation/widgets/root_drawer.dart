@@ -194,6 +194,9 @@ class _RootDrawerState extends State<RootDrawer> {
       title: 'المالية',
       icon: _SectionIcon.treasury,
       items: [
+        // **أولَ القسم وبلا صلاحية**: كل موظفٍ يقرأ محفظته. ومن لا يصل هذه القائمة — المصمم — له
+        // السطر فوق طابوره. EMPLOYEE-WALLET-DESIGN §٥.
+        _Link(icon: _LinkIcon.wallet, label: 'محفظتي', route: Routes.myWallet),
         _Link(
           icon: _LinkIcon.treasury,
           label: 'الحسابات والكاش',
@@ -205,6 +208,13 @@ class _RootDrawerState extends State<RootDrawer> {
           label: 'المعاملات المالية',
           route: Routes.walletTransactions,
           permission: AppPermission.viewCustomerWallets,
+        ),
+        // نظيرُها للموظفين، خلف صلاحيتهم. EMPLOYEE-WALLET-DESIGN §٥.
+        _Link(
+          icon: _LinkIcon.employees,
+          label: 'حركات محافظ الموظفين',
+          route: Routes.employeeWalletMovements,
+          permission: AppPermission.viewEmployeeWallets,
         ),
         // «المدفوعات الإلكترونية» — شحن المحافظ عبر EzonePay، ورصيد «Ezone». CUSTOMER-WALLET §٥.
         _Link(

@@ -52,6 +52,8 @@ void main() {
     '/treasury',
     '/treasury/settings',
     '/treasury/expense-categories',
+    '/my-wallet',
+    '/employee-wallet-movements',
   ];
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -447,5 +449,35 @@ void main() {
     expect(find.text('الحسابات والكاش'), findsOneWidget);
     expect(find.text('إعدادات المالية'), findsNothing);
     expect(find.text('تصنيفات المصروفات'), findsNothing);
+  });
+
+  testWidgets('«محفظتي» لكل موظف بلا صلاحية، و«حركات محافظ الموظفين» خلف صلاحيتها', (tester) async {
+    // Arrange
+    await arrange([]);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('محفظتي'), findsOneWidget);
+    expect(find.text('حركات محافظ الموظفين'), findsNothing);
+  });
+
+  testWidgets('من يرى المحافظ يجد حركاتها تحت «المالية»', (tester) async {
+    // Arrange
+    await arrange(['users.wallet.view']);
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('المالية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حركات محافظ الموظفين'));
+    await tester.pumpAndSettle();
+
+    // Assert — the drawer closed behind it, and no route was missing.
+    expect(tester.takeException(), isNull);
+    expect(find.text('حركات محافظ الموظفين'), findsNothing);
   });
 }

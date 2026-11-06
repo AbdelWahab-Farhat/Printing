@@ -107,6 +107,14 @@ import 'package:dayaa/features/design_tickets/repositories/design_ticket_thread_
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_thread_repository_impl.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_thread_usecases.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
+import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/credit_categories_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/employee_wallet_entries_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/repositories/employee_wallet_repository.dart';
+import 'package:dayaa/features/employee_wallet/repositories/employee_wallet_repository_impl.dart';
+import 'package:dayaa/features/employee_wallet/usecases/employee_wallet_usecases.dart';
 import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
@@ -453,6 +461,7 @@ abstract final class Injector {
     _registerInvestmentFund();
     _registerTreasury();
     _registerWallet();
+    _registerEmployeeWallet();
     _registerOnlinePayments();
     _registerProducts();
     _registerCities();
@@ -790,6 +799,58 @@ abstract final class Injector {
           getEntries: sl<GetCustomerWalletEntries>(),
           reverseEntry: sl<ReverseCustomerWalletEntry>(),
         ),
+      );
+  }
+
+  /// «محفظة الموظف» — Docs/employees/EMPLOYEE-WALLET-DESIGN.md. رأسُ الشاشة مقيّدٌ برقم الموظف،
+  /// والسجلُّ بما يُقرأ منه: محفظتُه، أو كل المحافظ، أو «محفظتي».
+  static void _registerEmployeeWallet() {
+    sl
+      ..registerLazySingleton<EmployeeWalletRepository>(
+        () => EmployeeWalletRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetEmployeeWallet>(
+        () => GetEmployeeWallet(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<GetMyWallet>(() => GetMyWallet(sl<EmployeeWalletRepository>()))
+      ..registerLazySingleton<GetEmployeeWalletEntries>(
+        () => GetEmployeeWalletEntries(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<DepositToEmployeeWallet>(
+        () => DepositToEmployeeWallet(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<CreditEmployeeWallet>(
+        () => CreditEmployeeWallet(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<WithdrawFromEmployeeWallet>(
+        () => WithdrawFromEmployeeWallet(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<AdjustEmployeeWallet>(
+        () => AdjustEmployeeWallet(sl<EmployeeWalletRepository>()),
+      )
+      ..registerLazySingleton<ReverseEmployeeWalletEntry>(
+        () => ReverseEmployeeWalletEntry(sl<EmployeeWalletRepository>()),
+      )
+      ..registerFactoryParam<EmployeeWalletCubit, int, void>(
+        (userId, _) => EmployeeWalletCubit(
+          userId: userId,
+          getWallet: sl<GetEmployeeWallet>(),
+          deposit: sl<DepositToEmployeeWallet>(),
+          credit: sl<CreditEmployeeWallet>(),
+          withdraw: sl<WithdrawFromEmployeeWallet>(),
+          adjust: sl<AdjustEmployeeWallet>(),
+        ),
+      )
+      ..registerFactoryParam<EmployeeWalletEntriesCubit, EmployeeWalletLedger, void>(
+        (ledger, _) => EmployeeWalletEntriesCubit(
+          ledger: ledger,
+          getEntries: sl<GetEmployeeWalletEntries>(),
+          reverseEntry: sl<ReverseEmployeeWalletEntry>(),
+        ),
+      )
+      ..registerFactory<MyWalletCubit>(() => MyWalletCubit(getWallet: sl<GetMyWallet>()))
+      ..registerFactory<CreditCategoriesCubit>(
+        () => CreditCategoriesCubit(getCategories: sl<GetExpenseCategories>()),
       );
   }
 

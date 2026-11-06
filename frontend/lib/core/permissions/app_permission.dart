@@ -350,6 +350,18 @@ enum AppPermission {
   adjustCustomerWallets('customers.wallet.adjust', 'تعديل رصيد محفظة عميل'),
   reverseCustomerWalletEntries('customers.wallet.reverse', 'عكس حركة على محفظة عميل'),
 
+  // «محفظة الموظف» — Docs/employees/EMPLOYEE-WALLET-DESIGN.md §٦. ستُّ ثقات: استلامُ مالٍ من موظف،
+  // ووعدُه بمال، وصرفُه له ثلاثُ درجاتٍ مختلفة. وقراءةُ الموظف محفظتَه هو بلا صلاحية.
+  //
+  // **التطبيق لا يسأل `users.wallet.reverse`**: الخادم يرسل `can_reverse` على السطر لمن يملكها، وهي
+  // هنا لأن شاشة الأدوار تعرض كل صلاحيةٍ باسمها، ولأن العقد مع الخادم حالةً بحالة.
+  viewEmployeeWallets('users.wallet.view', 'عرض محافظ الموظفين ومعاملاتها'),
+  depositToEmployeeWallets('users.wallet.deposit', 'إيداع مال استُلم من موظف'),
+  creditEmployeeWallets('users.wallet.credit', 'تسجيل مستحق لموظف'),
+  withdrawFromEmployeeWallets('users.wallet.withdraw', 'سحب من محفظة موظف'),
+  adjustEmployeeWallets('users.wallet.adjust', 'تعديل رصيد محفظة موظف'),
+  reverseEmployeeWalletEntries('users.wallet.reverse', 'عكس حركة على محفظة موظف'),
+
   // الدفع الإلكتروني عبر EzonePay — CUSTOMER-WALLET §٥. تحويلُ Ezone إلى المصرف تحت
   // `treasury.record` كأيّ تحويل.
   viewOnlinePayments('payments.online.view', 'عرض المدفوعات الإلكترونية'),

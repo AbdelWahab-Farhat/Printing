@@ -5,6 +5,8 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_picker_sheet.dart';
+import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
 import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/presentation/widgets/employee_card.dart';
 import 'package:dayaa/features/home/presentation/widgets/payment_board.dart';
@@ -41,6 +43,8 @@ class HomePage extends StatelessWidget {
         BlocProvider<InternalTicketsHomeCubit>(
           create: (_) => sl<InternalTicketsHomeCubit>()..load(),
         ),
+        // محفظةُ الموظف على بطاقته، للسبب نفسه: يقرؤها سحبُ التحديث مع الرئيسية.
+        BlocProvider<MyWalletCubit>(create: (_) => sl<MyWalletCubit>()..load()),
       ],
       child: const _HomeView(),
     );
@@ -63,6 +67,7 @@ class _HomeView extends StatelessWidget {
           onRefresh: () => Future.wait([
             context.read<HomeCubit>().refresh(),
             context.read<InternalTicketsHomeCubit>().load(),
+            context.read<MyWalletCubit>().load(),
           ]),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -74,7 +79,16 @@ class _HomeView extends StatelessWidget {
                 user: user,
                 // الجرسُ بجانب الدور، لا في الشريط — كبطاقة بريمولا.
                 action: const NotificationBell(onCard: true),
-                bottom: const InternalTicketsCardSection(),
+                // سطرُ «محفظتي» تحت رأس البطاقة وفوق التذاكر — الخيار «أ»، ٢٠٢٦-١١-٠٦.
+                bottom: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: 14.h),
+                    const MyWalletRow(),
+                    const InternalTicketsCardSection(),
+                  ],
+                ),
               ),
               SizedBox(height: 20.h),
               QuickActions(actions: _actionsFor(context)),
