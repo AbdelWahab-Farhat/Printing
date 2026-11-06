@@ -22,6 +22,8 @@ class _MockTreasury extends Mock implements TreasuryRepository {}
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
+  const explainTooltip = 'الفرق بين مال مستلم ومال مستحق';
+
   late _MockTreasury treasury;
 
   const salary = ExpenseCategory(
@@ -131,17 +133,38 @@ void main() {
       });
     }
 
-    testWidgets('زرٌّ واحد، والورقة تسأل أولاً: مال استلمناه أم مستحق', (tester) async {
+    testWidgets('زرٌّ واحد، والورقة تسأل أولاً: مال مستلم أم مال مستحق', (tester) async {
       // Arrange & Act
       await open(tester);
 
       // Assert
       expect(find.byType(BottomSheet), findsOneWidget);
       expect(find.byType(SegmentedButton<EmployeeDepositKind>), findsOneWidget);
-      expect(find.text('مال استلمناه'), findsOneWidget);
-      expect(find.text('مستحق'), findsOneWidget);
+      expect(find.text('مال مستلم'), findsOneWidget);
+      expect(find.text('مال مستحق'), findsOneWidget);
       expect(find.text('الطريقة'), findsOneWidget);
       expect(find.text('التصنيف'), findsNothing);
+    });
+
+    testWidgets('زرّ ⓘ يشرح الفرق بين الاثنين', (tester) async {
+      // Arrange
+      await open(tester);
+
+      // Act
+      await tester.tap(find.byTooltip(explainTooltip));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.textContaining('استلمته الشركة من الموظف'), findsOneWidget);
+      expect(find.textContaining('لا يدخل به مال'), findsOneWidget);
+    });
+
+    testWidgets('لا زرّ ⓘ حين لا سؤال، فلا فرق يُشرح', (tester) async {
+      // Arrange & Act
+      await open(tester, mayCredit: false);
+
+      // Assert
+      expect(find.byTooltip(explainTooltip), findsNothing);
     });
 
     testWidgets('من يملك استلام المال وحده لا يرى السؤال', (tester) async {
@@ -170,7 +193,7 @@ void main() {
       await open(tester);
 
       // Act
-      await tester.tap(find.text('مستحق'));
+      await tester.tap(find.text('مال مستحق'));
       await tester.pumpAndSettle();
 
       // Assert

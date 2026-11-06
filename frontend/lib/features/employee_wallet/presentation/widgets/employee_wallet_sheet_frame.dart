@@ -8,12 +8,16 @@ class EmployeeWalletSheetFrame extends StatelessWidget {
     required this.title,
     required this.formKey,
     required this.children,
+    this.titleAction,
     super.key,
   });
 
   final String title;
   final GlobalKey<FormState> formKey;
   final List<Widget> children;
+
+  /// في آخر سطر العنوان — زرُّ ⓘ مثلاً.
+  final Widget? titleAction;
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +43,16 @@ class EmployeeWalletSheetFrame extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 16.h),
-                Text(
-                  title,
-                  style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    ?titleAction,
+                  ],
                 ),
                 SizedBox(height: 20.h),
                 ...children,

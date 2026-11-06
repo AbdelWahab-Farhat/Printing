@@ -8,6 +8,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/credit_categories_cubit.dart';
+import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_deposit_explain.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_money_fields.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/employee_wallet_sheet_frame.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
@@ -22,7 +23,8 @@ typedef EmployeeMoneySubmit = Future<Failure?> Function(EmployeeMoneyDraft draft
 
 typedef EmployeeCreditSubmit = Future<Failure?> Function(EmployeeCreditDraft draft);
 
-/// «إيداع» — زرٌّ واحد، والورقة تسأل: مال استلمناه أم مستحق. قرار صاحب العمل س٢.
+/// «إيداع» — زرٌّ واحد، والورقة تسأل: مال مستلم أم مال مستحق. قرار صاحب العمل س٢، والاسمان وزرُّ ⓘ
+/// طلبُه عند التجربة (٢٠٢٦-١١-٠٧).
 ///
 /// **الاثنان شيئان في الدفاتر**: الأول مالٌ دخل حساباً فيُسأل عن طريقته وحسابه، والثاني مصروفٌ على
 /// الشركة بلا كاش فيُسأل عن تصنيفه. ومن يملك واحداً منهما لا يرى السؤال.
@@ -156,16 +158,19 @@ class _DepositSheetState extends State<_DepositSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final asks = widget.mayReceiveMoney && widget.mayCredit;
+
     final sheet = EmployeeWalletSheetFrame(
       title: 'إيداع',
       formKey: _formKey,
+      titleAction: asks ? const EmployeeDepositExplainButton() : null,
       children: [
-        if (widget.mayReceiveMoney && widget.mayCredit) ...[
+        if (asks) ...[
           // **السؤالُ قبل الحقول**، بعرض الورقة: هو ما يقرّر أيَّ حقولٍ تُسأل.
           SegmentedButton<EmployeeDepositKind>(
             segments: const [
-              ButtonSegment(value: EmployeeDepositKind.money, label: Text('مال استلمناه')),
-              ButtonSegment(value: EmployeeDepositKind.credit, label: Text('مستحق')),
+              ButtonSegment(value: EmployeeDepositKind.money, label: Text('مال مستلم')),
+              ButtonSegment(value: EmployeeDepositKind.credit, label: Text('مال مستحق')),
             ],
             selected: {_kind},
             showSelectedIcon: false,
