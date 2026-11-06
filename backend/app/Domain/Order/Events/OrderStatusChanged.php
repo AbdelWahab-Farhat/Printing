@@ -40,5 +40,10 @@ final readonly class OrderStatusChanged
         public OrderStatus $from,
         public OrderStatus $to,
         public ?int $actorId = null,
+        /**
+         * جزء من دفعة تسوية. حقيقةٌ لا قرار: لمن يستمع أن يقرر، كسائر ما في هذا الحدث — فخمسمئة
+         * جرس على ملف واحد لا تخبر أحداً بشيء.
+         */
+        public bool $partOfABatch = false,
     ) {}
 }

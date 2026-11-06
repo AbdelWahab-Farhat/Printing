@@ -6,6 +6,8 @@ namespace App\Domain\Audit\Enums;
 
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
+use App\Domain\Carrier\Models\NawrisSettlementImport;
+use App\Domain\Carrier\Models\NawrisSettlementImportItem;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductImage;
@@ -139,6 +141,8 @@ enum AuditSubject: string
     // business record and is exempt from the audit rules entirely — see the model.
     case NawrisParcel = 'nawris_parcel';
     case NawrisParcelOrder = 'nawris_parcel_order';
+    case NawrisSettlementImport = 'nawris_settlement_import';
+    case NawrisSettlementImportItem = 'nawris_settlement_import_item';
 
     // Inventory
     case StockItemGroup = 'stock_item_group';
@@ -261,6 +265,8 @@ enum AuditSubject: string
             self::ShippingCompany => ShippingCompany::class,
             self::NawrisParcel => NawrisParcel::class,
             self::NawrisParcelOrder => NawrisParcelOrder::class,
+            self::NawrisSettlementImport => NawrisSettlementImport::class,
+            self::NawrisSettlementImportItem => NawrisSettlementImportItem::class,
             self::StockItemGroup => StockItemGroup::class,
             self::StockItem => StockItem::class,
             self::Warehouse => Warehouse::class,
@@ -345,6 +351,8 @@ enum AuditSubject: string
             self::ShippingCompany => 'شركة توصيل',
             self::NawrisParcel => 'طرد نورس',
             self::NawrisParcelOrder => 'طلبية في طرد نورس',
+            self::NawrisSettlementImport => 'دفعة تسوية نورس',
+            self::NawrisSettlementImportItem => 'سطر في دفعة تسوية نورس',
             self::StockItemGroup => 'تصنيف',
             self::StockItem => 'مادة',
             self::Warehouse => 'مخزن',

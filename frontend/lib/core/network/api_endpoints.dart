@@ -773,6 +773,18 @@ abstract final class CarrierEndpoints {
 
   /// Tells Nawris the order's money again, for a parcel whose last change they refused.
   static String syncMoney(int orderId) => '/carrier/orders/$orderId/sync-money';
+
+  /// تقرير النورس: `POST` يسوّي ما يصلح منه، و`GET` الدفعات السابقة.
+  static const String settlementImports = '/carrier/settlement-imports';
+
+  /// قرار كل طلبية في الملف، بلا كتابة حرف واحد.
+  static const String settlementImportPreview = '/carrier/settlement-imports/preview';
+
+  /// قالب للإدخال اليدوي — ملف لا JSON.
+  static const String settlementImportTemplate = '/carrier/settlement-imports/template';
+
+  /// دفعة نُفّذت بأسطرها.
+  static String settlementImport(int id) => '/carrier/settlement-imports/$id';
 }
 
 /// الإشعارات — every account's own mailbox, plus the device registry push needs.

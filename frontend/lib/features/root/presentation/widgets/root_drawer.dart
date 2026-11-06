@@ -213,6 +213,13 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.onlinePayments,
           permission: AppPermission.viewOnlinePayments,
         ),
+        // تقرير النورس. صلاحيته صلاحية «تم التسوية» نفسها لا صلاحية تسوية الدفعات: يغلق الطلبيات.
+        _Link(
+          icon: _LinkIcon.treasury,
+          label: 'تسوية ملف النورس',
+          route: Routes.nawrisSettlement,
+          permission: AppPermission.settleOrders,
+        ),
         // «تسوية الدفعات» خرجت من هنا — صارت «مراجعة وتسوية الدفعات» تحت «حالات الدفع» في
         // الرئيسية، قرار صاحب العمل ٢٠٢٦-١٠-٠٨.
         // الافتراضيات والقواعد وتاريخ القفل ووجهة العهدة — للمالك. التصنيفاتُ صفٌّ وحدها أدناه.

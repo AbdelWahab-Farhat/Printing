@@ -21,6 +21,8 @@ import 'package:dayaa/features/audit/presentation/views/activity_log_page.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/auth/presentation/views/login_page.dart';
 import 'package:dayaa/features/business_fields/presentation/views/business_fields_page.dart';
+import 'package:dayaa/features/carrier/presentation/views/nawris_settlement_imports_page.dart';
+import 'package:dayaa/features/carrier/presentation/views/nawris_settlement_page.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/cities/presentation/views/cities_page.dart';
 import 'package:dayaa/features/cities/presentation/views/city_regions_page.dart';
@@ -235,6 +237,13 @@ abstract final class Routes {
 
   /// «تسوية الدفعات» — من الرئيسية، خلف `orders.payments.settle`. TREASURY-DESIGN §٢٣.
   static const String paymentSettlement = '/payment-settlement';
+
+  /// «تسوية ملف النورس» — خلف `orders.status.settled`. NAWRIS-SETTLEMENT-IMPORT.md.
+  static const String nawrisSettlement = '/nawris-settlement';
+
+  static const String nawrisSettlementImports = '/nawris-settlement/imports';
+
+  static String nawrisSettlementImport(int id) => '/nawris-settlement/imports/$id';
 
   static String investor(int id) => '/investors/$id';
 
@@ -866,6 +875,26 @@ abstract final class AppRouter {
             ? null
             : Routes.home,
         builder: (context, state) => const PaymentSettlementPage(),
+      ),
+      // كل طلبات هذه الشاشات ترجع 403 لمن لا يملك الصلاحية، فلا يصلها رابطٌ مباشر.
+      GoRoute(
+        path: Routes.nawrisSettlement,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.settleOrders) ? null : Routes.home,
+        builder: (context, state) => const NawrisSettlementPage(),
+      ),
+      GoRoute(
+        path: Routes.nawrisSettlementImports,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.settleOrders) ? null : Routes.home,
+        builder: (context, state) => const NawrisSettlementImportsPage(),
+      ),
+      GoRoute(
+        path: '${Routes.nawrisSettlementImports}/:id',
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.settleOrders) ? null : Routes.home,
+        builder: (context, state) =>
+            NawrisSettlementImportPage(importId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(
         path: Routes.treasurySettings,

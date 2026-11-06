@@ -44,6 +44,41 @@ final class CustodyForOrder
         return $held;
     }
 
+    /**
+     * {@see of()} لطلبيات كثيرة باستعلام واحد — ملف تسوية النورس يحمل مئات.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, array<int, string>> order id => custody account id => what it still holds
+     */
+    public function ofMany(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $rows = DB::table('treasury_movements as m')
+            ->join('treasury_accounts as a', 'a.id', '=', 'm.account_id')
+            ->whereIn('m.order_id', $orderIds)
+            ->where('a.kind', AccountKind::Custody->value)
+            ->whereNull('m.deleted_at')
+            ->groupBy('m.order_id', 'm.account_id')
+            ->selectRaw("m.order_id, m.account_id, SUM(CASE WHEN m.direction = 'in' THEN m.amount ELSE -m.amount END) AS held")
+            ->orderBy('m.account_id')
+            ->get();
+
+        $held = [];
+
+        foreach ($rows as $row) {
+            $amount = Money::round((string) $row->held);
+
+            if (Money::isPositive($amount)) {
+                $held[(int) $row->order_id][(int) $row->account_id] = $amount;
+            }
+        }
+
+        return $held;
+    }
+
     public function total(int $orderId): string
     {
         return Money::sum('0', ...array_values($this->of($orderId)));

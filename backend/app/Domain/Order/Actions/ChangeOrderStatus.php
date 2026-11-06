@@ -131,6 +131,9 @@ final class ChangeOrderStatus
         ?string $reason = null,
         ?User $actor = null,
         array $fields = [],
+        // اسم الدفعة حين تأتي الحركة من ملف تسوية النورس: يُكتب على عملية الخزينة، ويقول لمن يستمع
+        // إن هذه واحدة من مئات.
+        ?string $batch = null,
     ): Order {
         $from = $order->status;
 
@@ -221,7 +224,7 @@ final class ChangeOrderStatus
             throw OutsourcedLinesNeedACost::make($uncostedAfterFields);
         }
 
-        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $namedVendor, $acceptingARequest): Order {
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
@@ -314,6 +317,7 @@ final class ChangeOrderStatus
                         TransitionFields::SETTLEMENT_PICKS,
                     )),
                     pickFields: array_map(fn (string $key) => "fields.{$key}", TransitionFields::SETTLEMENT_PICKS),
+                    batch: $batch,
                 );
             }
 
@@ -580,7 +584,7 @@ final class ChangeOrderStatus
             // above each name one moment; this one names the fact that a moment happened, and
             // leaves «is this worth telling anyone» to its listener — which is the only place
             // that list should live. See {@see OrderStatusChanged}.
-            OrderStatusChanged::dispatch((int) $order->getKey(), $from, $target, $actorId);
+            OrderStatusChanged::dispatch((int) $order->getKey(), $from, $target, $actorId, $batch !== null);
 
             return $order->refresh();
         });

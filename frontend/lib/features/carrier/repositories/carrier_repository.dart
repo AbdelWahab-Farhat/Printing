@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/carrier/models/carrier_money_sync.dart';
 import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
+import 'package:dayaa/features/carrier/models/nawris_settlement.dart';
 
 /// Handing an order to the carrier, and the two ways of taking it back.
 ///
@@ -49,4 +53,28 @@ abstract interface class CarrierRepository {
   /// collecting the old amount. **A second refusal is an answer, not a failure** —
   /// [CarrierMoneySync.told] says which. Null when there is nothing out.
   Future<Either<Failure, CarrierMoneySync?>> syncMoney(int orderId);
+
+  /// `POST /carrier/settlement-imports/preview` — قرار كل طلبية في تقرير النورس، بلا كتابة شيء.
+  Future<Either<Failure, NawrisSettlementPreview>> previewSettlement({
+    required String path,
+    required String fileName,
+  });
+
+  /// `POST /carrier/settlement-imports` — يسوّي ما يصلح ويتخطّى الباقي.
+  ///
+  /// الملف نفسه يُرفع ثانية: الخادم يعيد الحكم تحت القفل، ويرفض بـ409 إن تغيّر شيء منذ المعاينة.
+  Future<Either<Failure, NawrisSettlementImport>> importSettlement({
+    required String path,
+    required String fileName,
+    required NawrisSettlementSubmission submission,
+  });
+
+  /// الدفعات السابقة، الأحدث أولاً.
+  Future<Either<Failure, Paginated<NawrisSettlementImport>>> settlementImports({required int page});
+
+  /// دفعة بأسطرها.
+  Future<Either<Failure, NawrisSettlementImport>> settlementImport(int id);
+
+  /// قالب الإدخال اليدوي.
+  Future<Either<Failure, Uint8List>> settlementTemplate();
 }

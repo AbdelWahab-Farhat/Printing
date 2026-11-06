@@ -26,6 +26,7 @@ use App\Application\Api\V1\Controllers\InvestorController;
 use App\Application\Api\V1\Controllers\InvestorDealController;
 use App\Application\Api\V1\Controllers\InvestorPortalController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
+use App\Application\Api\V1\Controllers\NawrisSettlementImportController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OnlinePaymentController;
@@ -596,6 +597,23 @@ Route::prefix('v1')->group(function (): void {
         // re-lodging it or closing a delivery conflict.
         Route::get('carrier/events', [CarrierController::class, 'events'])
             ->middleware('can:carrier.view')->name('carrier.events');
+
+        // تقرير النورس: يسوّي طلبيات ويحرّك مالها، فصلاحيته صلاحية «تم التسوية» نفسها — لا يكتسب أحد
+        // بالجملة ما لا يملكه بالمفرد. والقالب قبل `{import}`، وإلا قُرئ رقم دفعة.
+        Route::get('carrier/settlement-imports/template', [NawrisSettlementImportController::class, 'template'])
+            ->middleware('can:orders.status.settled')->name('carrier.settlement-imports.template');
+
+        Route::post('carrier/settlement-imports/preview', [NawrisSettlementImportController::class, 'preview'])
+            ->middleware('can:orders.status.settled')->name('carrier.settlement-imports.preview');
+
+        Route::post('carrier/settlement-imports', [NawrisSettlementImportController::class, 'store'])
+            ->middleware('can:orders.status.settled')->name('carrier.settlement-imports.store');
+
+        Route::get('carrier/settlement-imports', [NawrisSettlementImportController::class, 'index'])
+            ->middleware('can:orders.status.settled')->name('carrier.settlement-imports.index');
+
+        Route::get('carrier/settlement-imports/{import}', [NawrisSettlementImportController::class, 'show'])
+            ->middleware('can:orders.status.settled')->name('carrier.settlement-imports.show');
 
         Route::get('carrier/parcels', [CarrierController::class, 'parcels'])
             ->middleware('can:carrier.view')->name('carrier.parcels');

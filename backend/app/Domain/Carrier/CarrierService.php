@@ -5,24 +5,34 @@ declare(strict_types=1);
 namespace App\Domain\Carrier;
 
 use App\Domain\Carrier\Actions\BuildNawrisPayload;
+use App\Domain\Carrier\Actions\BuildNawrisSettlementTemplate;
 use App\Domain\Carrier\Actions\CancelNawrisParcel;
 use App\Domain\Carrier\Actions\DeleteNawrisParcel;
 use App\Domain\Carrier\Actions\DetachNawrisParcel;
 use App\Domain\Carrier\Actions\DispatchToNawris;
 use App\Domain\Carrier\Actions\EditNawrisParcel;
+use App\Domain\Carrier\Actions\EvaluateNawrisSettlement;
+use App\Domain\Carrier\Actions\ImportNawrisSettlement;
+use App\Domain\Carrier\Actions\ReadNawrisSettlementFile;
 use App\Domain\Carrier\Actions\ResendNawrisParcel;
 use App\Domain\Carrier\DTOs\NawrisMoneySync;
+use App\Domain\Carrier\DTOs\NawrisSettlementPreview;
+use App\Domain\Carrier\DTOs\NawrisSettlementSubmission;
 use App\Domain\Carrier\Enums\NawrisStatusCode;
 use App\Domain\Carrier\Exceptions\DeliveryWasReportedByTheCarrier;
 use App\Domain\Carrier\Models\NawrisParcel;
+use App\Domain\Carrier\Models\NawrisSettlementImport;
 use App\Domain\Delivery\Enums\FulfilmentType;
+use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Throwable;
 
 /**
@@ -45,7 +55,47 @@ final class CarrierService
         private readonly CancelNawrisParcel $cancel,
         private readonly ResendNawrisParcel $resend,
         private readonly BuildNawrisPayload $payload,
+        private readonly ReadNawrisSettlementFile $readSettlementFile,
+        private readonly EvaluateNawrisSettlement $evaluateSettlement,
+        private readonly ImportNawrisSettlement $importSettlement,
+        private readonly BuildNawrisSettlementTemplate $settlementTemplate,
     ) {}
+
+    /**
+     * ما سيحدث لكل طلبية في تقرير النورس — بلا كتابة حرف واحد.
+     */
+    public function previewSettlement(string $path, ?User $actor): NawrisSettlementPreview
+    {
+        return ($this->evaluateSettlement)(($this->readSettlementFile)($path), $actor);
+    }
+
+    /**
+     * تسوية ما يصلح من التقرير، وتخطّي ما عداه.
+     */
+    public function importSettlement(string $path, NawrisSettlementSubmission $submission, User $actor): NawrisSettlementImport
+    {
+        return ($this->importSettlement)(($this->readSettlementFile)($path), $submission, $actor);
+    }
+
+    public function settlementTemplate(): Spreadsheet
+    {
+        return ($this->settlementTemplate)();
+    }
+
+    /**
+     * الدفعات السابقة، الأحدث أولاً. بلا أسطرها: القائمة لا تحتاجها.
+     *
+     * @return LengthAwarePaginator<int, NawrisSettlementImport>
+     */
+    public function settlementImports(int $perPage): LengthAwarePaginator
+    {
+        return NawrisSettlementImport::query()->with('importer')->latest('id')->paginate($perPage);
+    }
+
+    public function loadSettlementImport(NawrisSettlementImport $import): NawrisSettlementImport
+    {
+        return $import->load(['importer', 'items' => fn ($query) => $query->orderBy('id')]);
+    }
 
     /**
      * Hand an order to Nawris.
