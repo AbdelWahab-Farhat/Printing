@@ -6,6 +6,7 @@ import 'package:dayaa/core/utils/fixed_point.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
+import 'package:dayaa/features/wallet/presentation/widgets/wallet_balance_after.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,8 +18,8 @@ typedef AdjustSubmit = Future<Failure?> Function({
 });
 
 /// «تعديل الرصيد» — زيادةٌ أو نقص، ومبلغ، وسببٌ إجباري. **لا مال يتحرّك**: تصحيحٌ للرصيد يُكتب
-/// سطراً في المحفظة وعلى «أرصدة محافظ الزبائن»، ولذلك لا طريقةَ دفعٍ فيها ولا حساب — وهذا ما
-/// يفرّقها عن «شحن المحفظة».
+/// سطراً في المحفظة وعلى حساب التزامها، ولذلك لا طريقةَ دفعٍ فيها ولا حساب — وهذا ما يفرّقها عن
+/// «شحن المحفظة». **ورقةٌ واحدة لمحفظة العميل ومحفظة الموظف**: كلٌّ يقول [onSubmit] ماذا يكتب.
 ///
 /// **ورقةٌ من الأسفل لا حوار** بطلب صاحب العمل (٢٠٢٦-١٠-١٧)، على شكل ورقة الشحن أختِها. والرصيدُ
 /// بعد التعديل يُحسب وهو يُكتب، فلا يُكتشف نقصٌ أكبرُ من الرصيد برسالة رفضٍ من الخادم.
@@ -191,7 +192,11 @@ class _AdjustSheetState extends State<_AdjustSheet> {
                   validator: (value) => (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
                 ),
                 SizedBox(height: 16.h),
-                _BalanceAfter(balance: widget.balance, after: _after),
+                WalletBalanceAfter(
+                  balance: widget.balance,
+                  after: _after,
+                  afterLabel: 'الرصيد بعد التعديل',
+                ),
                 SizedBox(height: 24.h),
                 AppButton(
                   label: _credit ? 'إضافة للرصيد' : 'خصم من الرصيد',
@@ -205,47 +210,6 @@ class _AdjustSheetState extends State<_AdjustSheet> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// الرصيدُ الحالي، ثم ما بعد التعديل ما إن يُكتب مبلغ. وتحت الصفر بلون الخطأ.
-class _BalanceAfter extends StatelessWidget {
-  const _BalanceAfter({required this.balance, required this.after});
-
-  final String balance;
-  final String? after;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-    final shown = after ?? balance;
-    final isBelowZero = shown.startsWith('-');
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14.r),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              after == null ? 'الرصيد الحالي' : 'الرصيد بعد التعديل',
-              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-          ),
-          Text(
-            '${shown.grouped} د.ل',
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: isBelowZero ? scheme.error : scheme.onSurface,
-            ),
-          ),
-        ],
       ),
     );
   }
