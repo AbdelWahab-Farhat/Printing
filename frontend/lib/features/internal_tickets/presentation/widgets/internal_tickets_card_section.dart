@@ -6,6 +6,7 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
+import 'package:dayaa/core/widgets/card_pressable.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_home_cubit.dart';
 import 'package:flutter/material.dart';
@@ -140,44 +141,6 @@ class _CardInk {
   Color get processing => lightCard ? const Color(0xFF8A5300) : const Color(0xFFFFC266);
 }
 
-/// ردُّ الضغط الوحيد على البطاقة: ما يُضغط يخفت لحظة — كبريمولا. لا `InkWell`: ظلُّه الرماديّ على
-/// التدرّج لطخة، والتموّجُ لا سطحَ له هنا.
-class _Pressable extends StatefulWidget {
-  const _Pressable({required this.onTap, required this.child});
-
-  final VoidCallback? onTap;
-  final Widget child;
-
-  @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable> {
-  bool _pressed = false;
-
-  void _set(bool pressed) => setState(() => _pressed = pressed);
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = widget.onTap != null;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: enabled ? (_) => _set(true) : null,
-      onTapUp: enabled ? (_) => _set(false) : null,
-      onTapCancel: enabled ? () => _set(false) : null,
-      onTap: widget.onTap,
-      child: AnimatedOpacity(
-        opacity: _pressed ? 0.55 : 1,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 90),
-        child: widget.child,
-      ),
-    );
-  }
-}
-
 /// الصفوف، ثم الذيل: «عرض كل التذاكر» و«تذكرة جديدة» تحت خطٍّ رفيع.
 class _TicketList extends StatelessWidget {
   const _TicketList({
@@ -265,7 +228,7 @@ class _TicketRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _Pressable(
+                child: CardPressable(
                   onTap: () => unawaited(_Actions.openTicket(context, ticket.id)),
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -637,7 +600,7 @@ class _ReplyButton extends StatelessWidget {
       button: true,
       expanded: expanded,
       label: 'رد على $name',
-      child: _Pressable(
+      child: CardPressable(
         onTap: onTap,
         child: Container(
           padding: EdgeInsetsDirectional.fromSTEB(14.w, 8.h, 18.w, 8.h),
@@ -690,7 +653,7 @@ class _SeenButton extends StatelessWidget {
         button: true,
         label: 'تمت القراءة',
         excludeSemantics: true,
-        child: _Pressable(
+        child: CardPressable(
           onTap: onTap,
           child: Container(
             width: size,
@@ -830,7 +793,7 @@ class _SendButton extends StatelessWidget {
           ? 'إعادة الإرسال'
           : 'إرسال الرد',
       excludeSemantics: true,
-      child: _Pressable(
+      child: CardPressable(
         onTap: onPressed,
         child: Container(
           width: size,
@@ -893,7 +856,7 @@ class _ShowAllButton extends StatelessWidget {
 
     return Align(
       alignment: AlignmentDirectional.centerStart,
-      child: _Pressable(
+      child: CardPressable(
         onTap: () => unawaited(_Actions.openAll(context)),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -932,7 +895,7 @@ class _NewTicketButton extends StatelessWidget {
         button: true,
         label: 'تذكرة جديدة',
         excludeSemantics: true,
-        child: _Pressable(
+        child: CardPressable(
           onTap: () => unawaited(_Actions.newTicket(context)),
           child: Container(
             width: size,
