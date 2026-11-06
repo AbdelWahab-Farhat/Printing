@@ -369,6 +369,16 @@ enum PermissionName: string
     case AdjustCustomerWallets = 'customers.wallet.adjust';
     case ReverseCustomerWalletEntries = 'customers.wallet.reverse';
 
+    // «محفظة الموظف» — Docs/employees/EMPLOYEE-WALLET-DESIGN.md §٦. ستُّ ثقاتٍ لا واحدة: استلامُ
+    // مالٍ من موظف، ووعدُه بمالٍ (مصروفٌ على الشركة)، وصرفُ مالٍ له — ثلاثُ درجات، ومَن يعدّ الكاش
+    // ليس بالضرورة من يقرّر ما يستحقّه زميله. وقراءةُ الموظف محفظتَه هو بلا صلاحية، كحسابه في الخزينة.
+    case ViewEmployeeWallets = 'users.wallet.view';
+    case DepositToEmployeeWallets = 'users.wallet.deposit';
+    case CreditEmployeeWallets = 'users.wallet.credit';
+    case WithdrawFromEmployeeWallets = 'users.wallet.withdraw';
+    case AdjustEmployeeWallets = 'users.wallet.adjust';
+    case ReverseEmployeeWalletEntries = 'users.wallet.reverse';
+
     // الشحن الإلكتروني عبر EzonePay — CUSTOMER-WALLET §٥. Seeing the attempts, asking EzonePay
     // about one again, and switching the methods and their limits. Recording EzonePay's payout to
     // the bank stays `treasury.record`: it is a transfer like any other.
@@ -521,6 +531,12 @@ enum PermissionName: string
             self::TopUpCustomerWallets => 'شحن محفظة عميل',
             self::AdjustCustomerWallets => 'تعديل رصيد محفظة عميل',
             self::ReverseCustomerWalletEntries => 'عكس حركة على محفظة عميل',
+            self::ViewEmployeeWallets => 'عرض محافظ الموظفين ومعاملاتها',
+            self::DepositToEmployeeWallets => 'إيداع مال استُلم من موظف',
+            self::CreditEmployeeWallets => 'تسجيل مستحق لموظف',
+            self::WithdrawFromEmployeeWallets => 'سحب من محفظة موظف',
+            self::AdjustEmployeeWallets => 'تعديل رصيد محفظة موظف',
+            self::ReverseEmployeeWalletEntries => 'عكس حركة على محفظة موظف',
             self::ViewOnlinePayments => 'عرض المدفوعات الإلكترونية',
             self::ReconcileOnlinePayments => 'إعادة التحقق من دفعة إلكترونية',
             self::ManageOnlinePaymentMethods => 'إدارة طرق الدفع الإلكتروني وحدودها',
@@ -610,6 +626,12 @@ enum PermissionName: string
             self::TopUpCustomerWallets,
             self::AdjustCustomerWallets,
             self::ReverseCustomerWalletEntries => 'محافظ العملاء',
+            self::ViewEmployeeWallets,
+            self::DepositToEmployeeWallets,
+            self::CreditEmployeeWallets,
+            self::WithdrawFromEmployeeWallets,
+            self::AdjustEmployeeWallets,
+            self::ReverseEmployeeWalletEntries => 'محافظ الموظفين',
             self::ViewOnlinePayments,
             self::ReconcileOnlinePayments,
             self::ManageOnlinePaymentMethods => 'الدفع الإلكتروني',

@@ -203,6 +203,10 @@ final class RecordOperation
                 throw AccountDoesNotFitMethod::customerWalletsPayable((string) $account->name, $field);
             }
 
+            if ($account->isEmployeeWalletsPayable()) {
+                throw AccountDoesNotFitMethod::employeeWalletsPayable((string) $account->name, $field);
+            }
+
             if ($account->kind === AccountKind::Payable) {
                 if ($type === OperationType::Deposit || $type === OperationType::Withdrawal) {
                     throw OperationRefused::notOnPayable($type->label(), (string) $account->name, $field);

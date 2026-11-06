@@ -647,6 +647,24 @@ final class AuditAttributeLabels
             'receipt_size_bytes' => 'حجم الإيصال',
             'receipt_checksum' => 'بصمة الإيصال',
         ],
+        // «محفظة الموظف» — EMPLOYEE-WALLET-DESIGN. لا سطر يُعدَّل؛ السجلُّ يقول من كتب ومتى.
+        'employee_wallet_entry' => [
+            'user_id' => 'الموظف',
+            'type' => 'نوع الحركة',
+            'method' => 'الطريقة',
+            'treasury_account_id' => 'الحساب',
+            'expense_category_id' => 'التصنيف',
+            'treasury_operation_id' => 'عملية المصروف',
+            'reference' => 'المرجع',
+            'occurred_at' => 'تاريخ الحركة',
+            'reverses_entry_id' => 'تعكس الحركة',
+            'client_token' => 'رمز الإرسال',
+            'receipt_disk' => 'مكان تخزين الإيصال',
+            'receipt_path' => 'مسار الإيصال',
+            'receipt_original_filename' => 'اسم ملف الإيصال',
+            'receipt_size_bytes' => 'حجم الإيصال',
+            'receipt_checksum' => 'بصمة الإيصال',
+        ],
         // الشحن الإلكتروني — CUSTOMER-WALLET §٥. كلُّ عمودٍ يكتبه الخادم؛ والسجلُّ يقول متى تغيّرت
         // حالُ المحاولة ولماذا.
         'payment_intent' => [

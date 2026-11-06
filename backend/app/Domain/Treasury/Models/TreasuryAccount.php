@@ -54,6 +54,12 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public const CUSTOMER_WALLETS = 'customer_wallets';
 
     /**
+     * «أرصدة محافظ الموظفين» — ما على الشركة لموظفيها في محافظهم. رصيده دائماً سالبُ مجموع المحافظ،
+     * و`wallets:check` يثبت ذلك. يُفتح عند أول حركة، ولا تحرّكه إلا المحافظ. EMPLOYEE-WALLET-DESIGN §٤.
+     */
+    public const EMPLOYEE_WALLETS = 'employee_wallets';
+
+    /**
      * «Ezone» — what EzonePay collected for the shop and has not paid out to the bank yet. Every
      * online top-up lands here, its fee leaves as an expense, and a payout carries the rest to the
      * bank. Seeded by migration. CUSTOMER-WALLET §٥.
@@ -114,6 +120,14 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public function isCustomerWalletsPayable(): bool
     {
         return $this->system_code === self::CUSTOMER_WALLETS;
+    }
+
+    /**
+     * «أرصدة محافظ الموظفين»: الخطُّ نفسه — تحويلٌ باليد يفصله عمّا تقوله المحافظ.
+     */
+    public function isEmployeeWalletsPayable(): bool
+    {
+        return $this->system_code === self::EMPLOYEE_WALLETS;
     }
 
     /**

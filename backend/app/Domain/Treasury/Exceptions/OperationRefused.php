@@ -49,6 +49,12 @@ final class OperationRefused extends DomainException
         return new self("تصنيف «{$category}» معطَّل", 'category_id');
     }
 
+    /** تصنيفٌ يكتبه النظام لغرضٍ آخر: السلفةُ تخرج من درج، وما احتفظ به الناقل ليس مستحقاً لموظف. */
+    public static function categoryNotForWallet(string $category): self
+    {
+        return new self("تصنيف «{$category}» لا يُسجَّل مستحقاً لموظف", 'category_id');
+    }
+
     public static function notReversible(string $type): self
     {
         return new self("عملية «{$type}» لا تُعكس من هنا");

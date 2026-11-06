@@ -20,6 +20,12 @@ enum OperationType: string
     case Adjustment = 'adjustment';
     case Settlement = 'settlement';
 
+    /**
+     * «مستحق موظف» — مصروفٌ على «أرصدة محافظ الموظفين» تكتبه المحفظة. شكلُ المصروف وحركتُه، لكنه
+     * لا يُكتب ولا يُعكس باليد: عكسٌ من شاشة الحسابات يترك سطر المحفظة قائماً. EMPLOYEE-WALLET-DESIGN §٤.
+     */
+    case WalletExpense = 'wallet_expense';
+
     public function label(): string
     {
         return match ($this) {
@@ -30,6 +36,7 @@ enum OperationType: string
             self::Transfer => 'تحويل',
             self::Adjustment => 'جرد الحساب',
             self::Settlement => 'تسوية طلبية',
+            self::WalletExpense => 'مستحق موظف',
         };
     }
 
@@ -43,6 +50,7 @@ enum OperationType: string
             self::Transfer => MovementKind::Transfer,
             self::Adjustment => MovementKind::Adjustment,
             self::Settlement => MovementKind::Settlement,
+            self::WalletExpense => MovementKind::Expense,
         };
     }
 
@@ -67,9 +75,10 @@ enum OperationType: string
      *
      * An opening cannot: a wrong count is corrected by «جرد الحساب», which says so in the ledger.
      * A settlement is undone by un-settling the order, not from this screen.
+     * ومستحقُّ الموظف يُعكس من شاشة المحفظة، فيُعكس سطرها معه.
      */
     public function isReversibleByHand(): bool
     {
-        return $this !== self::Opening && $this !== self::Settlement;
+        return $this !== self::Opening && $this !== self::Settlement && $this !== self::WalletExpense;
     }
 }

@@ -11,6 +11,7 @@ use App\Domain\Treasury\Actions\CreateTreasuryAccount;
 use App\Domain\Treasury\Actions\PostMovement;
 use App\Domain\Treasury\Actions\RecordGatewayFee;
 use App\Domain\Treasury\Actions\RecordOperation;
+use App\Domain\Treasury\Actions\RecordWalletExpense;
 use App\Domain\Treasury\Actions\ReverseMovement;
 use App\Domain\Treasury\Actions\ReverseOperation;
 use App\Domain\Treasury\Actions\SaveExpenseCategory;
@@ -81,6 +82,7 @@ final class TreasuryService
         private readonly OrderMoneyByAccount $orderMoney,
         private readonly SyncDebt $syncDebt,
         private readonly SettlePayment $settlePayment,
+        private readonly RecordWalletExpense $recordWalletExpense,
     ) {}
 
     // ── accounts ────────────────────────────────────────────────────────────────────────
@@ -477,6 +479,66 @@ final class TreasuryService
     }
 
     /**
+     * «أرصدة محافظ الموظفين» — يُفتح عند أول حركة، بـ`createOrFirst` على الرمز للسبب الذي يعطيه
+     * {@see payableForVendor()}. EMPLOYEE-WALLET-DESIGN §٤.
+     */
+    public function employeeWalletsPayable(): TreasuryAccount
+    {
+        $existing = TreasuryAccount::query()->where('system_code', TreasuryAccount::EMPLOYEE_WALLETS)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return TreasuryAccount::unguarded(fn () => TreasuryAccount::query()->createOrFirst(
+            ['system_code' => TreasuryAccount::EMPLOYEE_WALLETS],
+            [
+                'name' => 'أرصدة محافظ الموظفين',
+                'kind' => AccountKind::Payable,
+                'is_default' => false,
+                'is_active' => true,
+                'currency' => 'LYD',
+            ],
+        ));
+    }
+
+    /**
+     * مستحقٌّ لموظف، مصروفاً على «أرصدة محافظ الموظفين» — انظر {@see RecordWalletExpense}. يُستدعى
+     * داخل المعاملة التي تكتب سطر المحفظة.
+     */
+    public function recordWalletExpense(
+        int $categoryId,
+        int $employeeId,
+        string $amount,
+        DateTimeInterface $occurredAt,
+        string $notes,
+        ?int $actorId,
+    ): TreasuryOperation {
+        return ($this->recordWalletExpense)(
+            (int) $this->employeeWalletsPayable()->getKey(),
+            $categoryId,
+            $employeeId,
+            $amount,
+            $occurredAt,
+            $notes,
+            $actorId,
+        );
+    }
+
+    /**
+     * عكسُ ذلك المستحق. **بابٌ مستقلّ لأن شاشة الحسابات ترفضه**: لا يُعكس إلا مع سطر المحفظة.
+     */
+    public function reverseWalletExpense(int $operationId, string $reason, ?int $actorId): TreasuryOperation
+    {
+        return ($this->reverseOperation)(
+            TreasuryOperation::query()->findOrFail($operationId),
+            $reason,
+            $actorId,
+            byHand: false,
+        );
+    }
+
+    /**
      * What a payment provider kept, as an expense out of its account — see {@see RecordGatewayFee}.
      * Call inside the caller's transaction.
      */
@@ -565,8 +627,8 @@ final class TreasuryService
     /**
      * An account a cost may be charged to by hand: a drawer it was paid from, or a manual
      * «التزام» it is owed to — what «مصروف» on the operation sheet offers. Refuses a
-     * switched-off account, custody, a vendor's payable (its orders and payments move it) and the
-     * customers' excess.
+     * switched-off account, custody, a vendor's payable (its orders and payments move it), the
+     * customers' excess, and the two wallet payables — تكلفةٌ عليهما تفصلهما عن المحافظ.
      */
     public function expenseAccount(int $id, string $field = 'treasury_account_id'): TreasuryAccount
     {
@@ -582,6 +644,14 @@ final class TreasuryService
 
         if ($account->isCustomerExcessPayable()) {
             throw AccountDoesNotFitMethod::customerExcessPayable((string) $account->name, $field);
+        }
+
+        if ($account->isCustomerWalletsPayable()) {
+            throw AccountDoesNotFitMethod::customerWalletsPayable((string) $account->name, $field);
+        }
+
+        if ($account->isEmployeeWalletsPayable()) {
+            throw AccountDoesNotFitMethod::employeeWalletsPayable((string) $account->name, $field);
         }
 
         if ($account->kind !== AccountKind::Payable && ! $account->kind->spendable()) {

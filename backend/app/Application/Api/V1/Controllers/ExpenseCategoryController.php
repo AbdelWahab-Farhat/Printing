@@ -28,8 +28,10 @@ class ExpenseCategoryController extends Controller
     {
         $user = $request->user();
 
+        // ومن يسجّل مستحقاً لموظف يختار تصنيفه، ولو لم يلمس شاشة الحسابات.
         if (! $user?->can(PermissionName::RecordTreasuryOperations->value)
-            && ! $user?->can(PermissionName::ManageTreasury->value)) {
+            && ! $user?->can(PermissionName::ManageTreasury->value)
+            && ! $user?->can(PermissionName::CreditEmployeeWallets->value)) {
             throw new AuthorizationException('لا تملك صلاحية عرض تصنيفات المصروفات');
         }
 

@@ -14,6 +14,7 @@ use App\Application\Api\V1\Controllers\CustomerWalletController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
 use App\Application\Api\V1\Controllers\DesignTicketMessageController;
+use App\Application\Api\V1\Controllers\EmployeeWalletController;
 use App\Application\Api\V1\Controllers\ExpenseCategoryController;
 use App\Application\Api\V1\Controllers\EzonePayWebhookController;
 use App\Application\Api\V1\Controllers\FakeEzonePayController;
@@ -26,6 +27,7 @@ use App\Application\Api\V1\Controllers\InvestorController;
 use App\Application\Api\V1\Controllers\InvestorDealController;
 use App\Application\Api\V1\Controllers\InvestorPortalController;
 use App\Application\Api\V1\Controllers\ManufacturingCostRateController;
+use App\Application\Api\V1\Controllers\MyWalletController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OnlinePaymentController;
@@ -197,6 +199,32 @@ Route::prefix('v1')->group(function (): void {
         // stopped, never deleted, so everything it recorded keeps naming somebody who exists.
         Route::patch('users/{user}/activation', [UserController::class, 'setActivation'])
             ->middleware('can:users.manage')->name('users.activation');
+
+        // ── «محفظة الموظف» ──────────────────────────────────────────────────────────────
+        // EMPLOYEE-WALLET-DESIGN §٧. ستُّ صلاحيات، لأن استلام مالٍ ووعدَ موظفٍ بمالٍ وصرفَه له ثلاثُ
+        // درجات ثقة. وقاعدةُ «لا تحرّك محفظتك بنفسك» في الخدمة لا هنا: الصلاحيةُ تُسأل عن المحافظ
+        // كلها، وتلك عن هذه المحفظة.
+        Route::get('users/{user}/wallet', [EmployeeWalletController::class, 'show'])
+            ->middleware('can:users.wallet.view')->name('users.wallet.show');
+        Route::get('users/{user}/wallet/entries', [EmployeeWalletController::class, 'entries'])
+            ->middleware('can:users.wallet.view')->name('users.wallet.entries');
+        Route::post('users/{user}/wallet/deposits', [EmployeeWalletController::class, 'deposit'])
+            ->middleware('can:users.wallet.deposit')->name('users.wallet.deposit');
+        Route::post('users/{user}/wallet/credits', [EmployeeWalletController::class, 'credit'])
+            ->middleware('can:users.wallet.credit')->name('users.wallet.credit');
+        Route::post('users/{user}/wallet/withdrawals', [EmployeeWalletController::class, 'withdraw'])
+            ->middleware('can:users.wallet.withdraw')->name('users.wallet.withdraw');
+        Route::post('users/{user}/wallet/adjustments', [EmployeeWalletController::class, 'adjust'])
+            ->middleware('can:users.wallet.adjust')->name('users.wallet.adjust');
+        // «حركات محافظ الموظفين» — كل المحافظ في صفحة.
+        Route::get('employee-wallet-entries', [EmployeeWalletController::class, 'index'])
+            ->middleware('can:users.wallet.view')->name('employee-wallet-entries.index');
+        Route::post('employee-wallet-entries/{entry}/reverse', [EmployeeWalletController::class, 'reverse'])
+            ->middleware('can:users.wallet.reverse')->name('employee-wallet-entries.reverse');
+
+        // «محفظتي» — بلا صلاحية: كلُّ موظفٍ يقرأ محفظته هو، كما يقرأ حسابه في الخزينة.
+        Route::get('my-wallet', [MyWalletController::class, 'show'])->name('my-wallet.show');
+        Route::get('my-wallet/entries', [MyWalletController::class, 'entries'])->name('my-wallet.entries');
 
         // ── customers ───────────────────────────────────────────────────────────────────
         // No destroy route on purpose: a customer is deactivated, never deleted, so orders
@@ -1444,6 +1472,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('logs', [ActivityLogController::class, 'index'])->name('logs.index');
 
             Route::get('users/{user}/logs', [UserController::class, 'logs'])->name('users.logs');
+            Route::get('employee-wallet-entries/{entry}/logs', [EmployeeWalletController::class, 'logs'])
+                ->name('employee-wallet-entries.logs');
             Route::get('roles/{role}/logs', [RoleController::class, 'logs'])->name('roles.logs');
             Route::get('customers/{customer}/logs', [CustomerController::class, 'logs'])->name('customers.logs');
             Route::get('customers/{customer}/comments/{comment}/logs', [CustomerCommentController::class, 'logs'])

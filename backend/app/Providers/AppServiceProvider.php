@@ -14,6 +14,7 @@ use App\Domain\Delivery\DeliveryService;
 use App\Domain\DesignTicket\Events\DesignConversationChanged;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
+use App\Domain\EmployeeWallet\Events\EmployeeWalletMoved;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Events\InternalTicketChanged;
 use App\Domain\InternalTicket\Events\InternalTicketClosedForSilence;
@@ -33,6 +34,7 @@ use App\Domain\Notification\Channels\PushChannel;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenOrderStageChanges;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenSupportReplies;
 use App\Domain\Notification\Listeners\NotifyCustomerWhenWalletToppedUp;
+use App\Domain\Notification\Listeners\NotifyEmployeeWhenWalletMoves;
 use App\Domain\Notification\Listeners\NotifyOnInternalTicketActivity;
 use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
@@ -327,6 +329,9 @@ class AppServiceProvider extends ServiceProvider
 
         // «تم شحن محفظتك» — CUSTOMER-WALLET §٥.
         Event::listen(WalletToppedUpOnline::class, NotifyCustomerWhenWalletToppedUp::class);
+
+        // تحرّكت محفظة موظف، فيعرف صاحبها — EMPLOYEE-WALLET-DESIGN §١٠.
+        Event::listen(EmployeeWalletMoved::class, NotifyEmployeeWhenWalletMoves::class);
 
         // قنواتُ البثّ الحيّ ومن يدخلها. من هنا لا من `withRouting` — routes/channels.php يقول لماذا.
         require base_path('routes/channels.php');

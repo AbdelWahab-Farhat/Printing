@@ -36,6 +36,9 @@ class ExpenseCategory extends Model implements HasAuditTrail
     /** «عمولة الدفع الإلكتروني» — what EzonePay kept of a top-up, or of a payout. CUSTOMER-WALLET §٥. */
     public const ONLINE_PAYMENT_FEE = 'online_payment_fee';
 
+    /** «رواتب» — اختيارُها على «مستحق» يقترح راتب الموظف. EMPLOYEE-WALLET-DESIGN §٩ س٣. */
+    public const SALARY = 'salary';
+
     protected $table = 'treasury_expense_categories';
 
     /**

@@ -11,6 +11,7 @@ use App\Domain\Notification\Definitions\CustomerWroteToSupport;
 use App\Domain\Notification\Definitions\DesignTicketAssignedToYou;
 use App\Domain\Notification\Definitions\DesignTicketCommentPosted;
 use App\Domain\Notification\Definitions\DesignTicketReachedStatus;
+use App\Domain\Notification\Definitions\EmployeeWalletMovedForYou;
 use App\Domain\Notification\Definitions\InternalTicketAwaitsYourReply;
 use App\Domain\Notification\Definitions\InternalTicketClosedAfterSilence;
 use App\Domain\Notification\Definitions\InternalTicketMessagePosted;
@@ -124,6 +125,9 @@ enum NotificationType: string
      */
     case InternalTicketClosedForSilence = 'internal_ticket.closed_for_silence';
 
+    /** تحرّكت محفظتك — لصاحبها وحده. انظر {@see EmployeeWalletMovedForYou}. */
+    case EmployeeWalletMoved = 'employee_wallet.moved';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -152,6 +156,7 @@ enum NotificationType: string
             self::InternalTicketMessage => InternalTicketMessagePosted::class,
             self::InternalTicketReminder => InternalTicketAwaitsYourReply::class,
             self::InternalTicketClosedForSilence => InternalTicketClosedAfterSilence::class,
+            self::EmployeeWalletMoved => EmployeeWalletMovedForYou::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -191,6 +196,8 @@ enum NotificationType: string
             self::InternalTicketMessage => 'comment',
             self::InternalTicketReminder => 'comment',
             self::InternalTicketClosedForSilence => 'task',
+            // مفتاحٌ جديد، وجرسٌ عاديٌّ في نسخةٍ لا تعرفه — القاعدة التي فوق.
+            self::EmployeeWalletMoved => 'wallet',
             self::Announcement => 'announcement',
         };
     }
@@ -214,6 +221,7 @@ enum NotificationType: string
             self::InternalTicketMessage => 'رسالة في تذكرة داخلية',
             self::InternalTicketReminder => 'تذكير بتذكرة داخلية',
             self::InternalTicketClosedForSilence => 'تذكرة داخلية أُغلقت لعدم الرد',
+            self::EmployeeWalletMoved => 'حركة على محفظتك',
             self::Announcement => 'إشعار عام',
         };
     }

@@ -51,6 +51,18 @@ enum MovementKind: string
     /** «تعديل محفظة» — a balance corrected by hand. On «أرصدة محافظ الزبائن» alone: no money moved. */
     case WalletAdjustment = 'wallet_adjustment';
 
+    /**
+     * «إيداع محفظة موظف» — سلّم موظفٌ مالاً: `in` على الحساب الذي وصله، و`out` على «أرصدة محافظ
+     * الموظفين»، الدَّينُ الذي جاء معه. EMPLOYEE-WALLET-DESIGN §٣.
+     */
+    case EmployeeWalletDeposit = 'employee_wallet_deposit';
+
+    /** «سحب محفظة موظف» — قبض موظفٌ مالاً: `out` من الحساب الذي دفع، و`in` على الالتزام. */
+    case EmployeeWalletWithdrawal = 'employee_wallet_withdrawal';
+
+    /** «تعديل محفظة موظف» — على «أرصدة محافظ الموظفين» وحده: لا مال يتحرك. */
+    case EmployeeWalletAdjustment = 'employee_wallet_adjustment';
+
     public function label(): string
     {
         return match ($this) {
@@ -73,6 +85,9 @@ enum MovementKind: string
             self::ExcessKept => 'زائد اعتُبر إيراداً',
             self::WalletTopup => 'شحن محفظة زبون',
             self::WalletAdjustment => 'تعديل محفظة زبون',
+            self::EmployeeWalletDeposit => 'إيداع محفظة موظف',
+            self::EmployeeWalletWithdrawal => 'سحب محفظة موظف',
+            self::EmployeeWalletAdjustment => 'تعديل محفظة موظف',
         };
     }
 }

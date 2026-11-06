@@ -31,6 +31,19 @@ class AccessService
     ) {}
 
     /**
+     * يقفل صفَّ الموظف لمن يقرأ رصيد محفظته ثم يكتب عليه. EMPLOYEE-WALLET-DESIGN §١٢.
+     *
+     * **`FOR NO KEY UPDATE` لا `FOR UPDATE`.** صفُّ الموظف مُشارٌ إليه من كل جدول (`recorded_by`
+     * وأخواته)، و`FOR UPDATE` يوقف إدخال أيّ صفٍّ يشير إليه حتى تنتهي المعاملة، بل يصنع تعارضاً إن
+     * سجّل موظفان حركةً لبعضهما في اللحظة نفسها. وهذا القفل يكفي: حركتان على المحفظة نفسها تمرّان
+     * واحدةً بعد واحدة، ولا يوقف أحداً سواهما.
+     */
+    public function lockEmployee(int $userId): User
+    {
+        return User::query()->whereKey($userId)->lock('for no key update')->firstOrFail();
+    }
+
+    /**
      * Creates a staff account with the roles it starts with.
      *
      * @param  list<string>  $roleNames

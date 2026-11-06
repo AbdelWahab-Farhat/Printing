@@ -24,6 +24,7 @@ use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\DesignTicket\Models\DesignTicketMessage;
 use App\Domain\DesignTicket\Models\DesignTicketMessageAttachment;
+use App\Domain\EmployeeWallet\Models\EmployeeWalletEntry;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Models\InternalTicket;
@@ -226,6 +227,9 @@ enum AuditSubject: string
     // «محفظة الزبون» — Docs/payments/CUSTOMER-WALLET.md.
     case CustomerWalletEntry = 'customer_wallet_entry';
 
+    // «محفظة الموظف» — EMPLOYEE-WALLET-DESIGN.
+    case EmployeeWalletEntry = 'employee_wallet_entry';
+
     // الشحن الإلكتروني — CUSTOMER-WALLET §٥. `gateway_webhook_event` is absent, like Nawris's.
     case PaymentIntent = 'payment_intent';
     case OnlinePaymentMethod = 'online_payment_method';
@@ -309,6 +313,7 @@ enum AuditSubject: string
             self::VendorPayment => VendorPayment::class,
             self::TreasurySetting => TreasurySetting::class,
             self::CustomerWalletEntry => CustomerWalletEntry::class,
+            self::EmployeeWalletEntry => EmployeeWalletEntry::class,
             self::PaymentIntent => PaymentIntent::class,
             self::OnlinePaymentMethod => OnlinePaymentMethod::class,
         };
@@ -393,6 +398,7 @@ enum AuditSubject: string
             self::VendorPayment => 'دفعة مورد',
             self::TreasurySetting => 'إعدادات المالية',
             self::CustomerWalletEntry => 'حركة محفظة عميل',
+            self::EmployeeWalletEntry => 'حركة محفظة موظف',
             self::PaymentIntent => 'محاولة دفع إلكتروني',
             self::OnlinePaymentMethod => 'طريقة دفع إلكتروني',
         };
