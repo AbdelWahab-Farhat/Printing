@@ -134,11 +134,13 @@ class _OperationFormState extends State<_OperationForm> {
   /// يقول ذلك أيضاً.
   ///
   /// و«علينا» المفتوح باليد يأخذ أيضاً مصروفاً بالآجل وتحويلاً — اقتراضاً منه وسداداً إليه. أما
-  /// «علينا» المورد فلا يأخذ شيئاً هنا: أوامرُه ودفعاتُه تحرّكه.
+  /// «علينا» المورد فلا يأخذ شيئاً هنا: أوامرُه ودفعاتُه تحرّكه. ولا «علينا» النظام: المحافظُ
+  /// والطلبياتُ تحرّكه.
   List<TreasuryAccount> get _choices => [
     for (final account in widget.accounts)
       if (account.isActive &&
           !account.isVendorPayable &&
+          !account.isSystemPayable &&
           (account.isSpendable ||
               _kind == OperationKind.opening ||
               _kind == OperationKind.adjustment ||

@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/core/widgets/filter_option_chip.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -131,6 +132,71 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  group('الزر العائم على «علينا»', () {
+    const payable = TreasuryAccount(
+      id: 1,
+      name: 'قرض المعدات',
+      kind: AccountKind.payable,
+      kindLabel: 'علينا',
+      isDefault: false,
+      isActive: true,
+      isSystem: false,
+      isSpendable: false,
+      isPayable: true,
+      balance: '-1000.00',
+    );
+
+    const walletsPayable = TreasuryAccount(
+      id: 1,
+      name: 'أرصدة محافظ الموظفين',
+      kind: AccountKind.payable,
+      kindLabel: 'علينا',
+      isDefault: false,
+      isActive: true,
+      isSystem: true,
+      isSpendable: false,
+      isPayable: true,
+      balance: '-1500.00',
+    );
+
+    void signInAsTreasurer() => sl<Session>().adopt(
+      const AuthUser(
+        id: 1,
+        name: 'عبدالوهاب',
+        phone: '0911234567',
+        permissions: ['treasury.view', 'treasury.record', 'treasury.manage'],
+      ),
+    );
+
+    testWidgets('حساب يملكه النظام لا زرّ عليه، فكل ما فيه يرفضه الخادم', (tester) async {
+      // Arrange
+      signInAsTreasurer();
+      when(
+        () => repository.account(1),
+      ).thenAnswer((_) async => const Right(TreasuryAccountDetail(account: walletsPayable)));
+
+      // Act
+      await openThePage(tester);
+
+      // Assert
+      expect(find.byType(AppSpeedDial), findsNothing);
+    });
+
+    testWidgets('«علينا» المفتوح باليد يبقى زرّه', (tester) async {
+      // Arrange
+      signInAsTreasurer();
+      when(
+        () => repository.account(1),
+      ).thenAnswer((_) async => const Right(TreasuryAccountDetail(account: payable)));
+
+      // Act
+      await openThePage(tester);
+
+      // Assert
+      expect(find.byType(AppSpeedDial), findsOneWidget);
+    });
+  });
 
   group('the filter above the history', () {
     testWidgets('it offers the orders and the expenses, and no in/out figures', (tester) async {

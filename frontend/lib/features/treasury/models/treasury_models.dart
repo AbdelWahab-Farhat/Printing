@@ -98,6 +98,10 @@ class TreasuryAccount {
 
   bool get isVendorPayable => vendorId != null;
 
+  /// «علينا» يحرّكه النظام وحده: «مبالغ زائدة للزبائن»، و«أرصدة محافظ الزبائن»، و«أرصدة محافظ
+  /// الموظفين». كلُّ عمليةٍ باليد عليها يرفضها الخادم، فلا تُعرض أصلاً. EMPLOYEE-WALLET-DESIGN §٤.
+  bool get isSystemPayable => isPayable && isSystem;
+
   /// ما يقول الحسابُ إنه علينا كما يقوله الناس — «1000.00» لرصيد −1000.00. وتحت الصفر حين
   /// يكون عند الدائن مالٌ للشركة.
   String get owed => negateAmount(balance ?? '0.00');

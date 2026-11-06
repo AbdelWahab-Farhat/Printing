@@ -94,8 +94,10 @@ class _AccountView extends StatelessWidget {
                 ),
             ],
           ),
-          // A vendor's «علينا» moves by its purchase orders and payments alone (§٢٠).
-          floatingActionButton: detail == null || detail.account.isVendorPayable
+          // A vendor's «علينا» moves by its purchase orders and payments alone (§٢٠). و«علينا»
+          // النظام تحرّكه المحافظ والطلبيات وحدها، فكلُّ زرٍّ هنا كان سينتهي برفض الخادم.
+          floatingActionButton:
+              detail == null || detail.account.isVendorPayable || detail.account.isSystemPayable
               ? null
               : _Actions(account: detail.account),
           body: switch (state) {

@@ -59,6 +59,53 @@ void main() {
   }
 
   group('نموذج العملية', () {
+    testWidgets('حساب «علينا» الذي يملكه النظام لا يُعرض للاختيار', (tester) async {
+      // Arrange
+      const walletsPayable = TreasuryAccount(
+        id: 8,
+        name: 'أرصدة محافظ الموظفين',
+        kind: AccountKind.payable,
+        kindLabel: 'علينا',
+        isDefault: false,
+        isActive: true,
+        isSystem: true,
+        isSpendable: false,
+        isPayable: true,
+        balance: '-1500.00',
+      );
+      await tester.pumpWidget(
+        host(
+          (context) => showTreasuryOperationSheet(
+            context: context,
+            kind: OperationKind.adjustment,
+            accounts: const [cashBox, walletsPayable],
+            onSubmit:
+                ({
+                  required kind,
+                  amount,
+                  fromAccountId,
+                  toAccountId,
+                  categoryId,
+                  employeeId,
+                  countedBalance,
+                  notes,
+                  clientToken,
+                }) async => null,
+          ),
+        ),
+      );
+
+      // Act
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      final choices = tester.widget<AppDropdown<TreasuryAccount>>(
+        find.byType(AppDropdown<TreasuryAccount>),
+      );
+      expect(choices.items, [cashBox]);
+    });
+
     testWidgets('a count asks what was found, with no sentence under the box', (tester) async {
       // Arrange
       await tester.pumpWidget(
