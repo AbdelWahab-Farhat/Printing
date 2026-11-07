@@ -303,6 +303,13 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
     /// «التزام» it is owed to ([treasuryAccount]'s `kind` is `payable`).
     @JsonKey(name: 'treasury_account_id') int? treasuryAccountId,
     @JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,
+
+    /// What can still come back. The server reads it off the treasury, so a deal's share of the
+    /// cost is never in it. Absent everywhere but one order's own screen.
+    @JsonKey(name: 'refundable_amount') String? refundableAmount,
+
+    /// Every refund on this cost, newest first — the ones taken back too.
+    @Default(<PurchaseOrderCostRefund>[]) List<PurchaseOrderCostRefund> refunds,
   }) = _PurchaseOrderAdditionalCost;
 
   const PurchaseOrderAdditionalCost._();
@@ -317,14 +324,41 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
 
   bool get isOnVendorBill => treasuryAccountId == null;
 
+  /// Whether the account that paid is a manual «التزام» rather than a drawer.
+  bool get isOwedToPayable => treasuryAccount?.kind == 'payable';
+
+  /// Whether any of it is still out of its account.
+  bool get hasRefundableAmount => (double.tryParse(refundableAmount ?? '') ?? 0) > 0;
+
   /// «على فاتورة المورد» · «دُفعت من الخزنة» · «علينا لـ المخلّص».
   String get paidByLabel {
     if (isOnVendorBill) return 'على فاتورة المورد';
 
     final name = treasuryAccount?.name ?? 'حساب #$treasuryAccountId';
 
-    return treasuryAccount?.kind == 'payable' ? 'علينا لـ$name' : 'دُفعت من $name';
+    return isOwedToPayable ? 'علينا لـ$name' : 'دُفعت من $name';
   }
+}
+
+/// Money that came back on a cost, and why. Taken back by stamping, so it stays on the list.
+@freezed
+abstract class PurchaseOrderCostRefund with _$PurchaseOrderCostRefund {
+  const factory PurchaseOrderCostRefund({
+    required int id,
+    required String amount,
+    required String reason,
+    @JsonKey(name: 'recorded_by_name') String? recordedByName,
+    @JsonKey(name: 'created_at') DateTime? createdAt,
+    @JsonKey(name: 'is_reversed') @Default(false) bool isReversed,
+    @JsonKey(name: 'reversal_reason') String? reversalReason,
+  }) = _PurchaseOrderCostRefund;
+
+  const PurchaseOrderCostRefund._();
+
+  factory PurchaseOrderCostRefund.fromJson(Map<String, dynamic> json) =>
+      _$PurchaseOrderCostRefundFromJson(json);
+
+  String get amountLabel => groupedDecimal(amount);
 }
 
 /// One line: a shelf, how much was ordered, and how much of it has turned up.

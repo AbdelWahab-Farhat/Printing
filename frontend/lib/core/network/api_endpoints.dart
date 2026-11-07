@@ -520,6 +520,14 @@ abstract final class PurchaseOrderEndpoints {
   /// waives the 24-hour window once inside.
   static String receiptReversal(int purchaseOrderId) =>
       '/purchase-orders/$purchaseOrderId/receipt-reversal';
+
+  /// Money coming back on a cost paid outside the vendor's bill. Needs `treasury.reverse`.
+  static String costRefunds(int purchaseOrderId, int costId) =>
+      '/purchase-orders/$purchaseOrderId/additional-costs/$costId/refunds';
+
+  /// Taking such a refund back. The same grant.
+  static String costRefundReversal(int purchaseOrderId, int costId, int refundId) =>
+      '${costRefunds(purchaseOrderId, costId)}/$refundId/reversal';
 }
 
 /// معدلات تكلفة التصنيع — the standing prices an order is charged when it enters printing.

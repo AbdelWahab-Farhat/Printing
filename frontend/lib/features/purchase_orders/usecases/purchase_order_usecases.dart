@@ -253,6 +253,49 @@ class ReverseReceipt {
   }
 }
 
+/// Brings money back on a cost paid outside the vendor's bill. The amount is normalised like
+/// every figure in this file; the reason is free text and only trimmed — see [ReverseReceipt].
+class RefundCost {
+  const RefundCost(this._repository);
+
+  final PurchaseOrderRepository _repository;
+
+  Future<Either<Failure, PurchaseOrder>> call(
+    int purchaseOrderId,
+    int costId, {
+    required String amount,
+    required String reason,
+  }) {
+    return _repository.refundCost(
+      purchaseOrderId,
+      costId,
+      amount: _number(amount),
+      reason: reason.trim(),
+    );
+  }
+}
+
+/// Takes back a refund recorded in error.
+class ReverseCostRefund {
+  const ReverseCostRefund(this._repository);
+
+  final PurchaseOrderRepository _repository;
+
+  Future<Either<Failure, PurchaseOrder>> call(
+    int purchaseOrderId,
+    int costId,
+    int refundId, {
+    required String reason,
+  }) {
+    return _repository.reverseCostRefund(
+      purchaseOrderId,
+      costId,
+      refundId,
+      reason: reason.trim(),
+    );
+  }
+}
+
 /// Arabic-Indic digits to ASCII, and a comma to a decimal point.
 ///
 /// `٢٥` is what a Libyan keyboard produces and every numeric rule on the server is ASCII-only.

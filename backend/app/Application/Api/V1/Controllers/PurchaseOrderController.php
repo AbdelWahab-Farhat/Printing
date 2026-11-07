@@ -109,8 +109,11 @@ class PurchaseOrderController extends Controller
     {
         // `stockArrivals` is what the reversal affordance is computed from — see
         // PurchaseOrderResource. Loaded here and not on the list: it is one query for one order,
-        // and the list has no button to draw.
-        $purchaseOrder->load(['vendor', 'warehouse', 'items.stockItem', 'additionalCosts.treasuryAccount', 'stockArrivals']);
+        // and the list has no button to draw. The refund affordance on each cost is the same.
+        $purchaseOrder->load([
+            'vendor', 'warehouse', 'items.stockItem', 'stockArrivals',
+            'additionalCosts.treasuryAccount', 'additionalCosts.standingExpenses', 'additionalCosts.refunds.recorder',
+        ]);
 
         // Whose money is on this lorry — asked here because this is the screen where somebody is
         // about to receive it. Empty for the ordinary order the company paid for itself.

@@ -65,6 +65,7 @@ use App\Domain\Order\Models\OrderStatusTransition;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
+use App\Domain\PurchaseOrder\Models\PurchaseOrderCostRefund;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\Settings\Models\CompanySetting;
@@ -162,6 +163,7 @@ enum AuditSubject: string
     case PurchaseOrder = 'purchase_order';
     case PurchaseOrderItem = 'purchase_order_item';
     case PurchaseOrderAdditionalCost = 'purchase_order_additional_cost';
+    case PurchaseOrderCostRefund = 'purchase_order_cost_refund';
 
     // Investors
     case Investor = 'investor';
@@ -282,6 +284,7 @@ enum AuditSubject: string
             self::PurchaseOrder => PurchaseOrder::class,
             self::PurchaseOrderItem => PurchaseOrderItem::class,
             self::PurchaseOrderAdditionalCost => PurchaseOrderAdditionalCost::class,
+            self::PurchaseOrderCostRefund => PurchaseOrderCostRefund::class,
             self::Investor => Investor::class,
             self::InvestorDeal => InvestorDeal::class,
             self::InvestmentPeriod => InvestmentPeriod::class,
@@ -368,6 +371,7 @@ enum AuditSubject: string
             self::PurchaseOrder => 'أمر شراء',
             self::PurchaseOrderItem => 'بند أمر شراء',
             self::PurchaseOrderAdditionalCost => 'تكلفة إضافية لأمر شراء',
+            self::PurchaseOrderCostRefund => 'استرداد تكلفة أمر شراء',
             self::Investor => 'مستثمر',
             self::InvestorDeal => 'صفقة استثمار',
             self::InvestmentPeriod => 'فترة استثمار',

@@ -111,6 +111,14 @@ _PurchaseOrderAdditionalCost _$PurchaseOrderAdditionalCostFromJson(
       : PaymentAccountRef.fromJson(
           json['treasury_account'] as Map<String, dynamic>,
         ),
+  refundableAmount: json['refundable_amount'] as String?,
+  refunds:
+      (json['refunds'] as List<dynamic>?)
+          ?.map(
+            (e) => PurchaseOrderCostRefund.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <PurchaseOrderCostRefund>[],
 );
 
 Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
@@ -122,6 +130,34 @@ Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
   'stock_arrival_id': instance.stockArrivalId,
   'treasury_account_id': instance.treasuryAccountId,
   'treasury_account': instance.treasuryAccount?.toJson(),
+  'refundable_amount': instance.refundableAmount,
+  'refunds': instance.refunds.map((e) => e.toJson()).toList(),
+};
+
+_PurchaseOrderCostRefund _$PurchaseOrderCostRefundFromJson(
+  Map<String, dynamic> json,
+) => _PurchaseOrderCostRefund(
+  id: (json['id'] as num).toInt(),
+  amount: json['amount'] as String,
+  reason: json['reason'] as String,
+  recordedByName: json['recorded_by_name'] as String?,
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+  isReversed: json['is_reversed'] as bool? ?? false,
+  reversalReason: json['reversal_reason'] as String?,
+);
+
+Map<String, dynamic> _$PurchaseOrderCostRefundToJson(
+  _PurchaseOrderCostRefund instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'amount': instance.amount,
+  'reason': instance.reason,
+  'recorded_by_name': instance.recordedByName,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'is_reversed': instance.isReversed,
+  'reversal_reason': instance.reversalReason,
 };
 
 _PurchaseOrderItem _$PurchaseOrderItemFromJson(Map<String, dynamic> json) =>

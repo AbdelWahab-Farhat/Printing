@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\PurchaseOrder\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
+use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
+use App\Domain\Treasury\Models\TreasuryMovement;
 use App\Domain\Vendor\Models\StockArrival;
 use Database\Factories\PurchaseOrderAdditionalCostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +16,8 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -56,6 +61,42 @@ class PurchaseOrderAdditionalCost extends Model
     public function isPaidElsewhere(): bool
     {
         return $this->treasury_account_id !== null;
+    }
+
+    /**
+     * What can still come back: the expense standing on the treasury for this cost. Less than
+     * `amount` when part was refunded, or when a deal carries part of it as its own expense.
+     */
+    public function refundableAmount(): string
+    {
+        $standing = $this->relationLoaded('standingExpenses')
+            ? $this->standingExpenses
+            : $this->standingExpenses()->get();
+
+        return Money::sum('0', ...$standing->map(fn (TreasuryMovement $movement) => (string) $movement->amount)->all());
+    }
+
+    /**
+     * The money this cost has out of its account right now — nothing on the vendor's bill.
+     *
+     * @return MorphMany<TreasuryMovement, $this>
+     */
+    public function standingExpenses(): MorphMany
+    {
+        return $this->morphMany(TreasuryMovement::class, 'source')
+            ->where('kind', MovementKind::Expense->value)
+            ->whereNull('reverses_movement_id')
+            ->whereDoesntHave('reversedBy');
+    }
+
+    /**
+     * Every refund on this cost, the reversed ones too — newest first.
+     *
+     * @return HasMany<PurchaseOrderCostRefund, $this>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderCostRefund::class, 'additional_cost_id')->latest('id');
     }
 
     /**

@@ -209,4 +209,24 @@ abstract interface class PurchaseOrderRepository {
     int purchaseOrderId, {
     required String reason,
   });
+
+  /// Brings money back on a cost paid outside the vendor's bill, to the account that paid. The
+  /// order's totals, the vendor's debt and the stock's cost do not move.
+  ///
+  /// **Refused with a 422 and its own Arabic sentence** past what is left of the cost, and on an
+  /// order still `new`, where editing the cost is the way.
+  Future<Either<Failure, PurchaseOrder>> refundCost(
+    int purchaseOrderId,
+    int costId, {
+    required String amount,
+    required String reason,
+  });
+
+  /// Takes back a refund recorded in error: the expense stands again for that much.
+  Future<Either<Failure, PurchaseOrder>> reverseCostRefund(
+    int purchaseOrderId,
+    int costId,
+    int refundId, {
+    required String reason,
+  });
 }

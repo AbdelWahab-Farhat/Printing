@@ -3,6 +3,7 @@ import 'package:dayaa/core/pagination/changes.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/router/pop_result.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/dates.dart';
@@ -12,6 +13,8 @@ import 'package:dayaa/core/widgets/app_speed_dial.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/presentation/viewmodel/purchase_order_detail_cubit.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/cost_refund_sheet.dart';
+import 'package:dayaa/features/purchase_orders/presentation/widgets/cost_refunds.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/reverse_receipt_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/purchase_order_payments_section.dart';
@@ -352,6 +355,44 @@ class _Body extends StatelessWidget {
 
   final PurchaseOrder order;
 
+  Future<void> _refund(
+    BuildContext context,
+    PurchaseOrderAdditionalCost cost,
+  ) async {
+    final cubit = context.read<PurchaseOrderDetailCubit>();
+
+    final refunded = await showCostRefundSheet(
+      context: context,
+      cost: cost,
+      onConfirm: (amount, reason) =>
+          cubit.refundCost(cost.id, amount: amount, reason: reason),
+    );
+
+    if (refunded != true || !context.mounted) return;
+
+    context.showSuccess('تم استرداد المبلغ');
+  }
+
+  Future<void> _reverseRefund(
+    BuildContext context,
+    PurchaseOrderAdditionalCost cost,
+    PurchaseOrderCostRefund refund,
+  ) async {
+    final cubit = context.read<PurchaseOrderDetailCubit>();
+
+    final reversed = await showReverseCostRefundSheet(
+      context: context,
+      cost: cost,
+      refund: refund,
+      onConfirm: (reason) =>
+          cubit.reverseCostRefund(cost.id, refund.id, reason: reason),
+    );
+
+    if (reversed != true || !context.mounted) return;
+
+    context.showSuccess('تم التراجع عن الاسترداد');
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
@@ -481,6 +522,18 @@ class _Body extends StatelessWidget {
                         ),
                       ),
                     ],
+                    // A `new` order is edited instead: removing the cost returns its money.
+                    CostRefunds(
+                      cost: cost,
+                      canRefund:
+                          !order.status.isEditable &&
+                          sl<Session>().can(
+                            AppPermission.reverseTreasuryOperations,
+                          ),
+                      onRefund: () => _refund(context, cost),
+                      onReverse: (refund) =>
+                          _reverseRefund(context, cost, refund),
+                    ),
                   ],
                 ],
               ),

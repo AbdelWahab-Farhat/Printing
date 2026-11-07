@@ -32,6 +32,9 @@ class PurchaseOrderAdditionalCostResource extends JsonResource
                 'name' => $this->treasuryAccount->name,
                 'kind' => $this->treasuryAccount->kind->value,
             ]),
+            // Loaded for one order, not on the list. What can still come back, and what has.
+            'refundable_amount' => $this->whenLoaded('standingExpenses', fn (): string => $this->refundableAmount()),
+            'refunds' => PurchaseOrderCostRefundResource::collection($this->whenLoaded('refunds')),
         ];
     }
 }

@@ -191,6 +191,38 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     );
   }
 
+  @override
+  Future<Either<Failure, PurchaseOrder>> refundCost(
+    int purchaseOrderId,
+    int costId, {
+    required String amount,
+    required String reason,
+  }) {
+    return safeRequest<PurchaseOrder>(
+      () => _dio.post(
+        PurchaseOrderEndpoints.costRefunds(purchaseOrderId, costId),
+        data: <String, dynamic>{'amount': amount, 'reason': reason},
+      ),
+      parse: (data) => PurchaseOrder.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, PurchaseOrder>> reverseCostRefund(
+    int purchaseOrderId,
+    int costId,
+    int refundId, {
+    required String reason,
+  }) {
+    return safeRequest<PurchaseOrder>(
+      () => _dio.post(
+        PurchaseOrderEndpoints.costRefundReversal(purchaseOrderId, costId, refundId),
+        data: <String, dynamic>{'reason': reason},
+      ),
+      parse: (data) => PurchaseOrder.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
   /// The body create and update share. Written once, because the two differ only in the verb —
   /// and a field added to one and forgotten in the other is a silent half-save.
   Map<String, dynamic> _document({

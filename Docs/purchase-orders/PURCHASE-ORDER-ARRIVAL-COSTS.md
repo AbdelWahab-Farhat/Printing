@@ -86,7 +86,7 @@ cleared, totals and vendor debt recomputed.
 ### Cancelling an order
 
 A planned cost paid from a drawer **stays** — the money left. Its row stays on the cancelled
-order and in «المصاريف».
+order and in «المصاريف». If the money comes back, «استرداد» records it — §7.
 
 ## 4. Schema — one migration
 
@@ -139,3 +139,55 @@ order and in «المصاريف».
       except `treasury_settings_page_test` «التسوية إلى حساب المسوّي», which fails on main too
       (it looks for a sentence the page no longer has)
 - [ ] `Docs/openapi.json` — stale on main already (a regenerate rewrites ~800 lines); left alone
+
+## 7. Refunding a cost — «استرداد» (2026-11-04)
+
+Money coming back on a cost paid from a drawer or owed to a manual payable, with a required
+reason. Built for the cancelled order, whose cost otherwise stays spent for good. Branch
+`po-cost-refund`.
+
+### The owner's decisions
+
+| # | Decision |
+|---|---|
+| 1 | A refund moves **money only**. The stock's cost, the order's totals and the vendor's debt do not change. Unsold company stock can be repriced by hand with «إعادة تقييم». |
+| 2 | The money returns to **the account that paid**. If it really landed elsewhere, a normal transfer follows. |
+| 3 | The grant is the existing `treasury.reverse`, for refunding and for taking a refund back. The routes also ask `purchase_orders.view`, because the answer is the whole order. |
+| 4 | A refund is **dated today**. No backdating. |
+
+### How it works
+
+`POST /purchase-orders/{id}/additional-costs/{cost}/refunds` takes `amount` and `reason`.
+`RefundAdditionalCost` writes a `purchase_order_cost_refunds` row and calls `syncExpense` with what
+is left, so the expense movement is reversed and reposted at the smaller figure. At zero nothing is
+reposted. A payable's debt shrinks the same way; if that debt was already paid off, the payable
+reads as the person owing the company.
+
+`POST .../refunds/{refund}/reversal` takes `reason`. `ReverseCostRefund` stamps the row and reposts
+the expense with that amount added back. Nothing is deleted.
+
+**What can come back is the expense still standing on the treasury**, not the cost's `amount`
+(`PurchaseOrderAdditionalCost::refundableAmount()`). So several part refunds cannot pass the cost,
+and a deal's share of an arrival cost is never in the figure: it is that deal's expense, and it
+still follows the receipt.
+
+| Order status | |
+|---|---|
+| `new` | Refused. Editing the cost already gives the money back, and no status returns to `new`, so a refund and the order form never meet. |
+| `arrived` | Allowed. The stock still opens at the full cost. |
+| `cancelled` | Allowed. |
+| `completed` | Allowed, for the company's share only. |
+
+A cost on the vendor's bill has nothing to refund: it is inside the vendor's debt. Reversing a
+receipt after a refund gives back only what was left, because `syncExpense` reverses what stands.
+
+### Consequences to know
+
+- **«المصاريف» moves a part refund to today.** The original line is struck through and what is left
+  is reposted with today's date: 1,000 in October with 300 refunded in November reads 0 in October
+  and 700 in November. A full refund takes the line out of October. Account balances are right
+  either way.
+- **A manual reprice blocks reversing that receipt**, as it always has.
+
+Tests: `PurchaseOrderCostRefundTest` (18), `frontend/test/features/purchase_orders/cost_refund_test.dart`.
+`Docs/openapi.json` is left alone, as in §6.
