@@ -3,6 +3,9 @@
 > **Status: built.** Branch `feat/design-tickets`. Every phase in [§13](#13-the-implementation-plan)
 > is done; the app side has its own document,
 > [DESIGN-TICKETS-FRONTEND-INTEGRATION.md](DESIGN-TICKETS-FRONTEND-INTEGRATION.md).
+>
+> **2026-11-07:** a ticket now carries «أجر التصميم», paid into the designer's wallet on approval —
+> [SERVICE-PAY-DESIGN.md](../employees/SERVICE-PAY-DESIGN.md).
 
 The goal as it was given: **an organised system for design requests inside دعاية.** An employee
 sends the request to a designer from inside the system, follows the revisions and the review

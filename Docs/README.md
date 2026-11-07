@@ -103,6 +103,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 |---|---|
 | [EMPLOYEE-DETAIL-DESIGN.md](employees/EMPLOYEE-DETAIL-DESIGN.md) | شاشة تفاصيل الموظف — التعديل وإعادة التعيين والإيقاف. |
 | [EMPLOYEE-WALLET-DESIGN.md](employees/EMPLOYEE-WALLET-DESIGN.md) | محفظة الموظف — الإيداع والمستحق والسحب، متزامنةً مع الخزينة. الخادم والشاشات مبنيّان على فرع، ولم يُجرَّبا على هاتف. |
+| [SERVICE-PAY-DESIGN.md](employees/SERVICE-PAY-DESIGN.md) | خدمات الموظفين وأجر التصميم — السعر المقترح للمصمم، والأجر على التذكرة الذي يدخل محفظته عند الاعتماد. |
 
 ## [internal-tickets/](internal-tickets/)
 
