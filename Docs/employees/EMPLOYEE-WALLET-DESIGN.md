@@ -1,7 +1,8 @@
 # محفظة الموظف — الخطة
 
-> **الحالة (٢٠٢٦-١١-٠٦):** الخادم وشاشات تطبيق الموظفين مبنيّان ومختبَران على الفرع
-> `Designer-Wallet-Employee`، غير مرفوعين وغير منشورين، **ولم يُجرَّبا على هاتف**. التصميم في
+> **الحالة (٢٠٢٦-١١-٠٧):** الخادم وشاشات تطبيق الموظفين مدموجان في `main`، وغير منشورين، و`migrate`
+> شُغّل على القاعدة المحلية فقط. جرّبهما صاحب العمل على المحاكي، ومراجعة الدفتر لم تتم بعد. ملف المستخدم:
+> [EMPLOYEE-WALLETS-AND-DESIGN-PAY](../changes/EMPLOYEE-WALLETS-AND-DESIGN-PAY.md). التصميم في
 > [Claude Design](https://claude.ai/artifact/JLHmyUmYtrtpG2aMXQR8Nx) ووافق عليه صاحب العمل، واختار
 > الخيار «أ» لمدخل «محفظتي» على الرئيسية وعند المصمم (§٥).
 > تكمّل [CUSTOMER-WALLET](../payments/CUSTOMER-WALLET.md) و[TREASURY-DESIGN](../treasury/TREASURY-DESIGN.md)،
