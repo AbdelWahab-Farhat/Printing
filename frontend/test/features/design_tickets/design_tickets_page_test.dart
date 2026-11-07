@@ -36,6 +36,12 @@ class _StubRepository implements DesignTicketRepository {
   /// The newest version the list sends back, or null for a ticket nobody has drawn for.
   DesignTicketFile? latestVersion;
 
+  /// «أجر التصميم» كما يرسله الخادم لهذا القارئ، و`null` لمن لا يُقال له.
+  String? pay;
+
+  /// حالة الصفّ في القائمة.
+  DesignTicketStatus status = DesignTicketStatus.fresh;
+
   /// The ids the accept endpoint was called with.
   final List<int> accepted = <int>[];
 
@@ -60,7 +66,7 @@ class _StubRepository implements DesignTicketRepository {
             code: 'D1',
             title: 'تصميم كيس عصري',
             description: 'كيس شحن بهوية جديدة',
-            status: DesignTicketStatus.fresh,
+            status: status,
             statusLabel: 'جديد',
             customerId: 4,
             customerName: 'اسامة حماد',
@@ -68,6 +74,7 @@ class _StubRepository implements DesignTicketRepository {
             isInSharedPool: true,
             canAccept: offersAcceptance,
             latestVersion: latestVersion,
+            designerPay: pay,
           ),
         ],
         meta: const PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 1),
@@ -76,7 +83,7 @@ class _StubRepository implements DesignTicketRepository {
   }
 
   @override
-  Future<Either<Failure, DesignTicket>> accept(int ticketId) async {
+  Future<Either<Failure, DesignTicket>> accept(int ticketId, {String? designerPay}) async {
     accepted.add(ticketId);
 
     return const Right(
@@ -414,7 +421,7 @@ void main() {
     await tester.tap(find.text('قبول'));
     await tester.pumpAndSettle();
     expect(find.text('قبول الطلب؟'), findsOneWidget);
-    await tester.tap(find.text('إلغاء'));
+    await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
     // Assert
@@ -441,6 +448,71 @@ void main() {
     expect(repository.accepted, [1]);
     expect(repository.asked.length, readsBefore);
     expect(find.text('قيد التصميم'), findsOneWidget);
+  });
+
+  group('«أجر التصميم» على الصفّ', () {
+    Color? colorOf(WidgetTester tester, String text) =>
+        tester.widget<Text>(find.text(text)).style?.color;
+
+    testWidgets('the pay stands on the row, named, with its unit', (tester) async {
+      // Arrange
+      signInWith([AppPermission.viewDesignTickets]);
+      repository.pay = '1500.00';
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('أجر التصميم'), findsOneWidget);
+      expect(find.text('1,500 د.ل'), findsOneWidget);
+    });
+
+    testWidgets('a row with no pay, or a reader who is told none, says nothing', (tester) async {
+      // Arrange
+      signInWith([AppPermission.viewDesignTickets]);
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('أجر التصميم'), findsNothing);
+      expect(find.text('لم يُحدَّد'), findsNothing);
+    });
+
+    testWidgets('the designer reads it before «قبول», not after', (tester) async {
+      // Arrange
+      signInWith([AppPermission.viewDesignTickets, AppPermission.acceptDesignTickets]);
+      repository
+        ..pay = '50.00'
+        ..offersAcceptance = true;
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      final pay = tester.getTopLeft(find.text('50 د.ل')).dy;
+      final accept = tester.getTopLeft(find.text('قبول')).dy;
+      expect(pay, lessThan(accept));
+    });
+
+    testWidgets('a cancelled ticket keeps its figure, quietly: nothing was paid', (tester) async {
+      // Arrange
+      signInWith([AppPermission.viewDesignTickets]);
+      repository
+        ..pay = '50.00'
+        ..status = DesignTicketStatus.cancelled;
+
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Assert
+      final context = tester.element(find.text('50 د.ل'));
+      expect(colorOf(tester, '50 د.ل'), Theme.of(context).colorScheme.onSurfaceVariant);
+    });
   });
 
   testWidgets('the row names the customer by code and the designer by role', (tester) async {

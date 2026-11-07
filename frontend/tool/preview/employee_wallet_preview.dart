@@ -21,6 +21,7 @@ import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cub
 import 'package:dayaa/features/access/presentation/views/employee_detail_page.dart';
 import 'package:dayaa/features/access/repositories/access_repository.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -501,6 +502,7 @@ Future<void> main() async {
             userId: userId,
             getUser: GetUser(access),
             setPassword: SetUserPassword(access),
+            setServicePrice: SetEmployeeServicePrice(access),
             setActivation: SetUserActivation(access),
           ),
         )

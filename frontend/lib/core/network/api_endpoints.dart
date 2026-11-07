@@ -230,6 +230,9 @@ abstract final class AccessEndpoints {
 
   static String userSalary(int userId) => '/users/$userId/salary';
 
+  /// «خدمات الموظفين» — السعر المقترح لموظف في خدمة، خلف `users.salary`.
+  static String userService(int userId, String service) => '/users/$userId/services/$service';
+
   static String userActivation(int userId) => '/users/$userId/activation';
 
   static const String roles = '/roles';
@@ -445,6 +448,9 @@ abstract final class DesignTicketEndpoints {
   /// acceptance — a fact with a person and a time — and exactly one may ever exist. A second
   /// caller gets a 422 naming whoever holds it.
   static String acceptance(int ticketId) => '/design-tickets/$ticketId/acceptance';
+
+  /// «أجر التصميم» — يكتبه من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
+  static String pay(int ticketId) => '/design-tickets/$ticketId/pay';
 
   /// Calling the request off, with the reason the server requires.
   static String cancellation(int ticketId) => '/design-tickets/$ticketId/cancellation';

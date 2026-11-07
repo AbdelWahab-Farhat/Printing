@@ -91,6 +91,7 @@ class CreateDesignTicket {
     int? assignedDesignerId,
     List<PickedFile> files = const [],
     List<PrintColor> printColors = const [],
+    String? designerPay,
   }) {
     return _repository.create(
       customerId: customerId,
@@ -101,6 +102,7 @@ class CreateDesignTicket {
       assignedDesignerId: assignedDesignerId,
       files: files,
       printColors: printColors,
+      designerPay: designerPay,
     );
   }
 }
@@ -144,7 +146,18 @@ class AcceptDesignTicket {
 
   final DesignTicketRepository _repository;
 
-  Future<Either<Failure, DesignTicket>> call(int ticketId) => _repository.accept(ticketId);
+  Future<Either<Failure, DesignTicket>> call(int ticketId, {String? designerPay}) =>
+      _repository.accept(ticketId, designerPay: designerPay);
+}
+
+/// يكتب «أجر التصميم» أو يمحوه.
+class SetDesignTicketPay {
+  const SetDesignTicketPay(this._repository);
+
+  final DesignTicketRepository _repository;
+
+  Future<Either<Failure, DesignTicket>> call(int ticketId, {required String? designerPay}) =>
+      _repository.setPay(ticketId, designerPay: designerPay);
 }
 
 /// Calling a request off, with the reason it requires.
@@ -230,6 +243,7 @@ class ReviewDesignVersion {
     int versionId, {
     required DesignSubmissionStatus verdict,
     String? note,
+    String? confirmedPay,
   }) {
     return _repository.reviewVersion(
       ticketId,
@@ -243,6 +257,7 @@ class ReviewDesignVersion {
         _ => '',
       },
       note: note,
+      confirmedPay: confirmedPay,
     );
   }
 }

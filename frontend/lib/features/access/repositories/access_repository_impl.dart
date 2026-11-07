@@ -111,6 +111,18 @@ class AccessRepositoryImpl implements AccessRepository {
   }
 
   @override
+  Future<Either<Failure, AuthUser>> setServicePrice(int userId, String service, String? price) {
+    return safeRequest<AuthUser>(
+      () => _dio.put(
+        AccessEndpoints.userService(userId, service),
+        // يُرسل المفتاح ولو فارغاً: الفراغ قرارٌ بمحو السعر.
+        data: <String, dynamic>{'suggested_price': price},
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, AuthUser>> setUserSalary(int userId, String? salary) {
     return safeRequest<AuthUser>(
       () => _dio.patch(

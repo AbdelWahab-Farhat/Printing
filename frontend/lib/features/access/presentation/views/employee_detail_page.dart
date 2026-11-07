@@ -7,8 +7,10 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/amount_sheet.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
+import 'package:dayaa/core/widgets/card_pressable.dart';
 import 'package:dayaa/core/widgets/copy_text.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
 import 'package:dayaa/features/access/presentation/widgets/assign_roles_sheet.dart';
@@ -163,6 +165,11 @@ class _Body extends StatelessWidget {
         if (sl<Session>().can(AppPermission.manageUserSalaries)) ...[
           SizedBox(height: 14.h),
           _SalaryCard(user: user),
+          // للمصمم وحده: `services` لا يحمل غيره، ومن لا يقدّم الخدمة لا سطر له.
+          if (user.designService case final design?) ...[
+            SizedBox(height: 14.h),
+            _DesignPriceCard(service: design),
+          ],
         ],
 
         // باقٍ لموظفٍ موقوف: إيقافُ الحساب لا يمسّ رصيده، ويبقى صرفه ممكناً.
@@ -399,6 +406,60 @@ class _SalaryCard extends StatelessWidget {
         style: context.textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.w800,
           color: salary == null ? scheme.onSurfaceVariant : scheme.onSurface,
+        ),
+      ),
+    );
+  }
+}
+
+/// «أجر التصميم المقترح» — يظهر في الحقل على التذكرة ولا يحدد شيئاً.
+class _DesignPriceCard extends StatelessWidget {
+  const _DesignPriceCard({required this.service});
+
+  final EmployeeServicePrice service;
+
+  Future<void> _edit(BuildContext context) async {
+    final cubit = context.read<EmployeeDetailCubit>();
+
+    final choice = await showAmountSheet(
+      context: context,
+      title: 'أجر التصميم المقترح',
+      label: 'المبلغ',
+      confirmLabel: 'حفظ',
+      initial: service.suggestedPrice,
+    );
+
+    if (choice == null || !context.mounted) return;
+
+    if (await cubit.setServicePrice(service.service, choice.amount) && context.mounted) {
+      context.showSuccess('تم تحديث السعر المقترح');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final price = service.suggestedPrice;
+
+    return CardPressable(
+      onTap: () => _edit(context),
+      child: _Card(
+        title: 'أجر التصميم المقترح',
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                price == null ? 'لم يُحدَّد' : '${groupedDecimal(price)} د.ل',
+                style: context.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: price == null ? scheme.onSurfaceVariant : scheme.onSurface,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            // القلم هو ما يقول إن البطاقة تُفتح: بدونه تبدو كبطاقة الراتب التي تُقرأ فقط.
+            Icon(AppIcons.edit, size: 20.sp, color: scheme.onSurfaceVariant),
+          ],
         ),
       ),
     );

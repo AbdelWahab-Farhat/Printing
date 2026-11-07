@@ -47,9 +47,12 @@ class EmployeeWalletEntryRow extends StatelessWidget {
   }
 
   String? get _where {
+    // «أجر التصميم» عنوانُ السطر نفسه، فلا يُكتب تحته مرةً ثانية.
+    final category = entry.categoryName == entry.typeLabel ? null : entry.categoryName;
+
     final parts = <String>[
       if (showEmployee) ?entry.employeeName,
-      ?(entry.methodLabel ?? entry.categoryName),
+      ?(entry.methodLabel ?? category),
     ];
 
     return parts.isEmpty ? null : parts.join(' · ');

@@ -4,7 +4,6 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
-import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
@@ -13,6 +12,7 @@ import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_counts.dart';
 import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tickets_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/accept_ticket_prompt.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_card.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
@@ -112,21 +112,13 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
   Future<void> _accept(BuildContext context, DesignTicket ticket) async {
     final cubit = context.read<DesignTicketsCubit>();
 
-    final confirmed = await showCustomDialog(
-      context: context,
-      // A question mark, because the confirm button beside it says «قبول الطلب» and a dialog
-      // whose heading and whose button read identically tells the reader nothing.
-      title: 'قبول الطلب؟',
-      // What the tap actually does, in the words somebody would use about it afterwards.
-      description: 'ستصبح أنت المصمم المسؤول عن «${ticket.title}»، ولن يستطيع مصمم آخر أخذها.',
-      confirmLabel: 'قبول الطلب',
-    );
+    final acceptance = await confirmTicketAcceptance(context, ticket);
 
-    if (!(confirmed ?? false) || !context.mounted) return;
+    if (acceptance == null || !context.mounted) return;
 
     setState(() => _accepting = ticket.id);
 
-    final failure = await cubit.accept(ticket.id);
+    final failure = await cubit.accept(ticket.id, pay: acceptance.pay);
 
     if (!mounted) return;
 

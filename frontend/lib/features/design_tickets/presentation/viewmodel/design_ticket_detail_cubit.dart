@@ -36,6 +36,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
     required SubmitDesignVersion submitVersion,
     required ReviewDesignVersion reviewVersion,
     required WithdrawDesignVersion withdrawVersion,
+    required SetDesignTicketPay setPay,
   }) : _id = ticketId,
        _getTicket = getTicket,
        _accept = acceptTicket,
@@ -47,6 +48,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
        _submit = submitVersion,
        _review = reviewVersion,
        _withdraw = withdrawVersion,
+       _setPay = setPay,
        super(const DesignTicketDetailState.loading());
 
   final int _id;
@@ -60,6 +62,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   final SubmitDesignVersion _submit;
   final ReviewDesignVersion _review;
   final WithdrawDesignVersion _withdraw;
+  final SetDesignTicketPay _setPay;
 
   Future<void> load() async {
     // What it already has is kept while the next read is in flight, so a pull-to-refresh does not
@@ -83,7 +86,10 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   /// **A lost race is the interesting outcome**, and it is a 422 naming whoever holds the ticket.
   /// Returned rather than swallowed so the screen can say «أخذها فلان» — which is the whole
   /// second half of «لا تضيع هوية المصمم الذي استلم الطلب».
-  Future<Failure?> accept() => _write(() => _accept(_id));
+  Future<Failure?> accept({String? pay}) => _write(() => _accept(_id, designerPay: pay));
+
+  /// يكتب «أجر التصميم» أو يمحوه.
+  Future<Failure?> setPay(String? pay) => _write(() => _setPay(_id, designerPay: pay));
 
   /// Corrects the words of an open request.
   ///
@@ -91,20 +97,30 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   /// a conversation hang off a ticket by the time anybody notices the wrong one was picked; the
   /// second because routing work is its own grant. A closed ticket refuses this outright — an
   /// approval is a signature on the words that were there at the time.
+  ///
+  /// **ورقةٌ واحدة وطلبان**، كنموذج الموظف: [pay] يذهب إلى طريقه بعد الكلمات، فحارساهما في الخادم
+  /// مختلفان. وإن رُفضت الكلمات لم يُرسل، والطلبان يعاد إرسالهما بلا أثر إن فشل الثاني.
   Future<Failure?> update({
     required String title,
     required String description,
     String? instructions,
     List<PrintColor>? printColors,
-  }) => _write(
-    () => _update(
-      _id,
-      title: title,
-      description: description,
-      instructions: instructions,
-      printColors: printColors,
-    ),
-  );
+    Option<String?> pay = const None(),
+  }) async {
+    final failure = await _write(
+      () => _update(
+        _id,
+        title: title,
+        description: description,
+        instructions: instructions,
+        printColors: printColors,
+      ),
+    );
+
+    if (failure != null) return failure;
+
+    return pay.fold<Future<Failure?>>(() async => null, setPay);
+  }
 
   /// Hands it to a designer, or returns it to the shared pool — a null [designerId] is the pool,
   /// which is a queue rather than an absence.
@@ -140,7 +156,10 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
     int versionId, {
     required DesignSubmissionStatus verdict,
     String? note,
-  }) => _write(() => _review(_id, versionId, verdict: verdict, note: note));
+    String? confirmedPay,
+  }) => _write(
+    () => _review(_id, versionId, verdict: verdict, note: note, confirmedPay: confirmedPay),
+  );
 
   /// «سحب النسخة» — الملفُّ المرفوع خطأ. والقراءةُ بعده تُظهر «رفع نسخة معدّلة» من جديد.
   Future<Failure?> withdraw(int versionId) => _write(() => _withdraw(_id, versionId));

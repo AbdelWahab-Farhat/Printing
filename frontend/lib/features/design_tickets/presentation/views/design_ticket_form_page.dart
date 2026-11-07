@@ -10,7 +10,9 @@ import 'package:dayaa/core/print_colors/print_colors_editor.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/validators.dart';
+import 'package:dayaa/core/widgets/amount_sheet.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
@@ -59,6 +61,7 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _description = TextEditingController();
+  final _pay = TextEditingController();
 
   bool _isSaving = false;
 
@@ -77,6 +80,7 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   void dispose() {
     _title.dispose();
     _description.dispose();
+    _pay.dispose();
     super.dispose();
   }
 
@@ -92,6 +96,12 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
     setState(() {
       _designerId = choice.userId;
       _designerName = choice.name;
+      // السعر المقترح يُكتب ويبقى قابلاً للتغيير، كما يكتب «رواتب» الراتب. ومن بلا سعرٍ يُفرّغ الحقل،
+      // فلا يبقى فيه سعرُ مصممٍ غيره.
+      _pay.text = switch (choice.suggestedPay) {
+        final price? => trimDecimals(price),
+        null => '',
+      };
     });
   }
 
@@ -123,6 +133,10 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
       assignedDesignerId: _designerId,
       files: List<PickedFile>.of(_files),
       printColors: _colors,
+      designerPay: switch (Validators.toWesternDigits(_pay.text.trim())) {
+        '' => null,
+        final pay => pay,
+      },
     );
 
     if (!mounted) return;
@@ -182,6 +196,8 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
                 onTap: _pickDesigner,
               ),
             ],
+            SizedBox(height: 14.h),
+            OptionalAmountField(controller: _pay, label: 'أجر التصميم'),
             SizedBox(height: 18.h),
             PrintColorsField(
               colors: _colors,

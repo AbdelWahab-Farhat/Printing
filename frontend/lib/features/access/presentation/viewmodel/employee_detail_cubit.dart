@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -27,16 +28,19 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
     required int userId,
     required GetUser getUser,
     required SetUserPassword setPassword,
+    required SetEmployeeServicePrice setServicePrice,
     required SetUserActivation setActivation,
   }) : _userId = userId,
        _getUser = getUser,
        _setPassword = setPassword,
+       _setServicePrice = setServicePrice,
        _setActivation = setActivation,
        super(const EmployeeDetailState.loading());
 
   final int _userId;
   final GetUser _getUser;
   final SetUserPassword _setPassword;
+  final SetEmployeeServicePrice _setServicePrice;
   final SetUserActivation _setActivation;
 
   Future<void> load() async {
@@ -67,6 +71,11 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
 
   Future<bool> setPassword(String password) {
     return _change(() => _setPassword(userId: _userId, password: password));
+  }
+
+  /// السعر المقترح في «خدمات الموظفين»، و`null` يمحوه.
+  Future<bool> setServicePrice(String service, String? price) {
+    return _change(() => _setServicePrice(userId: _userId, service: service, price: price));
   }
 
   Future<bool> setActive({required bool isActive}) {

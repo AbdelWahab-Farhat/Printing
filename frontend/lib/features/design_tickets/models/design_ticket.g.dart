@@ -91,6 +91,8 @@ _DesignTicket _$DesignTicketFromJson(
           json['approved_design'] as Map<String, dynamic>,
         ),
   cancellationReason: json['cancellation_reason'] as String?,
+  designerPay: json['designer_pay'] as String?,
+  suggestedPay: json['suggested_pay'] as String?,
   versionsCount: (json['versions_count'] as num?)?.toInt(),
   unreadCommentsCount: (json['unread_comments_count'] as num?)?.toInt(),
   latestVersion: json['latest_version'] == null
@@ -114,6 +116,7 @@ _DesignTicket _$DesignTicketFromJson(
   canWithdraw: json['can_withdraw'] as bool? ?? false,
   canAssign: json['can_assign'] as bool? ?? false,
   canManage: json['can_manage'] as bool? ?? false,
+  canSetPay: json['can_set_pay'] as bool? ?? false,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -152,6 +155,8 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'approved_customer_design_id': instance.approvedCustomerDesignId,
       'approved_design': instance.approvedDesign?.toJson(),
       'cancellation_reason': instance.cancellationReason,
+      'designer_pay': instance.designerPay,
+      'suggested_pay': instance.suggestedPay,
       'versions_count': instance.versionsCount,
       'unread_comments_count': instance.unreadCommentsCount,
       'latest_version': instance.latestVersion?.toJson(),
@@ -163,6 +168,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
       'can_withdraw': instance.canWithdraw,
       'can_assign': instance.canAssign,
       'can_manage': instance.canManage,
+      'can_set_pay': instance.canSetPay,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
     };

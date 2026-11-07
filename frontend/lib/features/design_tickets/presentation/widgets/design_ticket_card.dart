@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
@@ -90,6 +92,8 @@ class DesignTicketCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // فوق «قبول»: المصمم يقرأ أجره قبل أن يأخذها. والخادم لا يرسله إلا لمن يحق له.
+              if (ticket.designerPay case final pay?) _PayLine(pay: pay, status: ticket.status),
               if (onAccept != null && ticket.canAccept) ...[
                 SizedBox(height: 10.h),
                 // **Full width, like every other action in this app.** A button that shrinks to
@@ -98,6 +102,59 @@ class DesignTicketCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «أجر التصميم» بعرض البطاقة: الاسم في أوّل السطر والمبلغ في آخره، وهو أكبر ما في البطاقة.
+///
+/// **بعرض البطاقة لا في سطر المصمم**، فذاك السطر يضيق بالصورة ويقصّ الاسم إن زاحمه رقم.
+class _PayLine extends StatelessWidget {
+  const _PayLine({required this.pay, required this.status});
+
+  final String pay;
+  final DesignTicketStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final text = context.textTheme;
+
+    final color = switch (status) {
+      // دخل المحفظة: الأخضر الذي تقول به هذه الشاشة «انتهى».
+      DesignTicketStatus.completed => scheme.paid,
+      // لم يُدفع ولن يُدفع، فلا يلفت النظر.
+      DesignTicketStatus.cancelled => scheme.onSurfaceVariant,
+      _ => scheme.primary,
+    };
+
+    return Padding(
+      padding: EdgeInsets.only(top: 10.h),
+      child: Container(
+        padding: EdgeInsets.only(top: 8.h),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6))),
+        ),
+        child: Row(
+          children: [
+            Icon(AppIcons.wallet, size: 16.sp, color: scheme.onSurfaceVariant),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: Text(
+                'أجر التصميم',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              '${groupedDecimal(pay)} د.ل',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: color),
+            ),
+          ],
         ),
       ),
     );

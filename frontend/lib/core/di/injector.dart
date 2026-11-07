@@ -34,6 +34,7 @@ import 'package:dayaa/features/access/usecases/get_role.dart';
 import 'package:dayaa/features/access/usecases/get_roles.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/get_users.dart';
+import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/access/usecases/set_user_salary.dart';
@@ -564,6 +565,9 @@ abstract final class Injector {
       ..registerLazySingleton<SetUserPassword>(
         () => SetUserPassword(sl<AccessRepository>()),
       )
+      ..registerLazySingleton<SetEmployeeServicePrice>(
+        () => SetEmployeeServicePrice(sl<AccessRepository>()),
+      )
       ..registerLazySingleton<SetUserSalary>(
         () => SetUserSalary(sl<AccessRepository>()),
       )
@@ -622,6 +626,7 @@ abstract final class Injector {
           userId: userId,
           getUser: sl<GetUser>(),
           setPassword: sl<SetUserPassword>(),
+          setServicePrice: sl<SetEmployeeServicePrice>(),
           setActivation: sl<SetUserActivation>(),
         ),
       )
@@ -1564,6 +1569,9 @@ abstract final class Injector {
       ..registerLazySingleton<WithdrawDesignVersion>(
         () => WithdrawDesignVersion(sl<DesignTicketRepository>()),
       )
+      ..registerLazySingleton<SetDesignTicketPay>(
+        () => SetDesignTicketPay(sl<DesignTicketRepository>()),
+      )
       ..registerFactory<DesignTicketsCubit>(
         () => DesignTicketsCubit(
           getTickets: sl<GetDesignTickets>(),
@@ -1584,6 +1592,7 @@ abstract final class Injector {
           submitVersion: sl<SubmitDesignVersion>(),
           reviewVersion: sl<ReviewDesignVersion>(),
           withdrawVersion: sl<WithdrawDesignVersion>(),
+          setPay: sl<SetDesignTicketPay>(),
         ),
       )
       // ── «الرد داخل التذكرة»: على محرّك التذاكر الداخلية — DESIGN-TICKET-CHAT ──────────

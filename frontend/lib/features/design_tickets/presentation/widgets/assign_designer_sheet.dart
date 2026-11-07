@@ -53,12 +53,15 @@ Future<DesignerChoice?> showAssignDesignerSheet({
 /// The sheet's answer: a user id and the name to write beside it, or null meaning the pool.
 @immutable
 class DesignerChoice {
-  const DesignerChoice(this.userId, this.name);
+  const DesignerChoice(this.userId, this.name, {this.suggestedPay});
 
-  const DesignerChoice.sharedPool() : userId = null, name = null;
+  const DesignerChoice.sharedPool() : userId = null, name = null, suggestedPay = null;
 
   final int? userId;
   final String? name;
+
+  /// السعر المقترح لهذا المصمم، يُكتب في حقل الأجر على النموذج.
+  final String? suggestedPay;
 }
 
 class _AssignSheet extends StatelessWidget {
@@ -103,8 +106,13 @@ class _AssignSheet extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   title: Text(user.name),
                   trailing: user.id == currentDesignerId ? const Icon(Icons.check) : null,
-                  onTap: () =>
-                      Navigator.of(context).pop(DesignerChoice(user.id, user.name)),
+                  onTap: () => Navigator.of(context).pop(
+                    DesignerChoice(
+                      user.id,
+                      user.name,
+                      suggestedPay: user.designService?.suggestedPrice,
+                    ),
+                  ),
                 ),
               ),
             ),

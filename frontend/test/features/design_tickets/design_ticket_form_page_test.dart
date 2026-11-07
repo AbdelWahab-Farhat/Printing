@@ -23,6 +23,7 @@ class _RecordingRepository implements DesignTicketRepository {
   bool wasCalled = false;
   int? sentDesignerId;
   List<PickedFile> sentFiles = const [];
+  String? sentPay;
 
   @override
   Future<Either<Failure, DesignTicket>> create({
@@ -34,10 +35,12 @@ class _RecordingRepository implements DesignTicketRepository {
     int? assignedDesignerId,
     List<PickedFile> files = const [],
     List<PrintColor> printColors = const [],
+    String? designerPay,
   }) async {
     wasCalled = true;
     sentDesignerId = assignedDesignerId;
     sentFiles = files;
+    sentPay = designerPay;
 
     return const Left(Failure.server(message: 'البيانات غير صحيحة'));
   }
@@ -174,6 +177,48 @@ void main() {
     expect(repository.sentDesignerId, isNull);
   });
 
+  Finder payField() => find.widgetWithText(TextFormField, 'أجر التصميم');
+
+  testWidgets('the pay written on the form travels with the request', (tester) async {
+    // Arrange
+    signInWith([AppPermission.manageDesignTickets]);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'تصميم شعار');
+    await tester.enterText(find.byType(TextFormField).at(1), 'شعار في المنتصف');
+    await tester.enterText(payField(), '٥٠');
+
+    // Act
+    await scrollToSend(tester);
+    await tester.tap(find.text('إرسال الطلب'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(repository.sentPay, '50');
+  });
+
+  testWidgets('an empty pay is no pay at all', (tester) async {
+    // Arrange
+    signInWith([AppPermission.manageDesignTickets]);
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'تصميم شعار');
+    await tester.enterText(find.byType(TextFormField).at(1), 'شعار في المنتصف');
+
+    // Act
+    await scrollToSend(tester);
+    await tester.tap(find.text('إرسال الطلب'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(repository.wasCalled, isTrue);
+    expect(repository.sentPay, isNull);
+  });
+
   testWidgets('the prose about attachments is gone', (tester) async {
     // Arrange
     signInWith([AppPermission.manageDesignTickets]);
@@ -196,6 +241,12 @@ void main() {
 
   Future<void> pickMenu(WidgetTester tester) async {
     picker.answer = const [menu];
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byIcon(AppIcons.attach));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(AppIcons.attach));
     await tester.pumpAndSettle();
     await tester.tap(find.text('مستندات'));

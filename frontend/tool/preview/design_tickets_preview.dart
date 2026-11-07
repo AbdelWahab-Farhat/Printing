@@ -121,6 +121,8 @@ Future<void> main() async {
         removeAttachment: RemoveDesignTicketAttachment(repository),
         submitVersion: SubmitDesignVersion(repository),
         reviewVersion: ReviewDesignVersion(repository),
+        withdrawVersion: WithdrawDesignVersion(repository),
+        setPay: SetDesignTicketPay(repository),
       ),
     );
 

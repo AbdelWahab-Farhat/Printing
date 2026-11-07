@@ -4,6 +4,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
 import 'package:dayaa/features/access/repositories/access_repository.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -38,6 +39,7 @@ void main() {
     userId: 4,
     getUser: GetUser(repository),
     setPassword: SetUserPassword(repository),
+    setServicePrice: SetEmployeeServicePrice(repository),
     setActivation: SetUserActivation(repository),
   );
 

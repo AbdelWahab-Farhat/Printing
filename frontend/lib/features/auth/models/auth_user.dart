@@ -3,6 +3,19 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'auth_user.freezed.dart';
 part 'auth_user.g.dart';
 
+/// صفٌّ من «خدمات الموظفين». السعر مقترحٌ يظهر في الحقل على التذكرة، ولا يحدد شيئاً.
+@freezed
+abstract class EmployeeServicePrice with _$EmployeeServicePrice {
+  const factory EmployeeServicePrice({
+    required String service,
+    required String label,
+    @JsonKey(name: 'suggested_price') String? suggestedPrice,
+  }) = _EmployeeServicePrice;
+
+  factory EmployeeServicePrice.fromJson(Map<String, dynamic> json) =>
+      _$EmployeeServicePriceFromJson(json);
+}
+
 /// The signed-in account.
 ///
 /// **One class, not an entity plus a model.** The pair used to exist so that a rename on the
@@ -57,6 +70,10 @@ abstract class AuthUser with _$AuthUser {
     /// was agreed, and different from a wage of zero.
     String? salary,
 
+    /// «خدمات الموظفين» التي يقدّمها — اليوم التصميم. قائمةٌ فارغة حين لا يقدّم شيئاً، أو حين لا
+    /// يُقال لهذا القارئ. انظر [designService].
+    @Default(<EmployeeServicePrice>[]) List<EmployeeServicePrice> services,
+
     /// Comes from the server rather than being derived from [roles] here.
     ///
     /// An administrator's access is granted by a rule on the backend, not by permission rows,
@@ -77,6 +94,15 @@ abstract class AuthUser with _$AuthUser {
   }) = _AuthUser;
 
   const AuthUser._();
+
+  /// خدمة التصميم إن كان يقدّمها. وجودُها هو ما يُظهر سطر السعر، وسعرُها قد يكون `null`.
+  EmployeeServicePrice? get designService {
+    for (final service in services) {
+      if (service.service == 'design') return service;
+    }
+
+    return null;
+  }
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => _$AuthUserFromJson(json);
 

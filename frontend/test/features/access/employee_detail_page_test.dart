@@ -3,10 +3,13 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/utils/app_icons.dart';
+import 'package:dayaa/core/widgets/card_pressable.dart';
 import 'package:dayaa/features/access/presentation/viewmodel/employee_detail_cubit.dart';
 import 'package:dayaa/features/access/presentation/views/employee_detail_page.dart';
 import 'package:dayaa/features/access/repositories/access_repository.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
+import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
@@ -75,6 +78,7 @@ void main() {
           userId: userId,
           getUser: GetUser(repository),
           setPassword: SetUserPassword(repository),
+          setServicePrice: SetEmployeeServicePrice(repository),
           setActivation: SetUserActivation(repository),
         ),
       )
@@ -134,6 +138,87 @@ void main() {
     expect(find.text('محمد عز الدين'), findsWidgets);
     expect(find.text('0944909851'), findsOneWidget);
     expect(find.text('محاسب'), findsOneWidget);
+  });
+
+  const designer = EmployeeServicePrice(
+    service: 'design',
+    label: 'التصميم',
+    suggestedPrice: '75.00',
+  );
+
+  testWidgets('a designer shows the suggested price to whoever reads the wages', (tester) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+      shown: employee.copyWith(services: const [designer]),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('أجر التصميم المقترح'), findsOneWidget);
+    expect(find.text('75 د.ل'), findsOneWidget);
+  });
+
+  testWidgets('nobody else is given the row, and neither is an employee who does not design', (
+    tester,
+  ) async {
+    // Arrange
+    arrange(reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('أجر التصميم المقترح'), findsNothing);
+  });
+
+  testWidgets('the price card shows that it opens for editing', (tester) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+      shown: employee.copyWith(services: const [designer]),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(
+      find.descendant(of: find.byType(CardPressable), matching: find.byIcon(AppIcons.edit)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tapping the price opens it and saves the new one', (tester) async {
+    // Arrange
+    final shown = employee.copyWith(services: const [designer]);
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+      shown: shown,
+    );
+    when(
+      () => repository.setServicePrice(4, 'design', '90'),
+    ).thenAnswer((_) async => Right(shown));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('75 د.ل'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, '75'), '90');
+    await tester.pump();
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.setServicePrice(4, 'design', '90')).called(1);
   });
 
   testWidgets('a stopped account says so, loudly and once', (tester) async {

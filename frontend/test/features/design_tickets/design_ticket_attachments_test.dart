@@ -134,6 +134,7 @@ void main() {
         submitVersion: SubmitDesignVersion(repository),
         reviewVersion: ReviewDesignVersion(repository),
         withdrawVersion: WithdrawDesignVersion(repository),
+        setPay: SetDesignTicketPay(repository),
       ),
     );
   });

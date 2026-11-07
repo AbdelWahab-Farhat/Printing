@@ -1,4 +1,5 @@
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -24,17 +25,31 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// Answers with a [ReviewChoice], never a bare verdict: `showModalBottomSheet` returns null when
 /// the sheet is **dismissed**, and backing out is not a decision.
+///
+/// [pay] ما يدخل المحفظة بالاعتماد، تقوله نافذة التأكيد. و`null` لا مال، فتبقى النافذة كما كانت.
 Future<ReviewChoice?> showReviewVersionSheet({
   required BuildContext context,
   required DesignTicketFile version,
+  ReviewPay? pay,
 }) {
   return showModalBottomSheet<ReviewChoice>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => _ReviewSheet(version: version),
+    builder: (_) => _ReviewSheet(version: version, pay: pay),
   );
+}
+
+/// ما يدخل بالاعتماد، ومحفظة مَن.
+@immutable
+class ReviewPay {
+  const ReviewPay({required this.amount, required this.payee});
+
+  final String amount;
+
+  /// رافع النسخة المعتمدة. `null` في نسخةٍ لا يُعرف رافعها.
+  final String? payee;
 }
 
 /// The sheet's answer.
@@ -47,9 +62,10 @@ class ReviewChoice {
 }
 
 class _ReviewSheet extends StatefulWidget {
-  const _ReviewSheet({required this.version});
+  const _ReviewSheet({required this.version, this.pay});
 
   final DesignTicketFile version;
+  final ReviewPay? pay;
 
   @override
   State<_ReviewSheet> createState() => _ReviewSheetState();
@@ -91,9 +107,18 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     context,
     verdict: DesignSubmissionStatus.approved,
     title: 'اعتماد التصميم؟',
-    description: 'تُغلق التذكرة ويُحفظ التصميم في حساب الزبون. لا يمكن التراجع.',
+    description: _approvalNote,
     confirmLabel: 'اعتماد',
   );
+
+  String get _approvalNote {
+    final pay = widget.pay;
+
+    if (pay == null) return 'تُغلق التذكرة ويُحفظ التصميم في حساب الزبون. لا يمكن التراجع.';
+
+    return 'تُغلق التذكرة ويُحفظ التصميم في حساب الزبون، '
+        'ويدخل ${groupedDecimal(pay.amount)} د.ل محفظة ${pay.payee ?? 'المصمم'}. لا يمكن التراجع.';
+  }
 
   Future<void> _requestChanges(BuildContext context) async {
     // Caught before the dialog rather than after it: a confirmation for something that is

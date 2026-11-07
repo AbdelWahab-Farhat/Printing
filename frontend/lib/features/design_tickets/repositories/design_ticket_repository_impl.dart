@@ -115,6 +115,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     int? assignedDesignerId,
     List<PickedFile> files = const [],
     List<PrintColor> printColors = const [],
+    String? designerPay,
   }) {
     final fields = <String, dynamic>{
       'customer_id': customerId,
@@ -126,6 +127,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
         'instructions': instructions.trim(),
       'order_id': ?orderId,
       'assigned_designer_id': ?assignedDesignerId,
+      'designer_pay': ?designerPay,
       // Omitted when empty, like the instructions. In the multipart body `FormData.fromMap`
       // flattens it to `print_colors[0][name]`, which is the shape PHP reads back as a list.
       if (printColors.isNotEmpty) 'print_colors': PrintColor.listToJson(printColors),
@@ -190,9 +192,23 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
   }
 
   @override
-  Future<Either<Failure, DesignTicket>> accept(int ticketId) {
+  Future<Either<Failure, DesignTicket>> accept(int ticketId, {String? designerPay}) {
     return safeRequest<DesignTicket>(
-      () => _dio.post(DesignTicketEndpoints.acceptance(ticketId)),
+      () => _dio.post(
+        DesignTicketEndpoints.acceptance(ticketId),
+        data: designerPay == null ? null : <String, dynamic>{'designer_pay': designerPay},
+      ),
+      parse: (data) => DesignTicket.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, DesignTicket>> setPay(int ticketId, {required String? designerPay}) {
+    return safeRequest<DesignTicket>(
+      () => _dio.patch(
+        DesignTicketEndpoints.pay(ticketId),
+        data: <String, dynamic>{'designer_pay': designerPay},
+      ),
       parse: (data) => DesignTicket.fromJson(data! as Map<String, dynamic>),
     );
   }
@@ -259,6 +275,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     int versionId, {
     required String verdict,
     String? note,
+    String? confirmedPay,
   }) {
     return safeRequest<DesignTicketFile>(
       () => _dio.post(
@@ -266,6 +283,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
         data: <String, dynamic>{
           'verdict': verdict,
           if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+          'confirmed_pay': ?confirmedPay,
         },
       ),
       parse: (data) => DesignTicketFile.fromJson(data! as Map<String, dynamic>),

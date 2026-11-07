@@ -79,6 +79,7 @@ abstract interface class DesignTicketRepository {
     int? assignedDesignerId,
     List<PickedFile> files = const [],
     List<PrintColor> printColors = const [],
+    String? designerPay,
   });
 
   /// Correcting the words.
@@ -107,7 +108,12 @@ abstract interface class DesignTicketRepository {
   /// **Exactly one acceptance is possible**, settled on the server by a conditional update rather
   /// than by a check. A designer who loses the race gets a 422 **naming whoever holds it**, which
   /// is the message to show as sent: it is the answer to «من أخذها؟».
-  Future<Either<Failure, DesignTicket>> accept(int ticketId);
+  ///
+  /// [designerPay] «أجر التصميم» حين لا أجر على التذكرة، ومن يأخذها هو من يكتبه.
+  Future<Either<Failure, DesignTicket>> accept(int ticketId, {String? designerPay});
+
+  /// يكتب «أجر التصميم» أو يمحوه بـ`null`. يُرسل المفتاح دائماً: الفراغ قرارٌ لا سهو.
+  Future<Either<Failure, DesignTicket>> setPay(int ticketId, {required String? designerPay});
 
   /// Calling a request off. The reason is required.
   ///
@@ -165,6 +171,7 @@ abstract interface class DesignTicketRepository {
     int versionId, {
     required String verdict,
     String? note,
+    String? confirmedPay,
   });
 
   /// «سحب النسخة» — المصمّم رفع ملفاً خطأً فيسحبه بنفسه، ما دام بانتظار المراجعة.

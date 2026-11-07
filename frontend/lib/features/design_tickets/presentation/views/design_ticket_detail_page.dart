@@ -11,6 +11,8 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/amount_sheet.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
@@ -19,6 +21,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/accept_ticket_prompt.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_attachments.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
@@ -87,16 +90,38 @@ class _DesignTicketDetailView extends StatelessWidget {
   Future<void> _accept(BuildContext context, DesignTicket ticket) async {
     final cubit = context.read<DesignTicketDetailCubit>();
 
-    final confirmed = await showCustomDialog(
+    final acceptance = await confirmTicketAcceptance(context, ticket);
+
+    if (acceptance == null || !context.mounted) return;
+
+    await _run(context, () => cubit.accept(pay: acceptance.pay), 'تم قبول الطلب');
+  }
+
+  /// قلم المصمم المسؤول، ولا يملك «تعديل الطلب»: الأجر وحده. السعر المقترح مكتوبٌ في الحقل ما لم
+  /// يُكتب أجر، والفراغ يمحوه.
+  Future<void> _editPay(BuildContext context, DesignTicket ticket) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final choice = await showAmountSheet(
       context: context,
-      title: 'قبول الطلب؟',
-      description: 'ستصبح أنت المصمم المسؤول عن «${ticket.title}»، ولن يستطيع مصمم آخر أخذها.',
-      confirmLabel: 'قبول الطلب',
+      title: 'أجر التصميم',
+      label: 'المبلغ',
+      confirmLabel: 'حفظ',
+      initial: ticket.designerPay ?? ticket.suggestedPay,
     );
 
-    if (!(confirmed ?? false) || !context.mounted) return;
+    if (choice == null || !context.mounted) return;
 
-    await _run(context, cubit.accept, 'تم قبول الطلب');
+    await _run(context, () => cubit.setPay(choice.amount), 'تم تحديث أجر التصميم');
+  }
+
+  /// ما تقوله نافذة الاعتماد: المبلغ، ومحفظة رافع النسخة — وهو من يستلمه في الخادم.
+  ReviewPay? _payOn(DesignTicket ticket, DesignTicketFile version) {
+    final pay = ticket.designerPay;
+
+    if (pay == null || (double.tryParse(pay) ?? 0) <= 0) return null;
+
+    return ReviewPay(amount: pay, payee: version.uploader?.name ?? ticket.acceptedBy?.name);
   }
 
   /// Uploading, whichever of the two things is being uploaded.
@@ -207,16 +232,32 @@ class _DesignTicketDetailView extends StatelessWidget {
     }
   }
 
-  Future<void> _review(BuildContext context, DesignTicketFile version) async {
+  Future<void> _review(
+    BuildContext context,
+    DesignTicket ticket,
+    DesignTicketFile version,
+  ) async {
     final cubit = context.read<DesignTicketDetailCubit>();
 
-    final choice = await showReviewVersionSheet(context: context, version: version);
+    final choice = await showReviewVersionSheet(
+      context: context,
+      version: version,
+      pay: _payOn(ticket, version),
+    );
 
     if (choice == null || !context.mounted) return;
 
     await _run(
       context,
-      () => cubit.review(version.id, verdict: choice.verdict, note: choice.note),
+      () => cubit.review(
+        version.id,
+        verdict: choice.verdict,
+        note: choice.note,
+        // المبلغ الذي قُرئ في النافذة، فلا يُدفع غيره إن تغيّر الأجر والنافذة مفتوحة.
+        confirmedPay: choice.verdict == DesignSubmissionStatus.approved
+            ? ticket.designerPay ?? '0'
+            : null,
+      ),
       choice.verdict == DesignSubmissionStatus.approved
           ? 'تم اعتماد التصميم وحفظه في حساب الزبون'
           : 'تم إرسال طلب التعديل',
@@ -283,6 +324,7 @@ class _DesignTicketDetailView extends StatelessWidget {
         description: edit.description,
         instructions: edit.instructions,
         printColors: edit.printColors,
+        pay: edit.pay,
       ),
       'تم تحديث الطلب',
     );
@@ -388,6 +430,12 @@ class _DesignTicketDetailView extends StatelessWidget {
                   tooltip: 'تعديل الطلب',
                   onPressed: state.isWorking ? null : () => _edit(context, ticket),
                   icon: Icon(AppIcons.edit),
+                )
+              else if (ticket.canSetPay)
+                IconButton(
+                  tooltip: 'تعديل أجر التصميم',
+                  onPressed: state.isWorking ? null : () => _editPay(context, ticket),
+                  icon: Icon(AppIcons.edit),
                 ),
               if (ticket.canManage)
                 IconButton(
@@ -449,7 +497,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                 SizedBox(height: 16.h),
                 _Versions(
                   ticket: ticket,
-                  onReview: (version) => _review(context, version),
+                  onReview: (version) => _review(context, ticket, version),
                 ),
                 SizedBox(height: 20.h),
                 _Actions(
@@ -462,7 +510,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                   onReview: () {
                     final pending = ticket.pendingVersion;
 
-                    if (pending != null) _review(context, pending);
+                    if (pending != null) _review(context, ticket, pending);
                   },
                   onWithdraw: () {
                     final pending = ticket.pendingVersion;
@@ -488,6 +536,12 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final text = context.textTheme;
+
+    // الطريق إلى صفحة المصمم ومحفظته، كرابط العميل: لمن تفتح له تلك الصفحة فقط.
+    VoidCallback? toEmployee(DesignTicketActor person) =>
+        sl<Session>().can(AppPermission.viewUsers)
+        ? () => context.push(Routes.employee(person.id))
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,9 +591,10 @@ class _Header extends StatelessWidget {
               ),
             // **Two facts, not one.** Who it is addressed to, and who actually took it — a
             // reassignment moves the first and never the second.
-            if (ticket.designer != null) _Fact(label: 'المصمم', value: ticket.designer!.name),
-            if (ticket.acceptedBy != null)
-              _Fact(label: 'استلمها', value: ticket.acceptedBy!.name),
+            if (ticket.designer case final designer?)
+              _Fact(label: 'المصمم', value: designer.name, onTap: toEmployee(designer)),
+            if (ticket.acceptedBy case final taker?)
+              _Fact(label: 'استلمها', value: taker.name, onTap: toEmployee(taker)),
             if (ticket.approvedBy != null)
               _Fact(label: 'اعتمدها', value: ticket.approvedBy!.name),
             // **«المصمم», not «الحالة».** It was labelled «الحالة» and sat a centimetre under
@@ -548,6 +603,15 @@ class _Header extends StatelessWidget {
             // answer while nobody has claimed it is that it is still in the pool.
             if (ticket.isInSharedPool)
               const _Fact(label: 'المصمم', value: 'الطابور المشترك'),
+            // يغيب عمّن لا يقرؤه ولا يكتبه، و«لم يُحدَّد» لمن يكتبه.
+            if (ticket.designerPay != null || ticket.canSetPay)
+              _Fact(
+                label: 'أجر التصميم',
+                value: switch (ticket.designerPay) {
+                  final pay? => '${groupedDecimal(pay)} د.ل',
+                  null => 'لم يُحدَّد',
+                },
+              ),
           ],
         ),
         if (ticket.cancellationReason != null) ...[

@@ -28,7 +28,7 @@ void main() {
   late ReviewChoice? answer;
 
   /// Opens the sheet and keeps whatever it answered with.
-  Widget host() => ScreenUtilInit(
+  Widget host({ReviewPay? pay}) => ScreenUtilInit(
     designSize: const Size(430, 932),
     builder: (context, _) => MaterialApp(
       locale: const Locale('ar'),
@@ -45,7 +45,11 @@ void main() {
             body: Center(
               child: TextButton(
                 onPressed: () async {
-                  answer = await showReviewVersionSheet(context: context, version: version);
+                  answer = await showReviewVersionSheet(
+                    context: context,
+                    version: version,
+                    pay: pay,
+                  );
                 },
                 child: const Text('افتح'),
               ),
@@ -58,11 +62,38 @@ void main() {
 
   setUp(() => answer = null);
 
-  Future<void> open(WidgetTester tester) async {
-    await tester.pumpWidget(host());
+  Future<void> open(WidgetTester tester, {ReviewPay? pay}) async {
+    await tester.pumpWidget(host(pay: pay));
     await tester.tap(find.text('افتح'));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('the confirmation says how much enters whose wallet', (tester) async {
+    // Arrange
+    await open(tester, pay: const ReviewPay(amount: '50.00', payee: 'أحمد'));
+
+    // Act
+    await tester.tap(find.text('اعتماد التصميم'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(
+      find.text('تُغلق التذكرة ويُحفظ التصميم في حساب الزبون، ويدخل 50 د.ل محفظة أحمد. لا يمكن التراجع.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a ticket with no pay is confirmed as it always was', (tester) async {
+    // Arrange
+    await open(tester);
+
+    // Act
+    await tester.tap(find.text('اعتماد التصميم'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('تُغلق التذكرة ويُحفظ التصميم في حساب الزبون. لا يمكن التراجع.'), findsOneWidget);
+  });
 
   testWidgets('both verdicts are buttons, and neither is a segment', (tester) async {
     // Arrange - Act

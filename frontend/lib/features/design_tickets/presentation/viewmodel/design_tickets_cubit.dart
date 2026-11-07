@@ -137,8 +137,8 @@ class DesignTicketsCubit extends PagedCubit<DesignTicket> {
   ///
   /// Returns the failure when there is one, so the screen says it in its own words — a Cubit
   /// that emitted a failure state here would blank the list it is sitting under.
-  Future<Failure?> accept(int ticketId) async {
-    final result = await _accept(ticketId);
+  Future<Failure?> accept(int ticketId, {String? pay}) async {
+    final result = await _accept(ticketId, designerPay: pay);
 
     if (isClosed) return null;
 

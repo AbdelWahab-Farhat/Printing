@@ -74,6 +74,9 @@ abstract interface class AccessRepository {
   /// a real state and different from a wage of zero.
   Future<Either<Failure, AuthUser>> setUserSalary(int userId, String? salary);
 
+  /// السعر المقترح لموظف في خدمة، و`null` يمحوه. ومن لا يقدّم الخدمة يُرفض في الخادم.
+  Future<Either<Failure, AuthUser>> setServicePrice(int userId, String service, String? price);
+
   /// Stops an account or starts it again.
   ///
   /// Its own endpoint rather than a field on [updateUser], and that is a safety property rather

@@ -112,6 +112,16 @@ void main() {
     expect(sent()['salary'], '3000');
   });
 
+  test('the suggested price goes to the service, and a clear still sends the key', () async {
+    // Act
+    await repository.setServicePrice(4, 'design', null);
+
+    // Assert
+    expect(adapter.path, '/users/4/services/design');
+    expect(sent().containsKey('suggested_price'), isTrue);
+    expect(sent()['suggested_price'], isNull);
+  });
+
   test('clearing the salary sends the key with a null rather than omitting it', () async {
     // Arrange — the endpoint requires the key to be `present`: an explicit null is how «لم
     // يُحدَّد» is recorded, and an absent one is indistinguishable from a half-built request.
