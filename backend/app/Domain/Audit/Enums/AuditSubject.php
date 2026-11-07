@@ -25,6 +25,7 @@ use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\DesignTicket\Models\DesignTicketMessage;
 use App\Domain\DesignTicket\Models\DesignTicketMessageAttachment;
 use App\Domain\EmployeeWallet\Models\EmployeeWalletEntry;
+use App\Domain\Identity\Models\EmployeeServicePrice;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Models\InternalTicket;
@@ -106,6 +107,7 @@ enum AuditSubject: string
     // Identity
     case User = 'user';
     case Role = 'role';
+    case EmployeeService = 'employee_service';
 
     // Customers
     case Customer = 'customer';
@@ -241,6 +243,7 @@ enum AuditSubject: string
     {
         return match ($this) {
             self::User => User::class,
+            self::EmployeeService => EmployeeServicePrice::class,
             self::Role => Role::class,
             self::Customer => Customer::class,
             self::CustomerShop => CustomerShop::class,
@@ -326,6 +329,7 @@ enum AuditSubject: string
     {
         return match ($this) {
             self::User => 'مستخدم',
+            self::EmployeeService => 'خدمة موظف',
             self::Role => 'دور',
             self::Customer => 'عميل',
             self::CustomerShop => 'محل عميل',

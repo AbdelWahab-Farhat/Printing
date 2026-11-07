@@ -86,6 +86,7 @@ final class CreateDesignTicket
                     'status' => DesignTicketStatus::New,
                     'requested_by_user_id' => $actor?->getKey(),
                     'assigned_designer_id' => $data->assignedDesignerId,
+                    'designer_pay' => $data->designerPay,
                 ])->save();
 
                 $ticketId = (int) $ticket->getKey();

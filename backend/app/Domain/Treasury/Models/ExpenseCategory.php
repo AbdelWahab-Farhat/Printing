@@ -39,6 +39,12 @@ class ExpenseCategory extends Model implements HasAuditTrail
     /** «رواتب» — اختيارُها على «مستحق» يقترح راتب الموظف. EMPLOYEE-WALLET-DESIGN §٩ س٣. */
     public const SALARY = 'salary';
 
+    /** «أجر التصميم» — ما يدخل محفظة المصمم عند اعتماد تذكرته. SERVICE-PAY-DESIGN §٤. */
+    public const DESIGN_PAY = 'design_pay';
+
+    /** التصنيفان النظاميان اللذان يُكتب بهما مستحقٌّ في محفظة موظف. */
+    public const FOR_EMPLOYEE_WALLETS = [self::SALARY, self::DESIGN_PAY];
+
     protected $table = 'treasury_expense_categories';
 
     /**

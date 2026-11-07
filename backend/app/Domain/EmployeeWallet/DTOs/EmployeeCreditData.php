@@ -16,6 +16,8 @@ final readonly class EmployeeCreditData
         public ?Carbon $occurredAt = null,
         public ?string $notes = null,
         public ?string $clientToken = null,
+        /** يكتبه النظام عن عملٍ انتهى، فوقته وقته الفعلي ولا يحرسه تاريخٌ يدوي. */
+        public bool $bySystem = false,
     ) {}
 
     /**

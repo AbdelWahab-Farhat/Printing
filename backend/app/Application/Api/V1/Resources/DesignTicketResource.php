@@ -128,6 +128,15 @@ class DesignTicketResource extends JsonResource
 
             'cancellation_reason' => $this->cancellation_reason,
 
+            // «أجر التصميم» — ما يدخل محفظة المصمم عند الاعتماد. والمفتاح غائبٌ عمّن لا يقرؤه، لا
+            // `null`: الفراغ يعني أن أحداً لم يكتب أجراً. انظر `DesignTicket::mayReadPay()`.
+            'designer_pay' => $this->when(
+                $this->resource->mayReadPay($reader),
+                fn (): ?string => $this->designer_pay,
+            ),
+            // السعر المقترح الذي يظهر في الحقل. تختمه شاشةُ التذكرة وحدها، ولا يحدد شيئاً.
+            'suggested_pay' => $this->whenHas('suggested_pay'),
+
             'versions_count' => $this->whenCounted('versions'),
 
             /*
@@ -174,6 +183,7 @@ class DesignTicketResource extends JsonResource
                 && $reader?->can(PermissionName::AssignDesignTickets->value) === true,
             'can_manage' => $this->status->isOpen()
                 && $reader?->can(PermissionName::ManageDesignTickets->value) === true,
+            'can_set_pay' => $this->status->isOpen() && $this->resource->mayWritePay($reader),
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

@@ -42,7 +42,7 @@ final class RecordWalletExpense
             throw OperationRefused::categoryInactive((string) $category->name);
         }
 
-        if ($category->isSystem() && $category->code !== ExpenseCategory::SALARY) {
+        if ($category->isSystem() && ! in_array($category->code, ExpenseCategory::FOR_EMPLOYEE_WALLETS, true)) {
             throw OperationRefused::categoryNotForWallet((string) $category->name);
         }
 

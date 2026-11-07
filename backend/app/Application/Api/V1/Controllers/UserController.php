@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\SetActivationRequest;
+use App\Application\Api\V1\Requests\User\SetEmployeeServicePriceRequest;
 use App\Application\Api\V1\Requests\User\SetUserPasswordRequest;
 use App\Application\Api\V1\Requests\User\SetUserSalaryRequest;
 use App\Application\Api\V1\Requests\User\StoreUserRequest;
@@ -16,11 +17,13 @@ use App\Application\Api\V1\Resources\UserResource;
 use App\Application\Controller;
 use App\Domain\Audit\AuditService;
 use App\Domain\Identity\AccessService;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Users
@@ -59,7 +62,7 @@ class UserController extends Controller
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
         $users = User::query()
-            ->with('roles')
+            ->with(['roles', 'services'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = '%'.trim((string) $request->string('search')).'%';
 
@@ -182,6 +185,35 @@ class UserController extends Controller
         $updated = $this->access->setUserSalary($user, $request->salary());
 
         return $this->success(new UserResource($updated), 'تم تحديث راتب الموظف بنجاح');
+    }
+
+    /**
+     * Set an employee's suggested price for a service
+     *
+     * يظهر في حقل الأجر على التذكرة ولا يحدد شيئاً. ومَن لا يقدّم الخدمة يُرفض. `null` يمحو السعر.
+     */
+    public function setServicePrice(
+        SetEmployeeServicePriceRequest $request,
+        User $user,
+        EmployeeServiceType $service,
+    ): JsonResponse {
+        $this->access->setServicePrice($user, $service, $request->suggestedPrice());
+
+        return $this->success(new UserResource($user->load('roles')), 'تم تحديث السعر المقترح');
+    }
+
+    /**
+     * An employee service's history
+     */
+    public function serviceLogs(
+        ActivityLogFilterRequest $request,
+        User $user,
+        EmployeeServiceType $service,
+        AuditService $audit,
+    ): JsonResponse {
+        $row = $this->access->serviceRow($user, $service) ?? throw new NotFoundHttpException;
+
+        return $this->auditTrailResponse($request, $row, $audit);
     }
 
     /**

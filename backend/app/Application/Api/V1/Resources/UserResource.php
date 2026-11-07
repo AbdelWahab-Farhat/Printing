@@ -46,6 +46,17 @@ class UserResource extends JsonResource
                 fn () => $this->salary,
             ),
 
+            // «خدمات الموظفين» — لمن يقرأ الرواتب، ولمن يكتب أجر التذكرة فيظهر له السعر المقترح، ولصاحبها
+            // يراه عند القبول. وقائمةٌ لا خريطة، حتى يبقى الفراغ `[]` ويقرؤه التطبيق قائمة.
+            'services' => $this->when(
+                $request->user()?->is($this->resource) === true
+                    || $request->user()?->canAny([
+                        PermissionName::ManageUserSalaries->value,
+                        PermissionName::ManageDesignTickets->value,
+                    ]) === true,
+                fn (): array => $this->resource->offeredServices(),
+            ),
+
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn ($role) => [
                 'name' => $role->name,
                 'label' => RoleName::tryFrom($role->name)?->label() ?? $role->name,

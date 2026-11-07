@@ -19,6 +19,7 @@ use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Enums\DesignTicketFileKind;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Queries\DesignTicketListQuery;
+use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
 use Database\Factories\DesignTicketFactory;
@@ -99,6 +100,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     {
         return [
             'status' => DesignTicketStatus::class,
+            'designer_pay' => 'decimal:2',
             'accepted_at' => 'datetime',
             'completed_at' => 'datetime',
             'requested_by_user_id' => 'integer',
@@ -235,6 +237,42 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
         // The unclaimed pool: addressed to nobody and not yet taken. What a designer is shown so
         // that work without a name on it can be picked up at all.
         return $this->assigned_designer_id === null && ! $this->isAccepted();
+    }
+
+    // ───────────────────────────────── أجر التصميم ─────────────────────────────────
+
+    /**
+     * مَن يُقال له كم أجر هذه التذكرة — SERVICE-PAY-DESIGN §٣.
+     *
+     * مَن ينشئ التذاكر، والمصمم المسؤول، ومَن سيأخذها من الطابور. ومَن يعتمد أيضاً، لأن نافذة تأكيده
+     * تذكر المبلغ الذي يوافق عليه. وما سواهم يغيب عنه المفتاح كما يغيب الراتب.
+     */
+    public function mayReadPay(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->canAny([
+            PermissionName::ManageDesignTickets->value,
+            PermissionName::ReviewDesignTickets->value,
+        ]) || ($user->can(PermissionName::AcceptDesignTickets->value) && $this->isWorkableBy($user));
+    }
+
+    /**
+     * مَن يكتبه: مَن ينشئ التذاكر، والمصمم المسؤول عنها. ومَن يأخذها من الطابور يكتبه عند القبول.
+     *
+     * **والمصمم يكتب ما سيدخل محفظته**، فالضمانُ أن مَن يعتمد يقرأ المبلغ قبل أن يوافق، وأنه لا يكون
+     * رافع النسخة (`DesignerCannotReviewOwnWork`).
+     */
+    public function mayWritePay(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can(PermissionName::ManageDesignTickets->value)
+            || $this->designerId() === (int) $user->getKey();
     }
 
     // ───────────────────────────────── the versions ─────────────────────────────────

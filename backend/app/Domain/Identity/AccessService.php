@@ -9,7 +9,10 @@ use App\Domain\Identity\Actions\CreateRole;
 use App\Domain\Identity\Actions\DeleteRole;
 use App\Domain\Identity\Actions\UpdateEmployee;
 use App\Domain\Identity\Actions\UpdateRole;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Exceptions\CannotStopOwnAccount;
+use App\Domain\Identity\Exceptions\EmployeeDoesNotOfferService;
+use App\Domain\Identity\Models\EmployeeServicePrice;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -81,6 +84,46 @@ class AccessService
         $user->tokens()->delete();
 
         return $user->load('roles');
+    }
+
+    /**
+     * السعر المقترح لموظف في خدمة. `null` يمحوه ويبقى الصف بتاريخه.
+     *
+     * @throws EmployeeDoesNotOfferService
+     */
+    public function setServicePrice(User $user, EmployeeServiceType $service, ?string $price): EmployeeServicePrice
+    {
+        if (! $user->offers($service)) {
+            throw EmployeeDoesNotOfferService::make($service);
+        }
+
+        $row = $this->serviceRow($user, $service) ?? new EmployeeServicePrice;
+
+        $row->forceFill([
+            'user_id' => $user->getKey(),
+            'service' => $service,
+            'suggested_price' => $price,
+        ])->save();
+
+        return $row;
+    }
+
+    /** ما يظهر في الحقل على التذكرة. ومَن لا يقدّم الخدمة `null`، ولو بقي له صفٌّ من قبل. */
+    public function suggestedPrice(User $user, EmployeeServiceType $service): ?string
+    {
+        if (! $user->offers($service)) {
+            return null;
+        }
+
+        return $this->serviceRow($user, $service)?->suggested_price;
+    }
+
+    public function serviceRow(User $user, EmployeeServiceType $service): ?EmployeeServicePrice
+    {
+        return EmployeeServicePrice::query()
+            ->where('user_id', $user->getKey())
+            ->where('service', $service->value)
+            ->first();
     }
 
     /**

@@ -20,7 +20,8 @@ use InvalidArgumentException;
  * **لا كاش يتحرك.** الخزينة تكتب مصروفاً بتصنيفه على «أرصدة محافظ الموظفين»، فيظهر في «المصاريف»
  * ويكبر الدَّين، والمال يبقى مكانه حتى يسحب الموظف. والسحبُ بعدها ليس مصروفاً ثانياً.
  *
- * **تاريخٌ من يد إنسان**، فلا يقع في فترةٍ مقفلة.
+ * **تاريخٌ من يد إنسان**، فلا يقع في فترةٍ مقفلة. وما يكتبه النظام بوقته الفعلي لا يُحرس بهذا، وإلا عطّل
+ * «مقفل حتى تاريخ» اعتماد التصاميم.
  */
 final class CreditEmployeeWallet
 {
@@ -45,7 +46,9 @@ final class CreditEmployeeWallet
 
             $occurredAt = $data->occurredAt ?? now();
 
-            $this->treasury->guardManualEntry($this->treasury->employeeWalletsPayable(), $occurredAt, 'occurred_at');
+            if (! $data->bySystem) {
+                $this->treasury->guardManualEntry($this->treasury->employeeWalletsPayable(), $occurredAt, 'occurred_at');
+            }
 
             $operation = $this->treasury->recordWalletExpense(
                 $data->categoryId,

@@ -7,9 +7,11 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\NarrowsDesignTickets;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\DesignTicket\AcceptDesignTicketRequest;
 use App\Application\Api\V1\Requests\DesignTicket\AssignDesignTicketRequest;
 use App\Application\Api\V1\Requests\DesignTicket\CancelDesignTicketRequest;
 use App\Application\Api\V1\Requests\DesignTicket\ReviewDesignVersionRequest;
+use App\Application\Api\V1\Requests\DesignTicket\SetDesignTicketPayRequest;
 use App\Application\Api\V1\Requests\DesignTicket\StoreDesignTicketAttachmentRequest;
 use App\Application\Api\V1\Requests\DesignTicket\StoreDesignTicketRequest;
 use App\Application\Api\V1\Requests\DesignTicket\SubmitDesignVersionRequest;
@@ -25,6 +27,8 @@ use App\Domain\DesignTicket\Enums\DesignTicketFileKind;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\DesignTicket\Queries\DesignTicketFilters;
+use App\Domain\Identity\AccessService;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Enums\NotificationType;
@@ -70,6 +74,7 @@ class DesignTicketController extends Controller
         // الشارةُ على كلِّ صفّ تُقرأ من صفوف الإشعارات، وهي سياقٌ آخر — فتُسأل من بابها.
         // والاتّجاه يبقى صحيحاً: الطبقةُ التطبيقيّة تعرف السياقين، ولا يعرف أحدُهما الآخر.
         private readonly NotificationService $notifications,
+        private readonly AccessService $access,
     ) {}
 
     /**
@@ -226,7 +231,7 @@ class DesignTicketController extends Controller
      * A ticket addressed to a named designer is refused to everybody else; one addressed to nobody
      * belongs to whoever reaches it first.
      */
-    public function accept(Request $request, DesignTicket $ticket): JsonResponse
+    public function accept(AcceptDesignTicketRequest $request, DesignTicket $ticket): JsonResponse
     {
         // **Deliberately not `refuseUnlessVisible()`, and this is the one endpoint that differs.**
         //
@@ -249,11 +254,31 @@ class DesignTicketController extends Controller
         /** @var User $designer */
         $designer = $request->user();
 
-        $accepted = $this->tickets->accept($ticket, $designer);
+        $accepted = $this->tickets->accept($ticket, $designer, $request->designerPay());
 
         return $this->success(
             new DesignTicketResource($this->loadForDisplay($request, $accepted)),
             'تم قبول الطلب',
+        );
+    }
+
+    /**
+     * Set the designer's pay on a ticket
+     *
+     * يكتبه مَن ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة. `null` يمحوه، فتكتمل بلا مال.
+     */
+    public function setPay(SetDesignTicketPayRequest $request, DesignTicket $ticket): JsonResponse
+    {
+        $this->refuseUnlessVisibleTicket($request, $ticket);
+
+        /** @var User $actor */
+        $actor = $request->user();
+
+        $updated = $this->tickets->setPay($ticket, $request->designerPay(), $actor);
+
+        return $this->success(
+            new DesignTicketResource($this->loadForDisplay($request, $updated)),
+            'تم تحديث أجر التصميم',
         );
     }
 
@@ -403,6 +428,7 @@ class DesignTicketController extends Controller
             $request->verdict(),
             $request->string('note')->toString() ?: null,
             $request->user(),
+            $request->confirmedPay(),
         );
 
         return $this->success(
@@ -504,13 +530,44 @@ class DesignTicketController extends Controller
     {
         $this->stampUnreadComments($request, new Collection([$ticket]));
 
-        return $ticket->load([
+        $ticket->load([
             'customer:id,code',
             'requester', 'designer', 'acceptedBy', 'approvedBy', 'approvedDesign', 'order',
             'latestVersion',
             'attachments.uploader',
             'versions.uploader', 'versions.reviewer',
         ])->loadCount('versions');
+
+        $this->stampSuggestedPay($request, $ticket);
+
+        return $ticket;
+    }
+
+    /**
+     * السعر المقترح الذي يظهر في حقل الأجر: للمصمم الذي على التذكرة، أو لقارئها من الطابور.
+     *
+     * **يُكتب هنا لا في المورد** للسبب الذي يعطيه {@see stampUnreadComments()}، ولأن «خدمات الموظفين»
+     * سياقٌ آخر. ومَن لا يقرأ الأجر لا يُختم له شيء، فيغيب المفتاح عنه.
+     */
+    private function stampSuggestedPay(Request $request, DesignTicket $ticket): void
+    {
+        /** @var User|null $reader */
+        $reader = $request->user();
+
+        if (! $ticket->isOpen() || ! $ticket->mayReadPay($reader)) {
+            return;
+        }
+
+        $designer = $ticket->acceptedBy ?? $ticket->designer;
+
+        if ($designer === null && $reader?->can(PermissionName::AcceptDesignTickets->value) === true) {
+            $designer = $reader;
+        }
+
+        $ticket->setAttribute(
+            'suggested_pay',
+            $designer === null ? null : $this->access->suggestedPrice($designer, EmployeeServiceType::Design),
+        );
     }
 
     /**

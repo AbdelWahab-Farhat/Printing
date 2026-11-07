@@ -17,7 +17,10 @@ use App\Domain\EmployeeWallet\Models\EmployeeWalletEntry;
 use App\Domain\EmployeeWallet\Queries\EmployeeWalletBalances;
 use App\Domain\EmployeeWallet\Support\BusinessDay;
 use App\Domain\EmployeeWallet\Support\OwnWalletRule;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Models\User;
+use App\Domain\Treasury\Models\ExpenseCategory;
+use App\Domain\Treasury\TreasuryService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -25,7 +28,8 @@ use Illuminate\Database\Eloquent\Builder;
  * باب «محفظة الموظف» — Docs/employees/EMPLOYEE-WALLET-DESIGN.md.
  *
  * **سياقٌ مستقلّ عن محفظة الزبون**: تلك مربوطةٌ بالطلبيات وفيها مال حقيقي، وهذا العمل لا يمسّها. هذا
- * السياق يعتمد على `Treasury` و`Identity` وحدهما، ولا يستورده أحد — الإشعارات تصغي لحدثه.
+ * السياق يعتمد على `Treasury` و`Identity` وحدهما، ولا يعرف من يناديه: الإشعارات تصغي لحدثه، والتذكرة
+ * تدخل من {@see payForService()}.
  *
  * **كلُّ كتابةٍ تمرّ بهذا الباب**، لأن قاعدة «لا تحرّك محفظتك بنفسك» وإعلانَ الحركة يسكنان هنا مرّةً
  * واحدة بدل أن يتذكّرهما كل فعل.
@@ -38,6 +42,7 @@ final class EmployeeWalletService
         private readonly CreditEmployeeWallet $credit,
         private readonly AdjustEmployeeWallet $adjust,
         private readonly ReverseEmployeeWalletEntry $reverse,
+        private readonly TreasuryService $treasury,
     ) {}
 
     public function balanceOf(int $userId): string
@@ -78,6 +83,36 @@ final class EmployeeWalletService
         $this->guardNotOwn($actor, $userId);
 
         return $this->announced(($this->credit)($userId, $data, (int) $actor->getKey()), $actor);
+    }
+
+    /**
+     * أجرُ خدمةٍ انتهت، يكتبه النظام في معاملة مَن يناديه — SERVICE-PAY-DESIGN §٤.
+     *
+     * **لا تمرّ بقاعدة «لا تحرّك محفظتك»**: الكاتب هو النظام لا `$actor`، وهو هنا يوقّع السطر فقط.
+     * و`$reference` فريدٌ في المحفظة، فلا يُكتب العمل نفسه مرتين.
+     */
+    public function payForService(
+        int $userId,
+        EmployeeServiceType $service,
+        string $amount,
+        string $reference,
+        string $notes,
+        ?User $actor,
+    ): EmployeeWalletEntry {
+        $category = $this->treasury->categoryWithCode(match ($service) {
+            EmployeeServiceType::Design => ExpenseCategory::DESIGN_PAY,
+        });
+
+        return $this->announced(
+            ($this->credit)($userId, new EmployeeCreditData(
+                amount: $amount,
+                categoryId: (int) $category->getKey(),
+                notes: $notes,
+                clientToken: $reference,
+                bySystem: true,
+            ), $actor === null ? null : (int) $actor->getKey()),
+            $actor,
+        );
     }
 
     public function adjust(
@@ -168,7 +203,7 @@ final class EmployeeWalletService
     /**
      * يعلن الحركة بعد أن التزمت معاملتها. الإعادةُ بالرمز نفسه لا سطرَ جديداً فيها ولا خبر.
      */
-    private function announced(EmployeeWalletEntry $entry, User $actor): EmployeeWalletEntry
+    private function announced(EmployeeWalletEntry $entry, ?User $actor): EmployeeWalletEntry
     {
         if ($entry->wasRecentlyCreated) {
             EmployeeWalletMoved::dispatch(
@@ -176,7 +211,7 @@ final class EmployeeWalletService
                 (int) $entry->user_id,
                 $entry->type->value,
                 $entry->isCredit(),
-                (int) $actor->getKey(),
+                $actor === null ? null : (int) $actor->getKey(),
             );
         }
 

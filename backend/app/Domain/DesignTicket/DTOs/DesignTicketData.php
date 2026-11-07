@@ -36,6 +36,7 @@ final readonly class DesignTicketData
         public ?int $assignedDesignerId = null,
         public array $files = [],
         public ?array $printColors = null,
+        public ?string $designerPay = null,
     ) {}
 
     /**
@@ -57,6 +58,9 @@ final readonly class DesignTicketData
                 : null,
             files: $files,
             printColors: PrintColors::normalise($data['print_colors'] ?? null),
+            designerPay: isset($data['designer_pay']) && $data['designer_pay'] !== ''
+                ? (string) $data['designer_pay']
+                : null,
         );
     }
 

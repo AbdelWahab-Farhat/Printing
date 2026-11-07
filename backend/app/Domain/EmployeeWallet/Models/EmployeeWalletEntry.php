@@ -78,6 +78,16 @@ class EmployeeWalletEntry extends Model implements HasAuditTrail
         return $this->isCredit() ? (string) $this->amount : bcmul((string) $this->amount, '-1', 2);
     }
 
+    /** عنوان السطر: «مستحق»، إلا أجر التصميم فيُقرأ باسمه في المحفظة والمعاملات. */
+    public function displayLabel(): string
+    {
+        if ($this->relationLoaded('category') && $this->category?->code === ExpenseCategory::DESIGN_PAY) {
+            return (string) $this->category->name;
+        }
+
+        return $this->type->label();
+    }
+
     /** أعكسَه شيء. يقرأ ما حُمّل قبل أن يسأل القاعدة — الكشفُ يسأله لكل سطر. */
     public function isReversed(): bool
     {

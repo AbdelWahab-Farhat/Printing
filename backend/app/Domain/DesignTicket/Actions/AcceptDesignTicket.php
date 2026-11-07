@@ -47,12 +47,14 @@ use App\Domain\Identity\Models\User;
 final class AcceptDesignTicket
 {
     /**
+     * @param  string|null  $pay  «أجر التصميم» يكتبه مَن يأخذها، حين لا أجر عليها. `null` يتركه كما هو.
+     *
      * @throws DesignTicketIsClosed
      * @throws DesignTicketAlreadyAccepted
      * @throws DesignTicketBelongsToAnotherDesigner
      * @throws DispatchersDoNotTakeFromThePool
      */
-    public function __invoke(DesignTicket $ticket, User $designer): DesignTicket
+    public function __invoke(DesignTicket $ticket, User $designer, ?string $pay = null): DesignTicket
     {
         if (! $ticket->isOpen()) {
             throw DesignTicketIsClosed::make($ticket->status);
@@ -99,7 +101,10 @@ final class AcceptDesignTicket
         // whole step exists to record. Touching the model puts the acceptance in the trail with
         // its causer — the `->each()` rule from RULES §10, applied to a single row.
         $ticket->refresh();
-        $ticket->forceFill(['accepted_at' => $now])->save();
+        $ticket->forceFill([
+            'accepted_at' => $now,
+            ...$pay === null ? [] : ['designer_pay' => $pay],
+        ])->save();
 
         DesignTicketProgressed::dispatch(
             (int) $ticket->getKey(),

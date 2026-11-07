@@ -46,6 +46,8 @@ class ReviewDesignVersionRequest extends FormRequest
                 'min:3',
                 'max:2000',
             ],
+            // المبلغ الذي قرأه المعتمد في نافذة التأكيد، و`0` إن لم يقرأ أجراً. نسخةٌ قديمة لا ترسله.
+            'confirmed_pay' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -56,6 +58,13 @@ class ReviewDesignVersionRequest extends FormRequest
     public function verdict(): DesignSubmissionStatus
     {
         return DesignSubmissionStatus::from((string) $this->validated('verdict'));
+    }
+
+    public function confirmedPay(): ?string
+    {
+        $pay = $this->validated('confirmed_pay');
+
+        return $pay === null ? null : (string) $pay;
     }
 
     /**

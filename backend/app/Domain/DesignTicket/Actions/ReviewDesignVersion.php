@@ -10,9 +10,12 @@ use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\DesignTicket\Exceptions\DesignerCannotReviewOwnWork;
 use App\Domain\DesignTicket\Exceptions\DesignReviewRequiresNote;
 use App\Domain\DesignTicket\Exceptions\DesignTicketIsClosed;
+use App\Domain\DesignTicket\Exceptions\DesignTicketPayChanged;
 use App\Domain\DesignTicket\Exceptions\DesignVersionAlreadyReviewed;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\EmployeeWallet\EmployeeWalletService;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -36,16 +39,30 @@ use Illuminate\Support\Facades\DB;
  * version exists, and that trail is the entire value of keeping versions at all.
  *
  * **A change request must say what to change.** The whole point of a revision round is the words.
+ *
+ * **والأجرُ جزءٌ خامس من الحقيقة نفسها** (SERVICE-PAY-DESIGN §٤): يدخل محفظة رافع النسخة المعتمدة في
+ * المعاملة نفسها، فلا تكتمل تذكرةٌ ويضيع أجرها، ولا يُدفع عن اعتمادٍ تراجع. ولأن المال صار يتبع هذا
+ * الفعل، فالفحوص كلُّها تحت قفل التذكرة: موافقتان في اللحظة نفسها كانتا تمرّان معاً.
+ *
+ * **ويستلمه مَن رفع النسخة لا مَن يحمل التذكرة**: نسخةٌ معلّقة تبقى بعد الإعادة إلى الطابور، وقد تُعتمد
+ * وغيرُ راسمها يحمل التذكرة.
  */
 final class ReviewDesignVersion
 {
-    public function __construct(private readonly PromoteApprovedDesign $promote) {}
+    public function __construct(
+        private readonly PromoteApprovedDesign $promote,
+        private readonly EmployeeWalletService $wallet,
+    ) {}
 
     /**
+     * @param  string|null  $confirmedPay  المبلغ الذي قرأه المعتمد في نافذة التأكيد، `0` إن لم يقرأ
+     *                                     أجراً. `null` من نسخةٍ قديمة لا تعرفه، فلا يُقارَن.
+     *
      * @throws DesignTicketIsClosed
      * @throws DesignVersionAlreadyReviewed
      * @throws DesignerCannotReviewOwnWork
      * @throws DesignReviewRequiresNote
+     * @throws DesignTicketPayChanged
      */
     public function __invoke(
         DesignTicket $ticket,
@@ -53,30 +70,43 @@ final class ReviewDesignVersion
         DesignSubmissionStatus $verdict,
         ?string $note = null,
         ?User $actor = null,
+        ?string $confirmedPay = null,
     ): DesignTicketFile {
-        if (! $ticket->isOpen()) {
-            throw DesignTicketIsClosed::make($ticket->status);
-        }
+        return DB::transaction(function () use ($ticket, $version, $verdict, $note, $actor, $confirmedPay): DesignTicketFile {
+            DesignTicket::query()->whereKey($ticket->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($version->status?->isReviewed() === true) {
-            throw DesignVersionAlreadyReviewed::make((int) $version->version, $version->status);
-        }
+            $ticket->refresh();
+            $version->refresh();
 
-        // Before the note check, so somebody reviewing their own work is told the real reason
-        // rather than being sent to write a note that will be refused anyway.
-        if ($actor !== null
-            && $version->uploaded_by_user_id !== null
-            && (int) $version->uploaded_by_user_id === (int) $actor->getKey()) {
-            throw DesignerCannotReviewOwnWork::make();
-        }
+            if (! $ticket->isOpen()) {
+                throw DesignTicketIsClosed::make($ticket->status);
+            }
 
-        $note = $note === null ? null : (trim($note) !== '' ? trim($note) : null);
+            if ($version->status?->isReviewed() === true) {
+                throw DesignVersionAlreadyReviewed::make((int) $version->version, $version->status);
+            }
 
-        if ($verdict->requiresNote() && $note === null) {
-            throw DesignReviewRequiresNote::make();
-        }
+            // Before the note check, so somebody reviewing their own work is told the real reason
+            // rather than being sent to write a note that will be refused anyway.
+            if ($actor !== null
+                && $version->uploaded_by_user_id !== null
+                && (int) $version->uploaded_by_user_id === (int) $actor->getKey()) {
+                throw DesignerCannotReviewOwnWork::make();
+            }
 
-        return DB::transaction(function () use ($ticket, $version, $verdict, $note, $actor): DesignTicketFile {
+            $note = $note === null ? null : (trim($note) !== '' ? trim($note) : null);
+
+            if ($verdict->requiresNote() && $note === null) {
+                throw DesignReviewRequiresNote::make();
+            }
+
+            // لا يُدفع غير ما وافق عليه: الأجرُ يُكتب والنافذة مفتوحة.
+            if ($verdict === DesignSubmissionStatus::Approved
+                && $confirmedPay !== null
+                && bccomp($this->payOn($ticket), $confirmedPay, 2) !== 0) {
+                throw DesignTicketPayChanged::make();
+            }
+
             $version->forceFill([
                 'status' => $verdict,
                 'review_note' => $note,
@@ -100,6 +130,10 @@ final class ReviewDesignVersion
 
             $ticket->forceFill($attributes)->save();
 
+            if ($verdict === DesignSubmissionStatus::Approved) {
+                $this->pay($ticket, $version, $actor);
+            }
+
             DesignTicketProgressed::dispatch(
                 (int) $ticket->getKey(),
                 $status,
@@ -108,5 +142,29 @@ final class ReviewDesignVersion
 
             return $version->refresh();
         });
+    }
+
+    private function payOn(DesignTicket $ticket): string
+    {
+        return (string) ($ticket->designer_pay ?? '0');
+    }
+
+    /** بلا أجر لا سطر ولا عملية، وتكتمل التذكرة كما كانت. */
+    private function pay(DesignTicket $ticket, DesignTicketFile $version, ?User $actor): void
+    {
+        $payee = $version->uploaded_by_user_id ?? $ticket->designerId();
+
+        if ($payee === null || bccomp($this->payOn($ticket), '0', 2) <= 0) {
+            return;
+        }
+
+        $this->wallet->payForService(
+            (int) $payee,
+            EmployeeServiceType::Design,
+            $this->payOn($ticket),
+            "design-ticket:{$ticket->getKey()}",
+            "أجر تصميم {$ticket->code}",
+            $actor,
+        );
     }
 }

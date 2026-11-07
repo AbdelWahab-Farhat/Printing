@@ -2,10 +2,11 @@
 
 namespace App\Domain\Identity\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Audit\Concerns\Auditable;
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Actions\AllocateEmployeeCode;
+use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Enums\RoleName;
 use App\Providers\AppServiceProvider;
 use Database\Factories\UserFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -88,6 +90,49 @@ class User extends Authenticatable implements HasAuditTrail
      *
      * @see AppServiceProvider::boot() for the gate that enforces it.
      */
+    /**
+     * «خدمات الموظفين» — انظر {@see EmployeeServicePrice}.
+     *
+     * @return HasMany<EmployeeServicePrice, $this>
+     */
+    public function services(): HasMany
+    {
+        return $this->hasMany(EmployeeServicePrice::class);
+    }
+
+    /**
+     * أيقدّم هذا الموظف هذه الخدمة.
+     *
+     * **`checkPermissionTo` لا `can()`**: المديرُ يملك كل صلاحية بقاعدة، ولا يصير مصمماً بها، كما لا
+     * يظهر في قائمة المصممين إلا بمنحٍ حقيقي.
+     *
+     * **على نسخةٍ من النموذج**: الفحص يحمّل علاقة `permissions`، و`UserResource` يرسل صلاحيات الموظف
+     * حين يجدها محمَّلة، فكان سؤالٌ عن خدمته يكشف صلاحياته لمن يقرأ شاشته.
+     */
+    public function offers(EmployeeServiceType $service): bool
+    {
+        return (clone $this)->checkPermissionTo($service->permission()->value);
+    }
+
+    /**
+     * خدماتُ هذا الموظف بأسعارها، وما لا يقدّمه لا يظهر — ما تعرضه شاشته وقائمة المصممين.
+     *
+     * @return list<array{service: string, label: string, suggested_price: string|null}>
+     */
+    public function offeredServices(): array
+    {
+        $rows = $this->relationLoaded('services') ? $this->services : $this->services()->get();
+
+        return array_values(array_map(
+            fn (EmployeeServiceType $service): array => [
+                'service' => $service->value,
+                'label' => $service->label(),
+                'suggested_price' => $rows->firstWhere('service', $service)?->suggested_price,
+            ],
+            array_filter(EmployeeServiceType::cases(), $this->offers(...)),
+        ));
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasRole(RoleName::Admin->value);

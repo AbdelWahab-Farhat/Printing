@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Audit\AuditAttributeLabels;
 use App\Domain\Audit\AuditHiddenAttributes;
 use App\Domain\Audit\AuditReferenceNames;
+use App\Domain\Audit\AuditRestrictedAttributes;
 use App\Domain\Audit\AuditValueLabels;
 use App\Domain\Audit\Enums\AuditEvent;
 use App\Domain\Audit\Enums\AuditSubject;
@@ -63,8 +64,16 @@ class ActivityLogResource extends JsonResource
         // the values, their labels and their translations. Narrowing in one place is what keeps
         // the three in step: a column dropped from `changes` but still named in
         // `attribute_labels` is a label for a line nobody draws.
-        $old = AuditHiddenAttributes::strip($this->attribute_changes?->get('old'), $subject);
-        $new = AuditHiddenAttributes::strip($this->attribute_changes?->get('attributes'), $subject);
+        $old = AuditRestrictedAttributes::strip(
+            AuditHiddenAttributes::strip($this->attribute_changes?->get('old'), $subject),
+            $subject,
+            $request->user(),
+        );
+        $new = AuditRestrictedAttributes::strip(
+            AuditHiddenAttributes::strip($this->attribute_changes?->get('attributes'), $subject),
+            $subject,
+            $request->user(),
+        );
 
         $valueLabels = AuditValueLabels::forChanges($subject, $old, $new, $this->referenceNames);
         $propertyLabels = AuditValueLabels::forProperties($this->properties);

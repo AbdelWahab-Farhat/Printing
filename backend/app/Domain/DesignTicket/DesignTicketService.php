@@ -15,6 +15,7 @@ use App\Domain\DesignTicket\Actions\MarkDesignTicketRead;
 use App\Domain\DesignTicket\Actions\PostDesignTicketMessage;
 use App\Domain\DesignTicket\Actions\RetractDesignTicketMessage;
 use App\Domain\DesignTicket\Actions\ReviewDesignVersion;
+use App\Domain\DesignTicket\Actions\SetDesignTicketPay;
 use App\Domain\DesignTicket\Actions\SubmitDesignVersion;
 use App\Domain\DesignTicket\Actions\UpdateDesignTicket;
 use App\Domain\DesignTicket\Actions\WithdrawDesignVersion;
@@ -62,6 +63,7 @@ final class DesignTicketService
         private readonly EditDesignTicketMessage $editMessage,
         private readonly RetractDesignTicketMessage $retractMessage,
         private readonly MarkDesignTicketRead $markRead,
+        private readonly SetDesignTicketPay $setPayOnTicket,
     ) {}
 
     /**
@@ -98,9 +100,9 @@ final class DesignTicketService
         return ($this->assignTicket)($ticket, $designer, $actor);
     }
 
-    public function accept(DesignTicket $ticket, User $designer): DesignTicket
+    public function accept(DesignTicket $ticket, User $designer, ?string $pay = null): DesignTicket
     {
-        return ($this->acceptTicket)($ticket, $designer);
+        return ($this->acceptTicket)($ticket, $designer, $pay);
     }
 
     public function cancel(DesignTicket $ticket, ?string $reason, ?User $actor = null): DesignTicket
@@ -138,8 +140,14 @@ final class DesignTicketService
         DesignSubmissionStatus $verdict,
         ?string $note = null,
         ?User $actor = null,
+        ?string $confirmedPay = null,
     ): DesignTicketFile {
-        return ($this->reviewVersion)($ticket, $version, $verdict, $note, $actor);
+        return ($this->reviewVersion)($ticket, $version, $verdict, $note, $actor, $confirmedPay);
+    }
+
+    public function setPay(DesignTicket $ticket, ?string $pay, User $actor): DesignTicket
+    {
+        return ($this->setPayOnTicket)($ticket, $pay, $actor);
     }
 
     public function withdraw(DesignTicket $ticket, DesignTicketFile $version, User $designer): DesignTicketFile

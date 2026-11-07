@@ -525,6 +525,12 @@ final class TreasuryService
         );
     }
 
+    /** تصنيفٌ يعتمد عليه النظام، برمزه لا باسمٍ يُعاد كتابته. */
+    public function categoryWithCode(string $code): ExpenseCategory
+    {
+        return ExpenseCategory::query()->where('code', $code)->firstOrFail();
+    }
+
     /**
      * عكسُ ذلك المستحق. **بابٌ مستقلّ لأن شاشة الحسابات ترفضه**: لا يُعكس إلا مع سطر المحفظة.
      */

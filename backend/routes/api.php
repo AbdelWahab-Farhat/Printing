@@ -195,6 +195,12 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('users/{user}/salary', [UserController::class, 'setSalary'])
             ->middleware('can:users.salary')->name('users.salary');
 
+        // «خدمات الموظفين» — السعر المقترح من جنس الراتب، فخلف صلاحيته.
+        Route::put('users/{user}/services/{service}', [UserController::class, 'setServicePrice'])
+            ->middleware('can:users.salary')->name('users.services.update');
+        Route::get('users/{user}/services/{service}/logs', [UserController::class, 'serviceLogs'])
+            ->middleware('can:users.salary')->name('users.services.logs');
+
         // No destroy route, for the same reason customers and products have none: an account is
         // stopped, never deleted, so everything it recorded keeps naming somebody who exists.
         Route::patch('users/{user}/activation', [UserController::class, 'setActivation'])
@@ -1215,6 +1221,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::patch('design-tickets/{ticket}/designer', [DesignTicketController::class, 'assign'])
             ->middleware('can:design_tickets.assign')->name('design-tickets.designer');
+
+        // «أجر التصميم». مَن يكتبه سؤالٌ عن هذه التذكرة بعينها، فجوابه في `SetDesignTicketPay`.
+        Route::patch('design-tickets/{ticket}/pay', [DesignTicketController::class, 'setPay'])
+            ->middleware('can:design_tickets.view')->name('design-tickets.pay');
 
         // «قبول الطلب». A POST to a noun rather than a PATCH on the ticket: what is created is
         // the acceptance — a fact with a person and a time — and exactly one may ever exist.

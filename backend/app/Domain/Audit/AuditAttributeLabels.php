@@ -97,6 +97,11 @@ final class AuditAttributeLabels
             'employee_code' => 'الرقم الوظيفي',
             'salary' => 'الراتب',
         ],
+        'employee_service' => [
+            'user_id' => 'الموظف',
+            'service' => 'الخدمة',
+            'suggested_price' => 'السعر المقترح',
+        ],
         'role' => [
             'name' => 'اسم الدور',
             'guard_name' => 'نطاق الصلاحية',
@@ -801,6 +806,7 @@ final class AuditAttributeLabels
             // what lets a designer read the ticket without a grant on customers.
             'customer_name' => 'اسم العميل',
             'order_id' => 'الطلبية',
+            'designer_pay' => 'أجر التصميم',
             'title' => 'عنوان الطلب',
             'description' => 'وصف الطلب',
             'instructions' => 'الملاحظات والتعليمات',

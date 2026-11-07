@@ -37,7 +37,7 @@ class EmployeeWalletEntryResource extends JsonResource
             ]),
 
             'type' => $this->type->value,
-            'type_label' => $this->type->label(),
+            'type_label' => $this->resource->displayLabel(),
 
             /** `in` يزيد المحفظة، و`out` ينقصها. */
             'direction' => $this->resource->isCredit() ? 'in' : 'out',
