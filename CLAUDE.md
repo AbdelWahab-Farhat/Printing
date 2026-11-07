@@ -3,7 +3,7 @@
 ## Commit messages
 
 Every commit message is in **English**: short, simple to understand and clean. This holds even
-though code comments, docs and chat are in Arabic.
+though docs and chat are in Arabic.
 
 Format ([Conventional Commits](https://www.conventionalcommits.org)):
 
@@ -30,3 +30,8 @@ feat(orders): show the overpaid amount next to "Paid"
 fix(orders): send booleans as 1/0 in multipart requests
 chore(release): staff 1.13.0 (12)
 ```
+
+## Code comments
+
+Code comments and doc comments are in **English only**, across the whole repo. User-facing strings
+stay in Arabic. This overrides any rule file that says otherwise.
