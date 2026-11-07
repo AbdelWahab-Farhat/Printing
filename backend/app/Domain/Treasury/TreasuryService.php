@@ -695,6 +695,17 @@ final class TreasuryService
     }
 
     /**
+     * ما في العهدة لطلبيات كثيرة باستعلام واحد.
+     *
+     * @param  list<int>  $orderIds
+     * @return array<int, array<int, string>> الطلبية => حساب العهدة => ما فيه لها، الموجب وحده
+     */
+    public function custodyOfMany(array $orderIds): array
+    {
+        return $this->custody->ofMany($orderIds);
+    }
+
+    /**
      * Carries an order's custody to the account it reached — «تم التسوية», TREASURY-DESIGN §٦ —
      * then collects what landed in «مصرف علي» or a branch's box into its kind's collecting
      * account, where the owner switched that on (§١٨). Call inside the status change's
@@ -710,6 +721,7 @@ final class TreasuryService
      * @param  array<string, int>  $picks  kind => the account picked for it under «اختيار حساب
      *                                     كل نوع عند التسوية» (§٢٤); ignored while that is off
      * @param  array<string, string>  $pickFields  kind => where a refused pick is filed
+     * @param  ?string  $batch  دفعة تسوية النورس، تُكتب في ملاحظة العملية
      */
     public function settleCustody(
         int $orderId,
@@ -724,6 +736,7 @@ final class TreasuryService
         array $settlerChoices = [],
         array $picks = [],
         array $pickFields = [],
+        ?string $batch = null,
     ): ?TreasuryOperation {
         // A past date only for the import of old orders, which were settled on their own day.
         $occurredAt ??= now();
@@ -742,10 +755,11 @@ final class TreasuryService
             applySettings: $collect,
             choices: $settlerChoices,
             picks: $picked,
+            batch: $batch,
         );
 
         if ($collect) {
-            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId, $settlerChoices, $picked);
+            ($this->collectOrderMoney)($orderId, $actorId, $occurredAt, $orderCode, $destinationId, $settlerChoices, $picked, $batch);
         }
 
         return $settlement;

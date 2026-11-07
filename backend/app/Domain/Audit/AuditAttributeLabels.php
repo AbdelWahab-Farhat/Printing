@@ -236,6 +236,38 @@ final class AuditAttributeLabels
             'is_default' => 'الشركة المبدئية',
         ],
 
+        'nawris_settlement_import' => [
+            'file_name' => 'اسم الملف',
+            'client_token' => 'رمز العملية',
+            'imported_by' => 'نفّذها',
+            'rows_count' => 'عدد الصفوف',
+            'orders_count' => 'عدد الطلبيات',
+            'settled_count' => 'ما سُوّي',
+            'skipped_count' => 'ما كان مسوّى',
+            'rejected_count' => 'ما لم يتحرك',
+            'left_out_count' => 'ما تُرك لتحويل لاحق',
+            'warnings_count' => 'عدد التنبيهات',
+            'total_held' => 'ما عند النورس',
+            'received_amount' => 'المبلغ المستلم',
+            'fee_total' => 'ما احتفظ به النورس',
+            'difference_reason' => 'سبب الفرق',
+        ],
+        'nawris_settlement_import_item' => [
+            'nawris_settlement_import_id' => 'الدفعة',
+            'row_number' => 'رقم الصف',
+            'raw_status' => 'الحالة في الملف',
+            'raw_code' => 'الكود في الملف',
+            'raw_receiver' => 'المستلم في الملف',
+            'order_code' => 'كود الطلبية',
+            'previous_status' => 'الحالة السابقة',
+            'outcome' => 'النتيجة',
+            'reason_code' => 'رمز السبب',
+            'reason' => 'السبب',
+            'warnings' => 'التنبيهات',
+            'held_amount' => 'ما عند النورس',
+            'fee_amount' => 'ما احتفظ به النورس',
+        ],
+
         // The carrier side. Everything Nawris knows a parcel by, in their words and ours — a
         // history screen here is read by whoever is chasing a parcel, not by a developer.
         'nawris_parcel' => [

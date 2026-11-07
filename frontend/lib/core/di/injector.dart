@@ -60,9 +60,12 @@ import 'package:dayaa/features/business_fields/usecases/delete_business_field.da
 import 'package:dayaa/features/business_fields/usecases/get_business_fields.dart';
 import 'package:dayaa/features/business_fields/usecases/save_business_field.dart';
 import 'package:dayaa/features/business_fields/usecases/set_business_field_activation.dart';
+import 'package:dayaa/features/carrier/presentation/viewmodel/nawris_settlement_cubit.dart';
+import 'package:dayaa/features/carrier/presentation/viewmodel/nawris_settlement_imports_cubit.dart';
 import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
 import 'package:dayaa/features/carrier/repositories/carrier_repository_impl.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
+import 'package:dayaa/features/carrier/usecases/nawris_settlement.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/carrier/usecases/sync_carrier_money.dart';
 import 'package:dayaa/features/cities/presentation/viewmodel/cities_cubit.dart';
@@ -1234,6 +1237,34 @@ abstract final class Injector {
       )
       // The red line's retry: the order's money to Nawris again, after they refused it.
       ..registerLazySingleton<SyncCarrierMoney>(() => SyncCarrierMoney(sl<CarrierRepository>()))
+      // تقرير النورس: من الملف إلى الدفعة، والدفعات السابقة.
+      ..registerLazySingleton<PreviewNawrisSettlement>(
+        () => PreviewNawrisSettlement(sl<CarrierRepository>()),
+      )
+      ..registerLazySingleton<ImportNawrisSettlement>(
+        () => ImportNawrisSettlement(sl<CarrierRepository>()),
+      )
+      ..registerLazySingleton<GetNawrisSettlementImports>(
+        () => GetNawrisSettlementImports(sl<CarrierRepository>()),
+      )
+      ..registerLazySingleton<GetNawrisSettlementImport>(
+        () => GetNawrisSettlementImport(sl<CarrierRepository>()),
+      )
+      ..registerLazySingleton<DownloadNawrisSettlementTemplate>(
+        () => DownloadNawrisSettlementTemplate(sl<CarrierRepository>()),
+      )
+      ..registerFactory<NawrisSettlementCubit>(
+        () => NawrisSettlementCubit(
+          preview: sl<PreviewNawrisSettlement>(),
+          import: sl<ImportNawrisSettlement>(),
+        ),
+      )
+      ..registerFactory<NawrisSettlementImportsCubit>(
+        () => NawrisSettlementImportsCubit(getImports: sl<GetNawrisSettlementImports>()),
+      )
+      ..registerFactory<NawrisSettlementImportCubit>(
+        () => NawrisSettlementImportCubit(getImport: sl<GetNawrisSettlementImport>()),
+      )
       // An order's money. Its own repository rather than four more methods on the one above,
       // because it is guarded by its own permissions: a screen allowed to read an order is not
       // thereby allowed to read what the customer has paid.

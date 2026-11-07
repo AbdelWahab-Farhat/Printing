@@ -293,8 +293,9 @@ class OrderService
         ?string $reason = null,
         ?User $actor = null,
         array $fields = [],
+        ?string $batch = null,
     ): Order {
-        return ($this->changeStatus)($order, $target, $reason, $actor, $fields);
+        return ($this->changeStatus)($order, $target, $reason, $actor, $fields, $batch);
     }
 
     /**

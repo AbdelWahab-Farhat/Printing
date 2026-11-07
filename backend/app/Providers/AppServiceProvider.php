@@ -84,6 +84,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // **باب كل سياق نسخةٌ واحدة في الطلب أو المهمّة.** بدون هذا كان كل مستمع لحدث يبني شجرة
+        // الخدمات كلها من جديد: ١٣٧ ألف كائن لتسوية طلبية واحدة، و٠٫٦ ثانية لا استعلام فيها — فدفعة
+        // من خمسمئة طلبية كانت خمس دقائق وحساب النورس مقفول. الأبواب والأفعال بلا حالة، و`scoped`
+        // لا `singleton` كي لا تعيش نسخة عبر مهام عامل الطابور.
+        foreach (glob(app_path('Domain/*/*Service.php')) ?: [] as $path) {
+            $this->app->scoped('App\\Domain\\'.basename(dirname($path)).'\\'.basename($path, '.php'));
+        }
+
         // The customer list asks about orders — who has never placed one, who has not placed one
         // for longest — through a port it declares itself, so the Customer module can be sorted
         // by the orders without depending on them. `Order` already points at `Customer`; the two

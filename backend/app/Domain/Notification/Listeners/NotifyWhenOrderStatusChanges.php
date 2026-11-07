@@ -40,7 +40,7 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
 
     public function handle(OrderStatusChanged $event): void
     {
-        if (! $this->isWorthABell($event->to)) {
+        if ($event->partOfABatch || ! $this->isWorthABell($event->to)) {
             return;
         }
 

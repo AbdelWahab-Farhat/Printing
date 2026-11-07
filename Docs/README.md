@@ -143,6 +143,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | [NAWRIS-INTEGRATION.md](nawris/NAWRIS-INTEGRATION.md) | Nawris carrier integration — the design. |
 | [NAWRIS-CHANGES.md](nawris/NAWRIS-CHANGES.md) | What actually changed: parcels, webhooks, carrier settlement. |
 | [NAWRIS-FRONTEND-INTEGRATION.md](nawris/NAWRIS-FRONTEND-INTEGRATION.md) | Connecting the Flutter app to it. |
+| [NAWRIS-SETTLEMENT-IMPORT.md](nawris/NAWRIS-SETTLEMENT-IMPORT.md) | تسوية الطلبيات بتقرير النورس — معاينة ثم تنفيذ، والمبلغ المستلم، والفرق أجرة. |
 
 ## [notifications/](notifications/)
 

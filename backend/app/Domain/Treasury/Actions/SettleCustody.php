@@ -62,6 +62,7 @@ final class SettleCustody
         bool $applySettings = true,
         array $choices = [],
         array $picks = [],
+        ?string $batch = null,
     ): ?TreasuryOperation {
         // قبل أي قراءة: قاعدةُ الطلب (min:0) تحمي الشاشة، لا نداءً من داخل الخادم. رسومٌ سالبة
         // كانت ستُخرج من العهدة أكثر مما فيها وتُدخل الحسابَ مالاً لم يوجد.
@@ -106,7 +107,7 @@ final class SettleCustody
             'category_id' => $feeCategory?->getKey(),
             'order_id' => $orderId,
             'occurred_at' => $occurredAt,
-            'notes' => $orderCode === null ? null : "تسوية الطلبية {$orderCode}",
+            'notes' => $orderCode === null ? $batch : "تسوية الطلبية {$orderCode}".($batch === null ? '' : " — {$batch}"),
             'recorded_by' => $actorId,
         ])->save();
 

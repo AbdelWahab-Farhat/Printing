@@ -78,6 +78,8 @@ final class CollectOrderMoney
         ?int $keepAccountId = null,
         array $choices = [],
         array $picks = [],
+        // دفعة تسوية النورس، تُكتب في الملاحظة ككل ما حرّكته الدفعة.
+        ?string $batch = null,
     ): array {
         $plans = [];
 
@@ -120,7 +122,7 @@ final class CollectOrderMoney
         $operations = [];
 
         foreach ($plans as [$kind, $target, $except, $evenUncollected, $why]) {
-            array_push($operations, ...$this->collect($orderId, $kind, $target, $except, $evenUncollected, $why, $actorId, $occurredAt, $orderCode));
+            array_push($operations, ...$this->collect($orderId, $kind, $target, $except, $evenUncollected, $why, $actorId, $occurredAt, $orderCode, $batch));
         }
 
         return $operations;
@@ -213,6 +215,7 @@ final class CollectOrderMoney
         ?int $actorId,
         DateTimeInterface $occurredAt,
         ?string $orderCode,
+        ?string $batch = null,
     ): array {
         $held = $this->money->of($orderId, $kind, $except, $evenUncollected);
 
@@ -232,7 +235,7 @@ final class CollectOrderMoney
             $amount = bccomp($amount, $there, Money::SCALE) > 0 ? $there : $amount;
 
             if (Money::isPositive($amount)) {
-                $operations[] = $this->carry($orderId, $accountId, $target, $amount, $why, $actorId, $occurredAt, $orderCode);
+                $operations[] = $this->carry($orderId, $accountId, $target, $amount, $why, $actorId, $occurredAt, $orderCode, $batch);
             }
         }
 
@@ -252,6 +255,7 @@ final class CollectOrderMoney
         ?int $actorId,
         DateTimeInterface $occurredAt,
         ?string $orderCode,
+        ?string $batch = null,
     ): TreasuryOperation {
         $operation = new TreasuryOperation;
 
@@ -260,6 +264,8 @@ final class CollectOrderMoney
             self::SETTLER => $orderCode === null ? 'إلى حساب المسوّي' : "الطلبية {$orderCode} إلى حساب المسوّي",
             default => $orderCode === null ? 'تجميع عند التسوية' : "تجميع الطلبية {$orderCode}",
         };
+
+        $notes = $batch === null ? $notes : "{$notes} — {$batch}";
 
         $operation->forceFill([
             'type' => OperationType::Settlement,
