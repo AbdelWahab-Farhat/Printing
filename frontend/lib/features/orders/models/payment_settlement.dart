@@ -1,3 +1,4 @@
+import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:flutter/foundation.dart' show immutable;
 
 /// «تسوية الدفعات» — the two lists the page switches between. TREASURY-DESIGN §٢٣.
@@ -99,11 +100,147 @@ class SettlementAccounts {
     ],
   );
 
-  /// Where payments wait to be settled — Nawris, a driver, «مصرف علي». The page's filter chips.
+  /// Where payments wait to be settled — Nawris, a driver, «مصرف علي».
   final List<SettlementAccount> sources;
 
   /// Every active cash box, bank and wallet — where money may be settled to.
   final List<SettlementAccount> destinations;
+}
+
+/// زرٌّ من «نوع الدفعة»: طريقة دفع أو حساب، لا الاثنان.
+///
+/// «حوالة» طريقة، أمّا «كاش نورس» و«مكتب قرجي» فطريقتهما كاش والحساب هو الفرق، فالخادم يقول أيّهما
+/// يحمل الزرّ ولا يعرف التطبيق أسماء الحسابات.
+@immutable
+class PaymentKind {
+  const PaymentKind({required this.label, this.method, this.accountId});
+
+  factory PaymentKind.fromJson(Map<String, dynamic> json) {
+    final wire = json['method'] as String?;
+
+    return PaymentKind(
+      label: json['label'] as String,
+      method: PaymentMethod.values.where((method) => method.wire == wire).firstOrNull,
+      accountId: json['account_id'] as int?,
+    );
+  }
+
+  final String label;
+  final PaymentMethod? method;
+  final int? accountId;
+
+  /// زرٌّ بطريقةٍ لا تعرفها هذه النسخة لا يحمل شيئاً، ولو رُسم لقرأ كـ«الكل».
+  bool get narrows => method != null || accountId != null;
+}
+
+/// موظفٌ في ورقة الفلتر: اسمٌ ورقمٌ لا غير.
+@immutable
+class PaymentPerson {
+  const PaymentPerson({required this.id, required this.name});
+
+  factory PaymentPerson.fromJson(Map<String, dynamic> json) =>
+      PaymentPerson(id: json['id'] as int, name: json['name'] as String);
+
+  final int id;
+  final String name;
+
+  @override
+  bool operator ==(Object other) => other is PaymentPerson && other.id == id && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, name);
+}
+
+/// `GET /order-payments/filter-options` — ما تعرضه ورقة الفلتر. أسماءٌ لا أرصدة.
+@immutable
+class PaymentFilterOptions {
+  const PaymentFilterOptions({
+    this.kinds = const [],
+    this.accounts = const [],
+    this.recorders = const [],
+    this.settlers = const [],
+  });
+
+  factory PaymentFilterOptions.fromJson(Map<String, dynamic> json) => PaymentFilterOptions(
+    kinds: [
+      for (final row in (json['kinds'] as List<dynamic>? ?? const []))
+        PaymentKind.fromJson(row as Map<String, dynamic>),
+    ].where((kind) => kind.narrows).toList(growable: false),
+    accounts: [
+      for (final row in (json['accounts'] as List<dynamic>? ?? const []))
+        SettlementAccount.fromJson(row as Map<String, dynamic>),
+    ],
+    recorders: _people(json['recorders']),
+    settlers: _people(json['settlers']),
+  );
+
+  static List<PaymentPerson> _people(Object? rows) => [
+    for (final row in (rows as List<dynamic>? ?? const []))
+      PaymentPerson.fromJson(row as Map<String, dynamic>),
+  ];
+
+  /// أزرار «نوع الدفعة».
+  final List<PaymentKind> kinds;
+
+  /// كل حسابٍ قد تكون الدفعة فيه — «حساب آخر» و«سُوّيت إلى».
+  final List<SettlementAccount> accounts;
+
+  /// مَن سجّل قيداً.
+  final List<PaymentPerson> recorders;
+
+  /// مَن سوّى دفعة.
+  final List<PaymentPerson> settlers;
+}
+
+/// ما يضيّقه الفلتر المتقدّم فوق التواريخ والحساب والنوع. مشتركٌ بين القائمتين، و[toAccountId]
+/// و[settledBy] لـ«مسوّاة» وحدها.
+///
+/// **يُقارَن بالقيمة**: يُسلَّم إلى المستودع كاملاً، فتقول الاختبارات ما أُرسل بسطرٍ واحد.
+@immutable
+class PaymentDetailFilter {
+  const PaymentDetailFilter({
+    this.method,
+    this.recordedBy,
+    this.minAmount,
+    this.maxAmount,
+    this.toAccountId,
+    this.settledBy,
+  });
+
+  final PaymentMethod? method;
+  final int? recordedBy;
+
+  /// نصّاً لا عدداً، كما يُحفظ كل مبلغ في التطبيق: يصل إلى الخادم كما كُتب.
+  final String? minAmount;
+  final String? maxAmount;
+
+  final int? toAccountId;
+  final int? settledBy;
+
+  bool get isEmpty => toQuery().isEmpty;
+
+  /// ما يُضاف إلى الطلب. الفارغ لا يُرسل.
+  Map<String, Object> toQuery() => {
+    if (method case final method?) 'method': method.wire,
+    'recorded_by': ?recordedBy,
+    'amount_min': ?minAmount,
+    'amount_max': ?maxAmount,
+    'to_account_id': ?toAccountId,
+    'settled_by': ?settledBy,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is PaymentDetailFilter &&
+      other.method == method &&
+      other.recordedBy == recordedBy &&
+      other.minAmount == minAmount &&
+      other.maxAmount == maxAmount &&
+      other.toAccountId == toAccountId &&
+      other.settledBy == settledBy;
+
+  @override
+  int get hashCode => Object.hash(method, recordedBy, minAmount, maxAmount, toAccountId, settledBy);
 }
 
 /// One payment in a settle request.

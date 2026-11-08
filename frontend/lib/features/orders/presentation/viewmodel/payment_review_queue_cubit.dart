@@ -13,7 +13,8 @@ import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 ///
 /// **«تحتاج مراجعة» in «مراجعة وتسوية الدفعات»** (2026-10-08): narrowed like the settlement list —
 /// the period chips on «الكل» ([PaymentPeriodFilter]), the search box (order code or customer),
-/// and in the advanced filter «من» / «إلى» and payments or refunds.
+/// and in the advanced filter «من» / «إلى», payments or refunds, «نوع الدفعة» and the rest of
+/// [PaymentPeriodFilter.detail] (2026-11-07).
 ///
 /// **A reviewed row leaves at once**, dropped locally rather than by re-reading: the person is
 /// working down the list, and a re-read would throw them back to the top of it. The count under
@@ -21,24 +22,34 @@ import 'package:dayaa/features/orders/usecases/manage_order_payments.dart';
 class PaymentReviewQueueCubit extends PagedCubit<OrderPayment> with PaymentPeriodFilter {
   PaymentReviewQueueCubit({
     required GetPaymentReviewQueue getQueue,
+    required GetPaymentFilterOptions getOptions,
     required ReviewOrderPayment reviewPayment,
     DateTime Function()? now,
   }) : _getQueue = getQueue,
+       _getOptions = getOptions,
        _reviewPayment = reviewPayment,
        _now = now ?? DateTime.now;
 
   final GetPaymentReviewQueue _getQueue;
+  final GetPaymentFilterOptions _getOptions;
   final ReviewOrderPayment _reviewPayment;
   final DateTime Function() _now;
 
   @override
   DateTime clock() => _now();
 
+  @override
+  Future<Either<Failure, PaymentFilterOptions>> fetchFilterOptions() => _getOptions();
+
   /// Payments, refunds, or — null — both. Set from the advanced filter.
   OrderPaymentType? type;
 
+  /// حيث نزل المال، أو null لكل الحسابات. يضبطه الفلتر المتقدّم.
+  int? accountId;
+
   /// Whether the advanced filter narrows the list — what lights its button.
-  bool get hasAdvanced => period == SettlementPeriod.custom || type != null;
+  bool get hasAdvanced =>
+      period == SettlementPeriod.custom || type != null || accountId != null || !detail.isEmpty;
 
   /// How many entries wait, on the whole filtered queue rather than this page. Null before the
   /// server has answered.
@@ -47,11 +58,19 @@ class PaymentReviewQueueCubit extends PagedCubit<OrderPayment> with PaymentPerio
     _ => null,
   };
 
-  /// «تطبيق» in the advanced filter: «من» / «إلى» and the type, in one load. What is typed in
-  /// the search box stays.
-  Future<void> applyAdvanced({DateTime? from, DateTime? to, OrderPaymentType? type}) {
+  /// «تطبيق» in the advanced filter: everything in it, in one load. What is typed in the search
+  /// box stays.
+  Future<void> applyAdvanced({
+    DateTime? from,
+    DateTime? to,
+    OrderPaymentType? type,
+    int? accountId,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
+  }) {
     adoptDates(from: from, to: to);
     this.type = type;
+    this.accountId = accountId;
+    this.detail = detail;
 
     return load(search: currentSearch);
   }
@@ -76,7 +95,15 @@ class PaymentReviewQueueCubit extends PagedCubit<OrderPayment> with PaymentPerio
   Future<Either<Failure, Paginated<OrderPayment>>> fetchPage({String? search, required int page}) {
     final shown = range;
 
-    return _getQueue(page: page, type: type, from: shown?.from, to: shown?.to, search: search);
+    return _getQueue(
+      page: page,
+      type: type,
+      accountId: accountId,
+      from: shown?.from,
+      to: shown?.to,
+      search: search,
+      detail: detail,
+    );
   }
 }
 

@@ -28,6 +28,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(SettlementState.pending);
     registerFallbackValue(<SettleRow>[]);
+    registerFallbackValue(const PaymentDetailFilter());
   });
 
   Widget host(Widget child) {
@@ -463,6 +464,7 @@ void main() {
       repository = _MockOrderPaymentRepository();
       cubit = PaymentSettlementCubit(
         getQueue: GetPaymentSettlementQueue(repository),
+        getOptions: GetPaymentFilterOptions(repository),
         getAccounts: GetSettlementAccounts(repository),
         settlePayments: SettleOrderPayments(repository),
         unsettlePayment: UnsettleOrderPayment(repository),
@@ -476,6 +478,7 @@ void main() {
           to: any(named: 'to'),
           accountId: any(named: 'accountId'),
           search: any(named: 'search'),
+          detail: any(named: 'detail'),
         ),
       ).thenAnswer((_) async => Right(pageOf([payment(canSettle: true)], total: '250.00')));
       when(() => repository.settlementAccounts()).thenAnswer(
@@ -521,6 +524,44 @@ void main() {
       expect(cubit.hasAdvanced, isTrue);
     });
 
+    test('the advanced filter takes the detail, and it alone lights the button', () async {
+      // Arrange
+      await cubit.load();
+      const detail = PaymentDetailFilter(method: PaymentMethod.bankTransfer, recordedBy: 21);
+
+      // Act
+      await cubit.applyAdvanced(detail: detail);
+
+      // Assert
+      verify(
+        () => repository.settlementQueue(page: 1, state: SettlementState.pending, detail: detail),
+      ).called(1);
+      expect(cubit.hasAdvanced, isTrue);
+      expect(cubit.period, SettlementPeriod.all);
+    });
+
+    test('a period chip keeps the detail', () async {
+      // Arrange
+      await cubit.load();
+      const detail = PaymentDetailFilter(maxAmount: '500');
+      await cubit.applyAdvanced(detail: detail);
+
+      // Act
+      await cubit.showPeriod(SettlementPeriod.today);
+
+      // Assert
+      final today = DateTime(2026, 10, 6);
+      verify(
+        () => repository.settlementQueue(
+          page: 1,
+          state: SettlementState.pending,
+          from: today,
+          to: today,
+          detail: detail,
+        ),
+      ).called(1);
+    });
+
     test('a chip after the advanced dates forgets them and keeps the account', () async {
       // Arrange
       await cubit.applyAdvanced(from: DateTime(2026, 10, 1), accountId: 9);
@@ -564,6 +605,7 @@ void main() {
       // Arrange — each tab of the page owns a Cubit fixed to its list
       final settled = PaymentSettlementCubit(
         getQueue: GetPaymentSettlementQueue(repository),
+        getOptions: GetPaymentFilterOptions(repository),
         getAccounts: GetSettlementAccounts(repository),
         settlePayments: SettleOrderPayments(repository),
         unsettlePayment: UnsettleOrderPayment(repository),

@@ -13,26 +13,29 @@ import 'package:flutter/foundation.dart';
 /// on, across every order. TREASURY-DESIGN §٢٣.
 ///
 /// Narrowed on the server by the period chips on «الكل» ([PaymentPeriodFilter]), by an order code
-/// or a customer's name, and — in the advanced filter — by «من» / «إلى» and where the money waits
-/// (2026-10-08).
+/// or a customer's name, and — in the advanced filter — by «من» / «إلى», where the money waits
+/// (2026-10-08), and the rest of [PaymentPeriodFilter.detail] (2026-11-07).
 ///
 /// **Re-read, never patched, after a settlement or an undo**: either moves rows between the two
 /// lists and changes the count, and the count is the server's answer.
 class PaymentSettlementCubit extends PagedCubit<OrderPayment> with PaymentPeriodFilter {
   PaymentSettlementCubit({
     required GetPaymentSettlementQueue getQueue,
+    required GetPaymentFilterOptions getOptions,
     required GetSettlementAccounts getAccounts,
     required SettleOrderPayments settlePayments,
     required UnsettleOrderPayment unsettlePayment,
     this.tab = SettlementState.pending,
     DateTime Function()? now,
   }) : _getQueue = getQueue,
+       _getOptions = getOptions,
        _getAccounts = getAccounts,
        _settlePayments = settlePayments,
        _unsettlePayment = unsettlePayment,
        _now = now ?? DateTime.now;
 
   final GetPaymentSettlementQueue _getQueue;
+  final GetPaymentFilterOptions _getOptions;
   final GetSettlementAccounts _getAccounts;
   final SettleOrderPayments _settlePayments;
   final UnsettleOrderPayment _unsettlePayment;
@@ -45,15 +48,19 @@ class PaymentSettlementCubit extends PagedCubit<OrderPayment> with PaymentPeriod
   @override
   DateTime clock() => _now();
 
+  @override
+  Future<Either<Failure, PaymentFilterOptions>> fetchFilterOptions() => _getOptions();
+
   /// Where the money waits — Nawris, «مصرف علي» — or null for every account. Set from the
   /// advanced filter.
   int? accountId;
 
   /// Whether the advanced filter narrows the list — what lights its button.
-  bool get hasAdvanced => period == SettlementPeriod.custom || accountId != null;
+  bool get hasAdvanced =>
+      period == SettlementPeriod.custom || accountId != null || !detail.isEmpty;
 
   /// Where payments wait and where they may go. Null until the server has answered; a failure
-  /// leaves it null and the page offers no account chips rather than wrong ones.
+  /// leaves it null, and settling asks again.
   final ValueNotifier<SettlementAccounts?> accounts = ValueNotifier<SettlementAccounts?>(null);
 
   /// How many payments the whole filtered list holds — what the tab says beside its name. Null
@@ -76,13 +83,19 @@ class PaymentSettlementCubit extends PagedCubit<OrderPayment> with PaymentPeriod
     result.fold((_) {}, (value) => accounts.value = value);
   }
 
-  /// «تطبيق» in the advanced filter: «من» / «إلى» and the account, in one load.
+  /// «تطبيق» in the advanced filter: everything in it, in one load.
   ///
   /// **What is typed in the search box stays** across every filter change: changing the period
   /// does not erase what somebody wrote to find.
-  Future<void> applyAdvanced({DateTime? from, DateTime? to, int? accountId}) {
+  Future<void> applyAdvanced({
+    DateTime? from,
+    DateTime? to,
+    int? accountId,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
+  }) {
     adoptDates(from: from, to: to);
     this.accountId = accountId;
+    this.detail = detail;
 
     return load(search: currentSearch);
   }
@@ -127,6 +140,7 @@ class PaymentSettlementCubit extends PagedCubit<OrderPayment> with PaymentPeriod
       to: shown?.to,
       accountId: accountId,
       search: search,
+      detail: detail,
     );
   }
 

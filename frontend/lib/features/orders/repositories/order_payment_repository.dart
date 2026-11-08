@@ -119,6 +119,7 @@ abstract interface class OrderPaymentRepository {
     DateTime? from,
     DateTime? to,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   });
 
   /// «تسوية الدفعات» — waiting or settled payments. `extraMeta['amount_total']` is what the whole
@@ -130,10 +131,14 @@ abstract interface class OrderPaymentRepository {
     DateTime? to,
     int? accountId,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   });
 
   /// Where payments wait, and where they may be settled to.
   Future<Either<Failure, SettlementAccounts>> settlementAccounts();
+
+  /// ما تعرضه ورقة الفلتر في القائمتين.
+  Future<Either<Failure, PaymentFilterOptions>> paymentFilterOptions();
 
   /// One or several payments' money to the account it reached, all or nothing. [accountId]
   /// null: each to its own automatic account.

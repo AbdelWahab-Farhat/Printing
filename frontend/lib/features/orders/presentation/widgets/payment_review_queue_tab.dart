@@ -8,6 +8,7 @@ import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/orders/models/payment_settlement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/payment_review_queue_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_queue_filters.dart';
 import 'package:dayaa/features/orders/presentation/widgets/payment_review_line.dart';
@@ -19,7 +20,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// أولاً. (كان تبويباً في «المالية» حتى ٢٠٢٦-١٠-٠٨.)
 ///
 /// **فوق الصفوف رأسُ الصفحة المشترك** ([PaymentQueueFilters]) ويمرّ معها: البحث، وأزرار الفترة على
-/// «الكل»، والفلتر المتقدّم بـ«من» / «إلى» والنوع. والعدد في اسم التبويب، لا في سطرٍ تحت الفلاتر.
+/// «الكل»، والفلتر المتقدّم ([showPaymentAdvancedFilter]). والعدد في اسم التبويب، لا في سطرٍ تحت الفلاتر.
 ///
 /// **لا يوقف شيئاً**: دفعةٌ غير مراجَعة تُحسب وتُسوّى وتحرّك الخزينة كالمراجَعة تماماً؛ هذه قائمة
 /// عمل المراجع لا بوّابة. واللمسة على الصفّ تفتح دفعات طلبيته، حيث يُرى الواصل والسجلّ كلّه.
@@ -56,19 +57,37 @@ class PaymentReviewQueueTab extends StatelessWidget {
     );
   }
 
-  /// «من» / «إلى» and payments or refunds.
+  /// الفلتر المتقدّم. وخياراته تُطلب من الخادم أوّل مرةٍ تُفتح فيها الورقة.
   Future<void> _advanced(BuildContext context) async {
     final cubit = context.read<PaymentReviewQueueCubit>();
+
+    await cubit.loadFilterOptions();
+
+    if (!context.mounted) return;
+
     final range = cubit.customRange;
     final chosen = await showPaymentAdvancedFilter(
       context: context,
-      current: PaymentAdvancedFilter(from: range?.from, to: range?.to, type: cubit.type),
+      current: PaymentAdvancedFilter(
+        from: range?.from,
+        to: range?.to,
+        accountId: cubit.accountId,
+        type: cubit.type,
+        detail: cubit.detail,
+      ),
+      options: cubit.filterOptions ?? const PaymentFilterOptions(),
       offersType: true,
     );
 
     if (chosen == null) return;
 
-    await cubit.applyAdvanced(from: chosen.from, to: chosen.to, type: chosen.type);
+    await cubit.applyAdvanced(
+      from: chosen.from,
+      to: chosen.to,
+      type: chosen.type,
+      accountId: chosen.accountId,
+      detail: chosen.detail,
+    );
   }
 
   /// The order's own ledger, where the receipt and every other entry are. Re-read on the way

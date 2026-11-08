@@ -160,6 +160,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(OrderPaymentType.payment);
       registerFallbackValue(DateTime(2026));
+      registerFallbackValue(const PaymentDetailFilter());
     });
 
     late _MockOrderPaymentRepository repository;
@@ -177,6 +178,7 @@ void main() {
       repository = _MockOrderPaymentRepository();
       cubit = PaymentReviewQueueCubit(
         getQueue: GetPaymentReviewQueue(repository),
+        getOptions: GetPaymentFilterOptions(repository),
         reviewPayment: ReviewOrderPayment(repository),
         now: () => DateTime(2026, 10, 6, 15),
       );
@@ -188,6 +190,7 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           search: any(named: 'search'),
+          detail: any(named: 'detail'),
         ),
       ).thenAnswer((_) async => Right(pageOf(const [])));
     });
@@ -265,6 +268,72 @@ void main() {
       ).called(1);
       expect(cubit.period, SettlementPeriod.custom);
       expect(cubit.hasAdvanced, isTrue);
+    });
+
+    test('the advanced filter takes the account and the detail, and lights its button', () async {
+      // Arrange
+      await cubit.load();
+      const detail = PaymentDetailFilter(method: PaymentMethod.libyana, minAmount: '100');
+
+      // Act
+      await cubit.applyAdvanced(accountId: 4, detail: detail);
+
+      // Assert
+      verify(() => repository.reviewQueue(page: 1, accountId: 4, detail: detail)).called(1);
+      expect(cubit.hasAdvanced, isTrue);
+      expect(cubit.period, SettlementPeriod.all);
+    });
+
+    test('an account alone lights the button; nothing at all does not', () async {
+      // Arrange
+      await cubit.load();
+
+      // Act
+      await cubit.applyAdvanced(accountId: 4);
+      final withAccount = cubit.hasAdvanced;
+      await cubit.applyAdvanced();
+
+      // Assert
+      expect(withAccount, isTrue);
+      expect(cubit.hasAdvanced, isFalse);
+    });
+
+    test('a period chip keeps the account and the detail', () async {
+      // Arrange
+      await cubit.load();
+      const detail = PaymentDetailFilter(recordedBy: 21);
+      await cubit.applyAdvanced(accountId: 4, detail: detail);
+
+      // Act
+      await cubit.showPeriod(SettlementPeriod.today);
+
+      // Assert
+      verify(
+        () => repository.reviewQueue(page: 1, accountId: 4, detail: detail, from: today, to: today),
+      ).called(1);
+    });
+
+    test('the options are asked once, and a failure is asked again next time', () async {
+      // Arrange
+      var answers = 0;
+      when(() => repository.paymentFilterOptions()).thenAnswer((_) async {
+        answers += 1;
+
+        return answers == 1
+            ? const Left(Failure.network(message: 'تعذّر'))
+            : const Right(PaymentFilterOptions(recorders: [PaymentPerson(id: 21, name: 'سالم')]));
+      });
+
+      // Act
+      await cubit.loadFilterOptions();
+      final afterFailure = cubit.filterOptions;
+      await cubit.loadFilterOptions();
+      await cubit.loadFilterOptions();
+
+      // Assert
+      expect(afterFailure, isNull);
+      expect(cubit.filterOptions?.recorders.single.name, 'سالم');
+      expect(answers, 2);
     });
 
     test('a chip after the advanced dates forgets them and keeps the type', () async {

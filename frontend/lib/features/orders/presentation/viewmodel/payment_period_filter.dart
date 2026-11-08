@@ -1,3 +1,5 @@
+import 'package:dartz/dartz.dart';
+import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/pagination/paged_cubit.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/payment_settlement.dart';
@@ -7,6 +9,8 @@ import 'package:dayaa/features/orders/models/payment_settlement.dart';
 /// **الأزرار تحت البحث** (الكل · اليوم · هذا الأسبوع · هذا الشهر) و**«من» / «إلى» في الفلتر
 /// المتقدّم**، كلٌّ منهما يمكن أن يُترك فارغاً. لا زرَّ لـ«من – إلى»: التاريخان حقلان في الفلتر،
 /// وما داما مضبوطين فالفترةُ [SettlementPeriod.custom] ولا زرَّ مختاراً.
+///
+/// **وبقية الفلتر المتقدّم هنا أيضاً** ([detail] و[filterOptions]): القائمتان تسألان الأسئلة نفسها.
 ///
 /// مشتركٌ بين `PaymentReviewQueueCubit` و`PaymentSettlementCubit` كي يقرأ الزرّان والتاريخان
 /// الشيءَ نفسه في التبويبين.
@@ -27,6 +31,26 @@ mixin PaymentPeriodFilter on PagedCubit<OrderPayment> {
     SettlementPeriod.custom => customRange,
     _ => period.rangeAt(clock()),
   };
+
+  /// ما يضيّقه الفلتر المتقدّم فوق التواريخ والحساب والنوع. يبقى حين تُبدَّل أزرار الفترة.
+  PaymentDetailFilter detail = const PaymentDetailFilter();
+
+  /// خيارات ورقة الفلتر. فارغةٌ حتى تُفتح الورقة أوّل مرة.
+  PaymentFilterOptions? filterOptions;
+
+  /// يطلبها الـCubit من الخادم.
+  Future<Either<Failure, PaymentFilterOptions>> fetchFilterOptions();
+
+  /// مرّةً واحدة في عمر القائمة. وإن فشلت تُطلب ثانيةً حين تُفتح الورقة من جديد.
+  Future<void> loadFilterOptions() async {
+    if (filterOptions != null) return;
+
+    final result = await fetchFilterOptions();
+
+    if (isClosed) return;
+
+    result.fold((_) {}, (value) => filterOptions = value);
+  }
 
   /// A chip. It forgets the advanced dates, and keeps what is typed in the search box.
   Future<void> showPeriod(SettlementPeriod value) {

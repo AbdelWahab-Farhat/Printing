@@ -156,6 +156,7 @@ class GetPaymentReviewQueue {
     DateTime? from,
     DateTime? to,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   }) => _repository.reviewQueue(
     page: page,
     type: type,
@@ -163,6 +164,7 @@ class GetPaymentReviewQueue {
     from: from,
     to: to,
     search: search,
+    detail: detail,
   );
 }
 
@@ -179,6 +181,7 @@ class GetPaymentSettlementQueue {
     DateTime? to,
     int? accountId,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   }) => _repository.settlementQueue(
     page: page,
     state: state,
@@ -186,7 +189,17 @@ class GetPaymentSettlementQueue {
     to: to,
     accountId: accountId,
     search: search,
+    detail: detail,
   );
+}
+
+/// ما تعرضه ورقة الفلتر في «مراجعة وتسوية الدفعات».
+class GetPaymentFilterOptions {
+  const GetPaymentFilterOptions(this._repository);
+
+  final OrderPaymentRepository _repository;
+
+  Future<Either<Failure, PaymentFilterOptions>> call() => _repository.paymentFilterOptions();
 }
 
 /// Where payments wait, and where they may be settled to.

@@ -1299,6 +1299,7 @@ abstract final class Injector {
       ..registerFactory<PaymentReviewQueueCubit>(
         () => PaymentReviewQueueCubit(
           getQueue: sl<GetPaymentReviewQueue>(),
+          getOptions: sl<GetPaymentFilterOptions>(),
           reviewPayment: sl<ReviewOrderPayment>(),
         ),
       )
@@ -1308,6 +1309,9 @@ abstract final class Injector {
       )
       ..registerLazySingleton<GetSettlementAccounts>(
         () => GetSettlementAccounts(sl<OrderPaymentRepository>()),
+      )
+      ..registerLazySingleton<GetPaymentFilterOptions>(
+        () => GetPaymentFilterOptions(sl<OrderPaymentRepository>()),
       )
       ..registerLazySingleton<SettleOrderPayments>(
         () => SettleOrderPayments(sl<OrderPaymentRepository>()),
@@ -1319,6 +1323,7 @@ abstract final class Injector {
       ..registerFactoryParam<PaymentSettlementCubit, SettlementState, void>(
         (tab, _) => PaymentSettlementCubit(
           getQueue: sl<GetPaymentSettlementQueue>(),
+          getOptions: sl<GetPaymentFilterOptions>(),
           getAccounts: sl<GetSettlementAccounts>(),
           settlePayments: sl<SettleOrderPayments>(),
           unsettlePayment: sl<UnsettleOrderPayment>(),

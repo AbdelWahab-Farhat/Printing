@@ -155,6 +155,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     DateTime? from,
     DateTime? to,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   }) {
     return safePaginatedRequest<OrderPayment>(
       () => _dio.get(
@@ -168,6 +169,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           if (from != null) 'from': _day(from),
           if (to != null) 'to': _day(to),
           if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+          ...detail.toQuery(),
         },
       ),
       parseItem: OrderPayment.fromJson,
@@ -182,6 +184,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     DateTime? to,
     int? accountId,
     String? search,
+    PaymentDetailFilter detail = const PaymentDetailFilter(),
   }) {
     return safePaginatedRequest<OrderPayment>(
       () => _dio.get(
@@ -193,6 +196,7 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
           if (to != null) 'to': _day(to),
           'account_id': ?accountId,
           if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+          ...detail.toQuery(),
         },
       ),
       parseItem: OrderPayment.fromJson,
@@ -204,6 +208,14 @@ class OrderPaymentRepositoryImpl implements OrderPaymentRepository {
     return safeRequest<SettlementAccounts>(
       () => _dio.get(OrderEndpoints.paymentSettlementAccounts),
       parse: (data) => SettlementAccounts.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, PaymentFilterOptions>> paymentFilterOptions() {
+    return safeRequest<PaymentFilterOptions>(
+      () => _dio.get(OrderEndpoints.paymentFilterOptions),
+      parse: (data) => PaymentFilterOptions.fromJson(data! as Map<String, dynamic>),
     );
   }
 

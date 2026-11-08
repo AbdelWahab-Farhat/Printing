@@ -733,6 +733,9 @@ abstract final class OrderEndpoints {
   /// «تسوية الدفعات» — `state=pending` (the default) or `state=settled`. TREASURY-DESIGN §٢٣.
   static const String paymentSettlementQueue = '/order-payments/settlement-queue';
 
+  /// `GET` — ما تعرضه ورقة الفلتر في «مراجعة وتسوية الدفعات»، لمن يراجع أو يسوّي.
+  static const String paymentFilterOptions = '/order-payments/filter-options';
+
   /// Where payments wait, and where they may be settled to.
   static const String paymentSettlementAccounts = '/order-payments/settlement-accounts';
 

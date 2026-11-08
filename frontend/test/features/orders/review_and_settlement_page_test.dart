@@ -58,6 +58,7 @@ void main() {
     registerFallbackValue(SettlementState.pending);
     registerFallbackValue(OrderPaymentType.payment);
     registerFallbackValue(DateTime(2026));
+    registerFallbackValue(const PaymentDetailFilter());
   });
 
   setUp(() async {
@@ -71,6 +72,7 @@ void main() {
         from: any(named: 'from'),
         to: any(named: 'to'),
         search: any(named: 'search'),
+        detail: any(named: 'detail'),
       ),
     ).thenAnswer((_) async => Right(pageOf([payment(1), payment(2)])));
     when(
@@ -81,6 +83,7 @@ void main() {
         to: any(named: 'to'),
         accountId: any(named: 'accountId'),
         search: any(named: 'search'),
+        detail: any(named: 'detail'),
       ),
     ).thenAnswer((invocation) async {
       final state = invocation.namedArguments[#state] as SettlementState;
@@ -95,16 +98,31 @@ void main() {
         ),
       ),
     );
+    when(() => repository.paymentFilterOptions()).thenAnswer(
+      (_) async => const Right(
+        PaymentFilterOptions(
+          kinds: [
+            PaymentKind(label: 'حوالة', method: PaymentMethod.bankTransfer),
+            PaymentKind(label: 'مكتب قرجي', accountId: 1),
+          ],
+          accounts: [SettlementAccount(id: 9, name: 'النورس')],
+          recorders: [PaymentPerson(id: 21, name: 'سالم')],
+          settlers: [PaymentPerson(id: 22, name: 'مريم')],
+        ),
+      ),
+    );
     sl
       ..registerFactory<PaymentReviewQueueCubit>(
         () => PaymentReviewQueueCubit(
           getQueue: GetPaymentReviewQueue(repository),
+          getOptions: GetPaymentFilterOptions(repository),
           reviewPayment: ReviewOrderPayment(repository),
         ),
       )
       ..registerFactoryParam<PaymentSettlementCubit, SettlementState, void>(
         (tab, _) => PaymentSettlementCubit(
           getQueue: GetPaymentSettlementQueue(repository),
+          getOptions: GetPaymentFilterOptions(repository),
           getAccounts: GetSettlementAccounts(repository),
           settlePayments: SettleOrderPayments(repository),
           unsettlePayment: UnsettleOrderPayment(repository),
@@ -188,7 +206,7 @@ void main() {
       verify(() => repository.reviewQueue(page: 1)).called(1);
     });
 
-    testWidgets('the review tab\'s advanced filter holds «من», «إلى» and the type — no account', (tester) async {
+    testWidgets('the review tab\'s advanced filter asks the kind of payment and payment or refund', (tester) async {
       // Arrange
       await open(tester, both);
 
@@ -197,11 +215,46 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('من'), findsOneWidget);
-      expect(find.text('إلى'), findsOneWidget);
-      expect(find.text('النوع'), findsOneWidget);
-      expect(find.text('الحساب'), findsNothing);
+      expect(find.text('من'), findsWidgets);
+      expect(find.text('إلى'), findsWidgets);
+      expect(find.text('دفعة أو ردّ'), findsOneWidget);
+      expect(find.text('نوع الدفعة'), findsOneWidget);
+      expect(find.widgetWithText(FilterOptionChip, 'حوالة'), findsOneWidget);
       expect(find.text('تطبيق'), findsOneWidget);
+    });
+
+    testWidgets('a reviewer who cannot settle still gets the kinds of payment', (tester) async {
+      // Arrange
+      await open(tester, ['orders.payments.review']);
+
+      // Act
+      await tester.tap(find.byKey(const ValueKey('advanced-filter')));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.widgetWithText(FilterOptionChip, 'مكتب قرجي'), findsOneWidget);
+      verifyNever(() => repository.settlementAccounts());
+    });
+
+    testWidgets('picking «حوالة» re-reads the review list with the method, and lights the button', (tester) async {
+      // Arrange
+      await open(tester, ['orders.payments.review']);
+      await tester.tap(find.byKey(const ValueKey('advanced-filter')));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.widgetWithText(FilterOptionChip, 'حوالة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('apply-advanced')));
+      await tester.pumpAndSettle();
+
+      // Assert
+      verify(
+        () => repository.reviewQueue(
+          page: 1,
+          detail: const PaymentDetailFilter(method: PaymentMethod.bankTransfer),
+        ),
+      ).called(1);
     });
   });
 
@@ -222,7 +275,7 @@ void main() {
       expect(find.text('لا دفعات مسوّاة في هذه الفترة'), findsOneWidget);
     });
 
-    testWidgets('its advanced filter holds «من», «إلى» and the account — no type', (tester) async {
+    testWidgets('its advanced filter asks the kind of payment — not payment or refund', (tester) async {
       // Arrange
       await open(tester, ['orders.payments.settle']);
 
@@ -231,10 +284,24 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('من'), findsOneWidget);
-      expect(find.text('إلى'), findsOneWidget);
-      expect(find.text('الحساب'), findsOneWidget);
-      expect(find.text('النوع'), findsNothing);
+      expect(find.text('نوع الدفعة'), findsOneWidget);
+      expect(find.widgetWithText(FilterOptionChip, 'حساب آخر'), findsOneWidget);
+      expect(find.text('دفعة أو ردّ'), findsNothing);
+      expect(find.text('سُوّيت إلى'), findsNothing);
+    });
+
+    testWidgets('the settled list\'s advanced filter also asks where it went', (tester) async {
+      // Arrange
+      await open(tester, ['orders.payments.settle']);
+      await tester.tap(find.text('مسوّاة'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byKey(const ValueKey('advanced-filter')).hitTestable().first);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('سُوّيت إلى'), findsOneWidget);
     });
   });
 

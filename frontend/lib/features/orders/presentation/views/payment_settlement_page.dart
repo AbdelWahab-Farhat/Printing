@@ -36,7 +36,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// والثانية حين تُفتح أوّل مرة.
 ///
 /// **والفلاتر فوق الصفوف وتمرّ معها** ([PaymentQueueFilters] في `PagedListView.header`): البحث،
-/// وأزرار الفترة على «الكل»، و«من» / «إلى» والحساب أو النوع في الفلتر المتقدّم.
+/// وأزرار الفترة على «الكل»، وبقية الأسئلة في الفلتر المتقدّم ([showPaymentAdvancedFilter]).
 class PaymentSettlementPage extends StatelessWidget {
   const PaymentSettlementPage({super.key});
 
@@ -248,24 +248,34 @@ class _SettlementListState extends State<_SettlementList> {
     );
   }
 
-  /// «من» / «إلى» and where the money waits. The accounts are asked again if the first answer
-  /// never came, so the field is never empty for want of a retry.
+  /// الفلتر المتقدّم. وخياراته تُطلب من الخادم أوّل مرةٍ تُفتح فيها الورقة.
   Future<void> _advanced() async {
-    if (_cubit.accounts.value == null) await _cubit.loadAccounts();
+    await _cubit.loadFilterOptions();
 
     if (!mounted) return;
 
     final range = _cubit.customRange;
     final chosen = await showPaymentAdvancedFilter(
       context: context,
-      current: PaymentAdvancedFilter(from: range?.from, to: range?.to, accountId: _cubit.accountId),
-      accounts: _cubit.accounts.value?.sources ?? const <SettlementAccount>[],
+      current: PaymentAdvancedFilter(
+        from: range?.from,
+        to: range?.to,
+        accountId: _cubit.accountId,
+        detail: _cubit.detail,
+      ),
+      options: _cubit.filterOptions ?? const PaymentFilterOptions(),
+      offersSettled: _cubit.tab == SettlementState.settled,
     );
 
     if (chosen == null || !mounted) return;
 
     await _refilter(
-      () => _cubit.applyAdvanced(from: chosen.from, to: chosen.to, accountId: chosen.accountId),
+      () => _cubit.applyAdvanced(
+        from: chosen.from,
+        to: chosen.to,
+        accountId: chosen.accountId,
+        detail: chosen.detail,
+      ),
     );
   }
 
