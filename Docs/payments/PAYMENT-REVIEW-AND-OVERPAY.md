@@ -74,7 +74,7 @@ CHECK `order_payments_review_needs_a_reviewable_entry`: لا مراجعة على
 | | |
 | --- | --- |
 | `PATCH /orders/{order}/payments/{payment}/review` | `{"reviewed": true\|false}` — `scopeBindings`، صلاحية `orders.payments.review` |
-| `GET /order-payments/review-queue` | الأقدم أولاً · فلاتر `from` `to` `account_id` `recorded_by` `type` · `meta.total` للعدّاد، و`meta.incoming_total` و`meta.outgoing_total` منفصلَين |
+| `GET /order-payments/review-queue` | الأقدم أولاً · فلاتر `from` `to` `account_id` `recorded_by` `type` `method` `amount_min` `amount_max` (§٩) · `meta.total` للعدّاد، و`meta.incoming_total` و`meta.outgoing_total` منفصلَين |
 
 وعلى كل دفعة في `OrderPaymentResource`: `requires_review` · `is_reviewed` · `reviewed_at` ·
 `reviewer` · `can_review` · `can_unreview` · `review_blocked_reason`، و`order {id, code, customer_name}`
@@ -281,3 +281,58 @@ Controller: `OrderPaymentReviewController` و`OrderPaymentController::keepExcess
 **الاختبارات:** `OrderOverpaymentTest` (الشاشة، الجمع، العكس، الردّ القديم من الزائد، الدفع بلا زيادة،
 القائمة بلا المفتاح)؛ `order_money_row_test` و`order_excess_revenue_test`.
 
+---
+
+## ٩ · الفلتر التفصيلي في «مراجعة وتسوية الدفعات» (٢٠٢٦-١١-٠٧)
+
+**الطلب:** «الفلتر هذا يكون على حسب نوع الدفعة: حوالة أو كاش نورس أو مكتب قرجي أو مكتب ولي العهد»،
+مع تحسين عرض الورقة وإضافة ما يفيد عليها.
+
+**الورقة نفسها في التبويبين** (`showPaymentAdvancedFilter`):
+
+| القسم | تحتاج مراجعة | بانتظار التسوية | مسوّاة |
+| --- | --- | --- | --- |
+| الفترة | ✓ | ✓ | ✓ (يوم التسوية) |
+| دفعة أو ردّ | ✓ | | |
+| نوع الدفعة | ✓ | ✓ | ✓ |
+| مَن سجّل | ✓ | ✓ | ✓ |
+| المبلغ من / إلى | ✓ | ✓ | ✓ |
+| سُوّيت إلى · مَن سوّى | | | ✓ |
+
+**«نوع الدفعة» أزرارٌ بلغة المحلّ، وبعضها طريقة وبعضها حساب.** «حوالة» و«ليبيانا» و«بطاقة مصرفية» طرق
+دفع؛ أمّا «كاش نورس» و«مكتب قرجي» و«مكتب ولي العهد» فطريقتها كلها كاش والحساب هو الفرق. لذلك يبني
+الخادم الأزرار ويحمل كلٌّ منها `method` أو `account_id`، ولا يعرف التطبيق أسماء الحسابات. الزرّ يحلّ
+محلّ ما قبله. و«المحفظة» ليست زرّاً: قيودها لا تدخل أيّاً من القائمتين.
+
+**والأكثر استعمالاً أوّلاً** (طلبُه على لقطة الورقة، اليوم نفسه): يعدّ الخادم الدفعات والردود لكل زرّ، فيتغيّر
+الترتيب مع العمل. والتعادل يبقي ترتيب طلبه؛ «الكل» أوّلاً و«حساب آخر» أخيراً دائماً. **لا يُعدّ إلا ما له حساب**
+وما لم يُلغَ: القيد القديم يعرف طريقته ولا يعرف مكتبه، فلو عُدّ لتقدّمت «حوالة» على المكاتب بما لا يُقارَن.
+
+**«رقم المرجع» بُني ثم أُزيل** في اليوم نفسه: «ماليش فايدة».
+
+- **حسابات المكاتب وحدها أزرار** (`pickup_city_id`): لكل موظفٍ قد يكون حساب، فتبقى البقية خلف
+  «حساب آخر»، ويلبس الزرّ اسم الحساب حين يُختار. اسمُ زرّ المكتب من مكتبه: «إستلام مكتب(قرجي)» تصير
+  «مكتب قرجي»، ومكتبٌ سُمّي بغير هذا الشكل يبقى باسم حسابه.
+- **المبلغ** يُقارَن بقيد الدفعة كاملاً، لا بالواصل بعد ما احتفظ به الناقل. وحدٌّ أدنى فوق الأعلى تقلبه
+  الورقة بدل أن يُرفض؛ والخادم يرفضه بـ422 لمن يرسله مباشرة.
+- **الورقة:** الرأس و«تطبيق» ثابتان وما بينهما يتمرّر. وأُصلح أمران قديمان: اليوم كان يُقصّ من التاريخ
+  في حقل نصف العرض، والعنوان كان لا يصطفّ مع الأقسام تحته في العربية. و«النوع» صار «دفعة أو ردّ» كي
+  لا يلتبس بـ«نوع الدفعة».
+
+**الـ API:**
+
+| | |
+| --- | --- |
+| `GET /order-payments/filter-options` | `kinds` · `accounts` · `recorders` · `settlers`. أسماءٌ لا أرصدة، ولحامل `orders.payments.review` أو `orders.payments.settle`: كانت الحسابات خلف صلاحية التسوية والموظفون خلف `users.view`، فلا يصل إليها مَن يراجع فقط |
+| فلاتر القائمتين | `account_id` `method` `recorded_by` `amount_min` `amount_max` (`FiltersPaymentEntries`) |
+| «مسوّاة» وحدها | `to_account_id` `settled_by` |
+
+موظفٌ ترك العمل يبقى في `recorders` و`settlers`: دفعاته باقيةٌ في القائمتين.
+
+**النشر:** لا migration. **الخادم قبل التطبيق**: النسخة الجديدة على خادمٍ قديم تجد `filter-options` غائباً،
+فتفتح الورقة بلا «نوع الدفعة» و«مَن سجّل». والعكس آمن: كل المعاملات الجديدة اختيارية.
+
+**الاختبارات:** `PaymentFilterOptionsTest` · `OrderPaymentReviewTest` · `PaymentSettlementTest`؛
+`payment_filter_sheet_test` · `payment_review_test` · `payment_settlement_test` ·
+`review_and_settlement_page_test` · `payment_filter_wire_test`. والرسم بلا هاتف:
+`tool/preview/payment_filter_preview.dart`.
