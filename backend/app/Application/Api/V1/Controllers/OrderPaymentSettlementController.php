@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Order\PaymentQueueRequest;
 use App\Application\Api\V1\Requests\Order\SettleOrderPaymentsRequest;
 use App\Application\Api\V1\Requests\Order\UnsettleOrderPaymentRequest;
 use App\Application\Api\V1\Resources\OrderPaymentResource;
@@ -12,12 +13,9 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
-use App\Domain\Order\Queries\PaymentSettlementQueue;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Payment settlement
@@ -49,21 +47,11 @@ class OrderPaymentSettlementController extends Controller
      *
      * `meta.amount_total` is what the whole filtered list adds up to; `meta.total` counts its rows.
      */
-    public function queue(Request $request): JsonResponse
+    public function queue(PaymentQueueRequest $request): JsonResponse
     {
-        $filters = $request->validate([
-            'state' => ['nullable', Rule::in([PaymentSettlementQueue::PENDING, PaymentSettlementQueue::SETTLED])],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-            /** Where the money landed — Nawris, «مصرف علي»… */
-            'account_id' => ['nullable', 'integer'],
-            /** An order code, or part of a customer's name. */
-            'q' => ['nullable', 'string', 'max:100'],
-        ]);
-
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
 
-        $queue = $this->orders->paymentSettlementQueue($filters, $perPage);
+        $queue = $this->orders->paymentSettlementQueue($request->validated(), $perPage);
 
         return $this->successWithPagination(
             OrderPaymentResource::collection($queue['page']),

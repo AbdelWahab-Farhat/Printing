@@ -8,6 +8,7 @@ use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Queries\Concerns\FiltersPaymentEntries;
 use App\Domain\Order\Support\BusinessDay;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\Enums\OperationType;
@@ -32,12 +33,14 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class PaymentSettlementQueue
 {
+    use FiltersPaymentEntries;
+
     public const PENDING = 'pending';
 
     public const SETTLED = 'settled';
 
     /**
-     * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return LengthAwarePaginator<int, OrderPayment>
      */
     public function page(array $filters, int $perPage): LengthAwarePaginator
@@ -66,7 +69,7 @@ final class PaymentSettlementQueue
     /**
      * What the whole filtered list adds up to.
      *
-     * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return array{amount_total: string}
      */
     public function totals(array $filters): array
@@ -75,7 +78,7 @@ final class PaymentSettlementQueue
     }
 
     /**
-     * @param  array{state?: ?string, from?: ?string, to?: ?string, account_id?: ?int, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return Builder<OrderPayment>
      */
     private function filtered(array $filters): Builder
@@ -90,7 +93,7 @@ final class PaymentSettlementQueue
             // A payment from the wallet put no money in any account — CUSTOMER-WALLET §٤.
             ->where('method', '<>', PaymentMethod::Wallet->value)
             ->whereDoesntHave('reversal')
-            ->when($filters['account_id'] ?? null, fn ($q, $id) => $q->where('treasury_account_id', $id))
+            ->tap(fn (Builder $q) => $this->narrowEntries($q, $filters))
             ->when(trim((string) ($filters['q'] ?? '')), fn ($q, $term) => $q->whereHas('order', fn ($order) => $order
                 ->where(fn ($match) => $match
                     ->where('code', 'ilike', "%{$term}%")
@@ -99,7 +102,10 @@ final class PaymentSettlementQueue
         if ($this->settled($filters)) {
             return $query->whereHas('standingSettlement', fn ($s) => $s
                 ->when($from, fn ($q) => $q->where('occurred_at', '>=', $from))
-                ->when($to, fn ($q) => $q->where('occurred_at', '<=', $to)));
+                ->when($to, fn ($q) => $q->where('occurred_at', '<=', $to))
+                // إلى أين ذهبت ومَن سوّاها: سؤالان لا يُطرحان إلا على «مسوّاة».
+                ->when($filters['to_account_id'] ?? null, fn ($q, $id) => $q->where('to_account_id', $id))
+                ->when($filters['settled_by'] ?? null, fn ($q, $id) => $q->where('recorded_by', $id)));
         }
 
         return $query

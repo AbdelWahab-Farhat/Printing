@@ -643,6 +643,50 @@ class PaymentSettlementTest extends TestCase
         $code->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $byNawris->id);
     }
 
+    public function test_the_list_filters_by_method_recorder_and_amount(): void
+    {
+        // Arrange — حوالةٌ بتسعين، وكاشٌ بثلاثمئة سجّله موظفٌ آخر.
+        [$clerk, $headers] = $this->owner();
+        [, $colleague] = $this->owner();
+        $this->putJson('/api/v1/treasury/settings', ['collect_bank' => true], $headers)->assertOk();
+        $transfer = $this->order('90.00');
+        $cash = $this->order('300.00');
+        $this->pay($headers, $transfer, '90', $this->bank('مصرف علي'));
+        $this->pay($colleague, $cash, '300', $this->defaultOf(AccountKind::Cash));
+
+        // Act
+        $byMethod = $this->getJson('/api/v1/order-payments/settlement-queue?method=bank_transfer', $headers);
+        $byRecorder = $this->getJson("/api/v1/order-payments/settlement-queue?recorded_by={$clerk->id}", $headers);
+        $byAmount = $this->getJson('/api/v1/order-payments/settlement-queue?amount_min=100&amount_max=400', $headers);
+
+        // Assert
+        $byMethod->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $transfer->id)
+            ->assertJsonPath('meta.amount_total', '90.00');
+        $byRecorder->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $transfer->id);
+        $byAmount->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $cash->id);
+    }
+
+    public function test_the_settled_list_filters_by_where_it_went_and_who_settled(): void
+    {
+        // Arrange — دفعتان من النورس، كلٌّ منهما إلى حسابٍ وبيد موظف.
+        [$first, $one] = $this->owner();
+        [, $two] = $this->owner();
+        $alisBank = $this->bank('مصرف علي');
+        $toAli = $this->deliveredByNawris('250.00');
+        $toBank = $this->deliveredByNawris('100.00');
+        $this->settle($one, [['payment_id' => $this->paymentOf($toAli)->id]], $alisBank)->assertOk();
+        $this->settle($two, [['payment_id' => $this->paymentOf($toBank)->id]], $this->defaultOf(AccountKind::Bank))->assertOk();
+
+        // Act
+        $byAccount = $this->getJson("/api/v1/order-payments/settlement-queue?state=settled&to_account_id={$alisBank->id}", $one);
+        $bySettler = $this->getJson("/api/v1/order-payments/settlement-queue?state=settled&settled_by={$first->id}", $one);
+
+        // Assert
+        $byAccount->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $toAli->id)
+            ->assertJsonPath('meta.amount_total', '250.00');
+        $bySettler->assertJsonCount(1, 'data')->assertJsonPath('data.0.order_id', $toAli->id);
+    }
+
     public function test_the_accounts_name_where_money_waits_and_where_it_may_go(): void
     {
         // Arrange

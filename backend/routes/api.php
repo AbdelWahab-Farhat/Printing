@@ -34,6 +34,7 @@ use App\Application\Api\V1\Controllers\NotificationController;
 use App\Application\Api\V1\Controllers\OnlinePaymentController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
+use App\Application\Api\V1\Controllers\OrderPaymentFilterController;
 use App\Application\Api\V1\Controllers\OrderPaymentReviewController;
 use App\Application\Api\V1\Controllers\OrderPaymentSettlementController;
 use App\Application\Api\V1\Controllers\OrderTicketController;
@@ -739,6 +740,11 @@ Route::prefix('v1')->group(function (): void {
             ->middleware('can:orders.payments.review')->name('orders.payments.review');
         Route::get('order-payments/review-queue', [OrderPaymentReviewController::class, 'queue'])
             ->middleware('can:orders.payments.review')->name('order-payments.review-queue');
+
+        // خياراتُ الفلتر في «مراجعة وتسوية الدفعات». الصلاحيةُ في الطلب لا هنا: تكفي إحدى اثنتين، و`can:`
+        // لا يقبل إلا واحدة.
+        Route::get('order-payments/filter-options', [OrderPaymentFilterController::class, 'options'])
+            ->name('order-payments.filter-options');
 
         // «تسوية دفعة» — a payment's money to the account it reached, before the order is settled,
         // and back. See TREASURY-DESIGN §٢٣.

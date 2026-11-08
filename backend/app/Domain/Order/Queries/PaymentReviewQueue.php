@@ -6,6 +6,7 @@ namespace App\Domain\Order\Queries;
 
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Queries\Concerns\FiltersPaymentEntries;
 use App\Domain\Order\Support\BusinessDay;
 use App\Domain\Order\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,8 +28,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class PaymentReviewQueue
 {
+    use FiltersPaymentEntries;
+
     /**
-     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return LengthAwarePaginator<int, OrderPayment>
      */
     public function page(array $filters, int $perPage): LengthAwarePaginator
@@ -44,7 +47,7 @@ final class PaymentReviewQueue
      * What the filtered queue adds up to, in and out — never one signed figure: «٥٠٠ بانتظار
      * المراجعة» made of 700 in and 200 out would describe no money anybody holds.
      *
-     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return array{incoming_total: string, outgoing_total: string}
      */
     public function totals(array $filters): array
@@ -60,7 +63,7 @@ final class PaymentReviewQueue
     }
 
     /**
-     * @param  array{from?: ?string, to?: ?string, account_id?: ?int, recorded_by?: ?int, type?: ?string, q?: ?string}  $filters
+     * @param  array<string, mixed>  $filters
      * @return Builder<OrderPayment>
      */
     private function filtered(array $filters): Builder
@@ -73,8 +76,7 @@ final class PaymentReviewQueue
             // أيامُ المحلّ بتوقيت طرابلس، لا أيامُ UTC ({@see BusinessDay}).
             ->when($filters['from'] ?? null, fn ($q, $from) => $q->where('paid_at', '>=', BusinessDay::start($from)))
             ->when($filters['to'] ?? null, fn ($q, $to) => $q->where('paid_at', '<=', BusinessDay::end($to)))
-            ->when($filters['account_id'] ?? null, fn ($q, $id) => $q->where('treasury_account_id', $id))
-            ->when($filters['recorded_by'] ?? null, fn ($q, $id) => $q->where('recorded_by', $id))
+            ->tap(fn (Builder $q) => $this->narrowEntries($q, $filters))
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             // بحثُ «مراجعة وتسوية الدفعات»: رقمُ الطلبية أو جزءٌ من اسم الزبون — كبحث التسوية حرفاً
             // ({@see PaymentSettlementQueue})، فيكتب المرءُ الشيءَ نفسَه في التبويبين.

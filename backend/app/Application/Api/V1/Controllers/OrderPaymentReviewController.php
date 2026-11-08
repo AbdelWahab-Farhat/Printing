@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Controllers;
 
+use App\Application\Api\V1\Requests\Order\PaymentQueueRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderPaymentRequest;
 use App\Application\Api\V1\Resources\OrderPaymentResource;
 use App\Application\Controller;
 use App\Domain\Identity\Models\User;
-use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Payment review
@@ -45,22 +43,11 @@ class OrderPaymentReviewController extends Controller
      * `meta.outgoing_total` are what the whole filtered list adds up to, money in and money out
      * apart.
      */
-    public function queue(Request $request): JsonResponse
+    public function queue(PaymentQueueRequest $request): JsonResponse
     {
-        $filters = $request->validate([
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'account_id' => ['nullable', 'integer'],
-            'recorded_by' => ['nullable', 'integer'],
-            /** `payment` or `refund` — the two kinds of entry a review covers. */
-            'type' => ['nullable', Rule::in([OrderPaymentType::Payment->value, OrderPaymentType::Refund->value])],
-            /** Part of an order code or of the customer's name. */
-            'q' => ['nullable', 'string', 'max:100'],
-        ]);
-
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
 
-        $queue = $this->orders->paymentReviewQueue($filters, $perPage);
+        $queue = $this->orders->paymentReviewQueue($request->validated(), $perPage);
 
         return $this->successWithPagination(
             OrderPaymentResource::collection($queue['page']),

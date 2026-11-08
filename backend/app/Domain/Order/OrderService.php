@@ -58,6 +58,7 @@ use App\Domain\Order\Queries\OrderPaymentStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStatusCountsQuery;
 use App\Domain\Order\Queries\OrderStockShortfallQuery;
 use App\Domain\Order\Queries\OrderTotalsQuery;
+use App\Domain\Order\Queries\PaymentFilterOptions;
 use App\Domain\Order\Queries\PaymentReviewQueue;
 use App\Domain\Order\Queries\PaymentSettlementQueue;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
@@ -103,6 +104,7 @@ class OrderService
         private readonly SettleOrderPayments $settlePayments,
         private readonly UnsettleOrderPayment $unsettlePayment,
         private readonly PaymentSettlementQueue $settlementQueue,
+        private readonly PaymentFilterOptions $paymentFilterOptions,
         private readonly WriteOffOrderBalance $writeOffBalance,
         private readonly CreateManufacturingCostRate $createManufacturingCostRate,
         private readonly UpdateManufacturingCostRate $updateManufacturingCostRate,
@@ -485,6 +487,16 @@ class OrderService
             'page' => $this->settlementQueue->page($filters, $perPage),
             'totals' => $this->settlementQueue->totals($filters),
         ];
+    }
+
+    /**
+     * ما تعرضه ورقة الفلتر في «مراجعة وتسوية الدفعات».
+     *
+     * @return array{kinds: list<array{label: string, method: ?string, account_id: ?int}>, accounts: list<array<string, mixed>>, recorders: list<array{id: int, name: string}>, settlers: list<array{id: int, name: string}>}
+     */
+    public function paymentFilterOptions(): array
+    {
+        return $this->paymentFilterOptions->all();
     }
 
     public function recordPayment(Order $order, OrderPaymentData $data, ?User $actor = null): OrderPayment

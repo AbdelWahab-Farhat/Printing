@@ -574,6 +574,71 @@ class OrderPaymentReviewTest extends TestCase
             ->assertJsonPath('data.0.recorded_by', $counterOne->id);
     }
 
+    public function test_the_queue_filters_by_method_account_and_amount(): void
+    {
+        // Arrange — كاشٌ بمئة، وليبيانا بمئتين وخمسين.
+        [, $cashier] = $this->cashier();
+        [, $reviewer] = $this->reviewer();
+        $order = $this->order();
+        $cash = $this->pay($cashier, $order);
+        $libyana = $this->pay($cashier, $order, [
+            'amount' => '250.00',
+            'method' => PaymentMethod::Libyana->value,
+        ]);
+
+        // Act
+        $byMethod = $this->queue($reviewer, ['method' => PaymentMethod::Libyana->value]);
+        $byAccount = $this->queue($reviewer, ['account_id' => $cash->treasury_account_id]);
+        $byAmount = $this->queue($reviewer, ['amount_min' => '200', 'amount_max' => '300']);
+        $byCeiling = $this->queue($reviewer, ['amount_max' => '150']);
+
+        // Assert
+        $byMethod->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $libyana->id);
+        $byAccount->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $cash->id);
+        $byAmount->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $libyana->id);
+        $byCeiling->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $cash->id);
+    }
+
+    public function test_the_totals_follow_the_detailed_filter(): void
+    {
+        // Arrange
+        [, $cashier] = $this->cashier();
+        [, $reviewer] = $this->reviewer();
+        $order = $this->order();
+        $this->pay($cashier, $order);
+        $this->pay($cashier, $order, ['amount' => '250.00', 'method' => PaymentMethod::Libyana->value]);
+
+        // Act
+        $response = $this->queue($reviewer, ['method' => PaymentMethod::Libyana->value]);
+
+        // Assert
+        $response->assertOk()->assertJsonPath('meta.incoming_total', '250.00');
+    }
+
+    public function test_a_ceiling_below_the_floor_is_refused(): void
+    {
+        // Arrange
+        [, $reviewer] = $this->reviewer();
+
+        // Act
+        $response = $this->queue($reviewer, ['amount_min' => '300', 'amount_max' => '200']);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('amount_max');
+    }
+
+    public function test_a_method_the_shop_does_not_know_is_refused(): void
+    {
+        // Arrange
+        [, $reviewer] = $this->reviewer();
+
+        // Act
+        $response = $this->queue($reviewer, ['method' => 'cheque']);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('method');
+    }
+
     public function test_the_queue_is_searched_by_order_code_or_customer_name(): void
     {
         // Arrange — بحثُ «مراجعة وتسوية الدفعات» نفسُه: رقمُ الطلبية أو جزءٌ من اسم الزبون.
