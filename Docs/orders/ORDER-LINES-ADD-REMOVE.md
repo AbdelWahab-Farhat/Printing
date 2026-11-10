@@ -56,7 +56,7 @@ edit there. The promise was never kept; now it is not made.
 | 6 | Restored or reinstated orders in zone 2 | **Refused** — cancel and re-take |
 | 7 | An edit that leaves zone 2 with nothing to print | **Refused** |
 | 8 | Tell the customer | No |
-| 9 | Who may edit in zone 2 | `orders.manage` **and** the grant for moving into «جاهزة للطباعة» |
+| 9 | Who may edit in zone 2 | `orders.manage` **and** the grant for moving into «جاهزة للطباعة» **and** `orders.items.edit_after_draw` (added 2026-11-10, see below) |
 
 ## 5 · The line contract
 
@@ -79,7 +79,7 @@ in, when it is added or its quantity changes. The same figure «جاهزة لل�
 
 All inside `UpdateOrder`'s transaction, with the order row locked:
 
-1. **Guards.** The actor holds `MoveOrderToReadyToPrint`. The order's draw was never reversed
+1. **Guards.** The actor holds `MoveOrderToReadyToPrint` and `EditDrawnOrderLines`. The order's draw was never reversed
    (no `order_reversal` movement against it — a restored or reinstated order). No removed line
    carries a scrap entry. Kilo-stocked lines that need a weight have one. The warehouse holds
    enough for what is about to be drawn, counted per shelf after what is about to come back.
@@ -147,6 +147,23 @@ stock before the new one draws.
   there is sent with the save. An order swapped back onto ours lets its vendor go.
 - Tests: `OrderLinesAddRemoveTest` 31; `order_invoice_cubit_test.dart`,
   `product_picker_sheet_test.dart`.
+
+**Follow-up 2026-11-10 — a grant of its own for zone 2:**
+
+- New permission `orders.items.edit_after_draw` — «تعديل بنود الطلبية بعد خروج البضاعة من
+  المخزن», in the «الطلبيات» group. A zone-2 line edit now needs it **on top of** `orders.manage`
+  and `orders.status.ready_to_print`; either of the two zone-2 grants alone is refused with
+  `EditingDrawnLinesRequiresPermission` (403), and the shelf does not move.
+- It covers all of zone 2 — «جاهزة للطباعة», and «قيد التصميم» on the standard road — because
+  the guard reads `stock_deducted_at`, not the status.
+- **Seeded on nobody** (owner's decision): no migration grants it to the roles that held the old
+  pair, so after deploy only administrators edit drawn lines until a role is given it.
+  Administrators pass through `Gate::before` and need nothing ticked.
+- The app greys «البنود» out without it and names both grants in the note. Zone 1 is unchanged.
+- No migration: the permission row is created on the first role save that ticks it
+  (`EnsurePermissionsExist`), or by `permissions:sync`.
+- Tests: `OrderLinesAddRemoveTest` 33 (two new — each zone-2 grant alone is refused);
+  `permission_contract_test.dart` keeps the two catalogues in step.
 
 **Changed on purpose:** shortages keep their old window (`Order::shortagesAreEditable()` — جديدة ·
 قيد التصميم · نواقص · قيد الطباعة), so declaring a shortage is exactly as before.

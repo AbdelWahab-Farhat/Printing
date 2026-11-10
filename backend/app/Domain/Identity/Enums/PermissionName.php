@@ -105,6 +105,14 @@ enum PermissionName: string
     case AddOrderAdditionalCost = 'orders.additional_cost';
     case ManageOrderDesigns = 'orders.designs.manage';
 
+    // Changing an order's lines once its stock has left the shelf — «جاهزة للطباعة», and
+    // «قيد التصميم» on the standard road. Asked **on top of** `orders.manage` and
+    // `orders.status.ready_to_print`, never instead of them: such an edit moves goods back to the
+    // shelf and off it again, so the owner decides separately who may do it. Seeded on nobody —
+    // until a role is given it, only an administrator edits drawn lines.
+    // See ORDER-LINES-ADD-REMOVE.md §4, decision 9.
+    case EditDrawnOrderLines = 'orders.items.edit_after_draw';
+
     // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the mark an employee puts on an order to say they told
     // the customer, and the queue of orders nobody has told yet.
     //
@@ -460,6 +468,7 @@ enum PermissionName: string
             self::DiscountOrders => 'منح خصم على الطلبية',
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
+            self::EditDrawnOrderLines => 'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
             self::ConfirmReadyMessage => 'تأكيد إرسال رسالة الجاهزية للزبون',
             self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
             self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
@@ -576,7 +585,7 @@ enum PermissionName: string
             // deliberately *not* in «حالات الطلبيات» either — a delete is not a status the
             // machine can move into, which is the whole of what that group collects.
             self::DeleteOrders, self::RestoreOrders, self::ViewOrderArchive,
-            self::ManageOrderDesigns,
+            self::ManageOrderDesigns, self::EditDrawnOrderLines,
             // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
             self::ConfirmReadyMessage => 'الطلبيات',
             self::MoveOrderToAwaitingDeposit, self::MoveOrderToDepositPaid,

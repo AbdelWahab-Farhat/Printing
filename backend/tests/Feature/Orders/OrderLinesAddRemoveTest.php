@@ -93,6 +93,7 @@ class OrderLinesAddRemoveTest extends TestCase
         return $this->staff([
             PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToPrinting,
+            PermissionName::EditDrawnOrderLines,
             PermissionName::ViewInventory,
             PermissionName::ManageInventory,
         ]);
@@ -742,6 +743,47 @@ class OrderLinesAddRemoveTest extends TestCase
         $response->assertForbidden();
         $this->assertSame('700.000', $this->balanceOf($warehouse, $size));
         $this->assertSame('300.000', (string) $order->items()->sole()->quantity);
+    }
+
+    public function test_changing_drawn_lines_needs_its_own_grant_beside_the_stock_one(): void
+    {
+        // Arrange
+        $size = $this->bagSize();
+        $warehouse = Warehouse::factory()->create();
+        $this->shelve($warehouse, $size, '1000');
+        $order = $this->drawn($this->order([[$size, '300']]), $warehouse);
+
+        // Act — a warehouse hand who may draw the stock, but was never given drawn-line edits.
+        $response = $this->edit($this->staff([
+            PermissionName::MoveOrderToReadyToPrint,
+            PermissionName::ViewInventory,
+            PermissionName::ManageInventory,
+        ]), $order, [$this->keep($order->items()->sole(), '500')]);
+
+        // Assert — refused, and neither the shelf nor the line moved.
+        $response->assertForbidden();
+        $this->assertSame('700.000', $this->balanceOf($warehouse, $size));
+        $this->assertSame('300.000', (string) $order->items()->sole()->quantity);
+    }
+
+    public function test_drawn_lines_cannot_be_changed_with_the_new_grant_alone(): void
+    {
+        // Arrange
+        $size = $this->bagSize();
+        $warehouse = Warehouse::factory()->create();
+        $this->shelve($warehouse, $size, '1000');
+        $order = $this->drawn($this->order([[$size, '300']]), $warehouse);
+
+        // Act — the drawn-line grant without the one that takes goods off the shelf.
+        $response = $this->edit(
+            $this->staff([PermissionName::EditDrawnOrderLines]),
+            $order,
+            [$this->keep($order->items()->sole(), '500')],
+        );
+
+        // Assert
+        $response->assertForbidden();
+        $this->assertSame('700.000', $this->balanceOf($warehouse, $size));
     }
 
     public function test_a_restored_order_cannot_have_its_drawn_lines_changed(): void

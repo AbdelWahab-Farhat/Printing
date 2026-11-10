@@ -135,6 +135,13 @@ enum AppPermission {
   // business may reasonably trust a role with exactly one of them.
   addOrderAdditionalCost('orders.additional_cost', 'إضافة تكلفة إضافية على الطلبية'),
   manageOrderDesigns('orders.designs.manage', 'إدارة تصاميم الطلبية واعتمادها'),
+  // Changing an order's lines once its stock has left the shelf. Asked on top of `manageOrders`
+  // and `moveOrderToReadyToPrint`, never instead of them; held by nobody until a role is given
+  // it, so only an administrator edits drawn lines out of the box.
+  editDrawnOrderLines(
+    'orders.items.edit_after_draw',
+    'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
+  ),
 
   // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the tick an employee puts on an order to say they told
   // the customer, and the box on the home screen counting the orders nobody has told yet.

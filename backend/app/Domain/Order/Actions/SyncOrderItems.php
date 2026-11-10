@@ -217,7 +217,10 @@ final class SyncOrderItems
             throw FulfillmentRequiresAnActor::make();
         }
 
-        if (! $actor->can(PermissionName::MoveOrderToReadyToPrint->value)) {
+        // Both grants, on top of the `orders.manage` the route already asked: the one that takes
+        // goods off the shelf, and the owner's own say on who edits drawn lines at all.
+        if (! $actor->can(PermissionName::MoveOrderToReadyToPrint->value)
+            || ! $actor->can(PermissionName::EditDrawnOrderLines->value)) {
             throw EditingDrawnLinesRequiresPermission::make();
         }
 

@@ -225,14 +225,15 @@ class _OrderEditViewState extends State<_OrderEditView> {
               order: order,
               isWorking: state.isWorking,
               mayDiscount: session.can(AppPermission.discountOrders),
-              // **And, once the stock has left, the grant that took it out** — saving the lines
-              // there moves the shelf. The server asks the same; this keeps the screen from
-              // offering what it would refuse.
+              // **And, once the stock has left, the grant that took it out plus the drawn-line
+              // grant** — saving the lines there moves the shelf. The server asks the same; this
+              // keeps the screen from offering what it would refuse.
               mayEditItems:
                   order.itemsAreEditable &&
                   session.can(AppPermission.manageOrders) &&
                   (!order.itemEditsMoveStock ||
-                      session.can(AppPermission.moveOrderToReadyToPrint)),
+                      (session.can(AppPermission.moveOrderToReadyToPrint) &&
+                          session.can(AppPermission.editDrawnOrderLines))),
               // A third line, and later than the other two: the address stays correctable
               // until somebody is driving to it.
               mayEditDestination: session.can(AppPermission.manageOrders),
@@ -423,7 +424,8 @@ class _Form extends StatelessWidget {
                               : order.itemEditsMoveStock &&
                                     sl<Session>().can(AppPermission.manageOrders)
                               ? 'خرجت بضاعة هذه الطلبية من المخزن، وتعديل بنودها يحرّك المخزن'
-                                    ' — يحتاج صلاحية «جاهزة للطباعة»'
+                                    ' — يحتاج صلاحيتي «جاهزة للطباعة»'
+                                    ' و«تعديل بنود الطلبية بعد خروج البضاعة من المخزن»'
                               : 'لا تملك صلاحية تعديل بنود الطلبية',
                         )
                       else if (state.linesMoveStock)
