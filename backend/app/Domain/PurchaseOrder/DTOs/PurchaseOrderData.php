@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\DTOs;
 
+use App\Domain\Treasury\Enums\Currency;
 use Carbon\CarbonImmutable;
 
 final readonly class PurchaseOrderData
@@ -22,6 +23,8 @@ final readonly class PurchaseOrderData
         public ?string $notes = null,
         /** Who saved it — stamped on a cost paid from a drawer and on its movement. */
         public ?int $actorId = null,
+        /** Read on creation alone — an order keeps the currency it was raised in. Null is dinars. */
+        public ?Currency $currency = null,
     ) {}
 
     /**
@@ -45,6 +48,7 @@ final readonly class PurchaseOrderData
                 : null,
             notes: self::textOrNull($validated['notes'] ?? null),
             actorId: $actorId,
+            currency: isset($validated['currency']) ? Currency::from((string) $validated['currency']) : null,
         );
     }
 

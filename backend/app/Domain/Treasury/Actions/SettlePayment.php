@@ -189,6 +189,11 @@ final class SettlePayment
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
         }
 
+        // A payment is dinars, and so is wherever it is settled to.
+        if ($account->isDollar()) {
+            throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
+        }
+
         if ($account->kind === AccountKind::Payable) {
             throw AccountDoesNotFitMethod::payable((string) $account->name, $field);
         }

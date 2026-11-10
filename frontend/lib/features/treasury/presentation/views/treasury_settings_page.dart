@@ -5,11 +5,15 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_settings_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_settings_explain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -269,6 +273,8 @@ class _Loaded extends StatelessWidget {
 
           if (settings.onlineFeePayer case final payer?)
             _Section(title: 'الدفع الإلكتروني', children: [_FeePayerTile(payer: payer)]),
+
+          _Section(title: 'العملات', children: [_UsdRateTile(rate: settings.usdRate)]),
         ],
       ),
     );
@@ -723,6 +729,112 @@ class _FeePayerTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// «سعر النظام» — dinars per dollar, what the dollar accounts are worth in the totals. Empty
+/// until written, and then the totals leave dollars out (USD-ACCOUNTS §٣).
+class _UsdRateTile extends StatelessWidget {
+  const _UsdRateTile({required this.rate});
+
+  final String? rate;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<TreasurySettingsCubit>();
+
+    return ListTile(
+      key: const ValueKey('usd-rate'),
+      contentPadding: EdgeInsetsDirectional.only(start: 16.w, end: 12.w),
+      leading: Icon(AppIcons.exchange, color: context.colorScheme.onSurfaceVariant),
+      title: const Text('سعر النظام للدولار'),
+      subtitle: const Text('دينار لكل دولار — به تُحسب قيمة حسابات الدولار في المجاميع'),
+      trailing: switch (rate) {
+        null => _Value('لم يُكتب', end: Icon(AppIcons.forward, color: context.colorScheme.outline)),
+        final value => _Value(
+          value.grouped,
+          end: IconButton(
+            tooltip: 'مسح السعر',
+            icon: Icon(AppIcons.close),
+            onPressed: () => _run(context, () => cubit.saveUsdRate(null)),
+          ),
+        ),
+      },
+      onTap: () async {
+        final typed = await showDialog<String>(
+          context: context,
+          builder: (_) => _UsdRateDialog(initial: rate?.grouped ?? ''),
+        );
+
+        if (typed != null && context.mounted) {
+          await _run(context, () => cubit.saveUsdRate(typed));
+        }
+      },
+    );
+  }
+}
+
+/// Owns its field, and disposes it itself once its exit animation is done with it.
+class _UsdRateDialog extends StatefulWidget {
+  const _UsdRateDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_UsdRateDialog> createState() => _UsdRateDialogState();
+}
+
+class _UsdRateDialogState extends State<_UsdRateDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final _rate = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _rate.dispose();
+    super.dispose();
+  }
+
+  String? _validate(String? value) {
+    final text = Validators.toWesternDigits((value ?? '').trim());
+    final number = double.tryParse(text);
+
+    if (text.isEmpty) return 'السعر مطلوب';
+    if (number == null) return 'السعر يجب أن يكون رقماً';
+    if (number <= 0) return 'السعر يجب أن يكون أكبر من صفر';
+    if (!RegExp(r'^\d+(\.\d{1,4})?$').hasMatch(text)) return 'أربع خانات عشرية على الأكثر';
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('سعر النظام للدولار'),
+      content: Form(
+        key: _formKey,
+        child: AppTextField(
+          controller: _rate,
+          label: 'دينار لكل دولار',
+          prefixIcon: AppIcons.exchange,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
+          textDirection: TextDirection.ltr,
+          validator: _validate,
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('إلغاء')),
+        FilledButton(
+          onPressed: () {
+            if (!(_formKey.currentState?.validate() ?? false)) return;
+
+            Navigator.of(context).pop(Validators.toWesternDigits(_rate.text.trim()));
+          },
+          child: const Text('حفظ'),
+        ),
+      ],
     );
   }
 }

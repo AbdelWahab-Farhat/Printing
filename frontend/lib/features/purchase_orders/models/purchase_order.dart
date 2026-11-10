@@ -1,5 +1,6 @@
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -177,6 +178,26 @@ abstract class PurchaseOrder with _$PurchaseOrder {
     /// status added on the server still reads correctly here.
     @JsonKey(name: 'status_label') required String statusLabel,
 
+    /// `LYD` or `USD` — every amount on the order is in it (USD-ACCOUNTS.md §٤). Picked when the
+    /// order is raised and never changed. Read it through [currency].
+    @JsonKey(name: 'currency') @Default('LYD') String currencyCode,
+
+    /// Dinars per dollar a dollar order's stock was priced at when it was received
+    /// (USD-ACCOUNTS.md §٥). Null until then, and always on a dinar order.
+    @JsonKey(name: 'arrival_rate') String? arrivalRate,
+
+    /// «سعر النظام» — what the receive screen opens its rate field on. Sent on a dollar order
+    /// alone, and null until the owner writes one.
+    @JsonKey(name: 'system_usd_rate') String? systemUsdRate,
+
+    /// Dinars per dollar the funded lines were bought at — asked when the order was funded. The
+    /// funded goods keep it at arrival (USD-ACCOUNTS.md §٥).
+    @JsonKey(name: 'funding_rate') String? fundingRate,
+
+    /// The funding rate and the arrival rate disagree. Nothing is booked for it — the owner's
+    /// decision of 2026-11-10 — so this is what the order's screen says.
+    @JsonKey(name: 'rate_difference') PurchaseOrderRateDifference? rateDifference,
+
     /// Plain `YYYY-MM-DD`, not a timestamp — the day the order was placed, not an instant.
     @JsonKey(name: 'order_date') required String orderDate,
     @JsonKey(name: 'expected_date') String? expectedDate,
@@ -257,6 +278,14 @@ abstract class PurchaseOrder with _$PurchaseOrder {
   /// Who it was raised against, however much of them arrived with it.
   String get vendorName => vendor?.name ?? 'مورد #$vendorId';
 
+  /// The currency of every amount on it. An older server sends none: dinars.
+  Currency get currency => Currency.fromWire(currencyCode);
+
+  /// Raised in dollars: paid from a dollar account, and received at a rate that prices its stock
+  /// in dinars. Funding by investors waits for an owner's decision (USD-ACCOUNTS.md §١١), so the
+  /// screens do not offer it.
+  bool get isDollar => currency == Currency.usd;
+
   String get warehouseName => warehouse?.name ?? 'بلا مخزن';
 
   /// Whether anything at all has been booked in against it yet.
@@ -282,6 +311,34 @@ abstract class PurchaseOrder with _$PurchaseOrder {
   bool get hasCostsPaidElsewhere => additionalCosts.any((cost) => !cost.isOnVendorBill);
 }
 
+/// A dollar order funded at one rate and received at another — USD-ACCOUNTS.md §٥.
+///
+/// Every figure is the server's. [perDollar] and [dinars] are sizes; which way they went is
+/// [direction] — `higher` when the dollars cost more at arrival than when they were funded.
+@freezed
+abstract class PurchaseOrderRateDifference with _$PurchaseOrderRateDifference {
+  const factory PurchaseOrderRateDifference({
+    @JsonKey(name: 'funding_rate') required String fundingRate,
+    @JsonKey(name: 'arrival_rate') required String arrivalRate,
+    @JsonKey(name: 'per_dollar') required String perDollar,
+    required String direction,
+
+    /// The funded lines' dollars — what the gap is counted on.
+    @JsonKey(name: 'funded_dollars') required String fundedDollars,
+
+    /// [perDollar] × [fundedDollars], in dinars.
+    required String dinars,
+  }) = _PurchaseOrderRateDifference;
+
+  const PurchaseOrderRateDifference._();
+
+  factory PurchaseOrderRateDifference.fromJson(Map<String, dynamic> json) =>
+      _$PurchaseOrderRateDifferenceFromJson(json);
+
+  /// The dollars cost more at arrival than when they were funded.
+  bool get isHigher => direction == 'higher';
+}
+
 /// One order-level cost not tied to any line — delivery, unloading, customs.
 ///
 /// **Spread across the lines by the server, not shown as a separate bill.** Each line's
@@ -295,6 +352,10 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
 
     /// A string like every other money field here: `'10.00'` as the server stored it.
     required String amount,
+
+    /// `LYD` or `USD` — the order's on the vendor's bill, the drawer's when paid from one
+    /// (USD-ACCOUNTS.md §٧). [amount] is in it. Read it through [currency].
+    @JsonKey(name: 'currency') @Default('LYD') String currencyCode,
 
     /// The receipt it was typed on; null on a cost planned when the order was raised.
     @JsonKey(name: 'stock_arrival_id') int? stockArrivalId,
@@ -319,6 +380,9 @@ abstract class PurchaseOrderAdditionalCost with _$PurchaseOrderAdditionalCost {
 
   /// `'10.00'` → `'10'`, ready for a widget.
   String get amountLabel => groupedDecimal(amount);
+
+  /// What [amount] is in. An older server sends none: dinars.
+  Currency get currency => Currency.fromWire(currencyCode);
 
   bool get isArrivalCost => stockArrivalId != null;
 

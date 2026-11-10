@@ -80,6 +80,7 @@ class SaveTreasuryAccount {
     bool? isCollected,
     int? pickupCityId,
     bool clearPickupCity = false,
+    Currency? currency,
   }) => _repository.saveAccount(
     id: id,
     name: name,
@@ -91,6 +92,7 @@ class SaveTreasuryAccount {
     isCollected: isCollected,
     pickupCityId: pickupCityId,
     clearPickupCity: clearPickupCity,
+    currency: currency,
   );
 }
 
@@ -103,7 +105,13 @@ class GetAccountOptions {
     required String method,
     bool incoming = true,
     int? orderId,
-  }) => _repository.accountOptions(method: method, incoming: incoming, orderId: orderId);
+    Currency? currency,
+  }) => _repository.accountOptions(
+    method: method,
+    incoming: incoming,
+    orderId: orderId,
+    currency: currency,
+  );
 }
 
 class RecordTreasuryOperation {
@@ -121,6 +129,8 @@ class RecordTreasuryOperation {
     String? countedBalance,
     String? notes,
     String? clientToken,
+    String? counterAmount,
+    String? rate,
   }) => _repository.recordOperation(
     kind: kind,
     amount: amount,
@@ -131,6 +141,8 @@ class RecordTreasuryOperation {
     countedBalance: countedBalance,
     notes: notes,
     clientToken: clientToken,
+    counterAmount: counterAmount,
+    rate: rate,
   );
 }
 
@@ -197,6 +209,8 @@ class SaveTreasurySettings {
     bool? settleIntoSettler,
     bool? pickSettlementAccounts,
     String? onlineFeePayer,
+    String? usdRate,
+    bool clearUsdRate = false,
   }) => _repository.saveSettings(
     ownAccountFirst: ownAccountFirst,
     blockOverdraft: blockOverdraft,
@@ -211,6 +225,8 @@ class SaveTreasurySettings {
     settleIntoSettler: settleIntoSettler,
     pickSettlementAccounts: pickSettlementAccounts,
     onlineFeePayer: onlineFeePayer,
+    usdRate: usdRate,
+    clearUsdRate: clearUsdRate,
   );
 }
 

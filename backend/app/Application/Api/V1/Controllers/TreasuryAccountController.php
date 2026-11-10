@@ -17,9 +17,11 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\OrderService;
 use App\Domain\Treasury\DTOs\AccountData;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
+use App\Domain\Treasury\Support\Money;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\ResponseTrait;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -49,18 +51,42 @@ class TreasuryAccountController extends Controller
         $accounts = $this->treasury->accountsFor($user, $request->boolean('active_only'));
 
         $active = $accounts->where('is_active', true);
+        $money = $active->filter(fn (TreasuryAccount $a) => $a->kind->holdsMoney());
+        $payables = $active->reject(fn (TreasuryAccount $a) => $a->kind->holdsMoney());
+
+        // Dollars count at «سعر النظام», as in «لمن المال» (USD-ACCOUNTS §٣); with no rate they
+        // stay out of the dinar total and are said beside it.
+        $rate = $this->treasury->settings()->usd_rate;
+        $inDinars = fn (string $dollars): ?string => $rate === null ? null : Money::round(bcmul($dollars, (string) $rate, 8));
+
+        $dollars = $this->sum($money->filter(fn (TreasuryAccount $a) => $a->isDollar()));
+        $dollarsInDinars = $inDinars($dollars);
+
+        // A vendor's dollar «علينا» (§٤), as a positive figure in dollars.
+        $owedDollars = bcmul($this->sum($payables->filter(fn (TreasuryAccount $a) => $a->isDollar())), '-1', 2);
+        $owedDollarsInDinars = $inDinars($owedDollars);
 
         return $this->success([
             'accounts' => TreasuryAccountResource::collection($accounts),
             // Only the accounts the caller can see — for a holder, their own money, not the shop's.
             // Money only: a debt is not a dinar in any drawer, and an older app adds up `total`.
-            'total' => $this->sum($active->filter(fn (TreasuryAccount $a) => $a->kind->holdsMoney())),
-            // «علينا» — what the payables owe, as a positive figure (§٢٠).
-            'payables_total' => bcmul(
-                $this->sum($active->reject(fn (TreasuryAccount $a) => $a->kind->holdsMoney())),
-                '-1',
+            'total' => bcadd(
+                $this->sum($money->reject(fn (TreasuryAccount $a) => $a->isDollar())),
+                $dollarsInDinars ?? '0',
                 2,
             ),
+            'usd_total' => bcadd($dollars, '0', 2),
+            'usd_rate' => $rate === null ? null : (string) $rate,
+            'usd_total_in_lyd' => $dollarsInDinars,
+            // «علينا» — what the payables owe, as a positive figure (§٢٠). The dollar ones count
+            // at «سعر النظام», like the money above, and are said beside it.
+            'payables_total' => bcadd(
+                bcmul($this->sum($payables->reject(fn (TreasuryAccount $a) => $a->isDollar())), '-1', 2),
+                $owedDollarsInDinars ?? '0',
+                2,
+            ),
+            'usd_payables_total' => $owedDollars,
+            'usd_payables_total_in_lyd' => $owedDollarsInDinars,
             'can_view_all' => $this->treasury->canViewAll($user),
         ]);
     }
@@ -168,6 +194,9 @@ class TreasuryAccountController extends Controller
             // The order the money is for: while it waits at a branch, «تلقائي» is that branch's
             // cash box (§١٩).
             'order_id' => ['nullable', 'integer'],
+            // `USD` for a dollar debt paid out (USD-ACCOUNTS §٦): the dollar accounts alone, and
+            // no «تلقائي».
+            'currency' => ['nullable', Rule::enum(Currency::class)],
         ]);
 
         $orderId = isset($validated['order_id']) ? (int) $validated['order_id'] : null;
@@ -179,6 +208,7 @@ class TreasuryAccountController extends Controller
             $orderId === null ? null : $orders->pickupOfficeOf($orderId),
             // والطردُ في الطريق: «تلقائي» هو النورس، كما تختاره الدفعةُ نفسها.
             carrierHolds: $orderId !== null && $carrier->hasParcelOnTheRoad($orderId),
+            currency: isset($validated['currency']) ? Currency::from((string) $validated['currency']) : Currency::Lyd,
         );
 
         return $this->success([
@@ -189,9 +219,10 @@ class TreasuryAccountController extends Controller
                 'kind_label' => $account->kind->label(),
                 'is_default' => (bool) $account->is_default,
             ])->values(),
-            'suggested_id' => $options['suggested']->id,
+            // Null for dollars: a dollar payment names its drawer (USD-ACCOUNTS §٦).
+            'suggested_id' => $options['suggested']?->id,
             // بالاسم أيضاً: المقترحُ قد يكون حساباً لا يُختار باليد فليس في القائمة — النورس.
-            'suggested_name' => $options['suggested']->name,
+            'suggested_name' => $options['suggested']?->name,
         ]);
     }
 

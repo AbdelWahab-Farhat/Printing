@@ -8,13 +8,33 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// «1,250 د.ل» / «−80 د.ل». الإشارة تُفصل قبل التجميع فلا يقع سالبٌ بين الأرقام، والسالبُ
 /// الطباعي هو الذي تطبعه دفاتر التطبيق.
-String treasuryMoney(String amount, {bool signed = false}) {
+///
+/// **Dollars read «$1,250» and are isolated left-to-right** (U+2066 … U+2069): inside an Arabic
+/// sentence — «الرصيد $1,250» — the bidi algorithm would otherwise carry a leading minus or the
+/// sign to the far side of the figure. USD-ACCOUNTS §٩.
+String treasuryMoney(String amount, {bool signed = false, Currency currency = Currency.lyd}) {
   final negative = amount.startsWith('-');
   final digits = (negative ? amount.substring(1) : amount).grouped;
   final sign = negative ? '−' : (signed ? '+' : '');
 
-  return '$sign$digits د.ل';
+  return switch (currency) {
+    Currency.lyd => '$sign$digits د.ل',
+    Currency.usd => '$_isolateLtr$sign\$$digits$_endIsolate',
+  };
 }
+
+/// An already-formatted, unsigned figure with its currency: «1,250 د.ل», or «$1,250» held
+/// left-to-right so Arabic text around it cannot flip the symbol and the digits
+/// (USD-ACCOUNTS.md §٩).
+String withCurrency(String figure, Currency currency) => switch (currency) {
+  Currency.lyd => '$figure د.ل',
+  Currency.usd => '$_isolateLtr\$$figure$_endIsolate',
+};
+
+/// LEFT-TO-RIGHT ISOLATE and POP DIRECTIONAL ISOLATE, by code point so no raw control character
+/// sits in the source.
+final _isolateLtr = String.fromCharCode(0x2066);
+final _endIsolate = String.fromCharCode(0x2069);
 
 IconData accountKindIcon(AccountKind kind) => switch (kind) {
   AccountKind.cash => AppIcons.cashBox,
@@ -28,16 +48,17 @@ IconData accountKindIcon(AccountKind kind) => switch (kind) {
 /// ما في الحساب كما يقوله الناس: «1,250 د.ل» للمال، و«علينا 1,000 د.ل» للدَّين — لا «−1,000»
 /// أبداً، فهي تُقرأ خطأً. و«لنا عنده» حين يكون عند الدائن مالٌ للشركة. TREASURY-DESIGN §٢٠.
 String treasuryBalanceLabel(TreasuryAccount account) {
-  if (!account.isPayable) return treasuryMoney(account.balance ?? '0');
+  if (!account.isPayable) return treasuryMoney(account.balance ?? '0', currency: account.currency);
 
-  return owedLabel(account.owed, holder: 'عنده');
+  return owedLabel(account.owed, holder: 'عنده', currency: account.currency);
 }
 
 /// ما علينا كما يقوله الناس: «علينا 1,000 د.ل»، أو — حين يكون عند الدائن مالٌ للشركة — «لنا
 /// عنده 50 د.ل». [holder] «عنده» لدائنٍ واحد و«عندهم» لأكثر. لا سالبَ عارياً أبداً.
-String owedLabel(String owed, {String holder = 'عندهم'}) => owed.startsWith('-')
-    ? 'لنا $holder ${treasuryMoney(owed.substring(1))}'
-    : 'علينا ${treasuryMoney(owed)}';
+String owedLabel(String owed, {String holder = 'عندهم', Currency currency = Currency.lyd}) =>
+    owed.startsWith('-')
+    ? 'لنا $holder ${treasuryMoney(owed.substring(1), currency: currency)}'
+    : 'علينا ${treasuryMoney(owed, currency: currency)}';
 
 /// الرقم أعلى شاشة الخزينة — كل ما في الحسابات، أو رصيد حسابٍ واحد.
 class TreasuryTotalCard extends StatelessWidget {
@@ -46,12 +67,16 @@ class TreasuryTotalCard extends StatelessWidget {
     required this.amount,
     this.footnote,
     this.inline = false,
+    this.currency = Currency.lyd,
     super.key,
   });
 
   final String label;
   final String amount;
   final String? footnote;
+
+  /// One account's balance is in its own currency; the dashboard's total is dinars.
+  final Currency currency;
 
   /// سطر واحد: العنوان في جهة القراءة والرقم مقابله — للوحة الحسابات، حيث المساحة لما تحت
   /// الرقم. صفحة الحساب تبقى على البطاقة الطويلة.
@@ -79,7 +104,7 @@ class TreasuryTotalCard extends StatelessWidget {
               ),
             ),
             Text(
-              treasuryMoney(amount),
+              treasuryMoney(amount, currency: currency),
               textDirection: TextDirection.ltr,
               style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
@@ -100,7 +125,7 @@ class TreasuryTotalCard extends StatelessWidget {
           Text(label, style: context.textTheme.bodyMedium),
           SizedBox(height: 6.h),
           Text(
-            treasuryMoney(amount),
+            treasuryMoney(amount, currency: currency),
             textDirection: TextDirection.ltr,
             style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
@@ -108,6 +133,55 @@ class TreasuryTotalCard extends StatelessWidget {
             SizedBox(height: 4.h),
             Text(note, style: context.textTheme.bodySmall),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The dollars under a dinar total: what the dollar accounts hold, and what that is worth in it
+/// at «سعر النظام» — or, with no rate written, that they are not in it. USD-ACCOUNTS §٣.
+class TreasuryDollarLine extends StatelessWidget {
+  const TreasuryDollarLine({required this.dollars, this.owed = false, super.key});
+
+  final DollarHoldings dollars;
+
+  /// What is owed in dollars — the vendors' dollar «علينا» (USD-ACCOUNTS §٤) — rather than
+  /// what is held.
+  final bool owed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final rate = dollars.rate;
+    final inLyd = dollars.inLyd;
+    final figure = treasuryMoney(dollars.held, currency: Currency.usd);
+
+    final text = switch ((rate != null && inLyd != null, owed)) {
+      (true, false) => 'منها بالدولار $figure = ${treasuryMoney(inLyd!)} بسعر النظام ${rate!.grouped}',
+      (true, true) =>
+        'من «علينا» بالدولار $figure = ${treasuryMoney(inLyd!)} بسعر النظام ${rate!.grouped}',
+      (false, false) =>
+        'وبالدولار $figure — خارج المجموع حتى يُكتب «سعر النظام» في إعدادات المالية',
+      (false, true) =>
+        'وعلينا بالدولار $figure — خارج المجموع حتى يُكتب «سعر النظام» في إعدادات المالية',
+    };
+
+    return Padding(
+      key: ValueKey(owed ? 'owed-dollar-line' : 'dollar-line'),
+      padding: EdgeInsets.only(top: 6.h),
+      child: Row(
+        children: [
+          Icon(AppIcons.exchange, size: 16.sp, color: rate == null ? scheme.tertiary : scheme.onSurfaceVariant),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: Text(
+              text,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: rate == null ? scheme.tertiary : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -188,9 +262,18 @@ class TreasuryAccountTile extends StatelessWidget {
 /// والمبلغ بإشارته والرصيد بعده على الجهة الأخرى. **المعكوس يبقى ظاهراً مشطوباً**، وسطرُ عكسه
 /// فوقه.
 class TreasuryMovementRow extends StatelessWidget {
-  const TreasuryMovementRow({required this.movement, this.onTap, this.onOptions, super.key});
+  const TreasuryMovementRow({
+    required this.movement,
+    this.onTap,
+    this.onOptions,
+    this.currency = Currency.lyd,
+    super.key,
+  });
 
   final TreasuryMovement movement;
+
+  /// The ledger's account's currency — every line on it is in it.
+  final Currency currency;
 
   /// يفتح مصدر المال حين يكون له باب — الطلبية اليوم. فارغٌ: لا شيء يُفتح.
   final VoidCallback? onTap;
@@ -208,6 +291,8 @@ class TreasuryMovementRow extends StatelessWidget {
         : scheme.error;
     final quiet = context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
     final struck = movement.isReversed ? TextDecoration.lineThrough : null;
+    // «المصاريف» names each line's account, and so its currency; a ledger has its own.
+    final lineCurrency = movement.accountCurrency ?? currency;
 
     final story = [
       // «المصاريف» تجمع الحسابات كلها، فيقول كل سطرٍ من أيّها خرج.
@@ -261,7 +346,7 @@ class TreasuryMovementRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                treasuryMoney(movement.signedAmount, signed: true),
+                treasuryMoney(movement.signedAmount, signed: true, currency: lineCurrency),
                 textDirection: TextDirection.ltr,
                 style: context.textTheme.titleLarge?.copyWith(
                   color: tone,
@@ -269,9 +354,19 @@ class TreasuryMovementRow extends StatelessWidget {
                   decoration: struck,
                 ),
               ),
+              // A dollar expense, in the dinars it is counted at (USD-ACCOUNTS §٨).
+              if (movement.dinarAmount case final dinars?) ...[
+                SizedBox(height: 2.h),
+                Text(
+                  '≈ ${treasuryMoney(dinars)}',
+                  key: const ValueKey('movement-in-dinars'),
+                  textDirection: TextDirection.ltr,
+                  style: quiet,
+                ),
+              ],
               if (movement.balanceAfter case final after?) ...[
                 SizedBox(height: 2.h),
-                Text('الرصيد ${treasuryMoney(after)}', style: quiet),
+                Text('الرصيد ${treasuryMoney(after, currency: currency)}', style: quiet),
               ],
             ],
           ),
@@ -331,6 +426,7 @@ class TreasuryFiguresCard extends StatelessWidget {
     required this.icon,
     required this.lines,
     this.emphasis,
+    this.currency = Currency.lyd,
     super.key,
   });
 
@@ -340,6 +436,9 @@ class TreasuryFiguresCard extends StatelessWidget {
 
   /// The line the card exists to say, drawn bold under the rest.
   final (String, String)? emphasis;
+
+  /// Of every figure on the card — a dollar purchase order's are dollars.
+  final Currency currency;
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +462,7 @@ class TreasuryFiguresCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: 12.h),
-            TreasuryFigures(lines: lines, emphasis: emphasis),
+            TreasuryFigures(lines: lines, emphasis: emphasis, currency: currency),
           ],
         ),
       ),
@@ -374,10 +473,16 @@ class TreasuryFiguresCard extends StatelessWidget {
 /// أسطر «البيان — المبلغ» وتحتها السطر الذي تُقال لأجله، بلا بطاقة ولا عنوان: داخل تبويب
 /// يكون اسم التبويب هو العنوان.
 class TreasuryFigures extends StatelessWidget {
-  const TreasuryFigures({required this.lines, this.emphasis, super.key});
+  const TreasuryFigures({
+    required this.lines,
+    this.emphasis,
+    this.currency = Currency.lyd,
+    super.key,
+  });
 
   final List<(String, String)> lines;
   final (String, String)? emphasis;
+  final Currency currency;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +497,7 @@ class TreasuryFigures extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
-                Text(treasuryMoney(amount), textDirection: TextDirection.ltr),
+                Text(treasuryMoney(amount, currency: currency), textDirection: TextDirection.ltr),
               ],
             ),
           ),
@@ -407,7 +512,7 @@ class TreasuryFigures extends StatelessWidget {
                 ),
               ),
               Text(
-                treasuryMoney(amount),
+                treasuryMoney(amount, currency: currency),
                 textDirection: TextDirection.ltr,
                 style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,

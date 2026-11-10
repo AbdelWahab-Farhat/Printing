@@ -41,7 +41,8 @@ final class ReverseVendorPayment
             if ($locked->type === VendorPaymentType::OpeningDebt) {
                 Vendor::query()->whereKey($locked->vendor_id)->lockForUpdate()->first();
 
-                $owed = $this->summary->forVendor((int) $locked->vendor_id)['owed'];
+                // In the debt's own currency (USD-ACCOUNTS.md §٦).
+                $owed = $this->summary->forVendor((int) $locked->vendor_id, $locked->currency)['owed'];
 
                 if (bccomp((string) $locked->amount, $owed, 2) > 0) {
                     throw VendorPaymentRefused::debtAlreadyPaid($owed);
@@ -60,6 +61,7 @@ final class ReverseVendorPayment
             $reversal->vendor_id = $locked->vendor_id;
             $reversal->purchase_order_id = $locked->purchase_order_id;
             $reversal->type = VendorPaymentType::Reversal;
+            $reversal->currency = $locked->currency;
             $reversal->reverses_payment_id = $locked->getKey();
             $reversal->recorded_by = $actorId;
             $reversal->save();

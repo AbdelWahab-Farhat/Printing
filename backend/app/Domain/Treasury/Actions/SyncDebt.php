@@ -44,6 +44,10 @@ final class SyncDebt
         string $notes,
         string $reason,
         ?int $actorId,
+        // A dollar expense's dinar figure (USD-ACCOUNTS.md §٨), written with the posting. A rate
+        // that moved while the amount did not reposts nothing: the figure is the rate of the day
+        // the money left.
+        ?string $dinarAmount = null,
     ): void {
         $amount = Money::round($amount);
         $wanted = $accountId !== null && Money::isPositive($amount);
@@ -89,6 +93,7 @@ final class SyncDebt
             notes: $notes,
             recordedBy: $actorId,
             revision: $posted->isEmpty() ? 0 : (int) $posted->max('revision') + 1,
+            dinarAmount: $dinarAmount,
         ));
     }
 }

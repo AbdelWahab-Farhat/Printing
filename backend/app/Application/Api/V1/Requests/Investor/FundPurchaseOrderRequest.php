@@ -45,6 +45,11 @@ class FundPurchaseOrderRequest extends FormRequest
             'printing_sale_price' => ['nullable', 'numeric', 'min:0.001', 'max:999999999'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
+            // Dinars per dollar on a dollar order — what the money is held against, «سعر النظام»
+            // unless changed (USD-ACCOUNTS.md §٥). Required there, which the domain checks; an
+            // order funded before keeps its own rate.
+            'rate' => ['nullable', 'decimal:0,4', 'min:0.0001', 'max:99999999'],
+
             // Which of the order's lines this deal funds. Omitted, it takes every line nobody
             // has claimed — the whole order the first time, the remainder afterwards. That the
             // lines belong to this order, and are still free, is checked in the domain.

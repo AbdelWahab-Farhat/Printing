@@ -94,12 +94,14 @@ class InvestmentFundRepositoryImpl implements InvestmentFundRepository {
     required int purchaseOrderId,
     required List<int> stockItemIds,
     Map<int, String> printingSalePrices = const {},
+    String? rate,
   }) {
     return safeRequest<Unit>(
       () => _dio.post(
         InvestmentEndpoints.fundPurchase(purchaseOrderId),
         data: {
           'stock_item_ids': stockItemIds,
+          'rate': ?rate,
           // المفتاحُ رقمُ المادة نصّاً — هكذا يقرؤه الخادم — ولا يُرسَل أصلاً حين لا سعرَ
           // لأيّ رفّ، فالمصفوفةُ الفارغة سؤالٌ بلا جواب.
           if (printingSalePrices.isNotEmpty)

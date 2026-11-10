@@ -49,6 +49,8 @@ final class ReverseMovement
                 ? null
                 : (int) $original->counterpart_account_id,
             reversesMovementId: (int) $original->getKey(),
+            // The dinars it stood for go back with it.
+            dinarAmount: $original->dinar_amount === null ? null : (string) $original->dinar_amount,
         ));
     }
 }

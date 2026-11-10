@@ -15,6 +15,7 @@ import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/account_change.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_expenses_cubit.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/currency_exchange_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_expenses_tab.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
@@ -148,7 +149,12 @@ class _Loaded extends StatelessWidget {
                 onTap: () => open(account),
               ),
             if (payables.isNotEmpty)
-              _Payables(payables: payables, total: accounts.payablesTotal, onOpen: open),
+              _Payables(
+                payables: payables,
+                total: accounts.payablesTotal,
+                owedDollars: accounts.owedDollars,
+                onOpen: open,
+              ),
           ],
         ),
       ),
@@ -170,6 +176,10 @@ class _Loaded extends StatelessWidget {
                 ],
                 emphasis: ('مال الشركة نفسها', ownership.companyOwn),
               ),
+              if (!ownership.dollars.isEmpty) TreasuryDollarLine(dollars: ownership.dollars),
+              // And what is owed in dollars, inside «علينا» above — USD-ACCOUNTS §٤.
+              if (!ownership.owedDollars.isEmpty)
+                TreasuryDollarLine(dollars: ownership.owedDollars, owed: true),
             ],
           ),
         ),
@@ -215,7 +225,9 @@ class _Loaded extends StatelessWidget {
                   amount: accounts.total,
                   inline: true,
                 ),
-                if (accounts.canViewAll) _Actions(accounts: accounts.accounts),
+                if (!accounts.dollars.isEmpty) TreasuryDollarLine(dollars: accounts.dollars),
+                if (accounts.canViewAll)
+                  _Actions(accounts: accounts.accounts, systemRate: accounts.dollars.rate),
               ],
             ),
           ),
@@ -237,10 +249,20 @@ class _Loaded extends StatelessWidget {
 /// يكونون عشرات، فيُطوَون في «ذمم الموردين» بمجموعهم وتُفتح على من له شيءٌ منهم؛ ومن سُدّد له
 /// كلُّه لا يُذكر.
 class _Payables extends StatelessWidget {
-  const _Payables({required this.payables, required this.total, required this.onOpen});
+  const _Payables({
+    required this.payables,
+    required this.total,
+    required this.onOpen,
+    required this.owedDollars,
+  });
 
   final List<TreasuryAccount> payables;
+
+  /// In dinars — the dollar «علينا» counted in at «سعر النظام» when there is one.
   final String total;
+
+  /// The vendors' dollar «علينا», said under [total] — USD-ACCOUNTS §٤.
+  final DollarHoldings owedDollars;
   final void Function(TreasuryAccount account) onOpen;
 
   @override
@@ -250,6 +272,14 @@ class _Payables extends StatelessWidget {
     final vendors = [
       for (final a in payables)
         if (a.isVendorPayable && a.owed != '0.00') a,
+    ];
+    // Added up per currency: a dollar «علينا» summed with the dinar ones would read $100 as
+    // 100 dinars.
+    final dinarVendors = [for (final a in vendors) if (!a.isDollar) a];
+    final dollarVendors = [for (final a in vendors) if (a.isDollar) a];
+    final vendorTotals = [
+      if (dinarVendors.isNotEmpty) owedLabel(_owedBy(dinarVendors)),
+      if (dollarVendors.isNotEmpty) owedLabel(_owedBy(dollarVendors), currency: Currency.usd),
     ];
 
     return Column(
@@ -276,6 +306,7 @@ class _Payables extends StatelessWidget {
             ),
           ],
         ),
+        if (!owedDollars.isEmpty) TreasuryDollarLine(dollars: owedDollars, owed: true),
         for (final account in own)
           TreasuryAccountTile(
             key: ValueKey(account.id),
@@ -292,9 +323,15 @@ class _Payables extends StatelessWidget {
               'ذمم الموردين',
               style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-            subtitle: Text('${vendors.length} مورد'),
+            subtitle: Text(
+              [
+                '${vendors.length} مورد',
+                // The dollar figure under the dinar one when the vendors owe both.
+                if (vendorTotals.length > 1) vendorTotals.last,
+              ].join(' · '),
+            ),
             trailing: Text(
-              owedLabel(_owedBy(vendors)),
+              vendorTotals.first,
               style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             children: [
@@ -338,9 +375,12 @@ class _Payables extends StatelessWidget {
 ///
 /// كل زر يظهر لمن يملك صلاحيته فقط، والزر الباقي وحده يأخذ العرض كله.
 class _Actions extends StatelessWidget {
-  const _Actions({required this.accounts});
+  const _Actions({required this.accounts, this.systemRate});
 
   final List<TreasuryAccount> accounts;
+
+  /// «سعر النظام», which an expense out of a dollar account opens its rate on (USD-ACCOUNTS §٨).
+  final String? systemRate;
 
   @override
   Widget build(BuildContext context) {
@@ -355,14 +395,16 @@ class _Actions extends StatelessWidget {
           onPressed: () => unawaited(
             showTreasuryAccountSheet(
               context: context,
-              onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) =>
-                  cubit.saveAccount(
-                    name: name,
-                    kind: kind,
-                    isDefault: isDefault,
-                    holderUserId: holderUserId,
-                    notes: notes,
-                  ),
+              onSubmit:
+                  ({required name, kind, isDefault, isActive, holderUserId, notes, currency}) =>
+                      cubit.saveAccount(
+                        name: name,
+                        kind: kind,
+                        isDefault: isDefault,
+                        holderUserId: holderUserId,
+                        notes: notes,
+                        currency: currency,
+                      ),
             ),
           ),
         ),
@@ -375,6 +417,7 @@ class _Actions extends StatelessWidget {
               context: context,
               kind: OperationKind.expense,
               accounts: accounts,
+              systemRate: systemRate,
               onSubmit:
                   ({
                     required kind,
@@ -386,6 +429,7 @@ class _Actions extends StatelessWidget {
                     countedBalance,
                     notes,
                     clientToken,
+                    rate,
                   }) async {
                     final failure = await cubit.record(
                       kind: kind,
@@ -397,6 +441,7 @@ class _Actions extends StatelessWidget {
                       countedBalance: countedBalance,
                       notes: notes,
                       clientToken: clientToken,
+                      rate: rate,
                     );
 
                     // The new expense belongs in «المصاريف», and changes its total.
@@ -411,15 +456,60 @@ class _Actions extends StatelessWidget {
         ),
     ];
 
-    if (buttons.isEmpty) return const SizedBox.shrink();
+    // «صرف عملة» once there is somewhere for dollars to go — USD-ACCOUNTS §٣.
+    final canExchange =
+        session.can(AppPermission.recordTreasuryOperations) &&
+        exchangeableAccounts(accounts).any((account) => account.isDollar);
+
+    if (buttons.isEmpty && !canExchange) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.only(top: 12.h),
-      child: Row(
+      child: Column(
         children: [
-          for (final (index, button) in buttons.indexed) ...[
-            if (index > 0) SizedBox(width: 12.w),
-            Expanded(child: button),
+          Row(
+            children: [
+              for (final (index, button) in buttons.indexed) ...[
+                if (index > 0) SizedBox(width: 12.w),
+                Expanded(child: button),
+              ],
+            ],
+          ),
+          if (canExchange) ...[
+            if (buttons.isNotEmpty) SizedBox(height: 8.h),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton.tonal(
+                key: const ValueKey('dashboard-exchange'),
+                label: 'صرف عملة',
+                icon: AppIcons.exchange,
+                onPressed: () => unawaited(
+                  showCurrencyExchangeSheet(
+                    context: context,
+                    accounts: accounts,
+                    onUpdateSystemRate: systemRateUpdater(session),
+                    onSubmit:
+                        ({
+                          required fromAccountId,
+                          required toAccountId,
+                          amount,
+                          counterAmount,
+                          rate,
+                          notes,
+                          clientToken,
+                        }) => cubit.recordExchange(
+                          fromAccountId: fromAccountId,
+                          toAccountId: toAccountId,
+                          amount: amount,
+                          counterAmount: counterAmount,
+                          rate: rate,
+                          notes: notes,
+                          clientToken: clientToken,
+                        ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ],
       ),

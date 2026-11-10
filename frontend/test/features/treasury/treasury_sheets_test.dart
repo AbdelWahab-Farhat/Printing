@@ -90,6 +90,7 @@ void main() {
                   countedBalance,
                   notes,
                   clientToken,
+                  rate,
                 }) async => null,
           ),
         ),
@@ -126,6 +127,7 @@ void main() {
                   countedBalance,
                   notes,
                   clientToken,
+                  rate,
                 }) async => null,
           ),
         ),
@@ -163,6 +165,7 @@ void main() {
                   countedBalance,
                   notes,
                   clientToken,
+                  rate,
                 }) async {
                   tokens.add(clientToken);
 
@@ -232,6 +235,7 @@ void main() {
                   countedBalance,
                   notes,
                   clientToken,
+                  rate,
                 }) async => null,
           ),
         ),
@@ -268,7 +272,7 @@ void main() {
       (context) => showTreasuryAccountSheet(
         context: context,
         account: account,
-        onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) async {
+        onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes, currency}) async {
           onNotes(notes);
 
           return null;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\PurchaseOrder\DTOs;
 
 use App\Domain\PurchaseOrder\Actions\ReceivePurchaseOrder;
+use App\Domain\Treasury\Support\ExchangeRate;
 
 final readonly class ReceivePurchaseOrderData
 {
@@ -24,6 +25,11 @@ final readonly class ReceivePurchaseOrderData
          * @var list<PurchaseOrderAdditionalCostData>
          */
         public array $additionalCosts = [],
+        /**
+         * Dinars per dollar on a dollar order — what its stock is priced at (USD-ACCOUNTS.md §٥).
+         * Required there, ignored on a dinar order.
+         */
+        public ?string $arrivalRate = null,
     ) {}
 
     /**
@@ -40,6 +46,9 @@ final readonly class ReceivePurchaseOrderData
                 PurchaseOrderAdditionalCostData::fromArray(...),
                 array_values($validated['additional_costs'] ?? []),
             ),
+            arrivalRate: isset($validated['arrival_rate']) && $validated['arrival_rate'] !== ''
+                ? ExchangeRate::normalize((string) $validated['arrival_rate'])
+                : null,
         );
     }
 

@@ -89,6 +89,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     bool? isCollected,
     int? pickupCityId,
     bool clearPickupCity = false,
+    Currency? currency,
   }) {
     // في التعديل يُترك المفتاح الغائب كما هو، و`null` في الجسم تعني «امسحه».
     final body = <String, dynamic>{
@@ -101,6 +102,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
       'notes': ?notes,
       'is_collected': ?isCollected,
       'pickup_city_id': ?pickupCityId,
+      'currency': ?currency?.wire,
       // المفتاح الآخر الذي له معنى وهو فارغ: هذه الخزنة لم تعد تخدم مكتبها.
       if (clearPickupCity) 'pickup_city_id': null,
     };
@@ -118,6 +120,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     required String method,
     bool incoming = true,
     int? orderId,
+    Currency? currency,
   }) {
     return safeRequest<AccountOptions>(
       () => _dio.get(
@@ -126,6 +129,7 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           'method': method,
           'purpose': incoming ? 'in' : 'out',
           'order_id': ?orderId,
+          'currency': ?currency?.wire,
         },
       ),
       parse: (data) => AccountOptions.fromJson(data as Map<String, dynamic>),
@@ -143,6 +147,8 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     String? countedBalance,
     String? notes,
     String? clientToken,
+    String? counterAmount,
+    String? rate,
   }) {
     return safeRequest<TreasuryOperation>(
       () => _dio.post(
@@ -150,6 +156,9 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
         data: {
           'type': kind.wire,
           'amount': ?amount,
+          // «صرف عملة» alone — any two of amount · counter_amount · rate.
+          'counter_amount': ?counterAmount,
+          'rate': ?rate,
           'from_account_id': ?fromAccountId,
           'to_account_id': ?toAccountId,
           'category_id': ?categoryId,
@@ -218,12 +227,17 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     bool? settleIntoSettler,
     bool? pickSettlementAccounts,
     String? onlineFeePayer,
+    String? usdRate,
+    bool clearUsdRate = false,
   }) {
     return safeRequest<TreasurySettings>(
       () => _dio.put(
         TreasuryEndpoints.settings,
         data: <String, dynamic>{
           'own_account_first': ?ownAccountFirst,
+          'usd_rate': ?usdRate,
+          // Sent empty, it clears «سعر النظام»: dollars then stay out of the dinar totals.
+          if (clearUsdRate) 'usd_rate': null,
           'settle_into_settler': ?settleIntoSettler,
           'pick_settlement_accounts': ?pickSettlementAccounts,
           'online_fee_payer': ?onlineFeePayer,

@@ -99,6 +99,8 @@ final class ReversePurchaseOrderReceipt
             $this->undoArrivalCosts($order, $arrival, $data);
 
             $order->status = PurchaseOrderStatus::Arrived;
+            // The stock it priced is gone; a new receipt asks for the rate again (USD-ACCOUNTS.md §٥).
+            $order->arrival_rate = null;
             $order->save();
 
             ($this->recalculateTotal)($order);

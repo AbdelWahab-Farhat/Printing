@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 
 /// One line of an order as the server needs it.
@@ -144,6 +145,10 @@ abstract interface class PurchaseOrderRepository {
     List<PurchaseOrderAdditionalCostLine> additionalCosts,
     String? expectedDate,
     String? notes,
+
+    /// Null is dinars, as on the server. Sent on creation alone — an order keeps its currency
+    /// (USD-ACCOUNTS.md §٤), so [update] has no such parameter.
+    Currency? currency,
   });
 
   /// Rewrites the document, its lines and its additional costs. Refused by the server unless the
@@ -189,6 +194,10 @@ abstract interface class PurchaseOrderRepository {
     List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
+
+    /// Dinars per dollar — what a dollar order's stock is priced at (USD-ACCOUNTS.md §٥).
+    /// Required there; null on a dinar order, and then not sent.
+    String? arrivalRate,
   });
 
   /// Undoes a receipt posted in error: takes the stock back off the shelf, marks the arrival as

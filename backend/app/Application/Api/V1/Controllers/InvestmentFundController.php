@@ -293,6 +293,10 @@ class InvestmentFundController extends Controller
             // فيخرج 500 بدل رسالةٍ يقرأها إنسان. نفسُ حدّ {@see FundPurchaseOrderRequest}.
             'printing_sale_prices' => ['nullable', 'array'],
             'printing_sale_prices.*' => ['nullable', 'numeric', 'min:0.001', 'max:999999999'],
+
+            // Dinars per dollar on a dollar order — what the fund pays at, «سعر النظام» unless
+            // changed (USD-ACCOUNTS.md §٥). Required there, which the domain checks.
+            'rate' => ['nullable', 'decimal:0,4', 'min:0.0001', 'max:99999999'],
         ]);
 
         $prices = [];
@@ -308,6 +312,9 @@ class InvestmentFundController extends Controller
             $validated['stock_item_ids'] ?? null,
             $request->user()?->id,
             $prices,
+            isset($validated['rate']) && $validated['rate'] !== ''
+                ? number_format((float) $validated['rate'], 4, '.', '')
+                : null,
         );
 
         return $this->success(

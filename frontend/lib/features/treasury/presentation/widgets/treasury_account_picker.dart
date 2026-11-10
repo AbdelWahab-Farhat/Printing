@@ -33,8 +33,22 @@ class TreasuryAccountPicker extends StatelessWidget {
     this.errorText,
     this.unsetLabel,
     this.payables = false,
+    this.currency,
+    this.dollars = false,
+    this.onPicked,
     super.key,
   });
+
+  /// [Currency.usd]: the dollar accounts of [method] alone — a dollar debt paid out
+  /// (USD-ACCOUNTS.md §٦). There is no «تلقائي» for dollars, so pair it with [unsetLabel].
+  final Currency? currency;
+
+  /// With no [method]: dollar drawers offered beside the dinar ones — a dollar purchase order's
+  /// cost (USD-ACCOUNTS.md §٧).
+  final bool dollars;
+
+  /// The whole option picked, for a form that needs more than its id — its currency.
+  final ValueChanged<AccountOption?>? onPicked;
 
   /// قيمة الطريقة على السلك — `cash`، `bank_transfer`، `bank_card`، `libyana`.
   ///
@@ -76,6 +90,8 @@ class TreasuryAccountPicker extends StatelessWidget {
           orderId: orderId,
           payables: payables,
           suggest: unsetLabel == null,
+          currency: currency,
+          dollars: dollars,
         ),
       child: _Picker(
         method: method,
@@ -87,6 +103,9 @@ class TreasuryAccountPicker extends StatelessWidget {
         errorText: errorText,
         unsetLabel: unsetLabel,
         payables: payables,
+        currency: currency,
+        dollars: dollars,
+        onPicked: onPicked,
       ),
     );
   }
@@ -108,6 +127,9 @@ class _Picker extends StatefulWidget {
     required this.errorText,
     required this.unsetLabel,
     required this.payables,
+    required this.currency,
+    required this.dollars,
+    required this.onPicked,
   });
 
   final String? method;
@@ -119,6 +141,9 @@ class _Picker extends StatefulWidget {
   final String? errorText;
   final String? unsetLabel;
   final bool payables;
+  final Currency? currency;
+  final bool dollars;
+  final ValueChanged<AccountOption?>? onPicked;
 
   @override
   State<_Picker> createState() => _PickerState();
@@ -133,6 +158,8 @@ class _PickerState extends State<_Picker> {
         old.incoming != widget.incoming ||
         old.orderId != widget.orderId ||
         old.payables != widget.payables ||
+        old.currency != widget.currency ||
+        old.dollars != widget.dollars ||
         (old.unsetLabel == null) != (widget.unsetLabel == null)) {
       unawaited(
         context.read<AccountPickerCubit>().load(
@@ -141,6 +168,8 @@ class _PickerState extends State<_Picker> {
           orderId: widget.orderId,
           payables: widget.payables,
           suggest: widget.unsetLabel == null,
+          currency: widget.currency,
+          dollars: widget.dollars,
         ),
       );
     }
@@ -194,13 +223,21 @@ class _PickerState extends State<_Picker> {
       value: chosen,
       items: rows,
       keyOf: (account) => account.id,
-      labelOf: (account) => account.isPayable ? 'علينا لـ${account.name}' : account.name,
+      labelOf: (account) => switch (account) {
+        AccountOption(isPayable: true) => 'علينا لـ${account.name}',
+        // Beside dinar drawers, a dollar one says so — what is typed then is dollars.
+        AccountOption(currency: Currency.usd) => '${account.name} — دولار',
+        _ => account.name,
+      },
       label: widget.label,
       prefixIcon: AppIcons.treasury,
       placeholder: automatic,
       enabled: enabled,
       errorText: error ?? widget.errorText,
-      onChanged: (account) => widget.onChanged(account?.id),
+      onChanged: (account) {
+        widget.onChanged(account?.id);
+        widget.onPicked?.call(account);
+      },
     );
   }
 }

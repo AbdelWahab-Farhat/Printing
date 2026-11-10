@@ -6,6 +6,7 @@ namespace App\Domain\PurchaseOrder\Models;
 
 use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasuryMovement;
@@ -48,13 +49,31 @@ class PurchaseOrderAdditionalCost extends Model
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * The column's own default, held on a new model too.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'currency' => 'LYD',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            // The order's on the vendor's bill, the drawer's when paid from one — USD-ACCOUNTS.md
+            // §٧. `amount` is in it. Assigned by the Actions, never mass-assigned.
+            'currency' => Currency::class,
         ];
+    }
+
+    /** In the order's own currency — what its totals and its lines are counted in. */
+    public function isInCurrencyOf(PurchaseOrder $order): bool
+    {
+        return $this->currency === $order->currency;
     }
 
     /** Paid to somebody other than the vendor — a drawer or a manual payable. */

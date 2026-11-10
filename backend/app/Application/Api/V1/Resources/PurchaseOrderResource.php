@@ -7,6 +7,8 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\Actions\ReverseStockArrival;
 use App\Domain\Vendor\Models\StockArrival;
 use Illuminate\Http\Request;
@@ -42,6 +44,22 @@ class PurchaseOrderResource extends JsonResource
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+
+            // Every amount below is in it — USD-ACCOUNTS.md §٤.
+            'currency' => $this->currency->value,
+            // Dinars per dollar the stock was priced at, once received (§٥); null otherwise.
+            'arrival_rate' => $this->arrival_rate === null ? null : (string) $this->arrival_rate,
+            // Dinars per dollar the funded lines were bought at; null until it is funded.
+            'funding_rate' => $this->funding_rate === null ? null : (string) $this->funding_rate,
+            // The two rates disagree — said on the order, and nothing else is written (the owner's
+            // decision, 2026-11-10). Null when they agree or either is missing.
+            'rate_difference' => $this->rateDifference(),
+            // «سعر النظام», which the receive screen opens its rate field on — a dollar order's
+            // alone, and null until the owner writes one.
+            'system_usd_rate' => $this->when(
+                $this->isDollar(),
+                fn (): ?string => ($rate = app(TreasuryService::class)->settings()->usd_rate) === null ? null : (string) $rate,
+            ),
 
             'order_date' => $this->order_date?->toDateString(),
             'expected_date' => $this->expected_date?->toDateString(),
@@ -151,5 +169,48 @@ class PurchaseOrderResource extends JsonResource
         }
 
         return $request->user()?->can(PermissionName::ReverseReceiptAnyTime->value) ?? false;
+    }
+
+    /**
+     * A dollar order funded at one rate and received at another — USD-ACCOUNTS.md §٥.
+     *
+     * **Said, and nothing else.** The funded goods keep the funding rate and the company's own
+     * the arrival rate; the owner chose to see the gap rather than book it (2026-11-10). So this
+     * is the whole of it: the two rates, the gap per dollar, which way it went, and what it comes
+     * to on the funded lines' dollars — the lines funding wrote a `funded_cost` on.
+     *
+     * @return array{funding_rate: string, arrival_rate: string, per_dollar: string, direction: string, funded_dollars: string, dinars: string}|null
+     */
+    private function rateDifference(): ?array
+    {
+        if ($this->funding_rate === null || $this->arrival_rate === null) {
+            return null;
+        }
+
+        $funding = (string) $this->funding_rate;
+        $arrival = (string) $this->arrival_rate;
+        $gap = bcsub($arrival, $funding, 4);
+
+        if (bccomp($gap, '0', 4) === 0) {
+            return null;
+        }
+
+        $perDollar = ltrim($gap, '-');
+
+        $fundedDollars = '0';
+
+        foreach ($this->items()->whereNotNull('funded_cost')->get() as $item) {
+            $fundedDollars = bcadd($fundedDollars, (string) ($item->final_total_cost ?? '0'), 2);
+        }
+
+        return [
+            'funding_rate' => $funding,
+            'arrival_rate' => $arrival,
+            'per_dollar' => $perDollar,
+            // The arrival rate against the funding rate: the dollars cost more when they came.
+            'direction' => bccomp($gap, '0', 4) > 0 ? 'higher' : 'lower',
+            'funded_dollars' => bcadd($fundedDollars, '0', 2),
+            'dinars' => Money::round(bcmul($fundedDollars, $perDollar, 8)),
+        ];
     }
 }

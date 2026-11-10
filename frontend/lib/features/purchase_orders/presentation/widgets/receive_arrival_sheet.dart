@@ -1,5 +1,7 @@
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
@@ -17,6 +19,9 @@ typedef ReceivedShipment = ({
   List<DraftAdditionalCost> additionalCosts,
   String? invoiceNumber,
   String? notes,
+
+  /// Dinars per dollar on a dollar order; null on a dinar one.
+  String? arrivalRate,
 });
 
 /// Booking a shipment in against a purchase order.
@@ -61,6 +66,14 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   final _invoice = TextEditingController();
   final _notes = TextEditingController();
 
+  /// «سعر الصرف» on a dollar order — what its stock is priced at in dinars (USD-ACCOUNTS.md §٥).
+  /// Opens on «سعر النظام», and may be changed to what the dollars really cost.
+  late final _rate = TextEditingController(
+    text: widget.order.systemUsdRate == null ? '' : trimDecimals(widget.order.systemUsdRate!),
+  );
+
+  bool get _inDollars => widget.order.isDollar;
+
   /// «تكاليف الوصول» — what was paid when the lorry arrived. **Starts empty**: most shipments
   /// carry none, and a blank row is one more box a storeman has to decide to leave alone.
   final List<AdditionalCostDraft> _costs = [];
@@ -76,6 +89,7 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
   void dispose() {
     _invoice.dispose();
     _notes.dispose();
+    _rate.dispose();
     for (final controller in _quantities.values) {
       controller.dispose();
     }
@@ -113,7 +127,21 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
       additionalCosts: [for (final cost in _costs) cost.toDraft()],
       invoiceNumber: _invoice.text,
       notes: _notes.text,
+      arrivalRate: _inDollars ? Validators.toWesternDigits(_rate.text.trim()) : null,
     ));
+  }
+
+  /// A number above zero, with four places at most — what the server takes.
+  String? _validateRate(String? value) {
+    final text = Validators.toWesternDigits((value ?? '').trim()).replaceAll(',', '.');
+    final parsed = double.tryParse(text);
+
+    if (parsed == null) return 'اكتب سعر الصرف';
+    if (parsed <= 0) return 'سعر الصرف يجب أن يكون أكبر من صفر';
+
+    final point = text.indexOf('.');
+
+    return point != -1 && text.length - point - 1 > 4 ? 'أربع خانات عشرية على الأكثر' : null;
   }
 
   @override
@@ -160,6 +188,31 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                 children: [
+                  // First, because every line below is priced by it.
+                  if (_inDollars) ...[
+                    AppTextField(
+                      key: const ValueKey('arrival-rate'),
+                      controller: _rate,
+                      label: 'سعر الصرف (دينار لكل دولار)',
+                      prefixIcon: AppIcons.exchange,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+                      ],
+                      validator: _validateRate,
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      widget.order.systemUsdRate == null
+                          ? 'لا سعر نظام مكتوب — اكتب ما كلّفه الدولار. به يُسعَّر المخزون بالدينار'
+                          : 'مكتوبٌ فيه سعر النظام، وتقدر تغيّره. به يُسعَّر المخزون بالدينار ولا '
+                                'يتغيّر بعدها',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                  ],
                   for (final item in lines) ...[
                     _LineBox(
                       item: item,
@@ -189,6 +242,7 @@ class _ReceiveArrivalSheetState extends State<_ReceiveArrivalSheet> {
                     AdditionalCostRow(
                       key: ObjectKey(cost),
                       cost: cost,
+                      currency: widget.order.currency,
                       requirePositive: true,
                       onRemove: () => _removeCost(cost),
                     ),

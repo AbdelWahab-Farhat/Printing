@@ -13,6 +13,7 @@ use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderData;
 use App\Domain\PurchaseOrder\DTOs\ReceivePurchaseOrderItemData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Exceptions\ArrivalCostOnFundedLineNeedsADrawer;
+use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderCurrencyRefused;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderHasNoWarehouse;
 use App\Domain\PurchaseOrder\Exceptions\PurchaseOrderNotReceivable;
 use App\Domain\PurchaseOrder\Exceptions\StockItemNotOnPurchaseOrder;
@@ -21,7 +22,9 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrderAdditionalCost;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use App\Domain\PurchaseOrder\Support\LargestRemainder;
 use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\PurchaseOrder\Support\PlannedDinarShares;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Vendor\DTOs\StockArrivalData;
 use App\Domain\Vendor\DTOs\StockArrivalItemData;
@@ -84,6 +87,19 @@ use Illuminate\Support\Facades\DB;
  * or owed to a manual payable it is an `expense` on that account ({@see SyncAdditionalCostExpense}),
  * for the company's part — the deal expense posts its own.
  *
+ * ## A dollar order — USD-ACCOUNTS.md §٥, §٧
+ *
+ * **Its stock is priced once, here, at `arrival_rate`** — asked on this screen and kept on the
+ * order. Every dollar figure behind a layer is multiplied by it; each line's share of a cost paid
+ * in dinars (customs out of a dinar drawer, planned or at arrival) is added as it is. The layer
+ * is in dinars, and nothing paid to the vendor afterwards touches it. A line's
+ * `arrival_additional_cost` stays in the order's currency, and its `landed_unit_cost` is the
+ * layer's, in dinars.
+ *
+ * **A funded line keeps its `funding_rate`** — the rate its dinars were fixed at when the fund or
+ * the partners bought it. The difference from the arrival rate moves no money and writes no
+ * expense; the order's screen says it (the owner's decision, 2026-11-10).
+ *
  * @throws PurchaseOrderNotReceivable
  * @throws PurchaseOrderHasNoWarehouse
  * @throws StockItemNotOnPurchaseOrder
@@ -109,7 +125,15 @@ final class ReceivePurchaseOrder
             throw PurchaseOrderHasNoWarehouse::make((int) $order->getKey());
         }
 
-        return DB::transaction(function () use ($order, $data): StockArrival {
+        // A dollar order's stock is priced in dinars at the rate asked on this screen —
+        // USD-ACCOUNTS.md §٥. Without it every layer would take dollars as dinars.
+        $rate = $order->isDollar() ? $data->arrivalRate : null;
+
+        if ($order->isDollar() && $rate === null) {
+            throw PurchaseOrderCurrencyRefused::arrivalRateNeeded();
+        }
+
+        return DB::transaction(function () use ($order, $data, $rate): StockArrival {
             // Locked for the rest of the transaction so two concurrent receipts against the
             // same order cannot both read the same quantity_received and both write a total
             // computed from it — the same reasoning ApplyStockChange locks a balance row for.
@@ -137,31 +161,67 @@ final class ReceivePurchaseOrder
             $byId = $items->keyBy('id');
             $shares = $this->splitArrivalCosts($data->additionalCosts, $byId, $received);
 
+            /** @var array<int, Currency> $currencies Each arrival cost's — the bill's or the drawer's. */
+            $currencies = [];
+
             // Every refusal before anything is written.
             foreach ($data->additionalCosts as $index => $cost) {
                 $field = "additional_costs.{$index}.treasury_account_id";
-                $this->costExpense->guardAccount($cost->treasuryAccountId, $field);
+                $this->costExpense->guardAccount($cost->treasuryAccountId, $field, $order, $rate);
+                $currencies[$index] = $this->costExpense->currencyOf($order, $cost, "additional_costs.{$index}.currency");
                 $this->guardFundedShare($cost, $shares[$index], $funding, $field);
             }
 
-            /** @var array<int, string> $arrivalShare Each line's share of every arrival cost. */
+            /**
+             * Each line's share of every arrival cost in the order's currency, and — on a dollar
+             * order — of every one in dinars, apart: the first is priced at the arrival rate, the
+             * second enters the stock as it is.
+             *
+             * @var array<int, string> $arrivalShare
+             * @var array<int, string> $dinarShare
+             */
             $arrivalShare = array_map(fn () => '0', $received);
+            $dinarShare = array_map(fn () => '0', $received);
 
-            foreach ($shares as $costShares) {
+            foreach ($shares as $index => $costShares) {
                 foreach ($costShares as $itemId => $cents) {
-                    $arrivalShare[$itemId] = bcadd($arrivalShare[$itemId], $cents, 0);
+                    if ($currencies[$index] === $order->currency) {
+                        $arrivalShare[$itemId] = bcadd($arrivalShare[$itemId], $cents, 0);
+                    } else {
+                        $dinarShare[$itemId] = bcadd($dinarShare[$itemId], $cents, 0);
+                    }
+                }
+            }
+
+            // A dinar cost planned on a dollar order sits outside its lines (see
+            // AllocatePurchaseOrderAdditionalCosts); each line's whole share of it lands now.
+            $planned = PlannedDinarShares::of($order, $items->keyBy('id'));
+
+            foreach ($planned as $itemId => $cents) {
+                if (array_key_exists($itemId, $dinarShare)) {
+                    $dinarShare[$itemId] = bcadd($dinarShare[$itemId], $cents, 0);
                 }
             }
 
             $landed = [];
 
             foreach ($received as $itemId => $quantity) {
-                $landed[$itemId] = $this->landedCost(
-                    $byId->get($itemId),
-                    $quantity,
-                    LargestRemainder::fromCents($arrivalShare[$itemId]),
-                    $funding[$itemId] !== null,
-                );
+                /** @var PurchaseOrderItem $item */
+                $item = $byId->get($itemId);
+
+                // A funded dollar line keeps the rate it was bought at — what the fund or the
+                // partners paid. The difference from the arrival rate writes nothing; the order's
+                // screen says it (the owner's decision, 2026-11-10).
+                $landed[$itemId] = $funding[$itemId] !== null && $order->isDollar()
+                    ? $this->fundedDollarCost($item, $quantity, (string) ($order->funding_rate ?? $rate), $planned[$itemId] ?? '0')
+                    : $this->landedCost(
+                        $item,
+                        $quantity,
+                        LargestRemainder::fromCents($arrivalShare[$itemId]),
+                        $funding[$itemId] !== null,
+                        $rate,
+                        LargestRemainder::fromCents($dinarShare[$itemId]),
+                    );
             }
 
             $arrival = $this->vendors->recordStockArrival(new StockArrivalData(
@@ -207,10 +267,11 @@ final class ReceivePurchaseOrder
 
             $costs = [];
 
-            foreach ($data->additionalCosts as $cost) {
+            foreach ($data->additionalCosts as $index => $cost) {
                 $row = $order->additionalCosts()->make(['name' => $cost->name, 'amount' => $cost->amount]);
                 $row->stock_arrival_id = $arrival->getKey();
                 $row->treasury_account_id = $cost->treasuryAccountId;
+                $row->currency = $currencies[$index];
                 $row->recorded_by = $data->receivedBy;
                 $row->save();
 
@@ -220,6 +281,8 @@ final class ReceivePurchaseOrder
             // Unconditional — see the class docblock. A short delivery closes the order just as
             // a full one does, and what is missing is read off the lines, not off the status.
             $order->status = PurchaseOrderStatus::Completed;
+            // Once, here: the stock is priced, and no payment afterwards changes it (§٥).
+            $order->arrival_rate = $rate;
             $order->save();
 
             ($this->recalculateTotal)($order);
@@ -288,12 +351,49 @@ final class ReceivePurchaseOrder
     }
 
     /**
-     * The unit and total cost the line's layer opens at.
+     * A funded dollar line's layer: what it cost in dinars at the funding rate — the figure the
+     * fund paid or the partners' money was held against — per unit ordered, as a dinar funded
+     * line opens at `final_unit_cost`. Its share of a cost paid on arrival is the deal's expense,
+     * as on any funded line.
      *
      * @return array{unit: ?string, total: ?string}
      */
-    private function landedCost(PurchaseOrderItem $item, string $quantity, string $arrivalShare, bool $funded): array
+    private function fundedDollarCost(PurchaseOrderItem $item, string $quantity, string $fundingRate, string $dinarShareCents): array
     {
+        if ($item->final_total_cost === null) {
+            return ['unit' => null, 'total' => null];
+        }
+
+        // What funding wrote on the line, which is what was paid; worked out again only for a
+        // line funded before the column existed.
+        $cost = $item->funded_cost !== null
+            ? (string) $item->funded_cost
+            : PlannedDinarShares::fundedLineCost($item, $fundingRate, $dinarShareCents);
+
+        $unit = Money::roundTo(bcdiv($cost, (string) $item->quantity_ordered, 10), 3);
+
+        return ['unit' => $unit, 'total' => Money::round(bcmul($unit, $quantity, 6))];
+    }
+
+    /**
+     * The unit and total cost the line's layer opens at — in dinars, always.
+     *
+     * **On a dollar order** (`$rate` set) the line's own figures are dollars: what arrived costs
+     * its dollars times the arrival rate, and its share of the dinar costs is added as it is —
+     * shipping from China at the rate, customs in Libya at face value (USD-ACCOUNTS.md §٥, §٧).
+     *
+     * @param  string  $arrivalShare  In the order's currency.
+     * @param  string  $dinarShare  In dinars — the dinar costs of a dollar order.
+     * @return array{unit: ?string, total: ?string}
+     */
+    private function landedCost(
+        PurchaseOrderItem $item,
+        string $quantity,
+        string $arrivalShare,
+        bool $funded,
+        ?string $rate = null,
+        string $dinarShare = '0',
+    ): array {
         if ($item->final_unit_cost === null) {
             return ['unit' => null, 'total' => null];
         }
@@ -310,6 +410,10 @@ final class ReceivePurchaseOrder
             $arrivalShare,
             10,
         );
+
+        if ($rate !== null) {
+            $total = bcadd(bcmul($total, $rate, 10), $dinarShare, 10);
+        }
 
         return [
             'unit' => Money::roundTo(bcdiv($total, $quantity, 10), 3),

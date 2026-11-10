@@ -56,6 +56,10 @@ class TreasuryOperation extends Model implements HasAuditTrail
         return [
             'type' => OperationType::class,
             'amount' => 'decimal:2',
+            // «صرف عملة» alone: what arrived, in the receiving account's currency, and dinars
+            // per dollar — USD-ACCOUNTS §٣.
+            'counter_amount' => 'decimal:2',
+            'rate' => 'decimal:4',
             'system_balance' => 'decimal:2',
             'counted_balance' => 'decimal:2',
             'occurred_at' => 'datetime',

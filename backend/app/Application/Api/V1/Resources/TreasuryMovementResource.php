@@ -32,12 +32,16 @@ class TreasuryMovementResource extends JsonResource
                 'id' => $this->account->id,
                 'name' => $this->account->name,
                 'kind' => $this->account->kind->value,
+                // `amount` is in it — USD-ACCOUNTS.md §٣.
+                'currency' => $this->account->currency->value,
             ]),
 
             'direction' => $this->direction->value,
             'kind' => $this->kind->value,
             'kind_label' => $this->kind->label(),
             'amount' => (string) $this->amount,
+            // An expense out of a dollar account, in dinars at its rate (§٨); null otherwise.
+            'dinar_amount' => $this->dinar_amount === null ? null : (string) $this->dinar_amount,
             // Signed, so a list can print «+50» and «−300» without knowing the rule.
             'signed_amount' => $this->signedAmount(),
             'balance_after' => $balanceAfter === null ? null : number_format((float) $balanceAfter, 2, '.', ''),

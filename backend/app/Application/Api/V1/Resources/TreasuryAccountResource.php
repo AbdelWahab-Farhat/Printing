@@ -23,7 +23,8 @@ class TreasuryAccountResource extends JsonResource
             'name' => $this->name,
             'kind' => $this->kind->value,
             'kind_label' => $this->kind->label(),
-            'currency' => $this->currency,
+            // The balance and every figure on the account are in it — USD-ACCOUNTS §٣.
+            'currency' => $this->currency->value,
 
             'holder_user_id' => $this->holder_user_id,
             'holder' => $this->whenLoaded('holder', fn (): ?array => $this->holder === null ? null : [

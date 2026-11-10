@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/uuid.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -29,6 +30,8 @@ typedef RecordOperationCallback =
       String? countedBalance,
       String? notes,
       String? clientToken,
+      // An expense out of a dollar account: dinars per dollar (USD-ACCOUNTS §٨).
+      String? rate,
     });
 
 /// عمليةٌ يدوية — إيداع، سحب، مصروف، تحويل، جرد، رصيد افتتاحي. TREASURY-DESIGN §٤.
@@ -47,6 +50,8 @@ Future<void> showTreasuryOperationSheet({
   TreasuryAccount? account,
   bool into = false,
   String? title,
+  // «سعر النظام» — what an expense out of a dollar account opens its rate on.
+  String? systemRate,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -60,6 +65,7 @@ Future<void> showTreasuryOperationSheet({
         into: into,
         title: title,
         onSubmit: onSubmit,
+        systemRate: systemRate,
       );
 
       // تصنيفات المصروف من Cubit — والنماذج الأخرى لا تسأل عنها شيئاً.
@@ -81,6 +87,7 @@ class _OperationForm extends StatefulWidget {
     this.account,
     this.into = false,
     this.title,
+    this.systemRate,
   });
 
   final OperationKind kind;
@@ -89,6 +96,7 @@ class _OperationForm extends StatefulWidget {
   final bool into;
   final String? title;
   final RecordOperationCallback onSubmit;
+  final String? systemRate;
 
   @override
   State<_OperationForm> createState() => _OperationFormState();
@@ -98,6 +106,10 @@ class _OperationFormState extends State<_OperationForm> {
   final _formKey = GlobalKey<FormState>();
   final _amount = TextEditingController();
   final _notes = TextEditingController();
+
+  /// «سعر الصرف» of an expense out of a dollar account — what «المصاريف» counts it at in dinars
+  /// (USD-ACCOUNTS §٨). Opens on «سعر النظام» when the screen knows it.
+  late final _rate = TextEditingController(text: trimDecimals(widget.systemRate ?? ''));
 
   /// مفتاح هذا النموذج: يولَّد مرةً ويُعاد مع كل محاولة، فإن وصلت الأولى وانقطع ردّها لم تُكتب
   /// العملية مرتين (`client_token`).
@@ -122,6 +134,7 @@ class _OperationFormState extends State<_OperationForm> {
   /// المفاتيح التي يعرضها هذا النموذج تحت حقوله؛ وما سواها يقوله توست.
   Set<String> get _rendered => {
     'amount',
+    'rate',
     'counted_balance',
     'from_account_id',
     'to_account_id',
@@ -153,6 +166,33 @@ class _OperationFormState extends State<_OperationForm> {
   /// owed, and the server turns the sign (§٢٠).
   bool get _aboutDebt => (_to ?? _from)?.isPayable ?? false;
 
+  /// On a dollar account every figure is dollars, and the box says so.
+  String get _inDollars => ((_from ?? _to)?.isDollar ?? false) ? ' بالدولار' : '';
+
+  /// An expense out of dollars, which is asked the rate it is counted at in dinars.
+  bool get _dollarExpense => _kind == OperationKind.expense && (_from?.isDollar ?? false);
+
+  /// What the expense comes to in dinars at the typed rate — said under the rate, not sent: the
+  /// server works it out the same way and keeps it.
+  String? get _inDinars {
+    final amount = double.tryParse(Validators.toWesternDigits(_amount.text.trim()));
+    final rate = double.tryParse(
+      Validators.toWesternDigits(_rate.text.trim()).replaceAll(',', '.'),
+    );
+
+    if (amount == null || rate == null || amount <= 0 || rate <= 0) return null;
+
+    return (amount * rate).toStringAsFixed(2);
+  }
+
+  String? _validateRate(String? value) {
+    final rate = double.tryParse(
+      Validators.toWesternDigits((value ?? '').trim()).replaceAll(',', '.'),
+    );
+
+    return rate == null || rate <= 0 ? 'اكتب سعر الصرف' : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -178,6 +218,7 @@ class _OperationFormState extends State<_OperationForm> {
   void dispose() {
     _amount.dispose();
     _notes.dispose();
+    _rate.dispose();
     super.dispose();
   }
 
@@ -228,6 +269,9 @@ class _OperationFormState extends State<_OperationForm> {
       employeeId: _employee?.id,
       notes: notes.isEmpty ? null : notes,
       clientToken: _clientToken,
+      rate: _dollarExpense
+          ? Validators.toWesternDigits(_rate.text.trim()).replaceAll(',', '.')
+          : null,
     );
 
     if (!mounted) return;
@@ -268,12 +312,18 @@ class _OperationFormState extends State<_OperationForm> {
       );
     }
 
+    // A transfer moves one amount, so its other side is in the same currency — across
+    // currencies it is «صرف عملة» (USD-ACCOUNTS §٣).
+    final other = identical(value, _from) ? _to : _from;
+    final anchor = _kind == OperationKind.transfer ? (locked ?? other) : null;
+
     return AppDropdown<TreasuryAccount>(
       value: value,
       // The other side of a transfer is never the locked account itself.
       items: [
         for (final account in _choices)
-          if (account.id != locked?.id) account,
+          if (account.id != locked?.id && (anchor == null || account.currency == anchor.currency))
+            account,
       ],
       keyOf: (account) => account.id,
       labelOf: (account) => '${account.name} — ${treasuryBalanceLabel(account)}',
@@ -362,17 +412,42 @@ class _OperationFormState extends State<_OperationForm> {
                 controller: _amount,
                 label: switch ((_isCount, _aboutDebt, _kind)) {
                   (true, true, _) => 'المستحق عليه فعلاً',
-                  (true, false, _) => 'الرصيد المعدود فعلاً',
+                  (true, false, _) => 'الرصيد المعدود فعلاً$_inDollars',
                   (false, true, OperationKind.opening) => 'الدَّين يوم الافتتاح',
-                  _ => 'المبلغ',
+                  _ => 'المبلغ$_inDollars',
                 },
                 prefixIcon: _isCount ? AppIcons.countBalance : AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
                 errorText: _refusal?.fieldError(_isCount ? 'counted_balance' : 'amount'),
                 validator: (value) => _validateAmount(value, allowZero: _isCount),
+                onChanged: _dollarExpense ? (_) => setState(() {}) : null,
               ),
               SizedBox(height: 16.h),
+
+              // Out of dollars: the rate «المصاريف» counts it at, and what that comes to.
+              if (_dollarExpense) ...[
+                AppTextField(
+                  key: const ValueKey('expense-rate'),
+                  controller: _rate,
+                  label: 'سعر الصرف (دينار لكل دولار)',
+                  prefixIcon: AppIcons.exchange,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫,]'))],
+                  errorText: _refusal?.fieldError('rate'),
+                  validator: _validateRate,
+                  onChanged: (_) => setState(() {}),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  _inDinars == null
+                      ? 'يُحسب المصروف بالدينار بهذا السعر في «المصاريف»'
+                      : 'يُحسب في «المصاريف» بـ ${treasuryMoney(_inDinars!)}',
+                  key: const ValueKey('expense-in-dinars'),
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                SizedBox(height: 16.h),
+              ],
 
               AppTextField(
                 controller: _notes,

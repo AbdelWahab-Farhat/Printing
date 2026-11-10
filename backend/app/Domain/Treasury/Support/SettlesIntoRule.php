@@ -28,7 +28,8 @@ final class SettlesIntoRule
 
         $target = TreasuryAccount::query()->findOrFail($targetId);
 
-        if (! $target->is_active || ! $target->kind->spendable()) {
+        // Custody holds orders' dinars, so it settles into a dinar account.
+        if (! $target->is_active || ! $target->kind->spendable() || $target->isDollar()) {
             throw AccountChangeRefused::cannotSettleInto((string) $target->name);
         }
     }

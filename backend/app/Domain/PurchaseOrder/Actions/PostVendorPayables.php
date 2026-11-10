@@ -150,11 +150,16 @@ final class PostVendorPayables
         $names = Vendor::query()->whereIn('id', $accounts->pluck('vendor_id'))->pluck('name', 'id');
 
         foreach ($accounts as $account) {
-            $owed = $this->summary->forVendor((int) $account->vendor_id)['owed'];
+            // Each payable against the debt in its own currency (USD-ACCOUNTS.md §٤).
+            $owed = $account->isDollar()
+                ? $this->summary->dollarsForVendor((int) $account->vendor_id)['owed']
+                : $this->summary->forVendor((int) $account->vendor_id)['owed'];
             $payable = bcmul($this->treasury->balanceOf($account), '-1', 2);
 
             $list[] = [
-                'vendor' => (string) ($names[$account->vendor_id] ?? $account->name),
+                'vendor' => $account->isDollar()
+                    ? $account->name
+                    : (string) ($names[$account->vendor_id] ?? $account->name),
                 'owed' => $owed,
                 'payable' => $payable,
                 'matches' => bccomp($owed, $payable, 2) === 0,

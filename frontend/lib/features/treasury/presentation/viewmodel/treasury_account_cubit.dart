@@ -86,6 +86,8 @@ class TreasuryAccountCubit extends Cubit<TreasuryAccountState> {
     String? countedBalance,
     String? notes,
     String? clientToken,
+    // An expense out of a dollar account: dinars per dollar (USD-ACCOUNTS §٨).
+    String? rate,
   }) async {
     final result = await _recordOperation(
       kind: kind,
@@ -97,6 +99,7 @@ class TreasuryAccountCubit extends Cubit<TreasuryAccountState> {
       countedBalance: countedBalance,
       notes: notes,
       clientToken: clientToken,
+      rate: rate,
     );
 
     if (result.isRight()) await moneyMoved();
@@ -148,6 +151,33 @@ class TreasuryAccountCubit extends Cubit<TreasuryAccountState> {
     final result = await _getAccounts(activeOnly: true);
 
     return result.map((list) => list.accounts);
+  }
+
+  /// «صرف عملة» from or into this account — the other side is in the other currency. Like
+  /// [record], the header is read again once on success.
+  Future<Either<Failure, TreasuryOperation>> recordExchange({
+    required int fromAccountId,
+    required int toAccountId,
+    String? amount,
+    String? counterAmount,
+    String? rate,
+    String? notes,
+    String? clientToken,
+  }) async {
+    final result = await _recordOperation(
+      kind: OperationKind.exchange,
+      fromAccountId: fromAccountId,
+      toAccountId: toAccountId,
+      amount: amount,
+      counterAmount: counterAmount,
+      rate: rate,
+      notes: notes,
+      clientToken: clientToken,
+    );
+
+    if (result.isRight()) await moneyMoved();
+
+    return result;
   }
 }
 

@@ -63,6 +63,13 @@ enum MovementKind: string
     /** «تعديل محفظة موظف» — على «أرصدة محافظ الموظفين» وحده: لا مال يتحرك. */
     case EmployeeWalletAdjustment = 'employee_wallet_adjustment';
 
+    /**
+     * «صرف عملة» — dinars changed into dollars or back: `out` in one currency from one account,
+     * `in` in the other to the second. The two amounts differ; the rate is on the operation.
+     * USD-ACCOUNTS.md §٣.
+     */
+    case Exchange = 'exchange';
+
     public function label(): string
     {
         return match ($this) {
@@ -88,6 +95,7 @@ enum MovementKind: string
             self::EmployeeWalletDeposit => 'إيداع محفظة موظف',
             self::EmployeeWalletWithdrawal => 'سحب محفظة موظف',
             self::EmployeeWalletAdjustment => 'تعديل محفظة موظف',
+            self::Exchange => 'صرف عملة',
         };
     }
 }

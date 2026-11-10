@@ -189,6 +189,11 @@ final class SettleCustody
                 throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
             }
 
+            // An order's money is dinars, and so is wherever it is settled to.
+            if ($account->isDollar()) {
+                throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
+            }
+
             if (! $account->kind->spendable()) {
                 throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
             }
@@ -238,6 +243,8 @@ final class SettleCustody
         if ($actorId !== null && TreasurySetting::current()->own_account_first) {
             $held = TreasuryAccount::query()
                 ->active()
+                // A settler's own dollar account is never where an order's dinars land.
+                ->inDinars()
                 ->where('holder_user_id', $actorId)
                 ->where('kind', '<>', AccountKind::Custody->value)
                 ->limit(2)
@@ -255,7 +262,7 @@ final class SettleCustody
                 ? null
                 : TreasuryAccount::query()->find($custody->settles_into_account_id);
 
-            if ($target !== null && $target->is_active && $target->kind->spendable()) {
+            if ($target !== null && $target->is_active && $target->kind->spendable() && ! $target->isDollar()) {
                 return $target;
             }
         }

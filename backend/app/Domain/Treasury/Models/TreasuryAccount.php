@@ -8,6 +8,7 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use Database\Factories\TreasuryAccountFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * `AccountBalances` for it. `kind`, `system_code` and `created_by` are stamped by the Action and
  * never fillable: a payload that could set `system_code` could redirect the Nawris webhook.
  *
+ * @property Currency $currency every amount on the account is in it — USD-ACCOUNTS §٣. Stamped
+ *                              by the Action, never fillable
  * @property ?int $pickup_city_id the «استلام مكتب» branch whose cash lands here — §١٩
  * @property ?int $vendor_id the vendor a payable is the debt to — §٢٠. Never fillable: only the
  *                           purchase-order context opens one, through `TreasuryService`
@@ -73,6 +76,7 @@ class TreasuryAccount extends Model implements HasAuditTrail
     {
         return [
             'kind' => AccountKind::class,
+            'currency' => Currency::class,
             'is_default' => 'boolean',
             'is_active' => 'boolean',
             // «يُجمَع عند التسوية» — false keeps this account's order money where it landed.
@@ -86,6 +90,23 @@ class TreasuryAccount extends Model implements HasAuditTrail
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * Dinar accounts alone — what every picker for a customer's money, a refund, a settlement or
+     * an investor offers. A dollar account is reached on purpose or not at all (USD-ACCOUNTS §٣).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeInDinars(Builder $query): void
+    {
+        $query->where('currency', Currency::Lyd->value);
+    }
+
+    /** Whether this account holds dollars — every amount on it is then dollars. */
+    public function isDollar(): bool
+    {
+        return $this->currency === Currency::Usd;
     }
 
     /** Whether code depends on this account by its system code — the Nawris account. */

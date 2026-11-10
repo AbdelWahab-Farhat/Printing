@@ -63,6 +63,15 @@ final class PurchaseOrderCannotBeFunded extends DomainException
         return new self('أمر الشراء غير موجود');
     }
 
+    /**
+     * Investors' money is dinars, so a dollar order is funded at a rate — asked on the funding
+     * screen, «سعر النظام» unless changed (USD-ACCOUNTS.md §٥).
+     */
+    public static function needsRate(): self
+    {
+        return new self('أمر الشراء بالدولار — اكتب سعر الصرف الذي يُموَّل به بالدينار');
+    }
+
     public static function nothingWasPutIn(): self
     {
         return new self('اكتب ما وضعه كل مستثمر — لا تُفتح صفقة بلا تمويل');

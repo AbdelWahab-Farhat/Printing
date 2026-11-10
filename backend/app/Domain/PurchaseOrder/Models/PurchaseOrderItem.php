@@ -62,6 +62,10 @@ class PurchaseOrderItem extends Model
             'allocated_additional_cost' => 'decimal:2',
             'final_unit_cost' => 'decimal:3',
             'final_total_cost' => 'decimal:2',
+            // A funded line of a dollar order: what it cost in dinars at the order's funding rate
+            // — written by FixFundingRate, read by the receipt and «بضاعة مشتراة لم تصل». Null
+            // everywhere else (USD-ACCOUNTS.md §٥).
+            'funded_cost' => 'decimal:2',
             // Written at receipt by ReceivePurchaseOrder, cleared by its reversal: this line's
             // share of the arrival costs, and the unit cost its layer actually opened at.
             'arrival_additional_cost' => 'decimal:2',

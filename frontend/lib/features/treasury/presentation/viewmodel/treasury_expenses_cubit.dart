@@ -38,6 +38,13 @@ class TreasuryExpensesCubit extends PagedCubit<TreasuryMovement> {
     _ => '0.00',
   };
 
+  /// The dollar expenses in dollars — already inside [total] at their rates, and said beside it
+  /// (USD-ACCOUNTS §٨). «0.00» from an older server, or when there are none.
+  String get usdTotal => switch (state) {
+    PagedLoaded(:final page) => '${page.extraMeta['expenses_usd_total'] ?? '0.00'}',
+    _ => '0.00',
+  };
+
   /// أول يومٍ وآخره لما يُعرض الآن، أو `null` لـ«الكل».
   ({DateTime from, DateTime to})? get range => switch (period) {
     ExpensePeriod.custom => customRange,

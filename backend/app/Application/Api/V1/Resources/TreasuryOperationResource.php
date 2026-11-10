@@ -20,6 +20,7 @@ class TreasuryOperationResource extends JsonResource
             'id' => $account->id,
             'name' => $account->name,
             'kind' => $account->kind->value,
+            'currency' => $account->currency->value,
         ];
 
         $reversed = $this->relationLoaded('reversedBy') ? $this->reversedBy !== null : $this->isReversed();
@@ -28,7 +29,11 @@ class TreasuryOperationResource extends JsonResource
             'id' => $this->id,
             'type' => $this->type->value,
             'type_label' => $this->type->label(),
+            // In the currency of the account it left; «صرف عملة» adds what arrived, in the other
+            // account's currency, and the rate in dinars per dollar.
             'amount' => (string) $this->amount,
+            'counter_amount' => $this->counter_amount === null ? null : (string) $this->counter_amount,
+            'rate' => $this->rate === null ? null : (string) $this->rate,
 
             'from_account_id' => $this->from_account_id,
             'from_account' => $this->whenLoaded('fromAccount', fn () => $account($this->fromAccount)),

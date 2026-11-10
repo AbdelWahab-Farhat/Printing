@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\Treasury;
 
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +21,8 @@ class StoreTreasuryAccountRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'kind' => ['required', Rule::enum(AccountKind::class)],
+            // Dinars when absent. Which kinds may be dollars is the Action's — USD-ACCOUNTS §٣.
+            'currency' => ['nullable', Rule::enum(Currency::class)],
             // «مصرف علي» — whose name the account is in. A removed employee cannot be given one.
             'holder_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
             'is_default' => ['nullable', 'boolean'],
@@ -47,6 +50,7 @@ class StoreTreasuryAccountRequest extends FormRequest
             'name.max' => 'اسم الحساب طويل جداً',
             'kind.required' => 'نوع الحساب مطلوب',
             'kind.enum' => 'نوع الحساب غير معروف',
+            'currency.enum' => 'العملة غير معروفة',
             'holder_user_id.exists' => 'الموظف غير موجود',
             'pickup_city_id.exists' => 'ليس مكتب استلام',
         ];
@@ -57,6 +61,7 @@ class StoreTreasuryAccountRequest extends FormRequest
         return [
             'name' => 'اسم الحساب',
             'kind' => 'نوع الحساب',
+            'currency' => 'العملة',
             'holder_user_id' => 'صاحب الحساب',
             'is_default' => 'الحساب الافتراضي',
             'is_collected' => 'يُجمَع عند التسوية',

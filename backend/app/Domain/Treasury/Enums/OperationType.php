@@ -26,6 +26,13 @@ enum OperationType: string
      */
     case WalletExpense = 'wallet_expense';
 
+    /**
+     * «صرف عملة» — dinars changed into dollars or back, between two accounts of different
+     * currencies. The one operation with two amounts: `amount` left, `counter_amount` arrived,
+     * and `rate` is dinars per dollar. USD-ACCOUNTS §٣.
+     */
+    case Exchange = 'exchange';
+
     public function label(): string
     {
         return match ($this) {
@@ -37,6 +44,7 @@ enum OperationType: string
             self::Adjustment => 'جرد الحساب',
             self::Settlement => 'تسوية طلبية',
             self::WalletExpense => 'مستحق موظف',
+            self::Exchange => 'صرف عملة',
         };
     }
 
@@ -51,6 +59,7 @@ enum OperationType: string
             self::Adjustment => MovementKind::Adjustment,
             self::Settlement => MovementKind::Settlement,
             self::WalletExpense => MovementKind::Expense,
+            self::Exchange => MovementKind::Exchange,
         };
     }
 
@@ -61,7 +70,7 @@ enum OperationType: string
      */
     public static function recordable(): array
     {
-        return [self::Opening, self::Deposit, self::Withdrawal, self::Expense, self::Transfer, self::Adjustment];
+        return [self::Opening, self::Deposit, self::Withdrawal, self::Expense, self::Transfer, self::Exchange, self::Adjustment];
     }
 
     /** Whether the reason is mandatory — money leaving by hand, and a count that disagreed. */

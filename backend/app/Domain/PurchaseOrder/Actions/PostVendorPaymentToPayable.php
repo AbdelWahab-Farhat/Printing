@@ -25,7 +25,11 @@ final class PostVendorPaymentToPayable
     /** True when it posted, false when the row was already there. */
     public function __invoke(VendorPayment $payment): bool
     {
-        $payable = $this->treasury->payableForVendor((int) $payment->vendor_id, (string) $payment->vendor?->name);
+        $payable = $this->treasury->payableForVendor(
+            (int) $payment->vendor_id,
+            (string) $payment->vendor?->name,
+            $payment->currency,
+        );
 
         $posted = $this->treasury->liveMovementsOf($payment->getMorphClass(), (int) $payment->getKey())
             ->contains(fn ($movement) => (int) $movement->account_id === (int) $payable->getKey());

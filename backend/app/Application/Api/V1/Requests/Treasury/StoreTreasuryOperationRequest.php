@@ -19,6 +19,7 @@ use Illuminate\Validation\Rule;
  * | withdrawal | from_account_id, amount, notes | treasury.record |
  * | expense | from_account_id, amount, category_id (employee_id for «سلفة») | treasury.record |
  * | transfer | from_account_id, to_account_id, amount | treasury.record |
+ * | exchange | from_account_id, to_account_id, two of amount · counter_amount · rate | treasury.record |
  * | adjustment | to_account_id (the account counted), counted_balance, notes | treasury.adjust |
  */
 class StoreTreasuryOperationRequest extends FormRequest
@@ -53,22 +54,41 @@ class StoreTreasuryOperationRequest extends FormRequest
 
             // خانتان عشريتان على الأكثر ودرهمٌ على الأقل: 0.001 كان يمرّ من `gt:0` ثم يُقرَّب إلى
             // صفر فيصطدم بقيد القاعدة ويخرج 500 بدل رسالة.
+            // «صرف عملة» takes any two of amount · counter_amount · rate; that two arrived is the
+            // Action's to check, once it knows which side is dollars.
             'amount' => [
                 'exclude_if:type,adjustment',
-                'required',
+                'required_unless:type,exchange',
+                'nullable',
                 'decimal:0,2',
                 'min:0.01',
                 'max:9999999999',
             ],
+            'counter_amount' => [
+                'exclude_unless:type,exchange',
+                'nullable',
+                'decimal:0,2',
+                'min:0.01',
+                'max:9999999999',
+            ],
+            // «صرف عملة», and an expense out of a dollar account: dinars per dollar, what it is
+            // counted at in «المصاريف» (USD-ACCOUNTS §٨). Ignored on a dinar expense.
+            'rate' => [
+                'exclude_unless:type,exchange,expense',
+                'nullable',
+                'decimal:0,4',
+                'min:0.0001',
+                'max:99999999',
+            ],
 
             'from_account_id' => [
-                'exclude_unless:type,withdrawal,expense,transfer',
+                'exclude_unless:type,withdrawal,expense,transfer,exchange',
                 'required',
                 'integer',
                 $account,
             ],
             'to_account_id' => [
-                'exclude_unless:type,opening,deposit,transfer,adjustment',
+                'exclude_unless:type,opening,deposit,transfer,exchange,adjustment',
                 'required',
                 'integer',
                 'different:from_account_id',
@@ -114,10 +134,16 @@ class StoreTreasuryOperationRequest extends FormRequest
         return [
             'type.required' => 'نوع العملية مطلوب',
             'type.in' => 'نوع العملية غير معروف',
-            'amount.required' => 'المبلغ مطلوب',
+            'amount.required_unless' => 'المبلغ مطلوب',
             'amount.decimal' => 'المبلغ رقمٌ بخانتين عشريتين على الأكثر',
             'amount.min' => 'المبلغ يجب أن يكون 0.01 على الأقل',
             'amount.max' => 'المبلغ أكبر من الحد المسموح',
+            'counter_amount.decimal' => 'المبلغ رقمٌ بخانتين عشريتين على الأكثر',
+            'counter_amount.min' => 'المبلغ يجب أن يكون 0.01 على الأقل',
+            'counter_amount.max' => 'المبلغ أكبر من الحد المسموح',
+            'rate.decimal' => 'السعر رقمٌ بأربع خانات عشرية على الأكثر',
+            'rate.min' => 'السعر يجب أن يكون أكبر من صفر',
+            'rate.max' => 'السعر أكبر من الحد المسموح',
             'from_account_id.required' => 'الحساب المسحوب منه مطلوب',
             'from_account_id.exists' => 'الحساب غير موجود',
             'to_account_id.required' => 'الحساب مطلوب',
@@ -141,6 +167,8 @@ class StoreTreasuryOperationRequest extends FormRequest
         return [
             'type' => 'نوع العملية',
             'amount' => 'المبلغ',
+            'counter_amount' => 'المبلغ المستلم',
+            'rate' => 'السعر',
             'from_account_id' => 'من حساب',
             'to_account_id' => 'إلى حساب',
             'category_id' => 'تصنيف المصروف',

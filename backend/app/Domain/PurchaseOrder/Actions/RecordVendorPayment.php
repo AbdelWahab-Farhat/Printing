@@ -13,6 +13,7 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\Queries\VendorPaymentSummary;
 use App\Domain\Treasury\DTOs\MovementData;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryAccount;
@@ -68,8 +69,10 @@ final class RecordVendorPayment
                 throw VendorPaymentRefused::orderOfAnotherVendor('#'.$order->getKey());
             }
 
+            $currency = $this->currencyOf($order, $data);
+
             if ($data->type !== VendorPaymentType::OpeningDebt) {
-                $this->guardNoAdvance($locked, $order, $data->amount);
+                $this->guardNoAdvance($locked, $order, $data->amount, $currency);
             }
 
             $actorId = $actor?->getKey() === null ? null : (int) $actor->getKey();
@@ -85,17 +88,20 @@ final class RecordVendorPayment
             $payment->vendor_id = $locked->getKey();
             $payment->purchase_order_id = $order?->getKey();
             $payment->type = $data->type;
+            $payment->currency = $currency;
             $payment->recorded_by = $actorId;
             $payment->client_token = $data->clientToken;
 
             $account = null;
 
             if ($data->type->movesMoney()) {
+                // A dollar debt from a named dollar account alone, a dinar one from dinars.
                 $account = $this->treasury->accountFor(
                     $data->method->value,
                     $actorId,
                     $data->treasuryAccountId,
                     incoming: false,
+                    currency: $currency,
                 );
 
                 // ولا قبل آخر جردٍ للدرج الذي خرجت منه — الجردُ يشهد بما كان فيه يومها.
@@ -123,7 +129,7 @@ final class RecordVendorPayment
                 return $payment;
             }
 
-            $payable = $this->treasury->payableForVendor((int) $locked->getKey(), (string) $locked->name);
+            $payable = $this->treasury->payableForVendor((int) $locked->getKey(), (string) $locked->name, $currency);
 
             if ($account !== null) {
                 $this->post($payment, $account, MovementDirection::Out, MovementKind::VendorPayment, "دفعة للمورد {$locked->name}{$about}", $actorId, $payable);
@@ -141,6 +147,25 @@ final class RecordVendorPayment
         });
     }
 
+    /**
+     * The row's currency — the debt's (USD-ACCOUNTS.md §٦). On an order it is the order's, and a
+     * different one sent is refused; on no order it is what was sent, dinars if nothing.
+     *
+     * @throws VendorPaymentRefused
+     */
+    private function currencyOf(?PurchaseOrder $order, VendorPaymentData $data): Currency
+    {
+        if ($order === null) {
+            return $data->currency ?? Currency::Lyd;
+        }
+
+        if ($data->currency !== null && $data->currency !== $order->currency) {
+            throw VendorPaymentRefused::notTheOrdersCurrency('#'.$order->getKey(), $order->currency->label());
+        }
+
+        return $order->currency;
+    }
+
     private function alreadySent(Vendor $vendor, ?string $clientToken): ?VendorPayment
     {
         return $clientToken === null ? null : VendorPayment::query()
@@ -156,8 +181,11 @@ final class RecordVendorPayment
      * **An order from before the treasury is paid on its own terms**: up to its total less what
      * was paid on it since, and apart from the rest of what the vendor is owed — its debt was
      * never counted there.
+     *
+     * **In the row's currency**: a dollar payment against what is left in dollars, on the order
+     * and on the vendor's dollar «علينا» (USD-ACCOUNTS.md §٦).
      */
-    private function guardNoAdvance(Vendor $vendor, ?PurchaseOrder $order, string $amount): void
+    private function guardNoAdvance(Vendor $vendor, ?PurchaseOrder $order, string $amount, Currency $currency): void
     {
         if ($order !== null && $order->status === PurchaseOrderStatus::Cancelled) {
             throw VendorPaymentRefused::orderCancelled('#'.$order->getKey());
@@ -179,7 +207,7 @@ final class RecordVendorPayment
             throw VendorPaymentRefused::exceedsOrder('#'.$order?->getKey(), $remaining);
         }
 
-        $owed = $this->summary->forVendor((int) $vendor->getKey())['owed'];
+        $owed = $this->summary->forVendor((int) $vendor->getKey(), $currency)['owed'];
 
         if (bccomp($amount, $owed, 2) > 0) {
             throw VendorPaymentRefused::exceedsOwed((string) $vendor->name, $owed);

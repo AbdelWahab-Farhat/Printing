@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
 use App\Domain\PurchaseOrder\Actions\UpdatePurchaseOrder;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Validation\Rule;
 
 /**
@@ -68,6 +69,7 @@ class UpdatePurchaseOrderRequest extends StorePurchaseOrderRequest
                 'nullable', 'integer',
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
             ],
+            'additional_costs.*.currency' => ['nullable', Rule::enum(Currency::class)],
         ];
     }
 

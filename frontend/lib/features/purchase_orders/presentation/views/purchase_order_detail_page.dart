@@ -17,7 +17,10 @@ import 'package:dayaa/features/purchase_orders/presentation/widgets/cost_refund_
 import 'package:dayaa/features/purchase_orders/presentation/widgets/cost_refunds.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/receive_arrival_sheet.dart';
 import 'package:dayaa/features/purchase_orders/presentation/widgets/reverse_receipt_sheet.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/treasury/presentation/widgets/purchase_order_payments_section.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart'
+    show treasuryMoney, withCurrency;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -157,6 +160,7 @@ class _PurchaseOrderDetailViewState extends State<_PurchaseOrderDetailView> {
       additionalCosts: shipment.additionalCosts,
       invoiceNumber: shipment.invoiceNumber,
       notes: shipment.notes,
+      arrivalRate: shipment.arrivalRate,
     );
 
     if (!context.mounted) return;
@@ -310,7 +314,8 @@ class _Actions extends StatelessWidget {
             permission: AppPermission.manageInventory,
             onTap: onReverseReceipt,
           ),
-        // Only while nothing has arrived: who paid for goods is declared before they land.
+        // Only while nothing has arrived: who paid for goods is declared before they land. A
+        // dollar order is funded at a rate the funding screen asks (USD-ACCOUNTS.md §٥).
         if (order.status.isEditable)
           AppAction(
             label: 'تمويل مستثمرين',
@@ -446,11 +451,35 @@ class _Body extends StatelessWidget {
           SizedBox(height: 8.h),
           _ReversalWindow(order: order),
         ],
+        if (order.isDollar) ...[
+          SizedBox(height: 8.h),
+          const _DollarOrderNote(),
+        ],
+        // Funded at one rate, received at another — said every time the order is opened, and
+        // nothing else is written for it (the owner's decision, 2026-11-10).
+        if (order.rateDifference case final difference?) ...[
+          SizedBox(height: 8.h),
+          _RateDifferenceNote(difference: difference),
+        ],
         SizedBox(height: 14.h),
         _Section(
           title: 'التواريخ',
           child: Column(
             children: [
+              if (order.isDollar) ...[
+                _Row(label: 'العملة', value: order.currency.label),
+                Divider(height: 18.h),
+                // What its funded goods were bought at, and what its stock was priced at once it
+                // was received (USD-ACCOUNTS.md §٥).
+                if (order.fundingRate case final rate?) ...[
+                  _Row(label: 'سعر الصرف عند التمويل', value: rate.grouped),
+                  Divider(height: 18.h),
+                ],
+                if (order.arrivalRate case final rate?) ...[
+                  _Row(label: 'سعر الصرف عند الاستلام', value: rate.grouped),
+                  Divider(height: 18.h),
+                ],
+              ],
               _Row(label: 'تاريخ الطلب', value: order.orderDate),
               if (order.expectedDate case final expected?) ...[
                 Divider(height: 18.h),
@@ -462,7 +491,7 @@ class _Body extends StatelessWidget {
                 Divider(height: 18.h),
                 _Row(
                   label: 'إجمالي التكلفة',
-                  value: '${groupedDecimal(total)} د.ل',
+                  value: treasuryMoney(total, currency: order.currency),
                 ),
               ],
               // **Part of the total above, not on top of it.** Every line's cost already carries
@@ -473,7 +502,7 @@ class _Body extends StatelessWidget {
                   Divider(height: 18.h),
                   _Row(
                     label: 'منها تكاليف إضافية',
-                    value: '${groupedDecimal(additional)} د.ل',
+                    value: treasuryMoney(additional, currency: order.currency),
                   ),
                 ],
               // What the vendor is owed differs from the total once a cost was paid to somebody
@@ -483,7 +512,7 @@ class _Body extends StatelessWidget {
                   Divider(height: 18.h),
                   _Row(
                     label: 'المستحق للمورد',
-                    value: '${groupedDecimal(owed)} د.ل',
+                    value: treasuryMoney(owed, currency: order.currency),
                   ),
                 ],
             ],
@@ -510,7 +539,8 @@ class _Body extends StatelessWidget {
                 children: [
                   for (final (index, cost) in costs.indexed) ...[
                     if (index > 0) Divider(height: 18.h),
-                    _Row(label: cost.name, value: '${cost.amountLabel} د.ل'),
+                    // Each in its own: shipping on the bill in dollars, customs from a dinar drawer.
+                    _Row(label: cost.name, value: withCurrency(cost.amountLabel, cost.currency)),
                     // Who was paid — said only when it was not the vendor, which is what every
                     // cost was before the question existed.
                     if (!cost.isOnVendorBill) ...[
@@ -557,12 +587,106 @@ class _Body extends StatelessWidget {
             children: [
               for (final (index, item) in order.items.indexed) ...[
                 if (index > 0) Divider(height: 18.h),
-                _LineRow(item: item),
+                _LineRow(item: item, currency: order.currency),
               ],
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The funding rate and the arrival rate disagree — USD-ACCOUNTS.md §٥. Both rates, the gap per
+/// dollar, which way it went, and what it comes to on the funded goods. **Said, not booked**: the
+/// funded goods keep the funding rate and nothing is written for the gap (2026-11-10).
+class _RateDifferenceNote extends StatelessWidget {
+  const _RateDifferenceNote({required this.difference});
+
+  final PurchaseOrderRateDifference difference;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final tone = difference.isHigher ? scheme.error : scheme.primary;
+    final way = difference.isHigher ? 'أعلى' : 'أقل';
+
+    return Container(
+      key: const ValueKey('rate-difference'),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: tone.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(AppIcons.exchange, size: 18.sp, color: tone),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'فرق في سعر الصرف — سعر الاستلام $way من سعر التمويل',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: tone,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'التمويل ${difference.fundingRate.grouped} · الاستلام '
+                  '${difference.arrivalRate.grouped} · الفرق ${difference.perDollar.grouped} '
+                  'دينار لكل دولار',
+                  style: context.textTheme.bodySmall,
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  'على بضاعة ممولة بـ ${withCurrency(difference.fundedDollars.grouped, Currency.usd)}: '
+                  '${withCurrency(difference.dinars.grouped, Currency.lyd)} $way. '
+                  'بقيت البضاعة الممولة بسعر التمويل، ولم يُسجَّل للفرق شيء.',
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How a dollar order differs, said once at the top — USD-ACCOUNTS.md §١١: its stock is priced at
+/// a rate asked on receipt, and what the fund bought keeps the rate it was funded at.
+class _DollarOrderNote extends StatelessWidget {
+  const _DollarOrderNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Container(
+      key: const ValueKey('dollar-order-note'),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14.r),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.exchange, size: 18.sp, color: scheme.tertiary),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              'أمر بالدولار — مبالغه ودينه بالدولار، ويُدفع من حساب دولار. يُسعَّر المخزون '
+              'بالدينار بسعر الصرف عند الاستلام، وما موّله الصندوق بسعر التمويل.',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurface),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -802,9 +926,14 @@ class _FundPurchaseSection extends StatelessWidget {
 
 /// One line: what was ordered, what has arrived, and what is still owing.
 class _LineRow extends StatelessWidget {
-  const _LineRow({required this.item});
+  const _LineRow({required this.item, required this.currency});
 
   final PurchaseOrderItem item;
+
+  /// The order's — every cost on the line is in it.
+  final Currency currency;
+
+  String _money(String figure) => withCurrency(figure, currency);
 
   @override
   Widget build(BuildContext context) {
@@ -884,8 +1013,8 @@ class _LineRow extends StatelessWidget {
             // can check against the quote they were given — and once delivery has been spread
             // over the lines, the landed figure is the one a job's margin is worked out against.
             // «للوحدة» named nothing, and named it identically for both units.
-            '${item.unitCostLabel} د.ل ${item.perUnitSuffix} · '
-            'الإجمالي ${item.totalCostLabel} د.ل',
+            '${_money(item.unitCostLabel)} ${item.perUnitSuffix} · '
+            'الإجمالي ${_money(item.totalCostLabel)}',
             style: context.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -896,8 +1025,8 @@ class _LineRow extends StatelessWidget {
           if (item.hasAllocatedCost) ...[
             SizedBox(height: 2.h),
             Text(
-              'الأساسي ${item.baseTotalCostLabel} د.ل '
-              '+ حصة من التكاليف الإضافية ${item.allocatedCostLabel} د.ل',
+              'الأساسي ${_money(item.baseTotalCostLabel)} '
+              '+ حصة من التكاليف الإضافية ${_money(item.allocatedCostLabel)}',
               style: context.textTheme.bodySmall?.copyWith(
                 color: scheme.outline,
               ),
@@ -908,8 +1037,9 @@ class _LineRow extends StatelessWidget {
           if (item.landedDiffersFromPlanned) ...[
             SizedBox(height: 2.h),
             Text(
-              'دخل المخزن بـ ${item.landedCostLabel} د.ل ${item.perUnitSuffix}'
-              '${item.hasArrivalCost ? ' · منها حصة تكاليف الوصول ${item.arrivalCostLabel} د.ل' : ''}',
+              // The layer's cost, which is dinars always — a dollar order's at its arrival rate.
+              'دخل المخزن بـ ${withCurrency(item.landedCostLabel, Currency.lyd)} ${item.perUnitSuffix}'
+              '${item.hasArrivalCost ? ' · منها حصة تكاليف الوصول ${_money(item.arrivalCostLabel)}' : ''}',
               style: context.textTheme.bodySmall?.copyWith(
                 color: scheme.outline,
               ),

@@ -24,6 +24,15 @@ _PurchaseOrder _$PurchaseOrderFromJson(
     unknownValue: PurchaseOrderStatus.unknown,
   ),
   statusLabel: json['status_label'] as String,
+  currencyCode: json['currency'] as String? ?? 'LYD',
+  arrivalRate: json['arrival_rate'] as String?,
+  systemUsdRate: json['system_usd_rate'] as String?,
+  fundingRate: json['funding_rate'] as String?,
+  rateDifference: json['rate_difference'] == null
+      ? null
+      : PurchaseOrderRateDifference.fromJson(
+          json['rate_difference'] as Map<String, dynamic>,
+        ),
   orderDate: json['order_date'] as String,
   expectedDate: json['expected_date'] as String?,
   notes: json['notes'] as String?,
@@ -72,6 +81,11 @@ Map<String, dynamic> _$PurchaseOrderToJson(
   'warehouse': instance.warehouse?.toJson(),
   'status': _$PurchaseOrderStatusEnumMap[instance.status]!,
   'status_label': instance.statusLabel,
+  'currency': instance.currencyCode,
+  'arrival_rate': instance.arrivalRate,
+  'system_usd_rate': instance.systemUsdRate,
+  'funding_rate': instance.fundingRate,
+  'rate_difference': instance.rateDifference?.toJson(),
   'order_date': instance.orderDate,
   'expected_date': instance.expectedDate,
   'notes': instance.notes,
@@ -98,12 +112,35 @@ const _$PurchaseOrderStatusEnumMap = {
   PurchaseOrderStatus.unknown: 'unknown',
 };
 
+_PurchaseOrderRateDifference _$PurchaseOrderRateDifferenceFromJson(
+  Map<String, dynamic> json,
+) => _PurchaseOrderRateDifference(
+  fundingRate: json['funding_rate'] as String,
+  arrivalRate: json['arrival_rate'] as String,
+  perDollar: json['per_dollar'] as String,
+  direction: json['direction'] as String,
+  fundedDollars: json['funded_dollars'] as String,
+  dinars: json['dinars'] as String,
+);
+
+Map<String, dynamic> _$PurchaseOrderRateDifferenceToJson(
+  _PurchaseOrderRateDifference instance,
+) => <String, dynamic>{
+  'funding_rate': instance.fundingRate,
+  'arrival_rate': instance.arrivalRate,
+  'per_dollar': instance.perDollar,
+  'direction': instance.direction,
+  'funded_dollars': instance.fundedDollars,
+  'dinars': instance.dinars,
+};
+
 _PurchaseOrderAdditionalCost _$PurchaseOrderAdditionalCostFromJson(
   Map<String, dynamic> json,
 ) => _PurchaseOrderAdditionalCost(
   id: (json['id'] as num).toInt(),
   name: json['name'] as String,
   amount: json['amount'] as String,
+  currencyCode: json['currency'] as String? ?? 'LYD',
   stockArrivalId: (json['stock_arrival_id'] as num?)?.toInt(),
   treasuryAccountId: (json['treasury_account_id'] as num?)?.toInt(),
   treasuryAccount: json['treasury_account'] == null
@@ -127,6 +164,7 @@ Map<String, dynamic> _$PurchaseOrderAdditionalCostToJson(
   'id': instance.id,
   'name': instance.name,
   'amount': instance.amount,
+  'currency': instance.currencyCode,
   'stock_arrival_id': instance.stockArrivalId,
   'treasury_account_id': instance.treasuryAccountId,
   'treasury_account': instance.treasuryAccount?.toJson(),

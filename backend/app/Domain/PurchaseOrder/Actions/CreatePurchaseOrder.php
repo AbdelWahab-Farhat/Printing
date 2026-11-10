@@ -9,6 +9,7 @@ use App\Domain\PurchaseOrder\DTOs\PurchaseOrderData;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,6 +52,8 @@ final class CreatePurchaseOrder
             $order->vendor_id = $data->vendorId;
             $order->warehouse_id = $data->warehouseId;
             $order->status = PurchaseOrderStatus::New;
+            // Picked once, here — USD-ACCOUNTS.md §٤. Every amount below is in it.
+            $order->currency = $data->currency ?? Currency::Lyd;
             $order->save();
 
             // One query for every shelf on the order rather than one per line: each needs its
@@ -82,10 +85,11 @@ final class CreatePurchaseOrder
             $costs = [];
 
             foreach ($data->additionalCosts as $index => $cost) {
-                $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id");
+                $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id", $order);
 
                 $row = $order->additionalCosts()->make(['name' => $cost->name, 'amount' => $cost->amount]);
                 $row->treasury_account_id = $cost->treasuryAccountId;
+                $row->currency = $this->costExpense->currencyOf($order, $cost, "additional_costs.{$index}.currency");
                 $row->recorded_by = $data->actorId;
                 $row->save();
 

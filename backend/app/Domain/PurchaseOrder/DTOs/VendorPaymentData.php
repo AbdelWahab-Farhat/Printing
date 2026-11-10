@@ -7,6 +7,7 @@ namespace App\Domain\PurchaseOrder\DTOs;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
 use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 
@@ -27,6 +28,9 @@ final readonly class VendorPaymentData
         public ?UploadedFile $receipt = null,
         // رمزُ الإرسال من التطبيق — الرمزُ نفسه مرّةً ثانية يُرجع الدفعةَ الأولى.
         public ?string $clientToken = null,
+        // The debt's currency, said for a row on no order (USD-ACCOUNTS.md §٦). On an order it
+        // may be left out — the order's currency is the row's — and must agree when sent.
+        public ?Currency $currency = null,
     ) {}
 
     /**
@@ -52,6 +56,7 @@ final readonly class VendorPaymentData
             notes: $text('notes'),
             receipt: $receipt instanceof UploadedFile ? $receipt : null,
             clientToken: $text('client_token'),
+            currency: $text('currency') === null ? null : Currency::from((string) $text('currency')),
         );
     }
 }

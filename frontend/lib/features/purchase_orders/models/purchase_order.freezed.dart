@@ -21,7 +21,17 @@ mixin _$PurchaseOrder {
 /// its key pointing at nothing. Receiving refuses in that case rather than guessing.
 @JsonKey(name: 'warehouse_id') int? get warehouseId; ArrivalRef? get warehouse;@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus get status;/// The Arabic the server chose. Rendered as-is wherever *this* order is on screen, so a
 /// status added on the server still reads correctly here.
-@JsonKey(name: 'status_label') String get statusLabel;/// Plain `YYYY-MM-DD`, not a timestamp — the day the order was placed, not an instant.
+@JsonKey(name: 'status_label') String get statusLabel;/// `LYD` or `USD` — every amount on the order is in it (USD-ACCOUNTS.md §٤). Picked when the
+/// order is raised and never changed. Read it through [currency].
+@JsonKey(name: 'currency') String get currencyCode;/// Dinars per dollar a dollar order's stock was priced at when it was received
+/// (USD-ACCOUNTS.md §٥). Null until then, and always on a dinar order.
+@JsonKey(name: 'arrival_rate') String? get arrivalRate;/// «سعر النظام» — what the receive screen opens its rate field on. Sent on a dollar order
+/// alone, and null until the owner writes one.
+@JsonKey(name: 'system_usd_rate') String? get systemUsdRate;/// Dinars per dollar the funded lines were bought at — asked when the order was funded. The
+/// funded goods keep it at arrival (USD-ACCOUNTS.md §٥).
+@JsonKey(name: 'funding_rate') String? get fundingRate;/// The funding rate and the arrival rate disagree. Nothing is booked for it — the owner's
+/// decision of 2026-11-10 — so this is what the order's screen says.
+@JsonKey(name: 'rate_difference') PurchaseOrderRateDifference? get rateDifference;/// Plain `YYYY-MM-DD`, not a timestamp — the day the order was placed, not an instant.
 @JsonKey(name: 'order_date') String get orderDate;@JsonKey(name: 'expected_date') String? get expectedDate; String? get notes;/// What the whole order costs, summed by the server from its lines.
 ///
 /// Null on an order raised before cost tracking existed — which is «غير مسجّل», not «صفر»,
@@ -74,16 +84,16 @@ $PurchaseOrderCopyWith<PurchaseOrder> get copyWith => _$PurchaseOrderCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&(identical(other.vendorAmount, vendorAmount) || other.vendorAmount == vendorAmount)&&const DeepCollectionEquality().equals(other.additionalCosts, additionalCosts)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.investorFunding, investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.receiptReversibleUntil, receiptReversibleUntil) || other.receiptReversibleUntil == receiptReversibleUntil)&&(identical(other.canReverseReceipt, canReverseReceipt) || other.canReverseReceipt == canReverseReceipt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.currencyCode, currencyCode) || other.currencyCode == currencyCode)&&(identical(other.arrivalRate, arrivalRate) || other.arrivalRate == arrivalRate)&&(identical(other.systemUsdRate, systemUsdRate) || other.systemUsdRate == systemUsdRate)&&(identical(other.fundingRate, fundingRate) || other.fundingRate == fundingRate)&&(identical(other.rateDifference, rateDifference) || other.rateDifference == rateDifference)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&(identical(other.vendorAmount, vendorAmount) || other.vendorAmount == vendorAmount)&&const DeepCollectionEquality().equals(other.additionalCosts, additionalCosts)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.investorFunding, investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.receiptReversibleUntil, receiptReversibleUntil) || other.receiptReversibleUntil == receiptReversibleUntil)&&(identical(other.canReverseReceipt, canReverseReceipt) || other.canReverseReceipt == canReverseReceipt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,vendorAmount,const DeepCollectionEquality().hash(additionalCosts),const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(investorFunding),defaultInvestorProfitSharePercent,receiptReversibleUntil,canReverseReceipt,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,currencyCode,arrivalRate,systemUsdRate,fundingRate,rateDifference,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,vendorAmount,const DeepCollectionEquality().hash(additionalCosts),const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(investorFunding),defaultInvestorProfitSharePercent,receiptReversibleUntil,canReverseReceipt,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, vendorAmount: $vendorAmount, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, receiptReversibleUntil: $receiptReversibleUntil, canReverseReceipt: $canReverseReceipt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, currencyCode: $currencyCode, arrivalRate: $arrivalRate, systemUsdRate: $systemUsdRate, fundingRate: $fundingRate, rateDifference: $rateDifference, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, vendorAmount: $vendorAmount, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, receiptReversibleUntil: $receiptReversibleUntil, canReverseReceipt: $canReverseReceipt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -94,11 +104,11 @@ abstract mixin class $PurchaseOrderCopyWith<$Res>  {
   factory $PurchaseOrderCopyWith(PurchaseOrder value, $Res Function(PurchaseOrder) _then) = _$PurchaseOrderCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'vendor_amount') String? vendorAmount,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'receipt_reversible_until') DateTime? receiptReversibleUntil,@JsonKey(name: 'can_reverse_receipt') bool canReverseReceipt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'currency') String currencyCode,@JsonKey(name: 'arrival_rate') String? arrivalRate,@JsonKey(name: 'system_usd_rate') String? systemUsdRate,@JsonKey(name: 'funding_rate') String? fundingRate,@JsonKey(name: 'rate_difference') PurchaseOrderRateDifference? rateDifference,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'vendor_amount') String? vendorAmount,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'receipt_reversible_until') DateTime? receiptReversibleUntil,@JsonKey(name: 'can_reverse_receipt') bool canReverseReceipt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
-$ArrivalRefCopyWith<$Res>? get vendor;$ArrivalRefCopyWith<$Res>? get warehouse;
+$ArrivalRefCopyWith<$Res>? get vendor;$ArrivalRefCopyWith<$Res>? get warehouse;$PurchaseOrderRateDifferenceCopyWith<$Res>? get rateDifference;
 
 }
 /// @nodoc
@@ -111,7 +121,7 @@ class _$PurchaseOrderCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? vendorAmount = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? receiptReversibleUntil = freezed,Object? canReverseReceipt = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? currencyCode = null,Object? arrivalRate = freezed,Object? systemUsdRate = freezed,Object? fundingRate = freezed,Object? rateDifference = freezed,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? vendorAmount = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? receiptReversibleUntil = freezed,Object? canReverseReceipt = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -120,7 +130,12 @@ as ArrivalRef?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehou
 as int?,warehouse: freezed == warehouse ? _self.warehouse : warehouse // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as PurchaseOrderStatus,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
-as String,orderDate: null == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
+as String,currencyCode: null == currencyCode ? _self.currencyCode : currencyCode // ignore: cast_nullable_to_non_nullable
+as String,arrivalRate: freezed == arrivalRate ? _self.arrivalRate : arrivalRate // ignore: cast_nullable_to_non_nullable
+as String?,systemUsdRate: freezed == systemUsdRate ? _self.systemUsdRate : systemUsdRate // ignore: cast_nullable_to_non_nullable
+as String?,fundingRate: freezed == fundingRate ? _self.fundingRate : fundingRate // ignore: cast_nullable_to_non_nullable
+as String?,rateDifference: freezed == rateDifference ? _self.rateDifference : rateDifference // ignore: cast_nullable_to_non_nullable
+as PurchaseOrderRateDifference?,orderDate: null == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
 as String,expectedDate: freezed == expectedDate ? _self.expectedDate : expectedDate // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,totalAmount: freezed == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
@@ -160,6 +175,18 @@ $ArrivalRefCopyWith<$Res>? get warehouse {
 
   return $ArrivalRefCopyWith<$Res>(_self.warehouse!, (value) {
     return _then(_self.copyWith(warehouse: value));
+  });
+}/// Create a copy of PurchaseOrder
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PurchaseOrderRateDifferenceCopyWith<$Res>? get rateDifference {
+    if (_self.rateDifference == null) {
+    return null;
+  }
+
+  return $PurchaseOrderRateDifferenceCopyWith<$Res>(_self.rateDifference!, (value) {
+    return _then(_self.copyWith(rateDifference: value));
   });
 }
 }
@@ -243,10 +270,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'arrival_rate')  String? arrivalRate, @JsonKey(name: 'system_usd_rate')  String? systemUsdRate, @JsonKey(name: 'funding_rate')  String? fundingRate, @JsonKey(name: 'rate_difference')  PurchaseOrderRateDifference? rateDifference, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PurchaseOrder() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.currencyCode,_that.arrivalRate,_that.systemUsdRate,_that.fundingRate,_that.rateDifference,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -264,10 +291,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'arrival_rate')  String? arrivalRate, @JsonKey(name: 'system_usd_rate')  String? systemUsdRate, @JsonKey(name: 'funding_rate')  String? fundingRate, @JsonKey(name: 'rate_difference')  PurchaseOrderRateDifference? rateDifference, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrder():
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.currencyCode,_that.arrivalRate,_that.systemUsdRate,_that.fundingRate,_that.rateDifference,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -284,10 +311,10 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'vendor_id')  int vendorId,  ArrivalRef? vendor, @JsonKey(name: 'warehouse_id')  int? warehouseId,  ArrivalRef? warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown)  PurchaseOrderStatus status, @JsonKey(name: 'status_label')  String statusLabel, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'arrival_rate')  String? arrivalRate, @JsonKey(name: 'system_usd_rate')  String? systemUsdRate, @JsonKey(name: 'funding_rate')  String? fundingRate, @JsonKey(name: 'rate_difference')  PurchaseOrderRateDifference? rateDifference, @JsonKey(name: 'order_date')  String orderDate, @JsonKey(name: 'expected_date')  String? expectedDate,  String? notes, @JsonKey(name: 'total_amount')  String? totalAmount, @JsonKey(name: 'total_additional_cost')  String? totalAdditionalCost, @JsonKey(name: 'vendor_amount')  String? vendorAmount, @JsonKey(name: 'additional_costs')  List<PurchaseOrderAdditionalCost> additionalCosts,  List<PurchaseOrderItem> items, @JsonKey(name: 'investor_funding')  List<PurchaseOrderFunding> investorFunding, @JsonKey(name: 'default_investor_profit_share_percent')  String? defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until')  DateTime? receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt')  bool canReverseReceipt, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrder() when $default != null:
-return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.warehouse,_that.status,_that.statusLabel,_that.currencyCode,_that.arrivalRate,_that.systemUsdRate,_that.fundingRate,_that.rateDifference,_that.orderDate,_that.expectedDate,_that.notes,_that.totalAmount,_that.totalAdditionalCost,_that.vendorAmount,_that.additionalCosts,_that.items,_that.investorFunding,_that.defaultInvestorProfitSharePercent,_that.receiptReversibleUntil,_that.canReverseReceipt,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -299,7 +326,7 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.warehouseId,_that.war
 @JsonSerializable()
 
 class _PurchaseOrder extends PurchaseOrder {
-  const _PurchaseOrder({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'order_date') required this.orderDate, @JsonKey(name: 'expected_date') this.expectedDate, this.notes, @JsonKey(name: 'total_amount') this.totalAmount, @JsonKey(name: 'total_additional_cost') this.totalAdditionalCost, @JsonKey(name: 'vendor_amount') this.vendorAmount, @JsonKey(name: 'additional_costs') final  List<PurchaseOrderAdditionalCost> additionalCosts = const <PurchaseOrderAdditionalCost>[], final  List<PurchaseOrderItem> items = const <PurchaseOrderItem>[], @JsonKey(name: 'investor_funding') final  List<PurchaseOrderFunding> investorFunding = const <PurchaseOrderFunding>[], @JsonKey(name: 'default_investor_profit_share_percent') this.defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until') this.receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt') this.canReverseReceipt = false, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _additionalCosts = additionalCosts,_items = items,_investorFunding = investorFunding,super._();
+  const _PurchaseOrder({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'currency') this.currencyCode = 'LYD', @JsonKey(name: 'arrival_rate') this.arrivalRate, @JsonKey(name: 'system_usd_rate') this.systemUsdRate, @JsonKey(name: 'funding_rate') this.fundingRate, @JsonKey(name: 'rate_difference') this.rateDifference, @JsonKey(name: 'order_date') required this.orderDate, @JsonKey(name: 'expected_date') this.expectedDate, this.notes, @JsonKey(name: 'total_amount') this.totalAmount, @JsonKey(name: 'total_additional_cost') this.totalAdditionalCost, @JsonKey(name: 'vendor_amount') this.vendorAmount, @JsonKey(name: 'additional_costs') final  List<PurchaseOrderAdditionalCost> additionalCosts = const <PurchaseOrderAdditionalCost>[], final  List<PurchaseOrderItem> items = const <PurchaseOrderItem>[], @JsonKey(name: 'investor_funding') final  List<PurchaseOrderFunding> investorFunding = const <PurchaseOrderFunding>[], @JsonKey(name: 'default_investor_profit_share_percent') this.defaultInvestorProfitSharePercent, @JsonKey(name: 'receipt_reversible_until') this.receiptReversibleUntil, @JsonKey(name: 'can_reverse_receipt') this.canReverseReceipt = false, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _additionalCosts = additionalCosts,_items = items,_investorFunding = investorFunding,super._();
   factory _PurchaseOrder.fromJson(Map<String, dynamic> json) => _$PurchaseOrderFromJson(json);
 
 @override final  int id;
@@ -315,6 +342,21 @@ class _PurchaseOrder extends PurchaseOrder {
 /// The Arabic the server chose. Rendered as-is wherever *this* order is on screen, so a
 /// status added on the server still reads correctly here.
 @override@JsonKey(name: 'status_label') final  String statusLabel;
+/// `LYD` or `USD` — every amount on the order is in it (USD-ACCOUNTS.md §٤). Picked when the
+/// order is raised and never changed. Read it through [currency].
+@override@JsonKey(name: 'currency') final  String currencyCode;
+/// Dinars per dollar a dollar order's stock was priced at when it was received
+/// (USD-ACCOUNTS.md §٥). Null until then, and always on a dinar order.
+@override@JsonKey(name: 'arrival_rate') final  String? arrivalRate;
+/// «سعر النظام» — what the receive screen opens its rate field on. Sent on a dollar order
+/// alone, and null until the owner writes one.
+@override@JsonKey(name: 'system_usd_rate') final  String? systemUsdRate;
+/// Dinars per dollar the funded lines were bought at — asked when the order was funded. The
+/// funded goods keep it at arrival (USD-ACCOUNTS.md §٥).
+@override@JsonKey(name: 'funding_rate') final  String? fundingRate;
+/// The funding rate and the arrival rate disagree. Nothing is booked for it — the owner's
+/// decision of 2026-11-10 — so this is what the order's screen says.
+@override@JsonKey(name: 'rate_difference') final  PurchaseOrderRateDifference? rateDifference;
 /// Plain `YYYY-MM-DD`, not a timestamp — the day the order was placed, not an instant.
 @override@JsonKey(name: 'order_date') final  String orderDate;
 @override@JsonKey(name: 'expected_date') final  String? expectedDate;
@@ -412,16 +454,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&(identical(other.vendorAmount, vendorAmount) || other.vendorAmount == vendorAmount)&&const DeepCollectionEquality().equals(other._additionalCosts, _additionalCosts)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._investorFunding, _investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.receiptReversibleUntil, receiptReversibleUntil) || other.receiptReversibleUntil == receiptReversibleUntil)&&(identical(other.canReverseReceipt, canReverseReceipt) || other.canReverseReceipt == canReverseReceipt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.currencyCode, currencyCode) || other.currencyCode == currencyCode)&&(identical(other.arrivalRate, arrivalRate) || other.arrivalRate == arrivalRate)&&(identical(other.systemUsdRate, systemUsdRate) || other.systemUsdRate == systemUsdRate)&&(identical(other.fundingRate, fundingRate) || other.fundingRate == fundingRate)&&(identical(other.rateDifference, rateDifference) || other.rateDifference == rateDifference)&&(identical(other.orderDate, orderDate) || other.orderDate == orderDate)&&(identical(other.expectedDate, expectedDate) || other.expectedDate == expectedDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalAmount, totalAmount) || other.totalAmount == totalAmount)&&(identical(other.totalAdditionalCost, totalAdditionalCost) || other.totalAdditionalCost == totalAdditionalCost)&&(identical(other.vendorAmount, vendorAmount) || other.vendorAmount == vendorAmount)&&const DeepCollectionEquality().equals(other._additionalCosts, _additionalCosts)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._investorFunding, _investorFunding)&&(identical(other.defaultInvestorProfitSharePercent, defaultInvestorProfitSharePercent) || other.defaultInvestorProfitSharePercent == defaultInvestorProfitSharePercent)&&(identical(other.receiptReversibleUntil, receiptReversibleUntil) || other.receiptReversibleUntil == receiptReversibleUntil)&&(identical(other.canReverseReceipt, canReverseReceipt) || other.canReverseReceipt == canReverseReceipt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,vendorAmount,const DeepCollectionEquality().hash(_additionalCosts),const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_investorFunding),defaultInvestorProfitSharePercent,receiptReversibleUntil,canReverseReceipt,createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,vendorId,vendor,warehouseId,warehouse,status,statusLabel,currencyCode,arrivalRate,systemUsdRate,fundingRate,rateDifference,orderDate,expectedDate,notes,totalAmount,totalAdditionalCost,vendorAmount,const DeepCollectionEquality().hash(_additionalCosts),const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_investorFunding),defaultInvestorProfitSharePercent,receiptReversibleUntil,canReverseReceipt,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, vendorAmount: $vendorAmount, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, receiptReversibleUntil: $receiptReversibleUntil, canReverseReceipt: $canReverseReceipt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'PurchaseOrder(id: $id, vendorId: $vendorId, vendor: $vendor, warehouseId: $warehouseId, warehouse: $warehouse, status: $status, statusLabel: $statusLabel, currencyCode: $currencyCode, arrivalRate: $arrivalRate, systemUsdRate: $systemUsdRate, fundingRate: $fundingRate, rateDifference: $rateDifference, orderDate: $orderDate, expectedDate: $expectedDate, notes: $notes, totalAmount: $totalAmount, totalAdditionalCost: $totalAdditionalCost, vendorAmount: $vendorAmount, additionalCosts: $additionalCosts, items: $items, investorFunding: $investorFunding, defaultInvestorProfitSharePercent: $defaultInvestorProfitSharePercent, receiptReversibleUntil: $receiptReversibleUntil, canReverseReceipt: $canReverseReceipt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -432,11 +474,11 @@ abstract mixin class _$PurchaseOrderCopyWith<$Res> implements $PurchaseOrderCopy
   factory _$PurchaseOrderCopyWith(_PurchaseOrder value, $Res Function(_PurchaseOrder) _then) = __$PurchaseOrderCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'vendor_amount') String? vendorAmount,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'receipt_reversible_until') DateTime? receiptReversibleUntil,@JsonKey(name: 'can_reverse_receipt') bool canReverseReceipt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'vendor_id') int vendorId, ArrivalRef? vendor,@JsonKey(name: 'warehouse_id') int? warehouseId, ArrivalRef? warehouse,@JsonKey(unknownEnumValue: PurchaseOrderStatus.unknown) PurchaseOrderStatus status,@JsonKey(name: 'status_label') String statusLabel,@JsonKey(name: 'currency') String currencyCode,@JsonKey(name: 'arrival_rate') String? arrivalRate,@JsonKey(name: 'system_usd_rate') String? systemUsdRate,@JsonKey(name: 'funding_rate') String? fundingRate,@JsonKey(name: 'rate_difference') PurchaseOrderRateDifference? rateDifference,@JsonKey(name: 'order_date') String orderDate,@JsonKey(name: 'expected_date') String? expectedDate, String? notes,@JsonKey(name: 'total_amount') String? totalAmount,@JsonKey(name: 'total_additional_cost') String? totalAdditionalCost,@JsonKey(name: 'vendor_amount') String? vendorAmount,@JsonKey(name: 'additional_costs') List<PurchaseOrderAdditionalCost> additionalCosts, List<PurchaseOrderItem> items,@JsonKey(name: 'investor_funding') List<PurchaseOrderFunding> investorFunding,@JsonKey(name: 'default_investor_profit_share_percent') String? defaultInvestorProfitSharePercent,@JsonKey(name: 'receipt_reversible_until') DateTime? receiptReversibleUntil,@JsonKey(name: 'can_reverse_receipt') bool canReverseReceipt,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
-@override $ArrivalRefCopyWith<$Res>? get vendor;@override $ArrivalRefCopyWith<$Res>? get warehouse;
+@override $ArrivalRefCopyWith<$Res>? get vendor;@override $ArrivalRefCopyWith<$Res>? get warehouse;@override $PurchaseOrderRateDifferenceCopyWith<$Res>? get rateDifference;
 
 }
 /// @nodoc
@@ -449,7 +491,7 @@ class __$PurchaseOrderCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? vendorAmount = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? receiptReversibleUntil = freezed,Object? canReverseReceipt = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? status = null,Object? statusLabel = null,Object? currencyCode = null,Object? arrivalRate = freezed,Object? systemUsdRate = freezed,Object? fundingRate = freezed,Object? rateDifference = freezed,Object? orderDate = null,Object? expectedDate = freezed,Object? notes = freezed,Object? totalAmount = freezed,Object? totalAdditionalCost = freezed,Object? vendorAmount = freezed,Object? additionalCosts = null,Object? items = null,Object? investorFunding = null,Object? defaultInvestorProfitSharePercent = freezed,Object? receiptReversibleUntil = freezed,Object? canReverseReceipt = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_PurchaseOrder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
@@ -458,7 +500,12 @@ as ArrivalRef?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehou
 as int?,warehouse: freezed == warehouse ? _self.warehouse : warehouse // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as PurchaseOrderStatus,statusLabel: null == statusLabel ? _self.statusLabel : statusLabel // ignore: cast_nullable_to_non_nullable
-as String,orderDate: null == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
+as String,currencyCode: null == currencyCode ? _self.currencyCode : currencyCode // ignore: cast_nullable_to_non_nullable
+as String,arrivalRate: freezed == arrivalRate ? _self.arrivalRate : arrivalRate // ignore: cast_nullable_to_non_nullable
+as String?,systemUsdRate: freezed == systemUsdRate ? _self.systemUsdRate : systemUsdRate // ignore: cast_nullable_to_non_nullable
+as String?,fundingRate: freezed == fundingRate ? _self.fundingRate : fundingRate // ignore: cast_nullable_to_non_nullable
+as String?,rateDifference: freezed == rateDifference ? _self.rateDifference : rateDifference // ignore: cast_nullable_to_non_nullable
+as PurchaseOrderRateDifference?,orderDate: null == orderDate ? _self.orderDate : orderDate // ignore: cast_nullable_to_non_nullable
 as String,expectedDate: freezed == expectedDate ? _self.expectedDate : expectedDate // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,totalAmount: freezed == totalAmount ? _self.totalAmount : totalAmount // ignore: cast_nullable_to_non_nullable
@@ -500,7 +547,301 @@ $ArrivalRefCopyWith<$Res>? get warehouse {
   return $ArrivalRefCopyWith<$Res>(_self.warehouse!, (value) {
     return _then(_self.copyWith(warehouse: value));
   });
+}/// Create a copy of PurchaseOrder
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PurchaseOrderRateDifferenceCopyWith<$Res>? get rateDifference {
+    if (_self.rateDifference == null) {
+    return null;
+  }
+
+  return $PurchaseOrderRateDifferenceCopyWith<$Res>(_self.rateDifference!, (value) {
+    return _then(_self.copyWith(rateDifference: value));
+  });
 }
+}
+
+
+/// @nodoc
+mixin _$PurchaseOrderRateDifference {
+
+@JsonKey(name: 'funding_rate') String get fundingRate;@JsonKey(name: 'arrival_rate') String get arrivalRate;@JsonKey(name: 'per_dollar') String get perDollar; String get direction;/// The funded lines' dollars — what the gap is counted on.
+@JsonKey(name: 'funded_dollars') String get fundedDollars;/// [perDollar] × [fundedDollars], in dinars.
+ String get dinars;
+/// Create a copy of PurchaseOrderRateDifference
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PurchaseOrderRateDifferenceCopyWith<PurchaseOrderRateDifference> get copyWith => _$PurchaseOrderRateDifferenceCopyWithImpl<PurchaseOrderRateDifference>(this as PurchaseOrderRateDifference, _$identity);
+
+  /// Serializes this PurchaseOrderRateDifference to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderRateDifference&&(identical(other.fundingRate, fundingRate) || other.fundingRate == fundingRate)&&(identical(other.arrivalRate, arrivalRate) || other.arrivalRate == arrivalRate)&&(identical(other.perDollar, perDollar) || other.perDollar == perDollar)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.fundedDollars, fundedDollars) || other.fundedDollars == fundedDollars)&&(identical(other.dinars, dinars) || other.dinars == dinars));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,fundingRate,arrivalRate,perDollar,direction,fundedDollars,dinars);
+
+@override
+String toString() {
+  return 'PurchaseOrderRateDifference(fundingRate: $fundingRate, arrivalRate: $arrivalRate, perDollar: $perDollar, direction: $direction, fundedDollars: $fundedDollars, dinars: $dinars)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PurchaseOrderRateDifferenceCopyWith<$Res>  {
+  factory $PurchaseOrderRateDifferenceCopyWith(PurchaseOrderRateDifference value, $Res Function(PurchaseOrderRateDifference) _then) = _$PurchaseOrderRateDifferenceCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'funding_rate') String fundingRate,@JsonKey(name: 'arrival_rate') String arrivalRate,@JsonKey(name: 'per_dollar') String perDollar, String direction,@JsonKey(name: 'funded_dollars') String fundedDollars, String dinars
+});
+
+
+
+
+}
+/// @nodoc
+class _$PurchaseOrderRateDifferenceCopyWithImpl<$Res>
+    implements $PurchaseOrderRateDifferenceCopyWith<$Res> {
+  _$PurchaseOrderRateDifferenceCopyWithImpl(this._self, this._then);
+
+  final PurchaseOrderRateDifference _self;
+  final $Res Function(PurchaseOrderRateDifference) _then;
+
+/// Create a copy of PurchaseOrderRateDifference
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? fundingRate = null,Object? arrivalRate = null,Object? perDollar = null,Object? direction = null,Object? fundedDollars = null,Object? dinars = null,}) {
+  return _then(_self.copyWith(
+fundingRate: null == fundingRate ? _self.fundingRate : fundingRate // ignore: cast_nullable_to_non_nullable
+as String,arrivalRate: null == arrivalRate ? _self.arrivalRate : arrivalRate // ignore: cast_nullable_to_non_nullable
+as String,perDollar: null == perDollar ? _self.perDollar : perDollar // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,fundedDollars: null == fundedDollars ? _self.fundedDollars : fundedDollars // ignore: cast_nullable_to_non_nullable
+as String,dinars: null == dinars ? _self.dinars : dinars // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PurchaseOrderRateDifference].
+extension PurchaseOrderRateDifferencePatterns on PurchaseOrderRateDifference {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PurchaseOrderRateDifference value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PurchaseOrderRateDifference value)  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PurchaseOrderRateDifference value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'funding_rate')  String fundingRate, @JsonKey(name: 'arrival_rate')  String arrivalRate, @JsonKey(name: 'per_dollar')  String perDollar,  String direction, @JsonKey(name: 'funded_dollars')  String fundedDollars,  String dinars)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference() when $default != null:
+return $default(_that.fundingRate,_that.arrivalRate,_that.perDollar,_that.direction,_that.fundedDollars,_that.dinars);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'funding_rate')  String fundingRate, @JsonKey(name: 'arrival_rate')  String arrivalRate, @JsonKey(name: 'per_dollar')  String perDollar,  String direction, @JsonKey(name: 'funded_dollars')  String fundedDollars,  String dinars)  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference():
+return $default(_that.fundingRate,_that.arrivalRate,_that.perDollar,_that.direction,_that.fundedDollars,_that.dinars);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'funding_rate')  String fundingRate, @JsonKey(name: 'arrival_rate')  String arrivalRate, @JsonKey(name: 'per_dollar')  String perDollar,  String direction, @JsonKey(name: 'funded_dollars')  String fundedDollars,  String dinars)?  $default,) {final _that = this;
+switch (_that) {
+case _PurchaseOrderRateDifference() when $default != null:
+return $default(_that.fundingRate,_that.arrivalRate,_that.perDollar,_that.direction,_that.fundedDollars,_that.dinars);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PurchaseOrderRateDifference extends PurchaseOrderRateDifference {
+  const _PurchaseOrderRateDifference({@JsonKey(name: 'funding_rate') required this.fundingRate, @JsonKey(name: 'arrival_rate') required this.arrivalRate, @JsonKey(name: 'per_dollar') required this.perDollar, required this.direction, @JsonKey(name: 'funded_dollars') required this.fundedDollars, required this.dinars}): super._();
+  factory _PurchaseOrderRateDifference.fromJson(Map<String, dynamic> json) => _$PurchaseOrderRateDifferenceFromJson(json);
+
+@override@JsonKey(name: 'funding_rate') final  String fundingRate;
+@override@JsonKey(name: 'arrival_rate') final  String arrivalRate;
+@override@JsonKey(name: 'per_dollar') final  String perDollar;
+@override final  String direction;
+/// The funded lines' dollars — what the gap is counted on.
+@override@JsonKey(name: 'funded_dollars') final  String fundedDollars;
+/// [perDollar] × [fundedDollars], in dinars.
+@override final  String dinars;
+
+/// Create a copy of PurchaseOrderRateDifference
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PurchaseOrderRateDifferenceCopyWith<_PurchaseOrderRateDifference> get copyWith => __$PurchaseOrderRateDifferenceCopyWithImpl<_PurchaseOrderRateDifference>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PurchaseOrderRateDifferenceToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderRateDifference&&(identical(other.fundingRate, fundingRate) || other.fundingRate == fundingRate)&&(identical(other.arrivalRate, arrivalRate) || other.arrivalRate == arrivalRate)&&(identical(other.perDollar, perDollar) || other.perDollar == perDollar)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.fundedDollars, fundedDollars) || other.fundedDollars == fundedDollars)&&(identical(other.dinars, dinars) || other.dinars == dinars));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,fundingRate,arrivalRate,perDollar,direction,fundedDollars,dinars);
+
+@override
+String toString() {
+  return 'PurchaseOrderRateDifference(fundingRate: $fundingRate, arrivalRate: $arrivalRate, perDollar: $perDollar, direction: $direction, fundedDollars: $fundedDollars, dinars: $dinars)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PurchaseOrderRateDifferenceCopyWith<$Res> implements $PurchaseOrderRateDifferenceCopyWith<$Res> {
+  factory _$PurchaseOrderRateDifferenceCopyWith(_PurchaseOrderRateDifference value, $Res Function(_PurchaseOrderRateDifference) _then) = __$PurchaseOrderRateDifferenceCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'funding_rate') String fundingRate,@JsonKey(name: 'arrival_rate') String arrivalRate,@JsonKey(name: 'per_dollar') String perDollar, String direction,@JsonKey(name: 'funded_dollars') String fundedDollars, String dinars
+});
+
+
+
+
+}
+/// @nodoc
+class __$PurchaseOrderRateDifferenceCopyWithImpl<$Res>
+    implements _$PurchaseOrderRateDifferenceCopyWith<$Res> {
+  __$PurchaseOrderRateDifferenceCopyWithImpl(this._self, this._then);
+
+  final _PurchaseOrderRateDifference _self;
+  final $Res Function(_PurchaseOrderRateDifference) _then;
+
+/// Create a copy of PurchaseOrderRateDifference
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? fundingRate = null,Object? arrivalRate = null,Object? perDollar = null,Object? direction = null,Object? fundedDollars = null,Object? dinars = null,}) {
+  return _then(_PurchaseOrderRateDifference(
+fundingRate: null == fundingRate ? _self.fundingRate : fundingRate // ignore: cast_nullable_to_non_nullable
+as String,arrivalRate: null == arrivalRate ? _self.arrivalRate : arrivalRate // ignore: cast_nullable_to_non_nullable
+as String,perDollar: null == perDollar ? _self.perDollar : perDollar // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,fundedDollars: null == fundedDollars ? _self.fundedDollars : fundedDollars // ignore: cast_nullable_to_non_nullable
+as String,dinars: null == dinars ? _self.dinars : dinars // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 
@@ -508,7 +849,9 @@ $ArrivalRefCopyWith<$Res>? get warehouse {
 mixin _$PurchaseOrderAdditionalCost {
 
  int get id; String get name;/// A string like every other money field here: `'10.00'` as the server stored it.
- String get amount;/// The receipt it was typed on; null on a cost planned when the order was raised.
+ String get amount;/// `LYD` or `USD` — the order's on the vendor's bill, the drawer's when paid from one
+/// (USD-ACCOUNTS.md §٧). [amount] is in it. Read it through [currency].
+@JsonKey(name: 'currency') String get currencyCode;/// The receipt it was typed on; null on a cost planned when the order was raised.
 @JsonKey(name: 'stock_arrival_id') int? get stockArrivalId;/// Who was paid. Null is the vendor's bill; otherwise the drawer that paid it, or the
 /// «التزام» it is owed to ([treasuryAccount]'s `kind` is `payable`).
 @JsonKey(name: 'treasury_account_id') int? get treasuryAccountId;@JsonKey(name: 'treasury_account') PaymentAccountRef? get treasuryAccount;/// What can still come back. The server reads it off the treasury, so a deal's share of the
@@ -527,16 +870,16 @@ $PurchaseOrderAdditionalCostCopyWith<PurchaseOrderAdditionalCost> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderAdditionalCost&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.stockArrivalId, stockArrivalId) || other.stockArrivalId == stockArrivalId)&&(identical(other.treasuryAccountId, treasuryAccountId) || other.treasuryAccountId == treasuryAccountId)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.refundableAmount, refundableAmount) || other.refundableAmount == refundableAmount)&&const DeepCollectionEquality().equals(other.refunds, refunds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderAdditionalCost&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currencyCode, currencyCode) || other.currencyCode == currencyCode)&&(identical(other.stockArrivalId, stockArrivalId) || other.stockArrivalId == stockArrivalId)&&(identical(other.treasuryAccountId, treasuryAccountId) || other.treasuryAccountId == treasuryAccountId)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.refundableAmount, refundableAmount) || other.refundableAmount == refundableAmount)&&const DeepCollectionEquality().equals(other.refunds, refunds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,amount,stockArrivalId,treasuryAccountId,treasuryAccount,refundableAmount,const DeepCollectionEquality().hash(refunds));
+int get hashCode => Object.hash(runtimeType,id,name,amount,currencyCode,stockArrivalId,treasuryAccountId,treasuryAccount,refundableAmount,const DeepCollectionEquality().hash(refunds));
 
 @override
 String toString() {
-  return 'PurchaseOrderAdditionalCost(id: $id, name: $name, amount: $amount, stockArrivalId: $stockArrivalId, treasuryAccountId: $treasuryAccountId, treasuryAccount: $treasuryAccount, refundableAmount: $refundableAmount, refunds: $refunds)';
+  return 'PurchaseOrderAdditionalCost(id: $id, name: $name, amount: $amount, currencyCode: $currencyCode, stockArrivalId: $stockArrivalId, treasuryAccountId: $treasuryAccountId, treasuryAccount: $treasuryAccount, refundableAmount: $refundableAmount, refunds: $refunds)';
 }
 
 
@@ -547,7 +890,7 @@ abstract mixin class $PurchaseOrderAdditionalCostCopyWith<$Res>  {
   factory $PurchaseOrderAdditionalCostCopyWith(PurchaseOrderAdditionalCost value, $Res Function(PurchaseOrderAdditionalCost) _then) = _$PurchaseOrderAdditionalCostCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String amount,@JsonKey(name: 'stock_arrival_id') int? stockArrivalId,@JsonKey(name: 'treasury_account_id') int? treasuryAccountId,@JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,@JsonKey(name: 'refundable_amount') String? refundableAmount, List<PurchaseOrderCostRefund> refunds
+ int id, String name, String amount,@JsonKey(name: 'currency') String currencyCode,@JsonKey(name: 'stock_arrival_id') int? stockArrivalId,@JsonKey(name: 'treasury_account_id') int? treasuryAccountId,@JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,@JsonKey(name: 'refundable_amount') String? refundableAmount, List<PurchaseOrderCostRefund> refunds
 });
 
 
@@ -564,11 +907,12 @@ class _$PurchaseOrderAdditionalCostCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrderAdditionalCost
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? amount = null,Object? stockArrivalId = freezed,Object? treasuryAccountId = freezed,Object? treasuryAccount = freezed,Object? refundableAmount = freezed,Object? refunds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? amount = null,Object? currencyCode = null,Object? stockArrivalId = freezed,Object? treasuryAccountId = freezed,Object? treasuryAccount = freezed,Object? refundableAmount = freezed,Object? refunds = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
+as String,currencyCode: null == currencyCode ? _self.currencyCode : currencyCode // ignore: cast_nullable_to_non_nullable
 as String,stockArrivalId: freezed == stockArrivalId ? _self.stockArrivalId : stockArrivalId // ignore: cast_nullable_to_non_nullable
 as int?,treasuryAccountId: freezed == treasuryAccountId ? _self.treasuryAccountId : treasuryAccountId // ignore: cast_nullable_to_non_nullable
 as int?,treasuryAccount: freezed == treasuryAccount ? _self.treasuryAccount : treasuryAccount // ignore: cast_nullable_to_non_nullable
@@ -671,10 +1015,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String amount, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String amount, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PurchaseOrderAdditionalCost() when $default != null:
-return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
+return $default(_that.id,_that.name,_that.amount,_that.currencyCode,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
   return orElse();
 
 }
@@ -692,10 +1036,10 @@ return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.trea
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String amount, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String amount, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrderAdditionalCost():
-return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
+return $default(_that.id,_that.name,_that.amount,_that.currencyCode,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -712,10 +1056,10 @@ return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.trea
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String amount, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String amount, @JsonKey(name: 'currency')  String currencyCode, @JsonKey(name: 'stock_arrival_id')  int? stockArrivalId, @JsonKey(name: 'treasury_account_id')  int? treasuryAccountId, @JsonKey(name: 'treasury_account')  PaymentAccountRef? treasuryAccount, @JsonKey(name: 'refundable_amount')  String? refundableAmount,  List<PurchaseOrderCostRefund> refunds)?  $default,) {final _that = this;
 switch (_that) {
 case _PurchaseOrderAdditionalCost() when $default != null:
-return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
+return $default(_that.id,_that.name,_that.amount,_that.currencyCode,_that.stockArrivalId,_that.treasuryAccountId,_that.treasuryAccount,_that.refundableAmount,_that.refunds);case _:
   return null;
 
 }
@@ -727,13 +1071,16 @@ return $default(_that.id,_that.name,_that.amount,_that.stockArrivalId,_that.trea
 @JsonSerializable()
 
 class _PurchaseOrderAdditionalCost extends PurchaseOrderAdditionalCost {
-  const _PurchaseOrderAdditionalCost({required this.id, required this.name, required this.amount, @JsonKey(name: 'stock_arrival_id') this.stockArrivalId, @JsonKey(name: 'treasury_account_id') this.treasuryAccountId, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'refundable_amount') this.refundableAmount, final  List<PurchaseOrderCostRefund> refunds = const <PurchaseOrderCostRefund>[]}): _refunds = refunds,super._();
+  const _PurchaseOrderAdditionalCost({required this.id, required this.name, required this.amount, @JsonKey(name: 'currency') this.currencyCode = 'LYD', @JsonKey(name: 'stock_arrival_id') this.stockArrivalId, @JsonKey(name: 'treasury_account_id') this.treasuryAccountId, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'refundable_amount') this.refundableAmount, final  List<PurchaseOrderCostRefund> refunds = const <PurchaseOrderCostRefund>[]}): _refunds = refunds,super._();
   factory _PurchaseOrderAdditionalCost.fromJson(Map<String, dynamic> json) => _$PurchaseOrderAdditionalCostFromJson(json);
 
 @override final  int id;
 @override final  String name;
 /// A string like every other money field here: `'10.00'` as the server stored it.
 @override final  String amount;
+/// `LYD` or `USD` — the order's on the vendor's bill, the drawer's when paid from one
+/// (USD-ACCOUNTS.md §٧). [amount] is in it. Read it through [currency].
+@override@JsonKey(name: 'currency') final  String currencyCode;
 /// The receipt it was typed on; null on a cost planned when the order was raised.
 @override@JsonKey(name: 'stock_arrival_id') final  int? stockArrivalId;
 /// Who was paid. Null is the vendor's bill; otherwise the drawer that paid it, or the
@@ -766,16 +1113,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderAdditionalCost&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.stockArrivalId, stockArrivalId) || other.stockArrivalId == stockArrivalId)&&(identical(other.treasuryAccountId, treasuryAccountId) || other.treasuryAccountId == treasuryAccountId)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.refundableAmount, refundableAmount) || other.refundableAmount == refundableAmount)&&const DeepCollectionEquality().equals(other._refunds, _refunds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PurchaseOrderAdditionalCost&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currencyCode, currencyCode) || other.currencyCode == currencyCode)&&(identical(other.stockArrivalId, stockArrivalId) || other.stockArrivalId == stockArrivalId)&&(identical(other.treasuryAccountId, treasuryAccountId) || other.treasuryAccountId == treasuryAccountId)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.refundableAmount, refundableAmount) || other.refundableAmount == refundableAmount)&&const DeepCollectionEquality().equals(other._refunds, _refunds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,amount,stockArrivalId,treasuryAccountId,treasuryAccount,refundableAmount,const DeepCollectionEquality().hash(_refunds));
+int get hashCode => Object.hash(runtimeType,id,name,amount,currencyCode,stockArrivalId,treasuryAccountId,treasuryAccount,refundableAmount,const DeepCollectionEquality().hash(_refunds));
 
 @override
 String toString() {
-  return 'PurchaseOrderAdditionalCost(id: $id, name: $name, amount: $amount, stockArrivalId: $stockArrivalId, treasuryAccountId: $treasuryAccountId, treasuryAccount: $treasuryAccount, refundableAmount: $refundableAmount, refunds: $refunds)';
+  return 'PurchaseOrderAdditionalCost(id: $id, name: $name, amount: $amount, currencyCode: $currencyCode, stockArrivalId: $stockArrivalId, treasuryAccountId: $treasuryAccountId, treasuryAccount: $treasuryAccount, refundableAmount: $refundableAmount, refunds: $refunds)';
 }
 
 
@@ -786,7 +1133,7 @@ abstract mixin class _$PurchaseOrderAdditionalCostCopyWith<$Res> implements $Pur
   factory _$PurchaseOrderAdditionalCostCopyWith(_PurchaseOrderAdditionalCost value, $Res Function(_PurchaseOrderAdditionalCost) _then) = __$PurchaseOrderAdditionalCostCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String amount,@JsonKey(name: 'stock_arrival_id') int? stockArrivalId,@JsonKey(name: 'treasury_account_id') int? treasuryAccountId,@JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,@JsonKey(name: 'refundable_amount') String? refundableAmount, List<PurchaseOrderCostRefund> refunds
+ int id, String name, String amount,@JsonKey(name: 'currency') String currencyCode,@JsonKey(name: 'stock_arrival_id') int? stockArrivalId,@JsonKey(name: 'treasury_account_id') int? treasuryAccountId,@JsonKey(name: 'treasury_account') PaymentAccountRef? treasuryAccount,@JsonKey(name: 'refundable_amount') String? refundableAmount, List<PurchaseOrderCostRefund> refunds
 });
 
 
@@ -803,11 +1150,12 @@ class __$PurchaseOrderAdditionalCostCopyWithImpl<$Res>
 
 /// Create a copy of PurchaseOrderAdditionalCost
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? amount = null,Object? stockArrivalId = freezed,Object? treasuryAccountId = freezed,Object? treasuryAccount = freezed,Object? refundableAmount = freezed,Object? refunds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? amount = null,Object? currencyCode = null,Object? stockArrivalId = freezed,Object? treasuryAccountId = freezed,Object? treasuryAccount = freezed,Object? refundableAmount = freezed,Object? refunds = null,}) {
   return _then(_PurchaseOrderAdditionalCost(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
+as String,currencyCode: null == currencyCode ? _self.currencyCode : currencyCode // ignore: cast_nullable_to_non_nullable
 as String,stockArrivalId: freezed == stockArrivalId ? _self.stockArrivalId : stockArrivalId // ignore: cast_nullable_to_non_nullable
 as int?,treasuryAccountId: freezed == treasuryAccountId ? _self.treasuryAccountId : treasuryAccountId // ignore: cast_nullable_to_non_nullable
 as int?,treasuryAccount: freezed == treasuryAccount ? _self.treasuryAccount : treasuryAccount // ignore: cast_nullable_to_non_nullable

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
 use App\Domain\Order\Enums\PaymentMethod;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,6 +38,9 @@ class StoreVendorPaymentRequest extends FormRequest
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
             ],
             'purchase_order_id' => ['nullable', 'integer', Rule::exists('purchase_orders', 'id')->whereNull('deleted_at')],
+            // The debt's currency (USD-ACCOUNTS.md §٦). Absent: the order's, or dinars on no
+            // order. A dollar row's account is a dollar one.
+            'currency' => ['nullable', Rule::enum(Currency::class)],
             'reference' => ['nullable', 'string', 'max:100'],
             'paid_at' => ['nullable', 'date', 'before_or_equal:now'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -61,6 +65,7 @@ class StoreVendorPaymentRequest extends FormRequest
             'method.required' => 'طريقة الدفع مطلوبة',
             'method.enum' => 'طريقة الدفع غير معروفة',
             'purchase_order_id.exists' => 'أمر الشراء غير موجود',
+            'currency.enum' => 'العملة يجب أن تكون دينار أو دولار',
             'paid_at.before_or_equal' => 'تاريخ الدفع لا يكون في المستقبل',
             'client_token.uuid' => 'رمز الإرسال غير صالح',
         ];
@@ -74,6 +79,7 @@ class StoreVendorPaymentRequest extends FormRequest
             'method' => 'طريقة الدفع',
             'treasury_account_id' => 'الحساب',
             'purchase_order_id' => 'أمر الشراء',
+            'currency' => 'العملة',
             'reference' => 'رقم المرجع',
             'paid_at' => 'تاريخ الدفع',
             'notes' => 'الملاحظات',

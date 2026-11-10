@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Treasury\DTOs;
 
 use App\Domain\Treasury\Enums\OperationType;
+use App\Domain\Treasury\Support\ExchangeRate;
 use App\Domain\Treasury\Support\Money;
 use Illuminate\Support\Carbon;
 
@@ -12,7 +13,8 @@ use Illuminate\Support\Carbon;
  * What the treasury screen sends for a hand operation.
  *
  * `amount` is absent for «جرد الحساب»: a count names the balance found, and the difference is
- * worked out under the lock — `countedBalance` carries it.
+ * worked out under the lock — `countedBalance` carries it. And it may be absent for «صرف عملة»,
+ * when the other two of its three figures were sent instead.
  */
 final readonly class OperationData
 {
@@ -30,6 +32,10 @@ final readonly class OperationData
         public ?string $clientToken = null,
         // «تحويل Ezone إلى المصرف» وحده يُخرج المالَ من «Ezone» — لا يأتي من طلبٍ أبداً.
         public bool $ezonePayout = false,
+        // «صرف عملة» alone: what arrived, and dinars per dollar. With `amount`, any two of the
+        // three are enough — the Action works out the third once it knows which side is dollars.
+        public ?string $counterAmount = null,
+        public ?string $rate = null,
     ) {}
 
     /**
@@ -55,6 +61,8 @@ final readonly class OperationData
             clientToken: isset($validated['client_token']) && $validated['client_token'] !== ''
                 ? (string) $validated['client_token']
                 : null,
+            counterAmount: isset($validated['counter_amount']) ? Money::normalize($validated['counter_amount']) : null,
+            rate: isset($validated['rate']) ? ExchangeRate::normalize($validated['rate']) : null,
         );
     }
 

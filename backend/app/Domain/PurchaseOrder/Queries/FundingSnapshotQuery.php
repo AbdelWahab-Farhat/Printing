@@ -6,6 +6,8 @@ namespace App\Domain\PurchaseOrder\Queries;
 
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
+use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\PurchaseOrder\Support\PlannedDinarShares;
 
 /**
  * What an order looks like to whoever is about to finance it: its shelves, its cost, and whether
@@ -31,9 +33,19 @@ final class FundingSnapshotQuery
      *     stock_item_ids: list<int>,
      *     line_costs: array<int, string>,
      *     total_cost: string,
+     *     is_dollar: bool,
+     *     funding_rate: ?string,
+     *     needs_rate: bool,
      * }|null
+     *
+     * **A dollar order's costs come back in dinars**, at the rate it was funded at before, or else
+     * at `$rate` — what the funding screen asks, «سعر النظام» unless changed (USD-ACCOUNTS.md §٥).
+     * Investors' money is dinars, so every figure it is held against is too: each line's dollars
+     * times the rate, and its share of the dinar costs planned on the order as it is
+     * ({@see PlannedDinarShares}). With neither rate, `needs_rate` says so and the costs are
+     * dollars — the funding actions refuse before reading them.
      */
-    public function __invoke(int $purchaseOrderId, bool $lock = false): ?array
+    public function __invoke(int $purchaseOrderId, bool $lock = false, ?string $rate = null): ?array
     {
         $query = PurchaseOrder::query()->whereKey($purchaseOrderId);
 
@@ -50,11 +62,16 @@ final class FundingSnapshotQuery
 
         $lines = $order->items()->get();
 
+        $fundingRate = ! $order->isDollar() ? null : ($order->funding_rate !== null ? (string) $order->funding_rate : $rate);
+        $planned = $fundingRate === null ? [] : PlannedDinarShares::of($order, $lines->keyBy('id'));
+
         $total = '0.00';
         $lineCosts = [];
 
         foreach ($lines as $line) {
-            $cost = (string) ($line->final_total_cost ?? '0.00');
+            $cost = $fundingRate === null
+                ? (string) ($line->final_total_cost ?? '0.00')
+                : Money::round(PlannedDinarShares::fundedLineCost($line, $fundingRate, $planned[$line->getKey()] ?? '0'));
 
             $total = bcadd($total, $cost, 2);
             // Keyed by shelf, because funding is per line: a deal taking one line of three is
@@ -79,6 +96,10 @@ final class FundingSnapshotQuery
             'stock_item_ids' => $shelves,
             'line_costs' => $lineCosts,
             'total_cost' => $total,
+            'is_dollar' => $order->isDollar(),
+            // The rate the costs above were worked out at — the order's own, or the one asked.
+            'funding_rate' => $fundingRate,
+            'needs_rate' => $order->isDollar() && $fundingRate === null,
         ];
     }
 }

@@ -17,6 +17,7 @@ use App\Domain\Investor\Exceptions\PurchaseOrderCannotBeFunded;
 use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Support\Money;
+use App\Domain\PurchaseOrder\Actions\FixFundingRate;
 use App\Domain\PurchaseOrder\Queries\FundingSnapshotQuery;
 use Illuminate\Support\Facades\DB;
 
@@ -85,15 +86,19 @@ final class FundPurchaseOrder
         private readonly OpenInvestorDeal $openDeal,
         private readonly ClaimDealSupply $claimSupply,
         private readonly RecordWalletEntry $recordEntry,
+        private readonly FixFundingRate $fixRate,
     ) {}
 
     /**
+     * **A dollar order is funded in dinars at `$data->rate`** — or at the rate the order was
+     * funded at before — and its lines keep that rate when they arrive (USD-ACCOUNTS.md §٥).
+     *
      * @throws PurchaseOrderCannotBeFunded
      */
     public function __invoke(int $purchaseOrderId, FundPurchaseOrderData $data, ?int $actorId): InvestorDeal
     {
         return DB::transaction(function () use ($purchaseOrderId, $data, $actorId): InvestorDeal {
-            $order = ($this->snapshot)($purchaseOrderId, lock: true);
+            $order = ($this->snapshot)($purchaseOrderId, lock: true, rate: $data->rate);
 
             $this->guardOrder($order);
             $shelves = $this->shelvesToFund($order, $purchaseOrderId, $data->stockItemIds);
@@ -143,12 +148,19 @@ final class FundPurchaseOrder
                 ($this->claimSupply)($deal, $purchaseOrderId, $stockItemId, $actorId);
             }
 
+            if ($order['funding_rate'] !== null) {
+                ($this->fixRate)($purchaseOrderId, $order['funding_rate'], array_intersect_key(
+                    $order['line_costs'],
+                    array_flip($shelves),
+                ));
+            }
+
             return $deal->load(['items.stockItem', 'shares.investor']);
         });
     }
 
     /**
-     * @param  array{id: int, status: string, is_fundable: bool, stock_item_ids: list<int>, total_cost: string}|null  $order
+     * @param  array{id: int, status: string, is_fundable: bool, stock_item_ids: list<int>, total_cost: string, is_dollar: bool, funding_rate: ?string, needs_rate: bool, line_costs: array<int, string>}|null  $order
      *
      * @throws PurchaseOrderCannotBeFunded
      */
@@ -165,6 +177,10 @@ final class FundPurchaseOrder
         if (! $order['is_fundable']) {
             throw PurchaseOrderCannotBeFunded::alreadyArriving();
         }
+
+        if ($order['needs_rate']) {
+            throw PurchaseOrderCannotBeFunded::needsRate();
+        }
     }
 
     /**
@@ -175,7 +191,7 @@ final class FundPurchaseOrder
      * still be unclaimed: a line already carrying a deal would otherwise be silently ignored at
      * receipt, because `dealForSupply` answers with the first row it finds.
      *
-     * @param  array{id: int, status: string, is_fundable: bool, stock_item_ids: list<int>, total_cost: string}  $order
+     * @param  array{id: int, status: string, is_fundable: bool, stock_item_ids: list<int>, total_cost: string, is_dollar: bool, funding_rate: ?string, needs_rate: bool, line_costs: array<int, string>}  $order
      * @param  list<int>|null  $requested
      * @return list<int>
      *

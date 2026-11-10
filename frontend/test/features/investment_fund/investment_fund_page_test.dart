@@ -83,6 +83,7 @@ class _FakeRepository implements InvestmentFundRepository {
     required int purchaseOrderId,
     required List<int> stockItemIds,
     Map<int, String> printingSalePrices = const {},
+    String? rate,
   }) async => const Left(Failure.server(message: 'لم يُستدعَ'));
 
   @override

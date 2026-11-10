@@ -77,6 +77,8 @@ class TreasurySettingsController extends Controller
             'pick_settlement_accounts' => (bool) $settings->pick_settlement_accounts,
             // «عمولة الدفع الإلكتروني على» — `customer` (the default) or `shop`. CUSTOMER-WALLET §٥.
             'online_fee_payer' => (string) ($settings->online_fee_payer ?? 'customer'),
+            // «سعر النظام» — dinars per dollar for the totals, null until written (USD-ACCOUNTS §٣).
+            'usd_rate' => $settings->usd_rate === null ? null : (string) $settings->usd_rate,
             // «كاش كل مكتب استلام» — each branch customers collect from, and the cash box its
             // cash lands in (null: the usual rules). Linked on the account (§١٩).
             'pickup_offices' => $delivery->pickupOffices()->map(fn (City $city) => [

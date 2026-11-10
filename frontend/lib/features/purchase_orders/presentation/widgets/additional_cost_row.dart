@@ -8,6 +8,7 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +26,7 @@ class AdditionalCostDraft {
     this.id,
     this.treasuryAccountId,
     this.paidByLabel,
+    this.accountCurrency,
   }) : name = TextEditingController(text: name),
        amount = TextEditingController(text: amount);
 
@@ -35,7 +37,12 @@ class AdditionalCostDraft {
     amount: trimDecimals(cost.amount),
     treasuryAccountId: cost.treasuryAccountId,
     paidByLabel: cost.paidByLabel,
+    // Paid from a drawer, the cost is in the drawer's currency (USD-ACCOUNTS §٧).
+    accountCurrency: cost.treasuryAccountId == null ? null : cost.currency,
   );
+
+  /// The currency of the drawer named — what the amount is typed in once one is. Null with none.
+  Currency? accountCurrency;
 
   /// يُحمل معها لتُصحَّح التكلفة القائمة بدل أن تُحذف وتُنشأ من جديد.
   final int? id;
@@ -82,12 +89,23 @@ class AdditionalCostRow extends StatelessWidget {
     required this.onRemove,
     this.onChanged,
     this.requirePositive = false,
+    this.currency = Currency.lyd,
     super.key,
   });
 
   final AdditionalCostDraft cost;
   final VoidCallback onRemove;
   final ValueChanged<String>? onChanged;
+
+  /// The order's. **A cost is in the order's currency on the vendor's bill, and in the drawer's
+  /// when paid from one** (USD-ACCOUNTS.md §٧) — so on a dollar order the amount is dollars on
+  /// the bill or out of a dollar drawer, and dinars out of a dinar one. A dollar drawer is offered
+  /// on a dollar order alone.
+  final Currency currency;
+
+  /// What the amount is typed in, as things stand on the row.
+  Currency get _typedIn =>
+      cost.treasuryAccountId == null ? currency : (cost.accountCurrency ?? Currency.lyd);
 
   /// تكلفةٌ عند الوصول شيءٌ دُفع — فالصفر يُرفض. والمخطّطة قد تكون صفراً: رسمٌ أُعفي منه يستحق
   /// أن يبقى على الأمر.
@@ -108,85 +126,97 @@ class AdditionalCostRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: AppTextField(
-                  controller: cost.name,
-                  label: 'البيان',
-                  hint: 'توصيل، تفريغ، جمارك…',
-                  // حين يكون في الصفّ شيءٌ فقط: الصفّ المتروك يُسقط قبل الإرسال، فرفضُ الحفظ
-                  // بسببه جدارٌ لا شيء خلفه.
-                  validator: (value) =>
-                      cost.isBlank || (value ?? '').trim().isNotEmpty
-                      ? null
-                      : 'أدخل بيان التكلفة',
-                  onChanged: onChanged,
+      // The row holds no state; the drawer is written into the draft, and the whole row is drawn
+      // again — the amount's currency follows the drawer.
+      child: StatefulBuilder(
+        builder: (context, setState) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: cost.name,
+                    label: 'البيان',
+                    hint: 'توصيل، تفريغ، جمارك…',
+                    // حين يكون في الصفّ شيءٌ فقط: الصفّ المتروك يُسقط قبل الإرسال، فرفضُ الحفظ
+                    // بسببه جدارٌ لا شيء خلفه.
+                    validator: (value) =>
+                        cost.isBlank || (value ?? '').trim().isNotEmpty
+                        ? null
+                        : 'أدخل بيان التكلفة',
+                    onChanged: onChanged,
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: onRemove,
-                icon: Icon(AppIcons.delete, size: 20.sp),
-                color: scheme.error,
-                tooltip: 'إزالة التكلفة',
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          AppTextField(
-            controller: cost.amount,
-            label: 'القيمة (د.ل)',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
-            ],
-            validator: (value) {
-              if (cost.isBlank) return null;
-
-              final parsed = double.tryParse(
-                Validators.toWesternDigits(
-                  value ?? '',
-                ).replaceAll(',', '.').trim(),
-              );
-
-              if (parsed == null) return 'أدخل القيمة';
-              if (parsed < 0) return 'القيمة لا يمكن أن تكون سالبة';
-
-              return requirePositive && parsed == 0
-                  ? 'القيمة يجب أن تكون أكبر من صفر'
-                  : null;
-            },
-            onChanged: onChanged,
-          ),
-          if (_mayNameAnAccount) ...[
+                IconButton(
+                  onPressed: onRemove,
+                  icon: Icon(AppIcons.delete, size: 20.sp),
+                  color: scheme.error,
+                  tooltip: 'إزالة التكلفة',
+                ),
+              ],
+            ),
             SizedBox(height: 10.h),
-            // الصفّ بلا حالة، والاختيار يُكتب في المسودّة — فيُعاد رسم المنتقي وحده.
-            StatefulBuilder(
-              builder: (context, setState) => TreasuryAccountPicker(
+            AppTextField(
+              controller: cost.amount,
+              label: 'القيمة (${_typedIn.symbol})',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+              ],
+              validator: (value) {
+                if (cost.isBlank) return null;
+
+                final parsed = double.tryParse(
+                  Validators.toWesternDigits(
+                    value ?? '',
+                  ).replaceAll(',', '.').trim(),
+                );
+
+                if (parsed == null) return 'أدخل القيمة';
+                if (parsed < 0) return 'القيمة لا يمكن أن تكون سالبة';
+
+                return requirePositive && parsed == 0
+                    ? 'القيمة يجب أن تكون أكبر من صفر'
+                    : null;
+              },
+              onChanged: onChanged,
+            ),
+            if (_mayNameAnAccount) ...[
+              SizedBox(height: 10.h),
+              TreasuryAccountPicker(
                 method: null,
                 incoming: false,
                 payables: true,
                 label: 'الحساب',
-                unsetLabel: 'على فاتورة المورد',
+                unsetLabel: currency == Currency.usd
+                    ? 'على فاتورة المورد، بالدولار'
+                    : 'على فاتورة المورد',
                 value: cost.treasuryAccountId,
+                dollars: currency == Currency.usd,
                 onChanged: (id) => setState(() => cost.treasuryAccountId = id),
+                onPicked: (option) => setState(() => cost.accountCurrency = option?.currency),
               ),
-            ),
-          ]
-          // تكلفةٌ يقول الخادم إنها دُفعت من حساب تبقى تقول ذلك، وحسابها يعود كما هو عند الحفظ.
-          else if (cost.treasuryAccountId != null) ...[
-            SizedBox(height: 10.h),
-            Text(
-              cost.paidByLabel ?? 'دُفعت من حساب',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+            ]
+            // تكلفةٌ يقول الخادم إنها دُفعت من حساب تبقى تقول ذلك، وحسابها يعود كما هو عند الحفظ.
+            else if (cost.treasuryAccountId != null) ...[
+              SizedBox(height: 10.h),
+              Text(
+                cost.paidByLabel ?? 'دُفعت من حساب',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ] else if (currency == Currency.usd) ...[
+              SizedBox(height: 8.h),
+              Text(
+                'على فاتورة المورد، بالدولار',
+                key: const ValueKey('dollar-cost-on-bill'),
+                style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

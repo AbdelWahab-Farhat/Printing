@@ -44,7 +44,7 @@ class TreasuryExpensesTab extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-              child: _Total(label: _totalLabel(cubit), amount: cubit.total),
+              child: _Total(label: _totalLabel(cubit), amount: cubit.total, dollars: cubit.usdTotal),
             ),
             const _Filters(),
             Expanded(child: _List(onMoneyMoved: onMoneyMoved)),
@@ -68,10 +68,17 @@ class TreasuryExpensesTab extends StatelessWidget {
 /// المجموع **سطرٌ صغير** لا بطاقةٌ كبيرة: فوقه في اللوحة مجموعُ الحسابات بالحجم الكبير، وتحته
 /// القائمة التي جاء التبويبُ من أجلها — فلا يأخذ منها أكثر من سطر.
 class _Total extends StatelessWidget {
-  const _Total({required this.label, required this.amount});
+  const _Total({required this.label, required this.amount, required this.dollars});
 
   final String label;
+
+  /// In dinars — a dollar expense at its rate.
   final String amount;
+
+  /// The dollar expenses in dollars, said under [amount] when there are any (USD-ACCOUNTS §٨).
+  final String dollars;
+
+  bool get _hasDollars => !RegExp(r'^-?0*(\.0*)?$').hasMatch(dollars);
 
   @override
   Widget build(BuildContext context) {
@@ -85,19 +92,30 @@ class _Total extends StatelessWidget {
         color: scheme.primaryContainer.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12.r),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                treasuryMoney(amount),
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          if (_hasDollars)
+            Text(
+              'منها بالدولار ${treasuryMoney(dollars, currency: Currency.usd)}',
+              key: const ValueKey('expenses-usd-total'),
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
-          ),
-          Text(
-            treasuryMoney(amount),
-            textDirection: TextDirection.ltr,
-            style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
         ],
       ),
     );
@@ -225,7 +243,11 @@ class _List extends StatelessWidget {
       context,
       title: expense.categoryName ?? expense.kindLabel,
       subtitle: [
-        treasuryMoney(expense.signedAmount, signed: true),
+        treasuryMoney(
+          expense.signedAmount,
+          signed: true,
+          currency: expense.accountCurrency ?? Currency.lyd,
+        ),
         ?expense.accountName,
       ].join(' · '),
       options: [
