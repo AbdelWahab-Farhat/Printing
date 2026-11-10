@@ -430,6 +430,8 @@ class _Actions extends StatelessWidget {
                     notes,
                     clientToken,
                     rate,
+                    occurredAt,
+                    confirmBeforeCount,
                   }) async {
                     final failure = await cubit.record(
                       kind: kind,
@@ -442,6 +444,8 @@ class _Actions extends StatelessWidget {
                       notes: notes,
                       clientToken: clientToken,
                       rate: rate,
+                      occurredAt: occurredAt,
+                      confirmBeforeCount: confirmBeforeCount ?? false,
                     );
 
                     // The new expense belongs in «المصاريف», and changes its total.

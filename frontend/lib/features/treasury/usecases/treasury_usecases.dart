@@ -131,6 +131,8 @@ class RecordTreasuryOperation {
     String? clientToken,
     String? counterAmount,
     String? rate,
+    String? occurredAt,
+    bool confirmBeforeCount = false,
   }) => _repository.recordOperation(
     kind: kind,
     amount: amount,
@@ -143,6 +145,8 @@ class RecordTreasuryOperation {
     clientToken: clientToken,
     counterAmount: counterAmount,
     rate: rate,
+    occurredAt: occurredAt,
+    confirmBeforeCount: confirmBeforeCount,
   );
 }
 

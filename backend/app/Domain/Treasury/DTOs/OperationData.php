@@ -36,6 +36,9 @@ final readonly class OperationData
         // three are enough — the Action works out the third once it knows which side is dollars.
         public ?string $counterAmount = null,
         public ?string $rate = null,
+        // An expense dated before the account's latest count: the person saw the warning and
+        // records it anyway.
+        public bool $confirmBeforeCount = false,
     ) {}
 
     /**
@@ -63,6 +66,7 @@ final readonly class OperationData
                 : null,
             counterAmount: isset($validated['counter_amount']) ? Money::normalize($validated['counter_amount']) : null,
             rate: isset($validated['rate']) ? ExchangeRate::normalize($validated['rate']) : null,
+            confirmBeforeCount: (bool) ($validated['confirm_before_count'] ?? false),
         );
     }
 

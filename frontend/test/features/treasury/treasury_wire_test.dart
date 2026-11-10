@@ -91,6 +91,34 @@ void main() {
     expect(adapter.body, containsPair('client_token', 'b9f1c1a2-0b8e-4c2a-9d33-2f0f6e9a7c11'));
   });
 
+  test('a back-dated expense sends its day, and the confirmation only when given', () async {
+    // Arrange
+    final confirmed = _CapturingAdapter(operation);
+    final today = _CapturingAdapter(operation);
+
+    // Act
+    await repositoryOver(confirmed).recordOperation(
+      kind: OperationKind.expense,
+      amount: '300',
+      fromAccountId: 1,
+      categoryId: 3,
+      occurredAt: '2026-11-03',
+      confirmBeforeCount: true,
+    );
+    await repositoryOver(today).recordOperation(
+      kind: OperationKind.expense,
+      amount: '300',
+      fromAccountId: 1,
+      categoryId: 3,
+    );
+
+    // Assert
+    expect(confirmed.body, containsPair('occurred_at', '2026-11-03'));
+    expect(confirmed.body, containsPair('confirm_before_count', true));
+    expect(today.body, isNot(contains('occurred_at')));
+    expect(today.body, isNot(contains('confirm_before_count')));
+  });
+
   test('دفعة المورد تحمل مفتاح الطلب، وتعود بالصف الذي كتبه الخادم', () async {
     // Arrange
     final adapter = _CapturingAdapter(payment);

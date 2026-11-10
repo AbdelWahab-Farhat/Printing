@@ -149,6 +149,8 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     String? clientToken,
     String? counterAmount,
     String? rate,
+    String? occurredAt,
+    bool confirmBeforeCount = false,
   }) {
     return safeRequest<TreasuryOperation>(
       () => _dio.post(
@@ -166,6 +168,8 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
           'counted_balance': ?countedBalance,
           'notes': ?notes,
           'client_token': ?clientToken,
+          'occurred_at': ?occurredAt,
+          if (confirmBeforeCount) 'confirm_before_count': true,
         },
       ),
       parse: (data) => TreasuryOperation.fromJson(data as Map<String, dynamic>),

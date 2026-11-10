@@ -96,6 +96,10 @@ class TreasuryCubit extends Cubit<TreasuryState> {
     String? clientToken,
     // An expense out of a dollar account: dinars per dollar (USD-ACCOUNTS §٨).
     String? rate,
+    // The day it happened, `YYYY-MM-DD`; null means now.
+    String? occurredAt,
+    // Records an expense dated before the account's latest count, after the warning.
+    bool confirmBeforeCount = false,
   }) async {
     final result = await _recordOperation(
       kind: kind,
@@ -108,6 +112,8 @@ class TreasuryCubit extends Cubit<TreasuryState> {
       notes: notes,
       clientToken: clientToken,
       rate: rate,
+      occurredAt: occurredAt,
+      confirmBeforeCount: confirmBeforeCount,
     );
 
     return result.fold((failure) => failure, (_) {

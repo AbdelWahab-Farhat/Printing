@@ -55,6 +55,19 @@ final class CheckpointFloor
         }
     }
 
+    /**
+     * The account's latest count when [$at] falls before it, or null. For a caller that warns
+     * instead of refusing.
+     */
+    public function before(TreasuryAccount $account, DateTimeInterface $at): ?TreasuryOperation
+    {
+        $checkpoint = $this->latestOf((int) $account->getKey());
+
+        return $checkpoint !== null && Carbon::instance($at)->lt($checkpoint->occurred_at)
+            ? $checkpoint
+            : null;
+    }
+
     /** آخرُ افتتاحٍ أو جردٍ قائمٍ للحساب — لا عكسٌ، ولا ما عُكس. */
     public function latestOf(int $accountId): ?TreasuryOperation
     {

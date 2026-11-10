@@ -86,6 +86,28 @@ final class OperationRefused extends DomainException
         return new self("لا تُسجَّل حركة يدوية على «{$account}» قبل {$floor}", $field);
     }
 
+    /**
+     * Not a refusal but a question: an expense dated before the account's latest count goes in
+     * once the person confirms. Its own key, `confirm_before_count`, is what tells the app to
+     * ask and send again with that key set.
+     *
+     * The count is left as it was. If the money left the drawer before the count, the count's
+     * difference already holds it, so the balance after the count drops below what was counted
+     * until the next count — and the warning says so.
+     */
+    public static function expenseBeforeCount(
+        string $account,
+        OperationType $checkpoint,
+        string $at,
+        string $amount,
+    ): self {
+        $message = $checkpoint === OperationType::Opening
+            ? "لـ«{$account}» رصيدٌ افتتاحي في {$at}، وهذا المصروف بتاريخٍ قبله. سيصير رصيد الحساب أقلَّ من الافتتاحي بـ{$amount} حتى يُجرد من جديد."
+            : "جُرد «{$account}» في {$at}، وهذا المصروف بتاريخٍ قبله. إن كان المبلغ قد خرج من الدرج قبل الجرد فهو داخلٌ في فرق ذلك الجرد، فيصير رصيد الحساب أقلَّ مما عُدّ بـ{$amount} حتى يُجرد من جديد.";
+
+        return new self($message, 'confirm_before_count');
+    }
+
     public static function locked(string $until, string $field = 'occurred_at'): self
     {
         return new self("الحسابات مقفلة حتى {$until} — لا تُسجَّل عملية يدوية بتاريخٍ قبله", $field);

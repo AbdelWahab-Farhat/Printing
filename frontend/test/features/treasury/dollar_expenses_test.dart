@@ -104,6 +104,8 @@ void main() {
                 notes,
                 clientToken,
                 rate,
+                occurredAt,
+                confirmBeforeCount,
               }) async {
                 sent
                   ..add(amount)

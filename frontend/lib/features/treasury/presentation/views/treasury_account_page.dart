@@ -355,6 +355,8 @@ class _Actions extends StatelessWidget {
               notes,
               clientToken,
               rate,
+              occurredAt,
+              confirmBeforeCount,
             }) async {
               final result = await header.record(
                 kind: kind,
@@ -367,6 +369,8 @@ class _Actions extends StatelessWidget {
                 notes: notes,
                 clientToken: clientToken,
                 rate: rate,
+                occurredAt: occurredAt,
+                confirmBeforeCount: confirmBeforeCount ?? false,
               );
 
               return result.fold((failure) => failure, (operation) {

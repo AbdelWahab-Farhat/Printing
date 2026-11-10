@@ -534,6 +534,8 @@ void main() {
                       notes,
                       clientToken,
                       rate,
+                      occurredAt,
+                      confirmBeforeCount,
                     }) async => null,
               ),
               child: const Text('افتح'),
@@ -586,6 +588,8 @@ void main() {
                       notes,
                       clientToken,
                       rate,
+                      occurredAt,
+                      confirmBeforeCount,
                     }) async {
                       sentFrom = fromAccountId;
                       sentTo = toAccountId;

@@ -303,6 +303,23 @@ final class RecordOperation
         ?TreasuryAccount $to,
     ): void {
         foreach (array_filter([$from, $to]) as $account) {
+            // An expense is warned about, not refused: a receipt that turns up after the count
+            // still happened. The person confirms and the count is left as it was.
+            if ($data->type === OperationType::Expense) {
+                $checkpoint = $this->floor->before($account, $data->occurredAt);
+
+                if ($checkpoint !== null && ! $data->confirmBeforeCount) {
+                    throw OperationRefused::expenseBeforeCount(
+                        (string) $account->name,
+                        $checkpoint->type,
+                        $checkpoint->occurred_at->format('Y-m-d H:i'),
+                        (string) $data->amount,
+                    );
+                }
+
+                continue;
+            }
+
             if ($data->type !== OperationType::Opening) {
                 $this->floor->guard($account, $data->occurredAt, 'occurred_at');
 

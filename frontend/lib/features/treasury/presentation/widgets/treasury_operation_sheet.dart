@@ -32,6 +32,10 @@ typedef RecordOperationCallback =
       String? clientToken,
       // An expense out of a dollar account: dinars per dollar (USD-ACCOUNTS §٨).
       String? rate,
+      // A back-dated expense: the day it happened, `YYYY-MM-DD`. Null means now.
+      String? occurredAt,
+      // Sent again after the person confirmed the "before the latest count" warning.
+      bool? confirmBeforeCount,
     });
 
 /// عمليةٌ يدوية — إيداع، سحب، مصروف، تحويل، جرد، رصيد افتتاحي. TREASURY-DESIGN §٤.
@@ -122,6 +126,10 @@ class _OperationFormState extends State<_OperationForm> {
   TreasuryAccount? _locked;
   ExpenseCategory? _category;
   AuthUser? _employee;
+
+  /// The day an expense happened. It opens on today; a receipt from last week is dated last week,
+  /// so it lands in that week's account statement and that month's «المصاريف».
+  DateTime _occurredOn = DateUtils.dateOnly(DateTime.now());
   bool _saving = false;
 
   /// آخر رفضٍ من الخادم — حقوله تُعلَّق تحت مربّعاتها.
@@ -141,7 +149,14 @@ class _OperationFormState extends State<_OperationForm> {
     'category_id',
     'employee_id',
     'notes',
+    'occurred_at',
+    // Not an error: the question the confirm dialog asks.
+    _beforeCountKey,
   };
+
+  /// The server's "dated before the account's latest count" warning comes under this key; the
+  /// sheet asks, and on «سجّل رغم ذلك» sends again with it set.
+  static const _beforeCountKey = 'confirm_before_count';
 
   /// الافتتاح والجرد قد يمسّان العهدة — افتتاح النورس، وجرد ما فيه. وما سواهما يتركها، والخادم
   /// يقول ذلك أيضاً.
@@ -234,6 +249,34 @@ class _OperationFormState extends State<_OperationForm> {
     return null;
   }
 
+  /// What is sent as `occurred_at`: nothing for today, so the server stamps the moment it is
+  /// written, and the day alone for an earlier one.
+  String? get _occurredAtWire {
+    if (_kind != OperationKind.expense) return null;
+    if (DateUtils.isSameDay(_occurredOn, DateTime.now())) return null;
+
+    return _day(_occurredOn);
+  }
+
+  static String _day(DateTime at) =>
+      '${at.year.toString().padLeft(4, '0')}-${at.month.toString().padLeft(2, '0')}-'
+      '${at.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _occurredOn,
+      firstDate: DateTime(2020),
+      lastDate: today,
+    );
+
+    if (picked == null || !mounted) return;
+
+    setState(() => _occurredOn = DateUtils.dateOnly(picked));
+  }
+
   Future<void> _pickEmployee() async {
     final picked = await showEmployeePicker(context: context);
 
@@ -256,23 +299,19 @@ class _OperationFormState extends State<_OperationForm> {
       _refusal = null;
     });
 
-    final figure = Validators.toWesternDigits(_amount.text.trim());
-    final notes = _notes.text.trim();
+    var failure = await _send();
 
-    final failure = await widget.onSubmit(
-      kind: _kind,
-      amount: _isCount ? null : figure,
-      countedBalance: _isCount ? figure : null,
-      fromAccountId: _from?.id,
-      toAccountId: _to?.id,
-      categoryId: _category?.id,
-      employeeId: _employee?.id,
-      notes: notes.isEmpty ? null : notes,
-      clientToken: _clientToken,
-      rate: _dollarExpense
-          ? Validators.toWesternDigits(_rate.text.trim()).replaceAll(',', '.')
-          : null,
-    );
+    // Dated before the account's latest count: say what it does to the count, and record it
+    // only if they say so. The same client token goes again, so nothing is written twice.
+    if (failure?.fieldError(_beforeCountKey) case final warning? when mounted) {
+      // Nothing is saving while the question is open.
+      setState(() => _saving = false);
+
+      if (!await _confirmBeforeCount(warning) || !mounted) return;
+
+      setState(() => _saving = true);
+      failure = await _send(confirmBeforeCount: true);
+    }
 
     if (!mounted) return;
 
@@ -289,6 +328,51 @@ class _OperationFormState extends State<_OperationForm> {
 
     Navigator.of(context).pop();
     context.showSuccess('تم تسجيل «${_kind.label}»');
+  }
+
+  Future<bool> _confirmBeforeCount(String warning) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تاريخ قبل آخر جرد'),
+        content: Text(warning, style: dialogContext.textTheme.bodyMedium),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('تراجع'),
+          ),
+          TextButton(
+            key: const ValueKey('confirm-before-count'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('سجّل رغم ذلك'),
+          ),
+        ],
+      ),
+    );
+
+    return answer ?? false;
+  }
+
+  Future<Failure?> _send({bool confirmBeforeCount = false}) {
+    final figure = Validators.toWesternDigits(_amount.text.trim());
+    final notes = _notes.text.trim();
+
+    return widget.onSubmit(
+      kind: _kind,
+      amount: _isCount ? null : figure,
+      countedBalance: _isCount ? figure : null,
+      fromAccountId: _from?.id,
+      toAccountId: _to?.id,
+      categoryId: _category?.id,
+      employeeId: _employee?.id,
+      notes: notes.isEmpty ? null : notes,
+      clientToken: _clientToken,
+      rate: _dollarExpense
+          ? Validators.toWesternDigits(_rate.text.trim()).replaceAll(',', '.')
+          : null,
+      occurredAt: _occurredAtWire,
+      confirmBeforeCount: confirmBeforeCount ? true : null,
+    );
   }
 
   Widget _accountPicker({
@@ -449,6 +533,17 @@ class _OperationFormState extends State<_OperationForm> {
                 SizedBox(height: 16.h),
               ],
 
+              if (_kind == OperationKind.expense) ...[
+                _DateRow(
+                  label: 'تاريخ المصروف',
+                  day: _day(_occurredOn),
+                  onTap: _pickDate,
+                ),
+                if (_refusal?.fieldError('occurred_at') case final error?)
+                  TreasuryFieldError(error),
+                SizedBox(height: 16.h),
+              ],
+
               AppTextField(
                 controller: _notes,
                 label: _kind.asksReason ? 'السبب' : 'ملاحظات (اختياري)',
@@ -466,6 +561,45 @@ class _OperationFormState extends State<_OperationForm> {
               SizedBox(height: 8.h),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable row that shows a day and opens the date picker — the fund expense sheet's row.
+class _DateRow extends StatelessWidget {
+  const _DateRow({required this.label, required this.day, required this.onTap});
+
+  final String label;
+  final String day;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return InkWell(
+      key: const ValueKey('expense-date'),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          border: Border.all(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Row(
+          children: [
+            Icon(AppIcons.today, size: 20.sp, color: scheme.onSurfaceVariant),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(label, style: context.textTheme.bodyMedium)),
+            Text(
+              day,
+              textDirection: TextDirection.ltr,
+              style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
       ),
     );

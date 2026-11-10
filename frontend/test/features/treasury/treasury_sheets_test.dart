@@ -91,6 +91,8 @@ void main() {
                   notes,
                   clientToken,
                   rate,
+                  occurredAt,
+                  confirmBeforeCount,
                 }) async => null,
           ),
         ),
@@ -128,6 +130,8 @@ void main() {
                   notes,
                   clientToken,
                   rate,
+                  occurredAt,
+                  confirmBeforeCount,
                 }) async => null,
           ),
         ),
@@ -166,6 +170,8 @@ void main() {
                   notes,
                   clientToken,
                   rate,
+                  occurredAt,
+                  confirmBeforeCount,
                 }) async {
                   tokens.add(clientToken);
 
@@ -236,6 +242,8 @@ void main() {
                   notes,
                   clientToken,
                   rate,
+                  occurredAt,
+                  confirmBeforeCount,
                 }) async => null,
           ),
         ),

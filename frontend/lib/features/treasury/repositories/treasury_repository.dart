@@ -70,6 +70,10 @@ abstract interface class TreasuryRepository {
   ///
   /// [clientToken] مفتاحٌ يولَّد مرةً لكل نموذج ويُعاد مع كل محاولة: إن وصل الطلب الأول وانقطع
   /// الرد، أعاد الخادم العمليةَ نفسها بدل أن يكتبها مرتين.
+  ///
+  /// [occurredAt] is the day it happened, as `YYYY-MM-DD`; null means now.
+  /// [confirmBeforeCount] records an expense dated before the account's latest count, after the
+  /// person has read the server's warning about it.
   Future<Either<Failure, TreasuryOperation>> recordOperation({
     required OperationKind kind,
     String? amount,
@@ -82,6 +86,8 @@ abstract interface class TreasuryRepository {
     String? clientToken,
     String? counterAmount,
     String? rate,
+    String? occurredAt,
+    bool confirmBeforeCount = false,
   });
 
   Future<Either<Failure, TreasuryOperation>> reverseOperation(

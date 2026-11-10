@@ -12,6 +12,7 @@ use App\Domain\Investor\Models\InvestorDeal;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Shortage\Models\Shortage;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Models\ExpenseCategory;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\TreasuryService;
@@ -313,6 +314,77 @@ class ManualEntryDatesTest extends TestCase
         $sameDay->assertUnprocessable()->assertJsonValidationErrors('occurred_at');
         $dayAfter->assertCreated();
         $this->assertSame('1050.00', $this->balance($cash));
+    }
+
+    /**
+     * A 300 fuel receipt from 10 October, typed after the drawer was counted on the 12th.
+     *
+     * @param  array<string, string>  $headers
+     */
+    private function backDatedExpense(array $headers, TreasuryAccount $account, bool $confirmed): TestResponse
+    {
+        return $this->postJson('/api/v1/treasury/operations', array_filter([
+            'type' => 'expense',
+            'from_account_id' => $account->id,
+            'category_id' => ExpenseCategory::factory()->create()->id,
+            'amount' => '300',
+            'occurred_at' => '2026-10-10',
+            'confirm_before_count' => $confirmed ?: null,
+        ]), $headers);
+    }
+
+    public function test_an_expense_dated_before_the_latest_count_asks_first_and_writes_nothing(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $this->countDrawer($headers, $cash, '1000', '2026-10-12');
+
+        // Act
+        $response = $this->backDatedExpense($headers, $cash, confirmed: false);
+
+        // Assert — the warning under its own key, so the app knows to ask rather than refuse.
+        $response->assertUnprocessable()->assertJsonValidationErrors('confirm_before_count');
+        $this->assertStringContainsString('300', $response->json('errors.confirm_before_count.0'));
+        $this->assertSame('1000.00', $this->balance($cash));
+    }
+
+    public function test_a_confirmed_expense_before_the_latest_count_is_written_and_the_count_left_alone(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $count = $this->countDrawer($headers, $cash, '1000', '2026-10-12');
+
+        // Act
+        $response = $this->backDatedExpense($headers, $cash, confirmed: true);
+
+        // Assert — on its own day, and the count's figures untouched.
+        $response->assertCreated();
+        $this->assertSame('2026-10-10', Carbon::parse($response->json('data.occurred_at'))->toDateString());
+        $this->assertSame('700.00', $this->balance($cash));
+        $this->assertDatabaseHas('treasury_operations', [
+            'id' => $count,
+            'counted_balance' => '1000.00',
+            'reverses_operation_id' => null,
+        ]);
+        $this->assertDatabaseMissing('treasury_operations', ['reverses_operation_id' => $count]);
+    }
+
+    public function test_a_confirmed_expense_inside_the_locked_period_is_still_refused(): void
+    {
+        // Arrange
+        $headers = $this->clerk();
+        $cash = $this->defaultOf(AccountKind::Cash);
+        $this->countDrawer($headers, $cash, '1000', '2026-10-12');
+        $this->lockUntil('2026-10-11');
+
+        // Act
+        $response = $this->backDatedExpense($headers, $cash, confirmed: true);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonValidationErrors('occurred_at');
+        $this->assertSame('1000.00', $this->balance($cash));
     }
 
     public function test_a_count_cannot_be_dated_before_the_previous_one(): void

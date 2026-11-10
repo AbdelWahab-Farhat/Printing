@@ -120,6 +120,10 @@ class StoreTreasuryOperationRequest extends FormRequest
 
             'occurred_at' => ['nullable', 'date', 'before_or_equal:now'],
 
+            // An expense dated before the account's latest count is warned about, not refused;
+            // the second send says the person read the warning and records it anyway.
+            'confirm_before_count' => ['exclude_unless:type,expense', 'nullable', 'boolean'],
+
             // A count always says why. A withdrawal does too unless the owner switched that off in
             // «إعدادات المالية» — so that half is the Action's, which reads the setting.
             'notes' => ['required_if:type,adjustment', 'nullable', 'string', 'max:1000'],
@@ -157,6 +161,7 @@ class StoreTreasuryOperationRequest extends FormRequest
             'counted_balance.min' => 'الرصيد المعدود لا يكون سالباً',
             'occurred_at.date' => 'التاريخ غير صحيح',
             'occurred_at.before_or_equal' => 'التاريخ لا يكون في المستقبل',
+            'confirm_before_count.boolean' => 'قيمة التأكيد غير صحيحة',
             'notes.required_if' => 'السبب مطلوب لهذه العملية',
             'client_token.uuid' => 'رمز الإرسال غير صالح',
         ];
