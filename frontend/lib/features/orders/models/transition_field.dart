@@ -151,6 +151,10 @@ abstract class TransitionField with _$TransitionField {
     num? min,
     num? max,
 
+    /// A [TransitionFieldType.number] that takes whole dinars only — the عربون boxes. The box
+    /// offers no decimal point, and the server refuses one all the same.
+    @Default(false) bool whole,
+
     /// The choices, for the one kind that carries its own — see
     /// [TransitionFieldType.paymentMethod]. Empty for every other kind.
     @Default(<TransitionFieldOption>[]) List<TransitionFieldOption> options,

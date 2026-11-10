@@ -615,11 +615,18 @@ class _NumberState extends State<_Number> {
           : '${widget.field.label} (اختياري)',
       helperText: widget.field.hint,
       errorText: widget.errorText,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: widget.field.whole
+          ? TextInputType.number
+          : const TextInputType.numberWithOptions(decimal: true),
       // Arabic-Indic digits are what the keyboard produces, so they are allowed through and
       // normalised on the way out — the same rule the invoice editor follows.
+      //
+      // **A whole box can drop the point because it never opens on one**: the server sends it
+      // whole. Stripping the point out of a figure already in the box would make 25.50 read 2550.
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
+        FilteringTextInputFormatter.allow(
+          widget.field.whole ? RegExp(r'[0-9٠-٩۰-۹]') : RegExp(r'[0-9٠-٩۰-۹.,]'),
+        ),
       ],
       textInputAction: TextInputAction.done,
       onChanged: widget.onChanged,

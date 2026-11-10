@@ -487,6 +487,7 @@ class _Form extends StatelessWidget {
                     title: 'الخصم',
                     child: _DiscountField(
                       initial: state.discount,
+                      errorText: state.discountError,
                       onChanged: cubit.setDiscount,
                     ),
                   ),
@@ -943,9 +944,10 @@ class _LineRowState extends State<_LineRow> {
 }
 
 class _DiscountField extends StatefulWidget {
-  const _DiscountField({required this.initial, required this.onChanged});
+  const _DiscountField({required this.initial, required this.errorText, required this.onChanged});
 
   final String initial;
+  final String? errorText;
   final ValueChanged<String> onChanged;
 
   @override
@@ -967,6 +969,10 @@ class _DiscountFieldState extends State<_DiscountField> {
     return AppTextField(
       controller: _controller,
       label: 'الخصم',
+      errorText: widget.errorText,
+      // **The point stays allowed, though a discount is whole dinars now.** This box opens on the
+      // order's own «25.00», and a filter that dropped the point would turn the next keystroke
+      // into 2500. The server refuses a fraction, and [errorText] says so.
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),

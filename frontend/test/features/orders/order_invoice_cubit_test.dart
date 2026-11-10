@@ -210,6 +210,33 @@ void main() {
     expect(cubit.state.estimatedTotal, '110.00');
   });
 
+  group('the estimate follows the server in whole dinars', () {
+    InvoiceLine line(String quantity, String unitPrice) => InvoiceLine(
+      id: 1,
+      productId: 1,
+      variantId: 1,
+      productName: 'كيس',
+      variantLabel: '25*35',
+      pricingUnitLabel: 'قطعة',
+      quantity: quantity,
+      unitPrice: unitPrice,
+    );
+
+    test('the fraction is dropped from the line', () {
+      expect(line('301', '1.100').estimate, 331);
+    });
+
+    test('a double landing just under a whole number is not floored to the one below', () {
+      // 100 × 1.15 is 114.99999999999999 in a double, and the server says 115.
+      expect(line('100', '1.15').estimate, 115);
+    });
+
+    test('a line under a dinar bills one, and an empty line bills nothing', () {
+      expect(line('1', '0.800').estimate, 1);
+      expect(line('0', '0.800').estimate, 0);
+    });
+  });
+
   // ───────────────────────────── saving ─────────────────────────────
 
   /// **An edit never mentions the shelf quantity, and no longer has to.**

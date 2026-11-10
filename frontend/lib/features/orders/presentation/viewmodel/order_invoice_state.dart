@@ -117,11 +117,18 @@ abstract class InvoiceLine with _$InvoiceLine {
   }
 
   /// What one line is worth, for the running estimate only.
+  ///
+  /// **In whole dinars, the server's rule** (`Money::wholeDinars`): the fraction dropped, and
+  /// never down to nothing. The product is cleaned to six places first, because 100 × 1.15 is
+  /// 114.99999999999999 in a double and a bare floor would say 114 where the server says 115.
   double get estimate {
     final q = double.tryParse(_ascii(quantity)) ?? 0;
     final p = double.tryParse(unitPrice) ?? 0;
+    final exact = (q * p * 1000000).round() / 1000000;
 
-    return q * p;
+    if (exact <= 0) return 0;
+
+    return exact < 1 ? 1 : exact.floorToDouble();
   }
 }
 
@@ -296,6 +303,12 @@ abstract class OrderInvoiceState with _$OrderInvoiceState {
   /// the number it is about.
   String? get recipientPhoneError => switch (failure) {
     ServerFailure(:final fieldErrors) => fieldErrors?['recipient_phone']?.firstOrNull,
+    _ => null,
+  };
+
+  /// The server's complaint about the discount — a fraction, nowadays — painted under the box.
+  String? get discountError => switch (failure) {
+    ServerFailure(:final fieldErrors) => fieldErrors?['discount']?.firstOrNull,
     _ => null,
   };
 

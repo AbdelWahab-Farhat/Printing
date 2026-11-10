@@ -181,7 +181,7 @@ class ShortageWarehouseQuantityTest extends TestCase
         $this->assertSame('30.000', (string) $item->shortage_quantity);
         $this->assertSame('12.500', (string) $item->shortage_warehouse_quantity);
         $this->assertSame('270.000', $item->billableQuantity());
-        $this->assertSame('418.50', (string) $item->line_total);
+        $this->assertSame('418.00', (string) $item->line_total);
     }
 
     public function test_the_purchase_that_was_refused_a_moment_ago_now_goes_through(): void

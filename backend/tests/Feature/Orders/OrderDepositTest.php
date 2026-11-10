@@ -12,6 +12,7 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
@@ -196,6 +197,74 @@ class OrderDepositTest extends TestCase
         $overTotal->assertStatus(422);
 
         $this->assertSame(OrderStatus::New, $order->refresh()->status);
+    }
+
+    public function test_the_deposit_boxes_take_whole_dinars_only(): void
+    {
+        // Arrange
+        [, $headers] = $this->clerk();
+        $order = $this->newOrder();
+
+        // Act
+        $asked = $this->move($headers, $order, OrderStatus::AwaitingDeposit, [
+            'deposit_amount' => '28.25',
+            'deposit_method' => PaymentMethod::Cash->value,
+        ]);
+
+        $parked = $this->awaitingDeposit($headers, '250.00');
+
+        $taken = $this->move($headers, $parked, OrderStatus::DepositPaid, [
+            'payment_amount' => '250.50',
+            'payment_method' => PaymentMethod::Cash->value,
+        ]);
+
+        // Assert
+        $asked->assertStatus(422);
+        $this->assertSame(
+            ['قيمة العربون بالدينار الكامل، بلا كسور'],
+            $asked->json('errors')['fields.deposit_amount'],
+        );
+        $taken->assertStatus(422);
+        $this->assertSame(
+            ['العربون المقبوض بالدينار الكامل، بلا كسور'],
+            $taken->json('errors')['fields.payment_amount'],
+        );
+    }
+
+    public function test_the_app_is_told_the_deposit_box_is_whole_and_it_opens_on_a_whole_figure(): void
+    {
+        // Arrange — an عربون agreed before the rule, which the box would now refuse as it stands.
+        [, $headers] = $this->clerk();
+        $order = $this->awaitingDeposit($headers, '250.00');
+        $order->forceFill(['deposit_expected_amount' => '28.25'])->save();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert
+        $box = collect($response->json('data.available_transitions'))
+            ->firstWhere('status', OrderStatus::DepositPaid->value)['fields'][0];
+
+        $this->assertTrue($box['whole']);
+        $this->assertSame('28', $box['value']);
+    }
+
+    public function test_the_money_box_at_settlement_still_takes_the_real_remainder(): void
+    {
+        // Arrange — an order from before the rule, and the box that collects what it still owes.
+        [$user] = $this->clerk();
+        $order = Order::factory()->status(OrderStatus::Delivered)->create([
+            'grand_total' => '183.30',
+            'stock_deducted_at' => now()->subDay(),
+        ]);
+
+        // Act
+        $fields = TransitionFields::for($order, OrderStatus::Settled, $user);
+
+        // Assert
+        $box = collect($fields)->firstWhere('key', TransitionFields::PAYMENT_AMOUNT);
+        $this->assertFalse($box->whole);
+        $this->assertSame('183.3', $box->value);
     }
 
     public function test_the_boxes_open_on_what_was_agreed_last_time(): void
