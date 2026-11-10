@@ -379,8 +379,8 @@ void main() {
   });
 
   test('the ready message is the owner\u2019s words with the invoice number in them', () {
-    // Arrange
-    final order = orderWith(status: OrderStatus.ready);
+    // Arrange \u2014 a pickup order, which is what the owner's text was written for.
+    final order = orderWith(status: OrderStatus.officePickup);
 
     // Act
     final message = OrderMessage.readyOf(order);
@@ -393,6 +393,22 @@ void main() {
       'طلبيتك رقم الفاتورة : [ 55 ] جاهزة للاستلام من مكتب شركة بريمولا .\n'
       '\n'
       'ساعات الدوام من الساعة 10 صباحا حتى 10 مساء .',
+    );
+  });
+
+  test('a delivery order is told its parcel is on the way, not to come to the office', () {
+    // Arrange
+    final order = orderWith(status: OrderStatus.outForDelivery, isOfficePickup: false);
+
+    // Act
+    final message = OrderMessage.readyOf(order);
+
+    // Assert — no office, no opening hours: the parcel is coming to them.
+    expect(
+      message,
+      'أهلا وسهلا بيك ، يومك طيب إن شاء الله\n'
+      '\n'
+      'طلبيتك رقم الفاتورة : [ 55 ] في الطريق إليك مع مندوب التوصيل .',
     );
   });
 }

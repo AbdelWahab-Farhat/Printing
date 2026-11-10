@@ -92,11 +92,10 @@ trait FiltersOrders
      * **The queue is three conditions, not one**, and the two beside the column are what make the
      * answer worth reading:
      *
-     * - **It has been ready.** `ready_at` is stamped the first time an order reaches «جاهزة» and
-     *   never cleared, so this is «بلغت الجاهزية» rather than «واقفة فيها» — a parcel already out
-     *   for delivery whose customer was never told is exactly what this box exists to surface.
-     *   Without it the queue would answer with every order in the shop, most of them not made
-     *   yet.
+     * - **It has been dispatched.** `dispatched_at` is stamped when an order enters «استلام مكتب»
+     *   or «جاري التوصيل» and never cleared — the same test as {@see Order::readyMessageApplies()},
+     *   so the box never counts an order whose screen has no switch on it. Without it the queue
+     *   would answer with every order in the shop, most of them not made yet.
      * - **The customer has not already got it.** Telling somebody their bags are ready after they
      *   have collected them is not work anybody is going to do, and a cancelled order has nobody
      *   to tell. This is also what keeps the queue from opening on the whole history the day the
@@ -122,7 +121,7 @@ trait FiltersOrders
         ));
 
         $query->whereNull('ready_message_sent_at')
-            ->whereNotNull('ready_at')
+            ->whereNotNull('dispatched_at')
             ->whereNotIn('status', $closed);
     }
 

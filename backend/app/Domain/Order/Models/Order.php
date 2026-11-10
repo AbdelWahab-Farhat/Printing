@@ -276,15 +276,17 @@ class Order extends Model implements HasAuditTrail
     /**
      * Whether «رسالة الجاهزية» is a question this order has reached at all.
      *
-     * **Read from `ready_at`, never from the status.** The stamp is written the first time an
-     * order enters «جاهزة» and is never cleared, so this stays true while the parcel is out for
-     * delivery and after the customer has it — which is exactly when «هل أُبلِغ أصلاً؟» is
-     * asked. A list of statuses written here instead would be a second copy of the map, and the
-     * copy that is forgotten the day a status is added after «جاهزة».
+     * **Read from `dispatched_at`, never from the status.** The message goes out when the order
+     * leaves the shelf, not when it lands on it: «استلام مكتب» for a pickup order, «جاري
+     * التوصيل» for a delivery one (owner's request, 2026-11-10). Both statuses stamp this one
+     * column, and the server picks which of the two an order enters, so the column already
+     * answers «has it been dispatched, whichever way?». It is never cleared, so this stays true
+     * after a return, a resend and the customer having the bags. A list of statuses written here
+     * instead would be a second copy of the map.
      */
     public function readyMessageApplies(): bool
     {
-        return $this->ready_at !== null;
+        return $this->dispatched_at !== null;
     }
 
     /**

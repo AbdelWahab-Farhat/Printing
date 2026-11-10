@@ -6,6 +6,7 @@ namespace Tests\Feature\Orders;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,12 +57,17 @@ class OrderReadyMessageTest extends TestCase
         return $this->auth(PermissionName::ViewOrders);
     }
 
-    /** An order standing where the message is due: the bags are made and on the shelf. */
+    /**
+     * An order standing where the message is due: waiting at the office for its customer.
+     *
+     * Not «جاهزة»: the message goes out on dispatch, so an order still on the shelf has none.
+     */
     private function readyOrder(): Order
     {
         return Order::factory()->create([
-            'status' => OrderStatus::Ready,
-            'ready_at' => now()->subHour(),
+            'status' => OrderStatus::OfficePickup,
+            'ready_at' => now()->subDay(),
+            'dispatched_at' => now()->subHour(),
         ]);
     }
 
@@ -113,10 +119,14 @@ class OrderReadyMessageTest extends TestCase
         ]);
     }
 
-    public function test_it_refuses_an_order_that_has_not_reached_ready(): void
+    public function test_it_refuses_an_order_that_has_not_been_dispatched(): void
     {
-        // Arrange
-        $order = Order::factory()->create(['status' => OrderStatus::Printing, 'ready_at' => null]);
+        // Arrange — made and on the shelf, but not yet handed to the office or the courier.
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Ready,
+            'ready_at' => now()->subHour(),
+            'dispatched_at' => null,
+        ]);
         $headers = $this->messenger();
 
         // Act
@@ -131,17 +141,73 @@ class OrderReadyMessageTest extends TestCase
         ]);
     }
 
-    /**
-     * The stamp survives the order moving on, which is the whole reason it is read from
-     * `ready_at` rather than from the status: «هل أُبلِغ أصلاً؟» is asked *after* the parcel has
-     * gone out, not while it sits on the shelf.
-     */
-    public function test_it_still_applies_after_the_order_has_left_the_shelf(): void
+    public function test_it_does_not_apply_while_the_order_waits_on_the_shelf(): void
     {
         // Arrange
         $order = Order::factory()->create([
-            'status' => OrderStatus::OutForDelivery,
-            'ready_at' => now()->subDay(),
+            'status' => OrderStatus::Ready,
+            'ready_at' => now()->subHour(),
+            'dispatched_at' => null,
+        ]);
+        $headers = $this->messenger();
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
+
+        // Assert
+        $response->assertOk()->assertJsonPath('data.ready_message_applies', false);
+    }
+
+    /**
+     * Moved by the real status action rather than seeded, so the test proves the move itself
+     * stamps what the rule reads — for both of the ways an order leaves the shelf. The action
+     * picks the dispatch status from the order's fulfilment type, as it does for the app.
+     */
+    public function test_it_applies_once_a_pickup_order_enters_office_pickup(): void
+    {
+        // Arrange
+        $order = Order::factory()->officePickup()->create([
+            'status' => OrderStatus::Ready,
+            'ready_at' => now()->subHour(),
+        ]);
+
+        // Act
+        // Refreshed so the column defaults (the production road) are on the model.
+        $moved = app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::OfficePickup);
+
+        // Assert
+        $this->assertSame(OrderStatus::OfficePickup, $moved->status);
+        $this->assertTrue($moved->refresh()->readyMessageApplies());
+    }
+
+    public function test_it_applies_once_a_delivery_order_goes_out_for_delivery(): void
+    {
+        // Arrange
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Ready,
+            'ready_at' => now()->subHour(),
+        ]);
+
+        // Act
+        $moved = app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::OutForDelivery);
+
+        // Assert
+        $this->assertSame(OrderStatus::OutForDelivery, $moved->status);
+        $this->assertTrue($moved->refresh()->readyMessageApplies());
+    }
+
+    /**
+     * The stamp survives the order moving on, which is the whole reason it is read from
+     * `dispatched_at` rather than from the status: a parcel that came back, or one the customer
+     * already has, still answers «هل أُبلِغ أصلاً؟».
+     */
+    public function test_it_still_applies_after_the_order_has_come_back(): void
+    {
+        // Arrange
+        $order = Order::factory()->create([
+            'status' => OrderStatus::ReturnedOffice,
+            'ready_at' => now()->subDays(3),
+            'dispatched_at' => now()->subDays(2),
         ]);
         $headers = $this->messenger();
 
@@ -232,26 +298,38 @@ class OrderReadyMessageTest extends TestCase
 
     /**
      * `is_ready_message_sent=0` is the queue, not a bare test on the column: an order that has
-     * not reached «جاهزة» has nobody to message yet, and one the customer already has is past
+     * not been dispatched has no message due yet, and one the customer already has is past
      * being told. See §٥ of the design.
      */
-    public function test_the_queue_holds_only_orders_that_are_ready_and_unannounced(): void
+    public function test_the_queue_holds_only_orders_that_are_dispatched_and_unannounced(): void
     {
         // Arrange
         $waiting = $this->readyOrder();
+        $outForDelivery = Order::factory()->create([
+            'status' => OrderStatus::OutForDelivery,
+            'ready_at' => now()->subDay(),
+            'dispatched_at' => now()->subHour(),
+        ]);
         $announced = Order::factory()->create([
+            'status' => OrderStatus::OfficePickup,
+            'ready_at' => now()->subDay(),
+            'dispatched_at' => now()->subHour(),
+            'ready_message_sent_at' => now(),
+        ]);
+        $onTheShelf = Order::factory()->create([
             'status' => OrderStatus::Ready,
             'ready_at' => now()->subHour(),
-            'ready_message_sent_at' => now(),
         ]);
         $notYetReady = Order::factory()->create(['status' => OrderStatus::New, 'ready_at' => null]);
         $delivered = Order::factory()->create([
             'status' => OrderStatus::Delivered,
             'ready_at' => now()->subDay(),
+            'dispatched_at' => now()->subDay(),
         ]);
         $cancelled = Order::factory()->create([
             'status' => OrderStatus::Cancelled,
             'ready_at' => now()->subDay(),
+            'dispatched_at' => now()->subDay(),
         ]);
         $headers = $this->messenger();
 
@@ -262,8 +340,9 @@ class OrderReadyMessageTest extends TestCase
         // Assert
         $ids = array_column((array) $response->json('data'), 'id');
         $response->assertOk();
-        $this->assertSame([$waiting->id], $ids);
+        $this->assertEqualsCanonicalizing([$waiting->id, $outForDelivery->id], $ids);
         $this->assertNotContains($announced->id, $ids);
+        $this->assertNotContains($onTheShelf->id, $ids);
         $this->assertNotContains($notYetReady->id, $ids);
         $this->assertNotContains($delivered->id, $ids);
         $this->assertNotContains($cancelled->id, $ids);
@@ -311,6 +390,7 @@ class OrderReadyMessageTest extends TestCase
         $this->readyOrder();
         $this->readyOrder();
         Order::factory()->create(['status' => OrderStatus::New, 'ready_at' => null]);
+        Order::factory()->create(['status' => OrderStatus::Ready, 'ready_at' => now()]);
         $headers = $this->messenger();
 
         // Act

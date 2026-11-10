@@ -8,7 +8,7 @@ import 'package:dayaa/features/orders/models/order_status.dart';
 /// **These are the only texts in the project written for the customer rather than for staff.**
 /// [of] is what «نسخ الفاتورة» puts on the clipboard and what «مشاركة الفاتورة» hands to the
 /// phone's own share sheet — one text, so the two doors can never disagree about what an order
-/// says. [readyOf] is the short one that follows it, once the bags are made.
+/// says. [readyOf] is the short one that follows it, once the order is dispatched.
 ///
 /// ## Why it is sections
 ///
@@ -61,16 +61,26 @@ class OrderMessage {
     ].join('\n\n');
   }
 
-  /// «رسالة الجاهزية» — what «نسخ الرسالة» puts on the clipboard once the order has been made.
+  /// «رسالة الجاهزية» — what «نسخ الرسالة» puts on the clipboard once the order is dispatched.
   ///
   /// **The owner's own wording, spacing and all** (طلب المستخدم، 2026-10-28): it is the
   /// greeting the shop was already sending by hand, and a customer who has had it before should
   /// recognise it. Only the invoice number is the order's.
-  static String readyOf(Order order) => [
-    'أهلا وسهلا بيك ، يومك طيب إن شاء الله',
-    'طلبيتك رقم الفاتورة : [ ${order.code} ] جاهزة للاستلام من مكتب شركة بريمولا .',
-    'ساعات الدوام من الساعة 10 صباحا حتى 10 مساء .',
-  ].join('\n\n');
+  ///
+  /// **Two texts, one per way the order leaves** (طلب المستخدم، 2026-11-10). The message is
+  /// offered from «استلام مكتب» for a pickup and from «جاري التوصيل» for a delivery, and
+  /// «جاهزة للاستلام من مكتب» told a delivery customer to come in for a parcel already on its
+  /// way to them. The delivery text drops the office hours for the same reason.
+  static String readyOf(Order order) => order.isOfficePickup
+      ? [
+          'أهلا وسهلا بيك ، يومك طيب إن شاء الله',
+          'طلبيتك رقم الفاتورة : [ ${order.code} ] جاهزة للاستلام من مكتب شركة بريمولا .',
+          'ساعات الدوام من الساعة 10 صباحا حتى 10 مساء .',
+        ].join('\n\n')
+      : [
+          'أهلا وسهلا بيك ، يومك طيب إن شاء الله',
+          'طلبيتك رقم الفاتورة : [ ${order.code} ] في الطريق إليك مع مندوب التوصيل .',
+        ].join('\n\n');
 
   /// What an email app writes on the subject line when the share sheet lands there.
   ///

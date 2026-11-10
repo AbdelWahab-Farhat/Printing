@@ -538,10 +538,10 @@ class OrderController extends Controller
      * `sent: false` takes an earlier confirmation back, for the stray tap — same grant, and both
      * movements stay in the order's history.
      *
-     * Accepted from the moment the order has *been* «جاهزة» and for the whole of its life
-     * afterwards — «هل أُبلِغ أصلاً؟» is asked after the parcel has gone out, not only while it
-     * waits on the shelf. Refused with 422 before that, and `ready_message_applies` on the order
-     * says so in advance so the box is never drawn on an order that would refuse it.
+     * Accepted from the moment the order has been dispatched — «استلام مكتب» for a pickup,
+     * «جاري التوصيل» for a delivery — and for the whole of its life afterwards. Refused with 422
+     * before that, and `ready_message_applies` on the order says so in advance so the box is
+     * never drawn on an order that would refuse it.
      */
     public function confirmReadyMessage(ConfirmReadyMessageRequest $request, Order $order): JsonResponse
     {

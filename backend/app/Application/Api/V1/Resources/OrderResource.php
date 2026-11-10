@@ -76,10 +76,10 @@ class OrderResource extends JsonResource
             // keys and not one, because the screen asks four different things of them.
 
             // **Whether the question applies at all**, answered by the server rather than left to
-            // a client comparing statuses. `Order::readyMessageApplies()` reads `ready_at`, which
-            // is stamped once and never cleared: the box is drawn on «جاهزة» and stays drawn
-            // through delivery and after it, which is exactly when «هل أُبلِغ أصلاً؟» is asked.
-            // A list of statuses written in Dart would be a second copy of the map.
+            // a client comparing statuses. `Order::readyMessageApplies()` reads `dispatched_at`,
+            // which is never cleared: the box is drawn from «استلام مكتب» or «جاري التوصيل» on,
+            // and stays drawn through returns, resends and delivery. A list of statuses written
+            // in Dart would be a second copy of the map.
             'ready_message_applies' => $this->readyMessageApplies(),
 
             'is_ready_message_sent' => $this->ready_message_sent_at !== null,

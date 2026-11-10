@@ -1121,12 +1121,15 @@ class _Body extends StatelessWidget {
               // واحد، وفصلُها في بطاقتين يجعل الخطوة الأخيرة شيئاً يُبحَث عنه. ولا عنوان فوق
               // البطاقة: الكلمة على المفتاح تقول ما يفعله، وعنوانٌ يعيدها سطرٌ ثانٍ لمعنى واحد.
               //
-              // **والبطاقة لا تُرسم إلا حين يكون فيها اثنان.** قبل «جاهزة» لا علامة أصلاً —
-              // الخادم يقول ذلك بـ`readyMessageApplies` لا مقارنةٌ بحالةٍ تُكتب هنا — فيبقى
-              // الزرّ وحده كما كان، لا صندوقاً حول زرٍّ واحد.
+              // **The card is drawn only when it holds two things.** Before dispatch — «استلام
+              // مكتب» for a pickup, «جاري التوصيل» for a delivery (owner's request, 2026-11-10)
+              // — there is no switch at all. The server says so with `readyMessageApplies`
+              // rather than a status compared here, so the button stands alone as it did, not
+              // a box around a single button.
               //
-              // **و«نسخ الرسالة» بجانبه، على القاعدة نفسها** (طلب المستخدم، 2026-10-28): رسالة
-              // الجاهزية تولد حين تولد العلامة، فلا تُعرَض قبل «جاهزة» ولا تغيب بعدها.
+              // **«نسخ الرسالة» sits beside it, on the same rule** (owner's request, 2026-10-28):
+              // the message is born with the switch, so it is not offered before dispatch and
+              // does not disappear after it.
               if (order.readyMessageApplies)
                 _Section(
                   child: Column(

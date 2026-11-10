@@ -42,7 +42,8 @@ final readonly class OrderFilters
          * `true` is a plain test on the column: «أيّها أُبلِغ أصحابها؟».
          *
          * `false` is **the queue**, not the column's negation — it also demands that the order
-         * has reached «جاهزة» and has not been delivered, settled or cancelled. A bare
+         * has been dispatched («استلام مكتب» or «جاري التوصيل») and has not been delivered,
+         * settled or cancelled. A bare
          * `ready_message_sent_at IS NULL` would answer with every order ever taken, including the
          * ones nobody could message yet because nothing is made, and every one the customer
          * already collected; a filter whose answer nobody wants is a filter nobody uses. See §٥

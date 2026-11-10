@@ -29,17 +29,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// قسم «رسالة الجاهزية» على شاشة الطلبية.
+/// The «رسالة الجاهزية» section on the order screen.
 ///
-/// **ثلاثة أسئلة، ولكلٍّ منها صاحبٌ مختلف يجيب عنه:**
+/// **Three questions, each answered by a different owner:**
 ///
-/// 1. **هل يُرسَم القسم أصلاً؟** الخادم يجيب بـ`ready_message_applies` — «بلغت الطلبية الجاهزية»
-///    مقروءاً من `ready_at`، لا مقارنةَ حالاتٍ تُكتب هنا. فيبقى مرسوماً بعد التسليم أيضاً، لأنّ
-///    «هل أُبلِغ أصلاً؟» يُسأل بعد خروج الطرد لا قبله.
-/// 2. **هل يُفتح المفتاح؟** `orders.ready_message` — والقسم لا يختفي بدونها، على قاعدة
-///    «الاستعجال»: «ليس لك» و«غير موجود» يجب ألّا يتشابها.
-/// 3. **ماذا يقول حين يكون مضبوطاً؟** مَن ضغطه ومتى — وهي الواقعة نفسها، إذ الغرض من الخانة
-///    التأكّد من أنّ الموظف المسؤول أرسل الرسالة.
+/// 1. **Is the section drawn at all?** The server answers with `ready_message_applies` — «the
+///    order has been dispatched» («استلام مكتب» or «جاري التوصيل»), read from `dispatched_at`,
+///    never from statuses compared here. It stays drawn after delivery too.
+/// 2. **Does the switch open?** `orders.ready_message` — and the section does not disappear
+///    without it, on the «الاستعجال» rule: «not yours» and «not there» must not look alike.
+/// 3. **What does it say once set?** Who pressed it and when — the fact itself, since the point
+///    of the switch is confirming the responsible employee sent the message.
 ///
 /// See Docs/orders/ORDER-READY-MESSAGE.md.
 ///
@@ -54,8 +54,8 @@ void main() {
   Order order({
     bool applies = true,
     bool sent = false,
-    OrderStatus status = OrderStatus.ready,
-    String statusLabel = 'جاهزة',
+    OrderStatus status = OrderStatus.outForDelivery,
+    String statusLabel = 'جاري التوصيل',
     OrderActor? sentBy,
     DateTime? sentAt,
   }) => Order(
