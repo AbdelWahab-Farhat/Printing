@@ -45,6 +45,10 @@ abstract interface class InvestmentFundRepository {
     required int purchaseOrderId,
     required List<int> stockItemIds,
     Map<int, String> printingSalePrices,
+
+    /// Dinars per dollar on a dollar order — what the fund pays at (USD-ACCOUNTS.md §٥). Null on
+    /// a dinar order, and then not sent.
+    String? rate,
   });
 
   /// مصروفٌ على الصندوق: يأكل من ربح فترته ويخرج من خزينته.

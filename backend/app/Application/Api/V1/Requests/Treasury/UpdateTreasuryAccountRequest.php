@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Treasury;
 
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,6 +24,8 @@ class UpdateTreasuryAccountRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:100'],
             'holder_user_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->whereNull('deleted_at')],
+            // Only while the account has never moved — UpdateTreasuryAccount says why.
+            'currency' => ['sometimes', Rule::enum(Currency::class)],
             'is_default' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             // «كاش مكتب الاستلام» — a branch customers collect from; cash accounts only (§١٩).
@@ -50,6 +53,7 @@ class UpdateTreasuryAccountRequest extends FormRequest
             'name.max' => 'اسم الحساب طويل جداً',
             'holder_user_id.exists' => 'الموظف غير موجود',
             'pickup_city_id.exists' => 'ليس مكتب استلام',
+            'currency.enum' => 'العملة غير معروفة',
         ];
     }
 
@@ -58,6 +62,7 @@ class UpdateTreasuryAccountRequest extends FormRequest
         return [
             'name' => 'اسم الحساب',
             'holder_user_id' => 'صاحب الحساب',
+            'currency' => 'العملة',
             'is_default' => 'الحساب الافتراضي',
             'is_active' => 'مفعّل',
             'is_collected' => 'يُجمَع عند التسوية',

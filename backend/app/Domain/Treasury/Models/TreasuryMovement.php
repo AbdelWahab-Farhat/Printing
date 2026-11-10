@@ -55,6 +55,8 @@ class TreasuryMovement extends Model
             'direction' => MovementDirection::class,
             'kind' => MovementKind::class,
             'amount' => 'decimal:2',
+            // An expense out of a dollar account, in dinars — USD-ACCOUNTS.md §٨.
+            'dinar_amount' => 'decimal:2',
             'occurred_at' => 'datetime',
         ];
     }

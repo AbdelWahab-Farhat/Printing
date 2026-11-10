@@ -168,10 +168,15 @@ final class FundGoodsOnOrder
             ->whereColumn('poi.quantity_received', '<', 'poi.quantity_ordered');
     }
 
-    /** التكلفةُ الواصلة للسطر بنسبة ما لم يصل منه — التعريفُ الواحد للرقم والقائمة. */
+    /**
+     * التكلفةُ الواصلة للسطر بنسبة ما لم يصل منه — التعريفُ الواحد للرقم والقائمة.
+     *
+     * On a dollar order the line's own figures are dollars; `funded_cost` is what funding fixed
+     * it at in dinars (USD-ACCOUNTS.md §٥), and that is what left the fund.
+     */
     private function valueSql(): string
     {
-        return 'coalesce(poi.final_total_cost, 0) * (poi.quantity_ordered - poi.quantity_received) / poi.quantity_ordered';
+        return 'coalesce(poi.funded_cost, poi.final_total_cost, 0) * (poi.quantity_ordered - poi.quantity_received) / poi.quantity_ordered';
     }
 
     private function day(mixed $value): ?string

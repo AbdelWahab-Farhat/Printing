@@ -17,6 +17,7 @@ import 'package:dayaa/features/purchase_orders/presentation/viewmodel/save_purch
 import 'package:dayaa/features/purchase_orders/presentation/widgets/additional_cost_row.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
 import 'package:dayaa/features/stock_items/presentation/widgets/stock_item_picker_sheet.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/vendors/models/vendor.dart';
 import 'package:dayaa/features/vendors/presentation/widgets/vendor_picker_sheet.dart';
 import 'package:dayaa/features/warehouses/presentation/widgets/warehouse_picker_sheet.dart';
@@ -92,6 +93,36 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   late String _orderDate = widget.order?.orderDate ?? _today;
   late String? _expectedDate = widget.order?.expectedDate;
 
+  /// Every amount on the order is in it — USD-ACCOUNTS.md §٤. Picked on a new order alone; an
+  /// existing one keeps what it was raised in.
+  late Currency _currency = widget.order?.currency ?? Currency.lyd;
+
+  /// To dollars: the fund's row goes — a dollar order is funded at a rate, asked on the order's
+  /// own funding screen once it is saved — so a funding choice made for dinars is dropped rather
+  /// than sent without one. A cost's dinar drawer stays: it pays a dollar order's customs. Back to
+  /// dinars, a dollar drawer named for a cost is dropped.
+  void _pickCurrency(Currency currency) {
+    setState(() {
+      _currency = currency;
+
+      if (currency == Currency.usd) {
+        _fundBuys = false;
+        _fundedShelves.clear();
+      }
+
+      // Back to dinars: a dollar drawer pays a dollar order's costs alone (USD-ACCOUNTS §٧).
+      if (currency == Currency.lyd) {
+        for (final cost in _additionalCosts) {
+          if (cost.accountCurrency == Currency.usd) {
+            cost
+              ..treasuryAccountId = null
+              ..accountCurrency = null;
+          }
+        }
+      }
+    });
+  }
+
   late final List<_LineDraft> _lines = [
     for (final item in widget.order?.items ?? const <PurchaseOrderItem>[])
       _LineDraft(
@@ -156,6 +187,11 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
   /// فات وقتُه أصلاً — طبقةُ التكلفة تُختم بصفقتها عند البوابة ولا تُختم بعدها.
   bool get _mayFund {
     if (!sl<Session>().can(AppPermission.manageInvestors)) return false;
+
+    // A dollar order is funded at a rate («سعر النظام» unless changed), which this form has no
+    // way to show before the order exists — so it is funded from the order's screen
+    // (USD-ACCOUNTS.md §٥).
+    if (_currency == Currency.usd) return false;
 
     final order = widget.order;
     if (order == null) return true;
@@ -461,6 +497,8 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
       orderDate: _orderDate,
       expectedDate: _expectedDate,
       notes: _notes.text,
+      // Dollars are said; dinars are the server's default and stay unsent, as before.
+      currency: !_isEditing && _currency == Currency.usd ? Currency.usd : null,
       items: [
         for (final line in _lines)
           DraftLine(
@@ -581,6 +619,22 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     onTap: _mayPickVendor ? _pickVendor : null,
                   ),
                   SizedBox(height: 12.h),
+                  // The currency, picked once — USD-ACCOUNTS.md §٤. An existing dinar order says
+                  // nothing, as before; an existing dollar one says so, locked like the vendor.
+                  if (!_isEditing) ...[
+                    _CurrencyPicker(value: _currency, onChanged: _pickCurrency),
+                    SizedBox(height: 12.h),
+                  ] else if (_currency == Currency.usd) ...[
+                    _PickerTile(
+                      icon: AppIcons.exchange,
+                      label: 'العملة',
+                      value: _currency.label,
+                      hint: '',
+                      lockedNote: 'العملة لا تتغيّر بعد إنشاء الأمر',
+                      onTap: null,
+                    ),
+                    SizedBox(height: 12.h),
+                  ],
                   _PickerTile(
                     icon: AppIcons.warehouse,
                     label: 'مخزن الوجهة',
@@ -628,6 +682,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     _LineRow(
                       key: ValueKey(line.stockItemId),
                       line: line,
+                      currency: _currency,
                       onChanged: (_) => _typed(cubit),
                       onRemove: () => _removeLine(line),
                     ),
@@ -661,6 +716,7 @@ class _PurchaseOrderFormViewState extends State<_PurchaseOrderFormView> {
                     AdditionalCostRow(
                       key: ObjectKey(cost),
                       cost: cost,
+                      currency: _currency,
                       onChanged: (_) => _typed(cubit),
                       onRemove: () => _removeAdditionalCost(cost),
                     ),
@@ -859,12 +915,16 @@ class _LineRow extends StatelessWidget {
     required this.line,
     required this.onChanged,
     required this.onRemove,
+    required this.currency,
     super.key,
   });
 
   final _LineDraft line;
   final ValueChanged<String> onChanged;
   final VoidCallback onRemove;
+
+  /// The order's — what the line's total is typed in.
+  final Currency currency;
 
   @override
   Widget build(BuildContext context) {
@@ -947,7 +1007,7 @@ class _LineRow extends StatelessWidget {
             controller: line.baseTotalCost,
             // The line's total, which is what the invoice in the buyer's hand is written in.
             // The server divides by the quantity above to get the per-unit figure.
-            label: 'تكلفة البند الإجمالية (د.ل)',
+            label: 'تكلفة البند الإجمالية (${currency.symbol})',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,]')),
@@ -969,6 +1029,45 @@ class _LineRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// «دينار · دولار» on a new order. Dollars carry a line saying what a dollar order cannot do yet,
+/// so its missing buttons later are not a surprise.
+class _CurrencyPicker extends StatelessWidget {
+  const _CurrencyPicker({required this.value, required this.onChanged});
+
+  final Currency value;
+  final ValueChanged<Currency> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<Currency>(
+          key: const ValueKey('order-currency'),
+          segments: [
+            for (final currency in Currency.values)
+              ButtonSegment(value: currency, label: Text(currency.label)),
+          ],
+          selected: {value},
+          showSelectedIcon: false,
+          onSelectionChanged: (picked) => onChanged(picked.single),
+        ),
+        if (value == Currency.usd) ...[
+          SizedBox(height: 6.h),
+          Text(
+            'كل مبالغ الأمر بالدولار، ودينه على «علينا» الدولاري للمورد ويُدفع من حساب دولار. '
+            'التكلفة على فاتورة المورد بالدولار، ومن حساب دينار بالدينار. وعند الاستلام يُسأل '
+            'عن سعر الصرف. والشراء بمال الصندوق من شاشة الأمر بعد حفظه، ويُسأل فيه عن السعر.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

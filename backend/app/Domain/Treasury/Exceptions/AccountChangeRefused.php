@@ -83,6 +83,30 @@ final class AccountChangeRefused extends DomainException
         return new self("لا تُسوّى العهدة إلى «{$account}» — يلزم حساب مفعّل غير عهدة", 'settles_into_account_id');
     }
 
+    /** USD-ACCOUNTS §٣: dollars sit in a cash box or a bank — not Libyana, custody or a payable. */
+    public static function dollarKind(string $kind): self
+    {
+        return new self("حساب الدولار يكون كاشاً أو مصرفاً — لا {$kind}", 'currency');
+    }
+
+    /** A default is where a payment nobody placed lands, and every such payment is dinars. */
+    public static function dollarCannotBeDefault(): self
+    {
+        return new self('حساب الدولار لا يكون افتراضياً لنوعه — الافتراضي تهبط فيه دفعات الزبائن بالدينار', 'is_default');
+    }
+
+    /** A pickup office's box takes what customers pay there — dinars. */
+    public static function dollarCannotServeAnOffice(): self
+    {
+        return new self('حساب الدولار لا يكون كاش مكتب استلام — الزبائن يدفعون هناك بالدينار', 'pickup_city_id');
+    }
+
+    /** The currency says what every figure on the account means; changing it re-reads its past. */
+    public static function currencyFixedAfterMovements(string $account): self
+    {
+        return new self("لـ«{$account}» حركات — عملته لا تتغيّر بعدها. افتح حساباً جديداً بالعملة الأخرى", 'currency');
+    }
+
     public static function onlyCashServesAnOffice(): self
     {
         return new self('كاش مكتب الاستلام يكون حساباً نقدياً', 'pickup_city_id');

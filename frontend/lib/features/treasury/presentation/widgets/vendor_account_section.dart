@@ -6,6 +6,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/treasury/models/vendor_payment.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_widgets.dart';
 import 'package:dayaa/features/treasury/usecases/treasury_usecases.dart';
@@ -82,15 +83,45 @@ class _VendorAccountSectionState extends State<VendorAccountSection> {
             AppButton.tonal(
               label: 'كشف الحساب',
               icon: AppIcons.treasury,
-              onPressed: () async {
-                await context.push(Routes.treasuryAccount(statement));
-
-                unawaited(_load());
-              },
+              onPressed: () => _open(statement),
             ),
+          ],
+          // The dollar «علينا» apart — added to the card above it would read dollars as dinars.
+          // USD-ACCOUNTS.md §٤.
+          if (account.dollarTreasuryAccountId case final dollars?) ...[
+            SizedBox(height: 14.h),
+            TreasuryFiguresCard(
+              key: const ValueKey('vendor-dollar-account'),
+              title: 'الحساب مع المورد بالدولار',
+              icon: AppIcons.exchange,
+              currency: Currency.usd,
+              lines: [
+                ('أوامر الشراء', account.dollars.ordered),
+                if (account.dollars.openingDebt != '0.00')
+                  ('دَين افتتاحي', account.dollars.openingDebt),
+                ('المدفوع', account.dollars.paid),
+                if (account.dollars.credited != '0.00')
+                  ('خصم من المورد', account.dollars.credited),
+              ],
+              emphasis: ('المستحق له', account.dollarsOwed),
+            ),
+            if (canReadStatement) ...[
+              SizedBox(height: 8.h),
+              AppButton.tonal(
+                label: 'كشف الحساب بالدولار',
+                icon: AppIcons.treasury,
+                onPressed: () => _open(dollars),
+              ),
+            ],
           ],
         ],
       ),
     );
+  }
+
+  Future<void> _open(int accountId) async {
+    await context.push(Routes.treasuryAccount(accountId));
+
+    unawaited(_load());
   }
 }

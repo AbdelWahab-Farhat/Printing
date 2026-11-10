@@ -212,7 +212,11 @@ final class UpdatePurchaseOrder
         $kept = [];
 
         foreach ($additionalCosts as $index => $cost) {
-            $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id");
+            $this->costExpense->guardAccount($cost->treasuryAccountId, "additional_costs.{$index}.treasury_account_id", $order);
+
+            // The bill's or the drawer's, worked out again: a cost moved from one to the other
+            // changes its currency with it (USD-ACCOUNTS.md §٧).
+            $currency = $this->costExpense->currencyOf($order, $cost, "additional_costs.{$index}.currency");
 
             if ($cost->id !== null) {
                 // Scoped through the relation, so another order's cost is never found here.
@@ -224,6 +228,7 @@ final class UpdatePurchaseOrder
 
                 $existing->fill(['name' => $cost->name, 'amount' => $cost->amount]);
                 $existing->treasury_account_id = $cost->treasuryAccountId;
+                $existing->currency = $currency;
                 $existing->save();
                 $kept[] = $existing;
 
@@ -232,6 +237,7 @@ final class UpdatePurchaseOrder
 
             $created = $order->additionalCosts()->make(['name' => $cost->name, 'amount' => $cost->amount]);
             $created->treasury_account_id = $cost->treasuryAccountId;
+            $created->currency = $currency;
             $created->recorded_by = $actorId;
             $created->save();
             $kept[] = $created;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Treasury\DTOs;
 
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 
 /**
  * An account as the accounts screen sends it. `kind` is read on create only — an account's kind
@@ -32,6 +33,8 @@ final readonly class AccountData
         // Cash only: the «استلام مكتب» branch this box serves (§١٩). A sent null unlinks it.
         public ?int $pickupCityId = null,
         public bool $hasPickupCity = false,
+        // Read on create, and on update only while the account has never moved (USD-ACCOUNTS §٣).
+        public ?Currency $currency = null,
     ) {}
 
     /**
@@ -57,6 +60,7 @@ final readonly class AccountData
             isCollected: isset($validated['is_collected']) ? (bool) $validated['is_collected'] : null,
             pickupCityId: isset($validated['pickup_city_id']) ? (int) $validated['pickup_city_id'] : null,
             hasPickupCity: array_key_exists('pickup_city_id', $validated),
+            currency: isset($validated['currency']) ? Currency::from((string) $validated['currency']) : null,
         );
     }
 }

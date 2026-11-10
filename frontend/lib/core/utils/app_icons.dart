@@ -272,6 +272,9 @@ abstract final class AppIcons {
   /// مالٌ انتقل بين حسابين.
   static IconData get transfer => _pick(Icons.swap_horiz_rounded, CupertinoIcons.arrow_right_arrow_left);
 
+  /// «صرف عملة» — dinars into dollars or back (USD-ACCOUNTS §٣).
+  static IconData get exchange => _pick(Icons.currency_exchange_rounded, CupertinoIcons.money_dollar_circle);
+
   /// «جرد الحساب» — عدُّ ما هو موجودٌ فعلاً.
   static IconData get countBalance => _pick(Icons.fact_check_outlined, CupertinoIcons.checkmark_seal);
 

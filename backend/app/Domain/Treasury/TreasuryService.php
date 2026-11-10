@@ -23,6 +23,7 @@ use App\Domain\Treasury\DTOs\AccountData;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\DTOs\OperationData;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Enums\OperationType;
@@ -159,14 +160,18 @@ final class TreasuryService
     /**
      * «المصاريف» — every account's expenses on one page, and what they add up to (§٢١).
      *
+     * `total` is dinars — a dollar expense at its rate — and `usd_total` the dollar ones in
+     * dollars, said beside it (USD-ACCOUNTS.md §٨).
+     *
      * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int}  $filters
-     * @return array{page: LengthAwarePaginator<int, TreasuryMovement>, total: string}
+     * @return array{page: LengthAwarePaginator<int, TreasuryMovement>, total: string, usd_total: string}
      */
     public function expenses(array $filters, int $perPage): array
     {
         return [
             'page' => $this->expenses->page($filters, $perPage),
             'total' => $this->expenses->total($filters),
+            'usd_total' => $this->expenses->dollarTotal($filters),
         ];
     }
 
@@ -183,7 +188,7 @@ final class TreasuryService
     /**
      * What a picker offers for a method and which it opens on.
      *
-     * @return array{accounts: \Illuminate\Support\Collection<int, TreasuryAccount>, suggested: TreasuryAccount}
+     * @return array{accounts: \Illuminate\Support\Collection<int, TreasuryAccount>, suggested: ?TreasuryAccount}
      */
     public function accountOptions(
         string $method,
@@ -191,6 +196,7 @@ final class TreasuryService
         bool $incoming,
         ?int $pickupCityId = null,
         bool $carrierHolds = false,
+        Currency $currency = Currency::Lyd,
     ): array {
         return $this->resolver->options(
             $method,
@@ -198,6 +204,7 @@ final class TreasuryService
             $incoming,
             $pickupCityId,
             $carrierHolds,
+            $currency,
         );
     }
 
@@ -210,6 +217,8 @@ final class TreasuryService
      * (`$incoming = false`) is never taken from custody. `$pickupCityId` is the branch an order
      * waits at, whose cash box takes its cash (§١٩). `$carrierHolds`: the order's Nawris parcel
      * is still on the road, so cash typed for it is in the courier's hand — Nawris's custody.
+     * `$currency` USD is a dollar debt paid: a dollar account, named, and nothing else
+     * (USD-ACCOUNTS §٦).
      */
     public function accountFor(
         string $method,
@@ -219,8 +228,9 @@ final class TreasuryService
         string $field = 'treasury_account_id',
         ?int $pickupCityId = null,
         bool $carrierHolds = false,
+        Currency $currency = Currency::Lyd,
     ): TreasuryAccount {
-        return $this->resolver->forMethod($method, $actorId, $chosenId, $incoming, $field, $pickupCityId, $carrierHolds);
+        return $this->resolver->forMethod($method, $actorId, $chosenId, $incoming, $field, $pickupCityId, $carrierHolds, $currency);
     }
 
     /**
@@ -233,6 +243,11 @@ final class TreasuryService
 
         if (! $account->is_active) {
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+        }
+
+        // Every form that asks "which drawer paid" pays in dinars — USD-ACCOUNTS §٣.
+        if ($account->isDollar()) {
+            throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
         }
 
         if (! $account->kind->spendable()) {
@@ -401,30 +416,42 @@ final class TreasuryService
     // ── «علينا» — what is owed (§٢٠) ─────────────────────────────────────────────────────
 
     /**
-     * The vendor's payable, opened the first time anything is owed to them or paid to them.
+     * The vendor's payable in one currency, opened the first time anything is owed to them or
+     * paid to them in it. A vendor has one per currency: a dollar purchase order's debt is
+     * dollars, on its own «علينا» beside the dinar one (USD-ACCOUNTS.md §٤).
      *
      * `createOrFirst`, not `firstOrCreate`: two purchase orders raised for a new vendor at once
      * would both miss the lookup, and the second insert meets `treasury_accounts_one_per_vendor`
      * inside a savepoint and reads the first one's row instead of failing.
      */
-    public function payableForVendor(int $vendorId, string $vendorName): TreasuryAccount
+    public function payableForVendor(int $vendorId, string $vendorName, Currency $currency = Currency::Lyd): TreasuryAccount
     {
-        $existing = TreasuryAccount::query()->where('vendor_id', $vendorId)->first();
+        $existing = TreasuryAccount::query()
+            ->where('vendor_id', $vendorId)
+            ->where('currency', $currency->value)
+            ->first();
 
         if ($existing !== null) {
             return $existing;
         }
 
         return TreasuryAccount::unguarded(fn () => TreasuryAccount::query()->createOrFirst(
-            ['vendor_id' => $vendorId],
+            ['vendor_id' => $vendorId, 'currency' => $currency->value],
             [
-                'name' => mb_substr($vendorName, 0, 100),
+                'name' => self::vendorPayableName($vendorName, $currency),
                 'kind' => AccountKind::Payable,
                 'is_default' => false,
                 'is_active' => true,
-                'currency' => 'LYD',
             ],
         ));
+    }
+
+    /** The vendor's name, and « (دولار)» after it on the dollar one — the dashboard shows both. */
+    private static function vendorPayableName(string $vendorName, Currency $currency): string
+    {
+        $suffix = $currency === Currency::Usd ? ' (دولار)' : '';
+
+        return mb_substr($vendorName, 0, 100 - mb_strlen($suffix)).$suffix;
     }
 
     /**
@@ -558,19 +585,24 @@ final class TreasuryService
         return app(RecordGatewayFee::class)($accountId, $fee, $occurredAt, $notes, $actorId);
     }
 
-    /** The vendor's payable, if anything was ever owed to them. */
-    public function payableIdOfVendor(int $vendorId): ?int
+    /** The vendor's payable in one currency, if anything was ever owed to them in it. */
+    public function payableIdOfVendor(int $vendorId, Currency $currency = Currency::Lyd): ?int
     {
-        $id = TreasuryAccount::query()->where('vendor_id', $vendorId)->value('id');
+        $id = TreasuryAccount::query()
+            ->where('vendor_id', $vendorId)
+            ->where('currency', $currency->value)
+            ->value('id');
 
         return $id === null ? null : (int) $id;
     }
 
-    /** A renamed vendor's account follows — it is found by the name on the dashboard. */
+    /** A renamed vendor's accounts follow — they are found by the name on the dashboard. */
     public function renameVendorPayable(int $vendorId, string $vendorName): void
     {
         TreasuryAccount::query()->where('vendor_id', $vendorId)->get()
-            ->each(fn (TreasuryAccount $account) => $account->forceFill(['name' => mb_substr($vendorName, 0, 100)])->save());
+            ->each(fn (TreasuryAccount $account) => $account->forceFill([
+                'name' => self::vendorPayableName($vendorName, $account->currency),
+            ])->save());
     }
 
     /**
@@ -616,6 +648,8 @@ final class TreasuryService
         string $notes,
         string $reason,
         ?int $actorId,
+        // Out of a dollar account: what it came to in dinars, for «المصاريف» (USD-ACCOUNTS §٨).
+        ?string $dinarAmount = null,
     ): void {
         ($this->syncDebt)(
             $sourceType,
@@ -627,6 +661,7 @@ final class TreasuryService
             $notes,
             $reason,
             $actorId,
+            $dinarAmount,
         );
     }
 
@@ -636,12 +671,18 @@ final class TreasuryService
      * switched-off account, custody, a vendor's payable (its orders and payments move it), the
      * customers' excess, and the two wallet payables — تكلفةٌ عليهما تفصلهما عن المحافظ.
      */
-    public function expenseAccount(int $id, string $field = 'treasury_account_id'): TreasuryAccount
+    public function expenseAccount(int $id, string $field = 'treasury_account_id', bool $dollarsToo = false): TreasuryAccount
     {
         $account = TreasuryAccount::query()->findOrFail($id);
 
         if (! $account->is_active) {
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+        }
+
+        // Dinars, unless the caller can count the dollars in dinars — a dollar purchase order's
+        // cost, at its rate (USD-ACCOUNTS §٧, §٨).
+        if ($account->isDollar() && ! $dollarsToo) {
+            throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
         }
 
         if ($account->isVendorPayable()) {
@@ -797,6 +838,10 @@ final class TreasuryService
                 throw AccountDoesNotFitMethod::system((string) $account->name, $field);
             }
 
+            if ($account->isDollar()) {
+                throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
+            }
+
             if ($account->kind !== $wanted) {
                 throw new OperationRefused("«{$account->name}» ليس حساب {$wanted->label()} — مال كل نوع يذهب إلى حسابٍ من نوعه", $field);
             }
@@ -890,6 +935,7 @@ final class TreasuryService
                 "treasury.pickable-of:{$kind->value}",
                 fn (): array => array_map(self::pickerRow(...), TreasuryAccount::query()
                     ->active()
+                    ->inDinars()
                     ->whereNull('system_code')
                     ->where('kind', $kind->value)
                     ->orderByDesc('is_default')
@@ -1137,6 +1183,7 @@ final class TreasuryService
     {
         return [
             'sources' => TreasuryAccount::query()
+                ->inDinars()
                 ->whereIn('kind', [AccountKind::Custody->value, AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
                 ->orderByRaw("CASE WHEN kind = 'custody' THEN 0 ELSE 1 END")
                 ->orderBy('name')
@@ -1146,6 +1193,7 @@ final class TreasuryService
                 ->all(),
             'destinations' => TreasuryAccount::query()
                 ->active()
+                ->inDinars()
                 // Not «Ezone» or any account code moves: no order's money is settled into them.
                 ->whereNull('system_code')
                 ->whereIn('kind', [AccountKind::Cash->value, AccountKind::Bank->value, AccountKind::Wallet->value])
@@ -1189,6 +1237,7 @@ final class TreasuryService
     {
         return TreasuryAccount::query()
             ->active()
+            ->inDinars()
             ->whereNull('system_code')
             ->where('kind', '<>', AccountKind::Payable->value)
             ->where(fn ($q) => $q->where('kind', '<>', AccountKind::Custody->value)

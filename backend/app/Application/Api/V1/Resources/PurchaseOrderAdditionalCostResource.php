@@ -22,6 +22,8 @@ class PurchaseOrderAdditionalCostResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'amount' => (string) $this->amount,
+            // The order's on the vendor's bill, the drawer's when paid from one — USD-ACCOUNTS.md §٧.
+            'currency' => $this->currency->value,
             // Set on a cost typed on the receive screen; null on one planned on the order.
             'stock_arrival_id' => $this->stock_arrival_id,
             // Who was paid: null is the vendor's bill; otherwise the drawer that paid, or the

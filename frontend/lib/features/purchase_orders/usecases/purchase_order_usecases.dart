@@ -5,6 +5,7 @@ import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
 import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 
 /// One page of the purchase orders list.
@@ -134,6 +135,10 @@ class SavePurchaseOrder {
     List<DraftAdditionalCost> additionalCosts = const [],
     String? expectedDate,
     String? notes,
+
+    /// Read when [id] is null alone — an order keeps the currency it was raised in. Null is
+    /// dinars.
+    Currency? currency,
   }) {
     final lines = [
       for (final line in items)
@@ -158,6 +163,7 @@ class SavePurchaseOrder {
         additionalCosts: costs,
         expectedDate: _blankToNull(expectedDate),
         notes: _blankToNull(notes),
+        currency: currency,
       );
     }
 
@@ -210,6 +216,7 @@ class ReceivePurchaseOrderArrival {
     List<DraftAdditionalCost> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
+    String? arrivalRate,
   }) {
     final lines = [
       for (final entry in quantities.entries)
@@ -223,6 +230,7 @@ class ReceivePurchaseOrderArrival {
       additionalCosts: _costLines(additionalCosts),
       invoiceNumber: _blankToNull(invoiceNumber),
       notes: _blankToNull(notes),
+      arrivalRate: arrivalRate == null || arrivalRate.trim().isEmpty ? null : _number(arrivalRate),
     );
   }
 

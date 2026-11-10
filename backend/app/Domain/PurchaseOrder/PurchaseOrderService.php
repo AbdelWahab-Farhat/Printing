@@ -184,6 +184,16 @@ class PurchaseOrderService
     }
 
     /**
+     * What the vendor is owed in dollars — USD-ACCOUNTS.md §٤.
+     *
+     * @return array{ordered: string, opening_debt: string, paid: string, credited: string, owed: string, paid_on_old_orders: string}
+     */
+    public function vendorDollarSummary(int $vendorId): array
+    {
+        return $this->vendorPaymentSummary->dollarsForVendor($vendorId);
+    }
+
+    /**
      * @return array{total: ?string, paid: string, remaining: ?string, predates_treasury: bool}
      */
     public function purchaseOrderPaymentSummary(PurchaseOrder $order): array

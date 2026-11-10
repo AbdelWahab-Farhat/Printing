@@ -39,7 +39,8 @@ class TreasuryExpenseController extends Controller
         return $this->successWithPagination(
             TreasuryMovementResource::collection($expenses['page']),
             // What the whole filtered period adds up to — not this page's rows.
-            extraMeta: ['expenses_total' => $expenses['total']],
+            // In dinars — a dollar expense at its rate — and the dollar ones beside it (§٨).
+            extraMeta: ['expenses_total' => $expenses['total'], 'expenses_usd_total' => $expenses['usd_total']],
         );
     }
 }

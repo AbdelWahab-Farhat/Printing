@@ -14,6 +14,7 @@ import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/treasury/models/vendor_payment.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/purchase_order_payments_cubit.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
@@ -115,6 +116,7 @@ class _Loaded extends StatelessWidget {
                 ('يُدفع عليه حتى', payments.payableUpTo!),
             ],
             emphasis: payments.remaining == null ? null : ('المتبقي للمورد', payments.remaining!),
+            currency: payments.currency,
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 4.w),
@@ -185,7 +187,8 @@ class _Loaded extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _PayVendorForm(cubit: cubit, suggested: remaining),
+      builder: (_) =>
+          _PayVendorForm(cubit: cubit, suggested: remaining, currency: payments.currency),
     );
   }
 
@@ -196,7 +199,7 @@ class _Loaded extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _CreditVendorForm(cubit: cubit),
+      builder: (_) => _CreditVendorForm(cubit: cubit, currency: payments.currency),
     );
   }
 
@@ -267,10 +270,11 @@ class _PaymentRow extends StatelessWidget {
         ? scheme.primary
         : scheme.error;
     final figure = !movedMoney
-        ? treasuryMoney(payment.amount)
+        ? treasuryMoney(payment.amount, currency: payment.currency)
         : treasuryMoney(
             payment.isReversal ? payment.amount : '-${payment.amount}',
             signed: true,
+            currency: payment.currency,
           );
 
     final story = [?payment.methodLabel, ?payment.accountName, ?payment.recorderName].join(' · ');
@@ -323,7 +327,7 @@ class _PaymentRow extends StatelessWidget {
                 context,
                 title: payment.typeLabel,
                 subtitle: [
-                  treasuryMoney(payment.amount),
+                  treasuryMoney(payment.amount, currency: payment.currency),
                   if (payment.paidAt case final at?) at.dayLabel,
                 ].join(' · '),
                 options: [
@@ -395,12 +399,19 @@ class _Failed extends StatelessWidget {
   }
 }
 
+/// «المبلغ» — and «بالدولار» when it is, so nobody types dinars into a dollar debt.
+String _amountLabel(Currency currency) =>
+    currency == Currency.usd ? 'المبلغ بالدولار' : 'المبلغ';
+
 /// «خصم من المورد» — نقصٌ في الشحنة أو تخفيض: يُنقص المستحق على الأمر ولا يحرّك مالاً، والخادم
 /// يرفض أكثر مما بقي عليه ويقول ذلك تحت المبلغ.
 class _CreditVendorForm extends StatefulWidget {
-  const _CreditVendorForm({required this.cubit});
+  const _CreditVendorForm({required this.cubit, required this.currency});
 
   final PurchaseOrderPaymentsCubit cubit;
+
+  /// The order's — the credit is in it.
+  final Currency currency;
 
   @override
   State<_CreditVendorForm> createState() => _CreditVendorFormState();
@@ -417,7 +428,7 @@ class _CreditVendorFormState extends State<_CreditVendorForm> {
   bool _saving = false;
   Failure? _refusal;
 
-  static const _rendered = {'amount', 'notes'};
+  static const _rendered = {'amount', 'currency', 'notes'};
 
   @override
   void dispose() {
@@ -482,11 +493,11 @@ class _CreditVendorFormState extends State<_CreditVendorForm> {
               SizedBox(height: 20.h),
               AppTextField(
                 controller: _amount,
-                label: 'المبلغ',
+                label: _amountLabel(widget.currency),
                 prefixIcon: AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
-                errorText: _refusal?.fieldError('amount'),
+                errorText: _refusal?.fieldError('amount') ?? _refusal?.fieldError('currency'),
                 validator: (value) {
                   final amount = double.tryParse(Validators.toWesternDigits((value ?? '').trim()));
 
@@ -514,9 +525,13 @@ class _CreditVendorFormState extends State<_CreditVendorForm> {
 /// «دفعة للمورد» — كم، وكيف، ومن أيّ درج. الدرج يجب أن يكفي: الخادم يرفض دفعةً لا يغطيها
 /// الحساب، ويقول ذلك تحت المبلغ.
 class _PayVendorForm extends StatefulWidget {
-  const _PayVendorForm({required this.cubit, this.suggested});
+  const _PayVendorForm({required this.cubit, required this.currency, this.suggested});
 
   final PurchaseOrderPaymentsCubit cubit;
+
+  /// The order's. **Each currency pays its own** (USD-ACCOUNTS.md §٦): a dollar debt from a
+  /// dollar account, named — there is no «تلقائي» drawer for dollars — in dollars, no rate.
+  final Currency currency;
 
   /// المتبقي للمورد — يُفتح عليه المبلغ ما دام موجباً.
   final String? suggested;
@@ -543,7 +558,24 @@ class _PayVendorFormState extends State<_PayVendorForm> {
   bool _saving = false;
   Failure? _refusal;
 
-  static const _rendered = {'amount', 'method', 'treasury_account_id', 'reference', 'notes'};
+  /// Said under the drawer when a dollar payment names none — before the server is asked.
+  String? _accountMissing;
+
+  bool get _inDollars => widget.currency == Currency.usd;
+
+  /// Dollars sit in a cash box or a bank alone, so those are the two ways to pay them.
+  List<PaymentMethod> get _methods => _inDollars
+      ? const [PaymentMethod.bankTransfer, PaymentMethod.cash]
+      : PaymentMethod.selectable;
+
+  static const _rendered = {
+    'amount',
+    'currency',
+    'method',
+    'treasury_account_id',
+    'reference',
+    'notes',
+  };
 
   @override
   void dispose() {
@@ -554,7 +586,14 @@ class _PayVendorFormState extends State<_PayVendorForm> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final valid = _formKey.currentState?.validate() ?? false;
+    final missing = _inDollars && _accountId == null
+        ? 'اختر حساب الدولار الذي خرج منه المبلغ'
+        : null;
+
+    setState(() => _accountMissing = missing);
+
+    if (!valid || missing != null) return;
 
     setState(() {
       _saving = true;
@@ -613,11 +652,11 @@ class _PayVendorFormState extends State<_PayVendorForm> {
               SizedBox(height: 20.h),
               AppTextField(
                 controller: _amount,
-                label: 'المبلغ',
+                label: _amountLabel(widget.currency),
                 prefixIcon: AppIcons.payment,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩.٫]'))],
-                errorText: _refusal?.fieldError('amount'),
+                errorText: _refusal?.fieldError('amount') ?? _refusal?.fieldError('currency'),
                 validator: (value) {
                   final amount = double.tryParse(Validators.toWesternDigits((value ?? '').trim()));
 
@@ -627,7 +666,7 @@ class _PayVendorFormState extends State<_PayVendorForm> {
               SizedBox(height: 16.h),
               AppDropdown<PaymentMethod>(
                 value: _method,
-                items: PaymentMethod.selectable,
+                items: _methods,
                 labelOf: (method) => method.label,
                 label: 'طريقة الدفع',
                 prefixIcon: AppIcons.payment,
@@ -644,11 +683,17 @@ class _PayVendorFormState extends State<_PayVendorForm> {
               ),
               SizedBox(height: 16.h),
               TreasuryAccountPicker(
+                key: const ValueKey('vendor-payment-account'),
                 method: _method.wire,
                 incoming: false,
                 value: _accountId,
-                errorText: _refusal?.fieldError('treasury_account_id'),
-                onChanged: (id) => setState(() => _accountId = id),
+                currency: _inDollars ? Currency.usd : null,
+                unsetLabel: _inDollars ? 'اختر حساب الدولار' : null,
+                errorText: _accountMissing ?? _refusal?.fieldError('treasury_account_id'),
+                onChanged: (id) => setState(() {
+                  _accountId = id;
+                  _accountMissing = null;
+                }),
               ),
               SizedBox(height: 16.h),
               AppTextField(

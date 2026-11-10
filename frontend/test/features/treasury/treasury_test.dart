@@ -533,6 +533,7 @@ void main() {
                       countedBalance,
                       notes,
                       clientToken,
+                      rate,
                     }) async => null,
               ),
               child: const Text('افتح'),
@@ -584,6 +585,7 @@ void main() {
                       countedBalance,
                       notes,
                       clientToken,
+                      rate,
                     }) async {
                       sentFrom = fromAccountId;
                       sentTo = toAccountId;

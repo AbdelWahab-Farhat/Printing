@@ -16,6 +16,7 @@ use App\Domain\PurchaseOrder\Exceptions\VendorPaymentRefused;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\PurchaseOrderService;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\Models\Vendor;
 use App\Support\ResponseTrait;
@@ -44,6 +45,10 @@ class VendorPaymentController extends Controller
             // The vendor's «علينا» account — its page is the vendor's statement (§٢٠). Null until
             // anything was owed or paid. Reading it takes `treasury.view`.
             'treasury_account_id' => $this->treasury->payableIdOfVendor((int) $vendor->getKey()),
+            // The dollar «علينا» beside it, from dollar purchase orders (USD-ACCOUNTS.md §٤):
+            // what is owed in dollars, and its account. `summary` above is dinars alone.
+            'usd_summary' => $this->orders->vendorDollarSummary((int) $vendor->getKey()),
+            'usd_treasury_account_id' => $this->treasury->payableIdOfVendor((int) $vendor->getKey(), Currency::Usd),
             'payments' => VendorPaymentResource::collection(
                 VendorPayment::query()
                     ->where('vendor_id', $vendor->getKey())

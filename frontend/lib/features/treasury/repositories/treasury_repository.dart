@@ -48,6 +48,7 @@ abstract interface class TreasuryRepository {
     bool? isCollected,
     int? pickupCityId,
     bool clearPickupCity = false,
+    Currency? currency,
   });
 
   /// الحسابات التي تقبلها الطريقة، والذي سيختاره الخادم. [incoming] كاذبٌ للمال الخارج — ردٌّ
@@ -59,6 +60,10 @@ abstract interface class TreasuryRepository {
     required String method,
     bool incoming = true,
     int? orderId,
+
+    /// [Currency.usd] for a dollar debt paid out: the dollar accounts alone, and no «تلقائي»
+    /// (USD-ACCOUNTS.md §٦). Null is dinars.
+    Currency? currency,
   });
 
   /// عمليةٌ يدوية واحدة. ما تحتاجه من حقول يتبع [kind] — انظر `StoreTreasuryOperationRequest`.
@@ -75,6 +80,8 @@ abstract interface class TreasuryRepository {
     String? countedBalance,
     String? notes,
     String? clientToken,
+    String? counterAmount,
+    String? rate,
   });
 
   Future<Either<Failure, TreasuryOperation>> reverseOperation(
@@ -115,6 +122,8 @@ abstract interface class TreasuryRepository {
     bool? settleIntoSettler,
     bool? pickSettlementAccounts,
     String? onlineFeePayer,
+    String? usdRate,
+    bool clearUsdRate = false,
   });
 
   /// أين تُسوّى العهدة؛ [targetId] فارغٌ يعيدها إلى القاعدة المبنيّة.

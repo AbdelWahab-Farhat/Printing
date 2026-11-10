@@ -75,6 +75,8 @@ final class UpdateTreasuryAccount
                 throw AccountChangeRefused::stillHoldsMoney((string) $locked->name);
             }
 
+            $this->guardCurrency($locked, $data);
+
             $changes = [];
 
             if ($data->name !== null) {
@@ -123,6 +125,11 @@ final class UpdateTreasuryAccount
                 $locked->pickup_city_id = $data->pickupCityId;
             }
 
+            // Not fillable, like the kind: what every figure on the account means is decided here.
+            if ($data->currency !== null) {
+                $locked->currency = $data->currency;
+            }
+
             $locked->fill($changes)->save();
 
             if ($data->isDefault === true && ! $locked->is_default) {
@@ -131,6 +138,27 @@ final class UpdateTreasuryAccount
 
             return $locked->refresh();
         });
+    }
+
+    /**
+     * The currency changes only on an account that has never moved — one opened in the wrong
+     * currency by mistake. And whatever the request changes, a dollar account stays a cash box or
+     * a bank that is nobody's default and no branch's box (USD-ACCOUNTS §٣).
+     */
+    private function guardCurrency(TreasuryAccount $account, AccountData $data): void
+    {
+        $changing = $data->currency !== null && $data->currency !== $account->currency;
+
+        if ($changing && $account->movements()->exists()) {
+            throw AccountChangeRefused::currencyFixedAfterMovements((string) $account->name);
+        }
+
+        CreateTreasuryAccount::guardCurrency(
+            $data->currency ?? $account->currency,
+            $account->kind,
+            $data->isDefault ?? $account->is_default,
+            $data->hasPickupCity ? $data->pickupCityId !== null : $account->pickup_city_id !== null,
+        );
     }
 
     private function holdsMoney(TreasuryAccount $account): bool

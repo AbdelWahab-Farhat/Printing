@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Treasury\Support;
 
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Exceptions\AccountDoesNotFitMethod;
 use App\Domain\Treasury\Exceptions\NoDefaultAccount;
 use App\Domain\Treasury\Models\TreasuryAccount;
@@ -25,6 +26,11 @@ use Illuminate\Support\Collection;
  * **Rule 5 always answers**, which is what keeps every existing screen working: today's app
  * sends no account, and the migration seeded a default for every kind.
  *
+ * **Dinars, unless dollars are asked for.** Every method here is a way dinars move, so no rule
+ * offers, suggests or accepts a dollar account — USD-ACCOUNTS §٣. A dollar account is never a
+ * default either (its table CHECK), so rule 5 cannot reach one. The one way in is `$currency`
+ * USD — a dollar debt paid (§٦) — which takes a named dollar account and nothing else.
+ *
  * **والقاعدةُ نفسُها تجيب الدفعةَ والشاشة**: {@see options()} يقترح ما يختاره {@see forMethod()}
  * فعلاً، فلا يسمّي «تلقائي» حساباً ويُسجَّل المالُ في غيره.
  */
@@ -44,11 +50,18 @@ final class AccountResolver
         string $field = 'treasury_account_id',
         ?int $pickupCityId = null,
         bool $carrierHolds = false,
+        Currency $currency = Currency::Lyd,
     ): TreasuryAccount {
         $kinds = $this->kindsFor($method, $incoming);
 
         if ($chosenId !== null) {
-            return $this->chosen($chosenId, $kinds, $incoming, $field, $actorId);
+            return $this->chosen($chosenId, $kinds, $incoming, $field, $actorId, $currency);
+        }
+
+        // Dollars have no default and no «own account first» — nobody falls into a dollar drawer
+        // by accident, so a dollar payment always names one (USD-ACCOUNTS §٦).
+        if ($currency === Currency::Usd) {
+            throw AccountDoesNotFitMethod::dollarNeedsAnAccount($field);
         }
 
         return $this->automatic($kinds, $actorId, $incoming, $pickupCityId, $carrierHolds);
@@ -92,6 +105,7 @@ final class AccountResolver
 
         return TreasuryAccount::query()
             ->active()
+            ->inDinars()
             ->where('kind', AccountKind::Cash->value)
             ->where('pickup_city_id', $pickupCityId)
             ->first();
@@ -100,7 +114,10 @@ final class AccountResolver
     /**
      * What a picker offers for a method, and which one it should open on.
      *
-     * @return array{accounts: Collection<int, TreasuryAccount>, suggested: TreasuryAccount}
+     * **Dollars on purpose alone**: `$currency` USD lists the dollar accounts of the method's
+     * kinds, and suggests none — a dollar payment names its drawer (USD-ACCOUNTS §٦).
+     *
+     * @return array{accounts: Collection<int, TreasuryAccount>, suggested: ?TreasuryAccount}
      */
     public function options(
         string $method,
@@ -108,11 +125,14 @@ final class AccountResolver
         bool $incoming,
         ?int $pickupCityId = null,
         bool $carrierHolds = false,
+        Currency $currency = Currency::Lyd,
     ): array {
         $kinds = $this->kindsFor($method, $incoming);
 
         $accounts = TreasuryAccount::query()
             ->active()
+            // Every method here is a way dinars arrive or leave; dollars are reached on purpose.
+            ->where('currency', $currency->value)
             ->whereIn('kind', array_map(fn (AccountKind $kind) => $kind->value, $kinds))
             // Custody is where Nawris or a driver holds money; nobody *picks* Nawris by hand —
             // the webhook does. A driver's own custody is offered to that driver alone.
@@ -125,7 +145,9 @@ final class AccountResolver
 
         return [
             'accounts' => $accounts,
-            'suggested' => $this->automatic($kinds, $actorId, $incoming, $pickupCityId, $carrierHolds),
+            'suggested' => $currency === Currency::Usd
+                ? null
+                : $this->automatic($kinds, $actorId, $incoming, $pickupCityId, $carrierHolds),
         ];
     }
 
@@ -144,6 +166,7 @@ final class AccountResolver
 
         return TreasuryAccount::query()
             ->active()
+            ->inDinars()
             ->where('holder_user_id', $actorId)
             ->where('kind', $kind->value)
             ->whereNull('system_code')
@@ -192,12 +215,27 @@ final class AccountResolver
     /**
      * @param  list<AccountKind>  $kinds
      */
-    private function chosen(int $id, array $kinds, bool $incoming, string $field, ?int $actorId): TreasuryAccount
-    {
+    private function chosen(
+        int $id,
+        array $kinds,
+        bool $incoming,
+        string $field,
+        ?int $actorId,
+        Currency $currency = Currency::Lyd,
+    ): TreasuryAccount {
         $account = TreasuryAccount::query()->findOrFail($id);
 
         if (! $account->is_active) {
             throw AccountDoesNotFitMethod::inactive((string) $account->name, $field);
+        }
+
+        // Each currency pays its own — USD-ACCOUNTS §٦.
+        if ($account->isDollar() && $currency !== Currency::Usd) {
+            throw AccountDoesNotFitMethod::dollar((string) $account->name, $field);
+        }
+
+        if (! $account->isDollar() && $currency === Currency::Usd) {
+            throw AccountDoesNotFitMethod::notDollar((string) $account->name, $field);
         }
 
         // **ما تخفيه الشاشة يرفضه الخادم أيضاً**: القائمة لا تعرض النورس ولا عهدةَ غيرك، لكنّ
@@ -242,6 +280,7 @@ final class AccountResolver
 
         $held = TreasuryAccount::query()
             ->active()
+            ->inDinars()
             ->where('holder_user_id', $actorId)
             ->whereIn('kind', array_map(fn (AccountKind $kind) => $kind->value, $kinds))
             ->limit(2)

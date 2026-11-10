@@ -130,12 +130,15 @@ class BuyWithFund {
 
   final InvestmentFundRepository _repository;
 
+  /// [rate] — dinars per dollar on a dollar order, what the fund pays at (USD-ACCOUNTS.md §٥).
   Future<Either<Failure, Unit>> call(
     int purchaseOrderId,
-    FundPurchaseRequest request,
-  ) => _repository.buyPurchaseOrder(
+    FundPurchaseRequest request, {
+    String? rate,
+  }) => _repository.buyPurchaseOrder(
     purchaseOrderId: purchaseOrderId,
     stockItemIds: request.stockItemIds,
     printingSalePrices: request.printingSalePrices,
+    rate: rate,
   );
 }

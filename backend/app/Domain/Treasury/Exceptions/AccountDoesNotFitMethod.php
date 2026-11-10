@@ -74,6 +74,27 @@ final class AccountDoesNotFitMethod extends DomainException
         return new self("«{$account}» يملؤه الدفع الإلكتروني ويُفرَّغ بـ«تحويل Ezone إلى المصرف» من «المدفوعات الإلكترونية» — لا يُدفع منه ولا إليه باليد", $field);
     }
 
+    /**
+     * A dollar account where the money is dinars — a customer's payment, a refund, a settlement,
+     * an investor. USD-ACCOUNTS §٣: a dollar account is reached on purpose or not at all.
+     */
+    public static function dollar(string $account, string $field = 'treasury_account_id'): self
+    {
+        return new self("«{$account}» حسابٌ بالدولار — هذا المبلغ بالدينار، فاختر حساباً بالدينار", $field);
+    }
+
+    /** A dollar debt paid from a dinar account — USD-ACCOUNTS §٦: each currency pays its own. */
+    public static function notDollar(string $account, string $field = 'treasury_account_id'): self
+    {
+        return new self("«{$account}» حسابٌ بالدينار — هذا المبلغ بالدولار، فاختر حساباً بالدولار", $field);
+    }
+
+    /** Dollars have no default account to fall back on, so a dollar payment names its own. */
+    public static function dollarNeedsAnAccount(string $field = 'treasury_account_id'): self
+    {
+        return new self('اختر حساب الدولار الذي خرج منه المبلغ', $field);
+    }
+
     public static function unknownMethod(string $method): self
     {
         return new self("طريقة الدفع «{$method}» غير معروفة للحسابات");

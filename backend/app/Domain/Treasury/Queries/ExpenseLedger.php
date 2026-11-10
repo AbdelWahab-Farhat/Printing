@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Treasury\Queries;
 
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Enums\MovementDirection;
 use App\Domain\Treasury\Enums\MovementKind;
 use App\Domain\Treasury\Models\TreasuryMovement;
@@ -53,7 +54,33 @@ final class ExpenseLedger
      */
     public function total(array $filters): string
     {
-        $sum = $this->filtered($filters)->whereDoesntHave('reversedBy')->sum('amount');
+        // **Dinars.** A dinar account's expense is its amount; a dollar account's is its dinar
+        // figure at the rate it was recorded at (USD-ACCOUNTS.md §٨) — its amount is dollars.
+        $dinars = $this->filtered($filters)
+            ->whereDoesntHave('reversedBy')
+            ->whereHas('account', fn ($q) => $q->where('currency', Currency::Lyd->value))
+            ->sum('amount');
+
+        $dollarsInDinars = $this->filtered($filters)
+            ->whereDoesntHave('reversedBy')
+            ->whereHas('account', fn ($q) => $q->where('currency', Currency::Usd->value))
+            ->sum('dinar_amount');
+
+        return Money::round(bcadd((string) $dinars, (string) $dollarsInDinars, 2));
+    }
+
+    /**
+     * What the filtered expenses out of dollar accounts add up to, in dollars — said beside the
+     * dinar total, which already counts them at their rates.
+     *
+     * @param  array{from?: ?string, to?: ?string, category_id?: ?int, account_id?: ?int, search?: ?string}  $filters
+     */
+    public function dollarTotal(array $filters): string
+    {
+        $sum = $this->filtered($filters)
+            ->whereDoesntHave('reversedBy')
+            ->whereHas('account', fn ($q) => $q->where('currency', Currency::Usd->value))
+            ->sum('amount');
 
         return Money::round((string) $sum);
     }

@@ -2,6 +2,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/investment_fund/usecases/investment_fund_usecases.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/usecases/purchase_order_usecases.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -41,6 +42,9 @@ class SavePurchaseOrderCubit extends Cubit<SavePurchaseOrderState> {
     String? expectedDate,
     String? notes,
     FundPurchaseRequest? funding,
+
+    /// On a new order alone; null is dinars.
+    Currency? currency,
   }) async {
     // Ignored rather than queued: a second tap while the first is in flight is a second POST,
     // and a purchase order has no natural key the server could dedupe on — it would be two
@@ -58,6 +62,7 @@ class SavePurchaseOrderCubit extends Cubit<SavePurchaseOrderState> {
       additionalCosts: additionalCosts,
       expectedDate: expectedDate,
       notes: notes,
+      currency: currency,
     );
 
     if (isClosed) return;

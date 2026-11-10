@@ -34,5 +34,8 @@ final readonly class MovementData
         // 0 for everything but a debt reposted after its source changed — a purchase order whose
         // total was edited. The reversed original still holds revision 0 in the posted-once index.
         public int $revision = 0,
+        // An expense out of a dollar account, in dinars at the rate it was recorded at — what
+        // «المصاريف» adds (USD-ACCOUNTS.md §٨). Null everywhere else.
+        public ?string $dinarAmount = null,
     ) {}
 }

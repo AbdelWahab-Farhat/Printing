@@ -18,6 +18,12 @@ final class VendorPaymentRefused extends DomainException
         return new self("أمر الشراء {$code} ليس لهذا المورد", 'purchase_order_id');
     }
 
+    /** A row in one currency on an order in the other — USD-ACCOUNTS.md §٦. */
+    public static function notTheOrdersCurrency(string $code, string $currency): self
+    {
+        return new self("أمر الشراء {$code} بال{$currency} — يُدفع ويُخصم عليه بعملته", 'currency');
+    }
+
     public static function orderCancelled(string $code): self
     {
         return new self("أمر الشراء {$code} ملغى — لا يُدفع عليه", 'purchase_order_id');

@@ -96,6 +96,42 @@ final class OperationRefused extends DomainException
         return new self('لا يُحوَّل من حساب إلى نفسه', 'to_account_id');
     }
 
+    /** A transfer moves one amount; across currencies the two differ, and that is «صرف عملة». */
+    public static function transferAcrossCurrencies(): self
+    {
+        return new self('الحسابان بعملتين مختلفتين — استعمل «صرف عملة» بدل التحويل', 'to_account_id');
+    }
+
+    public static function exchangeNeedsTwoCurrencies(): self
+    {
+        return new self('«صرف عملة» بين حسابٍ بالدينار وحسابٍ بالدولار — الحسابان بالعملة نفسها، استعمل التحويل', 'to_account_id');
+    }
+
+    /** Two of the three figures are enough; a third, when sent, has to agree with them. */
+    public static function exchangeFiguresDisagree(string $expected): self
+    {
+        return new self("المبالغ والسعر لا تتّفق — بهذا السعر يكون المبلغ {$expected}", 'counter_amount');
+    }
+
+    public static function exchangeNeedsTwoFigures(): self
+    {
+        return new self('اكتب اثنين من ثلاثة: المبلغ بالدينار، المبلغ بالدولار، السعر', 'counter_amount');
+    }
+
+    public static function exchangeTooSmall(): self
+    {
+        return new self('المبلغ أصغر من أن يُصرف بهذا السعر — أحد الطرفين يصير صفراً', 'amount');
+    }
+
+    /**
+     * An expense out of dollars is counted in dinars at a rate — «المصاريف» adds dinars
+     * (USD-ACCOUNTS §٨).
+     */
+    public static function dollarExpenseNeedsRate(string $account): self
+    {
+        return new self("«{$account}» حسابٌ بالدولار — اكتب سعر الصرف الذي يُحسب به المصروف بالدينار", 'rate');
+    }
+
     public static function notOnPayable(string $type, string $account, string $field): self
     {
         return new self("لا «{$type}» على «{$account}» — حساب التزام: يُسجَّل عليه مصروف بالآجل أو تحويل أو جرد", $field);

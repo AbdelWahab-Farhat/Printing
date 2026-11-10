@@ -35,7 +35,8 @@ final class UpdateTreasurySettings
 
             $target = TreasuryAccount::query()->findOrFail((int) $values[$field]);
 
-            if (! $target->is_active || $target->kind !== $kind || $target->isSystem()) {
+            // Never into dollars either: what is collected is orders' money, which is dinars.
+            if (! $target->is_active || $target->kind !== $kind || $target->isSystem() || $target->isDollar()) {
                 throw AccountChangeRefused::cannotCollectInto((string) $target->name, $kind->label(), $field);
             }
         }

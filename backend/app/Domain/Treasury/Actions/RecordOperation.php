@@ -20,6 +20,7 @@ use App\Domain\Treasury\Models\TreasurySetting;
 use App\Domain\Treasury\Queries\AccountBalances;
 use App\Domain\Treasury\Support\BalanceVisibility;
 use App\Domain\Treasury\Support\CheckpointFloor;
+use App\Domain\Treasury\Support\ExchangeRate;
 use App\Domain\Treasury\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ use InvalidArgumentException;
 
 /**
  * What a person does to the treasury by hand: an opening count, a deposit, a withdrawal, an
- * expense, a transfer, or «جرد الحساب».
+ * expense, a transfer, «صرف عملة», or «جرد الحساب».
  *
  * **The accounts are locked first, in id order.** The balance guard reads a sum and then writes
  * against it; two withdrawals racing for the last dinar would both pass without the lock, and two
@@ -70,7 +71,7 @@ final class RecordOperation
         // يُقفل الحسابُ نفسُه مرّتين ويصطدم الصفُّ بقيد الشكل.
         $toItself = $data->fromAccountId === $data->toAccountId;
 
-        if ($data->type === OperationType::Transfer && $toItself) {
+        if (($data->type === OperationType::Transfer || $data->type === OperationType::Exchange) && $toItself) {
             throw OperationRefused::sameAccount();
         }
 
@@ -92,6 +93,7 @@ final class RecordOperation
             }
 
             $this->guardAccounts($data->type, $from, $to, $data->ezonePayout);
+            $this->guardCurrencies($data->type, $from, $to);
             $this->guardCheckpoints($data, $from, $to);
 
             $category = $this->category($data);
@@ -99,6 +101,12 @@ final class RecordOperation
             [$amount, $from, $to, $systemBalance, $counted] = $data->type === OperationType::Adjustment
                 ? $this->adjustment($data, $to ?? $from)
                 : [(string) $data->amount, $from, $to, null, null];
+
+            [$amount, $counterAmount, $rate] = match (true) {
+                $data->type === OperationType::Exchange => $this->exchange($data, $from),
+                $data->type === OperationType::Expense && $from?->isDollar() === true => [$amount, ...$this->dollarExpense($data, $from, $amount)],
+                default => [$amount, null, null],
+            };
 
             // «منع الرصيد السالب في العمليات اليدوية» — on unless the owner switched it off. A
             // payable has no money to run out of: borrowing and buying on credit deepen its debt.
@@ -116,6 +124,8 @@ final class RecordOperation
             $operation->forceFill([
                 'type' => $data->type,
                 'amount' => $amount,
+                'counter_amount' => $counterAmount,
+                'rate' => $rate,
                 'from_account_id' => $from?->getKey(),
                 'to_account_id' => $to?->getKey(),
                 'category_id' => $category?->getKey(),
@@ -208,7 +218,7 @@ final class RecordOperation
             }
 
             if ($account->kind === AccountKind::Payable) {
-                if ($type === OperationType::Deposit || $type === OperationType::Withdrawal) {
+                if ($type === OperationType::Deposit || $type === OperationType::Withdrawal || $type === OperationType::Exchange) {
                     throw OperationRefused::notOnPayable($type->label(), (string) $account->name, $field);
                 }
 
@@ -221,6 +231,62 @@ final class RecordOperation
                 throw AccountDoesNotFitMethod::custody((string) $account->name, $field);
             }
         }
+    }
+
+    /**
+     * USD-ACCOUNTS §٣: a transfer moves one amount, so both sides share a currency; «صرف عملة»
+     * is the only way across, so its sides never do. An expense from dollars goes, with a rate —
+     * {@see dollarExpense()}.
+     */
+    private function guardCurrencies(OperationType $type, ?TreasuryAccount $from, ?TreasuryAccount $to): void
+    {
+        if ($type === OperationType::Transfer && $from !== null && $to !== null && $from->currency !== $to->currency) {
+            throw OperationRefused::transferAcrossCurrencies();
+        }
+
+        if ($type === OperationType::Exchange && $from !== null && $to !== null && $from->currency === $to->currency) {
+            throw OperationRefused::exchangeNeedsTwoCurrencies();
+        }
+
+    }
+
+    /**
+     * An expense out of a dollar account — USD-ACCOUNTS.md §٨: `amount` in dollars as it left,
+     * `rate` dinars per dollar (the form offers «سعر النظام»), and `counter_amount` what it came to
+     * in dinars — the figure «المصاريف» adds. Every other expense carries neither.
+     *
+     * @return array{0: ?string, 1: ?string} [counter_amount, rate]
+     *
+     * @throws OperationRefused
+     */
+    private function dollarExpense(OperationData $data, TreasuryAccount $from, string $amount): array
+    {
+        if ($data->rate === null) {
+            throw OperationRefused::dollarExpenseNeedsRate((string) $from->name);
+        }
+
+        return [Money::round(bcmul($amount, $data->rate, 8)), $data->rate];
+    }
+
+    /**
+     * «صرف عملة»'s figures, in the operation's terms: `amount` left `$from` in its currency,
+     * `counter_amount` arrived in the other's, and `rate` is dinars per dollar either way.
+     *
+     * @return array{0: string, 1: string, 2: string}
+     */
+    private function exchange(OperationData $data, TreasuryAccount $from): array
+    {
+        $buyingDollars = ! $from->isDollar();
+
+        $figures = ExchangeRate::figures(
+            lyd: $buyingDollars ? $data->amount : $data->counterAmount,
+            usd: $buyingDollars ? $data->counterAmount : $data->amount,
+            rate: $data->rate,
+        );
+
+        return $buyingDollars
+            ? [$figures['lyd'], $figures['usd'], $figures['rate']]
+            : [$figures['usd'], $figures['lyd'], $figures['rate']];
     }
 
     /**
@@ -343,11 +409,20 @@ final class RecordOperation
     ): void {
         $kind = $operation->type->movementKind();
 
+        // Every operation moves one amount, but «صرف عملة», whose receiving side is in the other
+        // currency. An expense out of dollars carries its dinars for «المصاريف» (§٨).
+        $dinars = $operation->type === OperationType::Expense && $operation->counter_amount !== null
+            ? (string) $operation->counter_amount
+            : null;
+
         $movement = fn (TreasuryAccount $account, MovementDirection $direction, ?TreasuryAccount $other) => new MovementData(
             accountId: (int) $account->getKey(),
             direction: $direction,
             kind: $kind,
-            amount: (string) $operation->amount,
+            amount: $direction === MovementDirection::In && $operation->counter_amount !== null
+                ? (string) $operation->counter_amount
+                : (string) $operation->amount,
+            dinarAmount: $dinars,
             occurredAt: $operation->occurred_at,
             sourceType: AuditSubject::TreasuryOperation->value,
             sourceId: (int) $operation->getKey(),

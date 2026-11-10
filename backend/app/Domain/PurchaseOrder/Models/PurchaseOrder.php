@@ -9,6 +9,7 @@ use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\PurchaseOrder\Enums\PurchaseOrderStatus;
 use App\Domain\PurchaseOrder\PurchaseOrderService;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Vendor\Models\StockArrival;
 use App\Domain\Vendor\Models\Vendor;
 use Database\Factories\PurchaseOrderFactory;
@@ -37,12 +38,31 @@ class PurchaseOrder extends Model implements HasAuditTrail
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * The column's own default, held on a new model too — so an order nobody gave a currency
+     * reads as dinars before it is ever reloaded.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'currency' => 'LYD',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'status' => PurchaseOrderStatus::class,
+            // Every amount on the order is in it — USD-ACCOUNTS.md §٤. Assigned once by
+            // CreatePurchaseOrder, never mass-assigned and never changed.
+            'currency' => Currency::class,
+            // Dinars per dollar, asked at receipt on a dollar order — USD-ACCOUNTS.md §٥. Written
+            // by ReceivePurchaseOrder, emptied by ReversePurchaseOrderReceipt.
+            'arrival_rate' => 'decimal:4',
+            // Dinars per dollar the funded lines were bought at — asked on the funding screen and
+            // written once by FixFundingRate. The funded goods keep it at arrival.
+            'funding_rate' => 'decimal:4',
             'order_date' => 'date',
             'expected_date' => 'date',
             // Not fillable — see RecalculatePurchaseOrderTotal, the only writer for both.
@@ -55,6 +75,12 @@ class PurchaseOrder extends Model implements HasAuditTrail
             // payments were never recorded, so it shows nothing owed (TREASURY-DESIGN §٨).
             'predates_treasury' => 'boolean',
         ];
+    }
+
+    /** Raised in dollars: its debt is on the vendor's dollar «علينا». */
+    public function isDollar(): bool
+    {
+        return $this->currency === Currency::Usd;
     }
 
     /**

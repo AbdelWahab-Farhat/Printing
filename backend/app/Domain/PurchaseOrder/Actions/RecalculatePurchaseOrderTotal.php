@@ -42,7 +42,10 @@ final class RecalculatePurchaseOrderTotal
             ->filter(fn (?string $total) => $total !== null)
             ->all();
 
-        $costs = $order->additionalCosts()->get();
+        // In the order's currency only — every figure here is in it. A dinar cost on a dollar
+        // order is outside its totals, and outside what the vendor is owed: it was paid from a
+        // dinar drawer, and lands in the stock in dinars (USD-ACCOUNTS.md §٧).
+        $costs = $order->additionalCosts()->where('currency', $order->currency->value)->get();
 
         $sum = fn (iterable $costs): string => Money::sum('0', ...collect($costs)
             ->map(fn (PurchaseOrderAdditionalCost $cost) => (string) $cost->amount)

@@ -9,6 +9,7 @@ use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
 use App\Domain\PurchaseOrder\Models\PurchaseOrder;
 use App\Domain\PurchaseOrder\Models\VendorPayment;
 use App\Domain\PurchaseOrder\Support\Money;
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Support\Collection;
 
 /**
@@ -27,7 +28,7 @@ use Illuminate\Support\Collection;
 final class VendorPaymentSummary
 {
     /**
-     * @return array{total: ?string, paid: string, credited: string, remaining: ?string, predates_treasury: bool}
+     * @return array{currency: string, total: ?string, paid: string, credited: string, remaining: ?string, predates_treasury: bool, payable_up_to: ?string}
      */
     public function forPurchaseOrder(PurchaseOrder $order): array
     {
@@ -41,6 +42,8 @@ final class VendorPaymentSummary
         $remaining = $counts ? Money::round(bcsub(bcsub($total, $paid, 8), $credited, 8)) : null;
 
         return [
+            // Every figure here is in it — USD-ACCOUNTS.md §٤.
+            'currency' => $order->currency->value,
             'total' => $total,
             'paid' => $paid,
             'credited' => $credited,
@@ -64,17 +67,21 @@ final class VendorPaymentSummary
      * what is paid on it cannot count against the rest either: it pays that order's old debt, and
      * is reported apart as `paid_on_old_orders` (§٢٠). The vendor's payable leaves it out alike.
      *
+     * **In one currency — dinars unless asked.** A dollar order's debt, and what pays it, is on
+     * the vendor's dollar «علينا» (USD-ACCOUNTS.md §٤, §٦); added to the dinars it would be
+     * dollars read as dinars. Every order from before the treasury is dinars.
+     *
      * @return array{ordered: string, opening_debt: string, paid: string, credited: string, owed: string, paid_on_old_orders: string}
      */
-    public function forVendor(int $vendorId): array
+    public function forVendor(int $vendorId, Currency $currency = Currency::Lyd): array
     {
-        $ordered = (string) PurchaseOrder::query()
-            ->where('vendor_id', $vendorId)
-            ->where('predates_treasury', false)
-            ->where('status', '<>', PurchaseOrderStatus::Cancelled->value)
-            ->sum('vendor_amount');
+        $ordered = $this->ordered($vendorId, $currency);
 
-        $rows = VendorPayment::query()->where('vendor_id', $vendorId)->with(['reversesPayment', 'purchaseOrder'])->get();
+        $rows = VendorPayment::query()
+            ->where('vendor_id', $vendorId)
+            ->where('currency', $currency->value)
+            ->with(['reversesPayment', 'purchaseOrder'])
+            ->get();
 
         [$old, $counted] = $rows->partition(fn (VendorPayment $row) => self::isOnAnOldOrder($row));
 
@@ -94,6 +101,28 @@ final class VendorPaymentSummary
                 8,
             )),
         ];
+    }
+
+    /**
+     * What the company owes this vendor in dollars, on the vendor's dollar «علينا» — the same
+     * figures as {@see forVendor()}, in dollars (USD-ACCOUNTS.md §٤, §٦).
+     *
+     * @return array{ordered: string, opening_debt: string, paid: string, credited: string, owed: string, paid_on_old_orders: string}
+     */
+    public function dollarsForVendor(int $vendorId): array
+    {
+        return $this->forVendor($vendorId, Currency::Usd);
+    }
+
+    /** Every live order's `vendor_amount` in one currency, from the treasury on. */
+    private function ordered(int $vendorId, Currency $currency): string
+    {
+        return (string) PurchaseOrder::query()
+            ->where('vendor_id', $vendorId)
+            ->where('currency', $currency->value)
+            ->where('predates_treasury', false)
+            ->where('status', '<>', PurchaseOrderStatus::Cancelled->value)
+            ->sum('vendor_amount');
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\PurchaseOrder\DTOs;
 
+use App\Domain\Treasury\Enums\Currency;
+
 final readonly class PurchaseOrderAdditionalCostData
 {
     public function __construct(
@@ -17,6 +19,12 @@ final readonly class PurchaseOrderAdditionalCostData
          * payable it is owed to — see `PurchaseOrderAdditionalCost`.
          */
         public ?int $treasuryAccountId = null,
+        /**
+         * Optional, and checked rather than trusted: the cost's currency is the order's on the
+         * vendor's bill and the drawer's when paid from one (USD-ACCOUNTS.md §٧). Sent, it must
+         * agree.
+         */
+        public ?Currency $currency = null,
     ) {}
 
     /**
@@ -30,6 +38,9 @@ final readonly class PurchaseOrderAdditionalCostData
             id: isset($validated['id']) ? (int) $validated['id'] : null,
             treasuryAccountId: isset($validated['treasury_account_id']) && $validated['treasury_account_id'] !== ''
                 ? (int) $validated['treasury_account_id']
+                : null,
+            currency: isset($validated['currency']) && $validated['currency'] !== ''
+                ? Currency::from((string) $validated['currency'])
                 : null,
         );
     }

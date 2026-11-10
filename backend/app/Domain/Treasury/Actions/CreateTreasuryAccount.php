@@ -6,6 +6,7 @@ namespace App\Domain\Treasury\Actions;
 
 use App\Domain\Treasury\DTOs\AccountData;
 use App\Domain\Treasury\Enums\AccountKind;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Exceptions\AccountChangeRefused;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Support\SettlesIntoRule;
@@ -37,7 +38,10 @@ final class CreateTreasuryAccount
             throw AccountChangeRefused::onlyCashServesAnOffice();
         }
 
-        return DB::transaction(function () use ($data, $kind, $actorId): TreasuryAccount {
+        $currency = $data->currency ?? Currency::Lyd;
+        $this->guardCurrency($currency, $kind, $data->isDefault === true, $data->pickupCityId !== null);
+
+        return DB::transaction(function () use ($data, $kind, $currency, $actorId): TreasuryAccount {
             $account = new TreasuryAccount([
                 'name' => $data->name,
                 'holder_user_id' => $data->holderUserId,
@@ -54,7 +58,7 @@ final class CreateTreasuryAccount
                 $this->freeOffice($data->pickupCityId);
                 $account->pickup_city_id = $data->pickupCityId;
             }
-            $account->currency = 'LYD';
+            $account->currency = $currency;
             $account->created_by = $actorId;
             $account->save();
 
@@ -64,6 +68,26 @@ final class CreateTreasuryAccount
 
             return $account->refresh();
         });
+    }
+
+    /**
+     * A dollar account is a cash box or a bank, never its kind's default and never a branch's
+     * box — both of those are where customers' dinars land (USD-ACCOUNTS §٣). The table says the
+     * same in `treasury_accounts_dollar_shape`; this says it in words.
+     */
+    public static function guardCurrency(Currency $currency, AccountKind $kind, bool $isDefault, bool $servesOffice): void
+    {
+        if (! $currency->allows($kind)) {
+            throw AccountChangeRefused::dollarKind($kind->label());
+        }
+
+        if ($currency === Currency::Usd && $isDefault) {
+            throw AccountChangeRefused::dollarCannotBeDefault();
+        }
+
+        if ($currency === Currency::Usd && $servesOffice) {
+            throw AccountChangeRefused::dollarCannotServeAnOffice();
+        }
     }
 
     /** One box per branch: linking a new one unlinks the old, as a new default does. */

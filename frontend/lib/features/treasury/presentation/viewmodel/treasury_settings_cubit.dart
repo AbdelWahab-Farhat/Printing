@@ -110,6 +110,12 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     ),
   );
 
+  /// «سعر النظام» — dinars per dollar for the totals. Null clears it, and dollars then stay out
+  /// of the dinar totals (USD-ACCOUNTS §٣).
+  Future<Failure?> saveUsdRate(String? rate) => _after(
+    () => _saveSettings(usdRate: rate, clearUsdRate: rate == null),
+  );
+
   /// Makes [account] the default of its kind; the old default loses the title on the server.
   Future<Failure?> makeDefault(TreasuryAccount account) =>
       _after(() => _saveAccount(id: account.id, name: account.name, isDefault: true));

@@ -94,6 +94,8 @@ class TreasuryCubit extends Cubit<TreasuryState> {
     String? countedBalance,
     String? notes,
     String? clientToken,
+    // An expense out of a dollar account: dinars per dollar (USD-ACCOUNTS §٨).
+    String? rate,
   }) async {
     final result = await _recordOperation(
       kind: kind,
@@ -103,6 +105,36 @@ class TreasuryCubit extends Cubit<TreasuryState> {
       categoryId: categoryId,
       employeeId: employeeId,
       countedBalance: countedBalance,
+      notes: notes,
+      clientToken: clientToken,
+      rate: rate,
+    );
+
+    return result.fold((failure) => failure, (_) {
+      if (!isClosed) unawaited(load());
+
+      return null;
+    });
+  }
+
+  /// «صرف عملة» from the dashboard. Both balances and the totals move, so the board is read
+  /// again on success, like [record].
+  Future<Failure?> recordExchange({
+    required int fromAccountId,
+    required int toAccountId,
+    String? amount,
+    String? counterAmount,
+    String? rate,
+    String? notes,
+    String? clientToken,
+  }) async {
+    final result = await _recordOperation(
+      kind: OperationKind.exchange,
+      fromAccountId: fromAccountId,
+      toAccountId: toAccountId,
+      amount: amount,
+      counterAmount: counterAmount,
+      rate: rate,
       notes: notes,
       clientToken: clientToken,
     );
@@ -122,6 +154,7 @@ class TreasuryCubit extends Cubit<TreasuryState> {
     bool? isDefault,
     int? holderUserId,
     String? notes,
+    Currency? currency,
   }) async {
     final result = await _saveAccount(
       name: name,
@@ -129,6 +162,7 @@ class TreasuryCubit extends Cubit<TreasuryState> {
       isDefault: isDefault,
       holderUserId: holderUserId,
       notes: notes,
+      currency: currency,
     );
 
     return result.fold((failure) => failure, (_) {

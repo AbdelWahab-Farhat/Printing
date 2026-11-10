@@ -72,6 +72,7 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
     List<DraftAdditionalCost> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
+    String? arrivalRate,
   }) {
     return _write(
       () => _receiveArrival(
@@ -80,6 +81,7 @@ class PurchaseOrderDetailCubit extends Cubit<PurchaseOrderDetailState> {
         additionalCosts: additionalCosts,
         invoiceNumber: invoiceNumber,
         notes: notes,
+        arrivalRate: arrivalRate,
       ),
     );
   }

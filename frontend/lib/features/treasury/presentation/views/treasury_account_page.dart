@@ -17,6 +17,7 @@ import 'package:dayaa/core/widgets/paged_list_view.dart';
 import 'package:dayaa/core/widgets/search_field.dart';
 import 'package:dayaa/features/treasury/models/treasury_models.dart';
 import 'package:dayaa/features/treasury/presentation/viewmodel/treasury_account_cubit.dart';
+import 'package:dayaa/features/treasury/presentation/widgets/currency_exchange_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_sheet.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_dialogs.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_operation_sheet.dart';
@@ -120,6 +121,7 @@ class _AccountView extends StatelessWidget {
                     amount: !detail.account.isPayable
                         ? detail.account.balance ?? '0'
                         : detail.account.owed.replaceFirst('-', ''),
+                    currency: detail.account.currency,
                   ),
                 ),
                 Padding(
@@ -131,7 +133,7 @@ class _AccountView extends StatelessWidget {
                   ),
                 ),
                 const _Filters(),
-                const Expanded(child: _History()),
+                Expanded(child: _History(currency: detail.account.currency)),
               ],
             ),
           },
@@ -146,7 +148,9 @@ class _AccountView extends StatelessWidget {
     await showTreasuryAccountSheet(
       context: context,
       account: account,
-      onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes}) => cubit.save(
+      // The currency is fixed once the account exists, so an edit never sends it.
+      onSubmit: ({required name, kind, isDefault, isActive, holderUserId, notes, currency}) =>
+          cubit.save(
         name: name,
         isDefault: isDefault,
         isActive: isActive,
@@ -187,7 +191,10 @@ class _Filters extends StatelessWidget {
 }
 
 class _History extends StatelessWidget {
-  const _History();
+  const _History({required this.currency});
+
+  /// The account's currency — every line of its ledger is in it.
+  final Currency currency;
 
   @override
   Widget build(BuildContext context) {
@@ -216,6 +223,7 @@ class _History extends StatelessWidget {
             final row = TreasuryMovementRow(
               key: ValueKey(movement.id),
               movement: movement,
+              currency: currency,
               // اللمسة تفتح مصدر المال حين يكون له باب — الطلبية — ولا شيء غير ذلك.
               onTap: switch (movement.orderId) {
                 final orderId? => () => context.push(Routes.order(orderId)),
@@ -249,7 +257,7 @@ class _History extends StatelessWidget {
       context,
       title: movement.kindLabel,
       subtitle: [
-        treasuryMoney(movement.signedAmount, signed: true),
+        treasuryMoney(movement.signedAmount, signed: true, currency: currency),
         if (movement.occurredAt case final at?) at.timeLabel,
       ].join(' · '),
       options: [
@@ -346,6 +354,7 @@ class _Actions extends StatelessWidget {
               countedBalance,
               notes,
               clientToken,
+              rate,
             }) async {
               final result = await header.record(
                 kind: kind,
@@ -357,10 +366,60 @@ class _Actions extends StatelessWidget {
                 countedBalance: countedBalance,
                 notes: notes,
                 clientToken: clientToken,
+                rate: rate,
               );
 
               return result.fold((failure) => failure, (operation) {
                 // السطر الذي كتبته العملية يُضاف أعلى السجل — لا يُعاد السجل كله.
+                unawaited(movements.addWrittenBy(operation));
+
+                return null;
+              });
+            },
+      );
+    }
+
+    /// «صرف عملة» — the other side is any account in the other currency, so every account is
+    /// read first, as for a transfer.
+    Future<void> exchange(BuildContext context) async {
+      final targets = await header.transferTargets();
+
+      if (!context.mounted) return;
+
+      final list = targets.fold<List<TreasuryAccount>?>((failure) {
+        context.showFailure(failure);
+
+        return null;
+      }, (list) => list);
+
+      if (list == null) return;
+
+      await showCurrencyExchangeSheet(
+        context: context,
+        accounts: list,
+        account: account,
+        onUpdateSystemRate: systemRateUpdater(sl<Session>()),
+        onSubmit:
+            ({
+              required fromAccountId,
+              required toAccountId,
+              amount,
+              counterAmount,
+              rate,
+              notes,
+              clientToken,
+            }) async {
+              final result = await header.recordExchange(
+                fromAccountId: fromAccountId,
+                toAccountId: toAccountId,
+                amount: amount,
+                counterAmount: counterAmount,
+                rate: rate,
+                notes: notes,
+                clientToken: clientToken,
+              );
+
+              return result.fold((failure) => failure, (operation) {
                 unawaited(movements.addWrittenBy(operation));
 
                 return null;
@@ -416,6 +475,7 @@ class _Actions extends StatelessWidget {
             AppIcons.fundWithdraw,
             AppPermission.recordTreasuryOperations,
           ),
+          // From dollars too: the sheet asks the rate it is counted at in dinars (USD-ACCOUNTS §٨).
           operation(
             OperationKind.expense,
             AppIcons.expense,
@@ -426,6 +486,13 @@ class _Actions extends StatelessWidget {
             AppIcons.transfer,
             AppPermission.recordTreasuryOperations,
           ),
+          if (account.isDollar)
+            AppAction(
+              label: OperationKind.exchange.label,
+              icon: AppIcons.exchange,
+              permission: AppPermission.recordTreasuryOperations,
+              onTap: exchange,
+            ),
         ],
         operation(
           OperationKind.adjustment,

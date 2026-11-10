@@ -166,7 +166,7 @@ final class CollectOrderMoney
 
         $named = $setting['into'] === null ? null : TreasuryAccount::query()->find($setting['into']);
 
-        if ($named !== null && $named->is_active && $named->kind === $kind) {
+        if ($named !== null && $named->is_active && $named->kind === $kind && ! $named->isDollar()) {
             return $named;
         }
 

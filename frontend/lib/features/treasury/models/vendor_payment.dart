@@ -4,6 +4,7 @@
 library;
 
 import 'package:dayaa/core/utils/fixed_point.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 
 /// صفٌّ واحد من دفعات مورد أو أمر شراء.
 class VendorPayment {
@@ -21,7 +22,11 @@ class VendorPayment {
     this.paidAt,
     this.notes,
     this.recorderName,
+    this.currency = Currency.lyd,
   });
+
+  /// The debt's and the drawer's — [amount] is in it (USD-ACCOUNTS.md §٦).
+  final Currency currency;
 
   final int id;
 
@@ -67,6 +72,7 @@ class VendorPayment {
     paidAt: paidAt,
     notes: notes,
     recorderName: recorderName,
+    currency: currency,
   );
 
   factory VendorPayment.fromJson(Map<String, dynamic> json) {
@@ -88,6 +94,7 @@ class VendorPayment {
       recorderName: recorder is Map<String, dynamic> ? recorder['name']?.toString() : null,
       isReversed: json['is_reversed'] == true,
       isReversible: json['is_reversible'] == true,
+      currency: Currency.fromWire(json['currency']),
     );
   }
 }
@@ -105,7 +112,14 @@ class PurchaseOrderPayments {
     this.remaining,
     this.credited = '0.00',
     this.payableUpTo,
+    this.currency = Currency.lyd,
   });
+
+  /// The order's — every figure here is in it (USD-ACCOUNTS.md §٤).
+  final Currency currency;
+
+  /// A dollar order's debt — paid from a dollar account alone, in dollars (USD-ACCOUNTS.md §٦).
+  bool get isDollar => currency == Currency.usd;
 
   final String? total;
   final String paid;
@@ -159,6 +173,7 @@ class PurchaseOrderPayments {
       payableUpTo: less(payableUpTo),
       predatesTreasury: predatesTreasury,
       payments: payments,
+      currency: currency,
     );
   }
 
@@ -178,6 +193,7 @@ class PurchaseOrderPayments {
       remaining: summary['remaining']?.toString(),
       payableUpTo: summary['payable_up_to']?.toString(),
       predatesTreasury: summary['predates_treasury'] == true,
+      currency: Currency.fromWire(summary['currency']),
       payments: [
         for (final row in rows.whereType<Map<String, dynamic>>()) VendorPayment.fromJson(row),
       ],
@@ -197,7 +213,22 @@ class VendorAccount {
     required this.payments,
     this.treasuryAccountId,
     this.paidOnOldOrders = '0.00',
+    this.dollars = const VendorDollarFigures(),
+    this.dollarTreasuryAccountId,
   });
+
+  /// The vendor's dollar «علينا» — dollar orders, and what paid or credited them
+  /// (USD-ACCOUNTS.md §٤, §٦). Everything else here is dinars.
+  final VendorDollarFigures dollars;
+
+  /// What is still owed in dollars.
+  String get dollarsOwed => dollars.owed;
+
+  /// The vendor's dollar «علينا» account. Null until a dollar order was raised with them.
+  final int? dollarTreasuryAccountId;
+
+  /// Whether the vendor has a dollar side to show at all.
+  bool get hasDollars => dollarTreasuryAccountId != null;
 
   /// Paid on orders from before the treasury — apart from [owed], whose debt never held them.
   final String paidOnOldOrders;
@@ -218,8 +249,20 @@ class VendorAccount {
         ? json['summary'] as Map<String, dynamic>
         : const <String, dynamic>{};
     final rows = json['payments'] is List ? json['payments'] as List : const [];
+    final dollars = json['usd_summary'] is Map<String, dynamic>
+        ? json['usd_summary'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    String figure(String key) => dollars[key]?.toString() ?? '0.00';
 
     return VendorAccount(
+      dollars: VendorDollarFigures(
+        ordered: figure('ordered'),
+        openingDebt: figure('opening_debt'),
+        paid: figure('paid'),
+        credited: figure('credited'),
+        owed: figure('owed'),
+      ),
+      dollarTreasuryAccountId: (json['usd_treasury_account_id'] as num?)?.toInt(),
       ordered: summary['ordered']?.toString() ?? '0.00',
       openingDebt: summary['opening_debt']?.toString() ?? '0.00',
       paid: summary['paid']?.toString() ?? '0.00',
@@ -233,4 +276,21 @@ class VendorAccount {
           .toList(growable: false),
     );
   }
+}
+
+/// The vendor's dollar «علينا» in figures, all in dollars — the server's `usd_summary`.
+class VendorDollarFigures {
+  const VendorDollarFigures({
+    this.ordered = '0.00',
+    this.openingDebt = '0.00',
+    this.paid = '0.00',
+    this.credited = '0.00',
+    this.owed = '0.00',
+  });
+
+  final String ordered;
+  final String openingDebt;
+  final String paid;
+  final String credited;
+  final String owed;
 }

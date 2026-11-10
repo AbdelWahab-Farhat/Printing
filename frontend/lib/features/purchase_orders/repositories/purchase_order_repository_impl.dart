@@ -6,6 +6,7 @@ import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order.dart';
 import 'package:dayaa/features/purchase_orders/models/purchase_order_counts.dart';
 import 'package:dayaa/features/purchase_orders/repositories/purchase_order_repository.dart';
+import 'package:dayaa/features/treasury/models/treasury_models.dart' show Currency;
 import 'package:dayaa/features/vendors/models/stock_arrival.dart';
 import 'package:dio/dio.dart';
 
@@ -86,19 +87,24 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? expectedDate,
     String? notes,
+    Currency? currency,
   }) {
     return safeRequest<PurchaseOrder>(
       () => _dio.post(
         PurchaseOrderEndpoints.index,
-        data: _document(
-          vendorId: vendorId,
-          warehouseId: warehouseId,
-          orderDate: orderDate,
-          items: items,
-          additionalCosts: additionalCosts,
-          expectedDate: expectedDate,
-          notes: notes,
-        ),
+        data: {
+          ..._document(
+            vendorId: vendorId,
+            warehouseId: warehouseId,
+            orderDate: orderDate,
+            items: items,
+            additionalCosts: additionalCosts,
+            expectedDate: expectedDate,
+            notes: notes,
+          ),
+          // On creation alone: the server keeps the currency an order was raised in.
+          'currency': ?currency?.wire,
+        },
       ),
       parse: (data) => PurchaseOrder.fromJson(data as Map<String, dynamic>),
     );
@@ -153,11 +159,13 @@ class PurchaseOrderRepositoryImpl implements PurchaseOrderRepository {
     List<PurchaseOrderAdditionalCostLine> additionalCosts = const [],
     String? invoiceNumber,
     String? notes,
+    String? arrivalRate,
   }) {
     return safeRequest<StockArrival>(
       () => _dio.post(
         PurchaseOrderEndpoints.arrivals(purchaseOrderId),
         data: <String, dynamic>{
+          'arrival_rate': ?arrivalRate,
           // Neither the vendor nor the warehouse is sent: both come from the order, and a
           // client that could name them could book stock into the wrong place.
           if (invoiceNumber != null && invoiceNumber.isNotEmpty)

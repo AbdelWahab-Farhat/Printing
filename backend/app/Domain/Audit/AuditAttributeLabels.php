@@ -540,6 +540,9 @@ final class AuditAttributeLabels
 
         'purchase_order' => [
             'predates_treasury' => 'سابق لنظام الحسابات',
+            'currency' => 'العملة',
+            'arrival_rate' => 'سعر الصرف عند الاستلام',
+            'funding_rate' => 'سعر الصرف عند التمويل',
             'order_date' => 'تاريخ الأمر',
             'expected_date' => 'التاريخ المتوقع',
             'total_amount' => 'الإجمالي',
@@ -560,11 +563,13 @@ final class AuditAttributeLabels
             'allocated_additional_cost' => 'حصة التكاليف الإضافية',
             'final_unit_cost' => 'تكلفة الوحدة النهائية',
             'final_total_cost' => 'التكلفة النهائية',
+            'funded_cost' => 'تكلفة التمويل بالدينار',
             'arrival_additional_cost' => 'حصة تكاليف الوصول',
             'landed_unit_cost' => 'تكلفة الوحدة عند الاستلام',
         ],
         'purchase_order_additional_cost' => [
             'purchase_order_id' => 'أمر الشراء',
+            'currency' => 'العملة',
             // Not the shared «الاسم»: this names what the charge was for — التوصيل، الجمارك —
             // which is what the form asks for and what the invoice calls it.
             'name' => 'البيان',
@@ -918,6 +923,7 @@ final class AuditAttributeLabels
             'settle_into_settler' => 'التسوية إلى حساب المسوّي',
             'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
+            'usd_rate' => 'سعر النظام',
             'updated_by' => 'عدّلها',
         ],
         'treasury_account' => [
@@ -940,6 +946,9 @@ final class AuditAttributeLabels
             'employee_id' => 'الموظف',
             'system_balance' => 'رصيد النظام',
             'counted_balance' => 'الرصيد المعدود',
+            // «صرف عملة» — USD-ACCOUNTS §٣.
+            'counter_amount' => 'المبلغ المستلم',
+            'rate' => 'سعر الصرف',
             'occurred_at' => 'تاريخ العملية',
             'reverses_operation_id' => 'تعكس عملية',
             'client_token' => 'رمز الإرسال',
@@ -948,6 +957,8 @@ final class AuditAttributeLabels
         ],
         'treasury_movement' => [
             'account_id' => 'الحساب',
+            // An expense out of a dollar account, in dinars at its rate — USD-ACCOUNTS §٨.
+            'dinar_amount' => 'المبلغ بالدينار',
             'direction' => 'الاتجاه',
             'kind' => 'نوع الحركة',
             'occurred_at' => 'تاريخ الحركة',
@@ -960,6 +971,7 @@ final class AuditAttributeLabels
         ],
         'vendor_payment' => [
             'purchase_order_id' => 'أمر الشراء',
+            'currency' => 'العملة',
             'type' => 'نوع الحركة',
             'method' => 'طريقة الدفع',
             'treasury_account_id' => 'الحساب',

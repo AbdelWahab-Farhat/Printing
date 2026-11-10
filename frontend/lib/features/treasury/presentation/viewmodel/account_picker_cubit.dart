@@ -37,6 +37,8 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
     int? orderId,
     bool payables = false,
     bool suggest = true,
+    Currency? currency,
+    bool dollars = false,
   }) {
     _last = _Question(
       method: method,
@@ -44,6 +46,8 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
       orderId: orderId,
       payables: payables,
       suggest: suggest,
+      currency: currency,
+      dollars: dollars,
     );
 
     return _ask(_last!);
@@ -61,11 +65,16 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
 
     final method = question.method;
     final result = method == null
-        ? await _spendable(payables: question.payables, suggest: question.suggest)
+        ? await _spendable(
+            payables: question.payables,
+            suggest: question.suggest,
+            dollars: question.dollars,
+          )
         : await _getOptions(
             method: method,
             incoming: question.incoming,
             orderId: question.orderId,
+            currency: question.currency,
           );
 
     // تغيّر السؤال والجوابُ في الطريق — هذا جوابُ سؤالٍ لم يعد أحدٌ يسأله.
@@ -86,6 +95,7 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
   Future<Either<Failure, AccountOptions>> _spendable({
     required bool payables,
     required bool suggest,
+    required bool dollars,
   }) async {
     final (accounts, cash) = await (
       _getAccounts(activeOnly: true),
@@ -103,7 +113,10 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
         (suggestion) => AccountOptions(
           accounts: [
             for (final account in list.accounts)
+              // Dinars, unless the form can take dollars — a dollar purchase order's cost
+              // (USD-ACCOUNTS §٧). The server refuses a dollar drawer anywhere else.
               if (account.isActive &&
+                  (!account.isDollar || dollars) &&
                   (account.isSpendable ||
                       (payables &&
                           account.isPayable &&
@@ -115,6 +128,7 @@ class AccountPickerCubit extends Cubit<AccountPickerState> {
                   kindLabel: account.kindLabel,
                   isDefault: account.isDefault,
                   isPayable: account.isPayable,
+                  currency: account.currency,
                 ),
           ],
           suggestedId: suggestion.suggestedId,
@@ -133,7 +147,16 @@ class _Question {
     required this.orderId,
     required this.payables,
     required this.suggest,
+    this.currency,
+    this.dollars = false,
   });
+
+  /// [Currency.usd] asks for the dollar accounts alone — a dollar debt paid out.
+  final Currency? currency;
+
+  /// For a form with no method: dollar drawers offered beside the dinar ones — a dollar purchase
+  /// order's cost (USD-ACCOUNTS §٧).
+  final bool dollars;
 
   final String? method;
   final bool incoming;

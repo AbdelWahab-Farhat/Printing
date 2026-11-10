@@ -40,6 +40,8 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'pick_settlement_accounts' => ['sometimes', 'boolean'],
             // «عمولة الدفع الإلكتروني على» — CUSTOMER-WALLET §٥.
             'online_fee_payer' => ['sometimes', Rule::in(['customer', 'shop'])],
+            // «سعر النظام» — dinars per dollar for the totals; null clears it (USD-ACCOUNTS §٣).
+            'usd_rate' => ['sometimes', 'nullable', 'decimal:0,4', 'min:0.0001', 'max:99999999'],
         ];
     }
 
@@ -51,6 +53,9 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'collect_cash_into_id.exists' => 'الحساب غير موجود',
             'collect_bank_into_id.exists' => 'الحساب غير موجود',
             'collect_wallet_into_id.exists' => 'الحساب غير موجود',
+            'usd_rate.decimal' => 'السعر رقمٌ بأربع خانات عشرية على الأكثر',
+            'usd_rate.min' => 'السعر يجب أن يكون أكبر من صفر',
+            'usd_rate.max' => 'السعر أكبر من الحد المسموح',
         ];
     }
 
@@ -71,6 +76,7 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'settle_into_settler' => 'التسوية إلى حساب المسوّي',
             'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
+            'usd_rate' => 'سعر النظام',
         ];
     }
 }

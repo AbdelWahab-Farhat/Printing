@@ -35,7 +35,13 @@ final class SyncPurchaseOrderDebt
         if ($owes) {
             /** @var Vendor $vendor */
             $vendor = Vendor::query()->findOrFail($order->vendor_id);
-            $account = (int) $this->treasury->payableForVendor((int) $vendor->getKey(), (string) $vendor->name)->getKey();
+            // In the order's own currency: a dollar order owes dollars, on the vendor's dollar
+            // «علينا» (USD-ACCOUNTS.md §٤), with no rate and no repricing.
+            $account = (int) $this->treasury->payableForVendor(
+                (int) $vendor->getKey(),
+                (string) $vendor->name,
+                $order->currency,
+            )->getKey();
         }
 
         $this->treasury->syncDebt(

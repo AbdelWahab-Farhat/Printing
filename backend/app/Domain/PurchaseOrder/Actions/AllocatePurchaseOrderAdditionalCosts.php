@@ -67,11 +67,16 @@ final class AllocatePurchaseOrderAdditionalCosts
     /**
      * The planned costs only. A cost added on the receive screen is spread over what that receipt
      * brought, not over what was ordered — {@see ReceivePurchaseOrder}.
+     *
+     * **And in the order's currency only**: a line's figures are in it. A dinar cost on a dollar
+     * order — customs out of a dinar drawer — cannot join a dollar line; it is spread into the
+     * stock in dinars at receipt (USD-ACCOUNTS.md §٧).
      */
     private function totalAdditionalCostCents(PurchaseOrder $order): string
     {
         $amounts = $order->additionalCosts()
             ->whereNull('stock_arrival_id')
+            ->where('currency', $order->currency->value)
             ->get()
             ->map(fn ($cost) => (string) $cost->amount)
             ->all();

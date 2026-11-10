@@ -50,6 +50,8 @@ final class ReverseOperation
             $reversal->forceFill([
                 'type' => $locked->type,
                 'amount' => (string) $locked->amount,
+                'counter_amount' => $locked->counter_amount === null ? null : (string) $locked->counter_amount,
+                'rate' => $locked->rate === null ? null : (string) $locked->rate,
                 'from_account_id' => $locked->from_account_id,
                 'to_account_id' => $locked->to_account_id,
                 'category_id' => $locked->category_id,

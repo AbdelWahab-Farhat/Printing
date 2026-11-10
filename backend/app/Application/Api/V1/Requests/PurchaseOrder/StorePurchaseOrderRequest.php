@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -32,6 +33,10 @@ class StorePurchaseOrderRequest extends FormRequest
             ],
 
             'order_date' => ['required', 'date'],
+
+            // Absent is dinars. Picked here once: an update has no such field, and the order
+            // keeps the currency it was raised in (USD-ACCOUNTS.md §٤).
+            'currency' => ['nullable', Rule::enum(Currency::class)],
 
             'expected_date' => ['nullable', 'date', 'after_or_equal:order_date'],
 
@@ -68,6 +73,9 @@ class StorePurchaseOrderRequest extends FormRequest
                 'nullable', 'integer',
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
             ],
+            // Checked, not trusted: the order's on the vendor's bill, the drawer's when paid
+            // from one (USD-ACCOUNTS.md §٧).
+            'additional_costs.*.currency' => ['nullable', Rule::enum(Currency::class)],
         ];
     }
 
@@ -100,6 +108,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'warehouse_id.exists' => 'مخزن الوجهة غير موجود',
             'order_date.required' => 'تاريخ الطلب مطلوب',
             'order_date.date' => 'تاريخ الطلب غير صحيح',
+            'currency.enum' => 'العملة يجب أن تكون دينار أو دولار',
             'expected_date.date' => 'التاريخ المتوقع غير صحيح',
             'expected_date.after_or_equal' => 'التاريخ المتوقع يجب أن يكون بعد أو يساوي تاريخ الطلب',
             'notes.max' => 'الملاحظات طويلة جداً',
@@ -135,6 +144,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'vendor_id' => 'المورد',
             'warehouse_id' => 'مخزن الوجهة',
             'order_date' => 'تاريخ الطلب',
+            'currency' => 'العملة',
             'expected_date' => 'التاريخ المتوقع',
             'notes' => 'الملاحظات',
             'items' => 'البنود',

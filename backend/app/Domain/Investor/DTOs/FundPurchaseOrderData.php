@@ -32,6 +32,8 @@ final readonly class FundPurchaseOrderData
          */
         public ?string $printingSalePrice = null,
         public ?string $notes = null,
+        /** Dinars per dollar on a dollar order — USD-ACCOUNTS.md §٥. Ignored on a dinar one. */
+        public ?string $rate = null,
     ) {}
 
     /**
@@ -57,6 +59,9 @@ final readonly class FundPurchaseOrderData
                 : null,
             notes: isset($validated['notes']) && trim((string) $validated['notes']) !== ''
                 ? trim((string) $validated['notes'])
+                : null,
+            rate: isset($validated['rate']) && $validated['rate'] !== ''
+                ? number_format((float) $validated['rate'], 4, '.', '')
                 : null,
         );
     }

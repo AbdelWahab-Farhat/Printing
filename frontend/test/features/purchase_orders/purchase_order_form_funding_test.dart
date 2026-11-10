@@ -72,6 +72,7 @@ class _FakeFundRepository implements InvestmentFundRepository {
     required int purchaseOrderId,
     required List<int> stockItemIds,
     Map<int, String> printingSalePrices = const {},
+    String? rate,
   }) async => const Left(
     Failure.server(
       message: 'نقدُ الصندوق لا يكفي: المطلوب 7,700 والمتاح 3,000',

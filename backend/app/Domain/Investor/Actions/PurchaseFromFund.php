@@ -13,6 +13,7 @@ use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Queries\FundCash;
 use App\Domain\Investor\Support\FundDeal;
 use App\Domain\Investor\Support\Money;
+use App\Domain\PurchaseOrder\Actions\FixFundingRate;
 use App\Domain\PurchaseOrder\Queries\FundingSnapshotQuery;
 use Illuminate\Support\Facades\DB;
 
@@ -60,12 +61,16 @@ final class PurchaseFromFund
         private readonly ClaimDealSupply $claimSupply,
         private readonly FundCash $cash,
         private readonly RecordCashEntry $treasury,
+        private readonly FixFundingRate $fixRate,
     ) {}
 
     /**
      * @param  list<int>|null  $stockItemIds  الرفوفُ المختارة، أو الكلُّ حين تُترك فارغة
      * @param  array<int, string>  $printingSalePrices  سعرُ السادة لكل رفّ — الرفُّ الغائب عنها
      *                                                  يمشي على الطريق الآخر: يركب البيعَ نفسَه
+     * @param  string|null  $rate  Dinars per dollar on a dollar order — what the fund pays at, and
+     *                             what its goods keep at arrival (USD-ACCOUNTS.md §٥). An order
+     *                             funded before keeps its own.
      *
      * @throws PurchaseOrderCannotBeFunded
      * @throws FundHasNotGotTheCash
@@ -75,9 +80,10 @@ final class PurchaseFromFund
         ?array $stockItemIds,
         ?int $actorId,
         array $printingSalePrices = [],
+        ?string $rate = null,
     ): InvestorDeal {
-        return DB::transaction(function () use ($purchaseOrderId, $stockItemIds, $actorId, $printingSalePrices): InvestorDeal {
-            $order = ($this->snapshot)($purchaseOrderId, lock: true);
+        return DB::transaction(function () use ($purchaseOrderId, $stockItemIds, $actorId, $printingSalePrices, $rate): InvestorDeal {
+            $order = ($this->snapshot)($purchaseOrderId, lock: true, rate: $rate);
 
             $this->guardOrder($order);
 
@@ -115,6 +121,15 @@ final class PurchaseFromFund
                 actorId: $actorId,
             );
 
+            // A dollar order: the rate the fund paid at, and each line's dinars at it — what its
+            // layers open at, so the fund's value does not move when they arrive.
+            if ($order['funding_rate'] !== null) {
+                ($this->fixRate)($purchaseOrderId, $order['funding_rate'], array_intersect_key(
+                    $order['line_costs'],
+                    array_flip($shelves),
+                ));
+            }
+
             return $deal->load('items.stockItem');
         });
     }
@@ -134,6 +149,10 @@ final class PurchaseFromFund
 
         if (! $order['is_fundable']) {
             throw PurchaseOrderCannotBeFunded::alreadyArriving();
+        }
+
+        if ($order['needs_rate']) {
+            throw PurchaseOrderCannotBeFunded::needsRate();
         }
     }
 

@@ -22,6 +22,7 @@ typedef SaveAccountCallback =
       bool? isActive,
       int? holderUserId,
       String? notes,
+      Currency? currency,
     });
 
 /// حسابٌ جديد — «مصرف علي»، مصرفٌ ثانٍ، عهدةُ مندوب — أو تعديلُ قائم.
@@ -58,6 +59,9 @@ class _AccountFormState extends State<_AccountForm> {
   late final _notes = TextEditingController(text: widget.account?.notes ?? '');
 
   late AccountKind _kind = widget.account?.kind ?? AccountKind.bank;
+
+  /// Chosen once, on a new cash box or bank — dollars sit nowhere else (USD-ACCOUNTS §٣).
+  late Currency _currency = widget.account?.currency ?? Currency.lyd;
   late bool _isDefault = widget.account?.isDefault ?? false;
   late bool _isActive = widget.account?.isActive ?? true;
   AuthUser? _holder;
@@ -69,6 +73,7 @@ class _AccountFormState extends State<_AccountForm> {
   static const _rendered = {
     'name',
     'kind',
+    'currency',
     'holder_user_id',
     'is_default',
     'is_active',
@@ -76,6 +81,9 @@ class _AccountFormState extends State<_AccountForm> {
   };
 
   bool get _isNew => widget.account == null;
+
+  /// Only a cash box or a bank may hold dollars.
+  bool get _mayBeDollars => _kind == AccountKind.cash || _kind == AccountKind.bank;
 
   static const _kinds = [
     AccountKind.cash,
@@ -130,6 +138,8 @@ class _AccountFormState extends State<_AccountForm> {
       isActive: _isNew || _isActive == account?.isActive ? null : _isActive,
       holderUserId: _holder?.id,
       notes: notes.isEmpty ? (cleared ? '' : null) : notes,
+      // Sent on a new account only, and only when it is not the dinars the server assumes.
+      currency: _isNew && _currency == Currency.usd ? Currency.usd : null,
     );
 
     if (!mounted) return;
@@ -154,9 +164,11 @@ class _AccountFormState extends State<_AccountForm> {
     final scheme = context.colorScheme;
     final account = widget.account;
     final holderName = _holder?.name ?? account?.holder?.name;
-    // Nothing falls back into custody or into a debt.
+    // Nothing falls back into custody, into a debt, or into dollars — a default is where
+    // customers' dinars land when nobody picks.
     final canBeDefault = _kind != AccountKind.custody &&
         _kind != AccountKind.payable &&
+        _currency != Currency.usd &&
         !(account?.isDefault ?? false);
     // A vendor's «علينا» carries the vendor's name and stays open while the vendor does (§٢٠).
     final ofVendor = account?.isVendorPayable ?? false;
@@ -219,6 +231,7 @@ class _AccountFormState extends State<_AccountForm> {
                       if (kind == AccountKind.custody || kind == AccountKind.payable) {
                         _isDefault = false;
                       }
+                      if (!_mayBeDollars) _currency = Currency.lyd;
                     });
                   },
                 )
@@ -233,6 +246,37 @@ class _AccountFormState extends State<_AccountForm> {
                   onChanged: (_) {},
                 ),
               SizedBox(height: 16.h),
+
+              // The currency, like the kind, is chosen once: shown on an edit, never offered.
+              if (_isNew && _mayBeDollars) ...[
+                AppDropdown<Currency>(
+                  key: const ValueKey('account-currency'),
+                  value: _currency,
+                  items: Currency.values,
+                  labelOf: (currency) => currency.label,
+                  label: 'العملة',
+                  errorText: _refusal?.fieldError('currency'),
+                  onChanged: (currency) {
+                    if (currency == null) return;
+
+                    setState(() {
+                      _currency = currency;
+                      if (currency == Currency.usd) _isDefault = false;
+                    });
+                  },
+                ),
+                SizedBox(height: 16.h),
+              ] else if (!_isNew && account!.isDollar) ...[
+                AppDropdown<Currency>(
+                  value: Currency.usd,
+                  items: const [Currency.usd],
+                  labelOf: (currency) => currency.label,
+                  label: 'العملة',
+                  enabled: false,
+                  onChanged: (_) {},
+                ),
+                SizedBox(height: 16.h),
+              ],
 
               if (!ofVendor) ...[
                 AppButton.tonal(

@@ -30,11 +30,12 @@ use Illuminate\Support\Carbon;
  * @property bool $settle_into_settler
  * @property bool $pick_settlement_accounts «اختيار حساب كل نوع عند التسوية» (§٢٤)
  * @property string $online_fee_payer «العمولة على» — `customer` or `shop` (CUSTOMER-WALLET §٥)
+ * @property ?string $usd_rate «سعر النظام» — dinars per dollar for the totals (USD-ACCOUNTS §٣)
  */
 #[Fillable([
     'own_account_first', 'block_overdraft', 'withdrawal_needs_reason', 'ask_carrier_fee', 'locked_until',
     'collect_cash', 'collect_cash_into_id', 'collect_bank', 'collect_bank_into_id', 'collect_wallet', 'collect_wallet_into_id',
-    'settle_into_settler', 'pick_settlement_accounts', 'online_fee_payer',
+    'settle_into_settler', 'pick_settlement_accounts', 'online_fee_payer', 'usd_rate',
 ])]
 class TreasurySetting extends Model implements HasAuditTrail
 {
@@ -58,6 +59,7 @@ class TreasurySetting extends Model implements HasAuditTrail
             'collect_wallet' => 'boolean',
             'settle_into_settler' => 'boolean',
             'pick_settlement_accounts' => 'boolean',
+            'usd_rate' => 'decimal:4',
         ];
     }
 

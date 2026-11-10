@@ -9,6 +9,7 @@ use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\PurchaseOrder\Enums\VendorPaymentType;
+use App\Domain\Treasury\Enums\Currency;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Vendor\Models\Vendor;
 use Database\Factories\VendorPaymentFactory;
@@ -39,12 +40,24 @@ class VendorPayment extends Model implements HasAuditTrail
     use Auditable, HasFactory, SoftDeletes;
 
     /**
+     * The column's own default, held on a new model too.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'currency' => 'LYD',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'type' => VendorPaymentType::class,
+            // The debt's and the drawer's — `amount` is in it (USD-ACCOUNTS.md §٦). Assigned by
+            // the Actions, never mass-assigned.
+            'currency' => Currency::class,
             'method' => PaymentMethod::class,
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',

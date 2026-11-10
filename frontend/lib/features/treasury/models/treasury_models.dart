@@ -43,6 +43,23 @@ enum AccountKind {
       values.firstWhere((kind) => kind.wire == value, orElse: () => AccountKind.unknown);
 }
 
+/// The currency an account holds — USD-ACCOUNTS §٣. Every figure on an account is in its
+/// currency; the one place two meet is «صرف عملة».
+enum Currency {
+  lyd('LYD', 'دينار', 'د.ل'),
+  usd('USD', 'دولار', r'$');
+
+  const Currency(this.wire, this.label, this.symbol);
+
+  final String wire;
+  final String label;
+  final String symbol;
+
+  /// An older server sends no currency; everything it knows is dinars.
+  static Currency fromWire(Object? value) =>
+      values.firstWhere((currency) => currency.wire == value, orElse: () => Currency.lyd);
+}
+
 /// من يحمل الحساب باسمه، أو من تسمّيه الحركة.
 class TreasuryPerson {
   const TreasuryPerson({required this.id, required this.name, this.employeeCode});
@@ -83,12 +100,18 @@ class TreasuryAccount {
     this.pickupCityId,
     this.isPayable = false,
     this.vendorId,
+    this.currency = Currency.lyd,
   });
 
   final int id;
   final String name;
   final AccountKind kind;
   final String kindLabel;
+
+  /// What its balance and every line of its ledger are in.
+  final Currency currency;
+
+  bool get isDollar => currency == Currency.usd;
 
   /// «علينا» — الرصيدُ دَينٌ تحت الصفر. TREASURY-DESIGN §٢٠.
   final bool isPayable;
@@ -167,6 +190,7 @@ class TreasuryAccount {
     pickupCityId: clearPickupCity ? null : (pickupCityId ?? this.pickupCityId),
     isPayable: isPayable,
     vendorId: vendorId,
+    currency: currency,
   );
 
   factory TreasuryAccount.fromJson(Map<String, dynamic> json) => TreasuryAccount(
@@ -187,6 +211,7 @@ class TreasuryAccount {
     pickupCityId: _intOrNull(json['pickup_city_id']),
     isPayable: json['is_payable'] == true,
     vendorId: _intOrNull(json['vendor_id']),
+    currency: Currency.fromWire(json['currency']),
   );
 }
 
@@ -253,7 +278,12 @@ class TreasurySettings {
     this.pickSettlementAccounts = false,
     this.pickupOffices = const [],
     this.onlineFeePayer,
+    this.usdRate,
   });
+
+  /// «سعر النظام» — dinars per dollar, what a dollar is worth in the totals. Null until the
+  /// owner writes one (USD-ACCOUNTS §٣).
+  final String? usdRate;
 
   /// الدفعة تنزل في حساب من يسجّلها قبل افتراضي الطريقة.
   final bool ownAccountFirst;
@@ -301,6 +331,7 @@ class TreasurySettings {
     pickSettlementAccounts: pickSettlementAccounts,
     pickupOffices: offices,
     onlineFeePayer: onlineFeePayer,
+    usdRate: usdRate,
   );
 
   factory TreasurySettings.fromJson(Map<String, dynamic> json) => TreasurySettings(
@@ -322,6 +353,7 @@ class TreasurySettings {
       for (final office in _maps(json['pickup_offices'])) PickupOffice.fromJson(office),
     ],
     onlineFeePayer: _stringOrNull(json['online_fee_payer']),
+    usdRate: _stringOrNull(json['usd_rate']),
   );
 }
 
@@ -332,9 +364,17 @@ class TreasuryAccounts {
     required this.total,
     required this.canViewAll,
     this.payablesTotal = '0.00',
+    this.dollars = const DollarHoldings(),
+    this.owedDollars = const DollarHoldings(),
   });
 
   final List<TreasuryAccount> accounts;
+
+  /// What the dollar accounts hold, beside [total] — USD-ACCOUNTS §٣.
+  final DollarHoldings dollars;
+
+  /// What the vendors' dollar «علينا» owe, beside [payablesTotal] — USD-ACCOUNTS §٤.
+  final DollarHoldings owedDollars;
 
   /// مجموع الخادم نفسه للحسابات المفعّلة — ولمن يحمل حساباً، ماله هو وحده. مالٌ فقط: ما علينا
   /// في [payablesTotal].
@@ -351,6 +391,8 @@ class TreasuryAccounts {
     total: total,
     payablesTotal: payablesTotal,
     canViewAll: canViewAll,
+    dollars: dollars,
+    owedDollars: owedDollars,
   );
 
   factory TreasuryAccounts.fromJson(Map<String, dynamic> json) => TreasuryAccounts(
@@ -358,6 +400,39 @@ class TreasuryAccounts {
     total: _string(json['total'], '0.00'),
     payablesTotal: _string(json['payables_total'], '0.00'),
     canViewAll: json['can_view_all'] == true,
+    dollars: DollarHoldings.fromJson(json, held: 'usd_total', inLyd: 'usd_total_in_lyd'),
+    owedDollars: DollarHoldings.fromJson(
+      json,
+      held: 'usd_payables_total',
+      inLyd: 'usd_payables_total_in_lyd',
+    ),
+  );
+}
+
+/// Dollars beside a dinar total, and what they are worth in it at «سعر النظام» — USD-ACCOUNTS §٣.
+///
+/// **[inLyd] is already inside the dinar total** when there is a rate. With none, the dollars
+/// cannot be valued, so the total leaves them out and the screen says so.
+class DollarHoldings {
+  const DollarHoldings({this.held = '0.00', this.rate, this.inLyd});
+
+  final String held;
+
+  /// Dinars per dollar, null until the owner writes one.
+  final String? rate;
+  final String? inLyd;
+
+  /// Whether there is anything to say: an older server, or no dollar money, says nothing.
+  bool get isEmpty => RegExp(r'^-?0*(\.0*)?$').hasMatch(held);
+
+  factory DollarHoldings.fromJson(
+    Map<String, dynamic> json, {
+    required String held,
+    required String inLyd,
+  }) => DollarHoldings(
+    held: _string(json[held], '0.00'),
+    rate: _stringOrNull(json['usd_rate']),
+    inLyd: _stringOrNull(json[inLyd]),
   );
 }
 
@@ -441,7 +516,17 @@ class TreasuryMovement {
     this.recorderName,
     this.notes,
     this.paymentReview,
+    this.accountCurrency,
+    this.dinarAmount,
   });
+
+  /// The currency of the line's account — sent by «المصاريف», which reads every account at once.
+  /// Null where the screen knows its account's currency already.
+  final Currency? accountCurrency;
+
+  /// An expense out of a dollar account, in dinars at its rate — what «المصاريف» adds
+  /// (USD-ACCOUNTS §٨). Null on every other line.
+  final String? dinarAmount;
 
   final int id;
   final String kind;
@@ -510,9 +595,16 @@ class TreasuryMovement {
     recorderName: recorderName,
     notes: notes,
     paymentReview: paymentReview,
+    accountCurrency: accountCurrency,
+    dinarAmount: dinarAmount,
   );
 
   factory TreasuryMovement.fromJson(Map<String, dynamic> json) => TreasuryMovement(
+    accountCurrency: switch (_mapOrNull(json['account'])?['currency']) {
+      final String wire => Currency.fromWire(wire),
+      _ => null,
+    },
+    dinarAmount: _stringOrNull(json['dinar_amount']),
     id: (json['id'] as num).toInt(),
     kind: _string(json['kind']),
     kindLabel: _string(json['kind_label']),
@@ -562,13 +654,21 @@ class TreasuryOperation {
     required this.typeLabel,
     required this.amount,
     required this.isReversible,
+    this.counterAmount,
+    this.rate,
   });
 
   final int id;
   final String type;
   final String typeLabel;
+
+  /// In the currency of the account it left.
   final String amount;
   final bool isReversible;
+
+  /// «صرف عملة» alone: what arrived, in the other account's currency, and dinars per dollar.
+  final String? counterAmount;
+  final String? rate;
 
   factory TreasuryOperation.fromJson(Map<String, dynamic> json) => TreasuryOperation(
     id: (json['id'] as num).toInt(),
@@ -576,6 +676,8 @@ class TreasuryOperation {
     typeLabel: _string(json['type_label']),
     amount: _string(json['amount'], '0.00'),
     isReversible: json['is_reversible'] == true,
+    counterAmount: _stringOrNull(json['counter_amount']),
+    rate: _stringOrNull(json['rate']),
   );
 }
 
@@ -625,6 +727,7 @@ class AccountOption {
     required this.kindLabel,
     required this.isDefault,
     this.isPayable = false,
+    this.currency = Currency.lyd,
   });
 
   final int id;
@@ -634,6 +737,10 @@ class AccountOption {
 
   /// «علينا» — لا درجٌ خرج منه المال، بل دينٌ بقي لصاحبه. يُعرض «علينا لـX» لا «X» وحده.
   final bool isPayable;
+
+  /// What the account holds — a dollar drawer is offered for a dollar purchase order's cost
+  /// alone (USD-ACCOUNTS §٧), and the cost is then typed in dollars.
+  final Currency currency;
 
   factory AccountOption.fromJson(Map<String, dynamic> json) => AccountOption(
     id: (json['id'] as num).toInt(),
@@ -702,9 +809,17 @@ class TreasuryOwnership {
     required this.fundCash,
     required this.companyOwn,
     this.payablesTotal = '0.00',
+    this.dollars = const DollarHoldings(),
+    this.owedDollars = const DollarHoldings(),
   });
 
   final String totalHeld;
+
+  /// The dollar accounts, valued into [totalHeld] at «سعر النظام» when there is one.
+  final DollarHoldings dollars;
+
+  /// The vendors' dollar «علينا», valued into [payablesTotal] at «سعر النظام» when there is one.
+  final DollarHoldings owedDollars;
   final List<InvestorHolding> investors;
   final String investorsTotal;
   final String fundCash;
@@ -722,6 +837,8 @@ class TreasuryOwnership {
     fundCash: _string(json['fund_cash'], '0.00'),
     payablesTotal: _string(json['payables_total'], '0.00'),
     companyOwn: _string(json['company_own'], '0.00'),
+    dollars: DollarHoldings.fromJson(json, held: 'usd_held', inLyd: 'usd_held_in_lyd'),
+    owedDollars: DollarHoldings.fromJson(json, held: 'usd_payables', inLyd: 'usd_payables_in_lyd'),
   );
 }
 
@@ -774,7 +891,10 @@ enum OperationKind {
   expense('expense', 'مصروف'),
   transfer('transfer', 'تحويل'),
   adjustment('adjustment', 'جرد الحساب'),
-  opening('opening', 'رصيد افتتاحي');
+  opening('opening', 'رصيد افتتاحي'),
+
+  /// Dinars into dollars or back — its own sheet, `currency_exchange_sheet.dart`.
+  exchange('exchange', 'صرف عملة');
 
   const OperationKind(this.wire, this.label);
 

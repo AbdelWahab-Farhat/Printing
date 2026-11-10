@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\PurchaseOrder;
 
+use App\Domain\Treasury\Enums\Currency;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -62,6 +63,11 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
                 'nullable', 'integer',
                 Rule::exists('treasury_accounts', 'id')->whereNull('deleted_at'),
             ],
+            'additional_costs.*.currency' => ['nullable', Rule::enum(Currency::class)],
+
+            // Dinars per dollar — required on a dollar order, which the Action checks: whether
+            // the order is in dollars is not this request's to read (USD-ACCOUNTS.md §٥).
+            'arrival_rate' => ['nullable', 'decimal:0,4', 'min:0.0001', 'max:99999999'],
         ];
     }
 
@@ -89,6 +95,8 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
     {
         return [
             'invoice_number.max' => 'رقم الفاتورة طويل جداً',
+            'arrival_rate.decimal' => 'سعر الصرف رقمٌ بأربع خانات عشرية على الأكثر',
+            'arrival_rate.min' => 'سعر الصرف يجب أن يكون أكبر من صفر',
             'notes.max' => 'الملاحظات طويلة جداً',
             'items.required' => 'يجب إضافة بند واحد على الأقل',
             'items.min' => 'يجب إضافة بند واحد على الأقل',
@@ -116,6 +124,7 @@ class ReceivePurchaseOrderArrivalRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'arrival_rate' => 'سعر الصرف',
             'invoice_number' => 'رقم الفاتورة',
             'notes' => 'الملاحظات',
             'items' => 'البنود',

@@ -23,6 +23,8 @@ class VendorPaymentResource extends JsonResource
             'type' => $this->type->value,
             'type_label' => $this->type->label(),
             'amount' => (string) $this->amount,
+            // The debt's and the drawer's — `amount` is in it (USD-ACCOUNTS.md §٦).
+            'currency' => $this->currency->value,
 
             'method' => $this->method?->value,
             'method_label' => $this->method?->label(),
