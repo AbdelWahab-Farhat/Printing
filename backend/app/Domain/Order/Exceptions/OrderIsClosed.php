@@ -10,6 +10,9 @@ use App\Support\Exceptions\DomainException;
 /**
  * Nothing may be done to a delivered or cancelled order.
  *
+ * Except a new discount on a delivered or settled one, which `UpdateOrder` lets through and
+ * refuses everything else with {@see ClosedOrderTakesOnlyADiscount}.
+ *
  * Separate from {@see TransitionNotAllowed} because it answers a different question: not "that
  * move is wrong" but "this order is finished". A clerk who sees the first goes looking for the
  * right move; one who sees the second stops.

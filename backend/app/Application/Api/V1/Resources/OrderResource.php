@@ -519,6 +519,11 @@ class OrderResource extends JsonResource
             'bench_is_fixed' => app(ResolveOrderFlow::class)->benchIsFixed($this->resource),
             'designs_are_editable' => $this->designsAreEditable(),
             'destination_is_editable' => $this->destinationIsEditable(),
+
+            // **The last line of all, and the only one that runs past «تم الاستلام».** Open in
+            // every status but «إلغاء تام» and «مرفوض»; on a delivered or settled order it is the
+            // only thing `UpdateOrder` accepts. See `Order::discountIsEditable()`.
+            'discount_is_editable' => $this->discountIsEditable(),
         ];
     }
 

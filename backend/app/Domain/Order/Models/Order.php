@@ -946,6 +946,26 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * Whether the discount may still be changed.
+     *
+     * **Open in every status but the two where nothing is owed** (owner's decision, 2026-11-11):
+     * «إلغاء تام» and «مرفوض». A discount is an argument about what the customer pays, and it
+     * goes on after the bags have left — the customer rings a week after «تم الاستلام» and the
+     * shop agrees to take something off. Refusing that sent people to undo the delivery, write
+     * the discount and deliver again: three moves on the timeline for one decision.
+     *
+     * **Later than every other field on the order, and it is the only one.** On a delivered or
+     * settled order the discount is all `UpdateOrder` accepts; the money that was already
+     * worked out from the old total — the investors' share and the fund's cash — is worked out
+     * again in the same transaction. See `UpdateOrder::reworkTheMoney()`.
+     */
+    public function discountIsEditable(): bool
+    {
+        return $this->status !== OrderStatus::Cancelled
+            && $this->status !== OrderStatus::RequestRejected;
+    }
+
+    /**
      * Where a delivered order stood before it reached «تم الاستلام», or null.
      *
      * The same reading as {@see statusBeforeCancellation()} and for the same reason: three

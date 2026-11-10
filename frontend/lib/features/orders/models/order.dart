@@ -361,6 +361,13 @@ abstract class Order with _$Order {
     /// refuses, because there the label has already left and only the label is real.
     @JsonKey(name: 'destination_is_editable') @Default(false) bool destinationIsEditable,
 
+    /// Whether the discount may still be changed.
+    ///
+    /// **The last line of all, and the only one past «تم الاستلام».** Open in every status
+    /// but «إلغاء تام» and «مرفوض»; on a delivered or settled order it is the only thing the
+    /// server accepts. Absent on an archived order, so it reads `false` there.
+    @JsonKey(name: 'discount_is_editable') @Default(false) bool discountIsEditable,
+
     /// Present on the list endpoint.
     @JsonKey(name: 'items_count') int? itemsCount,
 

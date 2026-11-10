@@ -559,7 +559,8 @@ final class ChangeOrderStatus
 
             // **The moment this order's money stops moving.** From «تم الاستلام» the state
             // machine offers only «تم التسوية», and `UpdateOrder` refuses every edit on a closed
-            // order — so `grand_total` and `total_cogs` are both frozen and the profit is final.
+            // order but a new discount — and announces this event again when one is written —
+            // so `grand_total` and `total_cogs` are settled and the profit is final.
             //
             // Announced rather than acted on: Orders does not know that investors exist, and a
             // direct call would close a dependency loop the container cannot build. See

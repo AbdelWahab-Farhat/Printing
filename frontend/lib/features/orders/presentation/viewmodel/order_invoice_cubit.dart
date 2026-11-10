@@ -22,6 +22,7 @@ part 'order_invoice_state.dart';
 class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   OrderInvoiceCubit({required Order order, required UpdateOrderInvoice updateInvoice})
     : _updateInvoice = updateInvoice,
+      _openingDiscount = order.discount,
       super(
         OrderInvoiceState(
           orderId: order.id,
@@ -68,6 +69,12 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       );
 
   final UpdateOrderInvoice _updateInvoice;
+
+  /// The discount the screen opened on, so a save knows whether this edit moved it.
+  final String _openingDiscount;
+
+  /// Whether this edit has changed the discount from the one the screen opened on.
+  bool get discountMoved => _ascii(state.discount) != _ascii(_openingDiscount);
 
   /// Puts a product the picker returned on the order, with no quantity yet.
   ///
@@ -285,7 +292,10 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
                 ),
             ]
           : null,
-      discount: state.linesAreEditable ? _ascii(state.discount) : null,
+      // **Also when the lines are shut, if this edit moved it** — the discount stays open long
+      // after the lines close, to «تم التسوية». Left out otherwise, so the order's own figure
+      // goes back as it stands now rather than as it stood when the screen opened.
+      discount: state.linesAreEditable || discountMoved ? _ascii(state.discount) : null,
       cityId: state.cityId,
       regionId: state.regionId,
       // Sent only when it may be changed. On an order out for delivery the server refuses a

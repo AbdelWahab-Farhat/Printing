@@ -12,8 +12,10 @@ use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\ShortageRevision;
+use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderShortagesRecorded;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
+use App\Domain\Order\Exceptions\ClosedOrderTakesOnlyADiscount;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\EditWouldChangeTheRoad;
@@ -26,7 +28,10 @@ use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Edits an order that is still open.
+ * Edits an order that is still open — and the discount on one that is not.
+ *
+ * A delivered or settled order accepts a new discount and nothing else; a cancelled or rejected
+ * one accepts nothing. See {@see Order::discountIsEditable()} and guardClosedOrder().
  *
  * Three things are guarded rather than freely editable, each for a different reason:
  *
@@ -53,10 +58,12 @@ final class UpdateOrder
         private readonly ResolveOrderFlow $resolveFlow,
         private readonly VendorService $vendors,
         private readonly GuardOneBench $guardOneBench,
+        private readonly RecalculateOrderPayments $recalculatePayments,
     ) {}
 
     /**
      * @throws OrderIsClosed
+     * @throws ClosedOrderTakesOnlyADiscount
      * @throws DestinationCannotChange
      * @throws DiscountRequiresPermission
      * @throws AdditionalCostRequiresPermission
@@ -65,9 +72,9 @@ final class UpdateOrder
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
     {
         // Closed, not final: an order the customer already has is not editable even though it
-        // still owes a settlement.
+        // still owes a settlement — except for its discount. See guardClosedOrder().
         if ($order->status->isClosed()) {
-            throw OrderIsClosed::make($order->status);
+            $this->guardClosedOrder($order, $data);
         }
 
         $this->guardDiscount($order, $data, $actor);
@@ -104,6 +111,10 @@ final class UpdateOrder
             // Whichever arrives second waits, then reads the order as the first one left it.
             Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $order->refresh();
+
+            // Read off the locked row, so a second discount racing this one is compared with
+            // what the first one left rather than with what the screen opened on.
+            $discountMoved = bccomp($data->discount, (string) $order->discount, Money::SCALE) !== 0;
 
             // What the lines said before this edit, so a road the edit did not move is never a
             // reason to refuse it — see the guard after the lines are written.
@@ -172,7 +183,13 @@ final class UpdateOrder
                 throw OutsourcedOrderNeedsAVendor::make();
             }
 
-            return ($this->recalculate)($order->load('items'))->refresh();
+            $recalculated = ($this->recalculate)($order->load('items'))->refresh();
+
+            if ($discountMoved && $recalculated->status->isClosed()) {
+                $this->reworkTheMoney($recalculated);
+            }
+
+            return $recalculated;
         });
 
         // **After the commit, never inside it** — the rule `SetOrderShortages` follows for the
@@ -210,6 +227,89 @@ final class UpdateOrder
         if ($after !== $before && ! $this->resolveFlow->mayMove($order->status, $after)) {
             throw EditWouldChangeTheRoad::make($order->status, $before, $after);
         }
+    }
+
+    /**
+     * What a closed order still accepts: a new discount, and nothing else.
+     *
+     * «إلغاء تام» and «مرفوض» accept nothing — nothing is owed on either, so a discount there is
+     * a number with no money behind it. «تم الاستلام» and «تم التسوية» accept the discount alone.
+     *
+     * **Compared field by field rather than refusing the other keys outright**, because every
+     * edit re-sends the whole order: the address, the notes and the vendor come back exactly as
+     * they were, and refusing them would refuse every discount. Only a field that *moved* is a
+     * reason to say no.
+     *
+     * @throws OrderIsClosed
+     * @throws ClosedOrderTakesOnlyADiscount
+     */
+    private function guardClosedOrder(Order $order, OrderData $data): void
+    {
+        if (! $order->discountIsEditable()) {
+            throw OrderIsClosed::make($order->status);
+        }
+
+        if (! $this->onlyTheDiscountMoves($order, $data)) {
+            throw ClosedOrderTakesOnlyADiscount::make($order->status);
+        }
+    }
+
+    private function onlyTheDiscountMoves(Order $order, OrderData $data): bool
+    {
+        $id = fn (mixed $value): ?int => $value === null ? null : (int) $value;
+
+        // The same trimming `OrderData` applies on the way in, so an older row holding '' or a
+        // trailing space is not read as somebody changing it.
+        $text = function (mixed $value): ?string {
+            $trimmed = trim((string) ($value ?? ''));
+
+            return $trimmed === '' ? null : $trimmed;
+        };
+
+        $sameMoney = fn (string $sent, mixed $stored): bool => bccomp($sent, (string) $stored, Money::SCALE) === 0;
+
+        return $data->items === null
+            && $data->cityId === (int) $order->city_id
+            && $data->regionId === $id($order->region_id)
+            && $data->customerShopId === $id($order->customer_shop_id)
+            && $data->vendorId === $id($order->vendor_id)
+            && $data->designSource === $order->design_source
+            && $data->recipientName === $text($order->recipient_name)
+            && $data->recipientPhone === $text($order->recipient_phone)
+            && $data->addressDetails === $text($order->address_details)
+            && $data->notes === $text($order->notes)
+            && $data->trackingNumber === $text($order->tracking_number)
+            && ($data->isUrgent === null || $data->isUrgent === (bool) $order->is_urgent)
+            && $sameMoney($data->designFee, $order->design_fee)
+            // The amount alone, as guardAdditionalCost() compares it.
+            && $sameMoney($data->additionalCost, $order->additional_cost);
+    }
+
+    /**
+     * Works out again the money that was worked out from the old total.
+     *
+     * **Two things were computed from `grand_total` once the order closed**, and both would go on
+     * describing an invoice that no longer exists:
+     *
+     * - **The investors' share of the profit**, posted on the way into «تم الاستلام». Announced
+     *   again as {@see OrderProfitFinalised}: the posting compares what should stand with what
+     *   does and writes reversals for the difference, so a second announcement corrects rather
+     *   than doubles. A share from a period that has already closed lands in the period open
+     *   today — see `PeriodForEntry::floorOf()` — the prior-period correction the ledger already
+     *   makes for every late change.
+     * - **The fund's cash from this order**, which is its revenue times what was collected over
+     *   the total. Re-run through {@see RecalculateOrderPayments}, whose event is the one door
+     *   that cash moves through.
+     *
+     * Inside the edit's transaction, so the discount and the money it moves land together or
+     * not at all. What the discount does to the customer's balance needs nothing here: a total
+     * below what was paid reads as «زائد» the moment it is written.
+     */
+    private function reworkTheMoney(Order $order): void
+    {
+        OrderProfitFinalised::dispatch((int) $order->getKey());
+
+        ($this->recalculatePayments)($order);
     }
 
     /**

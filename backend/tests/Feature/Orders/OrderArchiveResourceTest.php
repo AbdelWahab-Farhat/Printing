@@ -54,6 +54,7 @@ class OrderArchiveResourceTest extends TestCase
         'can_unsettle',
         'designs_are_editable',
         'destination_is_editable',
+        'discount_is_editable',
         'item_edits_move_stock',
         'items_are_editable',
         'progress',

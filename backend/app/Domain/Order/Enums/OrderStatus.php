@@ -558,6 +558,9 @@ enum OrderStatus: string
      * still has a move to make. One flag was asked to mean both and could only be right about
      * one of them.
      *
+     * **One exception, the discount** (owner's decision, 2026-11-11): a delivered or settled
+     * order still accepts a new one — see `Order::discountIsEditable()`.
+     *
      * **«مرفوض» مغلقٌ أيضاً، وغيرُ نهائي** (طلب المستخدم، 2026-09-25). لا أحد يعمل على طلبٍ
      * رُفض عند الباب، فكان يُحسب في «الطلبات الجارية» على شاشة العميل في تطبيق الموظفين، وهي قائمةُ
      * ما يدين له أحدٌ بقرار. لكنه لا يدخل {@see isFinal()}: الرفض يُتراجع عنه إلى «بانتظار

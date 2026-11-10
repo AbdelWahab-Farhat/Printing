@@ -138,6 +138,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   benchIsFixed: json['bench_is_fixed'] as bool? ?? false,
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
   destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
+  discountIsEditable: json['discount_is_editable'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
   items: (json['items'] as List<dynamic>?)
       ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -268,6 +269,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'bench_is_fixed': instance.benchIsFixed,
   'designs_are_editable': instance.designsAreEditable,
   'destination_is_editable': instance.destinationIsEditable,
+  'discount_is_editable': instance.discountIsEditable,
   'items_count': instance.itemsCount,
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),

@@ -484,6 +484,44 @@ class InvestorDealEarningsTest extends TestCase
         );
     }
 
+    public function test_a_discount_after_delivery_takes_its_share_back_off_the_investor(): void
+    {
+        // Arrange — the same sale as above: 5,000.00 of goods that cost 2,000.00, delivered.
+        $size = $this->investableSize();
+        $warehouse = Warehouse::factory()->create();
+        [$deal, $investor] = $this->fundedDeal($size);
+        $this->layer($size, $warehouse, '1000', '2.000', $deal);
+        $order = $this->saleOf($size);
+        $this->deliver($this->foreman(), $order, $warehouse);
+        $order->refresh();
+
+        $discounter = User::factory()->create();
+        $discounter->givePermissionTo([
+            PermissionName::ViewOrders->value,
+            PermissionName::ManageOrders->value,
+            PermissionName::DiscountOrders->value,
+        ]);
+        $this->app['auth']->forgetGuards();
+
+        // Act — the customer rings after the delivery and the shop takes 1,000.00 off.
+        $this->withHeaders(['Authorization' => 'Bearer '.$discounter->createToken('test')->plainTextToken])
+            ->putJson("/api/v1/orders/{$order->id}", array_filter([
+                'city_id' => $order->city_id,
+                'design_source' => $order->design_source->value,
+                'address_details' => $order->address_details,
+                'design_fee' => (string) $order->design_fee,
+                'discount' => '1000.00',
+                'additional_cost' => (string) $order->additional_cost,
+                'vendor_id' => $order->vendor_id,
+            ], fn (mixed $value) => $value !== null))
+            ->assertOk();
+
+        // Assert — 4,000.00 − 2,000.00 is 2,000.00, and his half of it is 1,000.00: the 1,500.00
+        // the delivery posted, less a reversal of the 500.00 the discount took away.
+        $balances = app(InvestorBalances::class)->forInvestor((int) $investor->getKey());
+        $this->assertSame('1000.00', $balances['deals'][$deal->getKey()]['profit']);
+    }
+
     // ─────────────────────────── the paperwork ───────────────────────────
 
     // ─────────────────────── the orders behind the money ───────────────────────

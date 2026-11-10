@@ -483,20 +483,52 @@ class _Form extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (mayDiscount && mayEditItems) ...[
+                // **In every status for whoever holds the grant** (owner's decision,
+                // 2026-11-11), no longer riding on the lines: the discount stays open after
+                // they close, to «تم التسوية». Where the server shuts it — «إلغاء تام»,
+                // «مرفوض» — the section stays and says so, the way «الاستعجال» above does.
+                if (mayDiscount) ...[
                   SizedBox(height: 16.h),
                   _Section(
                     title: 'الخصم',
-                    child: _DiscountField(
-                      initial: state.discount,
-                      errorText: state.discountError,
-                      onChanged: cubit.setDiscount,
+                    child: Column(
+                      children: [
+                        if (!order.discountIsEditable)
+                          _Note(text: 'الخصم مقفل في طلبية «${order.statusLabel}»')
+                        else ...[
+                          // Said before the save: on a closed order the discount is the only
+                          // thing that moves, and the money worked out from the old total
+                          // moves with it.
+                          if (order.isClosed)
+                            _Note(
+                              text:
+                                  'الطلبية «${order.statusLabel}» — لا يُعدَّل فيها إلا الخصم،'
+                                  ' ويُعاد معه حساب نصيب المستثمرين منها',
+                            ),
+                          // **A warning only, by the owner's choice.** An edit does not
+                          // reach Nawris: the parcel was lodged with the old amount, and the
+                          // courier collects what the parcel says.
+                          if (order.nawrisParcel?.isOpen ?? false)
+                            const _Error(
+                              text:
+                                  'الشحنة عند نورس بمبلغ التحصيل القديم، وتعديل الخصم هنا'
+                                  ' لا يصل إليهم — سيحصّل المندوب المبلغ القديم',
+                            ),
+                          _DiscountField(
+                            initial: state.discount,
+                            errorText: state.discountError,
+                            onChanged: cubit.setDiscount,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
                 SizedBox(height: 16.h),
                 _Estimate(total: state.estimatedTotal),
-                if (mayEditItems && state.dropsBelowPaid) ...[
+                // Also when only the discount moved — on a paid order past the press, that is
+                // the one way left to put the total under what came in.
+                if ((mayEditItems || cubit.discountMoved) && state.dropsBelowPaid) ...[
                   SizedBox(height: 8.h),
                   // Before the save, not discovered on the order screen after it: the
                   // difference is money the customer has paid for goods no longer on the order.

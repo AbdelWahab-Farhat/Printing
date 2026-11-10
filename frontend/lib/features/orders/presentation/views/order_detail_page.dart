@@ -1472,17 +1472,27 @@ class _Actions extends StatelessWidget {
   /// Null unless the server said this delivery may be undone, or the order is archived.
   final Future<void> Function(BuildContext context)? onUndoDelivery;
 
-  /// Whether «تعديل الطلبية» has anything at all to offer this person.
+  /// Whether «تعديل الطلبية» is offered to this person.
   ///
-  /// Three questions, each answered by the server's own flag and this user's own grant, and they
-  /// close at three different moments: the lines when the bags exist, the artwork when the press
-  /// starts, and the address only when somebody is already driving to it. An order in «جاهزة»
-  /// has both of the first two shut and the third wide open — which is exactly the case that
-  /// used to hide this button on a screen that had a section to offer.
-  bool get _mayEditSomething =>
-      (order.itemsAreEditable && sl<Session>().can(AppPermission.manageOrders)) ||
-      (order.destinationIsEditable && sl<Session>().can(AppPermission.manageOrders)) ||
-      (order.designsAreEditable && sl<Session>().can(AppPermission.manageOrderDesigns));
+  /// **In every status for whoever may edit orders** (owner's decision, 2026-11-11). The button
+  /// used to follow the sections — shown while the lines, the address or the artwork was open —
+  /// and so it vanished at «جاري التوصيل» and after, taking the discount with it although the
+  /// server would have accepted one. Now the screen always opens, and each section inside says
+  /// for itself whether it is locked and why.
+  ///
+  /// The other two grants open it only where they have something to do: the discount wherever
+  /// the server says it is open, the artwork while it is.
+  ///
+  /// Never on an archived order — every write there answers 404.
+  bool get _mayEditSomething {
+    if (order.isArchived) return false;
+
+    final session = sl<Session>();
+
+    return session.can(AppPermission.manageOrders) ||
+        (order.discountIsEditable && session.can(AppPermission.discountOrders)) ||
+        (order.designsAreEditable && session.can(AppPermission.manageOrderDesigns));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1499,14 +1509,10 @@ class _Actions extends StatelessWidget {
             onTap: onChangeStatus,
           ),
 
-        // Offered while *either* half of that screen is still open — the lines, or the artwork
-        // — and they close at different points, which is why one flag could not answer for
-        // both. The server owns both answers; this only stops offering a screen with nothing
-        // on it to change.
-        //
         // Checked here rather than declared as the action's `permission`, because it is an
-        // *either*: a clerk holds `orders.manage` and a designer holds `orders.designs.manage`,
-        // and each has something to do there the other has not.
+        // *either*: a clerk holds `orders.manage`, a designer `orders.designs.manage`, and the
+        // discount has its own grant — each has something to do there the others have not.
+        // See [_mayEditSomething].
         if (_mayEditSomething)
           AppAction(label: 'تعديل الطلبية', icon: AppIcons.edit, onTap: onEdit),
 

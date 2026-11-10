@@ -528,6 +528,69 @@ void main() {
 
   // ─────────────────────── moving where the order goes ───────────────────────
 
+  test('a delivered order sends a discount this edit moved, without its lines', () async {
+    // Arrange — the lines are shut, the discount is not (owner's decision, 2026-11-11).
+    stubSave();
+    final cubit = cubitFor(
+      orderWith().copyWith(
+        status: OrderStatus.delivered,
+        itemsAreEditable: false,
+        destinationIsEditable: false,
+        discountIsEditable: true,
+        isClosed: true,
+      ),
+    );
+
+    // Act
+    cubit.setDiscount('٣٠');
+    await cubit.save();
+
+    // Assert
+    final captured = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: captureAny(named: 'lines'),
+        discount: captureAny(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
+      ),
+    ).captured;
+
+    expect(captured[0], isNull);
+    expect(captured[1], '30');
+    expect(cubit.discountMoved, isTrue);
+  });
+
+  test('a discount nobody touched stays off the wire while the lines are shut', () async {
+    // Arrange — absent means the order's own figure goes back as it stands now.
+    stubSave();
+    final cubit = cubitFor(
+      orderWith(discount: '20.00').copyWith(itemsAreEditable: false, destinationIsEditable: true),
+    );
+
+    // Act
+    cubit.setCity(id: 9, name: 'الزاوية');
+    await cubit.save();
+
+    // Assert
+    final captured = verify(
+      () => repository.updateInvoice(
+        any(),
+        lines: any(named: 'lines'),
+        discount: captureAny(named: 'discount'),
+        cityId: any(named: 'cityId'),
+        regionId: any(named: 'regionId'),
+        recipientPhone: any(named: 'recipientPhone'),
+        isUrgent: any(named: 'isUrgent'),
+      ),
+    ).captured;
+
+    expect(captured.single, isNull);
+    expect(cubit.discountMoved, isFalse);
+  });
+
   test('an order past «جاهزة» saves its address without touching its lines', () async {
     // Arrange — the lines are shut and the address is not, which is the whole case this
     // screen was reopened for.
