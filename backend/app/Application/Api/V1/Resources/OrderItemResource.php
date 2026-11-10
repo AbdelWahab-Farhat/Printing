@@ -173,6 +173,15 @@ class OrderItemResource extends JsonResource
                 fn () => $this->stockUnit()->label(),
             ),
 
+            // What this line weighs in kilograms, or null when there is nothing to state — see
+            // OrderItem::weight(). Guarded like the label above: without the shelf, stockUnit()
+            // falls back to the selling unit and would answer wrongly. The orders list loads
+            // the shelf, so the card gets this without a query per line.
+            'weight' => $this->when(
+                $this->relationLoaded('variant') && ($this->variant?->relationLoaded('stockItem') ?? false),
+                fn (): ?string => $this->weight(),
+            ),
+
             // **Whether this line needs its shortage stated twice.** Guarded the same way and for
             // the same reason as the label above it: absent rather than false where the shelf was
             // not loaded, so a screen cannot read «the units agree» out of a payload that simply

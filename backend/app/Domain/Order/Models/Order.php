@@ -816,16 +816,13 @@ class Order extends Model implements HasAuditTrail
             return null;
         }
 
-        $unmeasured = $weighed->contains(
-            fn (OrderItem $item) => $item->isStockedInAnotherUnit() && $item->warehouse_quantity === null,
-        );
-
-        if ($unmeasured) {
+        // A kilogram line with no weight is one nobody has weighed yet; see OrderItem::weight().
+        if ($weighed->contains(fn (OrderItem $item) => $item->weight() === null)) {
             return null;
         }
 
         return $weighed->reduce(
-            fn (string $carry, OrderItem $item) => bcadd($carry, $item->producedQuantity(), 3),
+            fn (string $carry, OrderItem $item) => bcadd($carry, (string) $item->weight(), 3),
             '0.000',
         );
     }

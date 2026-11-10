@@ -396,6 +396,30 @@ class OrderItem extends Model
     }
 
     /**
+     * What this line weighs, in kilograms, or null when there is no weight to state.
+     *
+     * Only a line whose shelf is counted in kilograms weighs anything; a shelf counted in pieces
+     * has no weight, and no factor converts one into the other. A line sold by the piece off a
+     * kilogram shelf has a weight only once the warehouse has typed it in: until then
+     * {@see producedQuantity()} falls back to the piece count, which is not a weight.
+     *
+     * {@see Order::totalWeight()} is the sum of these, and null whenever any of them is.
+     * Reads the shelf behind the line, so load `variant.stockItem` first.
+     */
+    public function weight(): ?string
+    {
+        if ($this->stockUnit() !== PricingUnit::Kilogram) {
+            return null;
+        }
+
+        if ($this->isStockedInAnotherUnit() && $this->warehouse_quantity === null) {
+            return null;
+        }
+
+        return bcadd($this->producedQuantity(), '0', 3);
+    }
+
+    /**
      * What is missing from this line in the **shelf's** unit — what «النواقص» actually chases.
      *
      * **`shortage_quantity` is the invoice's number and this is the warehouse's**, and the two

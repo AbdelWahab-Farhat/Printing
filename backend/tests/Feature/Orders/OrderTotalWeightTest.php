@@ -204,6 +204,65 @@ class OrderTotalWeightTest extends TestCase
         $response->assertOk()->assertJsonPath('data.0.total_weight', '12.500');
     }
 
+    public function test_a_weighed_line_states_its_own_weight(): void
+    {
+        // Arrange — sold by the piece, stocked by the kilo, weighed at «جاهزة».
+        $order = Order::factory()->create();
+        $line = $this->line($order, $this->sellableSize(PricingUnit::Piece, PricingUnit::Kilogram), '300', '12.5');
+
+        // Act
+        $weight = $line->weight();
+
+        // Assert — the scale reading, not the 300 bags.
+        $this->assertSame('12.500', $weight);
+    }
+
+    public function test_a_line_sold_by_the_kilo_weighs_its_quantity(): void
+    {
+        // Arrange
+        $order = Order::factory()->create();
+        $line = $this->line($order, $this->sellableSize(PricingUnit::Kilogram, PricingUnit::Kilogram), '8.250');
+
+        // Act
+        $weight = $line->weight();
+
+        // Assert
+        $this->assertSame('8.250', $weight);
+    }
+
+    public function test_an_unweighed_line_and_a_counted_line_have_no_weight(): void
+    {
+        // Arrange — one waiting for the scale, one off a shelf counted in pieces.
+        $order = Order::factory()->create();
+        $unweighed = $this->line($order, $this->sellableSize(PricingUnit::Piece, PricingUnit::Kilogram), '300');
+        $counted = $this->line($order, $this->sellableSize(PricingUnit::Piece, PricingUnit::Piece), '100');
+
+        // Act
+        $weights = [$unweighed->weight(), $counted->weight()];
+
+        // Assert — null, never '0.000' and never the piece count.
+        $this->assertSame([null, null], $weights);
+    }
+
+    public function test_the_list_carries_each_line_s_weight(): void
+    {
+        // Arrange — one weighed line and one counted line on the same order.
+        $order = Order::factory()->create();
+        $this->line($order, $this->sellableSize(PricingUnit::Piece, PricingUnit::Kilogram), '300', '12.500');
+        $this->line($order, $this->sellableSize(PricingUnit::Piece, PricingUnit::Piece), '100');
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionName::ViewOrders->value);
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        // Act
+        $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
+
+        // Assert — the key is present on both lines, null where there is no weight.
+        $items = collect($response->assertOk()->json('data.0.items'));
+        $this->assertTrue($items->every(fn (array $item) => array_key_exists('weight', $item)));
+        $this->assertEqualsCanonicalizing(['12.500', null], $items->pluck('weight')->all());
+    }
+
     public function test_weighing_the_list_costs_no_query_per_order(): void
     {
         // Arrange — the same page asked for twice, once holding three times as many orders. The

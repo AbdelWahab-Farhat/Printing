@@ -925,6 +925,13 @@ abstract class OrderItem with _$OrderItem {
     /// of a payload that simply never asked.
     @JsonKey(name: 'is_stocked_in_another_unit') bool? isStockedInAnotherUnit,
 
+    /// What this line weighs in kilograms, worked out by the server — see [Order.totalWeight],
+    /// which is the sum of these.
+    ///
+    /// **Null means there is no weight to state**, never zero: the shelf is counted in pieces,
+    /// the line has not been weighed yet, or the payload did not carry the shelf at all.
+    String? weight,
+
     /// The copy of the size's «سعر التكلفة» taken the day this order was made — what makes a
     /// later change to the catalogue leave this order alone. Null on every line we make
     /// ourselves, and **absent** for anybody without `products.view_cost`, so the screen gates
@@ -953,6 +960,15 @@ abstract class OrderItem with _$OrderItem {
   /// False on a null — a payload that did not carry the shelf cannot be read as «they differ»,
   /// and asking for a weight nobody can supply is worse than asking for one number.
   bool get needsAWarehouseShortage => isStockedInAnotherUnit ?? false;
+
+  /// The weight to print beside the quantity — «12.5 كجم» — or null when it would add nothing.
+  ///
+  /// **Only on a line sold in another unit.** A line sold by the kilo already states its weight
+  /// as its quantity, and «50 كجم · 50 كجم» says it twice. Trimmed like [Order.weightLabel].
+  String? get weightLabel => switch ((isStockedInAnotherUnit, weight)) {
+        (true, final kilos?) => '${groupedDecimal(kilos)} كجم',
+        _ => null,
+      };
 
   bool get hasShortage {
     final missing = double.tryParse(shortageQuantity ?? '') ?? 0;

@@ -217,6 +217,71 @@ void main() {
     expect(find.byType(ProductThumbnail), findsNothing);
   });
 
+  group('line weight', () {
+    OrderItem weighed({
+      required String unit,
+      required bool stockedInAnotherUnit,
+      String? weight,
+    }) => line(1, 'أكياس الشحن السادة').copyWith(
+      pricingUnitLabel: unit,
+      isStockedInAnotherUnit: stockedInAnotherUnit,
+      weight: weight,
+    );
+
+    testWidgets('a piece line weighed by the kilo shows its weight after the quantity', (
+      tester,
+    ) async {
+      // Arrange — 100 bags that came to 12.5 kilos on the scale.
+      final item = weighed(unit: 'قطعة', stockedInAnotherUnit: true, weight: '12.500');
+      await tester.pumpWidget(host(OrderCard(order: orderWith([item]))));
+
+      // Act
+      await tester.pump();
+
+      // Assert — one line, trimmed like every other quantity on the card.
+      expect(find.text('100 قطعة · 12.5 كجم'), findsOneWidget);
+    });
+
+    testWidgets('a piece line not yet weighed shows only the quantity', (tester) async {
+      // Arrange — before «جاهزة» nobody has been near the scale.
+      final item = weighed(unit: 'قطعة', stockedInAnotherUnit: true);
+      await tester.pumpWidget(host(OrderCard(order: orderWith([item]))));
+
+      // Act
+      await tester.pump();
+
+      // Assert — no «٠ كجم», and not the bag count read as kilos.
+      expect(find.text('100 قطعة'), findsOneWidget);
+      expect(find.textContaining('كجم'), findsNothing);
+    });
+
+    testWidgets('a line sold by the kilo does not say its weight twice', (tester) async {
+      // Arrange — the quantity already is the weight.
+      final item = weighed(unit: 'كجم', stockedInAnotherUnit: false, weight: '100.000');
+      await tester.pumpWidget(host(OrderCard(order: orderWith([item]))));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('100 كجم'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+    });
+
+    testWidgets('a line off a shelf counted in pieces has no weight', (tester) async {
+      // Arrange — the server sends null: pieces have no weight.
+      final item = weighed(unit: 'قطعة', stockedInAnotherUnit: false);
+      await tester.pumpWidget(host(OrderCard(order: orderWith([item]))));
+
+      // Act
+      await tester.pump();
+
+      // Assert
+      expect(find.text('100 قطعة'), findsOneWidget);
+      expect(find.textContaining('كجم'), findsNothing);
+    });
+  });
+
   testWidgets('the whole card still opens the order', (tester) async {
     // Arrange — the rows are something to read, not a second destination.
     var taps = 0;

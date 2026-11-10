@@ -40420,6 +40420,13 @@
                             "\u0643\u062c\u0645"
                         ]
                     },
+                    "weight": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "What this line weighs in kilograms, or null when there is nothing to state \u2014 see\nOrderItem::weight(). Guarded like the label above: without the shelf, stockUnit()\nfalls back to the selling unit and would answer wrongly. The orders list loads\nthe shelf, so the card gets this without a query per line."
+                    },
                     "is_stocked_in_another_unit": {
                         "type": "boolean",
                         "description": "**Whether this line needs its shortage stated twice.** Guarded the same way and for\nthe same reason as the label above it: absent rather than false where the shelf was\nnot loaded, so a screen cannot read \u00abthe units agree\u00bb out of a payload that simply\nnever asked."

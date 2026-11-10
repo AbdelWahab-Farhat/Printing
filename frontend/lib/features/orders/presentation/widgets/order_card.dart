@@ -419,8 +419,14 @@ class _Line extends StatelessWidget {
             ),
           ),
           SizedBox(width: 8.w),
+          // The weight goes after the quantity on the same line, only on a line sold by the
+          // piece and weighed by the kilo — see `OrderItem.weightLabel`. It never adds a second
+          // line, so the card stays the height it was.
           Text(
-            '${item.quantity.grouped} ${item.pricingUnitLabel}',
+            [
+              '${item.quantity.grouped} ${item.pricingUnitLabel}',
+              ?item.weightLabel,
+            ].join(' · '),
             style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
