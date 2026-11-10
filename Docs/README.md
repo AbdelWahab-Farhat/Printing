@@ -39,6 +39,7 @@ A document that plans the app side of an already-built API ends in `-FRONTEND-IN
 | Document | |
 |---|---|
 | [README.md](changes/README.md) | شن تغيّر للمستخدم — ملف لكل PR مدموج، وقالبه. |
+| [PR-41-USD-ACCOUNTS.md](changes/PR-41-USD-ACCOUNTS.md) | حسابات وأوامر شراء ودفعات ومصاريف بالدولار. |
 | [PR-40-NAWRIS-SETTLEMENT-IMPORT.md](changes/PR-40-NAWRIS-SETTLEMENT-IMPORT.md) | «تسوية ملف النورس» — طلبيات كثيرة تتسوّى من ملف واحد. |
 | [PR-38-PO-COST-REFUND.md](changes/PR-38-PO-COST-REFUND.md) | «استرداد» تكاليف أمر الشراء. |
 | [PR-37-PRINT-COLORS.md](changes/PR-37-PRINT-COLORS.md) | «ألوان الطباعة» على التصاميم والطلبيات والتذاكر. |
