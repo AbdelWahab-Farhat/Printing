@@ -46,6 +46,12 @@ class UserResource extends JsonResource
                 fn () => $this->salary,
             ),
 
+            // «راتب تلقائي» — whether the monthly run posts that salary. Same reader as the salary.
+            'auto_salary' => $this->when(
+                $request->user()?->can(PermissionName::ManageUserSalaries->value) === true,
+                fn () => (bool) ($this->auto_salary ?? true),
+            ),
+
             // «خدمات الموظفين» — لمن يقرأ الرواتب، ولمن يكتب أجر التذكرة فيظهر له السعر المقترح، ولصاحبها
             // يراه عند القبول. وقائمةٌ لا خريطة، حتى يبقى الفراغ `[]` ويقرؤه التطبيق قائمة.
             'services' => $this->when(

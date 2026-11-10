@@ -36,6 +36,9 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class EmployeeWalletService
 {
+    /** Every automatic salary's token starts with this; app-sent tokens never do. */
+    public const SALARY_TOKEN_PREFIX = 'salary:';
+
     public function __construct(
         private readonly EmployeeWalletBalances $balances,
         private readonly RecordEmployeeMoney $money,
@@ -113,6 +116,36 @@ final class EmployeeWalletService
             ), $actor === null ? null : (int) $actor->getKey()),
             $actor,
         );
+    }
+
+    /**
+     * One month's salary, written by the monthly run — EMPLOYEE-WALLET-DESIGN §١٤.
+     *
+     * Like {@see payForService()}, the system is the writer, so the "not your own wallet" rule
+     * does not apply and nobody signs the line. `$monthKey` (`2026-11`, the month worked) goes
+     * into the client token, which is unique per wallet: a month is never paid twice, and a
+     * reversed salary is not paid again, because the reversal keeps the original row.
+     */
+    public function paySalary(int $userId, string $amount, string $monthKey, string $notes): EmployeeWalletEntry
+    {
+        $category = $this->treasury->categoryWithCode(ExpenseCategory::SALARY);
+
+        return $this->announced(
+            ($this->credit)($userId, new EmployeeCreditData(
+                amount: $amount,
+                categoryId: (int) $category->getKey(),
+                notes: $notes,
+                clientToken: self::salaryToken($monthKey),
+                bySystem: true,
+            ), null),
+            null,
+        );
+    }
+
+    /** The client token of the automatic salary for a month worked (`2026-11`). */
+    public static function salaryToken(string $monthKey): string
+    {
+        return self::SALARY_TOKEN_PREFIX.$monthKey;
     }
 
     public function adjust(

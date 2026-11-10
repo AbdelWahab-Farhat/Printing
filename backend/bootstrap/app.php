@@ -74,6 +74,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // وتُغلق التذكرةُ التي لم يكتب فيها أحدُ الطرفين ثلاثة أيام — كل ساعة، فتُغلق خلال ساعةٍ من
         // تمام المدة. انظر CloseSilentInternalTickets.
         $schedule->command('internal-tickets:close-silent')->hourly()->withoutOverlapping();
+
+        // Last month's salaries into the employee wallets, at 08:00 Tripoli time so the
+        // notifications do not arrive at midnight. Daily rather than on the 1st alone: a missed
+        // 1st is caught up the next morning, and a month is never paid twice. Does nothing while
+        // «إضافة الرواتب تلقائياً» is off. EMPLOYEE-WALLET-DESIGN §١٤.
+        $schedule->command('employees:post-salaries')
+            ->dailyAt('08:00')
+            ->timezone((string) config('app.business_timezone', 'Africa/Tripoli'))
+            ->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // An unauthenticated API request must never redirect to a web login page — there

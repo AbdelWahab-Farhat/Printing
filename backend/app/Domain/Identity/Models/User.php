@@ -25,7 +25,7 @@ use Spatie\Permission\Traits\HasRoles;
 // Models live under app/Domain/, so Laravel's App\Models convention can no longer
 // guess the factory. Every domain model names its factory explicitly.
 #[UseFactory(UserFactory::class)]
-#[Fillable(['name', 'email', 'phone', 'password', 'salary', 'is_active'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'salary', 'auto_salary', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasAuditTrail
 {
@@ -151,6 +151,8 @@ class User extends Authenticatable implements HasAuditTrail
             // A string, not a float: a wage is money, and this schema counts money in decimals
             // everywhere for the reason `OrderPayment` spells out.
             'salary' => 'decimal:2',
+            // «راتب تلقائي» — whether the monthly run posts this salary (EMPLOYEE-WALLET-DESIGN §١٤).
+            'auto_salary' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

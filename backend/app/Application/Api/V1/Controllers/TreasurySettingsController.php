@@ -79,6 +79,10 @@ class TreasurySettingsController extends Controller
             'online_fee_payer' => (string) ($settings->online_fee_payer ?? 'customer'),
             // «سعر النظام» — dinars per dollar for the totals, null until written (USD-ACCOUNTS §٣).
             'usd_rate' => $settings->usd_rate === null ? null : (string) $settings->usd_rate,
+            // «إضافة الرواتب تلقائياً», and the first 1st it posts on — null while it is off
+            // (EMPLOYEE-WALLET-DESIGN §١٤).
+            'auto_salaries' => (bool) $settings->auto_salaries,
+            'auto_salaries_from' => $settings->auto_salaries_from?->toDateString(),
             // «كاش كل مكتب استلام» — each branch customers collect from, and the cash box its
             // cash lands in (null: the usual rules). Linked on the account (§١٩).
             'pickup_offices' => $delivery->pickupOffices()->map(fn (City $city) => [

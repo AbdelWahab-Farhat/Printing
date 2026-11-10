@@ -164,7 +164,7 @@ class _Body extends StatelessWidget {
         // answer and gets said out loud.
         if (sl<Session>().can(AppPermission.manageUserSalaries)) ...[
           SizedBox(height: 14.h),
-          _SalaryCard(user: user),
+          _SalaryCard(user: user, isChanging: isChanging),
           // للمصمم وحده: `services` لا يحمل غيره، ومن لا يقدّم الخدمة لا سطر له.
           if (user.designService case final design?) ...[
             SizedBox(height: 14.h),
@@ -388,9 +388,16 @@ class _RolesCard extends StatelessWidget {
 
 /// What this employee is paid a month — drawn only for a reader holding `users.salary`.
 class _SalaryCard extends StatelessWidget {
-  const _SalaryCard({required this.user});
+  const _SalaryCard({required this.user, required this.isChanging});
 
   final AuthUser user;
+  final bool isChanging;
+
+  Future<void> _setAuto(BuildContext context, bool on) async {
+    if (await context.read<EmployeeDetailCubit>().setAutoSalary(on: on) && context.mounted) {
+      context.showSuccess(on ? 'سيُضاف راتبه تلقائياً' : 'راتبه يُضاف يدوياً');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -399,14 +406,34 @@ class _SalaryCard extends StatelessWidget {
 
     return _Card(
       title: 'الراتب الشهري',
-      child: Text(
-        // «لم يُحدَّد» rather than «0 د.ل»: an account created before the wage was agreed is a
-        // real state, and a nought would read as a wage of nothing.
-        salary == null ? 'لم يُحدَّد' : '${groupedDecimal(salary)} د.ل',
-        style: context.textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: salary == null ? scheme.onSurfaceVariant : scheme.onSurface,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            // «لم يُحدَّد» rather than «0 د.ل»: an account created before the wage was agreed is
+            // a real state, and a nought would read as a wage of nothing.
+            salary == null ? 'لم يُحدَّد' : '${groupedDecimal(salary)} د.ل',
+            style: context.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: salary == null ? scheme.onSurfaceVariant : scheme.onSurface,
+            ),
+          ),
+          // «راتب تلقائي» (EMPLOYEE-WALLET-DESIGN §١٤) — only with a wage to post.
+          if (salary != null) ...[
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Expanded(child: Text('راتب تلقائي', style: context.textTheme.bodyMedium)),
+                Switch(
+                  key: const ValueKey('auto-salary'),
+                  value: user.autoSalary,
+                  onChanged: isChanging ? null : (on) => _setAuto(context, on),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

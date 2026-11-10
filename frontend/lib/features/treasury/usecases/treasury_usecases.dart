@@ -215,6 +215,7 @@ class SaveTreasurySettings {
     String? onlineFeePayer,
     String? usdRate,
     bool clearUsdRate = false,
+    bool? autoSalaries,
   }) => _repository.saveSettings(
     ownAccountFirst: ownAccountFirst,
     blockOverdraft: blockOverdraft,
@@ -231,6 +232,7 @@ class SaveTreasurySettings {
     onlineFeePayer: onlineFeePayer,
     usdRate: usdRate,
     clearUsdRate: clearUsdRate,
+    autoSalaries: autoSalaries,
   );
 }
 

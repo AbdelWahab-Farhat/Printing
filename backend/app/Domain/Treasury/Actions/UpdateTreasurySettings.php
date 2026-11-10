@@ -8,6 +8,7 @@ use App\Domain\Treasury\Enums\AccountKind;
 use App\Domain\Treasury\Exceptions\AccountChangeRefused;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use App\Domain\Treasury\Models\TreasurySetting;
+use Carbon\CarbonImmutable;
 
 /**
  * «إعدادات المالية» — the owner's switches over the treasury's rules.
@@ -42,6 +43,22 @@ final class UpdateTreasurySettings
         }
 
         $settings = TreasurySetting::current();
+
+        // «إضافة الرواتب تلقائياً»: the date is the server's, never the request's. Turning the
+        // switch on never pays the month already running, so the run's first 1st is next
+        // month's. Turning it off forgets the date; on again starts counting afresh.
+        if (array_key_exists('auto_salaries', $values)) {
+            $on = (bool) $values['auto_salaries'];
+
+            if ($on && ! $settings->auto_salaries) {
+                $values['auto_salaries_from'] = CarbonImmutable::now((string) config('app.business_timezone', 'Africa/Tripoli'))
+                    ->startOfMonth()
+                    ->addMonthNoOverflow()
+                    ->toDateString();
+            } elseif (! $on) {
+                $values['auto_salaries_from'] = null;
+            }
+        }
 
         $settings->fill($values);
         $settings->updated_by = $actorId;

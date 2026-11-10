@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_auto_salary.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,11 +31,13 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
     required SetUserPassword setPassword,
     required SetEmployeeServicePrice setServicePrice,
     required SetUserActivation setActivation,
+    required SetUserAutoSalary setAutoSalary,
   }) : _userId = userId,
        _getUser = getUser,
        _setPassword = setPassword,
        _setServicePrice = setServicePrice,
        _setActivation = setActivation,
+       _setAutoSalary = setAutoSalary,
        super(const EmployeeDetailState.loading());
 
   final int _userId;
@@ -42,6 +45,7 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
   final SetUserPassword _setPassword;
   final SetEmployeeServicePrice _setServicePrice;
   final SetUserActivation _setActivation;
+  final SetUserAutoSalary _setAutoSalary;
 
   Future<void> load() async {
     // Only from nothing: a reload after an edit must not blank the screen being read.
@@ -76,6 +80,11 @@ class EmployeeDetailCubit extends Cubit<EmployeeDetailState> {
   /// السعر المقترح في «خدمات الموظفين»، و`null` يمحوه.
   Future<bool> setServicePrice(String service, String? price) {
     return _change(() => _setServicePrice(userId: _userId, service: service, price: price));
+  }
+
+  /// «راتب تلقائي» — EMPLOYEE-WALLET-DESIGN §١٤.
+  Future<bool> setAutoSalary({required bool on}) {
+    return _change(() => _setAutoSalary(userId: _userId, on: on));
   }
 
   Future<bool> setActive({required bool isActive}) {

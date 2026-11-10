@@ -74,6 +74,10 @@ abstract interface class AccessRepository {
   /// a real state and different from a wage of zero.
   Future<Either<Failure, AuthUser>> setUserSalary(int userId, String? salary);
 
+  /// «راتب تلقائي» — on, the monthly run posts the salary into their wallet; off, it is entered
+  /// by hand. Behind `users.salary`, like the wage. EMPLOYEE-WALLET-DESIGN §١٤.
+  Future<Either<Failure, AuthUser>> setUserAutoSalary(int userId, {required bool on});
+
   /// السعر المقترح لموظف في خدمة، و`null` يمحوه. ومن لا يقدّم الخدمة يُرفض في الخادم.
   Future<Either<Failure, AuthUser>> setServicePrice(int userId, String service, String? price);
 

@@ -15,6 +15,7 @@ use App\Domain\DesignTicket\Events\DesignConversationChanged;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\EmployeeWallet\Events\EmployeeWalletMoved;
+use App\Domain\EmployeeWallet\Events\SalariesPosted;
 use App\Domain\Identity\Models\User;
 use App\Domain\InternalTicket\Events\InternalTicketChanged;
 use App\Domain\InternalTicket\Events\InternalTicketClosedForSilence;
@@ -46,6 +47,7 @@ use App\Domain\Notification\Listeners\NotifyWhenOrderDepositIsChosen;
 use App\Domain\Notification\Listeners\NotifyWhenOrderEntersShortage;
 use App\Domain\Notification\Listeners\NotifyWhenOrderIsRequested;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
+use App\Domain\Notification\Listeners\NotifyWhenSalariesPosted;
 use App\Domain\Notification\Listeners\NotifyWhenShortageIsAssigned;
 use App\Domain\Notification\Support\FcmClient;
 use App\Domain\Notification\Support\GoogleServiceAccountToken;
@@ -340,6 +342,9 @@ class AppServiceProvider extends ServiceProvider
 
         // تحرّكت محفظة موظف، فيعرف صاحبها — EMPLOYEE-WALLET-DESIGN §١٠.
         Event::listen(EmployeeWalletMoved::class, NotifyEmployeeWhenWalletMoves::class);
+
+        // The monthly salary run posted salaries — EMPLOYEE-WALLET-DESIGN §١٤.
+        Event::listen(SalariesPosted::class, NotifyWhenSalariesPosted::class);
 
         // قنواتُ البثّ الحيّ ومن يدخلها. من هنا لا من `withRouting` — routes/channels.php يقول لماذا.
         require base_path('routes/channels.php');

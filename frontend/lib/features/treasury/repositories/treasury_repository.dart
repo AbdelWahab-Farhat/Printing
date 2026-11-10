@@ -113,7 +113,8 @@ abstract interface class TreasuryRepository {
   /// و[clearCollectInto] يرسل هدفاً فارغاً فيعود إلى افتراضي النوع. و[settleIntoSettler]
   /// «التسوية إلى حساب المسوّي» (§٢٢). و[pickSettlementAccounts] «اختيار حساب كل نوع عند
   /// التسوية» (§٢٤). و[onlineFeePayer] `customer` أو `shop` — «عمولة الدفع
-  /// الإلكتروني على» (CUSTOMER-WALLET §٥).
+  /// الإلكتروني على» (CUSTOMER-WALLET §٥). [autoSalaries] is «إضافة الرواتب تلقائياً»
+  /// (EMPLOYEE-WALLET-DESIGN §١٤); the server sets its start date.
   Future<Either<Failure, TreasurySettings>> saveSettings({
     bool? ownAccountFirst,
     bool? blockOverdraft,
@@ -130,6 +131,7 @@ abstract interface class TreasuryRepository {
     String? onlineFeePayer,
     String? usdRate,
     bool clearUsdRate = false,
+    bool? autoSalaries,
   });
 
   /// أين تُسوّى العهدة؛ [targetId] فارغٌ يعيدها إلى القاعدة المبنيّة.

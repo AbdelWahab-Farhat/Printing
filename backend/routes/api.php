@@ -197,6 +197,8 @@ Route::prefix('v1')->group(function (): void {
         // role and knowing what everyone is paid are different jobs.
         Route::patch('users/{user}/salary', [UserController::class, 'setSalary'])
             ->middleware('can:users.salary')->name('users.salary');
+        Route::patch('users/{user}/auto-salary', [UserController::class, 'setAutoSalary'])
+            ->middleware('can:users.salary')->name('users.auto-salary');
 
         // «خدمات الموظفين» — السعر المقترح من جنس الراتب، فخلف صلاحيته.
         Route::put('users/{user}/services/{service}', [UserController::class, 'setServicePrice'])

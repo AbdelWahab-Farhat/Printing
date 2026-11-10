@@ -30,7 +30,11 @@ import 'package:go_router/go_router.dart';
 ///
 /// **للقراءة**: اللمسةُ تفتح المحفظة أو المحاولة، وهناك يُحرَّك المال — في سياقه.
 class WalletTransactionsPage extends StatelessWidget {
-  const WalletTransactionsPage({super.key});
+  const WalletTransactionsPage({this.opensOn, super.key});
+
+  /// The tab to open on — `customers`, `employees` or `online`, from `?tab=`. The salary
+  /// summary notification opens `employees`. Unknown, or not one this reader has: the first.
+  final String? opensOn;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +54,10 @@ class WalletTransactionsPage extends StatelessWidget {
           // فارغة، فيُجاب هنا بدل أن ينهار.
           [] => const _Frame(body: SizedBox.shrink()),
           [final only] => _Frame(actions: only.actions, body: only.list),
-          _ => _Tabbed(ledgers: ledgers),
+          _ => _Tabbed(
+            ledgers: ledgers,
+            initialIndex: ledgers.indexWhere((ledger) => ledger.name == opensOn).clamp(0, ledgers.length - 1),
+          ),
         };
       },
     );
@@ -101,14 +108,16 @@ class _Frame extends StatelessWidget {
 }
 
 class _Tabbed extends StatelessWidget {
-  const _Tabbed({required this.ledgers});
+  const _Tabbed({required this.ledgers, this.initialIndex = 0});
 
   final List<_Ledger> ledgers;
+  final int initialIndex;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: ledgers.length,
+      initialIndex: initialIndex,
       child: _Frame(
         actions: [_OpenLedgerActions(ledgers: ledgers)],
         body: Column(

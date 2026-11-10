@@ -96,6 +96,7 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
     bool? settleIntoSettler,
     bool? pickSettlementAccounts,
     String? onlineFeePayer,
+    bool? autoSalaries,
   }) => _after(
     () => _saveSettings(
       ownAccountFirst: ownAccountFirst,
@@ -107,6 +108,7 @@ class TreasurySettingsCubit extends Cubit<TreasurySettingsState> {
       settleIntoSettler: settleIntoSettler,
       pickSettlementAccounts: pickSettlementAccounts,
       onlineFeePayer: onlineFeePayer,
+      autoSalaries: autoSalaries,
     ),
   );
 

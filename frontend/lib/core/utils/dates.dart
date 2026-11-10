@@ -44,6 +44,9 @@ abstract final class AppDates {
     return '${local.day} ${_months[local.month - 1]} ${local.year}';
   }
 
+  /// «نوفمبر» — the name of [month], 1 to 12.
+  static String monthName(int month) => _months[(month - 1) % 12];
+
   /// «14 أغسطس» — the year dropped when it is this one.
   ///
   /// For a list of things that happened recently, where the year is the same on every row and

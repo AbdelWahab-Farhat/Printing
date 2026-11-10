@@ -93,7 +93,11 @@ void main() {
   AuthUser account(List<String> permissions) =>
       AuthUser(id: 1, name: 'عبدالوهاب', phone: '0911234567', permissions: permissions);
 
-  Future<void> open(WidgetTester tester, {required List<String> permissions}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    required List<String> permissions,
+    String? opensOn,
+  }) async {
     await sl.reset();
     customers = _MockCustomers();
     employees = _MockEmployees();
@@ -180,15 +184,15 @@ void main() {
     await tester.pumpWidget(
       ScreenUtilInit(
         designSize: const Size(430, 932),
-        builder: (context, _) => const MaterialApp(
-          locale: Locale('ar'),
-          supportedLocales: [Locale('ar')],
-          localizationsDelegates: [
+        builder: (context, _) => MaterialApp(
+          locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar')],
+          localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: WalletTransactionsPage(),
+          home: WalletTransactionsPage(opensOn: opensOn),
         ),
       ),
     );
@@ -264,6 +268,25 @@ void main() {
       // Assert
       expect(find.text(employeeHint), findsOneWidget);
       expect(find.text('محمد عز الدين · كاش'), findsOneWidget);
+    });
+
+    testWidgets('?tab=employees opens on the employees tab — the salary summary goes there', (
+      tester,
+    ) async {
+      // Act
+      await open(tester, permissions: const [customerGrant, employeeGrant], opensOn: 'employees');
+
+      // Assert
+      expect(find.text(employeeHint), findsOneWidget);
+      expect(find.text('محمد عز الدين · كاش'), findsOneWidget);
+    });
+
+    testWidgets('a tab this reader does not have falls back to the first', (tester) async {
+      // Act
+      await open(tester, permissions: const [customerGrant, onlineGrant], opensOn: 'employees');
+
+      // Assert
+      expect(find.text(customerHint), findsOneWidget);
     });
 
     testWidgets('صلاحية العملاء وحدها: قائمتهم بلا تبويبات، ولا طلب للموظفين', (tester) async {

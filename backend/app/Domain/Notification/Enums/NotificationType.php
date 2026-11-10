@@ -20,6 +20,7 @@ use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderAwaitsReview;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
 use App\Domain\Notification\Definitions\OrderReachedStatus;
+use App\Domain\Notification\Definitions\SalariesPostedSummary;
 use App\Domain\Notification\Definitions\ShortageAssignedToYou;
 
 /**
@@ -128,6 +129,9 @@ enum NotificationType: string
     /** تحرّكت محفظتك — لصاحبها وحده. انظر {@see EmployeeWalletMovedForYou}. */
     case EmployeeWalletMoved = 'employee_wallet.moved';
 
+    /** The monthly run posted salaries — one summary. See {@see SalariesPostedSummary}. */
+    case SalariesPosted = 'employee_wallet.salaries_posted';
+
     /** Somebody wrote a message and sent it to staff. The only one a human composes. */
     case Announcement = 'announcement.manual';
 
@@ -157,6 +161,7 @@ enum NotificationType: string
             self::InternalTicketReminder => InternalTicketAwaitsYourReply::class,
             self::InternalTicketClosedForSilence => InternalTicketClosedAfterSilence::class,
             self::EmployeeWalletMoved => EmployeeWalletMovedForYou::class,
+            self::SalariesPosted => SalariesPostedSummary::class,
             self::Announcement => ManualAnnouncement::class,
         };
     }
@@ -198,6 +203,7 @@ enum NotificationType: string
             self::InternalTicketClosedForSilence => 'task',
             // مفتاحٌ جديد، وجرسٌ عاديٌّ في نسخةٍ لا تعرفه — القاعدة التي فوق.
             self::EmployeeWalletMoved => 'wallet',
+            self::SalariesPosted => 'wallet',
             self::Announcement => 'announcement',
         };
     }
@@ -222,6 +228,7 @@ enum NotificationType: string
             self::InternalTicketReminder => 'تذكير بتذكرة داخلية',
             self::InternalTicketClosedForSilence => 'تذكرة داخلية أُغلقت لعدم الرد',
             self::EmployeeWalletMoved => 'حركة على محفظتك',
+            self::SalariesPosted => 'رواتب الشهر',
             self::Announcement => 'إشعار عام',
         };
     }

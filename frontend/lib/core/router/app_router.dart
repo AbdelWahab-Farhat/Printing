@@ -863,7 +863,8 @@ abstract final class AppRouter {
             ])
             ? null
             : Routes.home,
-        builder: (context, state) => const WalletTransactionsPage(),
+        builder: (context, state) =>
+            WalletTransactionsPage(opensOn: state.uri.queryParameters['tab']),
       ),
       // «محفظتي» بلا حارس: كل موظفٍ يقرأ محفظته، والمصمم يصلها وهو خارج إطار التطبيق.
       GoRoute(path: Routes.myWallet, builder: (context, state) => const MyWalletPage()),

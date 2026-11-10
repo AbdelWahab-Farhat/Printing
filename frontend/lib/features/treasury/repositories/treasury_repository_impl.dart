@@ -233,12 +233,14 @@ class TreasuryRepositoryImpl implements TreasuryRepository {
     String? onlineFeePayer,
     String? usdRate,
     bool clearUsdRate = false,
+    bool? autoSalaries,
   }) {
     return safeRequest<TreasurySettings>(
       () => _dio.put(
         TreasuryEndpoints.settings,
         data: <String, dynamic>{
           'own_account_first': ?ownAccountFirst,
+          'auto_salaries': ?autoSalaries,
           'usd_rate': ?usdRate,
           // Sent empty, it clears «سعر النظام»: dollars then stay out of the dinar totals.
           if (clearUsdRate) 'usd_rate': null,

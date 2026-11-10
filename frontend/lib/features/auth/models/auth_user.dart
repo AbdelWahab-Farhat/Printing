@@ -70,6 +70,11 @@ abstract class AuthUser with _$AuthUser {
     /// was agreed, and different from a wage of zero.
     String? salary,
 
+    /// «راتب تلقائي» — whether the monthly run posts [salary] into their wallet
+    /// (EMPLOYEE-WALLET-DESIGN §١٤). Sent beside [salary] and to the same reader; defaulted to
+    /// `true`, the server's own default, for a response without it.
+    @JsonKey(name: 'auto_salary') @Default(true) bool autoSalary,
+
     /// «خدمات الموظفين» التي يقدّمها — اليوم التصميم. قائمةٌ فارغة حين لا يقدّم شيئاً، أو حين لا
     /// يُقال لهذا القارئ. انظر [designService].
     @Default(<EmployeeServicePrice>[]) List<EmployeeServicePrice> services,

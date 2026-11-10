@@ -137,6 +137,17 @@ class AccessRepositoryImpl implements AccessRepository {
   }
 
   @override
+  Future<Either<Failure, AuthUser>> setUserAutoSalary(int userId, {required bool on}) {
+    return safeRequest<AuthUser>(
+      () => _dio.patch(
+        AccessEndpoints.userAutoSalary(userId),
+        data: <String, dynamic>{'auto_salary': on},
+      ),
+      parse: (data) => AuthUser.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, AuthUser>> setUserActivation(int userId, {required bool isActive}) {
     return safeRequest<AuthUser>(
       () => _dio.patch(

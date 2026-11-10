@@ -500,4 +500,83 @@ void main() {
     expect(find.text('الحسابات'), findsNothing);
     expect(find.text('حساب جديد'), findsNothing);
   });
+
+  // ─────────────────────────── «الرواتب» — EMPLOYEE-WALLET-DESIGN §١٤ ───────────────────────────
+
+  group('«إضافة الرواتب تلقائياً»', () {
+    const off = TreasurySettings(
+      ownAccountFirst: true,
+      blockOverdraft: true,
+      withdrawalNeedsReason: true,
+      askCarrierFee: true,
+      autoSalaries: false,
+    );
+
+    testWidgets('an older server that does not send it draws no section', (tester) async {
+      // Act
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -3000));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('إضافة الرواتب تلقائياً'), findsNothing);
+    });
+
+    testWidgets('it starts off and saves alone', (tester) async {
+      // Arrange
+      when(() => repository.settings()).thenAnswer((_) async => const Right(off));
+      when(() => repository.saveSettings(autoSalaries: true)).thenAnswer(
+        (_) async => const Right(
+          TreasurySettings(
+            ownAccountFirst: true,
+            blockOverdraft: true,
+            withdrawalNeedsReason: true,
+            askCarrierFee: true,
+            autoSalaries: true,
+            autoSalariesFrom: '2026-12-01',
+          ),
+        ),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      final tile = find.byKey(const ValueKey('auto-salaries'));
+      await reveal(tester, tile);
+
+      // Act
+      final before = tester.widget<SwitchListTile>(
+        find.descendant(of: tile, matching: find.byType(SwitchListTile)),
+      );
+      await tester.tap(find.text('إضافة الرواتب تلقائياً'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(before.value, isFalse);
+      verify(() => repository.saveSettings(autoSalaries: true)).called(1);
+    });
+
+    test('before the first run, it names the day and the month it pays', () {
+      // Act
+      final label = autoSalariesStartLabel('2026-12-01', now: DateTime(2026, 11, 20));
+
+      // Assert
+      expect(label, 'أول إضافة 1 ديسمبر 2026، عن نوفمبر');
+    });
+
+    test('January pays December of the year before', () {
+      // Act
+      final label = autoSalariesStartLabel('2027-01-01', now: DateTime(2026, 12, 5));
+
+      // Assert
+      expect(label, 'أول إضافة 1 يناير 2027، عن ديسمبر');
+    });
+
+    test('once the first day has come, it states the rule', () {
+      // Act
+      final label = autoSalariesStartLabel('2026-12-01', now: DateTime(2026, 12, 1));
+
+      // Assert
+      expect(label, 'كل 1 من الشهر، عن الشهر السابق');
+    });
+  });
 }

@@ -6,6 +6,7 @@ import 'package:dayaa/features/access/repositories/access_repository.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_auto_salary.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +42,7 @@ void main() {
     setPassword: SetUserPassword(repository),
     setServicePrice: SetEmployeeServicePrice(repository),
     setActivation: SetUserActivation(repository),
+    setAutoSalary: SetUserAutoSalary(repository),
   );
 
   setUp(() {
@@ -196,6 +198,48 @@ void main() {
       EmployeeDetailState.loaded(employee.copyWith(isActive: false)),
     ],
   );
+
+  // ─────────────────────────── «راتب تلقائي» ───────────────────────────
+
+  blocTest<EmployeeDetailCubit, EmployeeDetailState>(
+    'switching the automatic salary off puts back the answered employee',
+    setUp: () {
+      // Arrange
+      when(() => repository.user(4)).thenAnswer((_) async => right(employee));
+      when(() => repository.setUserAutoSalary(4, on: false)).thenAnswer(
+        (_) async => right(employee.copyWith(autoSalary: false)),
+      );
+    },
+    build: build,
+    // Act
+    act: (cubit) async {
+      await cubit.load();
+      await cubit.setAutoSalary(on: false);
+    },
+    // Assert
+    expect: () => [
+      const EmployeeDetailState.loading(),
+      const EmployeeDetailState.loaded(employee),
+      const EmployeeDetailState.changing(employee),
+      EmployeeDetailState.loaded(employee.copyWith(autoSalary: false)),
+    ],
+  );
+
+  test('a refused switch keeps the employee as they were and reports false', () async {
+    // Arrange
+    when(() => repository.user(4)).thenAnswer((_) async => right(employee));
+    when(() => repository.setUserAutoSalary(4, on: false)).thenAnswer(
+      (_) async => left(const Failure.forbidden(message: 'ليس لديك صلاحية')),
+    );
+    await cubit.load();
+
+    // Act
+    final saved = await cubit.setAutoSalary(on: false);
+
+    // Assert
+    expect(saved, isFalse);
+    expect(cubit.state.user?.autoSalary, isTrue);
+  });
 
   test('a second change while one is in flight is ignored rather than queued', () async {
     // Arrange

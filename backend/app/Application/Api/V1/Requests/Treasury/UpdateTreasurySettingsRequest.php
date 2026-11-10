@@ -42,6 +42,9 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'online_fee_payer' => ['sometimes', Rule::in(['customer', 'shop'])],
             // «سعر النظام» — dinars per dollar for the totals; null clears it (USD-ACCOUNTS §٣).
             'usd_rate' => ['sometimes', 'nullable', 'decimal:0,4', 'min:0.0001', 'max:99999999'],
+            // «إضافة الرواتب تلقائياً» (EMPLOYEE-WALLET-DESIGN §١٤). Its start date is set by the
+            // server, so it is not accepted here.
+            'auto_salaries' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -77,6 +80,7 @@ class UpdateTreasurySettingsRequest extends FormRequest
             'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
             'usd_rate' => 'سعر النظام',
+            'auto_salaries' => 'إضافة الرواتب تلقائياً',
         ];
     }
 }

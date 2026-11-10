@@ -230,6 +230,9 @@ abstract final class AccessEndpoints {
 
   static String userSalary(int userId) => '/users/$userId/salary';
 
+  /// «راتب تلقائي» — behind `users.salary`, like the wage. EMPLOYEE-WALLET-DESIGN §١٤.
+  static String userAutoSalary(int userId) => '/users/$userId/auto-salary';
+
   /// «خدمات الموظفين» — السعر المقترح لموظف في خدمة، خلف `users.salary`.
   static String userService(int userId, String service) => '/users/$userId/services/$service';
 

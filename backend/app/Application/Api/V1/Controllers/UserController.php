@@ -8,6 +8,7 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\SetActivationRequest;
 use App\Application\Api\V1\Requests\User\SetEmployeeServicePriceRequest;
+use App\Application\Api\V1\Requests\User\SetUserAutoSalaryRequest;
 use App\Application\Api\V1\Requests\User\SetUserPasswordRequest;
 use App\Application\Api\V1\Requests\User\SetUserSalaryRequest;
 use App\Application\Api\V1\Requests\User\StoreUserRequest;
@@ -185,6 +186,19 @@ class UserController extends Controller
         $updated = $this->access->setUserSalary($user, $request->salary());
 
         return $this->success(new UserResource($updated), 'تم تحديث راتب الموظف بنجاح');
+    }
+
+    /**
+     * Switch an employee's automatic salary on or off
+     *
+     * Needs `users.salary`. On, the monthly run posts their salary into their wallet on the 1st;
+     * off, it is entered by hand. EMPLOYEE-WALLET-DESIGN §١٤.
+     */
+    public function setAutoSalary(SetUserAutoSalaryRequest $request, User $user): JsonResponse
+    {
+        $updated = $this->access->setAutoSalary($user, $request->boolean('auto_salary'));
+
+        return $this->success(new UserResource($updated), 'تم الحفظ');
     }
 
     /**

@@ -138,6 +138,17 @@ class AccessService
     }
 
     /**
+     * «راتب تلقائي» — whether the monthly run posts this employee's salary into their wallet.
+     * Off leaves them on manual entry. EMPLOYEE-WALLET-DESIGN §١٤.
+     */
+    public function setAutoSalary(User $user, bool $on): User
+    {
+        $user->update(['auto_salary' => $on]);
+
+        return $user->load('roles');
+    }
+
+    /**
      * Stops an account, or starts it again.
      *
      * **Stopping revokes the tokens too**, because the column alone would not throw out

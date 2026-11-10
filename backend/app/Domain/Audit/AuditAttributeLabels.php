@@ -96,6 +96,7 @@ final class AuditAttributeLabels
             'email_verified_at' => 'تاريخ توثيق البريد',
             'employee_code' => 'الرقم الوظيفي',
             'salary' => 'الراتب',
+            'auto_salary' => 'راتب تلقائي',
         ],
         'employee_service' => [
             'user_id' => 'الموظف',
@@ -924,6 +925,8 @@ final class AuditAttributeLabels
             'pick_settlement_accounts' => 'اختيار حساب كل نوع عند التسوية',
             'online_fee_payer' => 'عمولة الدفع الإلكتروني على',
             'usd_rate' => 'سعر النظام',
+            'auto_salaries' => 'إضافة الرواتب تلقائياً',
+            'auto_salaries_from' => 'أول إضافة تلقائية للرواتب',
             'updated_by' => 'عدّلها',
         ],
         'treasury_account' => [

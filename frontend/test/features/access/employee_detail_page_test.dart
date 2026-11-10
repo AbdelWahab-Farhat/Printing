@@ -11,6 +11,7 @@ import 'package:dayaa/features/access/repositories/access_repository.dart';
 import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_auto_salary.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/employee_wallet/models/employee_wallet_models.dart';
@@ -80,6 +81,7 @@ void main() {
           setPassword: SetUserPassword(repository),
           setServicePrice: SetEmployeeServicePrice(repository),
           setActivation: SetUserActivation(repository),
+          setAutoSalary: SetUserAutoSalary(repository),
         ),
       )
       ..registerFactoryParam<EmployeeWalletCubit, int, void>(
@@ -369,6 +371,67 @@ void main() {
 
     // Assert — «0 د.ل» would be a wage of nothing, which is a different claim.
     expect(find.text('لم يُحدَّد'), findsOneWidget);
+  });
+
+  // ─────────────────────────── «راتب تلقائي» ───────────────────────────
+
+  testWidgets('the salary card carries the automatic-salary switch, on by default', (
+    tester,
+  ) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('راتب تلقائي'), findsOneWidget);
+    expect(tester.widget<Switch>(find.byKey(const ValueKey('auto-salary'))).value, isTrue);
+  });
+
+  testWidgets('no switch for an employee with no agreed wage: there is nothing to post', (
+    tester,
+  ) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+      shown: employee.copyWith(salary: null),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('راتب تلقائي'), findsNothing);
+  });
+
+  testWidgets('flipping the switch saves it and draws the answer', (tester) async {
+    // Arrange
+    arrange(
+      reader(permissions: [AppPermission.viewUsers, AppPermission.manageUserSalaries]),
+    );
+    when(
+      () => repository.setUserAutoSalary(4, on: false),
+    ).thenAnswer((_) async => Right(employee.copyWith(autoSalary: false)));
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.ensureVisible(find.byKey(const ValueKey('auto-salary')));
+    await tester.tap(find.byKey(const ValueKey('auto-salary')));
+    await tester.pumpAndSettle();
+    final after = tester.widget<Switch>(find.byKey(const ValueKey('auto-salary'))).value;
+    // The success snackbar dismisses itself after three seconds.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.setUserAutoSalary(4, on: false)).called(1);
+    expect(after, isFalse);
   });
 
   // ─────────────────────────── the actions ───────────────────────────

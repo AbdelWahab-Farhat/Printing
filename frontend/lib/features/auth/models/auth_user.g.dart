@@ -38,6 +38,7 @@ _AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => _AuthUser(
       .toList(),
   isActive: json['is_active'] as bool? ?? true,
   salary: json['salary'] as String?,
+  autoSalary: json['auto_salary'] as bool? ?? true,
   services:
       (json['services'] as List<dynamic>?)
           ?.map((e) => EmployeeServicePrice.fromJson(e as Map<String, dynamic>))
@@ -57,6 +58,7 @@ Map<String, dynamic> _$AuthUserToJson(_AuthUser instance) => <String, dynamic>{
   'permissions': instance.permissions,
   'is_active': instance.isActive,
   'salary': instance.salary,
+  'auto_salary': instance.autoSalary,
   'services': instance.services.map((e) => e.toJson()).toList(),
   'is_admin': instance.isAdmin,
   'is_investor': instance.isInvestor,

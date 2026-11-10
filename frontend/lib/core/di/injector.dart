@@ -36,6 +36,7 @@ import 'package:dayaa/features/access/usecases/get_user.dart';
 import 'package:dayaa/features/access/usecases/get_users.dart';
 import 'package:dayaa/features/access/usecases/set_employee_service_price.dart';
 import 'package:dayaa/features/access/usecases/set_user_activation.dart';
+import 'package:dayaa/features/access/usecases/set_user_auto_salary.dart';
 import 'package:dayaa/features/access/usecases/set_user_password.dart';
 import 'package:dayaa/features/access/usecases/set_user_salary.dart';
 import 'package:dayaa/features/access/usecases/sync_user_roles.dart';
@@ -571,6 +572,9 @@ abstract final class Injector {
       ..registerLazySingleton<SetEmployeeServicePrice>(
         () => SetEmployeeServicePrice(sl<AccessRepository>()),
       )
+      ..registerLazySingleton<SetUserAutoSalary>(
+        () => SetUserAutoSalary(sl<AccessRepository>()),
+      )
       ..registerLazySingleton<SetUserSalary>(
         () => SetUserSalary(sl<AccessRepository>()),
       )
@@ -631,6 +635,7 @@ abstract final class Injector {
           setPassword: sl<SetUserPassword>(),
           setServicePrice: sl<SetEmployeeServicePrice>(),
           setActivation: sl<SetUserActivation>(),
+          setAutoSalary: sl<SetUserAutoSalary>(),
         ),
       )
       ..registerFactory<EmployeeFormCubit>(

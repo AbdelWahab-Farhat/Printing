@@ -279,7 +279,17 @@ class TreasurySettings {
     this.pickupOffices = const [],
     this.onlineFeePayer,
     this.usdRate,
+    this.autoSalaries,
+    this.autoSalariesFrom,
   });
+
+  /// «إضافة الرواتب تلقائياً» — EMPLOYEE-WALLET-DESIGN §١٤. Null from an older server, which
+  /// hides the section.
+  final bool? autoSalaries;
+
+  /// `2026-12-01` — the first 1st the run posts on, set by the server when the switch goes on.
+  /// Null while it is off.
+  final String? autoSalariesFrom;
 
   /// «سعر النظام» — dinars per dollar, what a dollar is worth in the totals. Null until the
   /// owner writes one (USD-ACCOUNTS §٣).
@@ -332,6 +342,8 @@ class TreasurySettings {
     pickupOffices: offices,
     onlineFeePayer: onlineFeePayer,
     usdRate: usdRate,
+    autoSalaries: autoSalaries,
+    autoSalariesFrom: autoSalariesFrom,
   );
 
   factory TreasurySettings.fromJson(Map<String, dynamic> json) => TreasurySettings(
@@ -354,6 +366,8 @@ class TreasurySettings {
     ],
     onlineFeePayer: _stringOrNull(json['online_fee_payer']),
     usdRate: _stringOrNull(json['usd_rate']),
+    autoSalaries: json.containsKey('auto_salaries') ? json['auto_salaries'] == true : null,
+    autoSalariesFrom: _stringOrNull(json['auto_salaries_from']),
   );
 }
 

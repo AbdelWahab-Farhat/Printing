@@ -5,6 +5,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/router/pop_result.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
@@ -275,10 +276,44 @@ class _Loaded extends StatelessWidget {
             _Section(title: 'الدفع الإلكتروني', children: [_FeePayerTile(payer: payer)]),
 
           _Section(title: 'العملات', children: [_UsdRateTile(rate: settings.usdRate)]),
+
+          // EMPLOYEE-WALLET-DESIGN §١٤. Absent from an older server, so not drawn.
+          if (settings.autoSalaries case final on?)
+            _Section(
+              title: 'الرواتب',
+              children: [
+                _Switch(
+                  key: const ValueKey('auto-salaries'),
+                  title: 'إضافة الرواتب تلقائياً',
+                  // A fact, not an explanation (the page keeps no sentences under switches):
+                  // when the first salaries land.
+                  subtitle: on ? autoSalariesStartLabel(settings.autoSalariesFrom) : null,
+                  value: on,
+                  onChanged: (v) => _run(context, () => cubit.saveSettings(autoSalaries: v)),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
+}
+
+/// «أول إضافة 1 ديسمبر 2026، عن نوفمبر» — when the run first posts, and the month it pays.
+/// [from] is the server's `2026-12-01`. Once that day has come, or without it, the rule itself.
+@visibleForTesting
+String autoSalariesStartLabel(String? from, {DateTime? now}) {
+  final start = from == null ? null : DateTime.tryParse(from);
+  final today = now ?? DateTime.now();
+
+  if (start == null || !start.isAfter(DateTime(today.year, today.month, today.day))) {
+    return 'كل 1 من الشهر، عن الشهر السابق';
+  }
+
+  final worked = DateTime(start.year, start.month - 1);
+
+  return 'أول إضافة ${start.day} ${AppDates.monthName(start.month)} ${start.year}، '
+      'عن ${AppDates.monthName(worked.month)}';
 }
 
 /// اسمُ المكتب بلا «إستلام مكتب(…)» حوله: المدنُ مسمّاةٌ هكذا في خريطة التوصيل، والعنوانُ فوقها
