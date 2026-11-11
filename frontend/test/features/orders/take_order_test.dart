@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -75,6 +76,8 @@ void main() {
     String? recipientPhone,
     String? notes,
     List<int> designIds = const [],
+    Map<int, List<PrintColor>> designColors = const {},
+    bool printsHere = false,
     String? additionalCost,
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
@@ -93,6 +96,8 @@ void main() {
       recipientPhone: recipientPhone,
       notes: notes,
       designIds: designIds,
+      designColors: designColors,
+      printsHere: printsHere,
       additionalCost: additionalCost,
       additionalCostReason: additionalCostReason,
       additionalCostNote: additionalCostNote,
@@ -314,6 +319,58 @@ void main() {
 
       // Assert
       expect(sent().designIds, isNull);
+    });
+
+    test('on a print order «بدون تصميم» is a reprint, and its file is sent', () async {
+      // Arrange — PRINT-COLORS.md §9: a print order is not taken without its design.
+
+      // Act
+      await submit(designSource: 'none', designIds: const [12], printsHere: true);
+
+      // Assert
+      expect(sent().designIds, [12]);
+    });
+
+    test('colours typed for a design go out beside it', () async {
+      // Arrange
+      const black = PrintColor(name: 'أسود', hex: '#000000');
+
+      // Act
+      await submit(
+        designSource: 'customer',
+        designIds: const [12, 13],
+        designColors: const {
+          12: [black],
+        },
+      );
+
+      // Assert — only for the design that has them.
+      expect(sent().designColors, [
+        {
+          'design_id': 12,
+          'print_colors': [
+            {'name': 'أسود', 'code': null, 'hex': '#000000'},
+          ],
+        },
+      ]);
+    });
+
+    test('colours for a design that is not sent are not sent either', () async {
+      // Arrange — picked, coloured, then «بدون تصميم» on plain goods.
+      const black = PrintColor(name: 'أسود', hex: '#000000');
+
+      // Act
+      await submit(
+        designIds: const [12],
+        designColors: const {
+          12: [black],
+        },
+      );
+
+      // Assert
+      final order = sent();
+      expect(order.designIds, isNull);
+      expect(order.designColors, isNull);
     });
   });
 

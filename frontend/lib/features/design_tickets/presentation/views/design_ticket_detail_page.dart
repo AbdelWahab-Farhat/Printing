@@ -24,6 +24,7 @@ import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tick
 import 'package:dayaa/features/design_tickets/presentation/widgets/accept_ticket_prompt.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_attachments.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_order_chip.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/edit_ticket_sheet.dart';
@@ -187,6 +188,9 @@ class _DesignTicketDetailView extends StatelessWidget {
         context: context,
         initial: previous.isNotEmpty ? previous : ticket?.printColors ?? const [],
         confirmLabel: 'إرسال للمراجعة',
+        // A ticket for a print order: the version cannot go up without its colours, because
+        // its approval puts them on the order (PRINT-COLORS.md §10).
+        required: ticket?.printColorsRequired ?? false,
       );
 
       if (colors == null || !context.mounted) return;
@@ -565,6 +569,19 @@ class _Header extends StatelessWidget {
           ticket.customerName,
           style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
+        // «تصميم طلبية»: on approval the design goes onto this order (PRINT-COLORS.md §10).
+        if (ticket.order case final order?) ...[
+          SizedBox(height: 8.h),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: DesignTicketOrderChip(
+              orderCode: order.code,
+              onTap: sl<Session>().can(AppPermission.viewOrders)
+                  ? () => context.push(Routes.order(order.id))
+                  : null,
+            ),
+          ),
+        ],
         SizedBox(height: 14.h),
         // **Two to a line, label over value, at reading size.** These were a `Wrap` of
         // «العميل: A713   المصمم: محمد علي   استلمها: …» in `bodySmall` — four facts crushed

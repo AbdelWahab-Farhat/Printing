@@ -10,6 +10,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
 import 'package:dayaa/features/design_tickets/repositories/design_ticket_repository.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
@@ -24,6 +25,8 @@ class _RecordingRepository implements DesignTicketRepository {
   int? sentDesignerId;
   List<PickedFile> sentFiles = const [];
   String? sentPay;
+  int? sentOrderId;
+  List<PrintColor> sentColors = const [];
 
   @override
   Future<Either<Failure, DesignTicket>> create({
@@ -41,6 +44,8 @@ class _RecordingRepository implements DesignTicketRepository {
     sentDesignerId = assignedDesignerId;
     sentFiles = files;
     sentPay = designerPay;
+    sentOrderId = orderId;
+    sentColors = printColors;
 
     return const Left(Failure.server(message: 'البيانات غير صحيحة'));
   }
@@ -101,22 +106,68 @@ void main() {
     isActive: true,
   );
 
-  Widget host() => ScreenUtilInit(
+  Widget host({DesignTicketForOrder? forOrder}) => ScreenUtilInit(
     designSize: const Size(430, 932),
-    builder: (context, _) => const MaterialApp(
-      locale: Locale('ar'),
-      supportedLocales: [Locale('ar')],
-      localizationsDelegates: [
+    builder: (context, _) => MaterialApp(
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       home: Directionality(
         textDirection: TextDirection.rtl,
-        child: DesignTicketFormPage(customer: customer),
+        child: DesignTicketFormPage(customer: customer, forOrder: forOrder),
       ),
     ),
   );
+
+  group('«تصميم طلبية» — opened from an order (PRINT-COLORS.md §10)', () {
+    const forOrder = DesignTicketForOrder(
+      customer: customer,
+      orderId: 1470,
+      orderCode: '1470',
+      brief: 'الطلبية 1470:\n• كيس شحن — 25*35 — 300\n\n',
+      colorsRequired: true,
+    );
+
+    testWidgets('says which order it is for, and starts from what the order is', (tester) async {
+      // Arrange
+      signInWith([AppPermission.manageDesignTickets]);
+
+      // Act
+      await tester.pumpWidget(host(forOrder: forOrder));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('تصميم طلبية #1470'), findsOneWidget);
+      expect(find.text('تصميم طلبية 1470'), findsOneWidget);
+      expect(find.textContaining('كيس شحن — 25*35'), findsOneWidget);
+      expect(find.text('ألوان الطباعة (مطلوبة)'), findsOneWidget);
+    });
+
+    testWidgets('is not sent without its colours', (tester) async {
+      // Arrange
+      signInWith([AppPermission.manageDesignTickets]);
+      await tester.pumpWidget(host(forOrder: forOrder));
+      await tester.pumpAndSettle();
+
+      // Act — a phone-tall screen, so the button is laid out (see `scrollToSend` below).
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('إرسال الطلب'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('إرسال الطلب'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(repository.wasCalled, isFalse);
+      expect(find.textContaining('لا تُرسل تذكرة الطلبية دونها'), findsOneWidget);
+    });
+  });
 
   testWidgets('somebody who may route work is asked who should draw it', (tester) async {
     // Arrange

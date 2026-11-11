@@ -1,3 +1,4 @@
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +36,7 @@ void main() {
     );
   }
 
-  Widget host(List<OrderDesign> designs) {
+  Widget host(List<OrderDesign> designs, {bool colorsRequired = false}) {
     return ScreenUtilInit(
       designSize: const Size(430, 932),
       builder: (context, _) => MaterialApp(
@@ -47,11 +48,48 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         home: Scaffold(
-          body: SingleChildScrollView(child: OrderDesignsSection(designs: designs)),
+          body: SingleChildScrollView(
+            child: OrderDesignsSection(designs: designs, colorsRequired: colorsRequired),
+          ),
         ),
       ),
     );
   }
+
+  group('colours on a print order (PRINT-COLORS.md §9)', () {
+    const missing = 'مطلوب: ألوان الطباعة — لا تنتقل الطلبية إلى «قيد الطباعة» دونها';
+
+    testWidgets('a version with no colours says they are required', (tester) async {
+      // Arrange / Act
+      await tester.pumpWidget(host([version(1)], colorsRequired: true));
+      await tester.pump();
+
+      // Assert
+      expect(find.text(missing), findsOneWidget);
+    });
+
+    testWidgets('a version with its colours says nothing', (tester) async {
+      // Arrange / Act
+      await tester.pumpWidget(
+        host([
+          version(1).copyWith(printColors: const [PrintColor(name: 'أسود', hex: '#000000')]),
+        ], colorsRequired: true),
+      );
+      await tester.pump();
+
+      // Assert
+      expect(find.text(missing), findsNothing);
+    });
+
+    testWidgets('an order nobody prints here is not asked', (tester) async {
+      // Arrange / Act
+      await tester.pumpWidget(host([version(1)]));
+      await tester.pump();
+
+      // Assert
+      expect(find.text(missing), findsNothing);
+    });
+  });
 
   testWidgets('the correction is current and the draft it replaced is folded away', (tester) async {
     // Arrange — الخادم يرسل الأحدث أولاً.

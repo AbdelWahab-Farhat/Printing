@@ -94,6 +94,94 @@ void main() {
     expect(find.byType(TextField), findsNothing);
   });
 
+  group('the colours asked on the move (PRINT-COLORS.md §12)', () {
+    final askedJson = <String, dynamic>{
+      'key': 'press_colors',
+      'type': 'print_colors_input',
+      'label': 'ألوان الطباعة — النسخة 1',
+      'required': true,
+      'hint': 'حدّد كم لوناً وما هو كل لون.',
+      'colors': [
+        {'name': 'أزرق', 'code': null, 'hex': null},
+      ],
+    };
+
+    test('arrives as its own kind, opening on what the version has', () {
+      // Act
+      final field = TransitionField.fromJson(askedJson);
+
+      // Assert
+      expect(field.type, TransitionFieldType.printColorsInput);
+      expect(field.isRequired, isTrue);
+      expect(field.colors, const [PrintColor(name: 'أزرق')]);
+    });
+
+    testWidgets('says what is missing and offers the sheet', (tester) async {
+      // Arrange
+      final field = TransitionField.fromJson(askedJson);
+
+      // Act
+      await tester.pumpWidget(
+        host(
+          TransitionFieldInput(
+            field: field,
+            value: field.colors,
+            customerId: 5,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Assert — a name without its swatch is not enough.
+      expect(find.text('مطلوب: لونٌ بلا عيّنة — اختر لون كل خانة'), findsOneWidget);
+      expect(find.text('تعديل الألوان'), findsOneWidget);
+    });
+
+    testWidgets('the colours chosen in the sheet are the answer', (tester) async {
+      // Arrange
+      tester.view
+        ..physicalSize = const Size(430 * 3, 932 * 3)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      final field = TransitionField.fromJson({...askedJson, 'colors': <Object>[]});
+      Object? answer;
+      await tester.pumpWidget(
+        host(
+          TransitionFieldInput(
+            field: field,
+            value: null,
+            customerId: 5,
+            onChanged: (value) => answer = value,
+          ),
+        ),
+      );
+
+      // Act
+      await tester.tap(find.text('تحديد ألوان الطباعة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('أسود'));
+      await tester.pump();
+      await tester.tap(find.text('اعتماد الألوان'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(answer, const [PrintColor(name: 'أسود', hex: '#000000')]);
+    });
+
+    testWidgets('a version with no colours yet says the move waits for them', (tester) async {
+      // Arrange
+      final field = TransitionField.fromJson({...askedJson, 'colors': <Object>[]});
+
+      // Act
+      await tester.pumpWidget(
+        host(TransitionFieldInput(field: field, value: null, customerId: 5, onChanged: (_) {})),
+      );
+
+      // Assert
+      expect(find.text('مطلوب: لا تنتقل الطلبية إلى «قيد الطباعة» دون ألوانها'), findsOneWidget);
+    });
+  });
+
   test('a version holds its own copy of the colors', () {
     // Act
     final version = OrderDesign.fromJson(const {

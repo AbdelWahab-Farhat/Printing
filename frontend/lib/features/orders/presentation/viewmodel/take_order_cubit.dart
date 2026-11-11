@@ -1,4 +1,5 @@
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
@@ -47,6 +48,8 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
     String? recipientPhone,
     String? notes,
     List<int> designIds = const [],
+    Map<int, List<PrintColor>> designColors = const {},
+    bool printsHere = false,
     String? additionalCost,
     AdditionalCostReason? additionalCostReason,
     String? additionalCostNote,
@@ -76,6 +79,8 @@ class TakeOrderCubit extends Cubit<TakeOrderState> {
       recipientPhone: recipientPhone,
       notes: notes,
       designIds: designIds,
+      designColors: designColors,
+      printsHere: printsHere,
       additionalCost: additionalCost,
       additionalCostReason: additionalCostReason,
       additionalCostNote: additionalCostNote,

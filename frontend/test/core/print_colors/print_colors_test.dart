@@ -17,7 +17,7 @@ void main() {
     code: 'PANTONE 186 C',
     hex: '#E4002B',
   );
-  const white = PrintColor(name: 'أبيض');
+  const white = PrintColor(name: 'أبيض', hex: '#FFFFFF');
 
   Widget host(Widget child) {
     return ScreenUtilInit(
@@ -86,7 +86,7 @@ void main() {
         expect(PrintColor.listFromJson('nonsense'), isEmpty);
         expect(
           PrintColor.listFromJson([
-            {'name': 'أبيض'},
+            {'name': 'أبيض', 'hex': '#FFFFFF'},
             42,
           ]),
           [white],
@@ -367,18 +367,18 @@ void main() {
       final name = tester.widget<TextField>(field('اسم اللون (اختياري)'));
       expect(name.controller?.text, 'أبيض');
 
-      // Act — back to the first, then a third colour.
+      // Act — back to the first, then a third colour from the presets.
       await tester.tap(find.bySemanticsLabel('اللون 1'));
       await tester.pump();
       expect(name.controller?.text, 'أحمر الشعار');
       await tester.tap(find.byTooltip('إضافة لون'));
       await tester.pump();
-      await tester.enterText(field('اسم اللون (اختياري)'), 'ذهبي');
+      await tester.tap(find.byTooltip('ذهبي'));
       await tester.pump();
       await save(tester);
 
       // Assert
-      expect(changed, [red, white, const PrintColor(name: 'ذهبي')]);
+      expect(changed, [red, white, const PrintColor(name: 'ذهبي', hex: '#C9A227')]);
     });
 
     testWidgets('the selected colour is removed from inside the sheet', (
@@ -407,10 +407,10 @@ void main() {
       expect(changed, [white]);
     });
 
-    testWidgets('a slot left empty is dropped rather than sent', (
+    testWidgets('an empty slot stops the save and the sheet names it', (
       tester,
     ) async {
-      // Arrange
+      // Arrange — a two-colour design with only the first colour picked.
       phone(tester);
       List<PrintColor>? changed;
       await tester.pumpWidget(
@@ -422,13 +422,114 @@ void main() {
         ),
       );
 
-      // Act — «إضافة لون», then a change of mind.
+      // Act
       await tester.tap(find.text('إضافة لون'));
       await tester.pumpAndSettle();
       await save(tester);
 
+      // Assert — nothing sent, and slot 2 is the one asked for.
+      expect(changed, isNull);
+      expect(find.textContaining('اللون 2'), findsOneWidget);
+      expect(find.text('اختر اللون'), findsOneWidget);
+    });
+
+    testWidgets('a preset gives the slot its swatch and its name', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('أزرق'));
+      await tester.pump();
+      await save(tester);
+
       // Assert
-      expect(changed, [red]);
+      expect(changed, [const PrintColor(name: 'أزرق', hex: '#0057B8')]);
+    });
+
+    testWidgets('a preset keeps a name somebody typed', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('اسم اللون (اختياري)'), 'لون الشعار');
+      await tester.pump();
+
+      // Act — one preset, then another: the typed name survives both.
+      await tester.tap(find.byTooltip('أحمر'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('أسود'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [const PrintColor(name: 'لون الشعار', hex: '#000000')]);
+    });
+
+    testWidgets('picking another preset replaces the name the last one wrote', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('أحمر'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('أصفر'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [const PrintColor(name: 'أصفر', hex: '#FFD100')]);
+    });
+
+    testWidgets('«عدد الألوان» makes that many slots, and each must be filled', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+
+      // Act — two colours; only the first picked.
+      await tester.tap(find.widgetWithText(ChoiceChip, '2'));
+      await tester.pump();
+      expect(find.bySemanticsLabel('اللون 2'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('اللون 1'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('أسود'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert — refused, and slot 2 is opened.
+      expect(changed, isNull);
+      expect(find.textContaining('اللون 2'), findsOneWidget);
+
+      // Act — the second picked.
+      await tester.tap(find.byTooltip('ذهبي'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [
+        const PrintColor(name: 'أسود', hex: '#000000'),
+        const PrintColor(name: 'ذهبي', hex: '#C9A227'),
+      ]);
     });
 
     testWidgets('«إلغاء» leaves the colours as they were', (tester) async {
@@ -518,6 +619,44 @@ void main() {
 
       // Assert — an empty list, not null: «حفظ» was pressed.
       expect(saved, isEmpty);
+    });
+
+    testWidgets('where colours are required, an untouched sheet does not save', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? saved;
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => saved = await showPrintColorsSheet(
+                context: context,
+                initial: const [],
+                required: true,
+              ),
+              child: const Text('افتح'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await save(tester);
+
+      // Assert — still open, asking for colour 1.
+      expect(saved, isNull);
+      expect(find.text('اختر اللون'), findsOneWidget);
+
+      // Act — removing the only slot does not get round it either.
+      await tester.tap(find.byTooltip('حذف هذا اللون'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(saved, isNull);
+      expect(find.bySemanticsLabel('اللون 1'), findsOneWidget);
     });
   });
 }

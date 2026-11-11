@@ -17,6 +17,7 @@ use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use Tests\TestCase;
  */
 class OrderStockMovementsTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     private User $foreman;
@@ -87,6 +89,9 @@ class OrderStockMovementsTest extends TestCase
         ])->assertOk();
 
         if ($toReady) {
+            // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+            $this->givePrintableArtwork($order);
+
             foreach ([OrderStatus::Printing, OrderStatus::Ready] as $step) {
                 $this->withHeaders($this->headers)->postJson("/api/v1/orders/{$order->id}/status", [
                     'status' => $step->value,

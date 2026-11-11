@@ -102,6 +102,11 @@ abstract class DesignTicket with _$DesignTicket {
     @Default(<PrintColor>[])
     List<PrintColor> printColors,
 
+    /// A ticket for an order our press prints: every version goes up with complete colours
+    /// (PRINT-COLORS.md §10). Decided by the server, which knows the order's road. Absent from an
+    /// older server, which asks for nothing.
+    @JsonKey(name: 'print_colors_required') @Default(false) bool printColorsRequired,
+
     @JsonKey(unknownEnumValue: DesignTicketStatus.unknown) required DesignTicketStatus status,
 
     /// The status in Arabic, as the server words it. Shown instead of [DesignTicketStatus.label]

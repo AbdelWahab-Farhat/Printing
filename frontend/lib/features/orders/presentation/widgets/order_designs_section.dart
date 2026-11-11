@@ -52,10 +52,16 @@ class OrderDesignsSection extends StatefulWidget {
     this.onReject,
     this.onEditColors,
     this.isWorking = false,
+    this.colorsRequired = false,
     super.key,
   });
 
   final List<OrderDesign> designs;
+
+  /// The order goes through our press, so every version it may print needs complete colours
+  /// before «قيد الطباعة» (PRINT-COLORS.md §9). A version without them says so in red, and the
+  /// colours sheet refuses an empty list.
+  final bool colorsRequired;
 
   /// Proposes another version. Null when the order is closed or the user may not.
   final Future<void> Function()? onAdd;
@@ -144,6 +150,7 @@ class _OrderDesignsSectionState extends State<OrderDesignsSection> {
     onReject: widget.onReject,
     onEditColors: widget.onEditColors,
     isWorking: widget.isWorking,
+    colorsRequired: widget.colorsRequired,
   );
 }
 
@@ -169,10 +176,18 @@ class _VersionCard extends StatelessWidget {
     required this.onReject,
     required this.onEditColors,
     required this.isWorking,
+    this.colorsRequired = false,
   });
 
   final OrderDesign design;
   final _Role role;
+
+  /// See [OrderDesignsSection.colorsRequired].
+  final bool colorsRequired;
+
+  /// A version the press may still print, whose colours are not yet what it needs.
+  bool get _colorsMissing =>
+      colorsRequired && !design.isRejected && !PrintColor.listIsComplete(design.printColors);
 
   /// The version that replaced this one. Null unless this is a [_Role.previous] that was not
   /// rejected — a rejection says its own reason instead.
@@ -204,6 +219,7 @@ class _VersionCard extends StatelessWidget {
     final colors = await showPrintColorsSheet(
       context: context,
       initial: design.printColors,
+      required: colorsRequired,
     );
 
     if (colors == null) return;
@@ -351,6 +367,15 @@ class _VersionCard extends StatelessWidget {
           if (design.printColors.isNotEmpty) ...[
             SizedBox(height: 10.h),
             PrintColorsView(colors: design.printColors),
+          ],
+          if (_colorsMissing) ...[
+            SizedBox(height: 8.h),
+            Text(
+              design.printColors.isEmpty
+                  ? 'مطلوب: ألوان الطباعة — لا تنتقل الطلبية إلى «قيد الطباعة» دونها'
+                  : 'مطلوب: لونٌ بلا عيّنة — لا تنتقل الطلبية إلى «قيد الطباعة» دونها',
+              style: text.bodySmall?.copyWith(color: scheme.error, fontWeight: FontWeight.w600),
+            ),
           ],
           if (onEditColors != null && !design.isRejected)
             Align(

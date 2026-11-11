@@ -26,6 +26,7 @@ use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -39,6 +40,7 @@ use Tests\TestCase;
  */
 class PartialDeliveryTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -186,6 +188,9 @@ class PartialDeliveryTest extends TestCase
         app(ResolveOrderFlow::class)($order->load('items'));
 
         $flow = $order->refresh()->production_flow;
+
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
 
         // Each road reaches «جاهزة» its own way — see `OrderStatus::allowedNext()`. The وسيط one
         // has no press and no shelf of ours; the plain one skips the press entirely.

@@ -18,7 +18,9 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_order_chip.dart';
 import 'package:dayaa/features/design_tickets/usecases/design_ticket_usecases.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -45,13 +47,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **المرفقاتُ تُختار هنا وتصل مع الطلب**، فيُبلَّغ المصمّم بتذكرةٍ فيها شعارُها. والصفُّ صفُّ
 /// «تذكرة داخلية جديدة» نفسه، ويقبل PDF كما تقبله شاشة التذكرة.
 class DesignTicketFormPage extends StatefulWidget {
-  const DesignTicketFormPage({required this.customer, super.key});
+  const DesignTicketFormPage({required this.customer, this.forOrder, super.key});
 
   /// كـ`media.design_tickets.max_files_on_create` على الخادم، وما زاد يُرفق من شاشة التذكرة.
   static const int maxFiles = 10;
 
   /// Whose artwork this is. The form cannot be opened without one.
   final Customer customer;
+
+  /// «تصميم طلبية»: opened from an order and linked to it. Null for a ticket raised from the
+  /// customer's own screen.
+  final DesignTicketForOrder? forOrder;
 
   @override
   State<DesignTicketFormPage> createState() => _DesignTicketFormPageState();
@@ -73,8 +79,25 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   /// بالترتيب الذي اختيرت به، وهو ترتيبها على التذكرة.
   final List<PickedFile> _files = [];
 
-  /// «ألوان الطباعة» the customer asked for. Optional; the designer's version starts from them.
+  /// «ألوان الطباعة» the customer asked for. The designer's version starts from them. Optional,
+  /// except on a ticket for an order our press prints (PRINT-COLORS.md §10).
   List<PrintColor> _colors = const [];
+
+  /// Set when «إرسال الطلب» is pressed without the colours an order ticket needs.
+  String? _colorsError;
+
+  bool get _colorsRequired => widget.forOrder?.colorsRequired ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // What the order is, so the designer does not have to open it to know the bag and the size.
+    if (widget.forOrder case final order?) {
+      _title.text = 'تصميم طلبية ${order.orderCode}';
+      _description.text = order.brief;
+    }
+  }
 
   @override
   void dispose() {
@@ -122,12 +145,21 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final formIsValid = _formKey.currentState?.validate() ?? false;
+    final colorsAreValid = !_colorsRequired || PrintColor.listIsComplete(_colors);
+
+    setState(() {
+      _colorsError = colorsAreValid
+          ? null
+          : 'حدّد ألوان الطباعة — كم لوناً، وما هو كل لون. لا تُرسل تذكرة الطلبية دونها';
+    });
+    if (!formIsValid || !colorsAreValid) return;
 
     setState(() => _isSaving = true);
 
     final result = await sl<CreateDesignTicket>()(
       customerId: widget.customer.id,
+      orderId: widget.forOrder?.orderId,
       title: _title.text,
       description: _description.text,
       assignedDesignerId: _designerId,
@@ -169,6 +201,20 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
               widget.customer.name,
               style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
+            if (widget.forOrder case final order?) ...[
+              SizedBox(height: 8.h),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: DesignTicketOrderChip(orderCode: order.orderCode),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                'يُضاف التصميم المعتمد إلى الطلبية تلقائياً، ولا تنتقل إلى «قيد الطباعة» قبل إغلاق التذكرة',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             SizedBox(height: 16.h),
             AppTextField(
               controller: _title,
@@ -201,7 +247,12 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
             SizedBox(height: 18.h),
             PrintColorsField(
               colors: _colors,
-              onChanged: (colors) => setState(() => _colors = colors),
+              required: _colorsRequired,
+              errorText: _colorsError,
+              onChanged: (colors) => setState(() {
+                _colors = colors;
+                _colorsError = null;
+              }),
             ),
             SizedBox(height: 18.h),
             Text(

@@ -26,6 +26,7 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,7 @@ use Tests\TestCase;
  */
 class OrderCancellationReversalTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -104,6 +106,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -147,6 +151,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -183,6 +189,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -236,6 +244,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -349,6 +359,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -395,6 +407,8 @@ class OrderCancellationReversalTest extends TestCase
         ])->assertCreated();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
@@ -448,6 +462,8 @@ class OrderCancellationReversalTest extends TestCase
         ManufacturingCostRate::factory()->forProduct($product)->type(ManufacturingCostType::Labor)->rate('2.000')->create();
 
         $order = Order::factory()->create();
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '50',
         ]);

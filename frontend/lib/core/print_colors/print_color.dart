@@ -68,6 +68,15 @@ class PrintColor {
   /// More than this is a photograph, not a spot-colour job — the server's own limit.
   static const max = 12;
 
+  /// Whether the press can work from this colour: it has its swatch or its press code. A name
+  /// alone («أزرق») does not count. Mirrors `PrintColors::isComplete()` (PRINT-COLORS.md §9).
+  bool get isComplete =>
+      swatch != null || (code != null && code!.trim().isNotEmpty);
+
+  /// Whether a design's list is what a print order needs: at least one colour, each complete.
+  static bool listIsComplete(List<PrintColor> colors) =>
+      colors.isNotEmpty && colors.every((color) => color.isComplete);
+
   static final RegExp _hexPattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
 
   @override

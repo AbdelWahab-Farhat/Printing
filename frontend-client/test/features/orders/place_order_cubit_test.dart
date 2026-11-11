@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
 import 'package:dayaa_client/features/auth/repositories/auth_repository.dart';
 import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
@@ -11,6 +12,7 @@ import 'package:dayaa_client/features/delivery/repositories/delivery_repository.
 import 'package:dayaa_client/features/delivery/usecases/list_cities.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/designs/repositories/design_repository.dart';
+import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
@@ -68,7 +70,15 @@ void main() {
   const amal = Shop(id: 6, name: 'متجر الأمل', cityId: 2, cityName: 'طرابلس');
 
   const me = CustomerAccount(id: 1, name: 'محمد', phone: '0912345678');
-  const logo = CustomerDesign(id: 3, label: 'الشعار', kind: DesignKind.image);
+  // With its colours: a chosen design without them keeps «إرسال» shut (PRINT-COLORS.md §9).
+  const black = PrintColor(name: 'أسود', hex: '#000000');
+  const logo = CustomerDesign(
+    id: 3,
+    label: 'الشعار',
+    kind: DesignKind.image,
+    printColors: [black],
+  );
+  const flyer = CustomerDesign(id: 4, label: 'المنشور', kind: DesignKind.image);
 
   const bag = OrderDraftLine(
     line: NewOrderLine(productId: 1, productVariantId: 2, quantity: '1000'),
@@ -126,6 +136,7 @@ void main() {
     quote: QuoteBasket(orders),
     place: PlaceOrder(orders),
     cart: cart,
+    chooseColors: ChooseDesignColors(designs),
   );
 
   PlaceOrderReady ready({
@@ -506,6 +517,87 @@ void main() {
       skip: 1,
       expect: () => [ready(step: CheckoutStep.details, cityId: 2, regionId: null)],
     );
+  });
+
+  group('the colours of a chosen design (PRINT-COLORS.md §9)', () {
+    test('a chosen design without colours keeps «إرسال» shut and is named', () async {
+      // Arrange
+      when(() => designs.list()).thenAnswer((_) async => const Right([logo, flyer]));
+      final cubit = build();
+      await cubit.load();
+
+      // Act
+      cubit
+        ..proceed()
+        ..toggleDesign(4);
+
+      // Assert
+      final state = cubit.state as PlaceOrderReady;
+      expect(state.canSubmit, isFalse);
+      expect(state.designsMissingColors, [flyer]);
+      expect(await cubit.submit(recipientPhone: '0912345678'), isNull);
+      verifyNever(() => orders.place(any()));
+      await cubit.close();
+    });
+
+    test('a design with its colours does not stop anything', () async {
+      // Arrange
+      final cubit = build();
+      await cubit.load();
+
+      // Act
+      cubit
+        ..proceed()
+        ..toggleDesign(3);
+
+      // Assert
+      expect(cubit.state.canSubmit, isTrue);
+      await cubit.close();
+    });
+
+    test('setting the colours here saves them to the library and opens «إرسال»', () async {
+      // Arrange
+      when(() => designs.list()).thenAnswer((_) async => const Right([logo, flyer]));
+      when(
+        () => designs.setColors(id: 4, colors: [black]),
+      ).thenAnswer((_) async => Right(flyer.copyWith(printColors: [black])));
+      final cubit = build();
+      await cubit.load();
+      cubit
+        ..proceed()
+        ..toggleDesign(4);
+
+      // Act
+      final failure = await cubit.setDesignColors(4, [black]);
+
+      // Assert
+      expect(failure, isNull);
+      verify(() => designs.setColors(id: 4, colors: [black])).called(1);
+      expect(cubit.state.canSubmit, isTrue);
+      await cubit.close();
+    });
+
+    test('a refusal is handed back and the design still needs its colours', () async {
+      // Arrange — a list our team confirmed cannot be changed from the app (§8).
+      const refusal = ServerFailure(message: 'اعتمد فريقنا هذه الألوان', statusCode: 422);
+      when(() => designs.list()).thenAnswer((_) async => const Right([logo, flyer]));
+      when(
+        () => designs.setColors(id: 4, colors: [black]),
+      ).thenAnswer((_) async => const Left(refusal));
+      final cubit = build();
+      await cubit.load();
+      cubit
+        ..proceed()
+        ..toggleDesign(4);
+
+      // Act
+      final failure = await cubit.setDesignColors(4, [black]);
+
+      // Assert
+      expect(failure, refusal);
+      expect(cubit.state.canSubmit, isFalse);
+      await cubit.close();
+    });
   });
 
   group('submit', () {

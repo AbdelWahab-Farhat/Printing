@@ -42,6 +42,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Investors\PlainStockPurchaseTest;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -76,6 +77,7 @@ use Tests\TestCase;
  */
 class OrderRestoreCostingTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -137,6 +139,7 @@ class OrderRestoreCostingTest extends TestCase
         );
 
         if ($throughToReady) {
+            $this->givePrintableArtwork($order); // the press needs colours (PRINT-COLORS.md §9)
             app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Printing, null, $actor);
             app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Ready, null, $actor);
         }
@@ -206,6 +209,7 @@ class OrderRestoreCostingTest extends TestCase
         app(RestoreOrder::class)($order->refresh(), $actor);
 
         // Act — the press runs, for the first and only time
+        $this->givePrintableArtwork($order); // the press needs colours (PRINT-COLORS.md §9)
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Printing, null, $actor);
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Ready, null, $actor);
 

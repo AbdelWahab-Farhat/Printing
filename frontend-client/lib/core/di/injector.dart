@@ -408,6 +408,8 @@ abstract final class Injector {
           // خطوة «العربون»: رصيد المحفظة، وهل الشحن الإلكتروني مفعّل.
           walletBalance: sl<GetWalletBalance>(),
           topUpMethods: sl<GetTopUpMethods>(),
+          // «ألوان الطباعة» لتصميمٍ مختار، من السلة نفسها (PRINT-COLORS.md §9).
+          chooseColors: sl<ChooseDesignColors>(),
         ),
       );
   }

@@ -49,10 +49,15 @@ extension TakeOrderStateX on TakeOrderState {
   /// `customer_design_id` — its own field name, because that refusal is written once and shared
   /// with the endpoint that attaches a single design to an existing order. All three are the
   /// same sentence to the clerk: this file cannot go on this order.
+  ///
+  /// The colours are refused under the same picker (PRINT-COLORS.md §9): `print_colors` from the
+  /// domain («حدّد ألوان الطباعة لـ…») and `design_colors.*` from the validator.
   String? get designsError =>
       _fieldError('customer_design_id') ??
       _fieldError('design_ids') ??
-      _firstErrorMatching(_designEntryKey);
+      _fieldError('print_colors') ??
+      _firstErrorMatching(_designEntryKey) ??
+      _firstErrorMatching(_designColorsKey);
 
   String? get recipientPhoneError => _fieldError('recipient_phone');
 
@@ -108,10 +113,13 @@ extension TakeOrderStateX on TakeOrderState {
 /// One entry in the list the artwork was sent as — `design_ids.0`, `design_ids.1`, …
 final RegExp _designEntryKey = RegExp(r'^design_ids\.\d+$');
 
+/// Anything about the colours typed for a design — `design_colors.0.print_colors.1.hex`, …
+final RegExp _designColorsKey = RegExp(r'^design_colors(\..+)?$');
+
 /// The exact keys the form paints under an input. Everything else goes to a snackbar.
 final RegExp _renderedKey = RegExp(
   r'^(items|city_id|region_id|discount|design_fee|recipient_phone|vendor_id'
-  r'|customer_design_id|design_ids'
+  r'|customer_design_id|design_ids|print_colors|design_colors(\..+)?'
   r'|items\.\d+\.quantity'
   r'|items\.\d+\.unit_price'
   r'|items\.\d+\.unit_cost'

@@ -117,7 +117,7 @@ Future<void> showCustomSnackBar({
             icon: leading,
             background: background,
             foreground: foreground,
-            onDismiss: _dismissNow,
+            onDismiss: _removeNow,
           ),
         ),
       ),
@@ -167,6 +167,26 @@ Future<void> _dismissNow() async {
     controller.dispose();
     if (entry.mounted) entry.remove();
   }
+}
+
+/// The toast was swiped away: remove it at once.
+///
+/// **No slide-out here.** The swipe has already animated the card off screen, and a dismissed
+/// `Dismissible` may not be built again — running [_dismissNow]'s reverse animation rebuilt it on
+/// every frame, and each frame threw «A dismissed Dismissible widget is still part of the tree»,
+/// painting the whole screen red.
+Future<void> _removeNow() async {
+  final entry = _entry;
+  final controller = _controller;
+
+  _entry = null;
+  _controller = null;
+  _signature = null;
+  _timer?.cancel();
+  _timer = null;
+
+  controller?.dispose();
+  if (entry != null && entry.mounted) entry.remove();
 }
 
 /// Tears down whatever is on screen, without animating.

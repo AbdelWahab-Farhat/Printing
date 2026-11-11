@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\DesignTicket\Actions;
 
 use App\Domain\Customer\Enums\DesignKind;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Enums\DesignTicketFileKind;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Events\DesignTicketProgressed;
 use App\Domain\DesignTicket\Exceptions\DesignTicketBelongsToAnotherDesigner;
 use App\Domain\DesignTicket\Exceptions\DesignTicketIsClosed;
+use App\Domain\DesignTicket\Exceptions\DesignTicketNeedsPrintColors;
 use App\Domain\DesignTicket\Exceptions\DesignTicketNotAcceptedYet;
 use App\Domain\DesignTicket\Exceptions\DesignTicketTransitionNotAllowed;
 use App\Domain\DesignTicket\Models\DesignTicket;
@@ -78,6 +80,14 @@ final class SubmitDesignVersion
         // because it is a mistake only a stale screen makes.
         if (! $ticket->status->acceptsSubmissions()) {
             throw DesignTicketTransitionNotAllowed::make($ticket->status, DesignTicketStatus::UnderReview);
+        }
+
+        // A version for a print order goes up with its colours — its own, else the brief's —
+        // because approving it puts them on the order (PRINT-COLORS.md §10). Before the file is
+        // stored, so a refusal leaves nothing behind.
+        if ($ticket->printColorsAreRequired()
+            && ! PrintColors::isComplete(PrintColors::normalise($printColors) ?? $ticket->print_colors)) {
+            throw DesignTicketNeedsPrintColors::make();
         }
 
         // Outside the transaction on purpose: a failed insert afterwards leaves an orphaned

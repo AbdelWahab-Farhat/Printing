@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
@@ -29,6 +30,8 @@ import 'package:dayaa/features/orders/repositories/order_repository.dart';
 /// **And the same rule again for the files:** artwork picked under «تصميم العميل» and then
 /// abandoned by switching to «بدون تصميم» is dropped here rather than sent. The picker is
 /// hidden at that point, which is a suggestion; this is the part that decides what is posted.
+/// **Except on a print order** ([printsHere]): there «بدون تصميم» is a repeat print, the picker
+/// stays open, and the file being reprinted is required (PRINT-COLORS.md §9).
 ///
 /// Nothing here adds anything up. `items_total`, `delivery_price` and `grand_total` are the
 /// server's, and the only totals shown before saving say they are estimates.
@@ -53,6 +56,12 @@ class TakeOrder {
     String? notes,
     List<int> designIds = const [],
 
+    /// Colours typed in the form, by library design id. Sent only for designs that are sent.
+    Map<int, List<PrintColor>> designColors = const {},
+
+    /// Whether a line goes through our press, which keeps the files under «بدون تصميم».
+    bool printsHere = false,
+
     /// What the customer is charged beyond the products — as typed, Arabic-Indic digits and
     /// all. Blank or zero means no charge, and takes its category and its note with it.
     String? additionalCost,
@@ -68,7 +77,12 @@ class TakeOrder {
     bool? isUrgent,
   }) {
     final fee = _number(designFee);
-    final artwork = designSource == noDesign ? const <int>[] : designIds;
+    final artwork = designSource == noDesign && !printsHere ? const <int>[] : designIds;
+    final typedColors = [
+      for (final id in artwork)
+        if (designColors[id] case final colors? when colors.isNotEmpty)
+          <String, dynamic>{'design_id': id, 'print_colors': PrintColor.listToJson(colors)},
+    ];
 
     // **Absent rather than `'0'`, and the three move together.** A new order that is not
     // charging says nothing about the charge at all — unlike an edit, where a cleared box means
@@ -89,6 +103,7 @@ class TakeOrder {
         // Absent rather than empty: «بدون تصميم» has nothing to say about files, and an empty
         // list would be the app claiming it does.
         designIds: artwork.isEmpty ? null : artwork,
+        designColors: typedColors.isEmpty ? null : typedColors,
         discount: _number(discount),
         additionalCost: isCharging ? charge : null,
         additionalCostReason: isCharging ? additionalCostReason : null,

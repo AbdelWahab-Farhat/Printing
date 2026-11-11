@@ -16,6 +16,7 @@ use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ use Tests\TestCase;
  */
 class OrderDepositTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -98,6 +100,11 @@ class OrderDepositTest extends TestCase
      */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this file tests.
+        if ($to === OrderStatus::Printing) {
+            $this->givePrintableArtwork($order);
+        }
+
         return $this->withHeaders($headers)->post(
             "/api/v1/orders/{$order->id}/status",
             ['status' => $to->value, 'fields' => $fields],

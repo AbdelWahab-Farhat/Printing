@@ -368,6 +368,22 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     }
 
     /**
+     * «تصميم طلبية» for an order our press prints: the brief and every version need complete
+     * colours, because approval puts them on the order (PRINT-COLORS.md §10).
+     */
+    public function printColorsAreRequired(): bool
+    {
+        if ($this->order_id === null) {
+            return false;
+        }
+
+        // `loadMissing`: strict mode turns a relation touched cold into an exception.
+        $order = $this->loadMissing('order')->order;
+
+        return $order !== null && $order->isPrintedHere();
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function requester(): BelongsTo

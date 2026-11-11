@@ -1,12 +1,17 @@
 import 'dart:async';
 
 import 'package:dayaa/core/di/injector.dart';
+import 'package:dayaa/core/permissions/app_permission.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_ticket.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +26,9 @@ import 'package:go_router/go_router.dart';
 /// يظهر تحته حين يعود صاحبه — فالزرّ والقائمةُ تحت مزوّدٍ واحد.
 ///
 /// والصفُّ يفتح شاشةَ نوعه، وبعد العودة تُقرأ القائمةُ ثانيةً: ما أُجيب أو أُغلق هناك يغيّر حالته.
+/// What «إضافة تذكرة» opens.
+enum _NewTicketKind { internal, design }
+
 class OrderTicketsSection extends StatelessWidget {
   const OrderTicketsSection({required this.order, super.key});
 
@@ -40,19 +48,86 @@ class _Tickets extends StatelessWidget {
 
   final Order order;
 
-  /// النموذجُ نفسه الذي يفتحه «فتح تذكرة» من ذراع الطلبية، والطلبيةُ وعميلُها فيه.
-  Future<void> _add(BuildContext context) => _thenReload(
-    context,
-    context.push<Object?>(
-      Routes.newInternalTicket,
-      extra: InternalTicketSubject(
-        orderId: order.id,
-        orderCode: order.code,
-        customerId: order.customer?.id,
-        customerName: order.customer?.name,
+  /// «إضافة تذكرة»: an internal ticket, or — where the reader may raise one and the order still
+  /// takes artwork — a design ticket linked to this order (PRINT-COLORS.md §10). With only the
+  /// first on offer it opens straight away, as it always did.
+  Future<void> _add(BuildContext context) async {
+    final customer = order.customer;
+    final offersDesign = customer != null &&
+        order.designsAreEditable &&
+        sl<Session>().can(AppPermission.manageDesignTickets);
+
+    final kind = offersDesign ? await _chooseKind(context) : _NewTicketKind.internal;
+    if (kind == null || !context.mounted) return;
+
+    switch (kind) {
+      case _NewTicketKind.internal:
+        // النموذجُ نفسه الذي يفتحه «فتح تذكرة» من ذراع الطلبية، والطلبيةُ وعميلُها فيه.
+        await _thenReload(
+          context,
+          context.push<Object?>(
+            Routes.newInternalTicket,
+            extra: InternalTicketSubject(
+              orderId: order.id,
+              orderCode: order.code,
+              customerId: order.customer?.id,
+              customerName: order.customer?.name,
+            ),
+          ),
+        );
+      case _NewTicketKind.design:
+        await _thenReload(
+          context,
+          context.push<Object?>(
+            Routes.designTicketForm,
+            extra: DesignTicketForOrder(
+              customer: customer!,
+              orderId: order.id,
+              orderCode: order.code,
+              brief: _brief(order),
+              colorsRequired: order.productionFlow == OrderFlow.standard,
+            ),
+          ),
+        );
+    }
+  }
+
+  Future<_NewTicketKind?> _chooseKind(BuildContext context) {
+    return showModalBottomSheet<_NewTicketKind>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(AppIcons.designs),
+              title: const Text('تذكرة تصميم'),
+              subtitle: const Text('لهذه الطلبية — يُضاف التصميم المعتمد إليها تلقائياً'),
+              onTap: () => Navigator.of(sheet).pop(_NewTicketKind.design),
+            ),
+            ListTile(
+              leading: Icon(AppIcons.add),
+              title: const Text('تذكرة داخلية'),
+              subtitle: const Text('سؤالٌ أو مهمة لموظف'),
+              onTap: () => Navigator.of(sheet).pop(_NewTicketKind.internal),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  /// What the order is, to start the brief: one line per printed size, so the designer knows
+  /// the bag and the size without opening the order.
+  static String _brief(Order order) {
+    final lines = [
+      for (final item in order.items ?? const <OrderItem>[])
+        '• ${item.productName} — ${item.variantLabel} — ${item.quantity.grouped}',
+    ];
+
+    return lines.isEmpty ? '' : 'الطلبية ${order.code}:\n${lines.join('\n')}\n\n';
+  }
 
   Future<void> _open(BuildContext context, String path) =>
       _thenReload(context, context.push<Object?>(path));

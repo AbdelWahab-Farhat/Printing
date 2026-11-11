@@ -10,6 +10,7 @@ use App\Domain\Customer\Actions\CreateCustomer;
 use App\Domain\Customer\Actions\DeleteBusinessField;
 use App\Domain\Customer\Actions\UpdateBusinessField;
 use App\Domain\Customer\Actions\UpdateCustomer;
+use App\Domain\Customer\Actions\UpdateCustomerDesign;
 use App\Domain\Customer\DTOs\BusinessFieldData;
 use App\Domain\Customer\DTOs\CustomerData;
 use App\Domain\Customer\Exceptions\BusinessFieldInUse;
@@ -20,6 +21,7 @@ use App\Domain\Customer\Queries\BusinessFieldFilters;
 use App\Domain\Customer\Queries\BusinessFieldListQuery;
 use App\Domain\Customer\Queries\CustomerFilters;
 use App\Domain\Customer\Queries\CustomerListQuery;
+use App\Domain\Customer\Support\PrintColors;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -41,6 +43,7 @@ class CustomerService
         private readonly DeleteBusinessField $deleteBusinessField,
         private readonly BusinessFieldListQuery $businessFieldListQuery,
         private readonly CountCustomerBadges $countBadges,
+        private readonly UpdateCustomerDesign $updateDesign,
     ) {}
 
     /**
@@ -92,6 +95,24 @@ class CustomerService
     public function findDesign(int $id): CustomerDesign
     {
         return CustomerDesign::query()->findOrFail($id);
+    }
+
+    /**
+     * Colours typed for a design while an order was being taken, written to the library only
+     * when the library has none worth keeping (empty, or names without a swatch or code). A
+     * design that already has complete colours keeps them; the order carries its own copy
+     * instead. Open orders are refreshed the way any library edit refreshes them.
+     * See PRINT-COLORS.md §9.
+     *
+     * @param  array<int, array<string, mixed>>  $colors
+     */
+    public function fillDesignColorsIfIncomplete(CustomerDesign $design, array $colors): CustomerDesign
+    {
+        if (PrintColors::isComplete($design->print_colors)) {
+            return $design;
+        }
+
+        return ($this->updateDesign)($design, ['print_colors' => PrintColors::normalise($colors)]);
     }
 
     public function create(CustomerData $data): Customer

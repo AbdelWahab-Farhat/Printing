@@ -70,6 +70,13 @@ final readonly class OrderData
          * whether the order went in. See `RequestOrderRequest`.
          */
         public ?string $clientToken = null,
+        /**
+         * Colours typed for the chosen designs in the new-order form, keyed by library design id.
+         * Read on create only. See `CreateOrder` and PRINT-COLORS.md §9.
+         *
+         * @var array<int, array<int, array<string, mixed>>>
+         */
+        public array $designColors = [],
     ) {}
 
     /**
@@ -111,6 +118,7 @@ final readonly class OrderData
             designIds: is_array($validated['design_ids'] ?? null)
                 ? array_values(array_map(intval(...), $validated['design_ids']))
                 : [],
+            designColors: self::designColors($validated['design_colors'] ?? null),
             items: array_key_exists('items', $validated) && is_array($validated['items'])
                 ? array_values(array_map(
                     fn (array $item, int $index) => OrderItemData::fromArray($item, $index),
@@ -119,6 +127,29 @@ final readonly class OrderData
                 ))
                 : null,
         );
+    }
+
+    /**
+     * `[{design_id, print_colors}]` → `[design_id => print_colors]`. A design listed twice keeps
+     * the last list sent.
+     *
+     * @return array<int, array<int, array<string, mixed>>>
+     */
+    private static function designColors(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $byDesign = [];
+
+        foreach ($value as $entry) {
+            if (is_array($entry) && isset($entry['design_id']) && is_array($entry['print_colors'] ?? null)) {
+                $byDesign[(int) $entry['design_id']] = array_values($entry['print_colors']);
+            }
+        }
+
+        return $byDesign;
     }
 
     private static function money(mixed $value): string

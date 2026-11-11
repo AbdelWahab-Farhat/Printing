@@ -2,9 +2,13 @@ import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/router/app_router.dart';
+import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/models/order_ticket.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
@@ -114,17 +118,18 @@ void main() {
     return const Scaffold(body: Text('شاشة التذكرة'));
   }
 
-  Widget host() {
+  Widget host({Order shown = order}) {
     router = GoRouter(
       initialLocation: '/',
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const Scaffold(
-            body: SingleChildScrollView(child: OrderTicketsSection(order: order)),
+          builder: (context, state) => Scaffold(
+            body: SingleChildScrollView(child: OrderTicketsSection(order: shown)),
           ),
         ),
         GoRoute(path: Routes.newInternalTicket, builder: (context, state) => destination(state)),
+        GoRoute(path: Routes.designTicketForm, builder: (context, state) => destination(state)),
         GoRoute(path: Routes.internalTicketPath, builder: (context, state) => destination(state)),
         GoRoute(path: Routes.designTicketDetailPath, builder: (context, state) => destination(state)),
         GoRoute(path: '/support/tickets/:id', builder: (context, state) => destination(state)),
@@ -223,6 +228,73 @@ void main() {
     expect(subject.orderId, 1470);
     expect(subject.customerId, 10);
     expect(find.text('T24'), findsOneWidget);
+  });
+
+  group('a design ticket from the order (PRINT-COLORS.md §10)', () {
+    void signInWith(List<String> permissions) {
+      final session = Session()
+        ..adopt(AuthUser(id: 1, name: 'فرحات', phone: '0911234567', permissions: permissions));
+      sl.registerSingleton<Session>(session);
+    }
+
+    // Still taking artwork, and printed here.
+    final open = order.copyWith(
+      status: OrderStatus.readyToPrint,
+      designsAreEditable: true,
+      productionFlow: OrderFlow.standard,
+    );
+
+    testWidgets('is offered beside the internal ticket, and carries the order', (tester) async {
+      // Arrange
+      signInWith(['design_tickets.manage']);
+      when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([]));
+      await tester.pumpWidget(host(shown: open));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('إضافة تذكرة'));
+      await tester.pumpAndSettle();
+      expect(find.text('تذكرة داخلية'), findsOneWidget);
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(opened, Routes.designTicketForm);
+      final subject = carried! as DesignTicketForOrder;
+      expect(subject.orderId, 1470);
+      expect(subject.customer.id, 10);
+      expect(subject.colorsRequired, isTrue);
+    });
+
+    testWidgets('is not offered once the order no longer takes artwork', (tester) async {
+      // Arrange — at the press: the design could not be added to it any more.
+      signInWith(['design_tickets.manage']);
+      when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([]));
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('إضافة تذكرة'));
+      await tester.pumpAndSettle();
+
+      // Assert — straight to the internal ticket, as before.
+      expect(opened, Routes.newInternalTicket);
+    });
+
+    testWidgets('is not offered to somebody who may not raise one', (tester) async {
+      // Arrange
+      signInWith(['orders.view']);
+      when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([]));
+      await tester.pumpWidget(host(shown: open));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('إضافة تذكرة'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(opened, Routes.newInternalTicket);
+    });
   });
 
   testWidgets('a failed read offers to try again', (tester) async {

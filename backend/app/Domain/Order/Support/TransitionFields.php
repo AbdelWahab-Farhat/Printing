@@ -6,6 +6,7 @@ namespace App\Domain\Order\Support;
 
 use App\Application\Api\V1\Resources\OrderResource;
 use App\Domain\Catalog\Enums\ProductionMode;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
@@ -19,7 +20,6 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\UndeliveredDisposition;
 use App\Domain\Order\Models\Order;
-use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Treasury\TreasuryService;
 use App\Support\DecimalText;
@@ -39,6 +39,9 @@ use App\Support\DecimalText;
 final class TransitionFields
 {
     /** What the money box is called in the payload, and the key its method hangs off. */
+    /** «ألوان الطباعة» answered on the move into the press (PRINT-COLORS.md §12). */
+    public const PRESS_COLORS_KEY = 'press_colors';
+
     public const PAYMENT_AMOUNT = 'payment_amount';
 
     public const PAYMENT_METHOD = 'payment_method';
@@ -640,13 +643,30 @@ final class TransitionFields
      */
     private static function printColors(Order $order): ?TransitionField
     {
-        $order->loadMissing('designs');
+        $version = $order->designForPress();
 
-        $versions = $order->designs->sortByDesc('version');
-
-        /** @var OrderDesign|null $version */
-        $version = $versions->first(fn (OrderDesign $design) => $design->status === OrderDesignStatus::Approved)
-            ?? $versions->first(fn (OrderDesign $design) => $design->status !== OrderDesignStatus::Rejected);
+        // **Asked, not reminded, when the move would be refused without them** (PRINT-COLORS.md
+        // §12): no version yet, or one whose colours are not complete. The move screen is where
+        // the person at the press is standing, so the colours are set there rather than by going
+        // back to «تعديل الطلبية». `ChangeOrderStatus` writes the answer onto the version the
+        // press will print — including one picked under «التصاميم» in the same move.
+        if ($order->isPrintedHere()
+            && ($version === null || ! PrintColors::isComplete($version->print_colors))) {
+            return TransitionField::printColorsInput(
+                key: self::PRESS_COLORS_KEY,
+                label: $version === null
+                    ? 'ألوان الطباعة'
+                    : "ألوان الطباعة — النسخة {$version->version}",
+                hint: $version === null
+                    ? 'اختر التصميم أعلاه، وحدّد كم لوناً وما هو كل لون'
+                    : 'حدّد كم لوناً وما هو كل لون. تُقفل الألوان بعد الانتقال إلى «قيد الطباعة»',
+                colors: $version?->print_colors ?? [],
+                // With no version yet the file is picked in this move, and it may bring complete
+                // colours of its own — so the answer is optional here, and `GuardPrintColors`
+                // judges what the move ends up with.
+                required: $version !== null,
+            );
+        }
 
         if ($version === null || $version->print_colors === null) {
             return null;

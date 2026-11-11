@@ -45,6 +45,7 @@ use App\Domain\Order\Models\OrderStatusTransition;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\StockEffectPreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -70,6 +71,7 @@ use Tests\TestCase;
  */
 class OrderDeletionTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     private function actor(): User
@@ -124,6 +126,7 @@ class OrderDeletionTest extends TestCase
         );
 
         if ($throughToReady) {
+            $this->givePrintableArtwork($order); // the press needs colours (PRINT-COLORS.md §9)
             app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Printing, null, $actor);
             app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Ready, null, $actor);
         }

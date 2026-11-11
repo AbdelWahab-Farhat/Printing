@@ -25,6 +25,7 @@ use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,7 @@ use Tests\TestCase;
  */
 class OutsourcingCostEntryTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -133,6 +135,11 @@ class OutsourcingCostEntryTest extends TestCase
      */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this file tests.
+        if ($to === OrderStatus::Printing) {
+            $this->givePrintableArtwork($order);
+        }
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter(['status' => $to->value, 'fields' => $fields ?: null]),
@@ -203,9 +210,11 @@ class OutsourcingCostEntryTest extends TestCase
             'unit_price' => '1.000',
         ]);
 
+        $customerId = (int) Customer::factory()->create()->getKey();
+
         // Act
         $response = $this->withHeaders($this->coordinator())->postJson('/api/v1/orders', [
-            'customer_id' => Customer::factory()->create()->getKey(),
+            'customer_id' => $customerId,
             'city_id' => City::factory()->create()->getKey(),
             'address_details' => 'شارع الجمهورية',
             'items' => [[
@@ -214,6 +223,8 @@ class OutsourcingCostEntryTest extends TestCase
                 'quantity' => '100',
                 'unit_cost' => '0.5',
             ]],
+            // A print order is taken with its artwork and colours (PRINT-COLORS.md §9).
+            'design_ids' => [$this->printableDesignId($customerId)],
         ]);
 
         // Assert — a typed number beside the shelf's would be a second answer to one question.

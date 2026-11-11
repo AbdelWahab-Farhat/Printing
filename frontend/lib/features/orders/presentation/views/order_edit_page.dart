@@ -13,6 +13,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
@@ -592,6 +593,7 @@ class _Form extends StatelessWidget {
                     child: OrderDesignsSection(
                       designs: order.designs!,
                       isWorking: isWorking,
+                      colorsRequired: order.productionFlow == OrderFlow.standard,
                       onAdd: onAddDesign,
                       onApprove: onReviewDesign == null
                           ? null

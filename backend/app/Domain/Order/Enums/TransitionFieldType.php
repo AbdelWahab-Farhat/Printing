@@ -114,6 +114,20 @@ enum TransitionFieldType: string
      */
     case PrintColors = 'print_colors';
 
+    /**
+     * **«ألوان الطباعة» answered on the way to the press** (PRINT-COLORS.md §12).
+     *
+     * Offered instead of {@see PrintColors} when the version about to be printed has no colours,
+     * or not complete ones, or when there is no version yet: the move is refused without them,
+     * so the move screen is where they are asked for. The answer is a list in the colours shape
+     * (`name`, `code`, `hex`), written onto that version before the move is judged. `colors` is
+     * what the sheet opens on. Required.
+     *
+     * An app that predates the type cannot answer it, so it cannot make this move; it still
+     * reaches the colours through «تعديل الطلبية».
+     */
+    case PrintColorsInput = 'print_colors_input';
+
     case Warehouse = 'warehouse';
 
     /**

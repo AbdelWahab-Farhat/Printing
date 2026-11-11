@@ -422,9 +422,9 @@ class OrderPrintColorsTest extends TestCase
         $this->assertSame([self::RED], $reminder['colors']);
     }
 
-    public function test_an_order_with_no_colors_on_record_gets_no_reminder(): void
+    public function test_an_order_with_no_colors_on_record_is_asked_for_them_on_the_move(): void
     {
-        // Arrange
+        // Arrange — §12: the move would be refused without them, so it asks instead of reminding.
         $headers = $this->staff();
         $customer = Customer::factory()->create();
         $order = $this->order($customer, OrderStatus::ReadyToPrint);
@@ -433,10 +433,17 @@ class OrderPrintColorsTest extends TestCase
         // Act
         $printing = $this->printingMove($headers, $order);
 
-        // Assert — no empty box; and no `colors` key leaks onto the fields that remain.
+        // Assert — no reminder; one required answer; and no `colors` key leaks onto the others.
         $this->assertNull(collect($printing['fields'])->firstWhere('type', 'print_colors'));
+        $asked = collect($printing['fields'])->firstWhere('type', 'print_colors_input');
+        $this->assertNotNull($asked);
+        $this->assertSame('press_colors', $asked['key']);
+        $this->assertTrue($asked['required']);
+        $this->assertSame([], $asked['colors']);
         foreach ($printing['fields'] as $field) {
-            $this->assertArrayNotHasKey('colors', $field);
+            if ($field['type'] !== 'print_colors_input') {
+                $this->assertArrayNotHasKey('colors', $field);
+            }
         }
     }
 

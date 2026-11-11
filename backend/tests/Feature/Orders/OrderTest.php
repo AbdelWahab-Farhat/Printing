@@ -25,6 +25,7 @@ use App\Domain\Order\Models\OrderDesign;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,7 @@ use Tests\TestCase;
  */
 class OrderTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -118,7 +120,7 @@ class OrderTest extends TestCase
         $customer = Customer::factory()->create();
         $city = City::factory()->create(['delivery_price' => '20.00']);
 
-        return array_merge([
+        $payload = array_merge([
             'customer_id' => $customer->getKey(),
             'city_id' => $city->getKey(),
             'address_details' => 'شارع الجمهورية',
@@ -128,6 +130,15 @@ class OrderTest extends TestCase
                 'quantity' => '300',
             ]],
         ], $overrides);
+
+        // A print order is taken with its artwork and colours (PRINT-COLORS.md §9). A test that
+        // picks its own designs, or says the design is ours to draw, is left to say so.
+        if (! array_key_exists('design_ids', $overrides)
+            && ($overrides['design_source'] ?? null) !== DesignSource::InHouse->value) {
+            $payload['design_ids'] = [$this->printableDesignId((int) $payload['customer_id'])];
+        }
+
+        return $payload;
     }
 
     // ───────────────────────────── taking an order ─────────────────────────────
@@ -714,15 +725,18 @@ class OrderTest extends TestCase
             PermissionName::AddOrderAdditionalCost,
         );
 
+        $customerId = (int) Customer::factory()->create()->getKey();
+
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', [
-            'customer_id' => Customer::factory()->create()->getKey(),
+            'customer_id' => $customerId,
             'city_id' => City::factory()->officePickup()->create()->getKey(),
             'items' => [[
                 'product_id' => $variant->product_id,
                 'product_variant_id' => $variant->getKey(),
                 'quantity' => '300',
             ]],
+            'design_ids' => [$this->printableDesignId($customerId)],
             'additional_cost' => '10.00',
             'additional_cost_reason' => AdditionalCostReason::Transport->value,
         ]);
@@ -977,7 +991,7 @@ class OrderTest extends TestCase
         // Arrange — the design is already in the customer's library, from a previous job.
         $headers = $this->clerk();
         $customer = Customer::factory()->create();
-        $design = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+        $design = CustomerDesign::factory()->printable()->create(['customer_id' => $customer->getKey()]);
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
@@ -1003,8 +1017,8 @@ class OrderTest extends TestCase
         // Arrange — two files for one job: the logo and the back of the bag.
         $headers = $this->clerk();
         $customer = Customer::factory()->create();
-        $first = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
-        $second = CustomerDesign::factory()->create(['customer_id' => $customer->getKey()]);
+        $first = CustomerDesign::factory()->printable()->create(['customer_id' => $customer->getKey()]);
+        $second = CustomerDesign::factory()->printable()->create(['customer_id' => $customer->getKey()]);
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([

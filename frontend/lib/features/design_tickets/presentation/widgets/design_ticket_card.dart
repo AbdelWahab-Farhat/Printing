@@ -7,6 +7,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_order_chip.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:flutter/material.dart';
@@ -190,6 +191,11 @@ class _Details extends StatelessWidget {
                   DesignTicketStatusPill(status: ticket.status, label: ticket.statusLabel),
                 ],
               ),
+              // «تصميم طلبية» — the kind, read off the order it is linked to (PRINT-COLORS.md §10).
+              if (ticket.order case final order?) ...[
+                SizedBox(height: 6.h),
+                DesignTicketOrderChip(orderCode: order.code),
+              ],
               SizedBox(height: 6.h),
               // **Both rows are named.** They were two lines each behind the same person icon —
               // «اسامة حماد» over «محمد علي» — and nothing on the card said which of the two

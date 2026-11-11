@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Catalog\Enums\ProductionMode;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Delivery\DeliveryService;
+use App\Domain\DesignTicket\Enums\DesignTicketStatus;
+use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\ShortageRevision;
@@ -17,12 +21,15 @@ use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
+use App\Domain\Order\Exceptions\OrderHasOpenDesignTicket;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
 use App\Domain\Order\Exceptions\OrderLinesNeedAPrice;
 use App\Domain\Order\Exceptions\OutsourcedLinesNeedACost;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
+use App\Domain\Order\Exceptions\PrintOrderNeedsADesign;
+use App\Domain\Order\Exceptions\PrintOrderNeedsColors;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageMustBeResolved;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
@@ -91,6 +98,9 @@ final class ChangeOrderStatus
         // clerk-typed one would.
         private readonly RecalculateOrderTotals $recalculateTotals,
         private readonly TreasuryService $treasury,
+        // «لا طلبية طباعة بلا ألوانها» at acceptance and at the press — PRINT-COLORS.md §9.
+        private readonly GuardPrintColors $guardPrintColors,
+        private readonly AttachApprovedTicketDesigns $attachApprovedTicketDesigns,
     ) {}
 
     /**
@@ -124,6 +134,8 @@ final class ChangeOrderStatus
      * @throws ShortageMustBeResolved
      * @throws FulfillmentRequiresAnActor
      * @throws PaymentRequiresAnActor
+     * @throws PrintOrderNeedsADesign
+     * @throws PrintOrderNeedsColors
      */
     public function __invoke(
         Order $order,
@@ -216,6 +228,26 @@ final class ChangeOrderStatus
         // «جاهزة» is the only time a وسيط line is costed, so a line arriving with no `unit_cost`
         // stays uncosted — and the order's profit unknown — for good. `TransitionFields` asks for
         // the figure on this move; this only has to know that every line now has one.
+        // **No press while a design ticket opened for this order is still open**
+        // (PRINT-COLORS.md §10). Its approval puts the design on the order; printing first
+        // would print a file nobody approved. Ours is «قيد الطباعة», the vendor's «قيد التصنيع».
+        $headsForThePress = $target === OrderStatus::Printing
+            || ($target === OrderStatus::Manufacturing && $order->production_flow === OrderFlow::Outsourced);
+
+        if ($headsForThePress) {
+            $openTickets = DesignTicket::query()
+                ->where('order_id', $order->getKey())
+                ->whereNotIn('status', [DesignTicketStatus::Completed, DesignTicketStatus::Cancelled])
+                ->orderBy('id')
+                ->pluck('code')
+                ->map(fn ($code): string => (string) $code)
+                ->all();
+
+            if ($openTickets !== []) {
+                throw OrderHasOpenDesignTicket::make($openTickets);
+            }
+        }
+
         $uncostedAfterFields = $target === OrderStatus::Ready && $order->ready_at === null
             ? self::outsourcedLinesLeftUncosted($order, $fields)
             : [];
@@ -494,7 +526,11 @@ final class ChangeOrderStatus
             $artworkGoesFirst = $order->designsAreEditable();
 
             if ($artworkGoesFirst) {
+                // A design ticket approved while the order could not take it lands now, before
+                // the order leaves a status that can (PRINT-COLORS.md §11).
+                ($this->attachApprovedTicketDesigns)($order, $actor);
                 $this->attachDesigns($order, $fields);
+                $this->applyPressColors($order, $fields);
             }
 
             // **Before the status moves, for the same reason the artwork sometimes is.** What
@@ -511,6 +547,22 @@ final class ChangeOrderStatus
 
             if (! $artworkGoesFirst) {
                 $this->attachDesigns($order, $fields);
+                // Back in a status that takes artwork — out of «نواقص», say — so a design
+                // ticket approved meanwhile lands now (PRINT-COLORS.md §11).
+                ($this->attachApprovedTicketDesigns)($order, $actor);
+            }
+
+            // **The colours, judged once the artwork the move carried is on** (PRINT-COLORS.md
+            // §9). Accepting a request is where a customer's order becomes one of ours, so it
+            // must meet the rule a clerk's order meets at creation. Every move into the press
+            // asks again, which is what catches orders taken before the rule existed. Inside the
+            // transaction, so a refusal takes back the status and any artwork attached above.
+            if ($acceptingARequest) {
+                $this->guardPrintColors->forIntake($order);
+            }
+
+            if ($target === OrderStatus::Printing) {
+                $this->guardPrintColors->forPress($order);
             }
 
             $this->recordDeclaredShortages($order, $target, $fields, $actor);
@@ -788,6 +840,33 @@ final class ChangeOrderStatus
         foreach ((array) ($fields['design_ids'] ?? []) as $designId) {
             ($this->addDesign)($order, (int) $designId);
         }
+    }
+
+    /**
+     * «ألوان الطباعة» answered on the move into the press (PRINT-COLORS.md §12), written onto
+     * the version the press will print — after any artwork the same move attached, so a design
+     * picked under «التصاميم» gets them too. Only this order's copy changes, as when the colours
+     * are corrected on «تعديل الطلبية»; the library is left alone. Called while the order still
+     * takes artwork, before the status is written and before `GuardPrintColors` judges it.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function applyPressColors(Order $order, array $fields): void
+    {
+        $colors = PrintColors::normalise($fields[TransitionFields::PRESS_COLORS_KEY] ?? null);
+
+        if ($colors === null) {
+            return;
+        }
+
+        $version = $order->unsetRelation('designs')->designForPress();
+
+        if ($version === null) {
+            return;
+        }
+
+        $version->forceFill(['print_colors' => $colors])->save();
+        $order->unsetRelation('designs');
     }
 
     /**

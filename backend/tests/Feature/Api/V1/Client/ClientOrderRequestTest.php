@@ -21,6 +21,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -40,6 +41,7 @@ use Tests\TestCase;
  */
 class ClientOrderRequestTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     /**
@@ -882,6 +884,9 @@ class ClientOrderRequestTest extends TestCase
 
         $order = Order::query()->firstOrFail();
         $headers = $this->staff(PermissionName::ViewOrders, PermissionName::ManageOrders);
+        // Nothing extra beyond what every print order needs: its artwork and colours
+        // (PRINT-COLORS.md §9, pinned in MandatoryPrintColorsTest).
+        $this->givePrintableArtwork($order);
 
         // Act
         $response = $this->withHeaders($headers)->postJson(
