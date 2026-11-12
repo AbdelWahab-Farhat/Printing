@@ -4,16 +4,20 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
+import 'package:dayaa/features/orders/usecases/get_order_tickets.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
@@ -34,9 +38,19 @@ class _MockOrderRepository extends Mock implements OrderRepository {}
 
 void main() {
   late _MockOrderRepository repository;
+  late GoRouter router;
 
   /// ما حمله الذراعُ إلى «تذكرة جديدة» — فما يفعله هو الذهابُ إليها.
   Object? carried;
+
+  /// Who is signed in, in place of the clerk [setUp] signs in.
+  Future<void> signInWith(List<String> permissions) async {
+    await sl.unregister<Session>();
+    sl.registerSingleton<Session>(
+      Session()
+        ..adopt(AuthUser(id: 1, name: 'فرحات', phone: '0911234567', permissions: permissions)),
+    );
+  }
 
   const customer = Customer(
     id: 10,
@@ -106,7 +120,7 @@ void main() {
   tearDown(Injector.reset);
 
   Widget host() {
-    final router = GoRouter(
+    router = GoRouter(
       initialLocation: '/',
       routes: [
         GoRoute(path: '/', builder: (context, state) => const OrderDetailPage(orderId: 1320)),
@@ -116,6 +130,14 @@ void main() {
             carried = state.extra;
 
             return const Scaffold(body: Text('تذكرة جديدة'));
+          },
+        ),
+        GoRoute(
+          path: Routes.designTicketForm,
+          builder: (context, state) {
+            carried = state.extra;
+
+            return const Scaffold(body: Text('تذكرة تصميم جديدة'));
           },
         ),
       ],
@@ -154,9 +176,7 @@ void main() {
     expect(find.text('تذاكر الموظفين'), findsNothing);
   });
 
-  testWidgets('it opens the new ticket with this order and its customer filled in', (
-    tester,
-  ) async {
+  testWidgets('it asks which ticket: a design ticket or an internal one', (tester) async {
     // Arrange
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
@@ -164,6 +184,26 @@ void main() {
 
     // Act
     await tester.tap(find.text('فتح تذكرة'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('تذكرة تصميم'), findsOneWidget);
+    expect(find.text('تذكرة داخلية'), findsOneWidget);
+    expect(carried, isNull);
+  });
+
+  testWidgets('«تذكرة داخلية» opens the new ticket with this order and its customer filled in', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await openTheDial(tester);
+    await tester.tap(find.text('فتح تذكرة'));
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.text('تذكرة داخلية'));
     await tester.pumpAndSettle();
 
     // Assert
@@ -177,5 +217,92 @@ void main() {
         customerName: 'حساب تجريبي ٢',
       ),
     );
+  });
+
+  group('the design ticket on that sheet', () {
+    /// Still taking artwork, and printed here.
+    final open = order.copyWith(designsAreEditable: true, productionFlow: OrderFlow.standard);
+
+    Future<void> openTheSheet(WidgetTester tester) async {
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await openTheDial(tester);
+      await tester.tap(find.text('فتح تذكرة'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens the design ticket form on this order', (tester) async {
+      // Arrange
+      await signInWith(['orders.view', 'design_tickets.manage']);
+      when(() => repository.order(1320)).thenAnswer((_) async => Right(open));
+      await openTheSheet(tester);
+
+      // Act
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('تذكرة تصميم جديدة'), findsOneWidget);
+      final subject = carried! as DesignTicketForOrder;
+      expect(subject.orderId, 1320);
+      expect(subject.orderCode, '1320');
+      expect(subject.customer.id, 10);
+      expect(subject.colorsRequired, isTrue);
+    });
+
+    testWidgets('is disabled, with the reason, once the order no longer takes artwork', (
+      tester,
+    ) async {
+      // Arrange — «جاهزة»: the design could not be added to it any more.
+      await signInWith(['orders.view', 'design_tickets.manage']);
+      await openTheSheet(tester);
+
+      // Act
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
+      // Assert — nothing opened, and the sheet says why.
+      expect(find.text('الطلبية في «جاهزة» ولم تعد تقبل تصميماً'), findsOneWidget);
+      expect(find.text('تذكرة داخلية'), findsOneWidget);
+      expect(carried, isNull);
+    });
+
+    testWidgets('is disabled, with the reason, for somebody who may not raise one', (
+      tester,
+    ) async {
+      // Arrange
+      when(() => repository.order(1320)).thenAnswer((_) async => Right(open));
+      await openTheSheet(tester);
+
+      // Act
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('لا تملك صلاحية فتح تذاكر التصميم'), findsOneWidget);
+      expect(carried, isNull);
+    });
+  });
+
+  testWidgets('the tickets on the order are read again on the way back', (tester) async {
+    // Arrange
+    when(() => repository.orderTickets(1320)).thenAnswer((_) async => const Right([]));
+    sl.registerFactory<OrderTicketsCubit>(
+      () => OrderTicketsCubit(getTickets: GetOrderTickets(repository)),
+    );
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await openTheDial(tester);
+    await tester.tap(find.text('فتح تذكرة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تذكرة داخلية'));
+    await tester.pumpAndSettle();
+
+    // Act
+    router.pop();
+    await tester.pumpAndSettle();
+
+    // Assert — once for the page, once more on the way back.
+    verify(() => repository.orderTickets(1320)).called(2);
   });
 }

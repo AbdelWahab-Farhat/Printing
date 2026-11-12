@@ -18,7 +18,6 @@ import 'package:dayaa/features/carrier/models/nawris_parcel.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/carrier/usecases/sync_carrier_money.dart';
-import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/investors/presentation/widgets/order_investors_section.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_flow.dart';
@@ -27,6 +26,7 @@ import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/open_ticket_on_order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deposit_card.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
@@ -83,8 +83,19 @@ class OrderDetailPage extends StatelessWidget {
     // No ledger Cubit here: the entries live on their own screen, behind their own permission,
     // and this one never reads them. What it shows of the money — the three numbers in the
     // header — travels on the order's own payload.
-    return BlocProvider<OrderDetailCubit>(
-      create: (_) => sl<OrderDetailCubit>(param1: orderId)..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<OrderDetailCubit>(
+          create: (_) => sl<OrderDetailCubit>(param1: orderId)..load(),
+        ),
+        // «التذاكر المرتبطة» is provided here, not in its section, so a ticket opened from the
+        // dial's «فتح تذكرة» shows in that list on the way back. Only where it is registered,
+        // the same condition that draws the section.
+        if (sl.isRegistered<OrderTicketsCubit>())
+          BlocProvider<OrderTicketsCubit>(
+            create: (_) => sl<OrderTicketsCubit>()..load(orderId),
+          ),
+      ],
       child: const _OrderDetailView(),
     );
   }
@@ -1567,22 +1578,15 @@ class _Actions extends StatelessWidget {
           onTap: onOpenPayments,
         ),
 
-        // «فتح تذكرة» من الطلبية مباشرةً، كـ«فتح تذكرة فالطلب» في بريمولا — طلبُ المالك ٢٠٢٦-١٠-٢٥:
-        // كان هنا «تذاكر الموظفين» يفتح قائمةَ تذاكرها، فصار الذراعُ نفسُه يفتح تذكرة.
-        // النموذجُ يُفتح والطلبيةُ وعميلُها فيه، فتظهر التذكرةُ في قائمة العميل، ويُعرف أن الطلبية
-        // لهذا العميل فيُسقطها اختيارُ غيره. بلا `permission` — التذاكرُ الداخلية لكل موظف.
+        // «فتح تذكرة» on the order itself, like Primula's (owner's request, 2026-10-25). It asks
+        // which ticket: a design ticket or an internal one, with the order and its customer
+        // filled in (owner's request, 2026-11-13). The design ticket is disabled, with its
+        // reason, where it cannot be opened; see [openTicketOnOrder]. No `permission`: every
+        // member of staff may open an internal ticket.
         AppAction(
           label: 'فتح تذكرة',
           icon: AppIcons.newInternalTicket,
-          onTap: (context) => context.push(
-            Routes.newInternalTicket,
-            extra: InternalTicketSubject(
-              orderId: order.id,
-              orderCode: order.code,
-              customerId: order.customer?.id,
-              customerName: order.customer?.name,
-            ),
-          ),
+          onTap: (context) => openTicketOnOrder(context, order),
         ),
 
         // «سجل التعديلات» used to stand here. It reads and never writes, which is what the two

@@ -16,6 +16,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_tickets_section
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/get_order_tickets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,7 +126,11 @@ void main() {
         GoRoute(
           path: '/',
           builder: (context, state) => Scaffold(
-            body: SingleChildScrollView(child: OrderTicketsSection(order: shown)),
+            // The page provides the list, so the dial can read it again too.
+            body: BlocProvider<OrderTicketsCubit>(
+              create: (_) => sl<OrderTicketsCubit>()..load(shown.id),
+              child: SingleChildScrollView(child: OrderTicketsSection(order: shown)),
+            ),
           ),
         ),
         GoRoute(path: Routes.newInternalTicket, builder: (context, state) => destination(state)),
@@ -217,6 +222,8 @@ void main() {
     // Act
     await tester.tap(find.text('إضافة تذكرة'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('تذكرة داخلية'));
+    await tester.pumpAndSettle();
     when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([staff]));
     router.pop();
     await tester.pumpAndSettle();
@@ -266,34 +273,44 @@ void main() {
       expect(subject.colorsRequired, isTrue);
     });
 
-    testWidgets('is not offered once the order no longer takes artwork', (tester) async {
+    testWidgets('is disabled, with the reason, once the order no longer takes artwork', (
+      tester,
+    ) async {
       // Arrange — at the press: the design could not be added to it any more.
       signInWith(['design_tickets.manage']);
       when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([]));
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
-
-      // Act
       await tester.tap(find.text('إضافة تذكرة'));
       await tester.pumpAndSettle();
 
-      // Assert — straight to the internal ticket, as before.
-      expect(opened, Routes.newInternalTicket);
+      // Act
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
+      // Assert — nothing opened, and the sheet says why.
+      expect(find.text('الطلبية في «قيد الطباعة» ولم تعد تقبل تصميماً'), findsOneWidget);
+      expect(opened, isNull);
     });
 
-    testWidgets('is not offered to somebody who may not raise one', (tester) async {
+    testWidgets('is disabled, with the reason, for somebody who may not raise one', (
+      tester,
+    ) async {
       // Arrange
       signInWith(['orders.view']);
       when(() => repository.orderTickets(1470)).thenAnswer((_) async => const Right([]));
       await tester.pumpWidget(host(shown: open));
       await tester.pumpAndSettle();
-
-      // Act
       await tester.tap(find.text('إضافة تذكرة'));
       await tester.pumpAndSettle();
 
+      // Act
+      await tester.tap(find.text('تذكرة تصميم'));
+      await tester.pumpAndSettle();
+
       // Assert
-      expect(opened, Routes.newInternalTicket);
+      expect(find.text('لا تملك صلاحية فتح تذاكر التصميم'), findsOneWidget);
+      expect(opened, isNull);
     });
   });
 
