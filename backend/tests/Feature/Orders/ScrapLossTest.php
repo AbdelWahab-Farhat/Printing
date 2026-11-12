@@ -15,6 +15,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class ScrapLossTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -81,6 +83,8 @@ class ScrapLossTest extends TestCase
         $item = OrderItem::factory()->for($order)->create([
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
 
         // The warehouse is named at the handover now — that is where the stock actually leaves —
         // and «جاهزة» no longer offers the picker, because by then there is nothing left to

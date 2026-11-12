@@ -593,15 +593,13 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('colours added under the design are saved on the design itself', (
+    testWidgets('colours added under the design are held for the order, not written to the library', (
       tester,
     ) async {
-      // Arrange
+      // Arrange — the server decides, with the order, whether they fill the library
+      // (PRINT-COLORS.md §9); an abandoned form must leave the library as it was.
       session.adopt(userWith(['orders.manage', 'customers.view', 'customers.manage']));
       when(() => designs.designs(7)).thenAnswer((_) async => const Right([flyer]));
-      when(
-        () => designs.setPrintColors(7, 2, [typed]),
-      ).thenAnswer((_) async => Right(flyer.copyWith(printColors: [typed])));
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
       await choose(tester, 'المنشور النهائي');
@@ -615,19 +613,20 @@ void main() {
       await tester.enterText(find.widgetWithText(TextField, 'اسم اللون (اختياري)'), 'أحمر الشعار');
       await tester.enterText(find.widgetWithText(TextField, 'كود اللون'), '#E4002B');
       await tester.pump();
-      await tester.tap(find.text('حفظ'));
+      await tester.tap(find.text('اعتماد الألوان'));
       await tester.pumpAndSettle();
 
-      // Assert — on the design, so this order copies them when it is created, and so do later ones.
-      verify(() => designs.setPrintColors(7, 2, [typed])).called(1);
-      expect(find.text('أحمر الشعار'), findsOneWidget);
+      // Assert
+      verifyNever(() => designs.setPrintColors(any(), any(), any()));
+      expect(find.text(typed.name), findsOneWidget);
       expect(find.text('تعديل الألوان'), findsOneWidget);
     });
 
-    testWidgets('the colours a design already has show under it, read-only without the grant', (
+    testWidgets('anybody taking the order may set the colours, not only a customer editor', (
       tester,
     ) async {
-      // Arrange — changing a design is «إضافة وتعديل العملاء», the same grant its upload needs.
+      // Arrange — colours are mandatory on a print order, so a clerk who could not set them
+      // could not take one.
       session.adopt(userWith(['orders.manage', 'customers.view']));
       when(
         () => designs.designs(7),
@@ -641,8 +640,7 @@ void main() {
       // Assert
       expect(find.text('أحمر الشعار'), findsOneWidget);
       expect(find.text('PANTONE 186 C'), findsOneWidget);
-      expect(find.text('تعديل الألوان'), findsNothing);
-      expect(find.text('إضافة ألوان الطباعة'), findsNothing);
+      expect(find.text('تعديل الألوان'), findsOneWidget);
     });
   });
 }

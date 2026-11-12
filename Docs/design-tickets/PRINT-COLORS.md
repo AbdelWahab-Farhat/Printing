@@ -1,7 +1,8 @@
 # «ألوان الطباعة» — the exact inks a design is printed in
 
-> **Branch `print-colors`, uncommitted by request.** Written in English; the shipped code and UI
-> strings stay Arabic like the rest.
+> **§1–§8 shipped on `main`.** §9–§11 (mandatory colours, design tickets from the order,
+> approval attaching the design) were built on `main` on 2026-11-11, uncommitted by request.
+> Written in English; the shipped code and UI strings stay Arabic like the rest.
 >
 > **Decisions settled with the owner on 2026-11-02:** colors live on the design and are copied
 > onto the order (option A); tickets carry them in the brief *and* on every version (T2); each
@@ -156,7 +157,127 @@ can wait.
 and «إنشاء» is still the only button. The design's options have a «ألوان الطباعة» row, which
 opens the editor or, when locked, the colors with their codes and «اعتمد فريقنا هذه الألوان
 برموزها — لتغييرها تواصل معنا». The card shows the colors as dots. The editor has a name box and
-a 20-color palette, with no code box and no hex box.
+a 20-color palette, with no code box and no hex box. *(Since replaced: both apps share one sheet with
+the HSV picker and a hex box, and §9 adds the basic inks above it.)*
 
 **Release.** Existing customer-app installs keep working, since the new keys are simply ignored,
 but they show none of this until a new customer-app release ships.
+
+## 9 · Colours are mandatory on a print order (owner, 2026-11-11)
+
+> «جعل خيار اضافة اللون اوضح ويكون اجباري لاي طلب طباعه بحيث لا تنشئ الطلبيه دون تحديد اللون
+> واذا كانت لونين لا تنشئ دون تحديدهما»، and: basic inks to pick in one tap, beside the manual bar.
+
+**A print order** is one on the standard road (`Order::isPrintedHere()`): at least one line our
+press prints. Plain goods and outsourced work are not asked.
+
+**A complete colour list** (`PrintColors::isComplete()`, `PrintColor.listIsComplete`) has at
+least one colour, and every colour carries its swatch (`hex`) or a press code. A name alone does
+not count: «أزرق» is how the wrong blue was printed.
+
+### The sheet (both apps)
+
+- **«عدد الألوان»** first: chips ١ · ٢ · ٣ · ٤ · أكثر. Picking ٢ makes two slots.
+- **Every slot must have its colour.** A blank slot used to be dropped silently, which is how a
+  two-colour design left with one. Now «حفظ» refuses, rings the empty slots in red and says
+  «اختر لوناً لكل خانة — اللون 2». An untouched sheet still saves "no colours" where colours are
+  optional; with `required: true` it does not.
+- **«ألوان أساسية»** above the picker: أبيض `#FFFFFF`, أسود `#000000`, أزرق `#0057B8`, أخضر
+  `#009A44`, أصفر `#FFD100`, أحمر `#E4002B`, ذهبي `#C9A227` (`print_color_presets.dart`). A tap
+  fills the swatch, and the name unless somebody typed their own. Gold is drawn as a gradient
+  because no flat swatch shows a metallic ink; the stored value is still one hex. The manual
+  picker («أو حدّد اللون يدوياً») and the hex box stay under them.
+
+### The rule, server side (`GuardPrintColors`)
+
+| Moment | Rule | Refusal |
+| --- | --- | --- |
+| `POST /orders` (`CreateOrder`) | a non-rejected design on the order, each with complete colours — unless `design_source` is `in_house` and no design is attached yet (its colours are asked for on the design ticket, §10) | `PrintOrderNeedsADesign` (`design_ids`), `PrintOrderNeedsColors` (`print_colors`, names the design) |
+| «بانتظار المراجعة» → «جديدة» (accepting a customer's request) | the same | the same |
+| Every move into «قيد الطباعة» | the version the press prints (`Order::designForPress()`: approved, else newest not rejected) has complete colours | the same, worded «قبل الانتقال إلى «قيد الطباعة»» |
+
+The creation check binds only on the clerk's door (an order born «جديدة»). A customer's request is
+**not** refused at checkout: older installs would lose the checkout. It is refused at acceptance
+instead, and the new customer app asks for the colours up front. An order the customer app opens
+straight into «انتظار العربون» is never accepted, so it meets the rule at the press only. The
+press gate is also what catches orders taken before the rule. Existing orders are otherwise left
+alone, and edits are not re-checked: the press gate covers them.
+
+**Colours typed in the new-order form** travel as
+`design_colors: [{design_id, print_colors: [...]}]` (`StoreOrderRequest`; only for designs also in
+`design_ids`; every colour needs `hex` or `code`). `CreateOrder` writes them to the library design
+when its own list is not complete (`CustomerService::fillDesignColorsIfIncomplete`, which refreshes
+open orders like any library edit); a design whose library colours are complete keeps them, and
+only this order's copy takes the typed list. Anybody who may take the order may set them; the old
+`customers.manage` gate on that button is gone, because a clerk who could not set colours could
+not take a print order.
+
+### The apps
+
+- **Staff, «طلبية جديدة»:** on a print order the picker shows under every source (under «بدون
+  تصميم» it means a reprint). Each chosen design is outlined in red with «مطلوب: ألوان الطباعة» and
+  a full «تحديد ألوان الطباعة» button until its colours are complete; «إنشاء الطلبية» stays shut
+  (`printArtworkIsReady`, `linesPrintHere` in `print_artwork.dart`). Under «من عندنا» with no
+  design the form says the colours go on the design ticket. Colours are held in the form and sent
+  with the order; nothing is written if the form is abandoned.
+- **Staff, the order's «التصاميم»:** on a print order that still takes artwork, a version without
+  complete colours says «مطلوب: ألوان الطباعة — لا تنتقل الطلبية إلى «قيد الطباعة» دونها», and the
+  sheet there is `required`.
+- **Customer, «سلتك»:** a chosen design without colours shows «حدّد ألوان الطباعة لهذا التصميم»
+  and «تحديد ألوان الطباعة», which saves to the library through `PUT client/designs/{id}/colors`;
+  «إرسال» stays shut until every chosen design has them (`designsMissingColors`).
+
+## 10 · «تصميم طلبية» — a design ticket opened from the order (owner, 2026-11-11)
+
+- **Where:** the order's «إضافة تذكرة» offers «تذكرة تصميم» beside «تذكرة داخلية» to somebody
+  with `design_tickets.manage`, while the order still takes artwork (`designs_are_editable`).
+  Otherwise it opens the internal ticket straight away, as before.
+- **The form** (`DesignTicketForOrder`): customer and order locked, the chip «تصميم طلبية #N»,
+  the title «تصميم طلبية N», the brief started with the order's lines, and the colours required
+  when the order is printed here.
+- **The kind is read off `order_id`**, so there is no new column. The chip shows on the ticket
+  list, the ticket (tapping it opens the order) and the form.
+- **No status move.** The owner pointed out that «جديدة» cannot reach «قيد التصميم» on the
+  standard road (New → «جاهزة للطباعة» → «قيد التصميم» → «قيد الطباعة»): the warehouse weighs the
+  goods at «جاهزة للطباعة». Staff move the order as they always did.
+- **Server:** `CreateDesignTicket` refuses an order that no longer takes artwork, and on a print
+  order refuses a brief without complete colours; `SubmitDesignVersion` refuses a version without
+  complete colours (its own, else the brief's) on such a ticket. `DesignTicketResource` sends
+  `print_colors_required` so the designer's sheet is `required`.
+- **The press gate:** an order cannot move into «قيد الطباعة» (or «قيد التصنيع» on the وسيط road)
+  while a linked design ticket is open.
+
+## 11 · Approval puts the design on the order (owner, 2026-11-11)
+
+Reverses DESIGN-TICKETS-DESIGN.md §12 Q5 («via a checkbox»).
+
+- Approving the final version of a ticket linked to an order promotes it to the library as before,
+  and **in the same transaction adds it to the order as a new version with status «معتمد»**
+  (owner's choice; one line in `AttachApprovedTicketDesigns` if it changes), with the approved
+  version's colours (else the brief's).
+- **If the order does not take artwork at that moment** — «نواقص» — approval still succeeds, and
+  the design is added the moment the order arrives in a status that does (`ChangeOrderStatus`).
+  A cancelled or closed order gets nothing. This replaces the one-tap button the plan proposed:
+  automatic is the same result with nothing for anybody to forget.
+- The §10 gate keeps the order from reaching the press while the ticket is open, so the
+  attachment cannot be missed on the way there.
+
+## 12 · The colours are answered on the move itself (owner, 2026-11-11)
+
+The press refused an order without colours, but the move screen offered no way to give them, so
+staff had to back out to «تعديل الطلبية». Now the move into «قيد الطباعة» asks:
+
+- **`print_colors_input`** (`TransitionFieldType::PrintColorsInput`, key `press_colors`) replaces
+  the read-only reminder whenever the version the press will print has incomplete colours, or
+  there is no version yet. `colors` carries what the version has, so the sheet opens on it.
+- **Required** when a version exists; **optional** when there is none, because a design picked
+  under «التصاميم» in the same move may bring complete colours of its own.
+- The answer goes in the colours shape and every colour needs `hex` or `code`.
+  `ChangeOrderStatus::applyPressColors()` writes it onto the press version, after any artwork the
+  move attached, before the status is written; then `GuardPrintColors::forPress()` judges. Only
+  the order's copy changes, as on «تعديل الطلبية».
+- A version with complete colours still gets the read-only reminder.
+- **Older staff apps** cannot draw the new kind, so they cannot make that move; they still reach
+  the colours through «تعديل الطلبية».
+- **Staff app:** `_PrintColorsAnswer` in `transition_field_input.dart`, outlined in red with
+  «مطلوب» until complete; the move's send button stays shut until it is (`OrderStatusState.canSubmit`).

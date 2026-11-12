@@ -32,6 +32,7 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/views/add_customer_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_detail_page.dart';
+import 'package:dayaa/features/design_tickets/models/design_ticket_for_order.dart';
 import 'package:dayaa/features/design_tickets/models/design_tickets_filter.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_detail_page.dart';
 import 'package:dayaa/features/design_tickets/presentation/views/design_ticket_form_page.dart';
@@ -1209,12 +1210,15 @@ abstract final class AppRouter {
             : Routes.designTickets,
         // The customer arrives as `extra`; there is no customer picker on the form, because a
         // ticket is always raised from a customer's own screen.
-        builder: (context, state) {
-          final customer = state.payload;
-
-          return customer is Customer
-              ? DesignTicketFormPage(customer: customer)
-              : const _UnknownDesignTicket();
+        // Or, from inside an order, a `DesignTicketForOrder` carrying the customer and the order
+        // the ticket is linked to (PRINT-COLORS.md §10).
+        builder: (context, state) => switch (state.payload) {
+          final DesignTicketForOrder forOrder => DesignTicketFormPage(
+            customer: forOrder.customer,
+            forOrder: forOrder,
+          ),
+          final Customer customer => DesignTicketFormPage(customer: customer),
+          _ => const _UnknownDesignTicket(),
         },
       ),
       GoRoute(

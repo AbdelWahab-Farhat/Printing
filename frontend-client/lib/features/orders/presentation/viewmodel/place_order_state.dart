@@ -121,9 +121,23 @@ extension PlaceOrderStateX on PlaceOrderState {
       lines.isNotEmpty &&
           cityId != null &&
           (!(selectedCity?.needsRegion ?? false) || regionId != null) &&
+          chosenDesignsHaveColors &&
           (step != CheckoutStep.deposit || depositIsReady),
     _ => false,
   };
+
+  /// The chosen designs that still need their colours (PRINT-COLORS.md §9): none, or one without
+  /// its swatch. Our team cannot accept the request until they are set, so they are asked for here.
+  List<CustomerDesign> get designsMissingColors => switch (this) {
+    PlaceOrderReady(:final designs, :final designIds) => [
+      for (final design in designs)
+        if (designIds.contains(design.id) && !PrintColor.listIsComplete(design.printColors))
+          design,
+    ],
+    _ => const [],
+  };
+
+  bool get chosenDesignsHaveColors => designsMissingColors.isEmpty;
 
   /// العربون الذي يعرضه الخادم لهذه السلة، أو `null` حين لا خطوة عربون.
   DepositOffer? get depositOffer => switch (quote?.deposit) {

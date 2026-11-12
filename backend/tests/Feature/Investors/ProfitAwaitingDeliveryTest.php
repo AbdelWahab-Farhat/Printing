@@ -33,6 +33,7 @@ use App\Domain\PurchaseOrder\Models\PurchaseOrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -52,6 +53,7 @@ use Tests\TestCase;
  */
 class ProfitAwaitingDeliveryTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -216,6 +218,9 @@ class ProfitAwaitingDeliveryTest extends TestCase
     private function toReady(array $headers, Order $order, Warehouse $warehouse): void
     {
         $this->toThePress($headers, $order, $warehouse);
+
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
 
         foreach ([OrderStatus::Printing, OrderStatus::Ready] as $status) {
             $this->withHeaders($headers)->postJson(

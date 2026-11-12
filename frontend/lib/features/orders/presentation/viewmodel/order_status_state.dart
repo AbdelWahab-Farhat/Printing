@@ -75,6 +75,7 @@ sealed class OrderStatusState with _$OrderStatusState {
   static bool _showsErrors(TransitionFieldType type) => switch (type) {
     TransitionFieldType.text ||
     TransitionFieldType.number ||
+    TransitionFieldType.printColorsInput ||
     TransitionFieldType.treasuryAccount => true,
     _ => false,
   };
@@ -96,6 +97,8 @@ sealed class OrderStatusState with _$OrderStatusState {
         .every((field) => switch (values[field.key]) {
           null => false,
           final String text => text.trim().isNotEmpty,
+          // A colour named without its swatch is not an answer the press can use (§9).
+          final List<PrintColor> colors => PrintColor.listIsComplete(colors),
           final Iterable<Object?> many => many.isNotEmpty,
           _ => true,
         });

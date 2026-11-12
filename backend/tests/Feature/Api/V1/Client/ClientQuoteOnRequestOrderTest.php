@@ -18,6 +18,7 @@ use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -44,6 +45,7 @@ use Tests\TestCase;
  */
 class ClientQuoteOnRequestOrderTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -256,6 +258,8 @@ class ClientQuoteOnRequestOrderTest extends TestCase
         $order = Order::query()->with('items')->sole();
         $item = $order->items->first();
         $headers = $this->staff(PermissionName::ManageOrders, PermissionName::ViewOrders);
+        // Accepting needs the artwork and its colours too (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
 
         // Act — the reviewer names 2.500 a piece for a hundred.
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -286,6 +290,8 @@ class ClientQuoteOnRequestOrderTest extends TestCase
             ->assertCreated();
 
         $order = Order::query()->with('items')->sole();
+        // Accepting needs the artwork and its colours too (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
 
         $this->withHeaders($this->staff(PermissionName::ManageOrders, PermissionName::ViewOrders))
             ->postJson("/api/v1/orders/{$order->id}/status", [

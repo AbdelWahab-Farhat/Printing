@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\DesignTicket\Actions;
 
 use App\Domain\Customer\CustomerService;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\DesignTicket\DTOs\DesignTicketData;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Events\DesignTicketAssigned;
+use App\Domain\DesignTicket\Exceptions\DesignTicketNeedsPrintColors;
 use App\Domain\DesignTicket\Exceptions\DesignTicketOrderBelongsToAnotherCustomer;
+use App\Domain\DesignTicket\Exceptions\DesignTicketOrderTakesNoArtwork;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
@@ -61,6 +64,16 @@ final class CreateDesignTicket
                     (int) $order->getKey(),
                     (int) $customer->getKey(),
                 );
+            }
+
+            // «تصميم طلبية» (PRINT-COLORS.md §10–§11): approval puts the design on the order, so
+            // the order must still take artwork, and a print order needs the colours asked for.
+            if (! $order->designsAreEditable()) {
+                throw DesignTicketOrderTakesNoArtwork::make((string) $order->code, $order->status->label());
+            }
+
+            if ($order->isPrintedHere() && ! PrintColors::isComplete($data->printColors)) {
+                throw DesignTicketNeedsPrintColors::make();
             }
         }
 

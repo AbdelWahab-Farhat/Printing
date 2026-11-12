@@ -17,6 +17,7 @@ use App\Domain\DesignTicket\Models\DesignTicketFile;
 use App\Domain\EmployeeWallet\EmployeeWalletService;
 use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\AttachApprovedTicketDesigns;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,6 +53,7 @@ final class ReviewDesignVersion
     public function __construct(
         private readonly PromoteApprovedDesign $promote,
         private readonly EmployeeWalletService $wallet,
+        private readonly AttachApprovedTicketDesigns $attachToOrder,
     ) {}
 
     /**
@@ -132,6 +134,15 @@ final class ReviewDesignVersion
 
             if ($verdict === DesignSubmissionStatus::Approved) {
                 $this->pay($ticket, $version, $actor);
+
+                // «تصميم طلبية»: the approved design goes onto its order in the same transaction,
+                // approved there too (PRINT-COLORS.md §11). An order that does not take artwork
+                // right now gets it when it next does; an archived one gets nothing.
+                $order = $ticket->order_id === null ? null : $ticket->order()->first();
+
+                if ($order !== null && ! $order->trashed()) {
+                    ($this->attachToOrder)($order, $actor);
+                }
             }
 
             DesignTicketProgressed::dispatch(

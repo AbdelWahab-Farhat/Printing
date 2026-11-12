@@ -20,6 +20,7 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -30,6 +31,7 @@ use Tests\TestCase;
  */
 class ProductionCostTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -71,6 +73,9 @@ class ProductionCostTest extends TestCase
      */
     private function enterReady(array $headers, Order $order, Warehouse $warehouse): void
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this tests.
+        $this->givePrintableArtwork($order);
+
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -389,6 +394,7 @@ class ProductionCostTest extends TestCase
             'pricing_unit' => PricingUnit::Piece,
             'quantity' => '300',
         ]);
+        $this->givePrintableArtwork($order);
 
         // Act — the weight is read off the scale at the handover, which is the only place a line
         // whose units differ can get one.

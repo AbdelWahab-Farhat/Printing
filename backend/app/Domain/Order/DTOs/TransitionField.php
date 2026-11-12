@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\DTOs;
 
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\TransitionFieldType;
 use App\Domain\Order\Support\TransitionFields;
@@ -113,6 +114,24 @@ final class TransitionField
             type: TransitionFieldType::PrintColors,
             label: $label,
             required: false,
+            hint: $hint,
+            colors: $colors,
+        );
+    }
+
+    /**
+     * «ألوان الطباعة» asked on the move into the press — {@see TransitionFieldType::PrintColorsInput}.
+     * [$colors] is what the sheet opens on: the version's own list, however incomplete.
+     *
+     * @param  list<array{name: string, code: string|null, hex: string|null}>  $colors
+     */
+    public static function printColorsInput(string $key, string $label, string $hint, array $colors, bool $required = true): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::PrintColorsInput,
+            label: $label,
+            required: $required,
             hint: $hint,
             colors: $colors,
         );
@@ -444,7 +463,9 @@ final class TransitionField
             // When a confirmation is asked — `{key, above}` — and null on everything else.
             'confirm_when' => $this->confirmWhen,
             // On the print-colors reminder alone, so no other field in the bag grows a key.
-            ...($this->type === TransitionFieldType::PrintColors ? ['colors' => $this->colors] : []),
+            ...(in_array($this->type, [TransitionFieldType::PrintColors, TransitionFieldType::PrintColorsInput], true)
+                ? ['colors' => $this->colors]
+                : []),
         ];
     }
 
@@ -480,6 +501,20 @@ final class TransitionField
             // لا شيء: جملةٌ تُقرأ لا تُرسَل، فقاعدةٌ عليها قاعدةٌ على ما لا يصل.
             TransitionFieldType::Notice => [],
             TransitionFieldType::PrintColors => [],
+
+            // The colours shape, as every other colours endpoint takes it — and a colour carries
+            // its swatch or its press code, because a name alone is not a colour (§9).
+            TransitionFieldType::PrintColorsInput => [
+                "fields.{$this->key}" => [$presence, 'array', 'min:1', 'max:'.PrintColors::MAX],
+                "fields.{$this->key}.*.name" => ['required', 'string', 'max:'.PrintColors::NAME_MAX],
+                "fields.{$this->key}.*.code" => ['nullable', 'string', 'max:'.PrintColors::CODE_MAX],
+                "fields.{$this->key}.*.hex" => [
+                    'nullable',
+                    "required_without:fields.{$this->key}.*.code",
+                    'string',
+                    'regex:'.PrintColors::HEX_PATTERN,
+                ],
+            ],
 
             // A yes or nothing. What it permits is the domain's to decide, not this rule's.
             TransitionFieldType::Confirmation => [
@@ -582,6 +617,15 @@ final class TransitionField
             // لا رسائلَ لحقلٍ بلا قواعد — ولا يصل هنا إلا لأن الطلب يمشي على الحقول كلّها.
             TransitionFieldType::Notice => [],
             TransitionFieldType::PrintColors => [],
+
+            TransitionFieldType::PrintColorsInput => [
+                "fields.{$this->key}.required" => 'حدّد ألوان الطباعة قبل الانتقال إلى «قيد الطباعة»',
+                "fields.{$this->key}.min" => 'حدّد ألوان الطباعة قبل الانتقال إلى «قيد الطباعة»',
+                "fields.{$this->key}.max" => 'لا تزيد ألوان الطباعة على '.PrintColors::MAX,
+                "fields.{$this->key}.*.name.required" => 'اسم اللون مطلوب',
+                "fields.{$this->key}.*.hex.required_without" => 'اختر لون كل خانة',
+                "fields.{$this->key}.*.hex.regex" => 'لون العيّنة يجب أن يكون بصيغة #RRGGBB',
+            ],
 
             TransitionFieldType::CustomerDesigns => [
                 "fields.{$this->key}.required" => "{$this->label} مطلوبة",

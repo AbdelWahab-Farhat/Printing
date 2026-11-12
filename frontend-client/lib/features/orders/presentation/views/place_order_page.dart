@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/print_colors/print_colors_sheet.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
@@ -13,6 +14,7 @@ import 'package:dayaa_client/core/widgets/app_dropdown.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/core/widgets/product_thumbnail.dart';
 import 'package:dayaa_client/features/delivery/models/city.dart';
+import 'package:dayaa_client/features/designs/models/customer_design.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
 import 'package:dayaa_client/features/orders/models/order_draft.dart';
 import 'package:dayaa_client/features/orders/presentation/viewmodel/place_order_cubit.dart';
@@ -747,6 +749,10 @@ class _DetailsStep extends StatelessWidget {
           for (final design in state.designs)
             if (state.designIds.contains(design.id)) ...[
               DesignOptionRow(design: design, onTap: () => showDesignPicker(context)),
+              // **The colours are required** (PRINT-COLORS.md §9): our team cannot accept the
+              // request without them, so they are asked for here rather than after a call.
+              if (state.designsMissingColors.contains(design))
+                _MissingColors(design: design),
               SizedBox(height: 8.h),
             ],
           AppButton.tonal(
@@ -782,6 +788,57 @@ class _DetailsStep extends StatelessWidget {
 /// الخطوة الثالثة: كم يُدفع الآن، وكيف (صاحب العمل، 2026-10-19) — [DepositChooser]، الشكلُ نفسه الذي
 /// تُعرضه ورقة الطلبية المقبولة بعد المراجعة. **الإلكتروني يُشحن أولاً**، ولا تُرسل الطلبية إلا حين
 /// ينجح — انظر `_submit`.
+/// Under a chosen design that has no colours yet: what is missing, and the colours sheet that
+/// saves them to the customer's library. «إرسال» stays shut until every chosen design has them.
+class _MissingColors extends StatelessWidget {
+  const _MissingColors({required this.design});
+
+  final CustomerDesign design;
+
+  Future<void> _choose(BuildContext context) async {
+    final cubit = context.read<PlaceOrderCubit>();
+    final colors = await showPrintColorsSheet(
+      context: context,
+      initial: design.printColors,
+      required: true,
+    );
+    if (colors == null || !context.mounted) return;
+
+    final failure = await cubit.setDesignColors(design.id, colors);
+    if (failure != null && context.mounted) context.showFailure(failure);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final canChoose = context.read<PlaceOrderCubit>().canChooseColors;
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: 6.h, start: 4.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'حدّد ألوان الطباعة لهذا التصميم — كم لوناً، وما هو كل لون',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: scheme.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (canChoose) ...[
+            SizedBox(height: 6.h),
+            AppButton.tonal(
+              label: 'تحديد ألوان الطباعة',
+              icon: AppIcons.printColors,
+              onPressed: () => unawaited(_choose(context)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _DepositStep extends StatelessWidget {
   const _DepositStep({
     required this.state,

@@ -25,6 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -40,6 +41,7 @@ use Tests\TestCase;
  */
 class OrderTransitionFieldsTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -114,6 +116,12 @@ class OrderTransitionFieldsTest extends TestCase
 
     private function move(array $headers, Order $order, OrderStatus $to, array $payload = []): TestResponse
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this file tests.
+        // A move that brings its own artwork is left to bring it.
+        if ($to === OrderStatus::Printing && ! isset($payload['fields']['design_ids'])) {
+            $this->givePrintableArtwork($order);
+        }
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             ['status' => $to->value] + $payload,
@@ -318,7 +326,9 @@ class OrderTransitionFieldsTest extends TestCase
         // front of it: an agreed file goes on the order and the press starts, with no detour
         // through a status naming work nobody did. The warehouse is not named here — the stock
         // left at the handover, not on the way into printing.
-        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        // `press_colors` (PRINT-COLORS.md §12): asked beside the artwork, optional while there is
+        // no version yet — the file picked here may bring its own colours.
+        $this->assertSame(['design_ids', 'press_colors', 'reason'], array_column($printing['fields'], 'key'));
         $this->assertFalse($printing['fields'][0]['required']);
         $this->assertFalse($printing['fields'][1]['required']);
     }
@@ -335,7 +345,9 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — this is the move the finished artwork arrives with: «قيد التصميم» is the one
         // status that accepts a version, and this is the last moment the order stands in it.
-        $this->assertSame(['design_ids', 'reason'], array_column($printing['fields'], 'key'));
+        // `press_colors` (PRINT-COLORS.md §12): asked beside the artwork, optional while there is
+        // no version yet — the file picked here may bring its own colours.
+        $this->assertSame(['design_ids', 'press_colors', 'reason'], array_column($printing['fields'], 'key'));
         $this->assertFalse($printing['fields'][0]['required']);
     }
 
@@ -1147,7 +1159,7 @@ class OrderTransitionFieldsTest extends TestCase
         // to the press with the file in the same hand. Stock already left a warehouse for this
         // run, so the move is not asked for one and this test stays about the artwork.
         [$order, $customer] = $this->orderNeedingArtwork();
-        $design = CustomerDesign::factory()->for($customer)->create();
+        $design = CustomerDesign::factory()->for($customer)->printable()->create();
         $order->forceFill([
             'status' => OrderStatus::Designing,
             'stock_deducted_at' => now(),

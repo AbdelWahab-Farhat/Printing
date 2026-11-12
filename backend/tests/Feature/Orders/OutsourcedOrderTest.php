@@ -24,6 +24,7 @@ use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -41,6 +42,7 @@ use Tests\TestCase;
  */
 class OutsourcedOrderTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -119,8 +121,10 @@ class OutsourcedOrderTest extends TestCase
      */
     private function take(array $headers, ProductVariant $size, array $overrides = []): TestResponse
     {
+        $customerId = (int) Customer::factory()->create()->getKey();
+
         return $this->withHeaders($headers)->postJson('/api/v1/orders', array_merge([
-            'customer_id' => Customer::factory()->create()->getKey(),
+            'customer_id' => $customerId,
             'city_id' => City::factory()->create(['delivery_price' => '20.00'])->getKey(),
             'address_details' => 'شارع الجمهورية',
             'items' => [[
@@ -128,6 +132,9 @@ class OutsourcedOrderTest extends TestCase
                 'product_variant_id' => $size->getKey(),
                 'quantity' => '50',
             ]],
+            // A print order is taken with its artwork and colours (PRINT-COLORS.md §9); harmless
+            // on a وسيط one, which may carry artwork too.
+            'design_ids' => [$this->printableDesignId($customerId)],
         ], $overrides));
     }
 
@@ -137,6 +144,11 @@ class OutsourcedOrderTest extends TestCase
      */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this file tests.
+        if ($to === OrderStatus::Printing) {
+            $this->givePrintableArtwork($order);
+        }
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter(['status' => $to->value, 'fields' => $fields ?: null]),

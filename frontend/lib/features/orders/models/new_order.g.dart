@@ -19,6 +19,9 @@ _NewOrder _$NewOrderFromJson(Map<String, dynamic> json) => _NewOrder(
   designIds: (json['design_ids'] as List<dynamic>?)
       ?.map((e) => (e as num).toInt())
       .toList(),
+  designColors: (json['design_colors'] as List<dynamic>?)
+      ?.map((e) => e as Map<String, dynamic>)
+      .toList(),
   discount: json['discount'] as String?,
   additionalCost: json['additional_cost'] as String?,
   additionalCostReason: $enumDecodeNullable(
@@ -43,6 +46,7 @@ Map<String, dynamic> _$NewOrderToJson(_NewOrder instance) => <String, dynamic>{
   'region_id': ?instance.regionId,
   'design_fee': ?instance.designFee,
   'design_ids': ?instance.designIds,
+  'design_colors': ?instance.designColors,
   'discount': ?instance.discount,
   'additional_cost': ?instance.additionalCost,
   'additional_cost_reason':

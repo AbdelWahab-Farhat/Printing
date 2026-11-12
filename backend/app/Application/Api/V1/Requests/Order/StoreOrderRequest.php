@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Order;
 
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
@@ -55,6 +56,19 @@ class StoreOrderRequest extends FormRequest
             // `AddOrderDesign` is one insert per entry.
             'design_ids' => ['sometimes', 'array', 'max:50'],
             'design_ids.*' => ['integer', Rule::exists('customer_designs', 'id')->withoutTrashed()],
+
+            // The colours typed for each chosen design in the form (PRINT-COLORS.md §9). Only for
+            // a design that is also in `design_ids`; `CreateOrder` decides whether they fill the
+            // library or only this order's copy. Every colour carries its swatch or its press
+            // code, because a name alone is how the wrong shade was printed.
+            'design_colors' => ['sometimes', 'array', 'max:50'],
+            'design_colors.*.design_id' => ['required', 'integer', Rule::in($this->designIds())],
+            'design_colors.*.print_colors' => ['required', 'array', 'min:1', 'max:'.PrintColors::MAX],
+            'design_colors.*.print_colors.*.name' => ['required', 'string', 'max:'.PrintColors::NAME_MAX],
+            'design_colors.*.print_colors.*.code' => ['nullable', 'string', 'max:'.PrintColors::CODE_MAX],
+            'design_colors.*.print_colors.*.hex' => [
+                'nullable', 'required_without:design_colors.*.print_colors.*.code', 'string', 'regex:'.PrintColors::HEX_PATTERN,
+            ],
 
             // Guarded by `orders.discount` inside the domain, so a console command or a future
             // import cannot get past it either.
@@ -158,11 +172,32 @@ class StoreOrderRequest extends FormRequest
     }
 
     /**
+     * The design ids sent with the order, for `design_colors.*.design_id`.
+     *
+     * @return list<int>
+     */
+    protected function designIds(): array
+    {
+        $ids = $this->input('design_ids');
+
+        return is_array($ids)
+            ? array_values(array_map(intval(...), array_filter($ids, is_numeric(...))))
+            : [];
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array
     {
         return [
+            'design_colors.*.design_id.in' => 'ألوانٌ لتصميمٍ لم يُختر في الطلبية',
+            'design_colors.*.print_colors.required' => 'حدّد ألوان الطباعة للتصميم',
+            'design_colors.*.print_colors.min' => 'حدّد ألوان الطباعة للتصميم',
+            'design_colors.*.print_colors.max' => 'لا تزيد ألوان الطباعة على :max',
+            'design_colors.*.print_colors.*.name.required' => 'اسم اللون مطلوب',
+            'design_colors.*.print_colors.*.hex.required_without' => 'اختر اللون',
+            'design_colors.*.print_colors.*.hex.regex' => 'لون العيّنة يجب أن يكون بصيغة #RRGGBB',
             'customer_id.required' => 'العميل مطلوب',
             'customer_id.exists' => 'العميل غير موجود',
             'city_id.required' => 'مدينة التوصيل مطلوبة',

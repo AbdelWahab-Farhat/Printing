@@ -42,6 +42,19 @@ class CustomerDesignFactory extends Factory
         ];
     }
 
+    /**
+     * A design a print order may be taken with: every colour carries its swatch
+     * (PRINT-COLORS.md §9).
+     */
+    public function printable(): static
+    {
+        return $this->state(fn () => [
+            'print_colors' => [
+                ['name' => 'أسود', 'code' => null, 'hex' => '#000000'],
+            ],
+        ]);
+    }
+
     public function pdf(): static
     {
         return $this->state(fn () => [

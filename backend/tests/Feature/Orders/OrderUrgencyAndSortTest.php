@@ -16,6 +16,7 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -34,6 +35,7 @@ use Tests\TestCase;
  */
 class OrderUrgencyAndSortTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -94,8 +96,10 @@ class OrderUrgencyAndSortTest extends TestCase
             'unit_price' => '1.100',
         ]);
 
+        $customerId = (int) Customer::factory()->create()->getKey();
+
         return array_merge([
-            'customer_id' => Customer::factory()->create()->getKey(),
+            'customer_id' => $customerId,
             'city_id' => City::factory()->create(['delivery_price' => '20.00'])->getKey(),
             'address_details' => 'شارع الجمهورية',
             'items' => [[
@@ -103,6 +107,8 @@ class OrderUrgencyAndSortTest extends TestCase
                 'product_variant_id' => $variant->getKey(),
                 'quantity' => '300',
             ]],
+            // A print order is taken with its artwork and colours (PRINT-COLORS.md §9).
+            'design_ids' => [$this->printableDesignId($customerId)],
         ], $overrides);
     }
 

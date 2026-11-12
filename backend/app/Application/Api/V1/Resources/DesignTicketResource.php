@@ -83,6 +83,13 @@ class DesignTicketResource extends JsonResource
             'customer_code' => $this->whenLoaded('customer', fn (): ?string => $this->customer?->code),
 
             'order_id' => $this->order_id,
+
+            // «تصميم طلبية» for a print order: the designer's colours sheet is mandatory
+            // (PRINT-COLORS.md §10). Only where the order was loaded, like the key below.
+            'print_colors_required' => $this->whenLoaded(
+                'order',
+                fn (): bool => $this->order !== null && $this->order->isPrintedHere(),
+            ),
             'order' => $this->whenLoaded('order', fn (): ?array => $this->order === null ? null : [
                 'id' => $this->order->id,
                 'code' => $this->order->code,

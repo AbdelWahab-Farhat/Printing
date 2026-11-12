@@ -161,4 +161,36 @@ void main() {
     expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     await clear(tester);
   });
+
+  testWidgets('a toast swiped away leaves at once, without throwing', (tester) async {
+    // Arrange — the swipe animates the card off screen itself; sliding it out a second time
+    // rebuilt a dismissed `Dismissible` on every frame and painted the screen red.
+    await tester.pumpWidget(host());
+    ctx.showError('حدّد ألوان الطباعة');
+    await tester.pumpAndSettle();
+
+    // Act — past the swipe and the shrink that follows it (300 ms), into the window where the
+    // old code was still sliding the toast out.
+    await tester.fling(find.text('حدّد ألوان الطباعة'), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // On a phone something rebuilds the toast in that window — the keyboard, a route — and each
+    // rebuild of a dismissed card threw. Forced here, wherever a card is still standing.
+    for (final element in find.byType(Dismissible).evaluate()) {
+      element.markNeedsBuild();
+    }
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Dismissible), findsNothing);
+    await tester.pumpAndSettle();
+
+    // Assert — gone, nothing thrown, and the next message still shows.
+    expect(tester.takeException(), isNull);
+    expect(find.text('حدّد ألوان الطباعة'), findsNothing);
+    ctx.showSuccess('تم الحفظ');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('تم الحفظ'), findsOneWidget);
+    await clear(tester);
+  });
 }

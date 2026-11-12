@@ -7,6 +7,7 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\Exceptions\CustomerIsInactive;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
+use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
@@ -16,6 +17,8 @@ use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
 use App\Domain\Order\Exceptions\OutsourcedLineCannotShareAnOrder;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
+use App\Domain\Order\Exceptions\PrintOrderNeedsADesign;
+use App\Domain\Order\Exceptions\PrintOrderNeedsColors;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
 use App\Domain\Vendor\VendorService;
@@ -44,7 +47,39 @@ final class CreateOrder
         // module's front door.
         private readonly VendorService $vendors,
         private readonly GuardOneBench $guardOneBench,
+        private readonly GuardPrintColors $guardPrintColors,
+        private readonly UpdateOrderDesignColors $updateDesignColors,
     ) {}
+
+    /**
+     * One chosen design, with the colours the clerk typed for it in the form, if any.
+     *
+     * The colours fill the library design when it has none worth keeping, so the next order
+     * starts with them, and the copy is taken from it. A design whose library colours are already
+     * complete keeps them, and only this order's copy takes the typed list («هالمرة بالأزرق»).
+     *
+     * @param  array<int, array<string, mixed>>|null  $colors
+     */
+    private function attachDesign(Order $order, int $designId, ?array $colors): void
+    {
+        if ($colors !== null) {
+            $design = $this->customers->findDesign($designId);
+
+            // Ownership is AddOrderDesign's refusal to make; writing another customer's library
+            // first would leave the write behind if anything but a rollback followed.
+            if ((int) $design->customer_id === (int) $order->customer_id) {
+                $this->customers->fillDesignColorsIfIncomplete($design, $colors);
+            }
+        }
+
+        $version = ($this->addDesign)($order, $designId);
+
+        $typed = $colors === null ? null : PrintColors::normalise($colors);
+
+        if ($typed !== null && $version->print_colors !== $typed) {
+            ($this->updateDesignColors)($order, $version, $typed);
+        }
+    }
 
     /**
      * [$initialStatus] is the door this order came through, and the only caller that passes
@@ -58,6 +93,8 @@ final class CreateOrder
      * @throws ShopDoesNotBelongToCustomer
      * @throws OutsourcedOrderNeedsAVendor
      * @throws OutsourcedLineCannotShareAnOrder
+     * @throws PrintOrderNeedsADesign
+     * @throws PrintOrderNeedsColors
      */
     public function __invoke(
         OrderData $data,
@@ -163,7 +200,7 @@ final class CreateOrder
             // only be recorded by walking the order through the designer's queue for work
             // nobody was doing.
             foreach ($data->designIds as $designId) {
-                ($this->addDesign)($order, $designId);
+                $this->attachDesign($order, $designId, $data->designColors[$designId] ?? null);
             }
 
             ($this->recalculate)($order->load('items'));
@@ -205,6 +242,15 @@ final class CreateOrder
                 && $order->production_flow->needsAVendor()
                 && $order->vendor_id === null) {
                 throw OutsourcedOrderNeedsAVendor::make();
+            }
+
+            // **No print order without its colours** (PRINT-COLORS.md §9). After the road is
+            // resolved, because only the standard road reaches our press. Only on the clerk's
+            // door («جديدة»): the customer app's orders — a request, or one born waiting on its
+            // deposit — must not lose their checkout over it. A request meets the rule when it is
+            // accepted, and every order meets it again on the way into «قيد الطباعة».
+            if ($initialStatus === OrderStatus::New) {
+                $this->guardPrintColors->forIntake($order);
             }
 
             // `from` is null exactly once per order, which is what makes "when was this taken"

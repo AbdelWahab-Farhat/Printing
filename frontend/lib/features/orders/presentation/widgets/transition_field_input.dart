@@ -1,6 +1,8 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/attachment_picker.dart';
 import 'package:dayaa/core/files/picked_file.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_sheet.dart';
 import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
@@ -73,6 +75,12 @@ class TransitionFieldInput extends StatelessWidget {
       ),
       TransitionFieldType.notice => _Notice(field: field),
       TransitionFieldType.printColors => _PrintColorsReminder(field: field),
+      TransitionFieldType.printColorsInput => _PrintColorsAnswer(
+        field: field,
+        colors: value is List<PrintColor> ? value! as List<PrintColor> : const [],
+        errorText: errorText,
+        onChanged: onChanged,
+      ),
       TransitionFieldType.number => _Number(
         field: field,
         value: value is String ? value! as String : '',
@@ -811,6 +819,101 @@ class _PrintColorsReminder extends StatelessWidget {
             SizedBox(height: 10.h),
             Text(hint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// «ألوان الطباعة» answered on the move into the press (PRINT-COLORS.md §12): asked here because
+/// the move is refused without them, so the person at the press sets them without leaving the
+/// screen. The same sheet as everywhere else — basic inks, «عدد الألوان», every slot filled.
+/// Outlined in red while a required answer is missing or incomplete.
+class _PrintColorsAnswer extends StatelessWidget {
+  const _PrintColorsAnswer({
+    required this.field,
+    required this.colors,
+    required this.errorText,
+    required this.onChanged,
+  });
+
+  final TransitionField field;
+  final List<PrintColor> colors;
+  final String? errorText;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _edit(BuildContext context) async {
+    final edited = await showPrintColorsSheet(
+      context: context,
+      initial: colors.isNotEmpty ? colors : field.colors,
+      required: field.isRequired,
+      confirmLabel: 'اعتماد الألوان',
+    );
+
+    if (edited != null) onChanged(edited.isEmpty ? null : edited);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final text = context.textTheme;
+    final complete = PrintColor.listIsComplete(colors);
+    final missing = field.isRequired && !complete;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: missing ? scheme.error : scheme.outlineVariant,
+          width: missing ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(AppIcons.printColors, size: 18.r, color: scheme.primary),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  field.isRequired ? field.label : '${field.label} (إن لم تكن على التصميم)',
+                  style: text.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          if (colors.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            PrintColorsView(colors: colors),
+          ],
+          if (field.hint case final hint? when hint.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(hint, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ],
+          if (missing) ...[
+            SizedBox(height: 8.h),
+            Text(
+              colors.isEmpty
+                  ? 'مطلوب: لا تنتقل الطلبية إلى «قيد الطباعة» دون ألوانها'
+                  : 'مطلوب: لونٌ بلا عيّنة — اختر لون كل خانة',
+              style: text.bodySmall?.copyWith(color: scheme.error, fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (errorText case final error?) ...[
+            SizedBox(height: 6.h),
+            Text(error, style: text.bodySmall?.copyWith(color: scheme.error)),
+          ],
+          SizedBox(height: 10.h),
+          AppButton.tonal(
+            label: colors.isEmpty ? 'تحديد ألوان الطباعة' : 'تعديل الألوان',
+            icon: AppIcons.printColors,
+            onPressed: () => _edit(context),
+          ),
         ],
       ),
     );

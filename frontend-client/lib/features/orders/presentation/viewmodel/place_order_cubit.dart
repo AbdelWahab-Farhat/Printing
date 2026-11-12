@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dayaa_client/core/error/failure.dart';
+import 'package:dayaa_client/core/print_colors/print_color.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/utils/uuid.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
@@ -8,6 +9,7 @@ import 'package:dayaa_client/features/auth/usecases/get_current_customer.dart';
 import 'package:dayaa_client/features/delivery/models/city.dart';
 import 'package:dayaa_client/features/delivery/usecases/list_cities.dart';
 import 'package:dayaa_client/features/designs/models/customer_design.dart';
+import 'package:dayaa_client/features/designs/usecases/choose_design_colors.dart';
 import 'package:dayaa_client/features/designs/usecases/list_designs.dart';
 import 'package:dayaa_client/features/orders/models/basket_quote.dart';
 import 'package:dayaa_client/features/orders/models/customer_order.dart';
@@ -55,7 +57,9 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
     required CartCubit cart,
     GetWalletBalance? walletBalance,
     GetTopUpMethods? topUpMethods,
-  }) : _cities = cities,
+    ChooseDesignColors? chooseColors,
+  }) : _chooseColors = chooseColors,
+       _cities = cities,
        _designs = designs,
        _shops = shops,
        _customer = customer,
@@ -80,6 +84,13 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
   /// خيارا «من المحفظة» و«دفع إلكتروني» في خطوة العربون. **بدونهما لا يُعرضان**، ويبقى المكتب.
   final GetWalletBalance? _walletBalance;
   final GetTopUpMethods? _topUpMethods;
+
+  /// Saves the colours of a chosen design to the customer's library. Without it the button is
+  /// not offered and a chosen design without colours keeps «إرسال» shut.
+  final ChooseDesignColors? _chooseColors;
+
+  /// Whether this screen can set a design's colours.
+  bool get canChooseColors => _chooseColors != null;
 
   /// مفتاح دفعة المحفظة حتى تنجح: إرسالٌ انقطع بعد أن دفع الخادم يُعاد بالمفتاح نفسه فلا يدفع ثانية.
   String? _depositToken;
@@ -339,6 +350,33 @@ class PlaceOrderCubit extends Cubit<PlaceOrderState> {
             : [...ready.designIds, designId],
       ),
     );
+  }
+
+  /// «ألوان الطباعة» for a chosen design, saved to the customer's library like on «تصاميمي», and
+  /// put back into the list so the row and «إرسال» see them at once. Returns the failure, if any,
+  /// for the page to say; a list our team has confirmed refuses the change (PRINT-COLORS.md §8).
+  Future<Failure?> setDesignColors(int designId, List<PrintColor> colors) async {
+    final choose = _chooseColors;
+    if (choose == null || _ready == null) return null;
+
+    final result = await choose(id: designId, colors: colors);
+    if (isClosed) return null;
+
+    return result.fold((failure) => failure, (saved) {
+      final ready = _ready;
+      if (ready != null) {
+        emit(
+          ready.copyWith(
+            designs: [
+              for (final design in ready.designs)
+                if (design.id == saved.id) saved else design,
+            ],
+          ),
+        );
+      }
+
+      return null;
+    });
   }
 
   void removeLineAt(int index) {

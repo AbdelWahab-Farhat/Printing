@@ -17,6 +17,7 @@ use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ use Tests\TestCase;
  */
 class OrderReinstatementTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     private ?Warehouse $warehouse = null;
@@ -87,6 +89,11 @@ class OrderReinstatementTest extends TestCase
      */
     private function move(array $headers, Order $order, OrderStatus $to, ?string $reason = null, array $fields = []): TestResponse
     {
+        // The press refuses an order without colours (PRINT-COLORS.md §9); not what this file tests.
+        if ($to === OrderStatus::Printing) {
+            $this->givePrintableArtwork($order);
+        }
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter([

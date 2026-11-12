@@ -18,11 +18,20 @@ class PrintColorsField extends StatelessWidget {
   const PrintColorsField({
     required this.colors,
     required this.onChanged,
+    this.required = false,
+    this.errorText,
     super.key,
   });
 
   final List<PrintColor> colors;
   final ValueChanged<List<PrintColor>> onChanged;
+
+  /// Colours are mandatory here (PRINT-COLORS.md §9): the heading says so and the sheet refuses
+  /// an empty list.
+  final bool required;
+
+  /// Said under the chips, in the error colour — the form's refusal to save without them.
+  final String? errorText;
 
   Future<void> _open(BuildContext context, {int? selected}) async {
     final edited = await showPrintColorsSheet(
@@ -30,6 +39,7 @@ class PrintColorsField extends StatelessWidget {
       initial: colors,
       selected: selected,
       addNew: selected == null,
+      required: required,
     );
     if (edited == null) return;
 
@@ -49,7 +59,7 @@ class PrintColorsField extends StatelessWidget {
             Icon(AppIcons.printColors, size: 18.r, color: scheme.primary),
             SizedBox(width: 6.w),
             Text(
-              'ألوان الطباعة',
+              required ? 'ألوان الطباعة (مطلوبة)' : 'ألوان الطباعة',
               style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
@@ -82,6 +92,10 @@ class PrintColorsField extends StatelessWidget {
               ),
           ],
         ),
+        if (errorText case final error?) ...[
+          SizedBox(height: 6.h),
+          Text(error, style: text.bodySmall?.copyWith(color: scheme.error)),
+        ],
       ],
     );
   }

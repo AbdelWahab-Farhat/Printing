@@ -1,6 +1,7 @@
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/permissions/app_permission.dart';
-import 'package:dayaa/core/print_colors/print_colors_editor.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/core/print_colors/print_colors_sheet.dart';
 import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
@@ -14,9 +15,9 @@ import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
-import 'package:dayaa/features/customers/usecases/set_customer_design_colors.dart';
 import 'package:dayaa/features/orders/models/default_destination.dart';
 import 'package:dayaa/features/orders/models/one_bench.dart';
+import 'package:dayaa/features/orders/models/print_artwork.dart';
 import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
@@ -158,9 +159,29 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// is not thereby allowed to take money off an invoice.
   bool get _mayCharge => sl<Session>().can(AppPermission.addOrderAdditionalCost);
 
-  /// «ألوان الطباعة» تُكتب على تصميم العميل نفسه، فتعديلُها تعديلٌ للعميل — الإذنُ نفسه الذي يرفع
-  /// به التصميم من المنتقي.
-  bool get _mayColorDesigns => sl<Session>().can(AppPermission.manageCustomers);
+  /// Colours typed here for a chosen design, by library design id. Sent with the order; the
+  /// server fills an uncoloured library design with them, or keeps them on this order's copy
+  /// only (PRINT-COLORS.md §9). Anybody taking the order may type them.
+  final Map<int, List<PrintColor>> _typedColors = {};
+
+  /// The colours this order will carry for [design]: what was typed here, else the library's.
+  List<PrintColor> _colorsOf(CustomerDesign design) =>
+      _typedColors[design.id] ?? design.printColors;
+
+  /// Whether a line goes through our press. A print order must carry a design with its colours.
+  /// See [linesPrintHere].
+  bool get _printsHere => linesPrintHere([for (final line in _lines) line.product]);
+
+  /// Whether the design picker is on screen: under «تصميم العميل» and «من عندنا», and under
+  /// «بدون تصميم» too on a print order, where it means a reprint of a file already on record.
+  bool get _showsDesignPicker => _designSource != _DesignSource.none || _printsHere;
+
+  /// Whether the artwork is what a print order needs. See [printArtworkIsReady].
+  bool get _artworkIsReady => printArtworkIsReady(
+    printsHere: _printsHere,
+    drawnInHouse: _designSource == _DesignSource.inHouse,
+    designColors: [for (final design in _designs) _colorsOf(design)],
+  );
 
   /// What the customer is being charged beyond the products, as the sheet last answered.
   ///
@@ -256,26 +277,20 @@ class _NewOrderViewState extends State<_NewOrderView> {
     context.read<TakeOrderCubit>().clearFailure();
   }
 
-  /// «ألوان الطباعة» لتصميمٍ مختار — تُحفظ على التصميم في مكتبة العميل، لا على هذه الطلبية.
-  ///
-  /// الطلبية لم تُنشأ بعد، والخادم ينسخ ألوان التصميم إليها ساعةَ إنشائها؛ فما يُحفظ هنا يصل
-  /// إليها وإلى كلّ طلبيةٍ بعدها بهذا التصميم. والجوابُ التصميمُ بعد الحفظ، فيُبدَّل في القائمة.
+  /// «ألوان الطباعة» for a chosen design, held here and sent with the order. Nothing is written
+  /// until «إنشاء الطلبية»: an abandoned form leaves the library as it was. The sheet refuses an
+  /// empty list or a slot without its colour, so a two-colour job cannot leave with one.
   Future<void> _editDesignColors(CustomerDesign design) async {
-    final colors = await showPrintColorsSheet(context: context, initial: design.printColors);
+    final colors = await showPrintColorsSheet(
+      context: context,
+      initial: _colorsOf(design),
+      required: true,
+      confirmLabel: 'اعتماد الألوان',
+    );
     if (colors == null || !mounted) return;
 
-    final result = await sl<SetCustomerDesignColors>()(design.customerId, design.id, colors);
-    if (!mounted) return;
-
-    result.fold(
-      (failure) => context.showFailure(failure),
-      (saved) => setState(
-        () => _designs = [
-          for (final kept in _designs)
-            if (kept.id == saved.id) saved else kept,
-        ],
-      ),
-    );
+    setState(() => _typedColors[design.id] = colors);
+    context.read<TakeOrderCubit>().clearFailure();
   }
 
   /// Charges the customer for something no line on the order describes — «تغليف خاص»، «نقل».
@@ -340,6 +355,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
       _lines.isNotEmpty &&
       _city != null &&
       !_mixesBenches &&
+      _artworkIsReady &&
       (!_vendorRequirement.isRequired || _vendor != null) &&
       _lines.every(
         (line) =>
@@ -358,8 +374,13 @@ class _NewOrderViewState extends State<_NewOrderView> {
       designSource: _designSource.value,
       designFee: _designFee.text,
       // Dropped by the use case when the source is «بدون تصميم», the same way the fee is —
-      // the picker being hidden is the suggestion, and that is the rule.
+      // the picker being hidden is the suggestion, and that is the rule. A print order keeps
+      // them: there the picker stays open for the file being reprinted.
       designIds: [for (final design in _designs) design.id],
+      designColors: {
+        for (final design in _designs) design.id: ?_typedColors[design.id],
+      },
+      printsHere: _printsHere,
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
       discount: _mayDiscount ? _discount.text : null,
@@ -829,20 +850,38 @@ class _NewOrderViewState extends State<_NewOrderView> {
             errorText: submission.designFeeError,
           ),
         ],
-        // Nothing is said under «بدون تصميم»: the segment is the whole answer.
-        if (_designSource != _DesignSource.none) ...[
+        // Nothing is said under «بدون تصميم» on plain goods: the segment is the whole answer.
+        // On a print order it means a reprint, and the file being reprinted is still picked.
+        if (_showsDesignPicker) ...[
           SizedBox(height: 10.h),
+          if (_printsHere && _designs.isEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: Text(
+                _designSource == _DesignSource.inHouse
+                    ? 'يمكن إنشاء الطلبية الآن وفتح «تذكرة تصميم» منها — تُحدَّد الألوان في التذكرة'
+                    : 'طلبية طباعة: اختر التصميم وحدّد ألوانه — لا تُنشأ دونها',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: _designSource == _DesignSource.inHouse
+                      ? context.colorScheme.onSurfaceVariant
+                      : context.colorScheme.error,
+                ),
+              ),
+            ),
           if (_designs.isNotEmpty) ...[
             for (final design in _designs)
               _ChosenDesign(
                 design: design,
-                onEditColors: _mayColorDesigns ? () => _editDesignColors(design) : null,
-                onRemove: () => setState(
-                  () => _designs = [
+                colors: _colorsOf(design),
+                colorsRequired: _printsHere,
+                onEditColors: () => _editDesignColors(design),
+                onRemove: () => setState(() {
+                  _designs = [
                     for (final kept in _designs)
                       if (kept.id != design.id) kept,
-                  ],
-                ),
+                  ];
+                  _typedColors.remove(design.id);
+                }),
               ),
             SizedBox(height: 4.h),
           ],
@@ -895,18 +934,32 @@ class _NewOrderViewState extends State<_NewOrderView> {
 /// is their property, and this screen never had the right to delete it.
 ///
 /// «ألوان الطباعة» تحت الملف الذي تخصّه، كما في «تعديل الطلبية»: الحبرُ ونسخةُ الملف في نظرةٍ
-/// واحدة. والزرّ يغيب بلا [onEditColors] — من لا يملك تعديل العميل يرى الألوان ولا يغيّرها.
+/// واحدة.
+///
+/// On a print order ([colorsRequired]) the colours are mandatory (PRINT-COLORS.md §9): until
+/// they are complete the card is outlined in red, says «مطلوب», and the button is a full one.
 class _ChosenDesign extends StatelessWidget {
-  const _ChosenDesign({required this.design, required this.onRemove, this.onEditColors});
+  const _ChosenDesign({
+    required this.design,
+    required this.colors,
+    required this.onRemove,
+    required this.onEditColors,
+    this.colorsRequired = false,
+  });
 
   final CustomerDesign design;
+
+  /// What this order will carry: typed in the form, or the library's.
+  final List<PrintColor> colors;
+  final bool colorsRequired;
   final VoidCallback onRemove;
-  final VoidCallback? onEditColors;
+  final VoidCallback onEditColors;
 
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final onEditColors = this.onEditColors;
+    final complete = PrintColor.listIsComplete(colors);
+    final missing = colorsRequired && !complete;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
@@ -915,6 +968,7 @@ class _ChosenDesign extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(14.r),
+          border: missing ? Border.all(color: scheme.error, width: 1.5) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -939,19 +993,38 @@ class _ChosenDesign extends StatelessWidget {
                 ),
               ],
             ),
-            if (design.printColors.isNotEmpty)
+            if (colors.isNotEmpty)
               Padding(
                 padding: EdgeInsetsDirectional.only(top: 8.h, end: 8.w),
-                child: PrintColorsView(colors: design.printColors),
+                child: PrintColorsView(colors: colors),
               ),
-            if (onEditColors != null)
+            if (missing) ...[
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: 8.h, end: 8.w),
+                child: Text(
+                  colors.isEmpty
+                      ? 'مطلوب: ألوان الطباعة — كم لوناً، وما هو كل لون'
+                      : 'مطلوب: لونٌ بلا عيّنة — اختر لون كل خانة',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: scheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: 8.h, end: 8.w),
+                child: AppButton(
+                  label: 'تحديد ألوان الطباعة',
+                  icon: AppIcons.printColors,
+                  onPressed: onEditColors,
+                ),
+              ),
+            ] else
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   icon: Icon(AppIcons.printColors, size: 18.r),
-                  label: Text(
-                    design.printColors.isEmpty ? 'إضافة ألوان الطباعة' : 'تعديل الألوان',
-                  ),
+                  label: Text(colors.isEmpty ? 'إضافة ألوان الطباعة' : 'تعديل الألوان'),
                   onPressed: onEditColors,
                 ),
               ),

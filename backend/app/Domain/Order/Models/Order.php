@@ -27,6 +27,7 @@ use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
@@ -884,6 +885,31 @@ class Order extends Model implements HasAuditTrail
     public function designsAreEditable(): bool
     {
         return in_array($this->status, self::designEditableStatuses(), true);
+    }
+
+    /**
+     * The version the press will print: the approved one, or failing that the newest one nobody
+     * turned down. Null when there is neither. Read by the colour reminder on the move into
+     * «قيد الطباعة» and by the guard that refuses that move without colours (PRINT-COLORS.md §9).
+     */
+    public function designForPress(): ?OrderDesign
+    {
+        $this->loadMissing('designs');
+
+        $versions = $this->designs->sortByDesc('version');
+
+        return $versions->first(fn (OrderDesign $design) => $design->status === OrderDesignStatus::Approved)
+            ?? $versions->first(fn (OrderDesign $design) => $design->status !== OrderDesignStatus::Rejected);
+    }
+
+    /**
+     * Whether this order goes through our press, which is what makes print colours mandatory.
+     * The standard road is the one with «قيد الطباعة» on it; plain goods and outsourced work
+     * never reach our press. See `ResolveOrderFlow`.
+     */
+    public function isPrintedHere(): bool
+    {
+        return ($this->production_flow ?? OrderFlow::Standard) === OrderFlow::Standard;
     }
 
     /**

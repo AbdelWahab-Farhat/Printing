@@ -21,6 +21,7 @@ import 'package:dayaa/features/carrier/usecases/sync_carrier_money.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/investors/presentation/widgets/order_investors_section.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/models/order_flow.dart';
 import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
@@ -1282,7 +1283,13 @@ class _Body extends StatelessWidget {
                   // Read here, changed on «تعديل الطلبية». Adding a version and judging one are
                   // both edits, and this screen having its own copies of them would be a second
                   // door onto the same room.
-                  child: OrderDesignsSection(designs: order.designs!),
+                  child: OrderDesignsSection(
+                    designs: order.designs!,
+                    // Said only while it can still be fixed: once the artwork locks, the press
+                    // has already been reached with colours (PRINT-COLORS.md §9).
+                    colorsRequired:
+                        order.productionFlow == OrderFlow.standard && order.designsAreEditable,
+                  ),
                 ),
               ],
               // «التذاكر المرتبطة» — طلبُها وحده، ورأسُها منها: بلا عنوانٍ هنا، لأن «إضافة تذكرة» في

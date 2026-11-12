@@ -1,4 +1,5 @@
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
@@ -196,6 +197,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
     for (final field in transition.fields) {
       final answer = switch (field.type) {
         TransitionFieldType.shippingCompany => _carrierIn(field),
+        // The colours the version already has, so the sheet opens on them and only what is
+        // missing has to be added. Nothing when there are none.
+        TransitionFieldType.printColorsInput when field.colors.isNotEmpty => field.colors,
         _ => field.value,
       };
 
@@ -316,6 +320,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
         if (values[field.key] case final value?)
           field.key: switch (value) {
             final List<CustomerDesign> designs => [for (final design in designs) design.id],
+            // «ألوان الطباعة» answered on the move (§12): the same shape every colours
+            // endpoint takes.
+            final List<PrintColor> colors => PrintColor.listToJson(colors),
             // The picker hands over the whole company so the button can say its name; only the
             // id crosses the wire, exactly as for a design.
             final ShippingCompany carrier => carrier.id,

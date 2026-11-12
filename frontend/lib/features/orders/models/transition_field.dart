@@ -44,6 +44,11 @@ enum TransitionFieldType {
   @JsonValue('print_colors')
   printColors,
 
+  /// «ألوان الطباعة» asked on the move into the press, answered as a `List<PrintColor>` that
+  /// opens on [TransitionField.colors] (PRINT-COLORS.md §12).
+  @JsonValue('print_colors_input')
+  printColorsInput,
+
   /// One of the carriers the business maintains.
   ///
   /// No options arrive with the field: this app already owns that list — it manages it — so the

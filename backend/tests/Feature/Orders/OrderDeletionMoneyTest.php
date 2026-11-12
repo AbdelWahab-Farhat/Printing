@@ -39,6 +39,7 @@ use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Treasury\Models\TreasuryAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\GivesPrintableArtwork;
 use Tests\TestCase;
 
 /**
@@ -64,6 +65,7 @@ use Tests\TestCase;
  */
 class OrderDeletionMoneyTest extends TestCase
 {
+    use GivesPrintableArtwork;
     use RefreshDatabase;
 
     private function actor(): User
@@ -593,6 +595,7 @@ class OrderDeletionMoneyTest extends TestCase
             $actor,
             ['warehouse_id' => $warehouse->getKey()],
         );
+        $this->givePrintableArtwork($order); // the press needs colours (PRINT-COLORS.md §9)
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Printing, null, $actor);
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Ready, null, $actor);
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::OutForDelivery, null, $actor);

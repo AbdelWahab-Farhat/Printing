@@ -118,6 +118,30 @@ final class PrintColors
         ));
     }
 
+    /**
+     * Whether a list says what the press needs: at least one colour, and every colour carries its
+     * swatch or its press code. A name alone («أزرق») is how the wrong shade got printed, so it
+     * does not count. See PRINT-COLORS.md §9.
+     *
+     * @param  array<int, mixed>|null  $colors
+     */
+    public static function isComplete(?array $colors): bool
+    {
+        $list = self::normalise($colors);
+
+        if ($list === null) {
+            return false;
+        }
+
+        foreach ($list as $color) {
+            if ($color['hex'] === null && $color['code'] === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function textOrNull(mixed $value): ?string
     {
         if (! is_string($value) && ! is_numeric($value)) {

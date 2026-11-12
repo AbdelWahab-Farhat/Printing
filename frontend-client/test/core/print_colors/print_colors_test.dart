@@ -263,6 +263,45 @@ void main() {
       // Assert
       expect(changed, [red, const PrintColor(name: 'أسود', hex: '#000000')]);
     });
+
+    testWidgets('a preset gives the slot its swatch and its name', (tester) async {
+      // Arrange
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('إضافة لون'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.byTooltip('ذهبي'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, [const PrintColor(name: 'ذهبي', hex: '#C9A227')]);
+    });
+
+    testWidgets('a second colour left empty stops the save', (tester) async {
+      // Arrange — a two-colour design, only the first colour picked.
+      phone(tester);
+      List<PrintColor>? changed;
+      await tester.pumpWidget(
+        host(PrintColorsField(colors: const [red], onChanged: (colors) => changed = colors)),
+      );
+      await tester.tap(find.text('أحمر الشعار'));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.widgetWithText(ChoiceChip, '2'));
+      await tester.pump();
+      await save(tester);
+
+      // Assert
+      expect(changed, isNull);
+      expect(find.textContaining('اللون 2'), findsOneWidget);
+    });
   });
 
   testWidgets('the code our team wrote is shown, left to right', (

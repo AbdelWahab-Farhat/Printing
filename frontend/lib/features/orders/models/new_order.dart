@@ -55,6 +55,11 @@ abstract class NewOrder with _$NewOrder {
     /// Omitted when empty: «بدون تصميم» sends no key at all.
     @JsonKey(name: 'design_ids', includeIfNull: false) List<int>? designIds,
 
+    /// Colours typed in the form for chosen designs: `{design_id, print_colors}` per design.
+    /// The server fills an uncoloured library design with them, or keeps them on this order's
+    /// copy only. See PRINT-COLORS.md §9.
+    @JsonKey(name: 'design_colors', includeIfNull: false) List<Map<String, dynamic>>? designColors,
+
     /// Guarded by `orders.discount` on the server. The field is hidden in the app for staff
     /// without the grant; that is the suggestion, and the refusal is the rule.
     @JsonKey(includeIfNull: false) String? discount,
