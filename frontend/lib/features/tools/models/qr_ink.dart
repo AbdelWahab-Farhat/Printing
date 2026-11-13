@@ -37,4 +37,16 @@ abstract final class QrInk {
     Color(0xFF1E3A8A), // أزرق داكن
     Color(0xFF4C1D95), // بنفسجي
   ];
+
+  /// The lowest ink-to-paper contrast a scanner reads without trouble.
+  ///
+  /// 3:1 is WCAG's floor for graphics. Pure red (`#FF0000`, 4:1) passes and orange
+  /// (`#FF8800`, about 2.4:1) does not, which matches what phone scanners manage on white.
+  static const double minContrast = 3;
+
+  /// Whether [ink] is too light on white paper to scan reliably.
+  ///
+  /// A warning, never a refusal: somebody printing on a dark bag may want exactly this ink.
+  static bool isLowContrast(Color ink) =>
+      (paper.computeLuminance() + .05) / (ink.computeLuminance() + .05) < minContrast;
 }

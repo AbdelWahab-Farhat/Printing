@@ -1,5 +1,6 @@
 import 'dart:ui' show Color;
 
+import 'package:dayaa_client/core/utils/hex_color.dart';
 import 'package:flutter/foundation.dart';
 
 /// لونٌ واحد من «ألوان الطباعة» على تصميم — PRINT-COLORS.md §8.
@@ -34,19 +35,11 @@ class PrintColor {
     'hex': hex,
   };
 
-  /// `#E4002B` ← [Color]، أو null لما ليس ستّ خانات.
-  static Color? parseHex(String? hex) {
-    if (hex == null || !_hexPattern.hasMatch(hex)) return null;
+  /// `#E4002B` → a [Color], or null for anything that is not six hex digits.
+  static Color? parseHex(String? hex) => HexColor.parse(hex);
 
-    return Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
-  }
-
-  /// [Color] ← `#E4002B`، الصيغة التي يقبلها الخادم.
-  static String toHex(Color color) {
-    final rgb = color.toARGB32() & 0xFFFFFF;
-
-    return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-  }
+  /// A [Color] → `#E4002B`, the form the server accepts.
+  static String toHex(Color color) => HexColor.of(color);
 
   /// قائمة الخادم ← نماذج. تتحمّل null والعناصر الشاذّة بدل أن تُسقط القائمة كلّها.
   static List<PrintColor> listFromJson(Object? json) => [
@@ -70,8 +63,6 @@ class PrintColor {
   /// Whether a design's list is what a print order needs: at least one colour, each complete.
   static bool listIsComplete(List<PrintColor> colors) =>
       colors.isNotEmpty && colors.every((color) => color.isComplete);
-
-  static final RegExp _hexPattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
 
   @override
   bool operator ==(Object other) =>

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dayaa_client/core/di/injector.dart';
+import 'package:dayaa_client/core/utils/hex_color.dart';
 import 'package:dayaa_client/core/widgets/app_text_field.dart';
 import 'package:dayaa_client/features/tools/models/qr_code_painter.dart';
 import 'package:dayaa_client/features/tools/models/qr_ink.dart';
@@ -392,6 +393,149 @@ void main() {
 
       untouched.dispose();
       wiped.dispose();
+    });
+  });
+
+  group('كود اللون', () {
+    /// The code field inside the open sheet.
+    Finder codeField() => find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byType(TextFormField),
+    );
+
+    String codeText(WidgetTester tester) =>
+        tester.widget<TextFormField>(codeField()).controller!.text;
+
+    /// A code on screen in black, and the custom-colour sheet open over it.
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await generate(tester, 'https://daaya.ly');
+      await tester.tap(find.byWidgetPredicate(_isCustomSwatch));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('الورقة تفتح على كود الحبر المطبَّق', (tester) async {
+      // Arrange & Act
+      await openSheet(tester);
+
+      // Assert
+      expect(codeText(tester), '#000000');
+    });
+
+    testWidgets('كودٌ مكتوب يُطبَّق كما هو، بلا # وبأحرفٍ صغيرة', (tester) async {
+      // Arrange
+      await openSheet(tester);
+
+      // Act
+      await tester.enterText(codeField(), '1e3a8a');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('اختيار هذا اللون'));
+      await tester.pumpAndSettle();
+
+      // Assert — exactly the typed colour, not an HSV round trip of it: it is the dark-blue quick
+      // swatch, so the row marks that swatch rather than the custom disc.
+      expect(paintedCode(tester)!.color, const Color(0xFF1E3A8A));
+      expect(QrInk.palette, contains(paintedCode(tester)!.color));
+    });
+
+    testWidgets('المنتقي يكتب الكود في الحقل', (tester) async {
+      // Arrange
+      await openSheet(tester);
+
+      // Act — top-right of the area in RTL is full saturation at hue zero: a red.
+      final area = find.byKey(QrInkPicker.saturationKey);
+      await tester.tapAt(tester.getTopLeft(area) + const Offset(1, 1));
+      await tester.pumpAndSettle();
+      final typed = codeText(tester);
+      await tester.tap(find.text('اختيار هذا اللون'));
+      await tester.pumpAndSettle();
+
+      // Assert — the field showed the code of exactly what was then applied.
+      expect(typed, isNot('#000000'));
+      expect(HexColor.of(paintedCode(tester)!.color), typed);
+    });
+
+    testWidgets('كودٌ ناقص يُظهر الصيغة ولا يُختار', (tester) async {
+      // Arrange
+      await openSheet(tester);
+
+      // Act
+      await tester.enterText(codeField(), '#1E3');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('اختيار هذا اللون'));
+      await tester.pumpAndSettle();
+
+      // Assert — the sheet is still open, and the code on screen kept its ink.
+      expect(find.text('بصيغة ‎#RRGGBB'), findsOneWidget);
+      expect(find.text('لون مخصّص'), findsOneWidget);
+      expect(paintedCode(tester)!.color, QrInk.black);
+    });
+
+    testWidgets('لونٌ فاتح يُنبَّه عليه ولا يُمنع', (tester) async {
+      // Arrange
+      await openSheet(tester);
+
+      // Act
+      await tester.enterText(codeField(), '#FFFF00');
+      await tester.pumpAndSettle();
+
+      // Assert — the warning, and the button still works.
+      expect(find.textContaining('قد لا يقرأه الماسح'), findsOneWidget);
+
+      await tester.tap(find.text('اختيار هذا اللون'));
+      await tester.pumpAndSettle();
+      expect(paintedCode(tester)!.color, const Color(0xFFFFFF00));
+    });
+
+    testWidgets('لونٌ داكن لا تنبيه عليه', (tester) async {
+      // Arrange
+      await openSheet(tester);
+
+      // Act
+      await tester.enterText(codeField(), '#B91C1C');
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.textContaining('قد لا يقرأه الماسح'), findsNothing);
+    });
+
+    testWidgets('كود الحبر المطبَّق فوق الصفّ، ويُنسخ بنقرة', (tester) async {
+      // Arrange
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+        call,
+      ) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+
+        return null;
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      expect(find.text('#000000'), findsOneWidget);
+
+      // Act — another quick swatch, then a tap on its code.
+      final other = QrInk.palette.firstWhere((ink) => ink != QrInk.black);
+      await tester.tap(find.byWidgetPredicate((widget) => _isSwatchOf(widget, other)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(HexColor.of(other)));
+      await tester.pump();
+
+      // Assert
+      expect(copied, HexColor.of(other));
+      expect(find.text('تم نسخ كود اللون'), findsOneWidget);
+
+      // The toast owns an animation and a dismissal timer; left running they outlive this test.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
     });
   });
 }

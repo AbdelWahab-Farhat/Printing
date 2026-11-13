@@ -1,5 +1,6 @@
 import 'dart:ui' show Color;
 
+import 'package:dayaa/core/utils/hex_color.dart';
 import 'package:flutter/foundation.dart';
 
 /// One ink a design is printed in — «ألوان الطباعة». See PRINT-COLORS.md.
@@ -40,18 +41,10 @@ class PrintColor {
   };
 
   /// `#E4002B` → a [Color], or null for anything that is not six hex digits.
-  static Color? parseHex(String? hex) {
-    if (hex == null || !_hexPattern.hasMatch(hex)) return null;
-
-    return Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
-  }
+  static Color? parseHex(String? hex) => HexColor.parse(hex);
 
   /// A [Color] → `#E4002B`, the form the server accepts.
-  static String toHex(Color color) {
-    final rgb = color.toARGB32() & 0xFFFFFF;
-
-    return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-  }
+  static String toHex(Color color) => HexColor.of(color);
 
   /// A server list → models. Tolerates null and stray entries rather than failing a whole order
   /// over one of them.
@@ -76,8 +69,6 @@ class PrintColor {
   /// Whether a design's list is what a print order needs: at least one colour, each complete.
   static bool listIsComplete(List<PrintColor> colors) =>
       colors.isNotEmpty && colors.every((color) => color.isComplete);
-
-  static final RegExp _hexPattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
 
   @override
   bool operator ==(Object other) =>
