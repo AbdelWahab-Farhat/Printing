@@ -6,7 +6,9 @@ namespace App\Domain\Notification\Definitions;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\Concerns\OneSwitch;
 use App\Domain\Notification\DTOs\RenderedNotification;
 
 /**
@@ -22,8 +24,16 @@ use App\Domain\Notification\DTOs\RenderedNotification;
  * same screen, about the same thing. Only the size of the audience differs, and
  * {@see NotificationAudience} already carries that distinction as data.
  */
-final readonly class DesignTicketAssignedToYou implements NotificationDefinition
+final readonly class DesignTicketAssignedToYou implements GroupNotification, NotificationDefinition
 {
+    use OneSwitch;
+
+    /** The shared pool only — a ticket given to one designer always reaches them. */
+    public function groupPermission(): PermissionName
+    {
+        return PermissionName::AcceptDesignTickets;
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -33,7 +43,7 @@ final readonly class DesignTicketAssignedToYou implements NotificationDefinition
 
         // Null is the shared pool, not missing data — see `DesignTicketAssigned`.
         return $designerId === null
-            ? NotificationAudience::permission(PermissionName::AcceptDesignTickets)
+            ? NotificationAudience::permission($this->groupPermission())
             : NotificationAudience::user((int) $designerId);
     }
 

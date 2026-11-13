@@ -4,6 +4,7 @@ import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/features/notifications/models/app_notification.dart';
+import 'package:dayaa/features/notifications/models/push_preference.dart';
 import 'package:dayaa/features/notifications/models/unread_count.dart';
 import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
 import 'package:dio/dio.dart';
@@ -104,4 +105,37 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
       ),
     );
   }
+
+  @override
+  Future<Either<Failure, List<PushPreferenceGroup>>> pushPreferences(int userId) {
+    return safeRequest<List<PushPreferenceGroup>>(
+      () => _dio.get(NotificationEndpoints.pushPreferences(userId)),
+      parse: _parseGroups,
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<PushPreferenceGroup>>> setPushPreference({
+    required int userId,
+    required String type,
+    required String scope,
+    required bool push,
+  }) {
+    return safeRequest<List<PushPreferenceGroup>>(
+      () => _dio.put(
+        NotificationEndpoints.pushPreferences(userId),
+        data: <String, dynamic>{
+          'type': type,
+          // Omitted for a type that is one switch, rather than sent as an empty string.
+          if (scope.isNotEmpty) 'scope': scope,
+          'push': push,
+        },
+      ),
+      parse: _parseGroups,
+    );
+  }
+
+  static List<PushPreferenceGroup> _parseGroups(dynamic data) => (data as List)
+      .map((e) => PushPreferenceGroup.fromJson(e as Map<String, dynamic>))
+      .toList();
 }

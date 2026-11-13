@@ -28,7 +28,7 @@ class NotificationTile extends StatelessWidget {
     return ListTile(
       onTap: notification.opensSomewhere ? onTap : null,
       leading: Icon(
-        _iconFor(notification.icon),
+        iconFor(notification.icon),
         color: unread ? theme.colorScheme.primary : theme.colorScheme.outline,
       ),
       // Body-size type, not a caption: this row is the message itself, not a label on something
@@ -65,7 +65,9 @@ class NotificationTile extends StatelessWidget {
   /// **An unknown key is not an error — it is a newer backend**, and the bell must still draw.
   /// That fallback is not defensive padding; it is the mechanism that lets the server ship a new
   /// notification type without waiting for an app release.
-  IconData _iconFor(String key) => switch (key) {
+  ///
+  /// Public because the push settings page draws the same keys beside each type.
+  static IconData iconFor(String key) => switch (key) {
         'warning' => AppIcons.urgent,
         'order' => AppIcons.orders,
         'inventory' => AppIcons.warehouse,

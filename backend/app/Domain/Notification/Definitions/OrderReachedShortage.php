@@ -6,7 +6,9 @@ namespace App\Domain\Notification\Definitions;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\Concerns\OneSwitch;
 use App\Domain\Notification\DTOs\RenderedNotification;
 
 /**
@@ -19,8 +21,15 @@ use App\Domain\Notification\DTOs\RenderedNotification;
  * A worked example of the whole extension point: an audience of one line, a sentence built from
  * frozen facts, and a route. No migration, no endpoint, no client change.
  */
-final readonly class OrderReachedShortage implements NotificationDefinition
+final readonly class OrderReachedShortage implements GroupNotification, NotificationDefinition
 {
+    use OneSwitch;
+
+    public function groupPermission(): PermissionName
+    {
+        return PermissionName::ViewOrders;
+    }
+
     /**
      * Everybody who may read orders.
      *
@@ -31,7 +40,7 @@ final readonly class OrderReachedShortage implements NotificationDefinition
      */
     public function audience(array $payload): NotificationAudience
     {
-        return NotificationAudience::permission(PermissionName::ViewOrders);
+        return NotificationAudience::permission($this->groupPermission());
     }
 
     /**
