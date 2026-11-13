@@ -31,6 +31,7 @@ use App\Application\Api\V1\Controllers\MyWalletController;
 use App\Application\Api\V1\Controllers\NawrisSettlementImportController;
 use App\Application\Api\V1\Controllers\NawrisWebhookController;
 use App\Application\Api\V1\Controllers\NotificationController;
+use App\Application\Api\V1\Controllers\NotificationPreferenceController;
 use App\Application\Api\V1\Controllers\OnlinePaymentController;
 use App\Application\Api\V1\Controllers\OrderController;
 use App\Application\Api\V1\Controllers\OrderPaymentController;
@@ -210,6 +211,13 @@ Route::prefix('v1')->group(function (): void {
         // stopped, never deleted, so everything it recorded keeps naming somebody who exists.
         Route::patch('users/{user}/activation', [UserController::class, 'setActivation'])
             ->middleware('can:users.manage')->name('users.activation');
+
+        // Which group notifications wake this employee's phone — the administrator decides, not
+        // the employee. Docs/notifications/PUSH-PREFERENCES.md.
+        Route::get('users/{user}/notification-preferences', [NotificationPreferenceController::class, 'show'])
+            ->middleware('can:users.manage')->name('users.notification-preferences.show');
+        Route::put('users/{user}/notification-preferences', [NotificationPreferenceController::class, 'update'])
+            ->middleware('can:users.manage')->name('users.notification-preferences.update');
 
         // ── «محفظة الموظف» ──────────────────────────────────────────────────────────────
         // EMPLOYEE-WALLET-DESIGN §٧. ستُّ صلاحيات، لأن استلام مالٍ ووعدَ موظفٍ بمالٍ وصرفَه له ثلاثُ

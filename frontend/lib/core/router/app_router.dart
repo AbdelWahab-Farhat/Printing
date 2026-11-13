@@ -74,6 +74,7 @@ import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manuf
 import 'package:dayaa/features/manufacturing_cost_rates/presentation/views/manufacturing_cost_rates_page.dart';
 import 'package:dayaa/features/notifications/presentation/views/compose_announcement_page.dart';
 import 'package:dayaa/features/notifications/presentation/views/notifications_page.dart';
+import 'package:dayaa/features/notifications/presentation/views/push_preferences_page.dart';
 import 'package:dayaa/features/online_payments/presentation/views/online_payment_methods_page.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/orders_filter.dart';
@@ -580,6 +581,12 @@ abstract final class Routes {
   static const String employeeWalletPath = '/employees/:id/wallet';
 
   static String employeeWallet(int id) => '/employees/$id/wallet';
+
+  /// «إشعارات الهاتف» — which group notifications wake this employee's phone. Behind
+  /// `users.manage`. Docs/notifications/PUSH-PREFERENCES.md.
+  static const String employeeNotificationsPath = '/employees/:id/notifications';
+
+  static String employeeNotifications(int id) => '/employees/$id/notifications';
 
   /// «محفظتي» — لكل موظف بلا صلاحية. **الخادم يكتب هذا المسار في الإشعار**، فلا يتغيّر وحده.
   static const String myWallet = '/my-wallet';
@@ -1557,6 +1564,18 @@ abstract final class AppRouter {
           return id == null
               ? const _UnknownEmployee()
               : EmployeeWalletPage(userId: id, employeeName: state.payload as String?);
+        },
+      ),
+      GoRoute(
+        path: Routes.employeeNotificationsPath,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageUsers) ? null : Routes.home,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+
+          return id == null
+              ? const _UnknownEmployee()
+              : PushPreferencesPage(userId: id, employeeName: state.payload as String?);
         },
       ),
       GoRoute(

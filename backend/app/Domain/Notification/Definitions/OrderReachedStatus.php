@@ -6,6 +6,7 @@ namespace App\Domain\Notification\Definitions;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\DTOs\RenderedNotification;
 use App\Domain\Notification\Listeners\NotifyWhenOrderStatusChanges;
@@ -22,7 +23,7 @@ use App\Domain\Order\Enums\OrderStatus;
  * Which statuses get here at all is {@see NotifyWhenOrderStatusChanges}'s
  * business, not this class's — it renders whatever it is handed.
  */
-final readonly class OrderReachedStatus implements NotificationDefinition
+final readonly class OrderReachedStatus implements GroupNotification, NotificationDefinition
 {
     /**
      * Everybody who may read orders.
@@ -35,7 +36,39 @@ final readonly class OrderReachedStatus implements NotificationDefinition
      */
     public function audience(array $payload): NotificationAudience
     {
-        return NotificationAudience::permission(PermissionName::ViewOrders);
+        return NotificationAudience::permission($this->groupPermission());
+    }
+
+    public function groupPermission(): PermissionName
+    {
+        return PermissionName::ViewOrders;
+    }
+
+    /**
+     * One push switch per status that rings — the noise this setting exists for. An employee in
+     * the warehouse keeps «جاهزة» and silences «تم التسوية».
+     *
+     * @return array<string, string>
+     */
+    public function pushScopes(): array
+    {
+        $scopes = [];
+
+        foreach (OrderStatus::cases() as $status) {
+            if (NotifyWhenOrderStatusChanges::isWorthABell($status)) {
+                $scopes[$status->value] = $status->label();
+            }
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function pushScopeOf(array $payload): string
+    {
+        return (string) ($payload['to_status'] ?? '');
     }
 
     /**

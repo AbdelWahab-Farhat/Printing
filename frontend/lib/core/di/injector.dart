@@ -169,16 +169,19 @@ import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturi
 import 'package:dayaa/features/manufacturing_cost_rates/repositories/manufacturing_cost_rate_repository_impl.dart';
 import 'package:dayaa/features/manufacturing_cost_rates/usecases/manufacturing_cost_rate_usecases.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/notifications_cubit.dart';
+import 'package:dayaa/features/notifications/presentation/viewmodel/push_preferences_cubit.dart';
 import 'package:dayaa/features/notifications/presentation/viewmodel/unread_badge_cubit.dart';
 import 'package:dayaa/features/notifications/repositories/notifications_repository.dart';
 import 'package:dayaa/features/notifications/repositories/notifications_repository_impl.dart';
 import 'package:dayaa/features/notifications/usecases/get_notifications.dart';
+import 'package:dayaa/features/notifications/usecases/get_push_preferences.dart';
 import 'package:dayaa/features/notifications/usecases/get_unread_count.dart';
 import 'package:dayaa/features/notifications/usecases/mark_all_read.dart';
 import 'package:dayaa/features/notifications/usecases/mark_notification_read.dart';
 import 'package:dayaa/features/notifications/usecases/register_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/release_device_token.dart';
 import 'package:dayaa/features/notifications/usecases/send_announcement.dart';
+import 'package:dayaa/features/notifications/usecases/set_push_preference.dart';
 import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payment_methods_cubit.dart';
 import 'package:dayaa/features/online_payments/presentation/viewmodel/online_payments_cubit.dart';
 import 'package:dayaa/features/online_payments/repositories/online_payment_repository.dart';
@@ -544,6 +547,20 @@ abstract final class Injector {
           sl<GetNotifications>(),
           sl<MarkNotificationRead>(),
           sl<MarkAllRead>(),
+        ),
+      )
+      ..registerLazySingleton<GetPushPreferences>(
+        () => GetPushPreferences(sl<NotificationsRepository>()),
+      )
+      ..registerLazySingleton<SetPushPreference>(
+        () => SetPushPreference(sl<NotificationsRepository>()),
+      )
+      // Parameterised: the page is about one employee.
+      ..registerFactoryParam<PushPreferencesCubit, int, void>(
+        (userId, _) => PushPreferencesCubit(
+          userId: userId,
+          getPreferences: sl<GetPushPreferences>(),
+          setPreference: sl<SetPushPreference>(),
         ),
       );
   }

@@ -551,4 +551,42 @@ void main() {
     expect(find.text('تشغيل الحساب'), findsOneWidget);
     expect(find.text('إيقاف الحساب'), findsNothing);
   });
+
+  testWidgets('«إشعارات الهاتف» is offered with the permission to manage users', (tester) async {
+    // Arrange
+    arrange(reader(permissions: [AppPermission.viewUsers, AppPermission.manageUsers]));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('إشعارات الهاتف'), findsOneWidget);
+  });
+
+  testWidgets('and not without it', (tester) async {
+    // Arrange — everything but `users.manage`, and an administrator, so the dial still has
+    // two actions (password and history) and opens rather than drawing one plain button.
+    arrange(
+      reader(
+        permissions: [
+          for (final permission in AppPermission.values)
+            if (permission != AppPermission.manageUsers) permission,
+        ],
+        isAdmin: true,
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    // Assert — the dial is open, and the action is not in it.
+    expect(find.text('سجل التغييرات'), findsOneWidget);
+    expect(find.text('إشعارات الهاتف'), findsNothing);
+  });
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Notification\Listeners;
 
+use App\Domain\Notification\Definitions\OrderReachedStatus;
 use App\Domain\Notification\DTOs\PendingNotification;
 use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\NotificationService;
@@ -40,7 +41,7 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
 
     public function handle(OrderStatusChanged $event): void
     {
-        if ($event->partOfABatch || ! $this->isWorthABell($event->to)) {
+        if ($event->partOfABatch || ! self::isWorthABell($event->to)) {
             return;
         }
 
@@ -87,8 +88,11 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
      * *are*, or ends the order, is announced. «نواقص» is silent here only because
      * {@see NotifyWhenOrderEntersShortage} already says more about it than this could, and two
      * bells for one move teaches staff to ignore both.
+     *
+     * Public because {@see OrderReachedStatus::pushScopes()} lists exactly these statuses as the
+     * push switches an administrator can turn off — one list, read twice.
      */
-    private function isWorthABell(OrderStatus $status): bool
+    public static function isWorthABell(OrderStatus $status): bool
     {
         return match ($status) {
             OrderStatus::Ready,

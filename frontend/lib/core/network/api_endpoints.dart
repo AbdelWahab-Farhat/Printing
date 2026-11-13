@@ -860,6 +860,10 @@ abstract final class NotificationEndpoints {
   static const String announcements = '/notifications/announcements';
 
   static String read(int id) => '/notifications/$id/read';
+
+  /// Which group notifications wake an employee's phone. GET lists the switches, PUT flips one.
+  /// Behind `users.manage`: the administrator decides, not the employee.
+  static String pushPreferences(int userId) => '/users/$userId/notification-preferences';
 }
 
 /// تذاكر الدعم — the desk, as staff read it.

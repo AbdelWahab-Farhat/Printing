@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/features/notifications/models/app_notification.dart';
+import 'package:dayaa/features/notifications/models/push_preference.dart';
 import 'package:dayaa/features/notifications/models/unread_count.dart';
 
 /// Every account's own mailbox, and the device registry that lets a push reach it.
@@ -53,5 +54,18 @@ abstract interface class NotificationsRepository {
     required String title,
     required String body,
     int? roleId,
+  });
+
+  /// Which group notifications wake [userId]'s phone. Behind `users.manage`.
+  Future<Either<Failure, List<PushPreferenceGroup>>> pushPreferences(int userId);
+
+  /// Turns one push switch on or off, and answers with the employee's switches after it.
+  ///
+  /// [scope] is `''` for a type that is one switch, and an order status for `order.status`.
+  Future<Either<Failure, List<PushPreferenceGroup>>> setPushPreference({
+    required int userId,
+    required String type,
+    required String scope,
+    required bool push,
   });
 }

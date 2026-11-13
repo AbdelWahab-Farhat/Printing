@@ -6,7 +6,9 @@ namespace App\Domain\Notification\Definitions;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\Concerns\OneSwitch;
 use App\Domain\Notification\DTOs\RenderedNotification;
 use App\Domain\Order\Enums\OrderStatus;
 
@@ -18,8 +20,15 @@ use App\Domain\Order\Enums\OrderStatus;
  * شاشته فبقيتا صامتتين. أما وصولُه فخبرٌ لمن لم يرَه: عميلٌ طلب في الثانية ليلاً ينتظر حتى يفتح
  * أحدُهم لوحة الرئيسية ويرى الرقم.
  */
-final readonly class OrderAwaitsReview implements NotificationDefinition
+final readonly class OrderAwaitsReview implements GroupNotification, NotificationDefinition
 {
+    use OneSwitch;
+
+    public function groupPermission(): PermissionName
+    {
+        return PermissionName::ManageOrders;
+    }
+
     /**
      * مَن يستطيع قبولها أو رفضها — `orders.manage`، الصلاحيةُ نفسها التي يكلّفها الأمران.
      *
@@ -30,7 +39,7 @@ final readonly class OrderAwaitsReview implements NotificationDefinition
      */
     public function audience(array $payload): NotificationAudience
     {
-        return NotificationAudience::permission(PermissionName::ManageOrders);
+        return NotificationAudience::permission($this->groupPermission());
     }
 
     /**

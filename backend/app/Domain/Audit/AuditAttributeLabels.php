@@ -1122,6 +1122,12 @@ final class AuditAttributeLabels
             'dedupe_key' => 'مفتاح منع التكرار',
             'causer_id' => 'أرسله',
         ],
+        'notification_preference' => [
+            'user_id' => 'الموظف',
+            'type' => 'نوع الإشعار',
+            'scope' => 'الحالة',
+            'push' => 'إشعار على الهاتف',
+        ],
     ];
 
     /**
