@@ -16,6 +16,7 @@ use App\Domain\Carrier\Actions\ImportNawrisSettlement;
 use App\Domain\Carrier\Actions\ReadNawrisSettlementFile;
 use App\Domain\Carrier\Actions\ResendNawrisParcel;
 use App\Domain\Carrier\DTOs\NawrisMoneySync;
+use App\Domain\Carrier\DTOs\NawrisParcelTerms;
 use App\Domain\Carrier\DTOs\NawrisSettlementPreview;
 use App\Domain\Carrier\DTOs\NawrisSettlementSubmission;
 use App\Domain\Carrier\Enums\NawrisStatusCode;
@@ -24,6 +25,7 @@ use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisSettlementImport;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
@@ -178,6 +180,44 @@ final class CarrierService
      */
     public function tellAboutMoney(Order $order): ?NawrisMoneySync
     {
+        return $this->tell($order, null);
+    }
+
+    /**
+     * Tells Nawris who pays their fee now — the same whole-payload edit, the same refusal path.
+     *
+     * Every edit already sends what the orders say, so this differs from {@see tellAboutMoney()}
+     * only in what a refusal is reported as: the courier will still charge the door as before.
+     */
+    public function tellAboutPayer(Order $order): ?NawrisMoneySync
+    {
+        return $this->tell($order, $order->delivery_paid_by);
+    }
+
+    /**
+     * The other orders in this order's open parcel, by id — the ones a change of who pays takes
+     * with it, because their parcel holds one setting. Empty when there is no open parcel or it
+     * holds this order alone.
+     *
+     * @return list<Order>
+     */
+    public function parcelSiblingsOf(Order $order): array
+    {
+        $parcel = $this->openParcelFor($order);
+
+        if ($parcel === null) {
+            return [];
+        }
+
+        return $parcel->orders()
+            ->whereKeyNot($order->getKey())
+            ->orderBy('orders.id')
+            ->get()
+            ->all();
+    }
+
+    private function tell(Order $order, ?DeliveryPayer $payer): ?NawrisMoneySync
+    {
         $parcel = $this->openParcelFor($order);
 
         if ($parcel === null) {
@@ -187,17 +227,17 @@ final class CarrierService
         $asked = (string) $parcel->amount_to_collect;
 
         return rescue(
-            function () use ($parcel, $asked): NawrisMoneySync {
+            function () use ($parcel, $asked, $payer): NawrisMoneySync {
                 $told = ($this->edit)($parcel);
 
-                return new NawrisMoneySync($told, true, $asked, (string) $told->amount_to_collect);
+                return new NawrisMoneySync($told, true, $asked, (string) $told->amount_to_collect, payer: $payer);
             },
-            fn (Throwable $refusal): NawrisMoneySync => $this->refused($parcel, $asked, $refusal),
+            fn (Throwable $refusal): NawrisMoneySync => $this->refused($parcel, $asked, $refusal, $payer),
         );
     }
 
     /** Kept on the parcel and in the log, so a refused edit is somebody's to put right. */
-    private function refused(NawrisParcel $parcel, string $asked, Throwable $refusal): NawrisMoneySync
+    private function refused(NawrisParcel $parcel, string $asked, Throwable $refusal, ?DeliveryPayer $payer = null): NawrisMoneySync
     {
         $reason = Str::limit($refusal->getMessage(), 490);
 
@@ -217,6 +257,7 @@ final class CarrierService
             $asked,
             $orders === [] ? $asked : $this->payload->amountToCollectFor($orders),
             $reason,
+            $payer,
         );
     }
 
@@ -342,7 +383,7 @@ final class CarrierService
      * one per order.
      *
      * @param  list<int>  $orderIds
-     * @return array<int, array{code: string, bar_code: ?string, is_open: bool, money_out_of_sync: bool, nawris_asks: string, sync_error: ?string, shared_with: list<array{id: int, code: string}>}>
+     * @return array<int, array{code: string, bar_code: ?string, is_open: bool, money_out_of_sync: bool, nawris_asks: string, sync_error: ?string, nawris_payer: ?string, shared_with: list<array{id: int, code: string}>}>
      */
     public function parcelCodesFor(array $orderIds): array
     {
@@ -359,7 +400,7 @@ final class CarrierService
             ->orderByDesc('l.id')
             ->get([
                 'l.order_id', 'l.nawris_parcel_id', 'p.code', 'p.bar_code', 'p.closed_at',
-                'p.amount_to_collect', 'p.sync_failed_at', 'p.sync_error',
+                'p.amount_to_collect', 'p.sync_failed_at', 'p.sync_error', 'p.shipment_on_sender',
             ]);
 
         $latest = [];
@@ -385,6 +426,12 @@ final class CarrierService
                 'money_out_of_sync' => $row->closed_at === null && $row->sync_failed_at !== null,
                 'nawris_asks' => Money::round((string) $row->amount_to_collect),
                 'sync_error' => $row->sync_error === null ? null : (string) $row->sync_error,
+                // Who Nawris has paying their fee, as far as we know — `recipient`, `us`, or null.
+                // The order screen compares it with the order's own answer: when they differ, a
+                // change of ours did not reach them and the courier will charge as Nawris says.
+                'nawris_payer' => NawrisParcelTerms::payerFor(
+                    $row->shipment_on_sender === null ? null : (int) $row->shipment_on_sender,
+                )?->value,
                 'shared_with' => array_values(array_filter(
                     $members[(int) $row->nawris_parcel_id] ?? [],
                     fn (array $member): bool => $member['id'] !== $orderId,

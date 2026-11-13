@@ -204,6 +204,7 @@ import 'package:dayaa/features/orders/repositories/order_payment_repository_impl
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/repositories/order_repository_impl.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/change_delivery_payer.dart';
 import 'package:dayaa/features/orders/usecases/change_order_status.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
@@ -1199,6 +1200,11 @@ abstract final class Injector {
       ..registerLazySingleton<ConfirmReadyMessage>(
         () => ConfirmReadyMessage(sl<OrderRepository>()),
       )
+      // «التوصيل على: المستلم / علينا» — a use case for the reason the two above are: the sheet
+      // asks, sends, and the order redraws from what came back.
+      ..registerLazySingleton<ChangeDeliveryPayer>(
+        () => ChangeDeliveryPayer(sl<OrderRepository>()),
+      )
       // Spoiled stock, written off against the line that was being printed. A use case rather
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
       ..registerLazySingleton<RecordScrapLoss>(
@@ -1400,6 +1406,7 @@ abstract final class Injector {
           restoreOrder: sl<RestoreOrder>(),
           confirmReadyMessage: sl<ConfirmReadyMessage>(),
           confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
+          changeDeliveryPayer: sl<ChangeDeliveryPayer>(),
         ),
       )
       ..registerFactory<OrderTicketsCubit>(

@@ -22,8 +22,10 @@ use DateTimeInterface;
  *   *earliest* event that carries a door amount gives it: that amount less what we had asked for at
  *   that moment. When that event is itself an edit, the amount from before the edit is the one that
  *   counts.
- * - **Who pays** starts at `1` and only ever changes through `changes.shipment_on_sender` on one of
- *   their edits, so it is the last value set by an edit.
+ * - **Who pays** starts at what we dispatched the parcel as (`payer_at_dispatch`; `1` for every
+ *   parcel from before 2026-11-13) and changes through `changes.shipment_on_sender` on one of their
+ *   edits — or through ours: our last accepted change (`payer_sent`, `payer_sent_at`) counts from
+ *   the moment we made it. The last of these wins.
  * - **An edit that moves the parcel to another city** makes the fee unknown from then on.
  *
  * **Read from the stored rows in id order, never from the event being processed.** Webhooks are
@@ -47,13 +49,26 @@ final class ReadNawrisParcelTerms
             ->orderBy('id')
             ->get(['id', 'payload', 'received_at']);
 
-        $shipmentOnSender = NawrisParcelTerms::CUSTOMER_PAYS;
+        // Where the parcel started: what we dispatched it as. Parcels from before 2026-11-13 carry
+        // nothing here, and every one of them was dispatched as the customer paying.
+        $shipmentOnSender = $parcel->payer_at_dispatch ?? NawrisParcelTerms::CUSTOMER_PAYS;
         $fee = null;
         $feeDecided = false;
         $cityChanged = false;
         $feeBeforeMove = null;
 
+        // Our own last accepted change of who pays, slotted into their history at the moment we
+        // made it — their webhook for our edit may not carry `changes.shipment_on_sender`, and
+        // without this the next event would read the parcel back to where it was.
+        $sentAt = $parcel->payer_sent_at;
+        $sentApplied = $parcel->payer_sent === null || $sentAt === null;
+
         foreach ($events as $event) {
+            if (! $sentApplied && ($event->received_at === null || $event->received_at >= $sentAt)) {
+                $shipmentOnSender = (int) $parcel->payer_sent;
+                $sentApplied = true;
+            }
+
             $payload = NawrisWebhookPayload::fromArray((array) $event->payload);
 
             if (! $feeDecided && $payload->status() === NawrisStatusCode::Delivered) {
@@ -83,6 +98,12 @@ final class ReadNawrisParcelTerms
             }
 
             $shipmentOnSender = $payload->shipmentOnSenderAfter ?? $shipmentOnSender;
+        }
+
+        // Sent after every event read so far — unless we are reading as of an event that came
+        // before it, when it had not happened yet.
+        if (! $sentApplied && ($upTo === null || $upTo->received_at === null || $upTo->received_at >= $sentAt)) {
+            $shipmentOnSender = (int) $parcel->payer_sent;
         }
 
         return new NawrisParcelTerms($fee, $shipmentOnSender, $cityChanged, $feeBeforeMove);

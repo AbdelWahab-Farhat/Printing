@@ -9,6 +9,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -447,6 +448,17 @@ class OrderRepositoryImpl implements OrderRepository {
         data: <String, dynamic>{'sent': sent},
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, DeliveryPayerChange>> changeDeliveryPayer(int orderId, {required String paidBy}) {
+    return safeRequest<DeliveryPayerChange>(
+      () => _dio.patch(
+        OrderEndpoints.deliveryPayer(orderId),
+        data: <String, dynamic>{'delivery_paid_by': paidBy},
+      ),
+      parse: (data) => DeliveryPayerChange.fromJson(data as Map<String, dynamic>),
     );
   }
 

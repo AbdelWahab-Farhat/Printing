@@ -22,6 +22,7 @@ import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/delivery_payer_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
@@ -196,6 +197,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// Not behind a permission of its own: the person taking the order is the one being told it
   /// is urgent, and `orders.manage` — which this whole form already costs — is the grant.
   bool _isUrgent = false;
+
+  /// «التوصيل علينا» — off, the recipient pays at the door. Only offered for a delivery.
+  bool _wePayDelivery = false;
 
   @override
   void dispose() {
@@ -396,6 +400,9 @@ class _NewOrderViewState extends State<_NewOrderView> {
       // Only when it was ticked. A `false` on every ordinary order would be the app saying
       // something about a field nobody touched — see `OrderData::$isUrgent`.
       isUrgent: _isUrgent ? true : null,
+      // Only for a delivery: an office pickup has no courier to pay, whatever the switch said
+      // before the city was changed.
+      wePayDelivery: _wePayDelivery && !city.isOfficePickup,
       lines: [
         for (final line in _lines)
           DraftOrderLine(
@@ -731,6 +738,16 @@ class _NewOrderViewState extends State<_NewOrderView> {
         if (error != null) ...[
           SizedBox(height: 6.h),
           Text(error, style: context.textTheme.bodySmall?.copyWith(color: scheme.error)),
+        ],
+        // **Who pays the courier, asked where the courier's price is shown.** Off by default —
+        // the recipient pays at the door — and absent for an office pickup, which has no courier.
+        if (city != null && !city.isOfficePickup) ...[
+          SizedBox(height: 6.h),
+          DeliveryPayerSwitch(
+            value: _wePayDelivery,
+            onChanged: (value) => setState(() => _wePayDelivery = value),
+            deliveryPrice: city.deliveryPrice,
+          ),
         ],
       ],
     );

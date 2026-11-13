@@ -2,8 +2,10 @@
 // this file names is worth taking.
 import 'package:dartz/dartz.dart' show Either;
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
+import 'package:dayaa/features/orders/usecases/change_delivery_payer.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
@@ -44,6 +46,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required RestoreOrder restoreOrder,
     required ConfirmReadyMessage confirmReadyMessage,
     required ConfirmDepositReceipt confirmDepositReceipt,
+    ChangeDeliveryPayer? changeDeliveryPayer,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
@@ -55,6 +58,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _restoreOrder = restoreOrder,
        _confirmReadyMessage = confirmReadyMessage,
        _confirmDepositReceipt = confirmDepositReceipt,
+       _changeDeliveryPayer = changeDeliveryPayer,
        super(const OrderDetailState.loading());
 
   final int _orderId;
@@ -86,6 +90,13 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// phone, which is why nothing derives it and why it lives here rather than on the move screen.
   final ConfirmReadyMessage _confirmReadyMessage;
   final ConfirmDepositReceipt _confirmDepositReceipt;
+
+  /// Optional so the screens and tests that never change who pays need not build one; the
+  /// injector always passes it.
+  final ChangeDeliveryPayer? _changeDeliveryPayer;
+
+  /// What the last [changeDeliveryPayer] answered beside the order — read once by the screen.
+  DeliveryPayerChange? _lastPayerChange;
 
   Future<void> load() async {
     // Keeps whatever is on screen: this is also the pull-to-refresh handler, and blanking the
@@ -237,6 +248,34 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// the screen greys the switch from the order it is already holding.
   Future<Failure?> confirmDepositReceipt({required bool received}) =>
       _write(() => _confirmDepositReceipt(_orderId, received: received));
+
+  /// «التوصيل على: المستلم / علينا» — [paidBy] is `recipient` or `us`.
+  ///
+  /// The same shape as the writes above: the order redraws from the answer, a refusal leaves it
+  /// where it was. What else came back — whether Nawris heard, which orders of a shared parcel
+  /// changed too — waits in [takeDeliveryPayerChange] for the screen to say once.
+  Future<Failure?> changeDeliveryPayer({required String paidBy}) {
+    final change = _changeDeliveryPayer;
+    if (change == null) return Future.value();
+
+    return _write(() async {
+      final result = await change(_orderId, paidBy: paidBy);
+
+      return result.map((answer) {
+        _lastPayerChange = answer;
+
+        return answer.order;
+      });
+    });
+  }
+
+  /// The last change's carrier answer and shared-parcel codes, handed over once.
+  DeliveryPayerChange? takeDeliveryPayerChange() {
+    final change = _lastPayerChange;
+    _lastPayerChange = null;
+
+    return change;
+  }
 
   /// Reads the order again for the one thing this app cannot work out for itself: the server's
   /// preview of what «حذف» — or «استعادة» — is about to do.

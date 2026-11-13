@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Requests\Order;
 use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
@@ -73,6 +74,9 @@ class StoreOrderRequest extends FormRequest
             // Guarded by `orders.discount` inside the domain, so a console command or a future
             // import cannot get past it either.
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('discount')],
+            // Who pays the courier; absent is the recipient. Read on creation only — afterwards it
+            // moves through `PATCH orders/{order}/delivery-payer`, which tells the carrier.
+            'delivery_paid_by' => ['nullable', Rule::enum(DeliveryPayer::class)],
 
             // The charge going the other way, behind `orders.additional_cost` and guarded in the
             // domain for the same reason the discount is.
@@ -238,6 +242,7 @@ class StoreOrderRequest extends FormRequest
             'address_details' => 'تفاصيل العنوان',
             'design_fee' => 'سعر التصميم',
             'discount' => 'الخصم',
+            'delivery_paid_by' => 'من يدفع التوصيل',
             'additional_cost' => 'التكلفة الإضافية',
             'additional_cost_reason' => 'سبب التكلفة الإضافية',
             'additional_cost_note' => 'ملاحظة التكلفة الإضافية',

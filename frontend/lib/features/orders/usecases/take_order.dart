@@ -75,6 +75,9 @@ class TakeOrder {
     /// «مستعجلة», as the clerk ticked it at the counter. Passed straight through: it is one
     /// boolean the server takes at its word, unlike the fee and the discount around it.
     bool? isUrgent,
+
+    /// «التوصيل علينا». False sends nothing, which the server reads as the recipient.
+    bool wePayDelivery = false,
   }) {
     final fee = _number(designFee);
     final artwork = designSource == noDesign && !printsHere ? const <int>[] : designIds;
@@ -110,6 +113,7 @@ class TakeOrder {
         additionalCostNote: isCharging ? _text(additionalCostNote) : null,
         vendorId: vendorId,
         isUrgent: isUrgent,
+        deliveryPaidBy: wePayDelivery ? 'us' : null,
         recipientPhone: _text(recipientPhone),
         notes: _text(notes),
         items: [

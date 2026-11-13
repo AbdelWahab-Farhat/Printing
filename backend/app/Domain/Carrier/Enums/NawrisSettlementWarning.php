@@ -24,6 +24,12 @@ enum NawrisSettlementWarning: string
     /** الأجرة علينا ولا نعرف قدرها. */
     case FeeUnknown = 'fee_unknown';
 
+    /**
+     * The fee is ours and Nawris never told us its size, so it is the order's delivery cost — the
+     * city's rate. What Nawris really kept replaces it (DELIVERY-PAYER.md §3).
+     */
+    case FeeFromCityRate = 'fee_from_city_rate';
+
     /** للطلبية مال عند سائق أيضاً، وتسويتها تنقله مع مال النورس. */
     case OtherCustody = 'other_custody';
 

@@ -6,6 +6,7 @@ namespace App\Domain\Order;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AddOrderDesign;
+use App\Domain\Order\Actions\ChangeDeliveryPayer;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
@@ -35,9 +36,11 @@ use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderLineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\ShortageRevision;
+use App\Domain\Order\Exceptions\DeliveryPayerCannotChange;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
@@ -66,6 +69,7 @@ use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The Order module's public front door.
@@ -118,6 +122,7 @@ class OrderService
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
+        private readonly ChangeDeliveryPayer $changeDeliveryPayer,
         private readonly ManufacturingCostRateListQuery $manufacturingCostRateListQuery,
     ) {}
 
@@ -352,6 +357,25 @@ class OrderService
      *
      * @throws ReadyMessageNeedsAReadyOrder
      */
+    /**
+     * «التوصيل على: المستلم / علينا» on this order and on every order sharing its parcel — one
+     * transaction, so a parcel never holds two answers. Telling the carrier is the caller's.
+     *
+     * @param  list<Order>  $alongWith  the orders that share its open parcel, from the carrier
+     *
+     * @throws DeliveryPayerCannotChange
+     */
+    public function changeDeliveryPayer(Order $order, DeliveryPayer $payer, array $alongWith = []): Order
+    {
+        return DB::transaction(function () use ($order, $payer, $alongWith): Order {
+            foreach ($alongWith as $sibling) {
+                ($this->changeDeliveryPayer)($sibling, $payer);
+            }
+
+            return ($this->changeDeliveryPayer)($order, $payer);
+        });
+    }
+
     public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order
     {
         return ($this->markReadyMessageSent)($order, $sent, $actor);

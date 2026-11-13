@@ -47,6 +47,8 @@ final class AuditAttributeLabels
         'fulfilment_type' => 'طريقة الاستلام',
         'pricing_unit' => 'وحدة التسعير',
         'delivery_price' => 'سعر التوصيل',
+        'delivery_paid_by' => 'من يدفع التوصيل',
+        'delivery_cost' => 'تكلفة التوصيل علينا',
 
         // The warehouse and money vocabulary, which reads the same on a purchase order, an
         // arrival, a batch and a movement — the whole point of this list. Naming them per
@@ -286,6 +288,9 @@ final class AuditAttributeLabels
             'collected_amount' => 'المبلغ المحصّل',
             'carrier_fee' => 'أجرة نورس',
             'shipment_on_sender' => 'من يدفع أجرة نورس',
+            'payer_at_dispatch' => 'من يدفع أجرة نورس عند الإرسال',
+            'payer_sent' => 'من يدفع أجرة نورس كما أبلغناها',
+            'payer_sent_at' => 'تاريخ إبلاغ نورس بمن يدفع أجرتها',
             'sync_failed_at' => 'تاريخ رفض نورس لتعديل المبلغ',
             'sync_error' => 'سبب رفض نورس',
             'door_amount' => 'مبلغ نورس عند الباب',

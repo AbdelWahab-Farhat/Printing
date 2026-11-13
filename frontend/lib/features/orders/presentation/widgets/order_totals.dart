@@ -1,3 +1,4 @@
+import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -15,8 +16,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// wonder what it means.
 ///
 /// **«التوصيل» is under the total, not above it, and adds to nothing.** By the owner's
-/// instruction the fee is neither our revenue nor our cost: the courier collects it from the
-/// customer at their door, so «الإجمالي» is the goods and our own charges alone. It is still
+/// instruction the fee is not our revenue: the courier collects it from the customer at their
+/// door, so «الإجمالي» is the goods and our own charges alone. **When we pay it** (DELIVERY-PAYER)
+/// it is our cost instead, and appears a second time, as a subtraction on the way to the profit. It is still
 /// printed, because a clerk quoting an order has to say what the trip costs — and printed
 /// *below* the rule, because a figure standing above a total is a figure the reader adds into
 /// it.
@@ -30,9 +32,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **والعلامتان `−` و`=` مكتوبتان.** الخطّ الفاصل يقول «انتهى شيء» ولا يقول ماذا فُعل؛ والسؤال
 /// الذي تجيبه هذه البطاقة هو «الرقم ده من وين جا».
 class OrderTotals extends StatelessWidget {
-  const OrderTotals({required this.order, this.showCosts = false, super.key});
+  const OrderTotals({
+    required this.order,
+    this.showCosts = false,
+    this.onChangeDeliveryPayer,
+    super.key,
+  });
 
   final Order order;
+
+  /// «تغيير» under the delivery line — null when the order may no longer change who pays, or
+  /// the reader may not. See `Order.canChangeDeliveryPayer`.
+  final VoidCallback? onChangeDeliveryPayer;
 
   /// Whether the two cost lines are drawn at all — `orders.view_cost`.
   ///
@@ -79,6 +90,10 @@ class OrderTotals extends StatelessWidget {
             // والصفر في تلك الفجوة يقول «هذه الطلبية لم تكلّفنا شيئاً» — وهي جملةٌ أخرى، وكاذبة.
             value: order.totalCogs?.grouped,
           ),
+          // **When we pay the courier, the fee is the order's own cost** (option B) — a second
+          // subtraction on the way to the profit, so «مجمل الربح» still adds up on the screen.
+          if (order.wePayDelivery)
+            _Line(sign: '−', label: 'التوصيل علينا', value: order.deliveryCost.grouped),
           // **والربح ينتظر التكلفة.** قبل «جاهزة» يكون «لم يُحتسب بعد» مرّتين، والثانية لا تقول
           // شيئاً لم تقله الأولى — فسطر `=` وخطّه لا يُرسمان حتى يوجد ما يُطرح.
           if (order.totalCogs != null) ...[
@@ -102,18 +117,45 @@ class OrderTotals extends StatelessWidget {
         Padding(
           padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
           child: _Line(
-            // The label carries the whole answer — «على الزبون» is why this figure is down here
-            // and out of the sum, and a sentence under the line saying so would be the same fact
+            // The label carries the whole answer — who pays is why this figure is down here and
+            // out of the sum, and a sentence under the line saying so would be the same fact
             // told twice.
-            label: 'التوصيل (على الزبون)',
+            label: order.wePayDelivery ? 'التوصيل (علينا — مجاني للزبون)' : 'التوصيل (على الزبون)',
             // '0.00' is a fact worth stating — it is what an office pickup costs, and «كم
             // التوصيل؟» wants an answer rather than a missing line to infer one from. Only the
             // lines *inside* the total hide when empty.
             value: order.deliveryPrice.grouped,
           ),
         ),
+        if (_nawrisDisagrees)
+          Padding(
+            padding: EdgeInsets.only(bottom: 6.h),
+            child: Text(
+              order.wePayDelivery
+                  ? 'نورس ما زالت تحمّل أجرتها على المستلم — لم يصلها التغيير، والمندوب سيطلبها منه.'
+                  : 'نورس ما زالت تحمّل أجرتها علينا — لم يصلها التغيير، وستخصمها مما تحوّله.',
+              style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+            ),
+          ),
+        if (onChangeDeliveryPayer case final change?)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: change,
+              icon: Icon(AppIcons.edit, size: 16.sp),
+              label: const Text('تغيير من يدفع التوصيل'),
+            ),
+          ),
       ],
     );
+  }
+
+  /// Nawris has the other side paying than the order says — our change never reached them.
+  bool get _nawrisDisagrees {
+    final parcel = order.nawrisParcel;
+    final theirs = parcel?.nawrisPayer;
+
+    return parcel != null && parcel.isOpen && theirs != null && theirs != order.deliveryPaidBy;
   }
 
   /// Whether the margin came out negative.

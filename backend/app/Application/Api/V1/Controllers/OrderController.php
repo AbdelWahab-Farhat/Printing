@@ -6,6 +6,7 @@ namespace App\Application\Api\V1\Controllers;
 
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
+use App\Application\Api\V1\Requests\Order\ChangeDeliveryPayerRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
@@ -20,6 +21,7 @@ use App\Application\Api\V1\Requests\Order\UndoOrderDeliveryRequest;
 use App\Application\Api\V1\Requests\Order\UnsettleOrderRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderDesignColorsRequest;
 use App\Application\Api\V1\Requests\Order\UpdateOrderRequest;
+use App\Application\Api\V1\Resources\NawrisMoneySyncResource;
 use App\Application\Api\V1\Resources\OrderDesignResource;
 use App\Application\Api\V1\Resources\OrderResource;
 use App\Application\Api\V1\Resources\ProductionCostEntryResource;
@@ -30,6 +32,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\DeleteOrder;
 use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
@@ -525,6 +528,38 @@ class OrderController extends Controller
             new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             'تم تحديث نواقص الطلبية',
         );
+    }
+
+    /**
+     * Change who pays delivery
+     *
+     * «التوصيل على: المستلم / علينا». Open until the courier has collected — «جاري التوصيل»
+     * included — and refused with 422 from «تم الاستلام» on. When we pay, the fee becomes the
+     * order's own cost: its profit and the investors' share are worked out again in the same
+     * request (Docs/orders/DELIVERY-PAYER.md).
+     *
+     * **Every order sharing its open Nawris parcel changes with it** — their parcel holds one
+     * answer — and `also_changed` names them. Nawris is then told once. **A refusal never fails
+     * the request**: the order says what was decided, and `carrier.warning` says the courier will
+     * still charge as before, exactly as a payment's does.
+     */
+    public function changeDeliveryPayer(ChangeDeliveryPayerRequest $request, Order $order): JsonResponse
+    {
+        $payer = DeliveryPayer::from((string) $request->validated('delivery_paid_by'));
+        $siblings = $order->delivery_paid_by === $payer ? [] : $this->carrier->parcelSiblingsOf($order);
+        $changed = $order->delivery_paid_by !== $payer;
+
+        $updated = $this->orders->changeDeliveryPayer($order, $payer, $siblings);
+
+        $carrier = $changed && $this->carrier->shouldDispatch($updated)
+            ? $this->carrier->tellAboutPayer($updated)
+            : null;
+
+        return $this->success([
+            'order' => new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated->refresh()))),
+            'carrier' => $carrier !== null ? new NawrisMoneySyncResource($carrier) : null,
+            'also_changed' => array_map(fn (Order $sibling): string => (string) $sibling->code, $siblings),
+        ], $payer === DeliveryPayer::Us ? 'صار التوصيل علينا' : 'صار التوصيل على المستلم');
     }
 
     /**

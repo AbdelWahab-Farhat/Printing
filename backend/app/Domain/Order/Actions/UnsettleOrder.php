@@ -6,6 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Exceptions\OrderIsNotSettled;
 use App\Domain\Order\Exceptions\SettledOrderMustBeUnsettledFirst;
 use App\Domain\Order\Models\Order;
@@ -52,6 +53,8 @@ final class UnsettleOrder
     public function __construct(
         private readonly RecordStatusTransition $record,
         private readonly TreasuryService $treasury,
+        private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
+        private readonly RecalculateOrderPayments $recalculatePayments,
     ) {}
 
     /**
@@ -82,6 +85,15 @@ final class UnsettleOrder
             ])->save();
 
             ($this->record)($locked, OrderStatus::Settled, OrderStatus::Delivered, trim($reason), $actor);
+
+            // What the carrier kept went back with the settlement, so an order whose courier we
+            // pay falls back to the city's rate as its delivery cost until it is settled again —
+            // and the money worked out from the real fee is worked out again from the guess.
+            if (($this->recalculateDeliveryCost)($locked)) {
+                OrderProfitFinalised::dispatch((int) $locked->getKey());
+
+                ($this->recalculatePayments)($locked);
+            }
 
             return $locked->refresh();
         });

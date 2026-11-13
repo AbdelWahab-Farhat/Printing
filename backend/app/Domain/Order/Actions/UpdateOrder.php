@@ -59,6 +59,7 @@ final class UpdateOrder
         private readonly VendorService $vendors,
         private readonly GuardOneBench $guardOneBench,
         private readonly RecalculateOrderPayments $recalculatePayments,
+        private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
     ) {}
 
     /**
@@ -185,7 +186,11 @@ final class UpdateOrder
 
             $recalculated = ($this->recalculate)($order->load('items'))->refresh();
 
-            if ($discountMoved && $recalculated->status->isClosed()) {
+            // The city's rate was copied again above; when we pay the courier and nothing has
+            // been kept at settlement yet, that rate is our delivery cost and moves with it.
+            $deliveryCostMoved = ($this->recalculateDeliveryCost)($recalculated);
+
+            if (($discountMoved && $recalculated->status->isClosed()) || $deliveryCostMoved) {
                 $this->reworkTheMoney($recalculated);
             }
 

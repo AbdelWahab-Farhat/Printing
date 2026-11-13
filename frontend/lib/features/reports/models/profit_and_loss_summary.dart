@@ -32,6 +32,10 @@ abstract class ProfitAndLossSummary with _$ProfitAndLossSummary {
     @JsonKey(name: 'cost_of_goods_sold') required PnlCostOfGoodsSold costOfGoodsSold,
     @JsonKey(name: 'gross_profit') required String grossProfit,
 
+    /// The courier's fee on the orders where we paid it — already taken off [grossProfit], and
+    /// not part of [costOfGoodsSold]. Null from a server that predates «التوصيل علينا».
+    @JsonKey(name: 'delivery_costs') String? deliveryCosts,
+
     /// Money that came in over these same days — and nothing more than that. See [PnlPeriod]
     /// for what the days mean and the class note on the screen for why it is never netted.
     @JsonKey(name: 'cash_collected') required String cashCollected,
@@ -86,6 +90,9 @@ abstract class ProfitAndLossSummary with _$ProfitAndLossSummary {
   /// cannot read counts as a profit, because painting «خسارة» over a figure nobody could parse
   /// is the worse of the two mistakes.
   bool get isLoss => (num.tryParse(grossProfit) ?? 0) < 0;
+
+  /// Whether any order in the period had delivery on us — the line is drawn only then.
+  bool get hasDeliveryCosts => (num.tryParse(deliveryCosts ?? '') ?? 0) > 0;
 
   /// Whether the block of figures is about anything at all.
   ///

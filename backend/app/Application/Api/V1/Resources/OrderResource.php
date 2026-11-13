@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\DTOs\TransitionField;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
@@ -150,6 +151,11 @@ class OrderResource extends JsonResource
             'items_total' => (string) $this->items_total,
             'design_fee' => (string) $this->design_fee,
             'delivery_price' => (string) $this->delivery_price,
+            // Who pays the courier, and what that costs us — 0 unless we pay. When we do, it is
+            // already inside `gross_profit` and the investors' share (DELIVERY-PAYER.md).
+            'delivery_paid_by' => $this->payer()->value,
+            'delivery_paid_by_label' => $this->payer()->label(),
+            'delivery_cost' => (string) ($this->delivery_cost ?? '0.00'),
             'discount' => (string) $this->discount,
             // Beside the discount and never folded into it: an order's total is read as «هذا ما
             // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
@@ -524,7 +530,69 @@ class OrderResource extends JsonResource
             // every status but «إلغاء تام» and «مرفوض»; on a delivered or settled order it is the
             // only thing `UpdateOrder` accepts. See `Order::discountIsEditable()`.
             'discount_is_editable' => $this->discountIsEditable(),
+
+            // «التوصيل على: المستلم / علينا» — open until the courier has collected, for whoever
+            // may change an order. See `Order::deliveryPayerIsEditable()`.
+            'can_change_delivery_payer' => $this->deliveryPayerIsEditable()
+                && (bool) $request->user()?->can(PermissionName::ManageOrders->value),
+
+            // **What switching to the other side would do, said before it is done.** Sentences
+            // the change sheet prints above its button — the parts that are not certain, or that
+            // move somebody's money. Empty when the switch is not offered.
+            'delivery_payer_warnings' => $this->deliveryPayerWarnings($request),
         ];
+    }
+
+    private function payer(): DeliveryPayer
+    {
+        return $this->delivery_paid_by ?? DeliveryPayer::Recipient;
+    }
+
+    /**
+     * The warnings for switching this order to the payer it does not have now.
+     *
+     * Reads the parcel the controller attached (`nawris_parcel`), the same way the parcel line
+     * itself is drawn: an order may not know a carrier exists.
+     *
+     * @return list<string>
+     */
+    private function deliveryPayerWarnings(Request $request): array
+    {
+        if (! $this->deliveryPayerIsEditable() || ! $request->user()?->can(PermissionName::ManageOrders->value)) {
+            return [];
+        }
+
+        $toUs = $this->payer() === DeliveryPayer::Recipient;
+        $parcel = isset($this->nawris_parcel) && ($this->nawris_parcel['is_open'] ?? false)
+            ? $this->nawris_parcel
+            : null;
+        $warnings = [];
+
+        if ($toUs) {
+            $warnings[] = 'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.';
+
+            if (bccomp((string) $this->delivery_price, '0', 2) <= 0) {
+                $warnings[] = 'لا سعر توصيل لهذه المدينة — تكلفة التوصيل غير معروفة الآن، وتُعرف عند التسوية مما يحتفظ به الناقل.';
+            } else {
+                $warnings[] = 'المحسوب الآن '.$this->delivery_price.' حسب سعر المدينة. إن احتفظ الناقل عند التسوية بمبلغ آخر صار هو التكلفة وأُعيد حساب الربح.';
+            }
+        } elseif (bccomp((string) ($this->delivery_cost ?? '0'), '0', 2) > 0) {
+            $warnings[] = 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الطلبية فيرتفع ربحها وحصة المستثمرين، ويطلب المندوب أجرته من المستلم.';
+        }
+
+        if ($parcel !== null) {
+            $warnings[] = "الطلبية في طرد نورس {$parcel['code']} — سيُبلَّغ النورس بالتغيير. إن كان الطرد مع المندوب فقد ترفض، وعندها يطلب المندوب الأجرة كما كانت حتى يُعاد الإبلاغ.";
+
+            $shared = array_map(fn (array $order): string => (string) $order['code'], $parcel['shared_with'] ?? []);
+
+            if ($shared !== []) {
+                $warnings[] = 'الطرد مشترك مع '.implode('، ', $shared).' — يتغيّر من يدفع التوصيل عليها كلها، فللطرد دافعٌ واحد.';
+            }
+        } elseif ($this->status === OrderStatus::OutForDelivery) {
+            $warnings[] = 'الطلبية مع المندوب ولا طرد نورس لها — النظام لا يبلغ المندوب، بلّغه بنفسك.';
+        }
+
+        return $warnings;
     }
 
     /**

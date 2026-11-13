@@ -85,6 +85,13 @@ final class ProfitAndLossSummaryQuery
 
         $cogs = (string) (clone $recognized)->sum('total_cogs');
 
+        // **The courier's fee on the orders where we pay it** — a real cost of those sales, so it
+        // comes off gross profit, the way it comes off each order's own (DELIVERY-PAYER.md §3).
+        // Its own line rather than inside COGS: it is not goods, and «المواد + العمالة + غير
+        // المباشرة» must keep adding up to the COGS figure beside them. Zero on every order where
+        // the recipient pays, which is every order before 2026-11-13.
+        $deliveryCosts = (string) (clone $recognized)->sum('delivery_cost');
+
         $orderIds = (clone $recognized)->pluck('id');
 
         // **`material_cost_actual`, not `material_cost` — and this statement is the reason that
@@ -203,7 +210,8 @@ final class ProfitAndLossSummaryQuery
                 'overhead' => Money::round((string) $costBreakdown->overhead),
                 'total' => Money::round($cogs),
             ],
-            'gross_profit' => Money::round(bcsub($revenueTotal, $cogs, 8)),
+            'delivery_costs' => Money::round($deliveryCosts),
+            'gross_profit' => Money::round(bcsub(bcsub($revenueTotal, $cogs, 8), $deliveryCosts, 8)),
             'cash_collected' => Money::round($cashCollected),
             'write_offs' => Money::round($writeOffs),
 

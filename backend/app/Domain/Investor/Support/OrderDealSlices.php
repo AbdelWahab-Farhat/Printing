@@ -23,6 +23,7 @@ use App\Domain\Order\Queries\ProfitAttributionQuery;
  *
  * ```
  * E(O)          = grand_total − items_total        the order-level extras, net of the discount
+ *                 − delivery_cost                  and of the courier's fee when we pay it
  * line_revenue  = line_total + share of E(O)       allocated across lines by line_total
  * per draw c    revenue    = share of line_revenue    ← by quantity, over EVERY draw of the
  *               conversion = share of the line's        movement, the company's included
@@ -45,7 +46,7 @@ final class OrderDealSlices
      * The company's own draws are walked — they carry weight in every allocation — and then
      * dropped: they belong to nobody this class is answering about.
      *
-     * @param  array{grand_total: string, items_total: string, lines: list<array{
+     * @param  array{grand_total: string, items_total: string, delivery_cost?: string, lines: list<array{
      *     movement_id: int, stock_purchased: bool, line_total: string, conversion_cost: string
      * }>}  $order  as {@see ProfitAttributionQuery} returns it
      * @param  array<int, list<array{
@@ -61,7 +62,14 @@ final class OrderDealSlices
      */
     public static function forOrder(array $order, array $breakdown): array
     {
-        $extras = bcsub($order['grand_total'], $order['items_total'], 2);
+        // Less what delivery costs us when we pay the courier: a cost of the whole order, spread
+        // over its lines like the discount, so every deal whose goods it sold carries its part
+        // (owner's decision, 2026-11-13 — Docs/orders/DELIVERY-PAYER.md).
+        $extras = bcsub(
+            bcsub($order['grand_total'], $order['items_total'], 2),
+            $order['delivery_cost'] ?? '0.00',
+            2,
+        );
 
         $extraShares = Money::allocate(
             $extras,

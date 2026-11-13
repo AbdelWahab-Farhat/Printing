@@ -92,6 +92,10 @@ abstract class NewOrder with _$NewOrder {
     /// `vendorRequirementFor`. Accepted on any order the server takes.
     @JsonKey(name: 'vendor_id', includeIfNull: false) int? vendorId,
 
+    /// `us` when we pay the courier — free delivery for the customer, and the fee becomes the
+    /// order's own cost. **Omitted otherwise**: absent is the recipient, the server's default.
+    @JsonKey(name: 'delivery_paid_by', includeIfNull: false) String? deliveryPaidBy,
+
     @JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,
     @JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,
     @JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,

@@ -13,6 +13,7 @@ use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\RecordOrderPayment;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
@@ -548,12 +549,18 @@ class NawrisCarrierFeeTest extends TestCase
         // Arrange — every edit re-sends the whole payload. Sending 0 regardless would put the fee
         // back on a customer someone at Nawris had taken it off. Their API counts one lower than
         // their webhooks: webhook 2 is API 1.
+        //
+        // **Since 2026-11-13 the order says who pays** (DELIVERY-PAYER.md), so the switch at
+        // Nawris is on the order too: their webhook moves it (`followTheirPayer`), and the
+        // migration moved every order already switched when it shipped. What is asserted is
+        // unchanged — the edit keeps us paying.
         config()->set('services.nawris.authentication_key', 'key');
         config()->set('services.nawris.main_client_code', 'client');
         config()->set('services.nawris.base_url', 'https://carrier.test/external-api/');
         Http::fake(['*' => Http::response(['success' => 1, 'result' => []], 200)]);
-        [, $parcel] = $this->parcelAsking('141.00');
+        [$order, $parcel] = $this->parcelAsking('141.00');
         $parcel->forceFill(['shipment_on_sender' => NawrisParcelTerms::SENDER_PAYS])->save();
+        $order->forceFill(['delivery_paid_by' => DeliveryPayer::Us])->save();
 
         // Act
         app(EditNawrisParcel::class)($parcel);

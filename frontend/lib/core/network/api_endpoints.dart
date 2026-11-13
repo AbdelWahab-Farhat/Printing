@@ -660,6 +660,10 @@ abstract final class OrderEndpoints {
   /// of a stray tap, and it costs the same grant, `orders.ready_message`.
   static String readyMessage(int orderId) => '/orders/$orderId/ready-message';
 
+  /// «التوصيل على: المستلم / علينا» — `{"delivery_paid_by": "recipient"|"us"}`, grant
+  /// `orders.manage`. Open until the courier has collected; tells Nawris when a parcel is out.
+  static String deliveryPayer(int orderId) => '/orders/$orderId/delivery-payer';
+
   /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
   ///
   /// A PATCH like [readyMessage] above, and the same shape of fact: a field on the order is

@@ -1067,6 +1067,31 @@ final class TreasuryService
     }
 
     /**
+     * What the carrier kept out of this order's money, across every settlement still standing —
+     * the order's own and any payment's settled ahead of it (§٢٣). «0.00» when nothing was kept.
+     *
+     * Read by `RecalculateDeliveryCost`: when we pay the courier, what they really kept is what
+     * delivery cost us, whatever the city's rate said (owner's decision, 2026-11-13).
+     */
+    public function carrierFeeKeptFor(int $orderId): string
+    {
+        $operations = TreasuryOperation::query()
+            ->where('type', OperationType::Settlement->value)
+            ->where('order_id', $orderId)
+            ->whereNull('reverses_operation_id')
+            ->whereDoesntHave('reversedBy')
+            ->select('id');
+
+        $kept = TreasuryMovement::query()
+            ->whereIn('operation_id', $operations)
+            ->where('kind', MovementKind::Expense->value)
+            ->where('direction', MovementDirection::Out->value)
+            ->sum('amount');
+
+        return Money::round((string) $kept);
+    }
+
+    /**
      * The order's own settlements — and, when a payment is named, that payment's settlement too
      * (§٢٣). **Another payment's settlement is never in it:** reversing Nawris's first payment
      * leaves the second where it was settled, and un-settling the order leaves both.

@@ -25,6 +25,7 @@ import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/delivery_payer_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/open_ticket_on_order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
@@ -259,6 +260,14 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.order!.isArchived &&
                       !state.isWorking
                   ? _confirmDeposit
+                  : null,
+              // «من يدفع التوصيل» — the server folds the status and the grant into one answer;
+              // the archive and a write in flight are this screen's own two conditions.
+              onChangeDeliveryPayer:
+                  state.order!.canChangeDeliveryPayer &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _changeDeliveryPayer
                   : null,
               // لا تقرّر شيئاً — تختار الجملة تحت مفتاحٍ مقفل وحدها. انظر [OrderDepositCard].
               depositClaimedByMe: switch (state.order!.depositClaimedBy) {
@@ -547,6 +556,55 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
       return;
     }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// «من يدفع التوصيل؟» — the sheet shows what switching does (the server's own warnings), and
+  /// nothing is sent until its button is pressed.
+  ///
+  /// **A refusal at Nawris is said in a dialog somebody has to dismiss**, as a payment's is: the
+  /// order says what was decided, but the courier will still charge as before until Nawris is
+  /// told again. Orders that changed with it in a shared parcel are named in the confirmation.
+  Future<void> _changeDeliveryPayer() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final paidBy = await showDeliveryPayerSheet(context: context, order: order);
+    if (paidBy == null || !mounted) return;
+
+    final failure = await cubit.changeDeliveryPayer(paidBy: paidBy);
+    if (!mounted) return;
+
+    if (failure != null) {
+      // The server's own Arabic — «لا يمكن تغيير من يدفع التوصيل وحالة الطلبية «تم الاستلام»».
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final change = cubit.takeDeliveryPayerChange();
+
+    if (change?.carrier?.warning case final warning?) {
+      await showCustomDialog(
+        context: context,
+        title: 'لم تُبلَّغ نورس',
+        description: warning,
+        confirmLabel: 'حسناً',
+        cancelLabel: null,
+        severity: DialogSeverity.warning,
+      );
+
+      if (!mounted) return;
+    }
+
+    final also = change?.alsoChanged ?? const <String>[];
+    context.showSuccess(
+      '${paidBy == 'us' ? 'صار التوصيل علينا' : 'صار التوصيل على المستلم'}'
+      '${also.isEmpty ? '' : ' — ومعها في الطرد نفسه: ${also.join('، ')}'}',
+    );
 
     final updated = cubit.state.order;
     if (updated != null) context.handBack(updated);
@@ -974,6 +1032,7 @@ class _Body extends StatelessWidget {
     required this.onReinstate,
     required this.onConfirmReadyMessage,
     required this.onConfirmDeposit,
+    this.onChangeDeliveryPayer,
     required this.depositClaimedByMe,
   });
 
@@ -1030,6 +1089,10 @@ class _Body extends StatelessWidget {
 
   /// Null when the deposit tick may not be moved — see the note at the call site.
   final Future<void> Function(bool received)? onConfirmDeposit;
+
+  /// «تغيير من يدفع التوصيل» under the delivery line — null when the order no longer allows it,
+  /// the reader may not, or a write is already on its way.
+  final VoidCallback? onChangeDeliveryPayer;
 
   /// Whether the reader is the one who claimed the deposit was paid; chooses the sentence under
   /// a locked switch and nothing else.
@@ -1266,7 +1329,14 @@ class _Body extends StatelessWidget {
               // الطرحة كجدولين. البطاقة تحملها الآن بعلامتيها، وتنتهي عند «الإجمالي» لمن لا
               // يملك `orders.view_cost` — فالفصل الذي كان فصل *جمهور* بقي، والفصل الذي كان
               // فصل *معنى* ذهب.
-              _Section(title: 'الحساب', child: OrderTotals(order: order, showCosts: showCosts)),
+              _Section(
+                title: 'الحساب',
+                child: OrderTotals(
+                  order: order,
+                  showCosts: showCosts,
+                  onChangeDeliveryPayer: onChangeDeliveryPayer,
+                ),
+              ),
               if (showCosts) ...[
                 // **Under the cost column, never inside it.** A `plain_sale` row is money this
                 // order *paid* an investor for its material — it is inside «تكلفة الإنتاج»

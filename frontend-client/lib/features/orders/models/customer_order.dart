@@ -313,6 +313,10 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     /// shop is not among them and never arrives.
     @JsonKey(name: 'items_total') String? itemsTotal,
     @JsonKey(name: 'delivery_price') String? deliveryPrice,
+
+    /// `us` when the shop pays the courier — the customer pays nothing at the door. Defaulted to
+    /// the recipient for a server that predates it, which is what every such order was.
+    @JsonKey(name: 'delivery_paid_by') @Default('recipient') String deliveryPaidBy,
     @JsonKey(name: 'design_fee') String? designFee,
     String? discount,
 

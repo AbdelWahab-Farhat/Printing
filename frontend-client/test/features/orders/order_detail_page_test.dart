@@ -412,6 +412,21 @@ void main() {
       );
     });
 
+    testWidgets('delivery the shop pays for is said to be free, with no fee to have ready', (
+      tester,
+    ) async {
+      // Arrange — DELIVERY-PAYER.md: the shop pays the courier
+      final order = order1304().copyWith(deliveryPaidBy: 'us');
+
+      // Act
+      await open(tester, order);
+
+      // Assert
+      expect(find.text('مجاني'), findsOneWidget);
+      expect(find.text('التوصيل للمندوب'), findsNothing);
+      expect(find.text('15 د.ل'), findsNothing);
+    });
+
     testWidgets('an order not yet priced says so instead of a figure', (tester) async {
       // Arrange
       final order = order1304().copyWith(

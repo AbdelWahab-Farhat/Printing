@@ -25,7 +25,10 @@ class OrderMoneyCard extends StatelessWidget {
       if (order.designFee case final fee? when fee._isSomething) _Extra('التصميم', fee),
       if (order.discount case final discount? when discount._isSomething)
         _Extra('الخصم', discount),
-      if (order.deliveryPrice case final delivery? when delivery._isSomething)
+      // المتجر يدفع للمندوب: لا شيء يُحضَّر عند الباب، فيُقال ذلك صراحةً لا بغياب السطر.
+      if (order.deliveryPaidBy == 'us')
+        _Extra.free('التوصيل', icon: AppIcons.outForDelivery)
+      else if (order.deliveryPrice case final delivery? when delivery._isSomething)
         _Extra('التوصيل للمندوب', delivery, icon: AppIcons.outForDelivery),
     ];
 
@@ -55,10 +58,15 @@ class OrderMoneyCard extends StatelessWidget {
 
 /// سطرٌ تحت الخانات: اسمه، ومبلغه في آخر السطر.
 class _Extra extends StatelessWidget {
-  const _Extra(this.label, this.amount, {this.icon});
+  const _Extra(this.label, String this.amount, {this.icon});
+
+  /// سطرٌ بلا مبلغ: «التوصيل — مجاني».
+  const _Extra.free(this.label, {this.icon}) : amount = null;
 
   final String label;
-  final String amount;
+
+  /// null في سطر «مجاني».
+  final String? amount;
   final IconData? icon;
 
   @override
@@ -78,7 +86,13 @@ class _Extra extends StatelessWidget {
             style: style?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant),
           ),
         ),
-        Text('${amount.asMoney} د.ل', style: style?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          switch (amount) {
+            final amount? => '${amount.asMoney} د.ل',
+            null => 'مجاني',
+          },
+          style: style?.copyWith(fontWeight: FontWeight.w700),
+        ),
       ],
     );
   }

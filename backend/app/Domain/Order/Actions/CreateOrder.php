@@ -11,6 +11,7 @@ use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
@@ -128,7 +129,9 @@ final class CreateOrder
             ? null
             : (string) $this->vendors->find($data->vendorId)->name;
 
-        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus): Order {
+        $payer = $data->deliveryPaidBy ?? DeliveryPayer::Recipient;
+
+        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus, $payer): Order {
             $order = new Order;
 
             $order->fill([
@@ -166,6 +169,10 @@ final class CreateOrder
                 'status' => $initialStatus,
                 'design_fee' => $data->designSource->isChargeable() ? $data->designFee : '0.00',
                 'delivery_price' => $destination->deliveryPrice,
+                // The recipient unless the form said otherwise; when we pay, the city's rate is
+                // the order's delivery cost until settlement shows the real one.
+                'delivery_paid_by' => $payer,
+                'delivery_cost' => $payer === DeliveryPayer::Us ? $destination->deliveryPrice : '0.00',
                 'discount' => $data->discount,
                 // The three move together and are guarded together: an amount, why it was
                 // charged, and the words beside it are one decision, not three fields.

@@ -48,6 +48,11 @@ class NawrisParcel extends Model
             'collected_amount' => 'decimal:2',
             'carrier_fee' => 'decimal:2',
             'shipment_on_sender' => 'integer',
+            // What *we* told them about who pays, in their webhook numbering — at dispatch, and
+            // our last accepted change with its moment. See ReadNawrisParcelTerms.
+            'payer_at_dispatch' => 'integer',
+            'payer_sent' => 'integer',
+            'payer_sent_at' => 'datetime',
             'sync_failed_at' => 'datetime',
             'door_amount' => 'decimal:2',
             'remote_status_code' => 'integer',
