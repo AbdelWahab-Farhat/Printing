@@ -66,7 +66,33 @@ class OrderReturnMessageSwitch extends StatelessWidget {
   );
 }
 
-/// The row both message switches draw: a switch, and under it who set it and when.
+/// «تم إرسال الطلبية للمورد» — the vendor-side twin of [OrderReadyMessageSwitch], on an
+/// outsourced order.
+///
+/// The employee copies the vendor message, sends it with the design, and then says so here. The
+/// server clears the mark on every entry into «قيد التصميم», because a corrected design has to
+/// go out again.
+class OrderVendorMessageSwitch extends StatelessWidget {
+  const OrderVendorMessageSwitch({required this.order, required this.onChanged, super.key});
+
+  final Order order;
+
+  /// Null when the mark may not be moved — a reader without `orders.status.manufacturing`, an
+  /// archived order, or a write already in flight.
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) => MessageSentSwitch(
+    title: 'تم إرسال الطلبية للمورد',
+    icon: AppIcons.vendorMessage,
+    sent: order.isVendorMessageSent,
+    sentBy: order.vendorMessageSentBy,
+    sentAt: order.vendorMessageSentAt,
+    onChanged: onChanged,
+  );
+}
+
+/// The row every message switch draws: a switch, and under it who set it and when.
 class MessageSentSwitch extends StatelessWidget {
   const MessageSentSwitch({
     required this.title,

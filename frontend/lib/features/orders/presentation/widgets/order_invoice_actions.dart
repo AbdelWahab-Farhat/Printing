@@ -92,21 +92,47 @@ class CopyReturnMessageButton extends StatelessWidget {
   }
 }
 
-/// Copies a customer message the server wrote. The admin words these in «رسائل الزبائن», so
-/// the app holds no text of its own; a null means a server too old to send one, and the button
-/// says so rather than copying nothing.
+/// «نسخ رسالة المورد» — what the vendor of an outsourced order is to make: the lines, the sizes,
+/// the quantities and the inks, in the admin's frame. Nothing about the customer or money is in
+/// it; the server writes it so.
+///
+/// Like the others, copying does not tick «تم إرسال الطلبية للمورد»: a copy is not a send.
+class CopyVendorMessageButton extends StatelessWidget {
+  const CopyVendorMessageButton({required this.order, super.key});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CopyServerTextButton(
+      label: 'نسخ رسالة المورد',
+      icon: AppIcons.vendorMessage,
+      text: order.vendorMessageText,
+      copied: 'تم نسخ رسالة المورد',
+      pasteHint: 'ألصقها في محادثة المورد',
+    );
+  }
+}
+
+/// Copies a message the server wrote. The admin words these in «نصوص الرسائل», so the app
+/// holds no text of its own; a null means a server too old to send one, and the button says so
+/// rather than copying nothing.
 class _CopyServerTextButton extends StatelessWidget {
   const _CopyServerTextButton({
     required this.label,
     required this.icon,
     required this.text,
     required this.copied,
+    this.pasteHint = 'ألصقها في محادثة الزبون',
   });
 
   final String label;
   final IconData icon;
   final String? text;
   final String copied;
+
+  /// Where to paste it — the customer's chat, or the vendor's.
+  final String pasteHint;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +150,7 @@ class _CopyServerTextButton extends StatelessWidget {
 
         unawaited(Clipboard.setData(ClipboardData(text: message)));
 
-        context.showSuccess(copied, details: 'ألصقها في محادثة الزبون');
+        context.showSuccess(copied, details: pasteHint);
       },
     );
   }

@@ -122,6 +122,22 @@ class OrderResource extends JsonResource
             ),
             'return_message_text' => $texts->returnFor($this->resource),
 
+            // ── «رسالة المورد» ─────────────────────────────────────────────────────────────────
+            // The same keys again, for the vendor of an outsourced order: applies in «جديدة»,
+            // «قيد التصميم» and «قيد التصنيع», cleared on every entry into «قيد التصميم». The text
+            // is null when the lines were not loaded. See OUTSOURCED-PRODUCTS.md §10.
+            'vendor_message_applies' => $this->vendorMessageApplies(),
+            'is_vendor_message_sent' => $this->vendor_message_sent_at !== null,
+            'vendor_message_sent_at' => $this->vendor_message_sent_at?->toIso8601String(),
+            'vendor_message_sent_by' => $this->whenLoaded(
+                'vendorMessenger',
+                fn () => $this->vendorMessenger === null ? null : [
+                    'id' => $this->vendorMessenger->id,
+                    'name' => $this->vendorMessenger->name,
+                ],
+            ),
+            'vendor_message_text' => $texts->vendorFor($this->resource),
+
             // Who is making it, for an order a vendor executes. The name travels with the id
             // because it is what this order said at the time — a vendor renamed since keeps its
             // new name everywhere except here. Null on every order that is made in-house.

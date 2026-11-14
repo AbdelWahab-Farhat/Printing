@@ -15,10 +15,12 @@ use Illuminate\Http\Request;
 /**
  * Customer messages
  *
- * The four texts staff copy and send to customers — the two ready messages and the two return
- * messages — as the admin wants them worded. Each has a built-in default; saving an empty text
- * puts the default back. `{رقم_الفاتورة}` in a text is replaced with the order's number.
- * See Docs/orders/ORDER-RETURN-MESSAGE.md §٥.
+ * The five texts staff copy and send — the two ready messages and the two return messages to
+ * customers, and the vendor message on an outsourced order — as the admin wants them worded.
+ * Each has a built-in default; saving an empty text puts the default back. `{رقم_الفاتورة}` in a
+ * text is replaced with the order's number; `{الأصناف}`, in the vendor text only, with the
+ * order's lines and colours. See Docs/orders/ORDER-RETURN-MESSAGE.md §٥ and
+ * Docs/outsourced-products/OUTSOURCED-PRODUCTS.md §10.
  */
 class CustomerMessageController extends Controller
 {
@@ -70,7 +72,7 @@ class CustomerMessageController extends Controller
         $this->settings->updateCustomerMessages($columns, $request->user()?->id);
         $this->texts->forget();
 
-        return $this->success($this->payload(), 'تم حفظ رسائل الزبائن');
+        return $this->success($this->payload(), 'تم حفظ نصوص الرسائل');
     }
 
     /**
@@ -87,6 +89,9 @@ class CustomerMessageController extends Controller
                     'body' => $this->texts->template($message),
                     'default_body' => $message->defaultBody(),
                     'is_customised' => $this->texts->isCustomised($message),
+                    // What this text may contain besides plain words: the order's number on all
+                    // of them, and the line list on the vendor text.
+                    'placeholders' => $message->placeholders(),
                 ],
                 CustomerMessage::cases(),
             ),

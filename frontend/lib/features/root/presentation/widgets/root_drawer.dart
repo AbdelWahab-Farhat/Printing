@@ -275,11 +275,12 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.roles,
           permission: AppPermission.manageRoles,
         ),
-        // The wording of the ready and return messages staff copy to customers. Company
-        // settings, so behind `settings.view`; saving needs `settings.manage`.
+        // The wording of the messages staff copy — ready and return to customers, and the
+        // vendor message. Company settings, so behind `settings.view`; saving needs
+        // `settings.manage`.
         _Link(
           icon: _LinkIcon.settings,
-          label: 'رسائل الزبائن',
+          label: 'نصوص الرسائل',
           route: Routes.customerMessages,
           permission: AppPermission.viewCompanySettings,
         ),

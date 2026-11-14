@@ -44,6 +44,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required RestoreOrder restoreOrder,
     required ConfirmReadyMessage confirmReadyMessage,
     required ConfirmReturnMessage confirmReturnMessage,
+    required ConfirmVendorMessage confirmVendorMessage,
     required ConfirmDepositReceipt confirmDepositReceipt,
   }) : _orderId = orderId,
        _getOrder = getOrder,
@@ -56,6 +57,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _restoreOrder = restoreOrder,
        _confirmReadyMessage = confirmReadyMessage,
        _confirmReturnMessage = confirmReturnMessage,
+       _confirmVendorMessage = confirmVendorMessage,
        _confirmDepositReceipt = confirmDepositReceipt,
        super(const OrderDetailState.loading());
 
@@ -90,6 +92,9 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
 
   /// The return-side twin: the customer was asked why their order came back.
   final ConfirmReturnMessage _confirmReturnMessage;
+
+  /// The vendor-side twin: the job of an outsourced order was sent to the vendor.
+  final ConfirmVendorMessage _confirmVendorMessage;
   final ConfirmDepositReceipt _confirmDepositReceipt;
 
   Future<void> load() async {
@@ -235,6 +240,11 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// Same shape as [confirmReadyMessage].
   Future<Failure?> confirmReturnMessage({required bool sent}) =>
       _write(() => _confirmReturnMessage(_orderId, sent: sent));
+
+  /// Records that the vendor of an outsourced order was sent the job — or takes that back.
+  /// Same shape as [confirmReadyMessage].
+  Future<Failure?> confirmVendorMessage({required bool sent}) =>
+      _write(() => _confirmVendorMessage(_orderId, sent: sent));
 
   /// Records that the عربون actually arrived — or takes that back.
   ///

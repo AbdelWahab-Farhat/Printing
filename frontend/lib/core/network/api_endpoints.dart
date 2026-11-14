@@ -667,6 +667,10 @@ abstract final class OrderEndpoints {
   /// the same grant.
   static String returnMessage(int orderId) => '/orders/$orderId/return-message';
 
+  /// «هل أُرسلت الطلبية للمورد؟» — the same PATCH shape as [readyMessage], on an outsourced
+  /// order, and on the grant that moves it to «قيد التصنيع» (`orders.status.manufacturing`).
+  static String vendorMessage(int orderId) => '/orders/$orderId/vendor-message';
+
   /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
   ///
   /// A PATCH like [readyMessage] above, and the same shape of fact: a field on the order is

@@ -10,6 +10,7 @@ use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReturnMessageRequest;
+use App\Application\Api\V1\Requests\Order\ConfirmVendorMessageRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\RecordVendorCostRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
@@ -584,6 +585,33 @@ class OrderController extends Controller
             $updated->return_message_sent_at === null
                 ? 'أُلغي تأكيد التواصل مع الزبون'
                 : 'تم تأكيد التواصل مع الزبون',
+        );
+    }
+
+    /**
+     * Confirm the vendor message
+     *
+     * «هل أُرسلت الطلبية للمورد؟» — the employee saying they sent «رسالة المورد» (what to make,
+     * how many, which colours) to the vendor of an outsourced order.
+     *
+     * Accepted only on an outsourced order in «جديدة», «قيد التصميم» or «قيد التصنيع»; refused
+     * with 422 otherwise, and `vendor_message_applies` says so in advance. The mark is cleared on
+     * every entry into «قيد التصميم», because a corrected design has to be sent again.
+     * `sent: false` takes a stray tap back. Same grant as moving the order to «قيد التصنيع».
+     */
+    public function confirmVendorMessage(ConfirmVendorMessageRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->markVendorMessageSent(
+            $order,
+            (bool) $request->validated('sent'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            $updated->vendor_message_sent_at === null
+                ? 'أُلغي تأكيد إرسال رسالة المورد'
+                : 'تم تأكيد إرسال الطلبية للمورد',
         );
     }
 

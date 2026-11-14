@@ -736,6 +736,11 @@ abstract final class AppIcons {
   static IconData get returnMessage =>
       _pick(Icons.contact_support_rounded, CupertinoIcons.question_circle_fill);
 
+  /// «رسالة المورد» — the job of an outsourced order, sent to the vendor. A bubble going out,
+  /// unlike [readyMessage]'s ticked one: this message hands work over.
+  static IconData get vendorMessage =>
+      _pick(Icons.forward_to_inbox_rounded, CupertinoIcons.paperplane_fill);
+
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
 

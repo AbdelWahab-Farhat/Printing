@@ -95,6 +95,7 @@ void main() {
           restoreOrder: RestoreOrder(repository),
           confirmReadyMessage: ConfirmReadyMessage(repository),
           confirmReturnMessage: ConfirmReturnMessage(repository),
+          confirmVendorMessage: ConfirmVendorMessage(repository),
           confirmDepositReceipt: ConfirmDepositReceipt(repository),
         ),
       );

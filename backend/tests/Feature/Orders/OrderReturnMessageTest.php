@@ -334,16 +334,19 @@ class OrderReturnMessageTest extends TestCase
 
     // ── the settings screen ──────────────────────────────────────────────────────────────────
 
-    public function test_the_settings_list_all_four_messages_with_their_defaults(): void
+    public function test_the_settings_list_every_message_with_its_default(): void
     {
         // Act
         $response = $this->withHeaders($this->auth(PermissionName::ViewCompanySettings))
             ->getJson('/api/v1/settings/customer-messages');
 
-        // Assert
+        // Assert — four customer texts and the vendor text (OUTSOURCED-PRODUCTS.md §10).
         $response->assertOk()
             ->assertJsonPath('data.placeholder', CustomerMessage::INVOICE_PLACEHOLDER)
-            ->assertJsonCount(4, 'data.messages')
+            ->assertJsonCount(5, 'data.messages')
+            ->assertJsonPath('data.messages.4.key', 'vendor_request')
+            ->assertJsonPath('data.messages.4.placeholders', [CustomerMessage::INVOICE_PLACEHOLDER, CustomerMessage::ITEMS_PLACEHOLDER])
+            ->assertJsonPath('data.messages.0.placeholders', [CustomerMessage::INVOICE_PLACEHOLDER])
             ->assertJsonPath('data.messages.0.key', 'ready_pickup')
             ->assertJsonPath('data.messages.0.is_customised', false)
             ->assertJsonPath('data.messages.0.body', CustomerMessage::ReadyPickup->defaultBody())

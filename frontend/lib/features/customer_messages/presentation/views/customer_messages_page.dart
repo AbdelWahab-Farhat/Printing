@@ -12,8 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// «رسائل الزبائن» — the admin words the four messages staff copy to customers: the ready
-/// message for pickup and for delivery, and the return message for the courier and the carrier.
+/// «نصوص الرسائل» — the admin words the messages staff copy: to customers, the ready message for
+/// pickup and for delivery and the return message for the courier and the carrier; and to the
+/// vendor of an outsourced order, the vendor message around the server's list of lines.
 ///
 /// Each field opens on the wording in force. «استعادة النص الافتراضي» puts the built-in text
 /// back; a text saved equal to it is sent as null, so it keeps following the built-in wording.
@@ -37,7 +38,7 @@ class _CustomerMessagesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return DismissKeyboard(
       child: Scaffold(
-        appBar: AppBar(title: const Text('رسائل الزبائن')),
+        appBar: AppBar(title: const Text('نصوص الرسائل')),
         body: BlocBuilder<CustomerMessagesCubit, CustomerMessagesState>(
           builder: (context, state) => switch (state) {
             CustomerMessagesLoading() => const Center(child: CircularProgressIndicator()),
@@ -128,7 +129,7 @@ class _FormState extends State<_Form> {
 
     await showCustomSnackBar(
       context: context,
-      title: failure?.message ?? 'تم حفظ رسائل الزبائن',
+      title: failure?.message ?? 'تم حفظ نصوص الرسائل',
       type: failure == null ? SnackType.success : SnackType.error,
     );
   }
@@ -199,6 +200,14 @@ class _MessageField extends StatelessWidget {
           maxLines: 10,
           maxLength: 2000,
         ),
+        // The vendor text has a second token, and only this field may use it.
+        if (message.placeholders.contains(CustomerMessageTemplate.itemsPlaceholder))
+          Text(
+            'اكتب ${CustomerMessageTemplate.itemsPlaceholder} حيث تريد أن تظهر الأصناف والكميات والألوان.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }

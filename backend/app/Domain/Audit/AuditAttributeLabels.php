@@ -343,6 +343,9 @@ final class AuditAttributeLabels
             // The return-side twin, cleared on every new return — ORDER-RETURN-MESSAGE.md.
             'return_message_sent_at' => 'تاريخ التواصل مع الزبون عن الراجع',
             'return_message_sent_by' => 'مَن تواصل مع الزبون عن الراجع',
+            // Cleared on every entry into «قيد التصميم» — OUTSOURCED-PRODUCTS.md §10.
+            'vendor_message_sent_at' => 'تاريخ إرسال رسالة المورد',
+            'vendor_message_sent_by' => 'مَن أرسل رسالة المورد',
             'dispatched_at' => 'تاريخ الإرسال',
             'delivered_at' => 'تاريخ التسليم',
             'returned_at' => 'تاريخ الإرجاع',
@@ -1117,6 +1120,7 @@ final class AuditAttributeLabels
             'ready_delivery_message' => 'رسالة الجاهزية — توصيل',
             'return_courier_message' => 'رسالة الراجع — راجع لدى المندوب',
             'return_carrier_message' => 'رسالة الراجع — راجع لدى شركة التوصيل',
+            'vendor_request_message' => 'رسالة المورد — طلبيات التصنيع',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see

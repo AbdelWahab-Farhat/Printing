@@ -1220,6 +1220,9 @@ abstract final class Injector {
       ..registerLazySingleton<ConfirmReturnMessage>(
         () => ConfirmReturnMessage(sl<OrderRepository>()),
       )
+      ..registerLazySingleton<ConfirmVendorMessage>(
+        () => ConfirmVendorMessage(sl<OrderRepository>()),
+      )
       // Spoiled stock, written off against the line that was being printed. A use case rather
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
       ..registerLazySingleton<RecordScrapLoss>(
@@ -1421,6 +1424,7 @@ abstract final class Injector {
           restoreOrder: sl<RestoreOrder>(),
           confirmReadyMessage: sl<ConfirmReadyMessage>(),
           confirmReturnMessage: sl<ConfirmReturnMessage>(),
+          confirmVendorMessage: sl<ConfirmVendorMessage>(),
           confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
         ),
       )

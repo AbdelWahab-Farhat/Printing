@@ -34,3 +34,15 @@ class ConfirmReturnMessage {
   Future<Either<Failure, Order>> call(int orderId, {required bool sent}) =>
       _repository.confirmReturnMessage(orderId, sent: sent);
 }
+
+/// «تم إرسال الطلبية للمورد» — an employee saying they sent the job of an outsourced order to its
+/// vendor. Same kind of record as [ConfirmReadyMessage], on the grant that moves the order to
+/// «قيد التصنيع».
+class ConfirmVendorMessage {
+  const ConfirmVendorMessage(this._repository);
+
+  final OrderRepository _repository;
+
+  Future<Either<Failure, Order>> call(int orderId, {required bool sent}) =>
+      _repository.confirmVendorMessage(orderId, sent: sent);
+}

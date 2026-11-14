@@ -221,6 +221,11 @@ abstract interface class OrderRepository {
   /// `Order.returnMessageApplies` says so in advance.
   Future<Either<Failure, Order>> confirmReturnMessage(int orderId, {required bool sent});
 
+  /// Records that the vendor of an outsourced order was sent the job — or takes that back.
+  /// Refused unless the order is outsourced and in «جديدة», «قيد التصميم» or «قيد التصنيع»;
+  /// `Order.vendorMessageApplies` says so in advance.
+  Future<Either<Failure, Order>> confirmVendorMessage(int orderId, {required bool sent});
+
   /// Records that the عربون actually arrived — or takes that back.
   ///
   /// **A second person's tick over somebody else's claim.** Moving an order to «عربون مدفوع»

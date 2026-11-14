@@ -48,6 +48,17 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
           json['return_message_sent_by'] as Map<String, dynamic>,
         ),
   returnMessageText: json['return_message_text'] as String?,
+  vendorMessageApplies: json['vendor_message_applies'] as bool? ?? false,
+  isVendorMessageSent: json['is_vendor_message_sent'] as bool? ?? false,
+  vendorMessageSentAt: json['vendor_message_sent_at'] == null
+      ? null
+      : DateTime.parse(json['vendor_message_sent_at'] as String),
+  vendorMessageSentBy: json['vendor_message_sent_by'] == null
+      ? null
+      : OrderActor.fromJson(
+          json['vendor_message_sent_by'] as Map<String, dynamic>,
+        ),
+  vendorMessageText: json['vendor_message_text'] as String?,
   depositExpectedAmount: json['deposit_expected_amount'] as String?,
   depositExpectedMethod: json['deposit_expected_method'] as String?,
   depositExpectedMethodLabel: json['deposit_expected_method_label'] as String?,
@@ -221,6 +232,11 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'return_message_sent_at': instance.returnMessageSentAt?.toIso8601String(),
   'return_message_sent_by': instance.returnMessageSentBy?.toJson(),
   'return_message_text': instance.returnMessageText,
+  'vendor_message_applies': instance.vendorMessageApplies,
+  'is_vendor_message_sent': instance.isVendorMessageSent,
+  'vendor_message_sent_at': instance.vendorMessageSentAt?.toIso8601String(),
+  'vendor_message_sent_by': instance.vendorMessageSentBy?.toJson(),
+  'vendor_message_text': instance.vendorMessageText,
   'deposit_expected_amount': instance.depositExpectedAmount,
   'deposit_expected_method': instance.depositExpectedMethod,
   'deposit_expected_method_label': instance.depositExpectedMethodLabel,

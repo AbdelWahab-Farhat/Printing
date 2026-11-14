@@ -332,3 +332,63 @@ draws whatever `available_transitions` describes.
 - **Cost per size, not per product.** §3. If every وسيط product turns out to have exactly one
   size, a single column on `products` would be simpler — but it cannot be compared with a price
   that is per size.
+
+---
+
+## 10. «رسالة المورد» — the text sent to the vendor (2026-11-14)
+
+On an outsourced order, the order screen shows a card at the top with «نسخ رسالة المورد» and a
+switch «تم إرسال الطلبية للمورد». The employee copies the text, pastes it into the vendor's
+WhatsApp chat, sends the approved design beside it, and ticks the switch.
+
+### When it shows
+
+`Order::vendorMessageApplies()`: the order is on the outsourced road **and** stands in «جديدة»,
+«قيد التصميم» or «قيد التصنيع». Once the goods are «جاهزة» there is nothing left to tell the
+vendor, so the card goes away. The server sends the answer as `vendor_message_applies`; the app
+compares no statuses.
+
+### What the text says
+
+Written by the server (`CustomerMessageTexts::vendorFor()`), in the admin's frame:
+
+```
+السلام عليكم ، يومك طيب إن شاء الله
+طلبية جديدة من دعاية رقم : [ {رقم_الفاتورة} ]
+
+{الأصناف}
+
+التصميم المعتمد نرسلوه ليكم في رسالة منفصلة .
+نرجو تأكيد الاستلام وموعد التسليم .
+```
+
+`{الأصناف}` becomes one bullet per line — product, size, quantity with its unit — plus the line's
+note, then «الألوان :» with the inks of the design the press would print (name and code).
+
+- **Nothing about the customer or money.** No name, phone, selling price or vendor cost. The
+  vendor needs to know what to make, not who buys it or what our margin is.
+- **Numbers are pinned left-to-right.** Every run of digits is wrapped in U+2066 … U+2069, so
+  «25×35» is not shown as «35×25» once pasted into an Arabic chat.
+- **The design file is not in the text.** A copied text cannot carry a file; the last line tells
+  the vendor it comes separately.
+- The text is null on a list row (the lines are not loaded there) and outside the window.
+
+The admin rewords the frame on «نصوص الرسائل» (renamed from «رسائل الزبائن», since it now holds
+a vendor text too): `company_settings.vendor_request_message`, null = the built-in wording. The
+list itself is always the server's.
+
+### The switch
+
+`orders.vendor_message_sent_at/by`, written only by `MarkVendorMessageSent` through
+`PATCH orders/{order}/vendor-message` with `{"sent": true|false}`. Same shape as the ready and
+return messages: who and when, both directions, refused with 422 outside the window.
+
+- **Grant: `orders.status.manufacturing`.** Whoever hands the job to the vendor tells them; the
+  customer-messages grant is a different job.
+- **Cleared on every entry into «قيد التصميم»** in `ChangeOrderStatus`. A design correction means
+  the vendor is sent the job again, so the old mark must not answer for the new send. Moving on to
+  «جاهزة» keeps it.
+- Copying the text does not tick the switch: a copy is not a send.
+
+Tests: `OrderVendorMessageTest` (backend), `order_vendor_message_test.dart` and
+`customer_messages_page_test.dart` (app).

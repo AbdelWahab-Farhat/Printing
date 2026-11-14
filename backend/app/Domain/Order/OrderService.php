@@ -13,6 +13,7 @@ use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\MarkReturnMessageSent;
+use App\Domain\Order\Actions\MarkVendorMessageSent;
 use App\Domain\Order\Actions\PayOrderFromWallet;
 use App\Domain\Order\Actions\RecordLateVendorCost;
 use App\Domain\Order\Actions\RecordOrderPayment;
@@ -44,6 +45,7 @@ use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
 use App\Domain\Order\Exceptions\ReturnMessageNeedsAReturnedOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
+use App\Domain\Order\Exceptions\VendorMessageNeedsAnOutsourcedOrder;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -92,6 +94,7 @@ class OrderService
         private readonly SetOrderShortages $setShortages,
         private readonly MarkReadyMessageSent $markReadyMessageSent,
         private readonly MarkReturnMessageSent $markReturnMessageSent,
+        private readonly MarkVendorMessageSent $markVendorMessageSent,
         private readonly MarkOrderNotesRead $markNotesRead,
         private readonly ConfirmDepositReceipt $confirmDepositReceipt,
         private readonly AddOrderDesign $addDesign,
@@ -368,6 +371,16 @@ class OrderService
     public function markReturnMessageSent(Order $order, bool $sent, ?User $actor = null): Order
     {
         return ($this->markReturnMessageSent)($order, $sent, $actor);
+    }
+
+    /**
+     * Records that the vendor of an outsourced order was sent the job — or takes that back.
+     *
+     * @throws VendorMessageNeedsAnOutsourcedOrder
+     */
+    public function markVendorMessageSent(Order $order, bool $sent, ?User $actor = null): Order
+    {
+        return ($this->markVendorMessageSent)($order, $sent, $actor);
     }
 
     /**
@@ -710,6 +723,8 @@ class OrderService
             'readyMessenger',
             // And who said they contacted the customer about the current return.
             'returnMessenger',
+            // And who said they sent the job to the vendor.
+            'vendorMessenger',
             // The two names on the عربون: who claimed it was paid and who confirmed it arrived.
             // The order screen prints both beside the tick — they are the whole point of a rule
             // that says the two must differ — and, like the messenger above, no card shows them.

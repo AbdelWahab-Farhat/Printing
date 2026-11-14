@@ -430,6 +430,14 @@ final class ChangeOrderStatus
                 $attributes['return_message_sent_by'] = null;
             }
 
+            // **A design correction sends the job again.** An outsourced order that goes back to
+            // «قيد التصميم» will reach the vendor with a different file, so the mark left from
+            // the first send must not answer for the second. OUTSOURCED-PRODUCTS.md §10.
+            if ($target === OrderStatus::Designing) {
+                $attributes['vendor_message_sent_at'] = null;
+                $attributes['vendor_message_sent_by'] = null;
+            }
+
             // Who took it. The name is snapshotted beside the key for the same reason the
             // city's is: what an order says carried it is a fact about that day, and it must
             // survive the company being renamed or removed from the list.

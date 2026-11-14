@@ -594,6 +594,11 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('orders/{order}/return-message', [OrderController::class, 'confirmReturnMessage'])
             ->middleware('can:orders.ready_message')->name('orders.return-message');
 
+        // «هل أُرسلت الطلبية للمورد؟» — the vendor-side twin on an outsourced order, on the grant
+        // that sends the order to «قيد التصنيع»: whoever hands the job to the vendor tells them.
+        Route::patch('orders/{order}/vendor-message', [OrderController::class, 'confirmVendorMessage'])
+            ->middleware('can:orders.status.manufacturing')->name('orders.vendor-message');
+
         // «هل وصل العربون فعلاً؟» — a second person's check on what the counter claimed when it
         // moved the order to «عربون مدفوع». Its own grant, and the domain refuses it to whoever
         // made the claim, so the two halves are necessarily two people.

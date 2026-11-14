@@ -257,6 +257,14 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.isWorking
                   ? _confirmReturnMessage
                   : null,
+              // The vendor-side twin, on the grant that moves the order to «قيد التصنيع»:
+              // whoever hands the job to the vendor tells them. Same three locks.
+              onConfirmVendorMessage:
+                  sl<Session>().can(AppPermission.moveOrderToManufacturing) &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _confirmVendorMessage
+                  : null,
               // **والعربون يُقفل على جواب الخادم لا على المنحة.** `can_confirm_deposit` تحمل
               // المنحة *وقاعدة* أنّ من ادّعى الدفع لا يؤكّده — والثانية لا يملك التطبيق جوابها،
               // فلا يُسأل عنها هنا. ويبقى الأرشيف والكتابة الجارية شرطَي هذه الشاشة كما في كل
@@ -582,6 +590,23 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     final cubit = context.read<OrderDetailCubit>();
 
     final failure = await cubit.confirmReturnMessage(sent: sent);
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// The vendor-side twin of [_confirmReadyMessage].
+  Future<void> _confirmVendorMessage(bool sent) async {
+    final cubit = context.read<OrderDetailCubit>();
+
+    final failure = await cubit.confirmVendorMessage(sent: sent);
     if (!mounted) return;
 
     if (failure != null) {
@@ -999,6 +1024,7 @@ class _Body extends StatelessWidget {
     required this.onReinstate,
     required this.onConfirmReadyMessage,
     required this.onConfirmReturnMessage,
+    required this.onConfirmVendorMessage,
     required this.onConfirmDeposit,
     required this.depositClaimedByMe,
   });
@@ -1056,6 +1082,10 @@ class _Body extends StatelessWidget {
 
   /// The same three locks as [onConfirmReadyMessage], for «تم التواصل مع الزبون».
   final Future<void> Function(bool sent)? onConfirmReturnMessage;
+
+  /// Null for a reader without `orders.status.manufacturing`, for an archived order, and while
+  /// a write is in flight — for «تم إرسال الطلبية للمورد».
+  final Future<void> Function(bool sent)? onConfirmVendorMessage;
 
   /// Null when the deposit tick may not be moved — see the note at the call site.
   final Future<void> Function(bool received)? onConfirmDeposit;
@@ -1175,6 +1205,25 @@ class _Body extends StatelessWidget {
               // **While the order stands in a return, the return message comes first**: it is
               // the job waiting on this order now — ask the customer what went wrong — and the
               // invoice card under it is the ready message from an earlier day.
+              // **On an outsourced order still on its way to the vendor, the vendor message comes
+              // first**: telling the vendor what to make is the job waiting on it now. The server
+              // answers with `vendorMessageApplies` — outsourced, in «جديدة», «قيد التصميم» or
+              // «قيد التصنيع» — so no status list is written here.
+              if (order.vendorMessageApplies) ...[
+                _Section(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: CopyVendorMessageButton(order: order),
+                      ),
+                      SizedBox(height: 4.h),
+                      OrderVendorMessageSwitch(order: order, onChanged: onConfirmVendorMessage),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
               if (order.returnMessageApplies) ...[
                 _Section(
                   child: Column(

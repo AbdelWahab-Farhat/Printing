@@ -469,6 +469,17 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> confirmVendorMessage(int orderId, {required bool sent}) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.vendorMessage(orderId),
+        data: <String, dynamic>{'sent': sent},
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Order>> confirmDepositReceipt(int orderId, {required bool received}) {
     return safeRequest<Order>(
       () => _dio.patch(

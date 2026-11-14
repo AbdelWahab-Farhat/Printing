@@ -20,10 +20,14 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Arrange - Act - Assert throughout.
 class _FakeRepository implements CustomerMessagesRepository {
+  _FakeRepository([this.stored = _stored]);
+
+  final CustomerMessages stored;
+
   Map<String, String?>? sent;
 
   @override
-  Future<Either<Failure, CustomerMessages>> messages() async => const Right(_stored);
+  Future<Either<Failure, CustomerMessages>> messages() async => Right(stored);
 
   @override
   Future<Either<Failure, CustomerMessages>> update(Map<String, String?> bodies) async {
@@ -53,12 +57,27 @@ const _stored = CustomerMessages(
   ],
 );
 
+/// The vendor text carries a second token, `{الأصناف}`, and its field says where it goes.
+const _withVendor = CustomerMessages(
+  placeholder: '{رقم_الفاتورة}',
+  messages: [
+    CustomerMessageTemplate(
+      key: 'vendor_request',
+      label: 'رسالة المورد — طلبيات التصنيع',
+      body: 'طلبية {رقم_الفاتورة}\n{الأصناف}',
+      defaultBody: 'طلبية {رقم_الفاتورة}\n{الأصناف}',
+      isCustomised: false,
+      placeholders: ['{رقم_الفاتورة}', '{الأصناف}'],
+    ),
+  ],
+);
+
 void main() {
   late _FakeRepository repository;
 
-  Future<void> register(List<String> permissions) async {
+  Future<void> register(List<String> permissions, [CustomerMessages stored = _stored]) async {
     await sl.reset();
-    repository = _FakeRepository();
+    repository = _FakeRepository(stored);
     sl
       ..registerSingleton<Session>(
         Session()..adopt(
@@ -131,6 +150,43 @@ void main() {
 
     // Assert
     expect(find.widgetWithText(TextField, 'راجع {رقم_الفاتورة}'), findsOneWidget);
+  });
+
+  testWidgets('the screen is called «نصوص الرسائل»', (tester) async {
+    // Arrange
+    await register(['settings.view']);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('نصوص الرسائل'), findsOneWidget);
+  });
+
+  testWidgets('only the vendor text says where the lines go', (tester) async {
+    // Arrange
+    await register(['settings.view', 'settings.manage'], _withVendor);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('رسالة المورد — طلبيات التصنيع'), findsOneWidget);
+    expect(find.textContaining('حيث تريد أن تظهر الأصناف'), findsOneWidget);
+  });
+
+  testWidgets('a customer text carries no lines hint', (tester) async {
+    // Arrange
+    await register(['settings.view', 'settings.manage']);
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.textContaining('حيث تريد أن تظهر الأصناف'), findsNothing);
   });
 
   testWidgets('a reader without settings.manage cannot save', (tester) async {

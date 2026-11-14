@@ -127,6 +127,26 @@ abstract class Order with _$Order {
     /// What «نسخ رسالة الراجع» copies — one text for the courier, another for the carrier.
     @JsonKey(name: 'return_message_text') String? returnMessageText,
 
+    // ── رسالة المورد ──────────────────────────────────────────────────────────────────────
+    //
+    // The vendor-side twin, on an outsourced order in «جديدة», «قيد التصميم» or «قيد التصنيع»:
+    // what to make, how many and in which colours, sent to the vendor. The server clears the
+    // mark on every entry into «قيد التصميم», because a corrected design goes out again.
+
+    /// Whether the order still has something to tell its vendor. The server's answer.
+    @JsonKey(name: 'vendor_message_applies') @Default(false) bool vendorMessageApplies,
+
+    @JsonKey(name: 'is_vendor_message_sent') @Default(false) bool isVendorMessageSent,
+
+    @JsonKey(name: 'vendor_message_sent_at') DateTime? vendorMessageSentAt,
+
+    /// Null on a list row, like [readyMessageSentBy].
+    @JsonKey(name: 'vendor_message_sent_by') OrderActor? vendorMessageSentBy,
+
+    /// What «نسخ رسالة المورد» copies, written by the server: the admin's frame around the
+    /// order's lines and colours. Null on a list row and outside the window.
+    @JsonKey(name: 'vendor_message_text') String? vendorMessageText,
+
     // ── العربون ──────────────────────────────────────────────────────────────────────────
     //
     // **The arrangement, the claim, and the confirmation — three different facts.** What was

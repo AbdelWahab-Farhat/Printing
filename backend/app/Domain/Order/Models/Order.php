@@ -172,6 +172,10 @@ class Order extends Model implements HasAuditTrail
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
             'manufacturing_started_at' => 'datetime',
+            // When somebody said they sent «رسالة المورد» to the vendor. Stamped by
+            // MarkVendorMessageSent, cleared by ChangeOrderStatus on every entry into «قيد
+            // التصميم» — see OUTSOURCED-PRODUCTS.md §10.
+            'vendor_message_sent_at' => 'datetime',
             // Stamped once by ChangeOrderStatus, on the first entry into `ready` — see
             // DeductOrderStock. Unlike ready_at, never overwritten by a later visit:
             // its whole job is to remember whether stock has already left the warehouse.
@@ -315,6 +319,40 @@ class Order extends Model implements HasAuditTrail
     public function returnMessageApplies(): bool
     {
         return CustomerMessage::forReturn($this->status) !== null;
+    }
+
+    /**
+     * Who said the vendor had been sent this job.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function vendorMessenger(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'vendor_message_sent_by');
+    }
+
+    /**
+     * Whether «رسالة المورد» is a question this order is asking now.
+     *
+     * Only on the outsourced road, and only before «جاهزة»: in «جديدة», «قيد التصميم» and «قيد
+     * التصنيع» the vendor still has something to be told. Once the goods are ready there is
+     * nothing left to send, and the copy button and the switch both go away.
+     */
+    public function vendorMessageApplies(): bool
+    {
+        return $this->production_flow === OrderFlow::Outsourced
+            && in_array($this->status, self::vendorMessageStatuses(), true)
+            && ! $this->trashed();
+    }
+
+    /**
+     * The statuses in which «رسالة المورد» applies to an outsourced order.
+     *
+     * @return list<OrderStatus>
+     */
+    public static function vendorMessageStatuses(): array
+    {
+        return [OrderStatus::New, OrderStatus::Designing, OrderStatus::Manufacturing];
     }
 
     /**
