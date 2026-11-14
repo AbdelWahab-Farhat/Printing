@@ -12,6 +12,7 @@ use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\CustomerMessage;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -417,6 +418,16 @@ final class ChangeOrderStatus
             if ($target === OrderStatus::Requested) {
                 $attributes['rejection_reason'] = null;
                 $attributes['request_rejected_at'] = null;
+            }
+
+            // **Every return asks for its own message.** Courier first, then the carrier, then
+            // perhaps again after a resend — each is a new conversation with the customer, so a
+            // mark left from the last one must not answer for this one. Cleared here, in the one
+            // writer of the status, so a Nawris update clears it the same as a tap does.
+            // ORDER-RETURN-MESSAGE.md §٢.
+            if (CustomerMessage::forReturn($target) !== null) {
+                $attributes['return_message_sent_at'] = null;
+                $attributes['return_message_sent_by'] = null;
             }
 
             // Who took it. The name is snapshotted beside the key for the same reason the

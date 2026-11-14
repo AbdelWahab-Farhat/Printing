@@ -26,6 +26,7 @@ use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Enums\AdditionalCostReason;
+use App\Domain\Order\Enums\CustomerMessage;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
@@ -195,6 +196,10 @@ class Order extends Model implements HasAuditTrail
             'delivered_at' => 'datetime',
             'settled_at' => 'datetime',
             'returned_at' => 'datetime',
+            // When somebody said they contacted the customer about the return the order is in
+            // now. Stamped by MarkReturnMessageSent, cleared by ChangeOrderStatus on every entry
+            // into a return status — see ORDER-RETURN-MESSAGE.md §٢.
+            'return_message_sent_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'request_rejected_at' => 'datetime',
         ];
@@ -288,6 +293,28 @@ class Order extends Model implements HasAuditTrail
     public function readyMessageApplies(): bool
     {
         return $this->dispatched_at !== null;
+    }
+
+    /**
+     * Who said the customer had been contacted about the current return.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function returnMessenger(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'return_message_sent_by');
+    }
+
+    /**
+     * Whether «رسالة الراجع» is a question this order is asking now.
+     *
+     * **Read from the status, unlike the ready message**, because a return is a place the order
+     * stands in and then leaves: once it is resent, back in the office or delivered, there is no
+     * customer to chase about it. Which statuses count is {@see CustomerMessage::forReturn()}'s.
+     */
+    public function returnMessageApplies(): bool
+    {
+        return CustomerMessage::forReturn($this->status) !== null;
     }
 
     /**

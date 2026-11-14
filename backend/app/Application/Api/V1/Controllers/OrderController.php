@@ -9,6 +9,7 @@ use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
+use App\Application\Api\V1\Requests\Order\ConfirmReturnMessageRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\RecordVendorCostRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
@@ -118,7 +119,7 @@ class OrderController extends Controller
     {
         $filters = OrderFilters::fromArray([
             ...$request->only([
-                'search', 'status', 'payment_status', 'urgent', 'is_ready_message_sent', 'sort',
+                'search', 'status', 'payment_status', 'urgent', 'is_ready_message_sent', 'is_return_message_sent', 'sort',
                 'customer_id', 'city_id', 'from', 'to',
             ]),
             'archived' => $archived,
@@ -177,7 +178,7 @@ class OrderController extends Controller
     {
         $filters = OrderFilters::fromArray([
             ...$request->only([
-                'search', 'payment_status', 'urgent', 'is_ready_message_sent',
+                'search', 'payment_status', 'urgent', 'is_ready_message_sent', 'is_return_message_sent',
                 'customer_id', 'city_id', 'from', 'to',
             ]),
             'archived' => $archived,
@@ -556,6 +557,33 @@ class OrderController extends Controller
             $updated->ready_message_sent_at === null
                 ? 'أُلغي تأكيد إرسال رسالة الجاهزية'
                 : 'تم تأكيد إرسال رسالة الجاهزية للزبون',
+        );
+    }
+
+    /**
+     * Confirm the return message
+     *
+     * «هل تواصلنا مع الزبون بعد أن رجعت طلبيته؟» — the employee saying they sent the return
+     * message (why did you not receive it?) and asked the customer what went wrong.
+     *
+     * Accepted only while the order stands in «راجع لدى المندوب» or «راجع لدى شركة التوصيل»;
+     * refused with 422 otherwise, and `return_message_applies` says so in advance. The mark is
+     * cleared on every new entry into a return, so each return asks for its own message.
+     * `sent: false` takes a stray tap back. Same grant as the ready message.
+     */
+    public function confirmReturnMessage(ConfirmReturnMessageRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->markReturnMessageSent(
+            $order,
+            (bool) $request->validated('sent'),
+            $this->actor($request),
+        );
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            $updated->return_message_sent_at === null
+                ? 'أُلغي تأكيد التواصل مع الزبون'
+                : 'تم تأكيد التواصل مع الزبون',
         );
     }
 

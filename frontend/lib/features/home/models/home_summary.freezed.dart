@@ -35,7 +35,9 @@ mixin _$HomeSummary {
 ///
 /// One number and its Arabic, not a list: it is a single queue, and the label travels with
 /// it because the screen it opens is titled with the box's own word.
-@JsonKey(name: 'ready_message') ReadyMessageQueue? get readyMessage;
+@JsonKey(name: 'ready_message') ReadyMessageQueue? get readyMessage;/// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
+/// Same grant and same «null is not your job» as [readyMessage].
+@JsonKey(name: 'return_message') ReadyMessageQueue? get returnMessage;
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,16 +50,16 @@ $HomeSummaryCopyWith<HomeSummary> get copyWith => _$HomeSummaryCopyWithImpl<Home
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, statuses)&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, statuses)&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(statuses),const DeepCollectionEquality().hash(payments),readyMessage);
+int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(statuses),const DeepCollectionEquality().hash(payments),readyMessage,returnMessage);
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage)';
+  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
 }
 
 
@@ -68,11 +70,11 @@ abstract mixin class $HomeSummaryCopyWith<$Res>  {
   factory $HomeSummaryCopyWith(HomeSummary value, $Res Function(HomeSummary) _then) = _$HomeSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage
 });
 
 
-$ReadyMessageQueueCopyWith<$Res>? get readyMessage;
+$ReadyMessageQueueCopyWith<$Res>? get readyMessage;$ReadyMessageQueueCopyWith<$Res>? get returnMessage;
 
 }
 /// @nodoc
@@ -85,7 +87,7 @@ class _$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,}) {
   return _then(_self.copyWith(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
@@ -94,6 +96,7 @@ as int,monthlyOrders: null == monthlyOrders ? _self.monthlyOrders : monthlyOrder
 as int,statuses: null == statuses ? _self.statuses : statuses // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,payments: null == payments ? _self.payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,readyMessage: freezed == readyMessage ? _self.readyMessage : readyMessage // ignore: cast_nullable_to_non_nullable
+as ReadyMessageQueue?,returnMessage: freezed == returnMessage ? _self.returnMessage : returnMessage // ignore: cast_nullable_to_non_nullable
 as ReadyMessageQueue?,
   ));
 }
@@ -108,6 +111,18 @@ $ReadyMessageQueueCopyWith<$Res>? get readyMessage {
 
   return $ReadyMessageQueueCopyWith<$Res>(_self.readyMessage!, (value) {
     return _then(_self.copyWith(readyMessage: value));
+  });
+}/// Create a copy of HomeSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReadyMessageQueueCopyWith<$Res>? get returnMessage {
+    if (_self.returnMessage == null) {
+    return null;
+  }
+
+  return $ReadyMessageQueueCopyWith<$Res>(_self.returnMessage!, (value) {
+    return _then(_self.copyWith(returnMessage: value));
   });
 }
 }
@@ -191,10 +206,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
   return orElse();
 
 }
@@ -212,10 +227,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary():
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -232,10 +247,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
   return null;
 
 }
@@ -247,7 +262,7 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 @JsonSerializable()
 
 class _HomeSummary extends HomeSummary {
-  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders, final  List<OrderStatusCount> statuses = const <OrderStatusCount>[], final  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage}): _statuses = statuses,_payments = payments,super._();
+  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders, final  List<OrderStatusCount> statuses = const <OrderStatusCount>[], final  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage, @JsonKey(name: 'return_message') this.returnMessage}): _statuses = statuses,_payments = payments,super._();
   factory _HomeSummary.fromJson(Map<String, dynamic> json) => _$HomeSummaryFromJson(json);
 
 @override@JsonKey(name: 'total_orders') final  int totalOrders;
@@ -300,6 +315,9 @@ class _HomeSummary extends HomeSummary {
 /// One number and its Arabic, not a list: it is a single queue, and the label travels with
 /// it because the screen it opens is titled with the box's own word.
 @override@JsonKey(name: 'ready_message') final  ReadyMessageQueue? readyMessage;
+/// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
+/// Same grant and same «null is not your job» as [readyMessage].
+@override@JsonKey(name: 'return_message') final  ReadyMessageQueue? returnMessage;
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -314,16 +332,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other._statuses, _statuses)&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other._statuses, _statuses)&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage);
+int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage,returnMessage);
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage)';
+  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
 }
 
 
@@ -334,11 +352,11 @@ abstract mixin class _$HomeSummaryCopyWith<$Res> implements $HomeSummaryCopyWith
   factory _$HomeSummaryCopyWith(_HomeSummary value, $Res Function(_HomeSummary) _then) = __$HomeSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage
 });
 
 
-@override $ReadyMessageQueueCopyWith<$Res>? get readyMessage;
+@override $ReadyMessageQueueCopyWith<$Res>? get readyMessage;@override $ReadyMessageQueueCopyWith<$Res>? get returnMessage;
 
 }
 /// @nodoc
@@ -351,7 +369,7 @@ class __$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,}) {
   return _then(_HomeSummary(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
@@ -360,6 +378,7 @@ as int,monthlyOrders: null == monthlyOrders ? _self.monthlyOrders : monthlyOrder
 as int,statuses: null == statuses ? _self._statuses : statuses // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,payments: null == payments ? _self._payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,readyMessage: freezed == readyMessage ? _self.readyMessage : readyMessage // ignore: cast_nullable_to_non_nullable
+as ReadyMessageQueue?,returnMessage: freezed == returnMessage ? _self.returnMessage : returnMessage // ignore: cast_nullable_to_non_nullable
 as ReadyMessageQueue?,
   ));
 }
@@ -375,6 +394,18 @@ $ReadyMessageQueueCopyWith<$Res>? get readyMessage {
 
   return $ReadyMessageQueueCopyWith<$Res>(_self.readyMessage!, (value) {
     return _then(_self.copyWith(readyMessage: value));
+  });
+}/// Create a copy of HomeSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReadyMessageQueueCopyWith<$Res>? get returnMessage {
+    if (_self.returnMessage == null) {
+    return null;
+  }
+
+  return $ReadyMessageQueueCopyWith<$Res>(_self.returnMessage!, (value) {
+    return _then(_self.copyWith(returnMessage: value));
   });
 }
 }

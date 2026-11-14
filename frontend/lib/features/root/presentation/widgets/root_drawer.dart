@@ -275,6 +275,14 @@ class _RootDrawerState extends State<RootDrawer> {
           route: Routes.roles,
           permission: AppPermission.manageRoles,
         ),
+        // The wording of the ready and return messages staff copy to customers. Company
+        // settings, so behind `settings.view`; saving needs `settings.manage`.
+        _Link(
+          icon: _LinkIcon.settings,
+          label: 'رسائل الزبائن',
+          route: Routes.customerMessages,
+          permission: AppPermission.viewCompanySettings,
+        ),
       ],
     ),
     // **عنوانٌ بصفٍّ واحد، وهو يخالف قاعدة الشريط عمداً** — قرار المستخدم، ٢٠٢٦-٠٩-١٠. البديل

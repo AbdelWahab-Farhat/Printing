@@ -83,6 +83,9 @@ import 'package:dayaa/features/comments/usecases/add_comment.dart';
 import 'package:dayaa/features/comments/usecases/delete_comment.dart';
 import 'package:dayaa/features/comments/usecases/edit_comment.dart';
 import 'package:dayaa/features/comments/usecases/get_comments.dart';
+import 'package:dayaa/features/customer_messages/repositories/customer_messages_repository.dart';
+import 'package:dayaa/features/customer_messages/repositories/customer_messages_repository_impl.dart';
+import 'package:dayaa/features/customer_messages/usecases/customer_messages_usecases.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/add_customer_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_designs_cubit.dart';
 import 'package:dayaa/features/customers/presentation/viewmodel/customer_detail_cubit.dart';
@@ -463,6 +466,7 @@ abstract final class Injector {
     _registerInvestorPortal();
     _registerInvestors();
     _registerInvestmentSettings();
+    _registerCustomerMessages();
     _registerInvestmentFund();
     _registerTreasury();
     _registerWallet();
@@ -1005,6 +1009,20 @@ abstract final class Injector {
       );
   }
 
+  /// «رسائل الزبائن» — the wording of the ready and return messages staff copy.
+  static void _registerCustomerMessages() {
+    sl
+      ..registerLazySingleton<CustomerMessagesRepository>(
+        () => CustomerMessagesRepositoryImpl(sl<Dio>()),
+      )
+      ..registerLazySingleton<GetCustomerMessages>(
+        () => GetCustomerMessages(sl<CustomerMessagesRepository>()),
+      )
+      ..registerLazySingleton<UpdateCustomerMessages>(
+        () => UpdateCustomerMessages(sl<CustomerMessagesRepository>()),
+      );
+  }
+
   static void _registerInvestors() {
     sl
       ..registerLazySingleton<InvestorRepository>(
@@ -1198,6 +1216,9 @@ abstract final class Injector {
       )
       ..registerLazySingleton<ConfirmReadyMessage>(
         () => ConfirmReadyMessage(sl<OrderRepository>()),
+      )
+      ..registerLazySingleton<ConfirmReturnMessage>(
+        () => ConfirmReturnMessage(sl<OrderRepository>()),
       )
       // Spoiled stock, written off against the line that was being printed. A use case rather
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
@@ -1399,6 +1420,7 @@ abstract final class Injector {
           deleteOrder: sl<DeleteOrder>(),
           restoreOrder: sl<RestoreOrder>(),
           confirmReadyMessage: sl<ConfirmReadyMessage>(),
+          confirmReturnMessage: sl<ConfirmReturnMessage>(),
           confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
         ),
       )

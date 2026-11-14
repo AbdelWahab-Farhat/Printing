@@ -69,6 +69,7 @@ use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Events\OrderStockRedrawn;
 use App\Domain\Order\Queries\OrderCustomerActivity;
+use App\Domain\Order\Support\CustomerMessageTexts;
 use App\Domain\Shortage\Events\ShortageAssigned;
 use App\Domain\Shortage\Listeners\CloseShortagesWhenOrderEnds;
 use App\Domain\Shortage\Listeners\ReopenShortagesWhenOrderIsRestored;
@@ -99,6 +100,11 @@ class AppServiceProvider extends ServiceProvider
         // by the orders without depending on them. `Order` already points at `Customer`; the two
         // pointing at each other would be a cycle. This line is the only place the two meet.
         $this->app->bind(CustomerOrderActivity::class, OrderCustomerActivity::class);
+
+        // Holds the admin's customer-message wording for one request, so a page of orders reads
+        // the settings row once rather than once per row. Scoped, so a queue worker never
+        // carries yesterday's wording into the next job.
+        $this->app->scoped(CustomerMessageTexts::class);
 
         // The carrier client takes its whole configuration as one array, so nothing inside it
         // reaches for `config()` — which is what lets a test hand it a different base URL or a

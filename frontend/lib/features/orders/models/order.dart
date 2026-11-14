@@ -104,6 +104,29 @@ abstract class Order with _$Order {
     /// because no card shows it and a page of twenty would be a query per row.
     @JsonKey(name: 'ready_message_sent_by') OrderActor? readyMessageSentBy,
 
+    /// What «نسخ الرسالة» copies, **written by the server** in the admin's wording from
+    /// «رسائل الزبائن». Null before dispatch.
+    @JsonKey(name: 'ready_message_text') String? readyMessageText,
+
+    // ── رسالة الراجع ──────────────────────────────────────────────────────────────────────
+    //
+    // The return-side twin: the order stands in «راجع لدى المندوب» or «راجع لدى شركة التوصيل»
+    // and somebody has to ask the customer what went wrong. The server clears the mark on every
+    // new return, so it always describes the return the order is in now.
+
+    /// Whether the order is in a return that asks for a message. The server's answer.
+    @JsonKey(name: 'return_message_applies') @Default(false) bool returnMessageApplies,
+
+    @JsonKey(name: 'is_return_message_sent') @Default(false) bool isReturnMessageSent,
+
+    @JsonKey(name: 'return_message_sent_at') DateTime? returnMessageSentAt,
+
+    /// Null on a list row, like [readyMessageSentBy].
+    @JsonKey(name: 'return_message_sent_by') OrderActor? returnMessageSentBy,
+
+    /// What «نسخ رسالة الراجع» copies — one text for the courier, another for the carrier.
+    @JsonKey(name: 'return_message_text') String? returnMessageText,
+
     // ── العربون ──────────────────────────────────────────────────────────────────────────
     //
     // **The arrangement, the claim, and the confirmation — three different facts.** What was

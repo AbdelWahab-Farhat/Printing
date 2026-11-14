@@ -26,6 +26,11 @@ _HomeSummary _$HomeSummaryFromJson(Map<String, dynamic> json) => _HomeSummary(
       : ReadyMessageQueue.fromJson(
           json['ready_message'] as Map<String, dynamic>,
         ),
+  returnMessage: json['return_message'] == null
+      ? null
+      : ReadyMessageQueue.fromJson(
+          json['return_message'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
@@ -37,6 +42,7 @@ Map<String, dynamic> _$HomeSummaryToJson(_HomeSummary instance) =>
       'statuses': instance.statuses.map((e) => e.toJson()).toList(),
       'payments': instance.payments.map((e) => e.toJson()).toList(),
       'ready_message': instance.readyMessage?.toJson(),
+      'return_message': instance.returnMessage?.toJson(),
     };
 
 _ReadyMessageQueue _$ReadyMessageQueueFromJson(Map<String, dynamic> json) =>

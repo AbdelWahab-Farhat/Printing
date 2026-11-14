@@ -36,6 +36,18 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
       : OrderActor.fromJson(
           json['ready_message_sent_by'] as Map<String, dynamic>,
         ),
+  readyMessageText: json['ready_message_text'] as String?,
+  returnMessageApplies: json['return_message_applies'] as bool? ?? false,
+  isReturnMessageSent: json['is_return_message_sent'] as bool? ?? false,
+  returnMessageSentAt: json['return_message_sent_at'] == null
+      ? null
+      : DateTime.parse(json['return_message_sent_at'] as String),
+  returnMessageSentBy: json['return_message_sent_by'] == null
+      ? null
+      : OrderActor.fromJson(
+          json['return_message_sent_by'] as Map<String, dynamic>,
+        ),
+  returnMessageText: json['return_message_text'] as String?,
   depositExpectedAmount: json['deposit_expected_amount'] as String?,
   depositExpectedMethod: json['deposit_expected_method'] as String?,
   depositExpectedMethodLabel: json['deposit_expected_method_label'] as String?,
@@ -203,6 +215,12 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'is_ready_message_sent': instance.isReadyMessageSent,
   'ready_message_sent_at': instance.readyMessageSentAt?.toIso8601String(),
   'ready_message_sent_by': instance.readyMessageSentBy?.toJson(),
+  'ready_message_text': instance.readyMessageText,
+  'return_message_applies': instance.returnMessageApplies,
+  'is_return_message_sent': instance.isReturnMessageSent,
+  'return_message_sent_at': instance.returnMessageSentAt?.toIso8601String(),
+  'return_message_sent_by': instance.returnMessageSentBy?.toJson(),
+  'return_message_text': instance.returnMessageText,
   'deposit_expected_amount': instance.depositExpectedAmount,
   'deposit_expected_method': instance.depositExpectedMethod,
   'deposit_expected_method_label': instance.depositExpectedMethodLabel,

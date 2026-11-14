@@ -10,6 +10,7 @@ use App\Application\Api\V1\Controllers\CompanySettingController;
 use App\Application\Api\V1\Controllers\CustomerCommentController;
 use App\Application\Api\V1\Controllers\CustomerController;
 use App\Application\Api\V1\Controllers\CustomerDesignController;
+use App\Application\Api\V1\Controllers\CustomerMessageController;
 use App\Application\Api\V1\Controllers\CustomerWalletController;
 use App\Application\Api\V1\Controllers\DesignTicketCommentController;
 use App\Application\Api\V1\Controllers\DesignTicketController;
@@ -587,6 +588,11 @@ Route::prefix('v1')->group(function (): void {
         // decision as the tick.
         Route::patch('orders/{order}/ready-message', [OrderController::class, 'confirmReadyMessage'])
             ->middleware('can:orders.ready_message')->name('orders.ready-message');
+
+        // «هل تواصلنا مع الزبون بعد أن رجعت طلبيته؟» — the return-side twin, on the same grant:
+        // whoever talks to customers about ready orders talks to them about returned ones.
+        Route::patch('orders/{order}/return-message', [OrderController::class, 'confirmReturnMessage'])
+            ->middleware('can:orders.ready_message')->name('orders.return-message');
 
         // «هل وصل العربون فعلاً؟» — a second person's check on what the counter claimed when it
         // moved the order to «عربون مدفوع». Its own grant, and the domain refuses it to whoever
@@ -1199,6 +1205,14 @@ Route::prefix('v1')->group(function (): void {
 
         Route::put('settings', [CompanySettingController::class, 'update'])
             ->middleware('can:settings.manage')->name('settings.update');
+
+        // The wording of the customer messages staff copy — ready and return. Company settings,
+        // so the same two grants as the row above.
+        Route::get('settings/customer-messages', [CustomerMessageController::class, 'show'])
+            ->middleware('can:settings.view')->name('settings.customer-messages.show');
+
+        Route::put('settings/customer-messages', [CustomerMessageController::class, 'update'])
+            ->middleware('can:settings.manage')->name('settings.customer-messages.update');
 
         // The cost layers behind those balances — the first thing in this API that could read
         // them. `PATCH .../cost` is the only write: it changes what a quantity of stock is

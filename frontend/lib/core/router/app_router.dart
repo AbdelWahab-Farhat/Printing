@@ -28,6 +28,7 @@ import 'package:dayaa/features/cities/presentation/views/cities_page.dart';
 import 'package:dayaa/features/cities/presentation/views/city_regions_page.dart';
 import 'package:dayaa/features/comments/models/comment_subject.dart';
 import 'package:dayaa/features/comments/presentation/views/comments_page.dart';
+import 'package:dayaa/features/customer_messages/presentation/views/customer_messages_page.dart';
 import 'package:dayaa/features/customers/models/customer.dart';
 import 'package:dayaa/features/customers/presentation/views/add_customer_page.dart';
 import 'package:dayaa/features/customers/presentation/views/customer_designs_page.dart';
@@ -225,6 +226,9 @@ abstract final class Routes {
 
   /// قواعدُ الصندوق الأربع — خلف `settings.view`.
   static const String investmentSettings = '/investment-settings';
+
+  /// «رسائل الزبائن» — the wording of the ready and return messages. Behind `settings.view`.
+  static const String customerMessages = '/customer-messages';
 
   /// الحسابات والكاش — اللوحة، وصفحة الحساب الواحد.
   static const String treasury = '/treasury';
@@ -837,6 +841,12 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.investmentSettings,
         builder: (context, state) => const InvestmentSettingsPage(),
+      ),
+      GoRoute(
+        path: Routes.customerMessages,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewCompanySettings) ? null : Routes.home,
+        builder: (context, state) => const CustomerMessagesPage(),
       ),
       GoRoute(
         path: Routes.treasury,

@@ -340,6 +340,9 @@ final class AuditAttributeLabels
             // recorded it. See ORDER-READY-MESSAGE.md.
             'ready_message_sent_at' => 'تاريخ إرسال رسالة الجاهزية',
             'ready_message_sent_by' => 'مَن أرسل رسالة الجاهزية',
+            // The return-side twin, cleared on every new return — ORDER-RETURN-MESSAGE.md.
+            'return_message_sent_at' => 'تاريخ التواصل مع الزبون عن الراجع',
+            'return_message_sent_by' => 'مَن تواصل مع الزبون عن الراجع',
             'dispatched_at' => 'تاريخ الإرسال',
             'delivered_at' => 'تاريخ التسليم',
             'returned_at' => 'تاريخ الإرجاع',
@@ -1109,6 +1112,11 @@ final class AuditAttributeLabels
             // افتراضُ الشاشة لا قاعدةُ حساب: يُملأ به المربعُ يوم التمويل ثم يُجمَّد المكتوبُ
             // على سطر التوريد، فتغييرُه لا يمسّ رفّاً مُوِّل.
             'default_plain_sale_price' => 'سعر السادة الافتراضي (للكيلو)',
+            // The admin's wording of the four customer messages; empty means the built-in text.
+            'ready_pickup_message' => 'رسالة الجاهزية — استلام مكتب',
+            'ready_delivery_message' => 'رسالة الجاهزية — توصيل',
+            'return_courier_message' => 'رسالة الراجع — راجع لدى المندوب',
+            'return_carrier_message' => 'رسالة الراجع — راجع لدى شركة التوصيل',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see

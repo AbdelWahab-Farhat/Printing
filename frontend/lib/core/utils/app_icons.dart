@@ -731,6 +731,11 @@ abstract final class AppIcons {
   static IconData get readyMessage =>
       _pick(Icons.mark_chat_read_rounded, CupertinoIcons.chat_bubble_text_fill);
 
+  /// «رسالة الراجع» — asking a customer why a parcel came back. A chat bubble like
+  /// [readyMessage], with a question in it: this message asks rather than tells.
+  static IconData get returnMessage =>
+      _pick(Icons.contact_support_rounded, CupertinoIcons.question_circle_fill);
+
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
 

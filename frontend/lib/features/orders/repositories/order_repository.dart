@@ -37,6 +37,7 @@ abstract interface class OrderRepository {
     List<String> paymentStatuses,
     bool? isUrgent,
     bool? readyMessageSent,
+    bool? returnMessageSent,
     OrdersSort sort,
     int? customerId,
     String? from,
@@ -70,6 +71,7 @@ abstract interface class OrderRepository {
     List<String> paymentStatuses,
     bool? isUrgent,
     bool? readyMessageSent,
+    bool? returnMessageSent,
     OrdersSort sort,
     int? customerId,
     String? from,
@@ -213,6 +215,11 @@ abstract interface class OrderRepository {
   /// Refused with the server's own Arabic before the order has ever been «جاهزة» — a refusal
   /// nobody should meet, because `Order.readyMessageApplies` says so in advance.
   Future<Either<Failure, Order>> confirmReadyMessage(int orderId, {required bool sent});
+
+  /// Records that the customer was contacted about their returned order — or takes that back.
+  /// Refused unless the order stands in «راجع لدى المندوب» or «راجع لدى شركة التوصيل»;
+  /// `Order.returnMessageApplies` says so in advance.
+  Future<Either<Failure, Order>> confirmReturnMessage(int orderId, {required bool sent});
 
   /// Records that the عربون actually arrived — or takes that back.
   ///

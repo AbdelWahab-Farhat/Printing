@@ -37,6 +37,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
     bool? readyMessageSent,
+    bool? returnMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
@@ -51,6 +52,7 @@ class OrderRepositoryImpl implements OrderRepository {
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
       readyMessageSent: readyMessageSent,
+      returnMessageSent: returnMessageSent,
       sort: sort,
       customerId: customerId,
       from: from,
@@ -72,6 +74,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
     bool? readyMessageSent,
+    bool? returnMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
     String? from,
@@ -86,6 +89,7 @@ class OrderRepositoryImpl implements OrderRepository {
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
       readyMessageSent: readyMessageSent,
+      returnMessageSent: returnMessageSent,
       sort: sort,
       customerId: customerId,
       from: from,
@@ -108,6 +112,7 @@ class OrderRepositoryImpl implements OrderRepository {
     required List<String> paymentStatuses,
     required bool? isUrgent,
     required bool? readyMessageSent,
+    required bool? returnMessageSent,
     required OrdersSort sort,
     required int? customerId,
     required String? from,
@@ -138,6 +143,8 @@ class OrderRepositoryImpl implements OrderRepository {
           // negation of the column — the server owns that difference, and this app deliberately
           // holds no copy of it. See ORDER-READY-MESSAGE.md §٥.
           if (readyMessageSent != null) 'is_ready_message_sent': readyMessageSent ? 1 : 0,
+          // The return-side queue, sent the same way — ORDER-RETURN-MESSAGE.md §٣.
+          if (returnMessageSent != null) 'is_return_message_sent': returnMessageSent ? 1 : 0,
           // Omitted while the list is in its default order, so the common request keeps the URL
           // it has always had — and so a server that predates the parameter answers it the same
           // way it always did.
@@ -444,6 +451,17 @@ class OrderRepositoryImpl implements OrderRepository {
     return safeRequest<Order>(
       () => _dio.patch(
         OrderEndpoints.readyMessage(orderId),
+        data: <String, dynamic>{'sent': sent},
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> confirmReturnMessage(int orderId, {required bool sent}) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.returnMessage(orderId),
         data: <String, dynamic>{'sent': sent},
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),

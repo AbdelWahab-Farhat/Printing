@@ -137,6 +137,7 @@ void main() {
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
           confirmReadyMessage: ConfirmReadyMessage(repository),
+          confirmReturnMessage: ConfirmReturnMessage(repository),
           confirmDepositReceipt: ConfirmDepositReceipt(repository),
         ),
       );

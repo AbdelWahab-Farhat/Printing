@@ -43,6 +43,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required DeleteOrder deleteOrder,
     required RestoreOrder restoreOrder,
     required ConfirmReadyMessage confirmReadyMessage,
+    required ConfirmReturnMessage confirmReturnMessage,
     required ConfirmDepositReceipt confirmDepositReceipt,
   }) : _orderId = orderId,
        _getOrder = getOrder,
@@ -54,6 +55,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _deleteOrder = deleteOrder,
        _restoreOrder = restoreOrder,
        _confirmReadyMessage = confirmReadyMessage,
+       _confirmReturnMessage = confirmReturnMessage,
        _confirmDepositReceipt = confirmDepositReceipt,
        super(const OrderDetailState.loading());
 
@@ -85,6 +87,9 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// employee told the customer their order is ready — something that happened on somebody's own
   /// phone, which is why nothing derives it and why it lives here rather than on the move screen.
   final ConfirmReadyMessage _confirmReadyMessage;
+
+  /// The return-side twin: the customer was asked why their order came back.
+  final ConfirmReturnMessage _confirmReturnMessage;
   final ConfirmDepositReceipt _confirmDepositReceipt;
 
   Future<void> load() async {
@@ -225,6 +230,11 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// shape. Nothing is re-read afterwards, for the reason [reinstate] gives.
   Future<Failure?> confirmReadyMessage({required bool sent}) =>
       _write(() => _confirmReadyMessage(_orderId, sent: sent));
+
+  /// Records that the customer was contacted about their returned order — or takes that back.
+  /// Same shape as [confirmReadyMessage].
+  Future<Failure?> confirmReturnMessage({required bool sent}) =>
+      _write(() => _confirmReturnMessage(_orderId, sent: sent));
 
   /// Records that the عربون actually arrived — or takes that back.
   ///

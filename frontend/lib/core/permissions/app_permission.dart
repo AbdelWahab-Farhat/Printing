@@ -151,7 +151,7 @@ enum AppPermission {
   // learns to scroll past. It gates two things — the switch on the order screen, which is drawn
   // for every reader and enabled only for a holder, and the box, which is not drawn at all
   // without it. See ORDER-READY-MESSAGE.md §٤.
-  confirmReadyMessage('orders.ready_message', 'تأكيد إرسال رسالة الجاهزية للزبون'),
+  confirmReadyMessage('orders.ready_message', 'رسائل الزبائن (الجاهزية والراجع)'),
   // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
   // the order to the press. Separate from the two production grants beside it because a
   // different desk does it — the wording is `PermissionName.php`'s, word for word.

@@ -32,10 +32,63 @@ class OrderReadyMessageSwitch extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
 
   @override
+  Widget build(BuildContext context) => MessageSentSwitch(
+    title: 'تم إرسال رسالة الجاهزية للزبون',
+    icon: AppIcons.readyMessage,
+    sent: order.isReadyMessageSent,
+    sentBy: order.readyMessageSentBy,
+    sentAt: order.readyMessageSentAt,
+    onChanged: onChanged,
+  );
+}
+
+/// «تم التواصل مع الزبون» — the return-side twin of [OrderReadyMessageSwitch].
+///
+/// The employee copies the return message, asks the customer what went wrong, and then says so
+/// here. The server clears the mark on every new return, so a switch that was on during the
+/// courier's return is off again once the parcel reaches the carrier.
+class OrderReturnMessageSwitch extends StatelessWidget {
+  const OrderReturnMessageSwitch({required this.order, required this.onChanged, super.key});
+
+  final Order order;
+
+  /// Null when the mark may not be moved — same rules as [OrderReadyMessageSwitch.onChanged].
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) => MessageSentSwitch(
+    title: 'تم التواصل مع الزبون',
+    icon: AppIcons.returnMessage,
+    sent: order.isReturnMessageSent,
+    sentBy: order.returnMessageSentBy,
+    sentAt: order.returnMessageSentAt,
+    onChanged: onChanged,
+  );
+}
+
+/// The row both message switches draw: a switch, and under it who set it and when.
+class MessageSentSwitch extends StatelessWidget {
+  const MessageSentSwitch({
+    required this.title,
+    required this.icon,
+    required this.sent,
+    required this.onChanged,
+    this.sentBy,
+    this.sentAt,
+    super.key,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool sent;
+  final OrderActor? sentBy;
+  final DateTime? sentAt;
+  final ValueChanged<bool>? onChanged;
+
+  @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final isEditable = onChanged != null;
-    final sent = order.isReadyMessageSent;
 
     return Material(
       type: MaterialType.transparency,
@@ -52,7 +105,7 @@ class OrderReadyMessageSwitch extends StatelessWidget {
             title: Row(
               children: [
                 Icon(
-                  AppIcons.readyMessage,
+                  icon,
                   size: 18.sp,
                   // ورماديّةٌ ما دامت مطفأة: أيقونةٌ خضراء فوق مفتاحٍ لم يُضغط تقول إنّ الرسالة
                   // أُرسلت أصلاً.
@@ -61,7 +114,7 @@ class OrderReadyMessageSwitch extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
-                    'تم إرسال رسالة الجاهزية للزبون',
+                    title,
                     style: context.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                       // الكلمة تخفت مع المفتاح، فلا يُقرأ الصفّ حيّاً وهو مقفل.
@@ -76,7 +129,7 @@ class OrderReadyMessageSwitch extends StatelessWidget {
           // وحده لو كان مَن ضغطها قد حُذف من الموظفين — الختم ينجو منه، والطلبية تظلّ تقول إنّ
           // رسالةً أُرسلت.
           if (sent)
-            if (_record(order) case final record?)
+            if (_record() case final record?)
               Padding(
                 padding: EdgeInsetsDirectional.only(start: 26.w, bottom: 4.h),
                 child: Text(
@@ -93,9 +146,9 @@ class OrderReadyMessageSwitch extends StatelessWidget {
   ///
   /// The day is [AppDates.stamp] rather than «منذ ساعتين»: this is read weeks later when a
   /// customer says nobody called them, and «منذ ساعتين» is true only while the screen is open.
-  static String? _record(Order order) {
-    final who = order.readyMessageSentBy?.name;
-    final when = order.readyMessageSentAt?.stampLabel;
+  String? _record() {
+    final who = sentBy?.name;
+    final when = sentAt?.stampLabel;
 
     return switch ((who, when)) {
       (final name?, final stamp?) => 'أرسلها $name · $stamp',

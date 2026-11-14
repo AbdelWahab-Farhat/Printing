@@ -37,6 +37,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'investment_settlement_months',
     'investment_capital_lock_months',
     'default_plain_sale_price',
+    // The admin's wording of the customer messages — null means the built-in text.
+    'ready_pickup_message',
+    'ready_delivery_message',
+    'return_courier_message',
+    'return_carrier_message',
 ])]
 class CompanySetting extends Model implements HasAuditTrail
 {

@@ -22,3 +22,15 @@ class ConfirmReadyMessage {
   Future<Either<Failure, Order>> call(int orderId, {required bool sent}) =>
       _repository.confirmReadyMessage(orderId, sent: sent);
 }
+
+/// «تم التواصل مع الزبون» — an employee saying they asked the customer why their order came
+/// back. The return-side twin of [ConfirmReadyMessage], in the same file because it is the same
+/// kind of record on the same grant.
+class ConfirmReturnMessage {
+  const ConfirmReturnMessage(this._repository);
+
+  final OrderRepository _repository;
+
+  Future<Either<Failure, Order>> call(int orderId, {required bool sent}) =>
+      _repository.confirmReturnMessage(orderId, sent: sent);
+}

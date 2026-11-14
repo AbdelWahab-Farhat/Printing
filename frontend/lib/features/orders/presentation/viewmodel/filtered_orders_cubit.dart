@@ -53,6 +53,7 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
       statuses: _filter.statuses,
       paymentStatuses: _filter.paymentStatuses,
       readyMessageSent: _filter.readyMessageSent,
+      returnMessageSent: _filter.returnMessageSent,
       customerId: _filter.customerId,
       from: _filter.from,
       to: _filter.to,
@@ -92,6 +93,10 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
       // «بانتظار رسالة الجاهزية» after being marked would be the screen arguing with itself. The
       // detail screen hands the order back and [PagedCubit.replace] drops it here.
       (_filter.readyMessageSent == null || _filter.readyMessageSent == item.isReadyMessageSent) &&
+      // The return queue empties the same way. And `false` here also means «still in a return»:
+      // a row the server says no longer asks for a message has left the queue too.
+      (_filter.returnMessageSent == null ||
+          (_filter.returnMessageSent! ? item.isReturnMessageSent : !item.isReturnMessageSent && item.returnMessageApplies)) &&
       // And an archived one leaves too, exactly as it leaves الطلبيات. This screen reads the
       // live list, so a deleted order was never one of its answers — but the row can be deleted
       // *from* here, on the detail screen this list opens, and the trashed order is handed

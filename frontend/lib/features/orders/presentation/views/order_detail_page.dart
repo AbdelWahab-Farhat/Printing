@@ -250,6 +250,13 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.isWorking
                   ? _confirmReadyMessage
                   : null,
+              // The return-side twin, on the same grant and the same three locks.
+              onConfirmReturnMessage:
+                  sl<Session>().can(AppPermission.confirmReadyMessage) &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _confirmReturnMessage
+                  : null,
               // **والعربون يُقفل على جواب الخادم لا على المنحة.** `can_confirm_deposit` تحمل
               // المنحة *وقاعدة* أنّ من ادّعى الدفع لا يؤكّده — والثانية لا يملك التطبيق جوابها،
               // فلا يُسأل عنها هنا. ويبقى الأرشيف والكتابة الجارية شرطَي هذه الشاشة كما في كل
@@ -560,6 +567,24 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
     if (failure != null) {
       // The server's own Arabic — «لا تُؤكَّد رسالة الجاهزية قبل أن تبلغ الطلبية حالة «جاهزة»».
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// The return-side twin of [_confirmReadyMessage]. The list behind is handed the updated order
+  /// so a row marked out of «طلبيات راجعة بانتظار التواصل» leaves without a request.
+  Future<void> _confirmReturnMessage(bool sent) async {
+    final cubit = context.read<OrderDetailCubit>();
+
+    final failure = await cubit.confirmReturnMessage(sent: sent);
+    if (!mounted) return;
+
+    if (failure != null) {
       context.showFailure(failure);
 
       return;
@@ -973,6 +998,7 @@ class _Body extends StatelessWidget {
     required this.onSyncCarrierMoney,
     required this.onReinstate,
     required this.onConfirmReadyMessage,
+    required this.onConfirmReturnMessage,
     required this.onConfirmDeposit,
     required this.depositClaimedByMe,
   });
@@ -1027,6 +1053,9 @@ class _Body extends StatelessWidget {
   /// Null for a reader without `orders.ready_message`, for an archived order, and while a write
   /// is already in flight — see the call site for why those three are one line.
   final Future<void> Function(bool sent)? onConfirmReadyMessage;
+
+  /// The same three locks as [onConfirmReadyMessage], for «تم التواصل مع الزبون».
+  final Future<void> Function(bool sent)? onConfirmReturnMessage;
 
   /// Null when the deposit tick may not be moved — see the note at the call site.
   final Future<void> Function(bool received)? onConfirmDeposit;
@@ -1142,6 +1171,25 @@ class _Body extends StatelessWidget {
               // **«نسخ الرسالة» sits beside it, on the same rule** (owner's request, 2026-10-28):
               // the message is born with the switch, so it is not offered before dispatch and
               // does not disappear after it.
+              //
+              // **While the order stands in a return, the return message comes first**: it is
+              // the job waiting on this order now — ask the customer what went wrong — and the
+              // invoice card under it is the ready message from an earlier day.
+              if (order.returnMessageApplies) ...[
+                _Section(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: CopyReturnMessageButton(order: order),
+                      ),
+                      SizedBox(height: 4.h),
+                      OrderReturnMessageSwitch(order: order, onChanged: onConfirmReturnMessage),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
               if (order.readyMessageApplies)
                 _Section(
                   child: Column(

@@ -7,7 +7,6 @@ import 'package:dayaa/features/carrier/repositories/carrier_repository.dart';
 import 'package:dayaa/features/carrier/usecases/lodge_order.dart';
 import 'package:dayaa/features/carrier/usecases/release_shipment.dart';
 import 'package:dayaa/features/orders/models/order.dart';
-import 'package:dayaa/features/orders/models/order_message.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
@@ -58,6 +57,9 @@ void main() {
     String statusLabel = 'جاري التوصيل',
     OrderActor? sentBy,
     DateTime? sentAt,
+    bool returnApplies = false,
+    bool returnSent = false,
+    OrderActor? returnSentBy,
   }) => Order(
     id: 55,
     code: '55',
@@ -68,6 +70,12 @@ void main() {
     isReadyMessageSent: sent,
     readyMessageSentBy: sentBy,
     readyMessageSentAt: sentAt,
+    // The server writes the text in the admin's wording; the app only copies it.
+    readyMessageText: applies ? 'طلبيتك رقم الفاتورة : [ 55 ] في الطريق إليك' : null,
+    returnMessageApplies: returnApplies,
+    isReturnMessageSent: returnSent,
+    returnMessageSentBy: returnSentBy,
+    returnMessageText: returnApplies ? 'طلبيتك رقم الفاتورة : [ 55 ] ولم يتم الاستلام' : null,
     customerId: 10,
     cityId: 1,
     designSource: 'customer',
@@ -124,6 +132,7 @@ void main() {
           deleteOrder: DeleteOrder(repository),
           restoreOrder: RestoreOrder(repository),
           confirmReadyMessage: ConfirmReadyMessage(repository),
+          confirmReturnMessage: ConfirmReturnMessage(repository),
           confirmDepositReceipt: ConfirmDepositReceipt(repository),
         ),
       );
@@ -252,7 +261,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // Assert
-    expect(copied, OrderMessage.readyOf(order()));
+    // The server's text, word for word — the app holds no wording of its own.
+    expect(copied, order().readyMessageText);
     expect(find.text('تم نسخ رسالة الجاهزية'), findsOneWidget);
     expect(theSwitch(tester).value, isFalse);
     verifyNever(() => repository.confirmReadyMessage(any(), sent: any(named: 'sent')));
@@ -381,5 +391,126 @@ void main() {
     verify(() => repository.confirmReadyMessage(55, sent: false)).called(1);
     expect(theSwitch(tester).value, isFalse);
     expect(find.textContaining('أرسلها'), findsNothing);
+  });
+
+  // ── رسالة الراجع ──────────────────────────────────────────────────────────────────────────
+
+  /// The return switch, found by its own words — a returned order also carries the ready one.
+  SwitchListTile returnSwitch(WidgetTester tester) => tester.widget<SwitchListTile>(
+    find.ancestor(of: find.text('تم التواصل مع الزبون'), matching: find.byType(SwitchListTile)),
+  );
+
+  Order returned({bool returnSent = false, OrderActor? returnSentBy}) => order(
+    status: OrderStatus.returnedCourier,
+    statusLabel: 'راجع لدى المندوب',
+    returnApplies: true,
+    returnSent: returnSent,
+    returnSentBy: returnSentBy,
+  );
+
+  testWidgets('a returned order draws the return message above the invoice card', (tester) async {
+    // Arrange
+    await sign(['orders.view', 'orders.ready_message'], returned());
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Assert — the job waiting on this order now comes first.
+    expect(find.byType(CopyReturnMessageButton), findsOneWidget);
+    expect(find.text('تم التواصل مع الزبون'), findsOneWidget);
+    expect(returnSwitch(tester).onChanged, isNotNull);
+    expect(
+      tester.getRect(find.byType(CopyReturnMessageButton)).top,
+      lessThan(tester.getRect(find.byType(CopyInvoiceButton)).top),
+    );
+  });
+
+  testWidgets('an order outside a return draws no return section', (tester) async {
+    // Arrange
+    await sign(['orders.view', 'orders.ready_message'], order());
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byType(CopyReturnMessageButton), findsNothing);
+    expect(find.text('تم التواصل مع الزبون'), findsNothing);
+  });
+
+  testWidgets('the return switch is drawn but locked without the grant', (tester) async {
+    // Arrange
+    await sign(['orders.view'], returned());
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(returnSwitch(tester).onChanged, isNull);
+  });
+
+  testWidgets('pressing «نسخ رسالة الراجع» copies the server text', (tester) async {
+    // Arrange
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (
+      call,
+    ) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+
+      return null;
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await sign(['orders.view', 'orders.ready_message'], returned());
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byType(CopyReturnMessageButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Assert — and copying does not tick the switch.
+    expect(copied, returned().returnMessageText);
+    expect(find.text('تم نسخ رسالة الراجع'), findsOneWidget);
+    verifyNever(() => repository.confirmReturnMessage(any(), sent: any(named: 'sent')));
+    resetSnackBars();
+    await tester.pump();
+  });
+
+  testWidgets('ticking the return switch records who contacted the customer', (tester) async {
+    // Arrange
+    await sign(['orders.view', 'orders.ready_message'], returned());
+    when(() => repository.confirmReturnMessage(55, sent: true)).thenAnswer(
+      (_) async => Right(
+        returned(returnSent: true, returnSentBy: const OrderActor(id: 1, name: 'عبدالوهاب')),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+    final tile = find.ancestor(
+      of: find.text('تم التواصل مع الزبون'),
+      matching: find.byType(SwitchListTile),
+    );
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+
+    // Assert
+    verify(() => repository.confirmReturnMessage(55, sent: true)).called(1);
+    verifyNever(() => repository.confirmReadyMessage(any(), sent: any(named: 'sent')));
+    expect(returnSwitch(tester).value, isTrue);
+    expect(find.textContaining('أرسلها عبدالوهاب'), findsOneWidget);
   });
 }

@@ -102,4 +102,25 @@ final class SettingsService
 
         return $settings;
     }
+
+    /**
+     * Writes the admin's wording of the customer messages.
+     *
+     * @param  array<string, string|null>  $messages  Column => text. Only the columns named are
+     *                                                touched; a null or blank text puts the
+     *                                                built-in wording back.
+     */
+    public function updateCustomerMessages(array $messages, ?int $actorId): CompanySetting
+    {
+        $settings = $this->current();
+
+        $settings->fill(array_map(
+            fn (?string $text) => $text === null || trim($text) === '' ? null : $text,
+            $messages,
+        ));
+        $settings->updated_by = $actorId;
+        $settings->save();
+
+        return $settings;
+    }
 }

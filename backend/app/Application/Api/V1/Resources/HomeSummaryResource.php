@@ -24,6 +24,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *     status_counts: array<string, int>,
  *     payment_counts: array<string, int>,
  *     ready_message_count: int|null,
+ *     return_message_count: int|null,
  * } $resource
  */
 class HomeSummaryResource extends JsonResource
@@ -91,6 +92,16 @@ class HomeSummaryResource extends JsonResource
                 fn (): array => [
                     'count' => (int) $summary['ready_message_count'],
                     'label' => 'بانتظار رسالة الجاهزية',
+                ],
+            ),
+
+            // The return-side twin: orders standing in a return that nobody has contacted the
+            // customer about. Absent, like the box above, for a reader without the grant.
+            'return_message' => $this->when(
+                ($summary['return_message_count'] ?? null) !== null,
+                fn (): array => [
+                    'count' => (int) $summary['return_message_count'],
+                    'label' => 'طلبيات راجعة بانتظار التواصل',
                 ],
             ),
         ];

@@ -62,13 +62,69 @@ class CopyReadyMessageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppButton.tonal(
+    return _CopyServerTextButton(
       label: 'نسخ الرسالة',
       icon: AppIcons.readyMessage,
-      onPressed: () {
-        unawaited(Clipboard.setData(ClipboardData(text: OrderMessage.readyOf(order))));
+      text: order.readyMessageText,
+      copied: 'تم نسخ رسالة الجاهزية',
+    );
+  }
+}
 
-        context.showSuccess('تم نسخ رسالة الجاهزية', details: 'ألصقها في محادثة الزبون');
+/// «نسخ رسالة الراجع» — asks the customer why the parcel came back. The server picks the text
+/// for the return the order is in (courier or carrier) in the admin's wording.
+///
+/// Like [CopyReadyMessageButton], copying does not tick «تم التواصل مع الزبون»: a copy is not
+/// a conversation.
+class CopyReturnMessageButton extends StatelessWidget {
+  const CopyReturnMessageButton({required this.order, super.key});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CopyServerTextButton(
+      label: 'نسخ رسالة الراجع',
+      icon: AppIcons.returnMessage,
+      text: order.returnMessageText,
+      copied: 'تم نسخ رسالة الراجع',
+    );
+  }
+}
+
+/// Copies a customer message the server wrote. The admin words these in «رسائل الزبائن», so
+/// the app holds no text of its own; a null means a server too old to send one, and the button
+/// says so rather than copying nothing.
+class _CopyServerTextButton extends StatelessWidget {
+  const _CopyServerTextButton({
+    required this.label,
+    required this.icon,
+    required this.text,
+    required this.copied,
+  });
+
+  final String label;
+  final IconData icon;
+  final String? text;
+  final String copied;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton.tonal(
+      label: label,
+      icon: icon,
+      onPressed: () {
+        final message = text;
+
+        if (message == null || message.isEmpty) {
+          context.showError('لا يوجد نص لهذه الرسالة — حدّث الصفحة وحاول مجدداً');
+
+          return;
+        }
+
+        unawaited(Clipboard.setData(ClipboardData(text: message)));
+
+        context.showSuccess(copied, details: 'ألصقها في محادثة الزبون');
       },
     );
   }

@@ -127,6 +127,19 @@ class _HomeView extends StatelessWidget {
                 ),
                 SizedBox(height: 24.h),
               ],
+              // The same person's second queue: returned orders whose customer nobody has asked
+              // what went wrong. Opened with the filter it was counted with.
+              if (summary.returnMessage case final queue?) ...[
+                ReadyMessageBox(
+                  queue: queue,
+                  icon: AppIcons.returnMessage,
+                  onOpen: () => _openOrders(
+                    context,
+                    OrdersFilter(title: queue.label, returnMessageSent: false),
+                  ),
+                ),
+                SizedBox(height: 24.h),
+              ],
               // **The money first, above the statuses.** It sat under fourteen status cards to
               // begin with, which meant the question the shop opens this screen to ask — «كم
               // طلبية لم تُدفع» — was two screens of scrolling away. Three cards ahead of

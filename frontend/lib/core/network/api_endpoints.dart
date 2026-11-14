@@ -203,6 +203,9 @@ abstract final class InvestmentEndpoints {
 /// المسار كان سيعد بفصلٍ لا يوجد خلفه.
 abstract final class SettingsEndpoints {
   static const String settings = '/settings';
+
+  /// «رسائل الزبائن» — the wording of the ready and return messages staff copy.
+  static const String customerMessages = '/settings/customer-messages';
 }
 
 abstract final class HomeEndpoints {
@@ -659,6 +662,10 @@ abstract final class OrderEndpoints {
   /// field on it is corrected. The body is `{"sent": true|false}` — the second value is the undo
   /// of a stray tap, and it costs the same grant, `orders.ready_message`.
   static String readyMessage(int orderId) => '/orders/$orderId/ready-message';
+
+  /// «هل تواصلنا مع الزبون بعد أن رجعت طلبيته؟» — the same PATCH shape as [readyMessage], on
+  /// the same grant.
+  static String returnMessage(int orderId) => '/orders/$orderId/return-message';
 
   /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
   ///

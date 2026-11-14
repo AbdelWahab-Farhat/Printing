@@ -52,6 +52,12 @@ final readonly class OrderFilters
          * Null is «كلاهما» — the list as it was before this existed.
          */
         public ?bool $readyMessageSent = null,
+        /**
+         * «هل تواصلنا مع الزبون بعد أن رجعت طلبيته؟» — `false` is the queue: an order in
+         * «راجع لدى المندوب» or «راجع لدى شركة التوصيل» that nobody has marked. `true` is a plain
+         * test on the column. Null is «كلاهما». See Docs/orders/ORDER-RETURN-MESSAGE.md §٣.
+         */
+        public ?bool $returnMessageSent = null,
         /** Which end of the queue the list starts at. Never null: there is always an order. */
         public OrderSort $sort = OrderSort::Newest,
         /**
@@ -90,6 +96,7 @@ final readonly class OrderFilters
             // Named on the wire exactly as the column reads on the payload, so «الطلبيات التي لم
             // تُرسل لها رسالة» is one word in both places.
             readyMessageSent: self::boolOrNull($query['is_ready_message_sent'] ?? null),
+            returnMessageSent: self::boolOrNull($query['is_return_message_sent'] ?? null),
             sort: OrderSort::fromRequest($query['sort'] ?? null),
             // Read the same way «مستعجلة» is, and then defaulted rather than left null: an
             // unanswered question here means the live list, which is what every caller written
@@ -124,6 +131,7 @@ final readonly class OrderFilters
             paymentStatuses: null,
             isUrgent: $this->isUrgent,
             readyMessageSent: $this->readyMessageSent,
+            returnMessageSent: $this->returnMessageSent,
             sort: $this->sort,
             archived: $this->archived,
         );

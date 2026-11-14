@@ -10,6 +10,7 @@ use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
+use App\Domain\Order\Support\CustomerMessageTexts;
 use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Order\Support\TransitionFields;
 use Illuminate\Http\Request;
@@ -52,6 +53,10 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Scoped: the settings row behind the customer-message texts is read once per request,
+        // not once per row of a page.
+        $texts = app(CustomerMessageTexts::class);
+
         return [
             'id' => $this->id,
 
@@ -96,6 +101,26 @@ class OrderResource extends JsonResource
                     'name' => $this->readyMessenger->name,
                 ],
             ),
+
+            // **The text «نسخ الرسالة» copies, written by the server.** The admin can reword it in
+            // the settings, so the app holds no copy of its own. Null before dispatch.
+            'ready_message_text' => $texts->readyFor($this->resource),
+
+            // ── «هل تواصلنا مع الزبون بعد أن رجعت طلبيته؟» ──────────────────────────────────
+            // The same four keys as the ready message, plus its text. Applies only while the
+            // order stands in «راجع لدى المندوب» or «راجع لدى شركة التوصيل», and the mark is
+            // cleared on every new entry into one. See Docs/orders/ORDER-RETURN-MESSAGE.md.
+            'return_message_applies' => $this->returnMessageApplies(),
+            'is_return_message_sent' => $this->return_message_sent_at !== null,
+            'return_message_sent_at' => $this->return_message_sent_at?->toIso8601String(),
+            'return_message_sent_by' => $this->whenLoaded(
+                'returnMessenger',
+                fn () => $this->returnMessenger === null ? null : [
+                    'id' => $this->returnMessenger->id,
+                    'name' => $this->returnMessenger->name,
+                ],
+            ),
+            'return_message_text' => $texts->returnFor($this->resource),
 
             // Who is making it, for an order a vendor executes. The name travels with the id
             // because it is what this order said at the time — a vendor renamed since keeps its

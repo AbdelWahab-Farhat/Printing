@@ -41,6 +41,10 @@ abstract class HomeSummary with _$HomeSummary {
     /// One number and its Arabic, not a list: it is a single queue, and the label travels with
     /// it because the screen it opens is titled with the box's own word.
     @JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,
+
+    /// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
+    /// Same grant and same «null is not your job» as [readyMessage].
+    @JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage,
   }) = _HomeSummary;
 
   const HomeSummary._();

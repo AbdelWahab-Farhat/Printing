@@ -469,7 +469,7 @@ enum PermissionName: string
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::EditDrawnOrderLines => 'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
-            self::ConfirmReadyMessage => 'تأكيد إرسال رسالة الجاهزية للزبون',
+            self::ConfirmReadyMessage => 'رسائل الزبائن (الجاهزية والراجع)',
             self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
             self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
             self::ConfirmDepositReceipt => 'تأكيد استلام العربون',

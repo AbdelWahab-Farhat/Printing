@@ -18,9 +18,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **ولا يُرسَم إطلاقاً لمن لا يملك `orders.ready_message`** — الخادم يحذف المفتاح أصلاً، فلا
 /// يبقى للشاشة ما ترسمه. من لا يعنيه هذا الطابور لا يرى مكانه فارغاً.
 class ReadyMessageBox extends StatelessWidget {
-  const ReadyMessageBox({required this.queue, this.onOpen, super.key});
+  const ReadyMessageBox({required this.queue, this.onOpen, this.icon, super.key});
 
   final ReadyMessageQueue queue;
+
+  /// The glyph at the start of the box. Null is the ready-message bubble; the return queue
+  /// passes its own so the two boxes are told apart at a glance.
+  final IconData? icon;
 
   /// Opens the orders behind the number. Null leaves the box readable and inert.
   final VoidCallback? onOpen;
@@ -53,7 +57,7 @@ class ReadyMessageBox extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                AppIcons.readyMessage,
+                icon ?? AppIcons.readyMessage,
                 size: 24.sp,
                 color: waiting ? scheme.onTertiaryContainer : scheme.outline,
               ),

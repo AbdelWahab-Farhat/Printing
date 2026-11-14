@@ -18,6 +18,7 @@ class OrdersFilter {
     this.statuses = const [],
     this.paymentStatuses = const [],
     this.readyMessageSent,
+    this.returnMessageSent,
     this.customerId,
     this.from,
     this.to,
@@ -43,6 +44,11 @@ class OrdersFilter {
   /// copy of it — which is what lets the box on the home screen and the screen it opens count
   /// the same set. Null asks nothing.
   final bool? readyMessageSent;
+
+  /// «هل تواصلنا مع الزبون عن الراجع؟» — the return-side twin of [readyMessageSent]. `false`
+  /// is the queue: orders in «راجع لدى المندوب» or «راجع لدى شركة التوصيل» nobody has marked.
+  /// The rule is the server's. Null asks nothing.
+  final bool? returnMessageSent;
 
   /// Whose orders these are. Null is the whole shop.
   ///

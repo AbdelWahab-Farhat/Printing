@@ -12,6 +12,7 @@ use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
+use App\Domain\Order\Actions\MarkReturnMessageSent;
 use App\Domain\Order\Actions\PayOrderFromWallet;
 use App\Domain\Order\Actions\RecordLateVendorCost;
 use App\Domain\Order\Actions\RecordOrderPayment;
@@ -41,6 +42,7 @@ use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
+use App\Domain\Order\Exceptions\ReturnMessageNeedsAReturnedOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
 use App\Domain\Order\Models\ManufacturingCostRate;
 use App\Domain\Order\Models\Order;
@@ -89,6 +91,7 @@ class OrderService
         private readonly UndoOrderDelivery $undoDelivery,
         private readonly SetOrderShortages $setShortages,
         private readonly MarkReadyMessageSent $markReadyMessageSent,
+        private readonly MarkReturnMessageSent $markReturnMessageSent,
         private readonly MarkOrderNotesRead $markNotesRead,
         private readonly ConfirmDepositReceipt $confirmDepositReceipt,
         private readonly AddOrderDesign $addDesign,
@@ -355,6 +358,16 @@ class OrderService
     public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order
     {
         return ($this->markReadyMessageSent)($order, $sent, $actor);
+    }
+
+    /**
+     * Records that the customer was contacted about their returned order — or takes that back.
+     *
+     * @throws ReturnMessageNeedsAReturnedOrder
+     */
+    public function markReturnMessageSent(Order $order, bool $sent, ?User $actor = null): Order
+    {
+        return ($this->markReturnMessageSent)($order, $sent, $actor);
     }
 
     /**
@@ -695,6 +708,8 @@ class OrderService
             // Who said the customer had been told — a name on the order screen, and the only
             // reason this relation is ever loaded. The list does not: no card shows it.
             'readyMessenger',
+            // And who said they contacted the customer about the current return.
+            'returnMessenger',
             // The two names on the عربون: who claimed it was paid and who confirmed it arrived.
             // The order screen prints both beside the tick — they are the whole point of a rule
             // that says the two must differ — and, like the messenger above, no card shows them.

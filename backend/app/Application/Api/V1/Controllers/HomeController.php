@@ -85,6 +85,11 @@ class HomeController extends Controller
             'ready_message_count' => $request->user()?->can(PermissionName::ConfirmReadyMessage->value) === true
                 ? $this->orders->count(new OrderFilters(readyMessageSent: false))
                 : null,
+            // «طلبيات راجعة بانتظار التواصل» — the same person's second queue, on the same
+            // grant and with the same «null means don't ask». ORDER-RETURN-MESSAGE.md §٤.
+            'return_message_count' => $request->user()?->can(PermissionName::ConfirmReadyMessage->value) === true
+                ? $this->orders->count(new OrderFilters(returnMessageSent: false))
+                : null,
         ]));
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Order\Queries\Concerns;
 
+use App\Domain\Order\Enums\CustomerMessage;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Models\Order;
@@ -69,6 +70,11 @@ trait FiltersOrders
                 $filters->readyMessageSent !== null,
                 fn (Builder $q) => $this->applyReadyMessage($q, $filters->readyMessageSent),
             )
+            // The return-side twin — see {@see applyReturnMessage()}.
+            ->when(
+                $filters->returnMessageSent !== null,
+                fn (Builder $q) => $this->applyReturnMessage($q, $filters->returnMessageSent),
+            )
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
             // **`placed_at`, in the shop's own timezone, and both of those matter.**
@@ -123,6 +129,29 @@ trait FiltersOrders
         $query->whereNull('ready_message_sent_at')
             ->whereNotNull('dispatched_at')
             ->whereNotIn('status', $closed);
+    }
+
+    /**
+     * «طلبيات راجعة بانتظار التواصل» and «أيّها تواصلنا معه؟».
+     *
+     * `false` is the queue: the order stands in a return that asks for a message and nobody has
+     * marked it. The status condition is what makes an order leave on its own once it is resent,
+     * back in the office or delivered — the column is cleared on the way *in* to a return, not
+     * on the way out. The statuses are {@see CustomerMessage::forReturn()}'s, the same test as
+     * {@see Order::returnMessageApplies()}.
+     *
+     * @param  Builder<Order>  $query
+     */
+    private function applyReturnMessage(Builder $query, bool $sent): void
+    {
+        if ($sent) {
+            $query->whereNotNull('return_message_sent_at');
+
+            return;
+        }
+
+        $query->whereNull('return_message_sent_at')
+            ->whereIn('status', CustomerMessage::returnStatusValues());
     }
 
     /**
