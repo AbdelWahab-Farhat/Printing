@@ -76,9 +76,17 @@ final class RecalculateOrderTotals
             throw DiscountExceedsTotal::make($discount, $beforeDiscount);
         }
 
+        // **A compensation order owes nothing.** `items_total` still says what the goods are
+        // worth — the lines keep their prices, and the P&L reads that figure as the size of the
+        // loss — but the customer is invoiced zero. Not a 100% discount: that would book the
+        // price as revenue and charge the investors a loss (ORDER-COMPENSATION.md §2).
+        $grandTotal = $order->is_compensation
+            ? Money::normalize('0')
+            : Money::round(bcsub($beforeDiscount, $discount, 8));
+
         $order->forceFill([
             'items_total' => $itemsTotal,
-            'grand_total' => Money::round(bcsub($beforeDiscount, $discount, 8)),
+            'grand_total' => $grandTotal,
         ])->save();
 
         return $order;

@@ -521,6 +521,9 @@ abstract final class AppIcons {
   static IconData get reorder =>
       _pick(Icons.drag_indicator_rounded, CupertinoIcons.line_horizontal_3_decrease);
 
+  /// «طلبية تعويض» — goods sent out for free, to make a mistake good.
+  static IconData get compensation => _pick(Icons.redeem_rounded, CupertinoIcons.gift_fill);
+
   /// A branch the customer walks into and collects from.
   ///
   /// On the delivery map this sits in the same list as [mapPin], and the glyph is the only

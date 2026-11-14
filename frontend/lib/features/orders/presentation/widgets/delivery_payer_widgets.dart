@@ -16,6 +16,7 @@ class DeliveryPayerSwitch extends StatelessWidget {
     required this.value,
     required this.onChanged,
     required this.deliveryPrice,
+    this.isCompensation = false,
     super.key,
   });
 
@@ -24,6 +25,9 @@ class DeliveryPayerSwitch extends StatelessWidget {
 
   /// The chosen city's rate, or null when none has been agreed.
   final String? deliveryPrice;
+
+  /// On a «طلبية تعويض» the fee is the company's alone — the investors share none of it.
+  final bool isCompensation;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +57,10 @@ class DeliveryPayerSwitch extends StatelessWidget {
         if (value)
           DeliveryPayerWarnings(
             warnings: [
-              'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.',
+              if (isCompensation)
+                'أجرة التوصيل تصير تكلفةً على الشركة وحدها — طلبية التعويض لا يتحمّل المستثمرون منها شيئاً.'
+              else
+                'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.',
               if (deliveryPrice case final price? when (num.tryParse(price) ?? 0) > 0)
                 'المحسوب الآن ${price.grouped} حسب سعر المدينة، وإن احتفظ الناقل بغيره عند التسوية صار هو التكلفة.'
               else

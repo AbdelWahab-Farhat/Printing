@@ -96,6 +96,14 @@ abstract class NewOrder with _$NewOrder {
     /// order's own cost. **Omitted otherwise**: absent is the recipient, the server's default.
     @JsonKey(name: 'delivery_paid_by', includeIfNull: false) String? deliveryPaidBy,
 
+    /// «طلبية تعويض» — the customer pays nothing for these goods. **Omitted unless true**, with
+    /// its reason, its words (required under «أخرى») and, optionally, the order it makes good.
+    /// Needs `orders.compensation`. Docs/orders/ORDER-COMPENSATION.md.
+    @JsonKey(name: 'is_compensation', includeIfNull: false) bool? isCompensation,
+    @JsonKey(name: 'compensation_reason', includeIfNull: false) String? compensationReason,
+    @JsonKey(name: 'compensation_note', includeIfNull: false) String? compensationNote,
+    @JsonKey(name: 'compensates_order_id', includeIfNull: false) int? compensatesOrderId,
+
     @JsonKey(name: 'recipient_name', includeIfNull: false) String? recipientName,
     @JsonKey(name: 'recipient_phone', includeIfNull: false) String? recipientPhone,
     @JsonKey(name: 'address_details', includeIfNull: false) String? addressDetails,

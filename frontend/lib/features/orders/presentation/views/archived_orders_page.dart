@@ -85,11 +85,13 @@ class _ArchivedOrdersView extends StatelessWidget {
                         selected: cubit.status,
                         selectedPayments: cubit.paymentStatuses,
                         selectedUrgency: cubit.isUrgent,
+                        selectedCompensation: cubit.isCompensation,
                         counts: cubit.counts,
-                        onApplied: (status, payments, isUrgent) => cubit.showFilters(
+                        onApplied: (status, payments, isUrgent, isCompensation) => cubit.showFilters(
                           status: status,
                           paymentStatuses: payments,
                           isUrgent: isUrgent,
+                          isCompensation: isCompensation,
                         ),
                       ),
                     ],

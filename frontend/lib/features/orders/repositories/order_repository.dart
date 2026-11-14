@@ -37,6 +37,7 @@ abstract interface class OrderRepository {
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     OrdersSort sort,
     int? customerId,
@@ -70,6 +71,7 @@ abstract interface class OrderRepository {
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     OrdersSort sort,
     int? customerId,
@@ -222,6 +224,17 @@ abstract interface class OrderRepository {
   /// charge as before. Every order sharing the parcel changes with it — see
   /// [DeliveryPayerChange.alsoChanged]. Refused with the server's Arabic once delivered.
   Future<Either<Failure, DeliveryPayerChange>> changeDeliveryPayer(int orderId, {required String paidBy});
+
+  /// «طلبية تعويض» on ([isCompensation] true, with [reason] and optionally [note] and the
+  /// [originalId] it makes good) or off. The total becomes 0 or comes back. Refused with the
+  /// server's Arabic once the lines have closed, or while the order carries a discount.
+  Future<Either<Failure, Order>> changeCompensation(
+    int orderId, {
+    required bool isCompensation,
+    String? reason,
+    String? note,
+    int? originalId,
+  });
 
   /// Records that the عربون actually arrived — or takes that back.
   ///

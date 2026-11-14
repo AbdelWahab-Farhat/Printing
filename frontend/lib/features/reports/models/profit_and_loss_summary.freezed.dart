@@ -997,7 +997,9 @@ mixin _$PnlLosses {
 
 /// تلف — spoiled during production.
  String get scrap;/// ما لم يستلمه العميل — made, counted, refused.
-@JsonKey(name: 'partial_delivery') String get partialDelivery; String get total;
+@JsonKey(name: 'partial_delivery') String get partialDelivery;/// «خسائر التعويض» — what the goods sent out free on compensation orders cost. Null from a
+/// server that predates them.
+ String? get compensation; String get total;
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1010,16 +1012,16 @@ $PnlLossesCopyWith<PnlLosses> get copyWith => _$PnlLossesCopyWithImpl<PnlLosses>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.total, total) || other.total == total));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,total);
+int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, total: $total)';
+  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
 }
 
 
@@ -1030,7 +1032,7 @@ abstract mixin class $PnlLossesCopyWith<$Res>  {
   factory $PnlLossesCopyWith(PnlLosses value, $Res Function(PnlLosses) _then) = _$PnlLossesCopyWithImpl;
 @useResult
 $Res call({
- String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String total
+ String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String? compensation, String total
 });
 
 
@@ -1047,11 +1049,12 @@ class _$PnlLossesCopyWithImpl<$Res>
 
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? scrap = null,Object? partialDelivery = null,Object? total = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? scrap = null,Object? partialDelivery = null,Object? compensation = freezed,Object? total = null,}) {
   return _then(_self.copyWith(
 scrap: null == scrap ? _self.scrap : scrap // ignore: cast_nullable_to_non_nullable
 as String,partialDelivery: null == partialDelivery ? _self.partialDelivery : partialDelivery // ignore: cast_nullable_to_non_nullable
-as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,compensation: freezed == compensation ? _self.compensation : compensation // ignore: cast_nullable_to_non_nullable
+as String?,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -1137,10 +1140,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PnlLosses() when $default != null:
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   return orElse();
 
 }
@@ -1158,10 +1161,10 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)  $default,) {final _that = this;
 switch (_that) {
 case _PnlLosses():
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1178,10 +1181,10 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)?  $default,) {final _that = this;
 switch (_that) {
 case _PnlLosses() when $default != null:
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   return null;
 
 }
@@ -1193,13 +1196,16 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 @JsonSerializable()
 
 class _PnlLosses implements PnlLosses {
-  const _PnlLosses({required this.scrap, @JsonKey(name: 'partial_delivery') required this.partialDelivery, required this.total});
+  const _PnlLosses({required this.scrap, @JsonKey(name: 'partial_delivery') required this.partialDelivery, this.compensation, required this.total});
   factory _PnlLosses.fromJson(Map<String, dynamic> json) => _$PnlLossesFromJson(json);
 
 /// تلف — spoiled during production.
 @override final  String scrap;
 /// ما لم يستلمه العميل — made, counted, refused.
 @override@JsonKey(name: 'partial_delivery') final  String partialDelivery;
+/// «خسائر التعويض» — what the goods sent out free on compensation orders cost. Null from a
+/// server that predates them.
+@override final  String? compensation;
 @override final  String total;
 
 /// Create a copy of PnlLosses
@@ -1215,16 +1221,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.total, total) || other.total == total));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,total);
+int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, total: $total)';
+  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
 }
 
 
@@ -1235,7 +1241,7 @@ abstract mixin class _$PnlLossesCopyWith<$Res> implements $PnlLossesCopyWith<$Re
   factory _$PnlLossesCopyWith(_PnlLosses value, $Res Function(_PnlLosses) _then) = __$PnlLossesCopyWithImpl;
 @override @useResult
 $Res call({
- String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String total
+ String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String? compensation, String total
 });
 
 
@@ -1252,11 +1258,12 @@ class __$PnlLossesCopyWithImpl<$Res>
 
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? scrap = null,Object? partialDelivery = null,Object? total = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? scrap = null,Object? partialDelivery = null,Object? compensation = freezed,Object? total = null,}) {
   return _then(_PnlLosses(
 scrap: null == scrap ? _self.scrap : scrap // ignore: cast_nullable_to_non_nullable
 as String,partialDelivery: null == partialDelivery ? _self.partialDelivery : partialDelivery // ignore: cast_nullable_to_non_nullable
-as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,compensation: freezed == compensation ? _self.compensation : compensation // ignore: cast_nullable_to_non_nullable
+as String?,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

@@ -22,6 +22,8 @@ class OrderMoneyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final extras = [
+      // «تعويض»: المتجر يرسل هذه البضاعة بلا مقابل — يُقال صراحةً لماذا السعر صفر.
+      if (order.isCompensation) _Extra.free('طلبية تعويض', icon: AppIcons.gift),
       if (order.designFee case final fee? when fee._isSomething) _Extra('التصميم', fee),
       if (order.discount case final discount? when discount._isSomething)
         _Extra('الخصم', discount),

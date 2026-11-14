@@ -169,6 +169,10 @@ abstract class PnlLosses with _$PnlLosses {
     /// ما لم يستلمه العميل — made, counted, refused.
     @JsonKey(name: 'partial_delivery') required String partialDelivery,
 
+    /// «خسائر التعويض» — what the goods sent out free on compensation orders cost. Null from a
+    /// server that predates them.
+    String? compensation,
+
     required String total,
   }) = _PnlLosses;
 

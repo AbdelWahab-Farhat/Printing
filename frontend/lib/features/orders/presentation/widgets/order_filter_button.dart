@@ -35,8 +35,12 @@ class OrderFilterButton extends StatelessWidget {
     required this.selectedUrgency,
     required this.counts,
     required this.onApplied,
+    this.selectedCompensation,
     super.key,
   });
+
+  /// Whether the list is narrowed to «طلبيات التعويض». Null is «كلاهما».
+  final bool? selectedCompensation;
 
   /// Which status the list is narrowed to, or null for «الكل».
   final OrderStatus? selected;
@@ -51,7 +55,12 @@ class OrderFilterButton extends StatelessWidget {
 
   /// Every axis at once. One callback rather than three, because the sheet answers them
   /// together and three would fetch the list three times for a single tap on «تطبيق».
-  final void Function(OrderStatus? status, Set<PaymentStatus> payments, bool? isUrgent)
+  final void Function(
+    OrderStatus? status,
+    Set<PaymentStatus> payments,
+    bool? isUrgent,
+    bool? isCompensation,
+  )
   onApplied;
 
   /// The sheet's own box, so a test can measure how much of the phone it takes. That is a
@@ -75,13 +84,14 @@ class OrderFilterButton extends StatelessWidget {
           selected: selected,
           selectedPayments: selectedPayments,
           selectedUrgency: selectedUrgency,
+          selectedCompensation: selectedCompensation,
           counts: value,
         ),
       ),
     );
 
     if (picked != null) {
-      onApplied(picked.status, picked.payments, picked.isUrgent);
+      onApplied(picked.status, picked.payments, picked.isUrgent, picked.isCompensation);
     }
   }
 
@@ -91,7 +101,10 @@ class OrderFilterButton extends StatelessWidget {
     // The sort is deliberately not counted: it has a button of its own beside this one, and
     // that button already fills when the list is running backwards.
     final isActive =
-        selected != null || selectedPayments.isNotEmpty || selectedUrgency != null;
+        selected != null ||
+        selectedPayments.isNotEmpty ||
+        selectedUrgency != null ||
+        selectedCompensation != null;
 
     return Material(
       color: isActive ? scheme.primaryContainer : scheme.surfaceContainerLowest,
@@ -114,11 +127,12 @@ class OrderFilterButton extends StatelessWidget {
 
 /// What the sheet answers with: every axis, together.
 class _FilterChoice {
-  const _FilterChoice(this.status, this.payments, this.isUrgent);
+  const _FilterChoice(this.status, this.payments, this.isUrgent, this.isCompensation);
 
   final OrderStatus? status;
   final Set<PaymentStatus> payments;
   final bool? isUrgent;
+  final bool? isCompensation;
 }
 
 /// Three questions on one sheet, and every one of them narrows the list: where the work stands,
@@ -156,12 +170,14 @@ class _FilterSheet extends StatefulWidget {
     required this.selected,
     required this.selectedPayments,
     required this.selectedUrgency,
+    required this.selectedCompensation,
     required this.counts,
   });
 
   final OrderStatus? selected;
   final Set<PaymentStatus> selectedPayments;
   final bool? selectedUrgency;
+  final bool? selectedCompensation;
   final OrderCounts counts;
 
   @override
@@ -172,9 +188,10 @@ class _FilterSheetState extends State<_FilterSheet> {
   late OrderStatus? _status = widget.selected;
   late Set<PaymentStatus> _payments = {...widget.selectedPayments};
   late bool? _isUrgent = widget.selectedUrgency;
+  late bool? _isCompensation = widget.selectedCompensation;
 
   bool get _isFiltered =>
-      _status != null || _payments.isNotEmpty || _isUrgent != null;
+      _status != null || _payments.isNotEmpty || _isUrgent != null || _isCompensation != null;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +229,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         _status = null;
                         _payments = <PaymentStatus>{};
                         _isUrgent = null;
+                        _isCompensation = null;
                       }),
                       child: const Text('مسح الفلاتر'),
                     ),
@@ -308,6 +326,26 @@ class _FilterSheetState extends State<_FilterSheet> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 18.h),
+                    const FilterSectionTitle(title: 'التعويض'),
+                    SizedBox(height: 10.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: [
+                        // One tick, as «المستعجلة فقط» above and for its reasons: the only
+                        // question anybody opens this for is «أرِني طلبيات التعويض». The API also
+                        // answers `is_compensation=0`; nothing here asks it.
+                        FilterOptionChip(
+                          label: 'طلبيات التعويض فقط',
+                          isTicked: true,
+                          isSelected: _isCompensation == true,
+                          onTap: () => setState(
+                            () => _isCompensation = _isCompensation == true ? null : true,
+                          ),
+                        ),
+                      ],
+                    ),
                     // **ولا قسمَ للترتيب هنا.** كان، ونُزع إلى زرٍّ فوق القائمة: كل شريحةٍ على
                     // هذه الورقة تُنقص من النتيجة، والترتيب لا يُنقص شيئاً — فشريحةٌ لا تصغّر
                     // القائمة بين شرائحَ تصغّرها تُقرأ كفلترٍ لا يعمل. انظر [OrderSortButton].
@@ -320,7 +358,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: AppButton(
                 label: 'تطبيق',
                 onPressed: () =>
-                    Navigator.of(context).pop(_FilterChoice(_status, _payments, _isUrgent)),
+                    Navigator.of(context).pop(_FilterChoice(_status, _payments, _isUrgent, _isCompensation)),
               ),
             ),
           ],

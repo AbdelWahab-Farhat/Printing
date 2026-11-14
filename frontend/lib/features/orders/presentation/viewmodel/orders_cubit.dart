@@ -67,6 +67,10 @@ class OrdersCubit extends PagedCubit<Order> {
   /// payment states do.
   bool? isUrgent;
 
+  /// Whether the list is narrowed to «طلبيات التعويض». Null is «كلاهما». A fourth axis,
+  /// crossing the others as urgency does.
+  bool? isCompensation;
+
   /// Which end of the queue the list starts at.
   ///
   /// **Not a filter, and it has its own button** — see [OrderSortButton]. It changes nothing
@@ -81,7 +85,7 @@ class OrdersCubit extends PagedCubit<Order> {
   /// The sort is deliberately absent: it narrows nothing, and the button beside the filter's
   /// already says which way the list runs.
   bool get isFiltered =>
-      status != null || paymentStatuses.isNotEmpty || isUrgent != null;
+      status != null || paymentStatuses.isNotEmpty || isUrgent != null || isCompensation != null;
 
   @override
   Object identityOf(Order item) => item.id;
@@ -95,6 +99,7 @@ class OrdersCubit extends PagedCubit<Order> {
       statuses: [?status?.wire],
       paymentStatuses: paymentStatuses.map((status) => status.wire).toList(growable: false),
       isUrgent: isUrgent,
+      isCompensation: isCompensation,
       sort: sort,
       page: page,
     );
@@ -165,16 +170,19 @@ class OrdersCubit extends PagedCubit<Order> {
     required OrderStatus? status,
     required Set<PaymentStatus> paymentStatuses,
     required bool? isUrgent,
+    bool? isCompensation,
   }) async {
     if (status == this.status &&
         setEquals(paymentStatuses, this.paymentStatuses) &&
-        isUrgent == this.isUrgent) {
+        isUrgent == this.isUrgent &&
+        isCompensation == this.isCompensation) {
       return;
     }
 
     this.status = status;
     this.paymentStatuses = paymentStatuses;
     this.isUrgent = isUrgent;
+    this.isCompensation = isCompensation;
 
     await load(search: currentSearch);
   }
@@ -206,7 +214,9 @@ class OrdersCubit extends PagedCubit<Order> {
       // urgent belongs in «المستعجلة فقط», and one that has just been calmed down leaves it.
       // The *sort* is deliberately not consulted — a patched row keeps its place rather than
       // jumping the queue, because nothing about it moved except the flag.
-      (isUrgent == null || item.isUrgent == isUrgent);
+      (isUrgent == null || item.isUrgent == isUrgent) &&
+      // The fourth axis: an order switched to or from «تعويض» joins or leaves the narrowed list.
+      (isCompensation == null || item.isCompensation == isCompensation);
 
   /// Whether an order still belongs under the filters on screen.
   ///

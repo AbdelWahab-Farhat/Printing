@@ -181,6 +181,10 @@ abstract class CustomerOrder with _$CustomerOrder {
 
     @JsonKey(name: 'is_awaiting_quote') @Default(false) bool isAwaitingQuote,
 
+    /// «تعويض» — the shop is sending these goods free; nothing is owed. False from a server
+    /// that predates it.
+    @JsonKey(name: 'is_compensation') @Default(false) bool isCompensation,
+
     // ── ما ترسمه البطاقة ─────────────────────────────────────────────────────
     // ما ترسمه بطاقة «طلباتي» (`OrderCard`) تحت رأسها: المال والمدينة والهاتف والبنود.
     // **كلها اختيارية**: التطبيق قد يصل الهاتف قبل أن يُنشر الخادم الذي يرسلها، والبطاقة ترسم
@@ -350,6 +354,10 @@ abstract class CustomerOrderDetail with _$CustomerOrderDetail {
     /// **The decided answer, sent rather than inferred.** Working it out from a handful of
     /// nulls would make every screen re-derive the same rule, and get it subtly different.
     @JsonKey(name: 'is_awaiting_quote') @Default(false) bool isAwaitingQuote,
+
+    /// «تعويض» — the shop is sending these goods free; nothing is owed. False from a server
+    /// that predates it.
+    @JsonKey(name: 'is_compensation') @Default(false) bool isCompensation,
 
     @Default(<OrderTimelineEntry>[]) List<OrderTimelineEntry> timeline,
 

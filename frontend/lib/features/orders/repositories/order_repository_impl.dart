@@ -37,6 +37,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
@@ -51,6 +52,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      isCompensation: isCompensation,
       readyMessageSent: readyMessageSent,
       sort: sort,
       customerId: customerId,
@@ -72,6 +74,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     OrdersSort sort = OrdersSort.fallback,
     int? customerId,
@@ -86,6 +89,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      isCompensation: isCompensation,
       readyMessageSent: readyMessageSent,
       sort: sort,
       customerId: customerId,
@@ -108,6 +112,7 @@ class OrderRepositoryImpl implements OrderRepository {
     required List<String> statuses,
     required List<String> paymentStatuses,
     required bool? isUrgent,
+    required bool? isCompensation,
     required bool? readyMessageSent,
     required OrdersSort sort,
     required int? customerId,
@@ -135,6 +140,8 @@ class OrderRepositoryImpl implements OrderRepository {
           // word, and the server reads both — but the digits are what every other client of
           // this API sends and what its own docs say.
           if (isUrgent != null) 'urgent': isUrgent ? 1 : 0,
+          // «طلبيات التعويض» — the same digits.
+          if (isCompensation != null) 'is_compensation': isCompensation ? 1 : 0,
           // Same digits, same reason. And `0` here asks for the *queue* rather than for the
           // negation of the column — the server owns that difference, and this app deliberately
           // holds no copy of it. See ORDER-READY-MESSAGE.md §٥.
@@ -446,6 +453,28 @@ class OrderRepositoryImpl implements OrderRepository {
       () => _dio.patch(
         OrderEndpoints.readyMessage(orderId),
         data: <String, dynamic>{'sent': sent},
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> changeCompensation(
+    int orderId, {
+    required bool isCompensation,
+    String? reason,
+    String? note,
+    int? originalId,
+  }) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.compensation(orderId),
+        data: <String, dynamic>{
+          'is_compensation': isCompensation,
+          if (isCompensation) 'compensation_reason': ?reason,
+          if (isCompensation) 'compensation_note': ?note,
+          if (isCompensation) 'compensates_order_id': ?originalId,
+        },
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );

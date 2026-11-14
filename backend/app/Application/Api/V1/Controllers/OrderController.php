@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeDeliveryPayerRequest;
+use App\Application\Api\V1\Requests\Order\ChangeOrderCompensationRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
@@ -32,6 +33,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\DeleteOrder;
 use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\Enums\CompensationReason;
 use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
@@ -122,7 +124,7 @@ class OrderController extends Controller
         $filters = OrderFilters::fromArray([
             ...$request->only([
                 'search', 'status', 'payment_status', 'urgent', 'is_ready_message_sent', 'sort',
-                'customer_id', 'city_id', 'from', 'to',
+                'customer_id', 'city_id', 'from', 'to', 'is_compensation',
             ]),
             'archived' => $archived,
         ]);
@@ -517,6 +519,37 @@ class OrderController extends Controller
             $order,
             $warehouseId > 0 ? $warehouseId : null,
         ));
+    }
+
+    /**
+     * Turn a compensation order on or off
+     *
+     * «طلبية تعويض»: the customer pays nothing for these goods — the total becomes 0, the lines
+     * keep their prices, and the cost is reported as a compensation loss. Needs
+     * `orders.compensation`, and is refused with 422 once the lines have closed («قيد الطباعة»
+     * onwards). A discount or additional cost on the order must be removed first. See
+     * Docs/orders/ORDER-COMPENSATION.md.
+     */
+    public function changeCompensation(ChangeOrderCompensationRequest $request, Order $order): JsonResponse
+    {
+        $on = $request->boolean('is_compensation');
+        $reason = $request->validated('compensation_reason');
+        $note = trim((string) ($request->validated('compensation_note') ?? ''));
+        $original = $request->validated('compensates_order_id');
+
+        $updated = $this->orders->changeCompensation(
+            $order,
+            $on,
+            $reason === null ? null : CompensationReason::from((string) $reason),
+            $note === '' ? null : $note,
+            $original === null ? null : (int) $original,
+            $request->user(),
+        );
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            $on ? 'صارت الطلبية طلبية تعويض' : 'صارت الطلبية طلبية عادية',
+        );
     }
 
     public function setShortages(SetOrderShortagesRequest $request, Order $order): JsonResponse

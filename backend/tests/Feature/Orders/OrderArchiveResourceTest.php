@@ -51,6 +51,7 @@ class OrderArchiveResourceTest extends TestCase
     private const OFFERED_KEYS = [
         'available_transitions',
         'bench_is_fixed',
+        'can_change_compensation',
         'can_change_delivery_payer',
         'can_unsettle',
         'delivery_payer_warnings',

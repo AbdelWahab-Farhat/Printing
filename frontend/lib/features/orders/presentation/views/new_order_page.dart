@@ -22,6 +22,7 @@ import 'package:dayaa/features/orders/models/vendor_requirement.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/take_order_cubit.dart';
 import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/compensation_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/delivery_payer_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
@@ -201,8 +202,18 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// «التوصيل علينا» — off, the recipient pays at the door. Only offered for a delivery.
   bool _wePayDelivery = false;
 
+  /// «طلبية تعويض» — goods sent out free. Offered only to `orders.compensation`; when on, the
+  /// discount and the additional cost are hidden and not sent.
+  final CompensationDraft _compensation = CompensationDraft();
+
+  bool get _mayCompensate => sl<Session>().can(AppPermission.compensationOrders);
+
+  /// Whether this order goes out free — only ever true for a reader holding the grant.
+  bool get _isCompensation => _mayCompensate && _compensation.isOn;
+
   @override
   void dispose() {
+    _compensation.dispose();
     for (final line in _lines) {
       line.dispose();
     }
@@ -360,6 +371,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
       _city != null &&
       !_mixesBenches &&
       _artworkIsReady &&
+      (!_isCompensation || _compensation.isComplete) &&
       (!_vendorRequirement.isRequired || _vendor != null) &&
       _lines.every(
         (line) =>
@@ -387,12 +399,16 @@ class _NewOrderViewState extends State<_NewOrderView> {
       printsHere: _printsHere,
       // Not merely hidden: a clerk without the grant sends no discount at all, so the server
       // has nothing to refuse.
-      discount: _mayDiscount ? _discount.text : null,
+      discount: _mayDiscount && !_isCompensation ? _discount.text : null,
       // The same rule again, on the grant of its own. The three travel together or not at all —
       // the use case drops the category and the note with the money.
-      additionalCost: _mayCharge ? _additionalCost?.amount : null,
-      additionalCostReason: _mayCharge ? _additionalCost?.reason : null,
-      additionalCostNote: _mayCharge ? _additionalCost?.note : null,
+      additionalCost: _mayCharge && !_isCompensation ? _additionalCost?.amount : null,
+      additionalCostReason: _mayCharge && !_isCompensation ? _additionalCost?.reason : null,
+      additionalCostNote: _mayCharge && !_isCompensation ? _additionalCost?.note : null,
+      isCompensation: _isCompensation,
+      compensationReason: _compensation.reason,
+      compensationNote: _compensation.note.text,
+      compensatesOrderId: _compensation.original?.id,
       // Only while the row is on screen — the same rule the discount follows.
       vendorId: _vendorRequirement.isOffered ? _vendor?.id : null,
       recipientPhone: _recipientPhone.text,
@@ -573,7 +589,26 @@ class _NewOrderViewState extends State<_NewOrderView> {
               SizedBox(height: 14.h),
               _Section(title: 'التصميم', child: _design(submission)),
 
-              if (_mayDiscount) ...[
+              // **Above the discount, because it replaces it**: a compensation owes nothing, so
+              // the discount and the additional cost are not asked while it is on.
+              if (_mayCompensate) ...[
+                SizedBox(height: 14.h),
+                _Section(
+                  title: 'التعويض',
+                  child: CompensationFields(
+                    draft: _compensation,
+                    customerId: customer.id,
+                    reasonError: submission.compensationReasonError,
+                    originalError: submission.compensatesOrderError,
+                    onChanged: () {
+                      context.read<TakeOrderCubit>().clearFailure();
+                      setState(() {});
+                    },
+                  ),
+                ),
+              ],
+
+              if (_mayDiscount && !_isCompensation) ...[
                 SizedBox(height: 14.h),
                 _Section(
                   title: 'الخصم',
@@ -595,7 +630,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
               // computed from anything. It is not in «إجمالي البنود (تقديري)» at the foot of
               // the form and must not read as though it were: that figure is the lines, and the
               // total this lands in is the server's.
-              if (_mayCharge) ...[
+              if (_mayCharge && !_isCompensation) ...[
                 SizedBox(height: 14.h),
                 _Section(
                   title: 'التكلفة الإضافية',
@@ -747,6 +782,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
             value: _wePayDelivery,
             onChanged: (value) => setState(() => _wePayDelivery = value),
             deliveryPrice: city.deliveryPrice,
+            isCompensation: _isCompensation,
           ),
         ],
       ],

@@ -76,6 +76,16 @@ class OrderTotals extends StatelessWidget {
           ),
         if (order.hasDiscount)
           _Line(label: 'الخصم', value: '- ${order.discount.grouped}', tone: scheme.error),
+        // **«طلبية تعويض» — the whole of it comes off, as its own line.** The goods keep their
+        // prices above so the reader sees what was given away; this line is why «الإجمالي»
+        // below is 0.
+        if (order.isCompensation)
+          _Line(
+            label: 'تعويض — بلا مقابل',
+            note: order.compensationReasonLabel,
+            value: '- ${_compensated(order)}',
+            tone: scheme.error,
+          ),
         Padding(
           padding: EdgeInsets.symmetric(vertical: 8.h),
           child: Divider(height: 1, color: scheme.outlineVariant),
@@ -148,6 +158,14 @@ class OrderTotals extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// What a compensation order gives away — the lines and, when ours, the design.
+  String _compensated(Order order) {
+    final lines = num.tryParse(order.itemsTotal) ?? 0;
+    final design = order.hasDesignFee ? (num.tryParse(order.designFee) ?? 0) : 0;
+
+    return (lines + design).toStringAsFixed(2).grouped;
   }
 
   /// Nawris has the other side paying than the order says — our change never reached them.

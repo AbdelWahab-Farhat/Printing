@@ -617,6 +617,11 @@ class _Losses extends StatelessWidget {
           _MoneyRow(label: 'خسارة تلف', value: losses.scrap),
           SizedBox(height: 10.h),
           _MoneyRow(label: 'خسارة تسليم جزئي', value: losses.partialDelivery),
+          // Only from a server that reports it — an older one has no such line.
+          if (losses.compensation case final compensation?) ...[
+            SizedBox(height: 10.h),
+            _MoneyRow(label: 'خسائر التعويض', value: compensation),
+          ],
           SizedBox(height: 10.h),
           _MoneyRow(label: 'الإجمالي', value: losses.total),
         ],

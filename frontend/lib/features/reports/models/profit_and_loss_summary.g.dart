@@ -60,6 +60,7 @@ Map<String, dynamic> _$PnlRevenueToJson(_PnlRevenue instance) =>
 _PnlLosses _$PnlLossesFromJson(Map<String, dynamic> json) => _PnlLosses(
   scrap: json['scrap'] as String,
   partialDelivery: json['partial_delivery'] as String,
+  compensation: json['compensation'] as String?,
   total: json['total'] as String,
 );
 
@@ -67,6 +68,7 @@ Map<String, dynamic> _$PnlLossesToJson(_PnlLosses instance) =>
     <String, dynamic>{
       'scrap': instance.scrap,
       'partial_delivery': instance.partialDelivery,
+      'compensation': instance.compensation,
       'total': instance.total,
     };
 

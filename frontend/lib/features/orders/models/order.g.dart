@@ -85,6 +85,17 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   ),
   additionalCostReasonLabel: json['additional_cost_reason_label'] as String?,
   additionalCostNote: json['additional_cost_note'] as String?,
+  isCompensation: json['is_compensation'] as bool? ?? false,
+  compensationReason: json['compensation_reason'] as String?,
+  compensationReasonLabel: json['compensation_reason_label'] as String?,
+  compensationNote: json['compensation_note'] as String?,
+  compensatesOrderId: (json['compensates_order_id'] as num?)?.toInt(),
+  compensatesOrderCode: json['compensates_order_code'] as String?,
+  compensatedBy:
+      (json['compensated_by'] as List<dynamic>?)
+          ?.map((e) => SharedParcelOrder.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <SharedParcelOrder>[],
   grandTotal: json['grand_total'] as String,
   paidAmount: json['paid_amount'] as String? ?? '0.00',
   writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
@@ -148,6 +159,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  canChangeCompensation: json['can_change_compensation'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
   items: (json['items'] as List<dynamic>?)
       ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -245,6 +257,13 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
       _$AdditionalCostReasonEnumMap[instance.additionalCostReason],
   'additional_cost_reason_label': instance.additionalCostReasonLabel,
   'additional_cost_note': instance.additionalCostNote,
+  'is_compensation': instance.isCompensation,
+  'compensation_reason': instance.compensationReason,
+  'compensation_reason_label': instance.compensationReasonLabel,
+  'compensation_note': instance.compensationNote,
+  'compensates_order_id': instance.compensatesOrderId,
+  'compensates_order_code': instance.compensatesOrderCode,
+  'compensated_by': instance.compensatedBy.map((e) => e.toJson()).toList(),
   'grand_total': instance.grandTotal,
   'paid_amount': instance.paidAmount,
   'written_off_amount': instance.writtenOffAmount,
@@ -284,6 +303,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'discount_is_editable': instance.discountIsEditable,
   'can_change_delivery_payer': instance.canChangeDeliveryPayer,
   'delivery_payer_warnings': instance.deliveryPayerWarnings,
+  'can_change_compensation': instance.canChangeCompensation,
   'items_count': instance.itemsCount,
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),

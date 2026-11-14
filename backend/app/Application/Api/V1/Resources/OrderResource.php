@@ -165,6 +165,27 @@ class OrderResource extends JsonResource
             'additional_cost_reason' => $this->additional_cost_reason?->value,
             'additional_cost_reason_label' => $this->additional_cost_reason?->label(),
             'additional_cost_note' => $this->additional_cost_note,
+
+            // «طلبية تعويض»: the goods go out free, so `grand_total` is 0 while `items_total`
+            // still says what they are worth. ORDER-COMPENSATION.md.
+            'is_compensation' => (bool) $this->is_compensation,
+            'compensation_reason' => $this->compensation_reason?->value,
+            'compensation_reason_label' => $this->compensation_reason?->label(),
+            'compensation_note' => $this->compensation_note,
+            'compensates_order_id' => $this->compensates_order_id === null ? null : (int) $this->compensates_order_id,
+            // The original's number, and the compensations made for this order — loaded on the
+            // order screen only (`loadForDisplay`), null/absent on list cards.
+            'compensates_order_code' => $this->whenLoaded(
+                'compensatedOrder',
+                fn () => $this->compensatedOrder?->code,
+            ),
+            'compensated_by' => $this->whenLoaded(
+                'compensations',
+                fn () => $this->compensations
+                    ->map(fn ($order): array => ['id' => (int) $order->id, 'code' => (string) $order->code])
+                    ->values()
+                    ->all(),
+            ),
             'grand_total' => (string) $this->grand_total,
 
             // The cost side, null until the order has reached printing — see the order_items
@@ -536,6 +557,11 @@ class OrderResource extends JsonResource
             'can_change_delivery_payer' => $this->deliveryPayerIsEditable()
                 && (bool) $request->user()?->can(PermissionName::ManageOrders->value),
 
+            // «طلبية تعويض» on or off — while the lines are open, for whoever holds the grant.
+            'can_change_compensation' => $this->compensationIsEditable()
+                && (bool) $request->user()?->can(PermissionName::ManageOrders->value)
+                && (bool) $request->user()?->can(PermissionName::CompensationOrders->value),
+
             // **What switching to the other side would do, said before it is done.** Sentences
             // the change sheet prints above its button — the parts that are not certain, or that
             // move somebody's money. Empty when the switch is not offered.
@@ -568,8 +594,14 @@ class OrderResource extends JsonResource
             : null;
         $warnings = [];
 
+        // On a compensation order the fee is the company's alone — investors share none of it
+        // (ORDER-COMPENSATION.md §5), so the sentences say so instead.
+        $compensation = (bool) $this->is_compensation;
+
         if ($toUs) {
-            $warnings[] = 'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.';
+            $warnings[] = $compensation
+                ? 'أجرة التوصيل تصير تكلفةً على الشركة وحدها — طلبية التعويض لا يتحمّل المستثمرون منها شيئاً.'
+                : 'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.';
 
             if (bccomp((string) $this->delivery_price, '0', 2) <= 0) {
                 $warnings[] = 'لا سعر توصيل لهذه المدينة — تكلفة التوصيل غير معروفة الآن، وتُعرف عند التسوية مما يحتفظ به الناقل.';
@@ -577,7 +609,9 @@ class OrderResource extends JsonResource
                 $warnings[] = 'المحسوب الآن '.$this->delivery_price.' حسب سعر المدينة. إن احتفظ الناقل عند التسوية بمبلغ آخر صار هو التكلفة وأُعيد حساب الربح.';
             }
         } elseif (bccomp((string) ($this->delivery_cost ?? '0'), '0', 2) > 0) {
-            $warnings[] = 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الطلبية فيرتفع ربحها وحصة المستثمرين، ويطلب المندوب أجرته من المستلم.';
+            $warnings[] = $compensation
+                ? 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الشركة، ويطلب المندوب أجرته من المستلم.'
+                : 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الطلبية فيرتفع ربحها وحصة المستثمرين، ويطلب المندوب أجرته من المستلم.';
         }
 
         if ($parcel !== null) {

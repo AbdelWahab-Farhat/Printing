@@ -24,6 +24,7 @@ _CustomerOrder _$CustomerOrderFromJson(Map<String, dynamic> json) =>
       itemsCount: (json['items_count'] as num?)?.toInt(),
       total: json['total'] as String?,
       isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
+      isCompensation: json['is_compensation'] as bool? ?? false,
       paidAmount: json['paid_amount'] as String?,
       balance: json['balance'] as String?,
       cityName: json['city_name'] as String?,
@@ -52,6 +53,7 @@ Map<String, dynamic> _$CustomerOrderToJson(_CustomerOrder instance) =>
       'items_count': instance.itemsCount,
       'total': instance.total,
       'is_awaiting_quote': instance.isAwaitingQuote,
+      'is_compensation': instance.isCompensation,
       'paid_amount': instance.paidAmount,
       'balance': instance.balance,
       'city_name': instance.cityName,
@@ -162,6 +164,7 @@ _CustomerOrderDetail _$CustomerOrderDetailFromJson(
       ? null
       : DepositOffer.fromJson(json['deposit_offer'] as Map<String, dynamic>),
   isAwaitingQuote: json['is_awaiting_quote'] as bool? ?? false,
+  isCompensation: json['is_compensation'] as bool? ?? false,
   timeline:
       (json['timeline'] as List<dynamic>?)
           ?.map((e) => OrderTimelineEntry.fromJson(e as Map<String, dynamic>))
@@ -205,6 +208,7 @@ Map<String, dynamic> _$CustomerOrderDetailToJson(
   'deposit_at_office': instance.depositAtOffice,
   'deposit_offer': instance.depositOffer?.toJson(),
   'is_awaiting_quote': instance.isAwaitingQuote,
+  'is_compensation': instance.isCompensation,
   'timeline': instance.timeline.map((e) => e.toJson()).toList(),
   'placed_at': instance.placedAt?.toIso8601String(),
   'unread_notes_count': instance.unreadNotesCount,

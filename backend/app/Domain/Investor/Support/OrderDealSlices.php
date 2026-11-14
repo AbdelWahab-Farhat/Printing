@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Investor\Support;
 
+use App\Domain\Investor\Actions\PostFundProceedsForOrder;
 use App\Domain\Investor\Queries\DealOrdersQuery;
 use App\Domain\Order\Queries\ProfitAttributionQuery;
 
@@ -62,6 +63,10 @@ final class OrderDealSlices
      */
     public static function forOrder(array $order, array $breakdown): array
     {
+        if ($order['is_compensation'] ?? false) {
+            return self::atCost($order, $breakdown);
+        }
+
         // Less what delivery costs us when we pay the courier: a cost of the whole order, spread
         // over its lines like the discount, so every deal whose goods it sold carries its part
         // (owner's decision, 2026-11-13 — Docs/orders/DELIVERY-PAYER.md).
@@ -117,6 +122,52 @@ final class OrderDealSlices
                     'material_cost' => $draw['total_cost'],
                     'revenue' => $revenue[$position] ?? '0.00',
                     'conversion_cost' => $conversion[$position] ?? '0.00',
+                ]);
+            }
+        }
+
+        return self::sealed($slices);
+    }
+
+    /**
+     * A compensation order's slices: **each deal gets its goods back at cost, and earns nothing**
+     * (owner's decision, ORDER-COMPENSATION.md §5, option a).
+     *
+     * Nothing was sold, so there is no revenue to split, no conversion cost for the deal to bear,
+     * and no order-level extras — the courier's fee included, when we pay it: a compensation is
+     * the company's mistake, carried by the company alone. Revenue equals material, so the profit
+     * is exactly zero and {@see profitsOf()} posts nothing; the revenue is what the fund is paid
+     * back for its goods, by the company ({@see PostFundProceedsForOrder}).
+     *
+     * Draws the press already bought off the shelf are dropped, as in {@see forOrder()}: the deal
+     * was paid for those the day they left.
+     *
+     * @param  array<string, mixed>  $order
+     * @param  array<int, list<array<string, mixed>>>  $breakdown
+     * @return array<int, array{
+     *     quantity: string, material_cost: string, revenue: string,
+     *     conversion_cost: string, profit: string
+     * }>
+     */
+    private static function atCost(array $order, array $breakdown): array
+    {
+        $slices = [];
+
+        foreach ($order['lines'] as $line) {
+            foreach ($breakdown[$line['movement_id']] ?? [] as $draw) {
+                $dealId = $draw['investor_deal_id'];
+
+                if ($dealId === null || ($line['stock_purchased'] && $draw['printing_sale_price'] !== null)) {
+                    continue;
+                }
+
+                $slices[$dealId] ??= self::empty();
+
+                $slices[$dealId] = self::add($slices[$dealId], [
+                    'quantity' => $draw['quantity'],
+                    'material_cost' => $draw['total_cost'],
+                    'revenue' => $draw['total_cost'],
+                    'conversion_cost' => '0.00',
                 ]);
             }
         }

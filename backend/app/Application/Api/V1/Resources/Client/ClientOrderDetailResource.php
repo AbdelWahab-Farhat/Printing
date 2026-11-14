@@ -104,6 +104,9 @@ class ClientOrderDetailResource extends JsonResource
             'design_fee' => $awaitingQuote ? null : (string) $this->design_fee,
             'discount' => $awaitingQuote ? null : (string) $this->discount,
             'total' => $awaitingQuote ? null : (string) $this->grand_total,
+            // «تعويض» — the shop is sending these goods free; the app labels the order and asks
+            // for nothing. The reason stays staff-side.
+            'is_compensation' => (bool) $this->is_compensation,
             'paid_amount' => $awaitingQuote ? null : (string) $this->paid_amount,
             'balance' => $awaitingQuote ? null : $this->remainingAmount(),
 

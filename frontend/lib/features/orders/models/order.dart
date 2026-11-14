@@ -211,6 +211,22 @@ abstract class Order with _$Order {
     /// What was actually done, in the clerk's words. The detail, never the classification.
     @JsonKey(name: 'additional_cost_note') String? additionalCostNote,
 
+    /// «طلبية تعويض» — the goods go out free: [grandTotal] is `0.00` while [itemsTotal] still
+    /// says what they are worth. Docs/orders/ORDER-COMPENSATION.md.
+    @JsonKey(name: 'is_compensation') @Default(false) bool isCompensation,
+
+    /// Why, as a code (`print_defect`…) and in the server's Arabic — rendered as-is.
+    @JsonKey(name: 'compensation_reason') String? compensationReason,
+    @JsonKey(name: 'compensation_reason_label') String? compensationReasonLabel,
+    @JsonKey(name: 'compensation_note') String? compensationNote,
+
+    /// The order this one makes good, when one was named — «تعويض عن #…».
+    @JsonKey(name: 'compensates_order_id') int? compensatesOrderId,
+    @JsonKey(name: 'compensates_order_code') String? compensatesOrderCode,
+
+    /// The compensation orders made for this one — «عُوِّضت بالطلبية #…». Order screen only.
+    @JsonKey(name: 'compensated_by') @Default(<SharedParcelOrder>[]) List<SharedParcelOrder> compensatedBy,
+
     @JsonKey(name: 'grand_total') required String grandTotal,
 
     /// **The numbers the screen puts side by side**, every one the server's arithmetic —
@@ -386,6 +402,10 @@ abstract class Order with _$Order {
     /// What switching to the other side would do, in the server's words — printed above the
     /// button so nobody switches without knowing what moves and what is not certain.
     @JsonKey(name: 'delivery_payer_warnings') @Default(<String>[]) List<String> deliveryPayerWarnings,
+
+    /// Whether «طلبية تعويض» may still be switched on or off, for this reader — while the lines
+    /// are open, and only with `orders.compensation`.
+    @JsonKey(name: 'can_change_compensation') @Default(false) bool canChangeCompensation,
 
     /// Present on the list endpoint.
     @JsonKey(name: 'items_count') int? itemsCount,
@@ -728,7 +748,8 @@ abstract class NawrisParcelRef with _$NawrisParcelRef {
   factory NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
 }
 
-/// Another order in the same Nawris parcel — enough to name it and open it.
+/// Another order, by id and number — enough to name it and open it. Used for the orders sharing
+/// a Nawris parcel, and for the links between a compensation and its original.
 @freezed
 abstract class SharedParcelOrder with _$SharedParcelOrder {
   const factory SharedParcelOrder({

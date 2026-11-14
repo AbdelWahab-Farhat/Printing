@@ -664,6 +664,11 @@ abstract final class OrderEndpoints {
   /// `orders.manage`. Open until the courier has collected; tells Nawris when a parcel is out.
   static String deliveryPayer(int orderId) => '/orders/$orderId/delivery-payer';
 
+  /// «طلبية تعويض» on or off — `{"is_compensation", "compensation_reason", "compensation_note",
+  /// "compensates_order_id"}`, grants `orders.manage` + `orders.compensation`. Open while the
+  /// lines are. Docs/orders/ORDER-COMPENSATION.md.
+  static String compensation(int orderId) => '/orders/$orderId/compensation';
+
   /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
   ///
   /// A PATCH like [readyMessage] above, and the same shape of fact: a field on the order is

@@ -28,11 +28,13 @@ void main() {
   late OrderStatus? appliedStatus;
   late Set<PaymentStatus>? appliedPayments;
   late bool? appliedUrgency;
+  late bool? appliedCompensation;
 
   setUp(() {
     appliedStatus = null;
     appliedPayments = null;
     appliedUrgency = null;
+    appliedCompensation = null;
   });
 
   /// A real phone, not the 800×600 the test binding defaults to.
@@ -88,10 +90,11 @@ void main() {
             selectedPayments: selectedPayments,
             selectedUrgency: selectedUrgency,
             counts: counts,
-            onApplied: (status, payments, isUrgent) {
+            onApplied: (status, payments, isUrgent, isCompensation) {
               appliedStatus = status;
               appliedPayments = payments;
               appliedUrgency = isUrgent;
+              appliedCompensation = isCompensation;
             },
           ),
         ),
@@ -351,6 +354,23 @@ void main() {
     expect(appliedStatus, OrderStatus.ready);
     expect(appliedPayments, {PaymentStatus.unpaid});
     expect(appliedUrgency, isTrue);
+  });
+
+  testWidgets('«طلبيات التعويض فقط» narrows the list and crosses the other axes', (tester) async {
+    // Arrange
+    useAPhone(tester);
+    await tester.pumpWidget(host());
+    await openTheSheet(tester);
+
+    // Act
+    await tapOption(tester, 'المستعجلة فقط');
+    await tapOption(tester, 'طلبيات التعويض فقط');
+    await tester.tap(find.text('تطبيق'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(appliedUrgency, isTrue);
+    expect(appliedCompensation, isTrue);
   });
 
   testWidgets('«مسح الفلاتر» clears urgency with the rest', (tester) async {

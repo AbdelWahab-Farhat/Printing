@@ -77,10 +77,11 @@ final class PostFundProceedsForOrder
         }
 
         DB::transaction(function () use ($orderId, $fundId): void {
-            [$fromCustomer, $fromCompany] = $this->targetsFor($orderId, $fundId);
+            [$fromCustomer, $fromCompany, $compensation] = $this->targetsFor($orderId, $fundId);
 
             $this->reconcile($orderId, CashEntryType::SaleProceeds, $fromCustomer, 'تصحيح تحصيل الصندوق من الطلبية');
             $this->reconcile($orderId, CashEntryType::WriteOffCoveredByCompany, $fromCompany, 'تصحيح ما تحمّلته الشركة من شطب الطلبية');
+            $this->reconcile($orderId, CashEntryType::CompensationCoveredByCompany, $compensation, 'تصحيح ما تحمّلته الشركة من بضاعة التعويض');
         });
     }
 
@@ -135,15 +136,21 @@ final class PostFundProceedsForOrder
     /**
      * ما ينبغي أن يكون في الخزينة عن هذه الطلبية اليوم — من العميل، ومن الشركة عن المشطوب.
      *
-     * @return array{0: string, 1: string}
+     * The third figure is a compensation order's: see {@see compensationTarget()}.
+     *
+     * @return array{0: string, 1: string, 2: string}
      */
     private function targetsFor(int $orderId, int $fundId): array
     {
-        $none = ['0.00', '0.00'];
+        $none = ['0.00', '0.00', '0.00'];
         $order = $this->orders->profitAttributionFor($orderId);
 
         if ($order === null || $order['lines'] === [] || $order['status'] === OrderStatus::Cancelled->value) {
             return $none;
+        }
+
+        if ($order['is_compensation']) {
+            return ['0.00', '0.00', $this->compensationTarget($order, $fundId)];
         }
 
         $grandTotal = (string) $order['grand_total'];
@@ -175,7 +182,42 @@ final class PostFundProceedsForOrder
         $fromCustomer = Money::round(bcmul($revenue, $this->ratio($byCustomer, $grandTotal), 8));
         $inAll = Money::round(bcmul($revenue, $this->ratio($covered, $grandTotal), 8));
 
-        return [$fromCustomer, Money::round(bcsub($inAll, $fromCustomer, 8))];
+        return [$fromCustomer, Money::round(bcsub($inAll, $fromCustomer, 8)), '0.00'];
+    }
+
+    /**
+     * What the company owes the fund for goods a compensation order gave away: **their cost**,
+     * once the order has reached the customer (owner's decision, ORDER-COMPENSATION.md §5 (a)).
+     *
+     * Nothing is ever collected on such an order, so the cash cannot follow collection as a sale's
+     * does; it follows delivery instead — the moment the goods are gone for good, and the moment
+     * {@see PostDealEarningsForOrder} would have recognised a sale. Before it the order can still
+     * come home and be cancelled, its goods back on the shelf; undoing the delivery takes the
+     * target back to zero and the row is reversed.
+     *
+     * The figure is the fund's slice revenue, which {@see OrderDealSlices} sets to the material
+     * cost of its draws on a compensation order — one definition for the screen and the ledger.
+     *
+     * @param  array<string, mixed>  $order
+     */
+    private function compensationTarget(array $order, int $fundId): string
+    {
+        $delivered = in_array($order['status'], [OrderStatus::Delivered->value, OrderStatus::Settled->value], true);
+
+        if (! $delivered) {
+            return '0.00';
+        }
+
+        $slices = OrderDealSlices::forOrder(
+            $order,
+            $this->inventory->consumptionBreakdownFor(
+                array_map(fn (array $line) => $line['movement_id'], $order['lines']),
+            ),
+        );
+
+        $revenue = (string) ($slices[$fundId]['revenue'] ?? '0');
+
+        return bccomp($revenue, '0', 2) > 0 ? Money::round($revenue) : '0.00';
     }
 
     /**

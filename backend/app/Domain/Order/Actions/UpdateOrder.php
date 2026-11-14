@@ -60,6 +60,7 @@ final class UpdateOrder
         private readonly GuardOneBench $guardOneBench,
         private readonly RecalculateOrderPayments $recalculatePayments,
         private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
+        private readonly GuardCompensation $guardCompensation,
     ) {}
 
     /**
@@ -80,6 +81,13 @@ final class UpdateOrder
 
         $this->guardDiscount($order, $data, $actor);
         $this->guardAdditionalCost($order, $data, $actor);
+
+        // The flag itself never moves here — see ChangeOrderCompensation — but a compensation
+        // order owes nothing, so neither charge can be put on it through the edit form.
+        if ($order->is_compensation) {
+            $this->guardCompensation->noCharges($data->discount, $data->additionalCost);
+        }
+
         $shopName = $this->resolveShop($data, (int) $order->customer_id);
 
         $destinationMoved = (int) $order->city_id !== $data->cityId

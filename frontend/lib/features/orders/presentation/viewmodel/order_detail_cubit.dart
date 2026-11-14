@@ -6,6 +6,7 @@ import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/change_delivery_payer.dart';
+import 'package:dayaa/features/orders/usecases/change_order_compensation.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
 import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
@@ -47,6 +48,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required ConfirmReadyMessage confirmReadyMessage,
     required ConfirmDepositReceipt confirmDepositReceipt,
     ChangeDeliveryPayer? changeDeliveryPayer,
+    ChangeOrderCompensation? changeCompensation,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
@@ -59,6 +61,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _confirmReadyMessage = confirmReadyMessage,
        _confirmDepositReceipt = confirmDepositReceipt,
        _changeDeliveryPayer = changeDeliveryPayer,
+       _changeCompensation = changeCompensation,
        super(const OrderDetailState.loading());
 
   final int _orderId;
@@ -94,6 +97,9 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
   /// Optional so the screens and tests that never change who pays need not build one; the
   /// injector always passes it.
   final ChangeDeliveryPayer? _changeDeliveryPayer;
+
+  /// «طلبية تعويض» on or off — optional for the reason [_changeDeliveryPayer] is.
+  final ChangeOrderCompensation? _changeCompensation;
 
   /// What the last [changeDeliveryPayer] answered beside the order — read once by the screen.
   DeliveryPayerChange? _lastPayerChange;
@@ -267,6 +273,28 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
         return answer.order;
       });
     });
+  }
+
+  /// «طلبية تعويض» on or off. The order redraws from the answer — its total 0, or billed
+  /// again — and a refusal leaves it where it was, as the writes above do.
+  Future<Failure?> changeCompensation({
+    required bool isCompensation,
+    String? reason,
+    String? note,
+    int? originalId,
+  }) {
+    final change = _changeCompensation;
+    if (change == null) return Future.value();
+
+    return _write(
+      () => change(
+        _orderId,
+        isCompensation: isCompensation,
+        reason: reason,
+        note: note,
+        originalId: originalId,
+      ),
+    );
   }
 
   /// The last change's carrier answer and shared-parcel codes, handed over once.

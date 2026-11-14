@@ -50,6 +50,7 @@ final class CreateOrder
         private readonly GuardOneBench $guardOneBench,
         private readonly GuardPrintColors $guardPrintColors,
         private readonly UpdateOrderDesignColors $updateDesignColors,
+        private readonly GuardCompensation $guardCompensation,
     ) {}
 
     /**
@@ -108,6 +109,14 @@ final class CreateOrder
 
         $this->guardDiscount($data, $actor);
         $this->guardAdditionalCost($data, $actor);
+
+        // «طلبية تعويض» — the grant, no charges, and the original (when named) is this
+        // customer's ordinary order. Only on the clerk's door: the customer app never sends it.
+        if ($data->isCompensation) {
+            $this->guardCompensation->permission($actor);
+            $this->guardCompensation->noCharges($data->discount, $data->additionalCost);
+            $this->guardCompensation->original($data->compensatesOrderId, $data->customerId);
+        }
 
         $customer = $this->customers->find($data->customerId);
 
@@ -179,6 +188,11 @@ final class CreateOrder
                 'additional_cost' => $data->additionalCost,
                 'additional_cost_reason' => $data->additionalCostReason,
                 'additional_cost_note' => $data->additionalCostNote,
+                // Read by RecalculateOrderTotals below, which zeroes the total when it is set.
+                'is_compensation' => $data->isCompensation,
+                'compensation_reason' => $data->isCompensation ? $data->compensationReason : null,
+                'compensation_note' => $data->isCompensation ? $data->compensationNote : null,
+                'compensates_order_id' => $data->isCompensation ? $data->compensatesOrderId : null,
                 'placed_at' => now(),
                 'created_by' => $actor?->getKey(),
                 // On the row in the same write, so an order and its key are never apart: the

@@ -152,6 +152,8 @@ class FundCashRow extends StatelessWidget {
     'legacy_transfer' => AppIcons.investorDeals,
     'write_off_covered_by_company' => AppIcons.writeOff,
     'expense_covered_by_company' => AppIcons.expense,
+    // The company paying the fund back, at cost, for goods a compensation order gave away.
+    'compensation_by_company' => AppIcons.compensation,
     _ => AppIcons.more,
   };
 }
