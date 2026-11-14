@@ -594,6 +594,18 @@ Route::prefix('v1')->group(function (): void {
         // sits here rather than in the request for the reason the shortage route's does: this
         // endpoint costs one fixed grant whatever the body says, and the untick is the same
         // decision as the tick.
+        // «التوصيل على: المستلم / علينا» — a route of its own rather than a field on the edit,
+        // because changing it tells Nawris, and it stays open at «جاري التوصيل» when the edit
+        // form's address and phone are frozen. DELIVERY-PAYER.md.
+        Route::patch('orders/{order}/delivery-payer', [OrderController::class, 'changeDeliveryPayer'])
+            ->middleware('can:orders.manage')->name('orders.delivery-payer');
+
+        // «طلبية تعويض» on an existing order — its own route for the delivery payer's reason:
+        // every edit re-sends the whole order, and a flag that zeroes the total must not ride
+        // along. `orders.compensation` is the domain's check. ORDER-COMPENSATION.md.
+        Route::patch('orders/{order}/compensation', [OrderController::class, 'changeCompensation'])
+            ->middleware('can:orders.manage')->name('orders.compensation');
+
         Route::patch('orders/{order}/ready-message', [OrderController::class, 'confirmReadyMessage'])
             ->middleware('can:orders.ready_message')->name('orders.ready-message');
 

@@ -468,6 +468,9 @@ abstract final class AppIcons {
   static IconData get outForDelivery =>
       _pick(Icons.local_shipping_rounded, CupertinoIcons.car_detailed);
 
+  /// «طلبية تعويض» — goods the shop sends free, to make a mistake good.
+  static IconData get gift => _pick(Icons.redeem_rounded, CupertinoIcons.gift_fill);
+
   /// «راجع لدى المندوب» — turned back on the road; our own man still has it.
   static IconData get returnedCourier =>
       _pick(Icons.u_turn_left_rounded, CupertinoIcons.arrow_uturn_left);

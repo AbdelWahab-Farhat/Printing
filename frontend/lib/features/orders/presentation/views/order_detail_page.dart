@@ -25,6 +25,8 @@ import 'package:dayaa/features/orders/models/order_payment.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_tickets_cubit.dart';
+import 'package:dayaa/features/orders/presentation/widgets/compensation_widgets.dart';
+import 'package:dayaa/features/orders/presentation/widgets/delivery_payer_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/edit_shortages_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/open_ticket_on_order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_customer_card.dart';
@@ -275,6 +277,23 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.isWorking
                   ? _confirmDeposit
                   : null,
+              // «من يدفع التوصيل» — the server folds the status and the grant into one answer;
+              // the archive and a write in flight are this screen's own two conditions.
+              onChangeDeliveryPayer:
+                  state.order!.canChangeDeliveryPayer &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _changeDeliveryPayer
+                  : null,
+              // «طلبية تعويض» — the server folds the lines' status and both grants into one
+              // answer; the archive and a write in flight are this screen's own.
+              onChangeCompensation:
+                  state.order!.canChangeCompensation &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _changeCompensation
+                  : null,
+              onOpenOrder: (id) => context.push(Routes.order(id)).ignore(),
               // لا تقرّر شيئاً — تختار الجملة تحت مفتاحٍ مقفل وحدها. انظر [OrderDepositCard].
               depositClaimedByMe: switch (state.order!.depositClaimedBy) {
                 final claimer? => sl<Session>().isSelf(claimer.id),
@@ -562,6 +581,85 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
 
       return;
     }
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// «من يدفع التوصيل؟» — the sheet shows what switching does (the server's own warnings), and
+  /// nothing is sent until its button is pressed.
+  ///
+  /// **A refusal at Nawris is said in a dialog somebody has to dismiss**, as a payment's is: the
+  /// order says what was decided, but the courier will still charge as before until Nawris is
+  /// told again. Orders that changed with it in a shared parcel are named in the confirmation.
+  Future<void> _changeDeliveryPayer() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final paidBy = await showDeliveryPayerSheet(context: context, order: order);
+    if (paidBy == null || !mounted) return;
+
+    final failure = await cubit.changeDeliveryPayer(paidBy: paidBy);
+    if (!mounted) return;
+
+    if (failure != null) {
+      // The server's own Arabic — «لا يمكن تغيير من يدفع التوصيل وحالة الطلبية «تم الاستلام»».
+      context.showFailure(failure);
+
+      return;
+    }
+
+    final change = cubit.takeDeliveryPayerChange();
+
+    if (change?.carrier?.warning case final warning?) {
+      await showCustomDialog(
+        context: context,
+        title: 'لم تُبلَّغ نورس',
+        description: warning,
+        confirmLabel: 'حسناً',
+        cancelLabel: null,
+        severity: DialogSeverity.warning,
+      );
+
+      if (!mounted) return;
+    }
+
+    final also = change?.alsoChanged ?? const <String>[];
+    context.showSuccess(
+      '${paidBy == 'us' ? 'صار التوصيل علينا' : 'صار التوصيل على المستلم'}'
+      '${also.isEmpty ? '' : ' — ومعها في الطرد نفسه: ${also.join('، ')}'}',
+    );
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// «طلبية تعويض» on or off, through its sheet — nothing is sent until its button is pressed.
+  /// A refusal is the server's own Arabic (the lines have closed, or a discount is in the way).
+  Future<void> _changeCompensation() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final choice = await showCompensationSheet(context: context, order: order);
+    if (choice == null || !mounted) return;
+
+    final failure = await cubit.changeCompensation(
+      isCompensation: choice.isOn,
+      reason: choice.reason,
+      note: choice.note,
+      originalId: choice.originalId,
+    );
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.showSuccess(choice.isOn ? 'صارت الطلبية طلبية تعويض' : 'صارت الطلبية طلبية عادية');
 
     final updated = cubit.state.order;
     if (updated != null) context.handBack(updated);
@@ -1026,6 +1124,9 @@ class _Body extends StatelessWidget {
     required this.onConfirmReturnMessage,
     required this.onConfirmVendorMessage,
     required this.onConfirmDeposit,
+    this.onChangeDeliveryPayer,
+    this.onChangeCompensation,
+    this.onOpenOrder,
     required this.depositClaimedByMe,
   });
 
@@ -1089,6 +1190,17 @@ class _Body extends StatelessWidget {
 
   /// Null when the deposit tick may not be moved — see the note at the call site.
   final Future<void> Function(bool received)? onConfirmDeposit;
+
+  /// «تغيير من يدفع التوصيل» under the delivery line — null when the order no longer allows it,
+  /// the reader may not, or a write is already on its way.
+  final VoidCallback? onChangeDeliveryPayer;
+
+  /// «طلبية تعويض» on or off — null when the lines have closed, the reader lacks the grant, or
+  /// a write is on its way. See `Order.canChangeCompensation`.
+  final VoidCallback? onChangeCompensation;
+
+  /// Opens another order — the original a compensation names, or the replacement made for it.
+  final ValueChanged<int>? onOpenOrder;
 
   /// Whether the reader is the one who claimed the deposit was paid; chooses the sentence under
   /// a locked switch and nothing else.
@@ -1363,7 +1475,39 @@ class _Body extends StatelessWidget {
               // الطرحة كجدولين. البطاقة تحملها الآن بعلامتيها، وتنتهي عند «الإجمالي» لمن لا
               // يملك `orders.view_cost` — فالفصل الذي كان فصل *جمهور* بقي، والفصل الذي كان
               // فصل *معنى* ذهب.
-              _Section(title: 'الحساب', child: OrderTotals(order: order, showCosts: showCosts)),
+              // «طلبية تعويض» — why, which order it makes good, and the switch while it may move.
+              // Also on an ordinary order that has been compensated, to name the replacement.
+              if (order.isCompensation || order.compensatedBy.isNotEmpty || onChangeCompensation != null) ...[
+                _Section(
+                  title: 'التعويض',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      CompensationSummary(order: order, onOpenOrder: onOpenOrder),
+                      if (onChangeCompensation case final change?)
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                            onPressed: change,
+                            icon: Icon(AppIcons.compensation, size: 16.sp),
+                            label: Text(
+                              order.isCompensation ? 'إرجاعها طلبية عادية' : 'تحويلها إلى طلبية تعويض',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16.h),
+              ],
+              _Section(
+                title: 'الحساب',
+                child: OrderTotals(
+                  order: order,
+                  showCosts: showCosts,
+                  onChangeDeliveryPayer: onChangeDeliveryPayer,
+                ),
+              ),
               if (showCosts) ...[
                 // **Under the cost column, never inside it.** A `plain_sale` row is money this
                 // order *paid* an investor for its material — it is inside «تكلفة الإنتاج»

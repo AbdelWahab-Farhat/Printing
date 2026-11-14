@@ -77,6 +77,12 @@ final class ResendNawrisParcel
                 'delivery_price_deducted' => '0.00',
                 'shipping_company_id' => $parcel->shipping_company_id,
                 'dispatched_at' => now(),
+                // A resend sends no payload — Nawris re-lodges the same shipment — so who pays
+                // their fee is what the old parcel stood at, and the new one starts from it.
+                'shipment_on_sender' => $parcel->shipment_on_sender,
+                'payer_at_dispatch' => $parcel->shipment_on_sender,
+                'payer_sent' => $parcel->shipment_on_sender,
+                'payer_sent_at' => $parcel->shipment_on_sender === null ? null : now(),
             ])->save();
 
             foreach ($orders as $order) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources\Client;
 
 use App\Domain\Order\Enums\CustomerOrderStage;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Models\Order;
@@ -97,9 +98,15 @@ class ClientOrderDetailResource extends JsonResource
             // not part of these sums at all.
             'items_total' => $awaitingQuote ? null : (string) $this->items_total,
             'delivery_price' => (string) $this->delivery_price,
+            // `us` when the shop pays the courier — the app then says «التوصيل مجاني» rather than
+            // asking the customer to have the fee ready at the door. Never the cost to the shop.
+            'delivery_paid_by' => ($this->delivery_paid_by ?? DeliveryPayer::Recipient)->value,
             'design_fee' => $awaitingQuote ? null : (string) $this->design_fee,
             'discount' => $awaitingQuote ? null : (string) $this->discount,
             'total' => $awaitingQuote ? null : (string) $this->grand_total,
+            // «تعويض» — the shop is sending these goods free; the app labels the order and asks
+            // for nothing. The reason stays staff-side.
+            'is_compensation' => (bool) $this->is_compensation,
             'paid_amount' => $awaitingQuote ? null : (string) $this->paid_amount,
             'balance' => $awaitingQuote ? null : $this->remainingAmount(),
 

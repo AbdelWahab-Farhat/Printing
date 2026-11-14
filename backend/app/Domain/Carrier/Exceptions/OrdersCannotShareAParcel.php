@@ -39,6 +39,14 @@ final class OrdersCannotShareAParcel extends DomainException
         return new self("الطلبية {$code} إلى مدينة أو منطقة أخرى، والطرد المشترك يذهب إلى عنوان واحد");
     }
 
+    /**
+     * One parcel, one answer to who pays Nawris's fee — their parcel holds a single setting.
+     */
+    public static function differentPayer(string $code): self
+    {
+        return new self("الطلبية {$code} تختلف في من يدفع التوصيل، والطرد المشترك له دافعٌ واحد — وحّدها أولاً");
+    }
+
     public static function differentPhone(string $code): self
     {
         return new self("الطلبية {$code} برقم مستلم آخر، والطرد المشترك يُسلَّم لرقم واحد");

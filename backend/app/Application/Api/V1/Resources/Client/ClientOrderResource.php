@@ -66,6 +66,8 @@ class ClientOrderResource extends JsonResource
             // than what they will be asked to pay. The card draws «يُحدَّد بعد المراجعة».
             'total' => $awaitingQuote ? null : (string) $this->grand_total,
             'is_awaiting_quote' => $awaitingQuote,
+            // «تعويض» on the card — see ClientOrderDetailResource.
+            'is_compensation' => (bool) $this->is_compensation,
 
             // **ما ترسمه بطاقة القائمة، وكلّه يصل العميل أصلاً حين يفتح طلبيته**
             // ({@see ClientOrderDetailResource}). البطاقة على شكل بطاقة تطبيق الموظفين (طلب

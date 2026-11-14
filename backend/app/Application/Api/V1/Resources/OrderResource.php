@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Resources;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\DTOs\TransitionField;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
@@ -191,6 +192,11 @@ class OrderResource extends JsonResource
             'items_total' => (string) $this->items_total,
             'design_fee' => (string) $this->design_fee,
             'delivery_price' => (string) $this->delivery_price,
+            // Who pays the courier, and what that costs us — 0 unless we pay. When we do, it is
+            // already inside `gross_profit` and the investors' share (DELIVERY-PAYER.md).
+            'delivery_paid_by' => $this->payer()->value,
+            'delivery_paid_by_label' => $this->payer()->label(),
+            'delivery_cost' => (string) ($this->delivery_cost ?? '0.00'),
             'discount' => (string) $this->discount,
             // Beside the discount and never folded into it: an order's total is read as «هذا ما
             // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
@@ -200,6 +206,27 @@ class OrderResource extends JsonResource
             'additional_cost_reason' => $this->additional_cost_reason?->value,
             'additional_cost_reason_label' => $this->additional_cost_reason?->label(),
             'additional_cost_note' => $this->additional_cost_note,
+
+            // «طلبية تعويض»: the goods go out free, so `grand_total` is 0 while `items_total`
+            // still says what they are worth. ORDER-COMPENSATION.md.
+            'is_compensation' => (bool) $this->is_compensation,
+            'compensation_reason' => $this->compensation_reason?->value,
+            'compensation_reason_label' => $this->compensation_reason?->label(),
+            'compensation_note' => $this->compensation_note,
+            'compensates_order_id' => $this->compensates_order_id === null ? null : (int) $this->compensates_order_id,
+            // The original's number, and the compensations made for this order — loaded on the
+            // order screen only (`loadForDisplay`), null/absent on list cards.
+            'compensates_order_code' => $this->whenLoaded(
+                'compensatedOrder',
+                fn () => $this->compensatedOrder?->code,
+            ),
+            'compensated_by' => $this->whenLoaded(
+                'compensations',
+                fn () => $this->compensations
+                    ->map(fn ($order): array => ['id' => (int) $order->id, 'code' => (string) $order->code])
+                    ->values()
+                    ->all(),
+            ),
             'grand_total' => (string) $this->grand_total,
 
             // The cost side, null until the order has reached printing — see the order_items
@@ -565,7 +592,82 @@ class OrderResource extends JsonResource
             // every status but «إلغاء تام» and «مرفوض»; on a delivered or settled order it is the
             // only thing `UpdateOrder` accepts. See `Order::discountIsEditable()`.
             'discount_is_editable' => $this->discountIsEditable(),
+
+            // «التوصيل على: المستلم / علينا» — open until the courier has collected, for whoever
+            // may change an order. See `Order::deliveryPayerIsEditable()`.
+            'can_change_delivery_payer' => $this->deliveryPayerIsEditable()
+                && (bool) $request->user()?->can(PermissionName::ManageOrders->value),
+
+            // «طلبية تعويض» on or off — while the lines are open, for whoever holds the grant.
+            'can_change_compensation' => $this->compensationIsEditable()
+                && (bool) $request->user()?->can(PermissionName::ManageOrders->value)
+                && (bool) $request->user()?->can(PermissionName::CompensationOrders->value),
+
+            // **What switching to the other side would do, said before it is done.** Sentences
+            // the change sheet prints above its button — the parts that are not certain, or that
+            // move somebody's money. Empty when the switch is not offered.
+            'delivery_payer_warnings' => $this->deliveryPayerWarnings($request),
         ];
+    }
+
+    private function payer(): DeliveryPayer
+    {
+        return $this->delivery_paid_by ?? DeliveryPayer::Recipient;
+    }
+
+    /**
+     * The warnings for switching this order to the payer it does not have now.
+     *
+     * Reads the parcel the controller attached (`nawris_parcel`), the same way the parcel line
+     * itself is drawn: an order may not know a carrier exists.
+     *
+     * @return list<string>
+     */
+    private function deliveryPayerWarnings(Request $request): array
+    {
+        if (! $this->deliveryPayerIsEditable() || ! $request->user()?->can(PermissionName::ManageOrders->value)) {
+            return [];
+        }
+
+        $toUs = $this->payer() === DeliveryPayer::Recipient;
+        $parcel = isset($this->nawris_parcel) && ($this->nawris_parcel['is_open'] ?? false)
+            ? $this->nawris_parcel
+            : null;
+        $warnings = [];
+
+        // On a compensation order the fee is the company's alone — investors share none of it
+        // (ORDER-COMPENSATION.md §5), so the sentences say so instead.
+        $compensation = (bool) $this->is_compensation;
+
+        if ($toUs) {
+            $warnings[] = $compensation
+                ? 'أجرة التوصيل تصير تكلفةً على الشركة وحدها — طلبية التعويض لا يتحمّل المستثمرون منها شيئاً.'
+                : 'أجرة التوصيل تصير تكلفةً على الطلبية: تُخصم من ربحها، ويتحمّل المستثمرون حصتهم منها.';
+
+            if (bccomp((string) $this->delivery_price, '0', 2) <= 0) {
+                $warnings[] = 'لا سعر توصيل لهذه المدينة — تكلفة التوصيل غير معروفة الآن، وتُعرف عند التسوية مما يحتفظ به الناقل.';
+            } else {
+                $warnings[] = 'المحسوب الآن '.$this->delivery_price.' حسب سعر المدينة. إن احتفظ الناقل عند التسوية بمبلغ آخر صار هو التكلفة وأُعيد حساب الربح.';
+            }
+        } elseif (bccomp((string) ($this->delivery_cost ?? '0'), '0', 2) > 0) {
+            $warnings[] = $compensation
+                ? 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الشركة، ويطلب المندوب أجرته من المستلم.'
+                : 'تُرفع تكلفة التوصيل ('.$this->delivery_cost.') عن الطلبية فيرتفع ربحها وحصة المستثمرين، ويطلب المندوب أجرته من المستلم.';
+        }
+
+        if ($parcel !== null) {
+            $warnings[] = "الطلبية في طرد نورس {$parcel['code']} — سيُبلَّغ النورس بالتغيير. إن كان الطرد مع المندوب فقد ترفض، وعندها يطلب المندوب الأجرة كما كانت حتى يُعاد الإبلاغ.";
+
+            $shared = array_map(fn (array $order): string => (string) $order['code'], $parcel['shared_with'] ?? []);
+
+            if ($shared !== []) {
+                $warnings[] = 'الطرد مشترك مع '.implode('، ', $shared).' — يتغيّر من يدفع التوصيل عليها كلها، فللطرد دافعٌ واحد.';
+            }
+        } elseif ($this->status === OrderStatus::OutForDelivery) {
+            $warnings[] = 'الطلبية مع المندوب ولا طرد نورس لها — النظام لا يبلغ المندوب، بلّغه بنفسك.';
+        }
+
+        return $warnings;
     }
 
     /**

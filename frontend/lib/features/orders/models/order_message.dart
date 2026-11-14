@@ -156,7 +156,12 @@ class OrderMessage {
     if (order.hasDiscount) 'الخصم: - ${_amount(order.discount)}',
     'المدفوع: ${_amount(order.paidAmount)}',
     'المتبقي: ${_amount(order.remainingAmount)}',
-    if (order.hasDeliveryPrice) 'التوصيل (يُدفع للمندوب): ${_amount(order.deliveryPrice)}',
+    // When we pay the courier the customer pays nothing at the door, and the message says so
+    // rather than leaving them to have the fee ready.
+    if (order.wePayDelivery)
+      'التوصيل: مجاني'
+    else if (order.hasDeliveryPrice)
+      'التوصيل (يُدفع للمندوب): ${_amount(order.deliveryPrice)}',
   ]);
 
   /// «التكلفة الإضافية (تغليف خاص — علبة كرتون مزدوجة): ١٠٫٠٠ د».

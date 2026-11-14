@@ -1,7 +1,8 @@
 # Compensation orders — «طلبية تعويض»
 
-> **Status: planned, not built.** Plan agreed 2026-11-14; decisions 2, 3 and 4 below are still
-> open. Branch to be: `order-compensation` (not created yet). Nothing in code has changed.
+> **Status: built 2026-11-14 on the `delivery-payer` branch, merged into `main` with PR #44 on
+> 2026-11-15** (built on top of the delivery payer at the owner's request, not on a branch of its
+> own). Every decision in §3 is final. What was built, and how it differs from the plan, is §8.
 
 ---
 
@@ -45,9 +46,9 @@ with bad debts in reports, and there is no link to the original order.
 | # | Question | Answer |
 |---|---|---|
 | 1 | Approach | **Decided: B — a compensation order type** (§4). |
-| 2 | Goods that belong to investors | **Open** — see §5. Recommended: (a) at cost. |
-| 3 | Link to the original order | **Open** — see §6. Recommended: required, except reason «مجاملة». |
-| 4 | Who pays delivery on a compensation order | **Open — owner decides after seeing the rest.** Depends on the `delivery-payer` branch (uncommitted, not on main). Options: build on top of it · wait for its merge · leave delivery as today (customer pays the courier). |
+| 2 | Goods that belong to investors | **Decided: (a) at cost** — see §5. |
+| 3 | Link to the original order | **Decided: always optional** — see §6. When given: the same customer's, and not itself a compensation. |
+| 4 | Who pays delivery on a compensation order | **Decided: the employee chooses**, with the ordinary delivery-payer switch — no special default. When we pay, the fee is the company's alone; investors share none of it. |
 | 5 | When the switch can change | **Decided:** only before «جاهزة», while lines are still editable. |
 | 6 | Customer app | **Decided:** show the order, labelled «تعويض», no price owed. |
 
@@ -148,3 +149,67 @@ database, no external services, left uncommitted until the owner says so.
 **Risks**
 - Financial code (investor postings) — needs a specialist review pass before merge.
 - Decision 4 may add a dependency on the `delivery-payer` branch.
+
+---
+
+## 8. What was built (2026-11-14)
+
+Merged with PR #44. Where the build differs from §7, it says so.
+
+### Backend
+
+- **Migration** `2026_11_14_200000_add_compensation_to_orders_table`: the four columns of §7, an
+  index on `is_compensation`, and the fund cash ledger's CHECK constraint widened by one type.
+  Real `down()` (soft-deletes rows of the new type, as the earlier reshapes do).
+- **Switching on an existing order is its own endpoint**, not a field on the edit form:
+  `PATCH orders/{order}/compensation` (`ChangeOrderCompensation`) — the delivery payer's pattern.
+  The edit form re-sends the whole order, and a flag that zeroes the total must not ride along.
+  Creating an order takes the four fields directly (`StoreOrderRequest`, `CreateOrder`).
+- **Rules** (`GuardCompensation`): `orders.compensation` both ways; no discount and no additional
+  cost (refused, not dropped — remove them first); the original, when named, is the same
+  customer's, not a compensation, and not the order itself; an order that other compensations
+  name as their original cannot become one. Open while `itemsAreEditable()`.
+- **Total**: `RecalculateOrderTotals` writes `grand_total = 0`; `items_total` keeps the lines.
+  Deposit, Nawris COD and settlement already handled a zero total — nothing changed there.
+- **Investors, at cost**: `OrderDealSlices::atCost()` — revenue = material of each deal draw,
+  no conversion cost, no extras, no courier fee; profit exactly 0, so `PostDealEarningsForOrder`
+  posts nothing. Draws the press already bought off the shelf are skipped, as on any order.
+- **Fund cash**: new `CashEntryType::CompensationCoveredByCompany` (`compensation_by_company`) —
+  the company pays the fund its goods' cost when the order reaches «تم الاستلام». Posted by
+  `PostFundProceedsForOrder` (third target) through `PostCompensationCoverWhenDeliveryMoves`, which
+  listens to delivery, undo-delivery, archive and restore (`OrderStockRedrawn`) and acts on
+  compensation orders only. Reconciled to a target, so repeats change nothing.
+- **P&L**: compensation orders are out of revenue (product and design fee); their cost stays in
+  COGS and is named under `losses.compensation` (internal shelf margin netted out, and goods left
+  behind on a partial delivery left to `losses.partial_delivery` so the total counts them once).
+- **Sales statistics** leave compensation orders out — nothing was sold.
+- **Resources**: `OrderResource` (`is_compensation`, reason + label, note, original id + code,
+  `compensated_by`, `can_change_compensation`; the delivery-payer warnings say the fee is the
+  company's alone), client list and detail (`is_compensation`), audit labels, list filter
+  `?is_compensation=1`.
+
+### Staff app
+
+New-order section «التعويض» (switch, reason chips, words, optional original-order picker; hides
+the discount and the additional cost), «التعويض» section on the order screen with the links both
+ways and a sheet to switch it, «تعويض» badge on the card, a compensation line in «الحساب», the
+P&L line «خسائر التعويض», the fund cash row icon, the permission, and a «طلبيات التعويض فقط» tick
+on the order filter sheet (live list and archive alike; sends `is_compensation=1`).
+
+### Customer app
+
+«تعويض — بلا مقابل» on the order card, «طلبية تعويض — مجاني» on the order's money card.
+
+### Tests
+
+`tests/Feature/Orders/CompensationOrderTest.php` (31 tests), `frontend/test/features/orders/
+compensation_test.dart` (5), one in `frontend-client/test/features/orders/order_detail_page_test.dart`.
+
+### Still open
+
+- **Fund stock the press already bought.** When a printed line drew fund stock carrying
+  `printing_sale_price`, the fund was paid the shelf price at the draw (`StockSoldToPress`); the
+  compensation does not undo that, so on those goods the fund keeps the shelf margin, not exactly
+  the cost. Consistent with every other order (goods the press bought are the press's) — owner to
+  confirm.
+- Production migrate needs the owner's OK at the time.

@@ -199,6 +199,9 @@ final class SalesStatisticsQuery
         // whichever it is handed.
         return function (EloquentBuilder|QueryBuilder $query) use ($filters): void {
             $query->whereIn('orders.status', [OrderStatus::Delivered->value, OrderStatus::Settled->value])
+                // A compensation order sold nothing — its goods went out free, and the P&L keeps
+                // them out of revenue too (ORDER-COMPENSATION.md §4).
+                ->where('orders.is_compensation', false)
                 ->whereBetween(
                     DB::raw('COALESCE(orders.delivered_at, orders.settled_at)'),
                     [$filters->from, $filters->to],

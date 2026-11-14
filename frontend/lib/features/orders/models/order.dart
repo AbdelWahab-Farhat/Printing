@@ -217,6 +217,17 @@ abstract class Order with _$Order {
     @JsonKey(name: 'items_total') required String itemsTotal,
     @JsonKey(name: 'design_fee') required String designFee,
     @JsonKey(name: 'delivery_price') required String deliveryPrice,
+
+    /// Who pays the courier: `recipient` (at the door, the default) or `us`.
+    ///
+    /// Defaulted for an order from a server that predates the column — every one of those
+    /// left delivery on the recipient. Docs/orders/DELIVERY-PAYER.md.
+    @JsonKey(name: 'delivery_paid_by') @Default('recipient') String deliveryPaidBy,
+    @JsonKey(name: 'delivery_paid_by_label') @Default('المستلم') String deliveryPaidByLabel,
+
+    /// What delivery costs us: `'0.00'` while the recipient pays; the city's rate, then what
+    /// the carrier really kept, when we do. Already inside [grossProfit].
+    @JsonKey(name: 'delivery_cost') @Default('0.00') String deliveryCost,
     required String discount,
 
     /// A charge added to the order that no line on it describes — «تغليف خاص»، «نقل».
@@ -242,6 +253,22 @@ abstract class Order with _$Order {
 
     /// What was actually done, in the clerk's words. The detail, never the classification.
     @JsonKey(name: 'additional_cost_note') String? additionalCostNote,
+
+    /// «طلبية تعويض» — the goods go out free: [grandTotal] is `0.00` while [itemsTotal] still
+    /// says what they are worth. Docs/orders/ORDER-COMPENSATION.md.
+    @JsonKey(name: 'is_compensation') @Default(false) bool isCompensation,
+
+    /// Why, as a code (`print_defect`…) and in the server's Arabic — rendered as-is.
+    @JsonKey(name: 'compensation_reason') String? compensationReason,
+    @JsonKey(name: 'compensation_reason_label') String? compensationReasonLabel,
+    @JsonKey(name: 'compensation_note') String? compensationNote,
+
+    /// The order this one makes good, when one was named — «تعويض عن #…».
+    @JsonKey(name: 'compensates_order_id') int? compensatesOrderId,
+    @JsonKey(name: 'compensates_order_code') String? compensatesOrderCode,
+
+    /// The compensation orders made for this one — «عُوِّضت بالطلبية #…». Order screen only.
+    @JsonKey(name: 'compensated_by') @Default(<SharedParcelOrder>[]) List<SharedParcelOrder> compensatedBy,
 
     @JsonKey(name: 'grand_total') required String grandTotal,
 
@@ -410,6 +437,18 @@ abstract class Order with _$Order {
     /// but «إلغاء تام» and «مرفوض»; on a delivered or settled order it is the only thing the
     /// server accepts. Absent on an archived order, so it reads `false` there.
     @JsonKey(name: 'discount_is_editable') @Default(false) bool discountIsEditable,
+
+    /// Whether «التوصيل على» may still be switched, for this reader — open until the courier
+    /// has collected, «جاري التوصيل» included.
+    @JsonKey(name: 'can_change_delivery_payer') @Default(false) bool canChangeDeliveryPayer,
+
+    /// What switching to the other side would do, in the server's words — printed above the
+    /// button so nobody switches without knowing what moves and what is not certain.
+    @JsonKey(name: 'delivery_payer_warnings') @Default(<String>[]) List<String> deliveryPayerWarnings,
+
+    /// Whether «طلبية تعويض» may still be switched on or off, for this reader — while the lines
+    /// are open, and only with `orders.compensation`.
+    @JsonKey(name: 'can_change_compensation') @Default(false) bool canChangeCompensation,
 
     /// Present on the list endpoint.
     @JsonKey(name: 'items_count') int? itemsCount,
@@ -671,6 +710,9 @@ abstract class Order with _$Order {
   /// delivery we did not bill — neither is a line on the customer's copy.
   bool get hasDeliveryPrice => deliveryPrice != '0.00';
 
+  /// Whether we pay the courier for this order — the customer gets free delivery.
+  bool get wePayDelivery => deliveryPaidBy == 'us';
+
   /// The name to put on the delivery line — the recipient when there is one, else the customer.
   String? get recipient => recipientName ?? customer?.name;
 
@@ -739,12 +781,18 @@ abstract class NawrisParcelRef with _$NawrisParcelRef {
 
     /// Their refusal, in their words.
     @JsonKey(name: 'sync_error') String? syncError,
+
+    /// Who Nawris has paying their fee, as far as we know — `recipient`, `us`, or null. When it
+    /// differs from the order's own answer, our change did not reach them and the courier will
+    /// charge as Nawris says.
+    @JsonKey(name: 'nawris_payer') String? nawrisPayer,
   }) = _NawrisParcelRef;
 
   factory NawrisParcelRef.fromJson(Map<String, dynamic> json) => _$NawrisParcelRefFromJson(json);
 }
 
-/// Another order in the same Nawris parcel — enough to name it and open it.
+/// Another order, by id and number — enough to name it and open it. Used for the orders sharing
+/// a Nawris parcel, and for the links between a compensation and its original.
 @freezed
 abstract class SharedParcelOrder with _$SharedParcelOrder {
   const factory SharedParcelOrder({

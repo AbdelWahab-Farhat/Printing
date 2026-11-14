@@ -26,7 +26,9 @@ use App\Domain\Order\Actions\RestoreOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\UndoOrderDelivery;
 use App\Domain\Order\Enums\AdditionalCostReason;
+use App\Domain\Order\Enums\CompensationReason;
 use App\Domain\Order\Enums\CustomerMessage;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
@@ -116,6 +118,11 @@ class Order extends Model implements HasAuditTrail
             'items_total' => 'decimal:2',
             'design_fee' => 'decimal:2',
             'delivery_price' => 'decimal:2',
+            // Who pays the courier, and what that costs us — see DeliveryPayer. Both stay out of
+            // the fillable list: the payer moves only through ChangeDeliveryPayer, which tells
+            // the carrier, and the cost only through RecalculateDeliveryCost.
+            'delivery_paid_by' => DeliveryPayer::class,
+            'delivery_cost' => 'decimal:2',
             'discount' => 'decimal:2',
             // The charge that goes the other way — packaging, transport, a change to what was
             // agreed. Beside the discount rather than inside it, so «لماذا تغيّر الإجمالي؟» has
@@ -124,6 +131,11 @@ class Order extends Model implements HasAuditTrail
             // Cast, and that is the whole of what makes the change history say «تغليف خاص»
             // rather than `special_packaging` — see AuditValueLabels, which derives from here.
             'additional_cost_reason' => AdditionalCostReason::class,
+            // «طلبية تعويض»: goods sent out for free. Out of the fillable list like the totals —
+            // it zeroes `grand_total`, so it moves only through CreateOrder and
+            // ChangeOrderCompensation, behind `orders.compensation`. ORDER-COMPENSATION.md.
+            'is_compensation' => 'boolean',
+            'compensation_reason' => CompensationReason::class,
             'grand_total' => 'decimal:2',
             // The cost-side twin of grand_total — written only by RecalculateOrderCogs, and
             // absent from the fillable list for the same reason grand_total is.
@@ -247,6 +259,27 @@ class Order extends Model implements HasAuditTrail
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The order this compensation order makes good, when one was named. Archived originals stay
+     * readable: the link is history, not a live dependency.
+     *
+     * @return BelongsTo<Order, $this>
+     */
+    public function compensatedOrder(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'compensates_order_id')->withTrashed();
+    }
+
+    /**
+     * The compensation orders that name this one as their original.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function compensations(): HasMany
+    {
+        return $this->hasMany(self::class, 'compensates_order_id');
     }
 
     /**
@@ -619,7 +652,10 @@ class Order extends Model implements HasAuditTrail
             return null;
         }
 
-        return Money::round(bcsub((string) $this->grand_total, (string) $this->total_cogs, 8));
+        // Less what delivery costs us — 0 unless we pay the courier (DeliveryPayer, option B).
+        $cost = bcadd((string) $this->total_cogs, (string) ($this->delivery_cost ?? '0.00'), 8);
+
+        return Money::round(bcsub((string) $this->grand_total, $cost, 8));
     }
 
     /**
@@ -1054,6 +1090,41 @@ class Order extends Model implements HasAuditTrail
     {
         return $this->status !== OrderStatus::Cancelled
             && $this->status !== OrderStatus::RequestRejected;
+    }
+
+    /**
+     * Whether who pays the courier may still be changed.
+     *
+     * **Open until the courier has collected** (owner's decision, 2026-11-13): «جاري التوصيل»
+     * included, because that is exactly when a customer rings to say they were promised free
+     * delivery. From «تم الاستلام» the fee has been paid at the door by whoever paid it, so
+     * changing the answer would rewrite history and move no money. Cancelled and rejected orders
+     * deliver nothing.
+     */
+    public function deliveryPayerIsEditable(): bool
+    {
+        return ! in_array($this->status, [
+            OrderStatus::Delivered,
+            OrderStatus::Settled,
+            OrderStatus::Cancelled,
+            OrderStatus::RequestRejected,
+        ], true) && ! $this->trashed();
+    }
+
+    public function wePayDelivery(): bool
+    {
+        return $this->delivery_paid_by === DeliveryPayer::Us;
+    }
+
+    /**
+     * Whether the order may still be turned into a compensation order, or back.
+     *
+     * **The same line as the lines themselves** (owner's decision, ORDER-COMPENSATION.md §3.5):
+     * once the press runs the order is ink on bags, and what it was sold as is settled with it.
+     */
+    public function compensationIsEditable(): bool
+    {
+        return $this->itemsAreEditable() && ! $this->trashed();
     }
 
     /**

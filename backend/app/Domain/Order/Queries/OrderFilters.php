@@ -75,6 +75,8 @@ final readonly class OrderFilters
          * put an order somebody deleted back in the work queue.
          */
         public bool $archived = false,
+        /** «طلبيات التعويض» — null is «كلاهما», as with «مستعجلة». */
+        public ?bool $isCompensation = null,
     ) {}
 
     /**
@@ -102,6 +104,7 @@ final readonly class OrderFilters
             // unanswered question here means the live list, which is what every caller written
             // before the archive existed was asking for.
             archived: self::boolOrNull($query['archived'] ?? null) ?? false,
+            isCompensation: self::boolOrNull($query['is_compensation'] ?? null),
         );
     }
 
@@ -134,6 +137,7 @@ final readonly class OrderFilters
             returnMessageSent: $this->returnMessageSent,
             sort: $this->sort,
             archived: $this->archived,
+            isCompensation: $this->isCompensation,
         );
     }
 

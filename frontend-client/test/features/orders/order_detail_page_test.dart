@@ -412,6 +412,33 @@ void main() {
       );
     });
 
+    testWidgets('delivery the shop pays for is said to be free, with no fee to have ready', (
+      tester,
+    ) async {
+      // Arrange — DELIVERY-PAYER.md: the shop pays the courier
+      final order = order1304().copyWith(deliveryPaidBy: 'us');
+
+      // Act
+      await open(tester, order);
+
+      // Assert
+      expect(find.text('مجاني'), findsOneWidget);
+      expect(find.text('التوصيل للمندوب'), findsNothing);
+      expect(find.text('15 د.ل'), findsNothing);
+    });
+
+    testWidgets('a compensation order says it is free, and why its price is zero', (tester) async {
+      // Arrange — ORDER-COMPENSATION.md: the shop sends the goods free
+      final order = order1304().copyWith(isCompensation: true, total: '0.00', balance: '0.00');
+
+      // Act
+      await open(tester, order);
+
+      // Assert
+      expect(find.text('طلبية تعويض'), findsOneWidget);
+      expect(find.text('مجاني'), findsOneWidget);
+    });
+
     testWidgets('an order not yet priced says so instead of a figure', (tester) async {
       // Arrange
       final order = order1304().copyWith(

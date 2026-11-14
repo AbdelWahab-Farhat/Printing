@@ -41,6 +41,14 @@ final class EvaluateNawrisSettlement
     /** النورس يكتب «تم التسوية»، وهكذا نسمّيها نحن أيضاً؛ «تمت» تأتي من القالب اليدوي. */
     private const SETTLED_LABELS = ['تم التسوية', 'تمت التسوية'];
 
+    /**
+     * Orders whose fee share is their own delivery cost because Nawris never told us theirs —
+     * filled by {@see feeShares()}, read by {@see withMoney()} to say so.
+     *
+     * @var array<int, true>
+     */
+    private array $fromCityRate = [];
+
     public function __construct(private readonly TreasuryService $treasury) {}
 
     /**
@@ -398,12 +406,13 @@ final class EvaluateNawrisSettlement
      */
     private function feeShares(array $lines, array $parcels): array
     {
+        $this->fromCityRate = [];
         $latest = [];
 
         foreach ($lines as $line) {
             $parcel = $line->settles() ? ($parcels[(int) $line->orderId][0] ?? null) : null;
 
-            if ($parcel !== null && $this->weOweTheFee($parcel) && $parcel->carrier_fee !== null) {
+            if ($parcel !== null && $this->weOweTheFee($parcel)) {
                 $latest[(int) $parcel->nawris_parcel_id] = $parcel;
             }
         }
@@ -412,17 +421,33 @@ final class EvaluateNawrisSettlement
             return [];
         }
 
-        $members = DB::table('nawris_parcel_orders')
-            ->whereIn('nawris_parcel_id', array_keys($latest))
-            ->whereNull('deleted_at')
-            ->orderBy('order_id')
-            ->get(['nawris_parcel_id', 'order_id', 'amount_to_collect'])
+        $members = DB::table('nawris_parcel_orders as l')
+            ->join('orders as o', 'o.id', '=', 'l.order_id')
+            ->whereIn('l.nawris_parcel_id', array_keys($latest))
+            ->whereNull('l.deleted_at')
+            ->orderBy('l.order_id')
+            ->get(['l.nawris_parcel_id', 'l.order_id', 'l.amount_to_collect', 'o.delivery_cost'])
             ->groupBy('nawris_parcel_id');
 
         $shares = [];
 
         foreach ($latest as $parcelId => $parcel) {
             $rows = $members->get($parcelId, collect());
+
+            // **Their fee unread — every parcel dispatched as "we pay" since 2026-11-13, whose
+            // door amount never shows it.** Each order's own delivery cost stands in: the city's
+            // rate, the figure the order's profit already carries. Flagged on the line, because
+            // it is our rate and not their word.
+            if ($parcel->carrier_fee === null) {
+                foreach ($rows as $row) {
+                    if (bccomp((string) $row->delivery_cost, '0', Money::SCALE) > 0) {
+                        $shares[(int) $row->order_id] = Money::normalize($row->delivery_cost);
+                        $this->fromCityRate[(int) $row->order_id] = true;
+                    }
+                }
+
+                continue;
+            }
             $total = Money::sum('0', ...$rows->map(fn (object $row): string => (string) $row->amount_to_collect)->all());
             $fee = Money::normalize($parcel->carrier_fee);
             $assigned = '0.00';
@@ -473,10 +498,15 @@ final class EvaluateNawrisSettlement
         $fee = bccomp($fee, $amount, Money::SCALE) > 0 ? $amount : $fee;
 
         if ($parcel !== null && $this->weOweTheFee($parcel) && $parcel->carrier_fee === null) {
-            $warnings[] = [
-                'code' => NawrisSettlementWarning::FeeUnknown,
-                'message' => 'الأجرة على الشركة ولا نعرف قدرها — راجع المبلغ المستلم.',
-            ];
+            $warnings[] = isset($this->fromCityRate[$id])
+                ? [
+                    'code' => NawrisSettlementWarning::FeeFromCityRate,
+                    'message' => "التوصيل علينا ولم تذكر النورس أجرتها — المتوقَّع {$fee} حسب سعر المدينة. إن احتفظت بغيره صار هو تكلفة التوصيل وأُعيد حساب ربح الطلبية.",
+                ]
+                : [
+                    'code' => NawrisSettlementWarning::FeeUnknown,
+                    'message' => 'الأجرة على الشركة ولا نعرف قدرها — راجع المبلغ المستلم.',
+                ];
         }
 
         if (array_diff_key($held, [$nawris => true]) !== []) {

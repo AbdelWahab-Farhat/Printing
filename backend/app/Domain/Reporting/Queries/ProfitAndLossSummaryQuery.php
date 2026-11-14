@@ -14,6 +14,7 @@ use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -74,9 +75,15 @@ final class ProfitAndLossSummaryQuery
             ->whereIn('status', [OrderStatus::Delivered->value, OrderStatus::Settled->value])
             ->whereBetween(DB::raw('COALESCE(delivered_at, settled_at)'), [$filters->from, $filters->to]);
 
-        $productRevenue = (string) (clone $recognized)->sum('items_total');
+        // **A compensation order sold nothing**, so its price is not revenue — its lines keep a
+        // price only to say what the goods were worth. Its cost stays in COGS below, where every
+        // good that left the shelf is, and is named again under `losses.compensation`
+        // (ORDER-COMPENSATION.md §4). Unlike a 100% discount, which this statement cannot see.
+        $sold = (clone $recognized)->where('is_compensation', false);
 
-        $serviceRevenue = (string) (clone $recognized)
+        $productRevenue = (string) (clone $sold)->sum('items_total');
+
+        $serviceRevenue = (string) (clone $sold)
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN design_source = ? THEN design_fee ELSE 0 END), 0) as total',
                 [DesignSource::InHouse->value],
@@ -84,6 +91,13 @@ final class ProfitAndLossSummaryQuery
             ->value('total');
 
         $cogs = (string) (clone $recognized)->sum('total_cogs');
+
+        // **The courier's fee on the orders where we pay it** — a real cost of those sales, so it
+        // comes off gross profit, the way it comes off each order's own (DELIVERY-PAYER.md §3).
+        // Its own line rather than inside COGS: it is not goods, and «المواد + العمالة + غير
+        // المباشرة» must keep adding up to the COGS figure beside them. Zero on every order where
+        // the recipient pays, which is every order before 2026-11-13.
+        $deliveryCosts = (string) (clone $recognized)->sum('delivery_cost');
 
         $orderIds = (clone $recognized)->pluck('id');
 
@@ -185,6 +199,8 @@ final class ProfitAndLossSummaryQuery
             )
             ->first();
 
+        $compensation = $this->compensationCost($recognized);
+
         $revenueTotal = Money::sum($productRevenue, $serviceRevenue);
 
         return [
@@ -203,7 +219,8 @@ final class ProfitAndLossSummaryQuery
                 'overhead' => Money::round((string) $costBreakdown->overhead),
                 'total' => Money::round($cogs),
             ],
-            'gross_profit' => Money::round(bcsub($revenueTotal, $cogs, 8)),
+            'delivery_costs' => Money::round($deliveryCosts),
+            'gross_profit' => Money::round(bcsub(bcsub($revenueTotal, $cogs, 8), $deliveryCosts, 8)),
             'cash_collected' => Money::round($cashCollected),
             'write_offs' => Money::round($writeOffs),
 
@@ -212,12 +229,45 @@ final class ProfitAndLossSummaryQuery
             'losses' => [
                 'scrap' => Money::round((string) $losses->scrap),
                 'partial_delivery' => Money::round((string) $losses->partial_delivery),
+                // «خسائر التعويض» — what the goods given away cost the business.
+                'compensation' => Money::round($compensation),
                 'total' => Money::sum(
                     (string) $losses->scrap,
                     (string) $losses->partial_delivery,
+                    $compensation,
                 ),
             ],
             'orders_recognized' => $orderIds->count(),
         ];
+    }
+
+    /**
+     * What the compensation orders delivered in the period cost the business — their COGS, at
+     * the company's own cost of the goods (the internal سعر السادة margin netted out, as for the
+     * statement's COGS above). Their courier fee, when we paid it, is already in `delivery_costs`.
+     *
+     * @param  Builder<Order>  $recognized
+     */
+    private function compensationCost(Builder $recognized): string
+    {
+        $compensations = (clone $recognized)->where('is_compensation', true);
+
+        $cogs = (string) (clone $compensations)->sum('total_cogs');
+
+        $margin = (string) OrderItem::query()
+            ->whereIn('order_id', (clone $compensations)->select('id'))
+            ->selectRaw('COALESCE(SUM(material_cost - COALESCE(material_cost_actual, material_cost)), 0) as margin')
+            ->value('margin');
+
+        // Goods left behind on a partly delivered compensation are already named under
+        // `losses.partial_delivery`; taken off here so `losses.total` counts them once.
+        $leftBehind = (string) ProductionCostEntry::query()
+            ->whereIn('order_id', (clone $compensations)->select('id'))
+            ->where('cost_type', ManufacturingCostType::DeliveryLoss->value)
+            ->whereNull('reverses_entry_id')
+            ->whereDoesntHave('reversal')
+            ->sum('amount');
+
+        return bcsub(bcsub($cogs, $margin, 8), $leftBehind, 8);
     }
 }

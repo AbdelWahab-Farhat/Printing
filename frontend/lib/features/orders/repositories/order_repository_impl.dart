@@ -9,6 +9,7 @@ import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
 import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -36,6 +37,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     bool? returnMessageSent,
     OrdersSort sort = OrdersSort.fallback,
@@ -51,6 +53,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      isCompensation: isCompensation,
       readyMessageSent: readyMessageSent,
       returnMessageSent: returnMessageSent,
       sort: sort,
@@ -73,6 +76,7 @@ class OrderRepositoryImpl implements OrderRepository {
     List<String> statuses = const <String>[],
     List<String> paymentStatuses = const <String>[],
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     bool? returnMessageSent,
     OrdersSort sort = OrdersSort.fallback,
@@ -88,6 +92,7 @@ class OrderRepositoryImpl implements OrderRepository {
       statuses: statuses,
       paymentStatuses: paymentStatuses,
       isUrgent: isUrgent,
+      isCompensation: isCompensation,
       readyMessageSent: readyMessageSent,
       returnMessageSent: returnMessageSent,
       sort: sort,
@@ -111,6 +116,7 @@ class OrderRepositoryImpl implements OrderRepository {
     required List<String> statuses,
     required List<String> paymentStatuses,
     required bool? isUrgent,
+    required bool? isCompensation,
     required bool? readyMessageSent,
     required bool? returnMessageSent,
     required OrdersSort sort,
@@ -139,6 +145,8 @@ class OrderRepositoryImpl implements OrderRepository {
           // word, and the server reads both — but the digits are what every other client of
           // this API sends and what its own docs say.
           if (isUrgent != null) 'urgent': isUrgent ? 1 : 0,
+          // «طلبيات التعويض» — the same digits.
+          if (isCompensation != null) 'is_compensation': isCompensation ? 1 : 0,
           // Same digits, same reason. And `0` here asks for the *queue* rather than for the
           // negation of the column — the server owns that difference, and this app deliberately
           // holds no copy of it. See ORDER-READY-MESSAGE.md §٥.
@@ -469,6 +477,28 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, Order>> changeCompensation(
+    int orderId, {
+    required bool isCompensation,
+    String? reason,
+    String? note,
+    int? originalId,
+  }) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.compensation(orderId),
+        data: <String, dynamic>{
+          'is_compensation': isCompensation,
+          if (isCompensation) 'compensation_reason': ?reason,
+          if (isCompensation) 'compensation_note': ?note,
+          if (isCompensation) 'compensates_order_id': ?originalId,
+        },
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
   Future<Either<Failure, Order>> confirmVendorMessage(int orderId, {required bool sent}) {
     return safeRequest<Order>(
       () => _dio.patch(
@@ -476,6 +506,17 @@ class OrderRepositoryImpl implements OrderRepository {
         data: <String, dynamic>{'sent': sent},
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, DeliveryPayerChange>> changeDeliveryPayer(int orderId, {required String paidBy}) {
+    return safeRequest<DeliveryPayerChange>(
+      () => _dio.patch(
+        OrderEndpoints.deliveryPayer(orderId),
+        data: <String, dynamic>{'delivery_paid_by': paidBy},
+      ),
+      parse: (data) => DeliveryPayerChange.fromJson(data as Map<String, dynamic>),
     );
   }
 

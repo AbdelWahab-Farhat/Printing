@@ -179,6 +179,16 @@ class _Report extends StatelessWidget {
 
         _CostOfGoodsSold(cost: summary.costOfGoodsSold),
 
+        // **The fee on orders whose courier we paid** — a cost of those sales, already off the
+        // profit above, and kept out of «تفاصيل التكلفة» because it is not goods.
+        if (summary.hasDeliveryCosts) ...[
+          SizedBox(height: 20.h),
+          _Section(
+            title: 'التوصيل علينا',
+            child: _MoneyRow(label: 'أجرة التوصيل على الطلبيات المجانية', value: summary.deliveryCosts!),
+          ),
+        ],
+
         // Above the break, because it belongs to the arithmetic above it — it is a part of the
         // cost, named. Absent entirely against a server from before the feature.
         if (summary.losses case final losses?) ...[
@@ -249,6 +259,14 @@ class _Totals extends StatelessWidget {
             ],
           ),
         ),
+        // The three tiles stop adding up once delivery on us is in the profit, so say why.
+        if (summary.hasDeliveryCosts) ...[
+          SizedBox(height: 8.h),
+          Text(
+            'الربح بعد خصم التوصيل علينا (${summary.deliveryCosts!.grouped}).',
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
         if (summary.isLoss) ...[
           SizedBox(height: 8.h),
           Text(
@@ -599,6 +617,11 @@ class _Losses extends StatelessWidget {
           _MoneyRow(label: 'خسارة تلف', value: losses.scrap),
           SizedBox(height: 10.h),
           _MoneyRow(label: 'خسارة تسليم جزئي', value: losses.partialDelivery),
+          // Only from a server that reports it — an older one has no such line.
+          if (losses.compensation case final compensation?) ...[
+            SizedBox(height: 10.h),
+            _MoneyRow(label: 'خسائر التعويض', value: compensation),
+          ],
           SizedBox(height: 10.h),
           _MoneyRow(label: 'الإجمالي', value: losses.total),
         ],

@@ -96,6 +96,9 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   itemsTotal: json['items_total'] as String,
   designFee: json['design_fee'] as String,
   deliveryPrice: json['delivery_price'] as String,
+  deliveryPaidBy: json['delivery_paid_by'] as String? ?? 'recipient',
+  deliveryPaidByLabel: json['delivery_paid_by_label'] as String? ?? 'المستلم',
+  deliveryCost: json['delivery_cost'] as String? ?? '0.00',
   discount: json['discount'] as String,
   additionalCost: json['additional_cost'] as String? ?? '0.00',
   additionalCostReason: $enumDecodeNullable(
@@ -105,6 +108,17 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   ),
   additionalCostReasonLabel: json['additional_cost_reason_label'] as String?,
   additionalCostNote: json['additional_cost_note'] as String?,
+  isCompensation: json['is_compensation'] as bool? ?? false,
+  compensationReason: json['compensation_reason'] as String?,
+  compensationReasonLabel: json['compensation_reason_label'] as String?,
+  compensationNote: json['compensation_note'] as String?,
+  compensatesOrderId: (json['compensates_order_id'] as num?)?.toInt(),
+  compensatesOrderCode: json['compensates_order_code'] as String?,
+  compensatedBy:
+      (json['compensated_by'] as List<dynamic>?)
+          ?.map((e) => SharedParcelOrder.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <SharedParcelOrder>[],
   grandTotal: json['grand_total'] as String,
   paidAmount: json['paid_amount'] as String? ?? '0.00',
   writtenOffAmount: json['written_off_amount'] as String? ?? '0.00',
@@ -162,6 +176,13 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
   destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
   discountIsEditable: json['discount_is_editable'] as bool? ?? false,
+  canChangeDeliveryPayer: json['can_change_delivery_payer'] as bool? ?? false,
+  deliveryPayerWarnings:
+      (json['delivery_payer_warnings'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  canChangeCompensation: json['can_change_compensation'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
   items: (json['items'] as List<dynamic>?)
       ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -261,12 +282,22 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'items_total': instance.itemsTotal,
   'design_fee': instance.designFee,
   'delivery_price': instance.deliveryPrice,
+  'delivery_paid_by': instance.deliveryPaidBy,
+  'delivery_paid_by_label': instance.deliveryPaidByLabel,
+  'delivery_cost': instance.deliveryCost,
   'discount': instance.discount,
   'additional_cost': instance.additionalCost,
   'additional_cost_reason':
       _$AdditionalCostReasonEnumMap[instance.additionalCostReason],
   'additional_cost_reason_label': instance.additionalCostReasonLabel,
   'additional_cost_note': instance.additionalCostNote,
+  'is_compensation': instance.isCompensation,
+  'compensation_reason': instance.compensationReason,
+  'compensation_reason_label': instance.compensationReasonLabel,
+  'compensation_note': instance.compensationNote,
+  'compensates_order_id': instance.compensatesOrderId,
+  'compensates_order_code': instance.compensatesOrderCode,
+  'compensated_by': instance.compensatedBy.map((e) => e.toJson()).toList(),
   'grand_total': instance.grandTotal,
   'paid_amount': instance.paidAmount,
   'written_off_amount': instance.writtenOffAmount,
@@ -304,6 +335,9 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'designs_are_editable': instance.designsAreEditable,
   'destination_is_editable': instance.destinationIsEditable,
   'discount_is_editable': instance.discountIsEditable,
+  'can_change_delivery_payer': instance.canChangeDeliveryPayer,
+  'delivery_payer_warnings': instance.deliveryPayerWarnings,
+  'can_change_compensation': instance.canChangeCompensation,
   'items_count': instance.itemsCount,
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),
@@ -391,6 +425,7 @@ _NawrisParcelRef _$NawrisParcelRefFromJson(Map<String, dynamic> json) =>
       moneyOutOfSync: json['money_out_of_sync'] as bool? ?? false,
       nawrisAsks: json['nawris_asks'] as String?,
       syncError: json['sync_error'] as String?,
+      nawrisPayer: json['nawris_payer'] as String?,
     );
 
 Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
@@ -402,6 +437,7 @@ Map<String, dynamic> _$NawrisParcelRefToJson(_NawrisParcelRef instance) =>
       'money_out_of_sync': instance.moneyOutOfSync,
       'nawris_asks': instance.nawrisAsks,
       'sync_error': instance.syncError,
+      'nawris_payer': instance.nawrisPayer,
     };
 
 _SharedParcelOrder _$SharedParcelOrderFromJson(Map<String, dynamic> json) =>

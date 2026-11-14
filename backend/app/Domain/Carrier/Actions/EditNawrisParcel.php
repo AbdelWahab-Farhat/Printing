@@ -8,6 +8,7 @@ use App\Domain\Carrier\DTOs\NawrisParcelTerms;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  * `Order::destinationIsEditable()` is false at «جاري التوصيل», so the address and the recipient's
  * phone are frozen by our own domain for precisely the window a parcel is out — and `receiver` is
  * the order code rather than a person's name, so even a name change alters nothing we would send.
- * What is left is a deposit, an installment or a write-off recorded after dispatch.
+ * What is left is a deposit, an installment or a write-off recorded after dispatch — and, since
+ * 2026-11-13, who pays the courier's fee, which the order says and every edit repeats.
  *
  * **The destination is replayed off the parcel, never re-derived.** An edit carrying a different
  * area moves the parcel; re-reading the city at edit time is how that happens by accident.
@@ -51,13 +53,14 @@ final class EditNawrisParcel
             return $parcel;
         }
 
+        $payer = $this->payerFor($parcel, $orders);
+
         $body = $this->payload->forOrders(
             $orders,
             $parcel->government,
             $parcel->area,
             $parcel->code,
-            // Who pays their fee, as their webhooks last said — never reset by an edit of ours.
-            NawrisParcelTerms::apiValueFor($parcel->shipment_on_sender),
+            NawrisParcelTerms::apiValueFor($payer),
         );
 
         // The reference never changes: changing it detaches the shipment from this record.
@@ -65,7 +68,39 @@ final class EditNawrisParcel
 
         $this->client->editOrder($body);
 
+        // They took it, so who pays is now what we sent — kept with its moment, because their
+        // webhook for our own edit may or may not say so. See ReadNawrisParcelTerms.
+        if ($payer !== null) {
+            $parcel->forceFill([
+                'payer_sent' => $payer,
+                'payer_sent_at' => now(),
+                'shipment_on_sender' => $payer,
+            ])->save();
+        }
+
         return $this->recordAccepted($parcel);
+    }
+
+    /**
+     * Who pays their fee, in their webhook numbering: **what the orders say** (DELIVERY-PAYER.md).
+     *
+     * **Except once every order has been delivered** — the fee was paid at the door by whoever
+     * paid it, our answer can no longer change, and a late edit (a payment typed after delivery)
+     * must not re-open the question. Then the parcel's own last value is replayed, as before.
+     *
+     * @param  list<Order>  $orders
+     */
+    private function payerFor(NawrisParcel $parcel, array $orders): ?int
+    {
+        $open = array_filter($orders, fn (Order $order): bool => $order->deliveryPayerIsEditable());
+
+        if ($open === []) {
+            return $parcel->shipment_on_sender;
+        }
+
+        $first = array_values($open)[0];
+
+        return NawrisParcelTerms::webhookValueFor($first->delivery_paid_by ?? DeliveryPayer::Recipient);
     }
 
     /**

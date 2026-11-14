@@ -21,6 +21,7 @@ use App\Domain\InternalTicket\Events\InternalTicketChanged;
 use App\Domain\InternalTicket\Events\InternalTicketClosedForSilence;
 use App\Domain\InternalTicket\Events\InternalTicketReplyOverdue;
 use App\Domain\Inventory\Events\StockCreditedBack;
+use App\Domain\Investor\Listeners\PostCompensationCoverWhenDeliveryMoves;
 use App\Domain\Investor\Listeners\PostEarningsWhenOrderIsFinalised;
 use App\Domain\Investor\Listeners\PostFundProceedsWhenPaymentsMove;
 use App\Domain\Investor\Listeners\PostPurchasesWhenStockLeaves;
@@ -205,6 +206,13 @@ class AppServiceProvider extends ServiceProvider
         // transaction that moved the status, so the money and the status land together or not
         // at all.
         Event::listen(OrderProfitFinalised::class, PostEarningsWhenOrderIsFinalised::class);
+        // A compensation order collects nothing, so its fund cash — the goods back at cost,
+        // paid by the company — follows delivery rather than payments. Before the release below,
+        // for the reason the payments listener is. ORDER-COMPENSATION.md §5.
+        Event::listen(OrderProfitFinalised::class, PostCompensationCoverWhenDeliveryMoves::class);
+        Event::listen(OrderDeliveryUndone::class, PostCompensationCoverWhenDeliveryMoves::class);
+        Event::listen(OrderProfitUnwound::class, PostCompensationCoverWhenDeliveryMoves::class);
+        Event::listen(OrderStockRedrawn::class, PostCompensationCoverWhenDeliveryMoves::class);
         // **والبابُ نفسُه على هذا الحدث كذلك.** طلبيةٌ دُفعت سلفاً يكتمل شرطاها لحظةَ التسليم،
         // فلا حدثَ تحصيلٍ يأتي بعدها — ولولا هذا السطر لانتظر مالُ صاحبها كنسةَ الكرون.
         Event::listen(OrderProfitFinalised::class, ReleaseProfitWhenBothGatesOpen::class);

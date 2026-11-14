@@ -31,6 +31,8 @@ final class ProfitAttributionQuery
      *     written_off_amount: string,
      *     carrier_settled_amount: string,
      *     items_total: string,
+     *     delivery_cost: string,
+     *     is_compensation: bool,
      *     total_cogs: ?string,
      *     gross_profit: ?string,
      *     lines: list<array{
@@ -63,6 +65,8 @@ final class ProfitAttributionQuery
      *     written_off_amount: string,
      *     carrier_settled_amount: string,
      *     items_total: string,
+     *     delivery_cost: string,
+     *     is_compensation: bool,
      *     total_cogs: ?string,
      *     gross_profit: ?string,
      *     lines: list<array{
@@ -135,6 +139,12 @@ final class ProfitAttributionQuery
             'written_off_amount' => (string) $order->written_off_amount,
             'carrier_settled_amount' => (string) $order->carrier_settled_amount,
             'items_total' => (string) $order->items_total,
+            // What delivery costs us — 0 unless we pay the courier. Comes off the order's extras
+            // in OrderDealSlices, so the investors share it as they share a discount (option B).
+            'delivery_cost' => (string) ($order->delivery_cost ?? '0.00'),
+            // «طلبية تعويض»: nothing was sold, so OrderDealSlices returns each deal its goods at
+            // cost instead of splitting a revenue (ORDER-COMPENSATION.md §5, option a).
+            'is_compensation' => (bool) $order->is_compensation,
             'total_cogs' => $order->total_cogs === null ? null : (string) $order->total_cogs,
             'gross_profit' => $order->grossProfit(),
             'lines' => $lines,

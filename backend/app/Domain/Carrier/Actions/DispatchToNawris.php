@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\Actions;
 
+use App\Domain\Carrier\DTOs\NawrisParcelTerms;
 use App\Domain\Carrier\Exceptions\CityHasNoNawrisMapping;
 use App\Domain\Carrier\Exceptions\NawrisRejectedRequest;
 use App\Domain\Carrier\Exceptions\OrderAlreadyHasAnOpenParcel;
@@ -13,6 +14,7 @@ use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisParcelOrder;
 use App\Domain\Carrier\Support\NawrisClient;
 use App\Domain\Delivery\Enums\FulfilmentType;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
@@ -109,7 +111,16 @@ final class DispatchToNawris
         // region, which `guardOneDoor` has just made sure of.
         $destination = ($this->destination)($orders[0]);
 
-        $body = $this->payload->forOrders($orders, $destination->government, $destination->area);
+        // Who pays their fee, as the orders say — one answer for the parcel, which `guardOneDoor`
+        // has just made sure of. Their webhook numbering here, their API's in the request.
+        $payer = NawrisParcelTerms::webhookValueFor($orders[0]->delivery_paid_by ?? DeliveryPayer::Recipient);
+
+        $body = $this->payload->forOrders(
+            $orders,
+            $destination->government,
+            $destination->area,
+            shipmentOnSender: NawrisParcelTerms::apiValueFor($payer),
+        );
 
         $response = $this->client->addOrder($body);
 
@@ -123,7 +134,7 @@ final class DispatchToNawris
             throw NawrisRejectedRequest::make('إنشاء الشحنة', 'لم يصل رقم الطرد في الرد');
         }
 
-        return $this->record($orders, $code, $response->barCode(), $destination, $body);
+        return $this->record($orders, $code, $response->barCode(), $destination, $body, $payer);
     }
 
     /**
@@ -136,10 +147,11 @@ final class DispatchToNawris
         ?string $barCode,
         NawrisDestination $destination,
         array $body,
+        int $payer,
     ): NawrisParcel {
         $amount = $this->payload->amountToCollectFor($orders);
 
-        return DB::transaction(function () use ($orders, $code, $barCode, $destination, $body, $amount): NawrisParcel {
+        return DB::transaction(function () use ($orders, $code, $barCode, $destination, $body, $amount, $payer): NawrisParcel {
             $parcel = new NawrisParcel;
 
             // Assigned, never mass-assigned: none of this comes from a request, and a fillable
@@ -159,6 +171,12 @@ final class DispatchToNawris
                 'delivery_price_deducted' => '0.00',
                 'shipping_company_id' => $destination->shippingCompanyId,
                 'dispatched_at' => now(),
+                // Who pays their fee, as we sent it — where `ReadNawrisParcelTerms` starts reading
+                // their history from, rather than assuming the customer.
+                'shipment_on_sender' => $payer,
+                'payer_at_dispatch' => $payer,
+                'payer_sent' => $payer,
+                'payer_sent_at' => now(),
             ])->save();
 
             foreach ($orders as $order) {
@@ -214,6 +232,10 @@ final class DispatchToNawris
 
             if ($this->payload->phone($order) !== $phone) {
                 throw OrdersCannotShareAParcel::differentPhone($code);
+            }
+
+            if ($order->delivery_paid_by !== $first->delivery_paid_by) {
+                throw OrdersCannotShareAParcel::differentPayer($code);
             }
         }
     }

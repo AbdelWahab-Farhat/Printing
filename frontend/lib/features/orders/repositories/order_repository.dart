@@ -5,6 +5,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
+import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
@@ -36,6 +37,7 @@ abstract interface class OrderRepository {
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     bool? returnMessageSent,
     OrdersSort sort,
@@ -70,6 +72,7 @@ abstract interface class OrderRepository {
     List<String> statuses,
     List<String> paymentStatuses,
     bool? isUrgent,
+    bool? isCompensation,
     bool? readyMessageSent,
     bool? returnMessageSent,
     OrdersSort sort,
@@ -225,6 +228,25 @@ abstract interface class OrderRepository {
   /// Refused unless the order is outsourced and in «جديدة», «قيد التصميم» or «قيد التصنيع»;
   /// `Order.vendorMessageApplies` says so in advance.
   Future<Either<Failure, Order>> confirmVendorMessage(int orderId, {required bool sent});
+
+  /// «التوصيل على: المستلم / علينا» — [paidBy] is `recipient` or `us`.
+  ///
+  /// **Nawris refusing is not a failure**: the order says what was decided, and
+  /// [DeliveryPayerChange.carrier] carries the server's warning that the courier will still
+  /// charge as before. Every order sharing the parcel changes with it — see
+  /// [DeliveryPayerChange.alsoChanged]. Refused with the server's Arabic once delivered.
+  Future<Either<Failure, DeliveryPayerChange>> changeDeliveryPayer(int orderId, {required String paidBy});
+
+  /// «طلبية تعويض» on ([isCompensation] true, with [reason] and optionally [note] and the
+  /// [originalId] it makes good) or off. The total becomes 0 or comes back. Refused with the
+  /// server's Arabic once the lines have closed, or while the order carries a discount.
+  Future<Either<Failure, Order>> changeCompensation(
+    int orderId, {
+    required bool isCompensation,
+    String? reason,
+    String? note,
+    int? originalId,
+  });
 
   /// Records that the عربون actually arrived — or takes that back.
   ///

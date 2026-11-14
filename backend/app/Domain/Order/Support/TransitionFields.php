@@ -803,7 +803,7 @@ final class TransitionFields
         if ($picks !== null) {
             return [
                 ...self::picks($picks),
-                ...($held !== [] && $treasury->settings()->ask_carrier_fee ? [self::carrierFee($total)] : []),
+                ...($held !== [] && self::asksCarrierFee($order, $treasury) ? [self::carrierFee($total, $order)] : []),
             ];
         }
 
@@ -829,18 +829,50 @@ final class TransitionFields
                 )),
                 hint: "في العهدة: {$where}",
             ),
-            // Offered unless the owner switched it off in «إعدادات المالية».
-            ...($treasury->settings()->ask_carrier_fee ? [self::carrierFee($total)] : []),
+            // Offered unless the owner switched it off in «إعدادات المالية» — and always when we
+            // pay the courier, because then the carrier keeps its fee out of what it hands over.
+            ...(self::asksCarrierFee($order, $treasury) ? [self::carrierFee($total, $order)] : []),
         ];
     }
 
-    private static function carrierFee(string $held): TransitionField
+    private static function asksCarrierFee(Order $order, TreasuryService $treasury): bool
     {
+        return $order->wePayDelivery() || $treasury->settings()->ask_carrier_fee;
+    }
+
+    /**
+     * «احتفظ به الناقل» — opening on the order's delivery cost when we pay the courier.
+     *
+     * **A figure to confirm, and the warning says what typing another one does**: when we pay, the
+     * amount kept becomes the order's delivery cost (owner's decision, 2026-11-13 — the real fee
+     * wins), and the investors' share is worked out again from it. When the recipient pays, the box
+     * opens empty as it always did: nothing should be kept, and anything that is is an expense.
+     */
+    private static function carrierFee(string $held, Order $order): TransitionField
+    {
+        if (! $order->wePayDelivery()) {
+            return TransitionField::number(
+                key: self::SETTLEMENT_FEE,
+                label: 'احتفظ به الناقل',
+                required: false,
+                max: (float) $held,
+            );
+        }
+
+        $expected = (string) ($order->delivery_cost ?? '0.00');
+        $known = bccomp($expected, '0', Money::SCALE) > 0;
+        $prefill = bccomp($expected, $held, Money::SCALE) > 0 ? $held : $expected;
+
         return TransitionField::number(
             key: self::SETTLEMENT_FEE,
-            label: 'احتفظ به الناقل',
+            label: 'احتفظ به الناقل (التوصيل علينا)',
             required: false,
             max: (float) $held,
+            hint: $known
+                ? 'التوصيل علينا، والمتوقَّع '.DecimalText::trim($expected)
+                    .' حسب سعر المدينة. إن احتفظ الناقل بمبلغ آخر فاكتبه: يصير هو تكلفة التوصيل على الطلبية ويُعاد حساب ربحها وحصة المستثمرين.'
+                : 'التوصيل علينا ولا نعرف أجرته — المدينة بلا سعر توصيل. اكتب ما احتفظ به الناقل فعلاً: يصير تكلفة التوصيل على الطلبية.',
+            value: $known ? $prefill : null,
         );
     }
 

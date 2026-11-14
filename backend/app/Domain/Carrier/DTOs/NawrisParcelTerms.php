@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Carrier\DTOs;
 
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Support\Money;
 
 /**
@@ -20,6 +21,9 @@ use App\Domain\Order\Support\Money;
  *
  * With `2` Nawris keeps its fee out of what it transfers, so that fee is entered at «تم التسوية»
  * under «ما احتفظ به الناقل» — the webhook only says so.
+ *
+ * **We send what the order says** since 2026-11-13 (`orders.delivery_paid_by`) — before that,
+ * always `0` at dispatch. Docs/orders/DELIVERY-PAYER.md.
  *
  * **Their API counts one lower**: we send `0` for the customer and `1` for us, and their webhooks
  * report those as `1` and `2`. {@see apiValueFor()} is the one place that crosses over.
@@ -44,6 +48,25 @@ final readonly class NawrisParcelTerms
         public bool $cityChanged = false,
         public ?string $feeBeforeMove = null,
     ) {}
+
+    /**
+     * The order's answer in their webhook numbering — what a parcel is dispatched or edited to.
+     * Since 2026-11-13 the order says who pays, and every request we send repeats it.
+     */
+    public static function webhookValueFor(DeliveryPayer $payer): int
+    {
+        return $payer === DeliveryPayer::Us ? self::SENDER_PAYS : self::CUSTOMER_PAYS;
+    }
+
+    /** Their webhook value as the order's answer, or null for a value we cannot read. */
+    public static function payerFor(?int $webhookValue): ?DeliveryPayer
+    {
+        return match ($webhookValue) {
+            self::CUSTOMER_PAYS => DeliveryPayer::Recipient,
+            self::SENDER_PAYS => DeliveryPayer::Us,
+            default => null,
+        };
+    }
 
     /** The webhook value as their API takes it on an edit: `1` when we pay their fee, else `0`. */
     public static function apiValueFor(?int $webhookValue): int

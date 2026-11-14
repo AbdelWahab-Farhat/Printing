@@ -102,6 +102,10 @@ final class ChangeOrderStatus
         // «لا طلبية طباعة بلا ألوانها» at acceptance and at the press — PRINT-COLORS.md §9.
         private readonly GuardPrintColors $guardPrintColors,
         private readonly AttachApprovedTicketDesigns $attachApprovedTicketDesigns,
+        // When we pay the courier, what they kept at settlement is what delivery cost us —
+        // DELIVERY-PAYER.md §3.
+        private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
+        private readonly RecalculateOrderPayments $recalculatePayments,
     ) {}
 
     /**
@@ -352,6 +356,14 @@ final class ChangeOrderStatus
                     pickFields: array_map(fn (string $key) => "fields.{$key}", TransitionFields::SETTLEMENT_PICKS),
                     batch: $batch,
                 );
+
+                // **The real fee wins** (owner's decision, 2026-11-13). On an order whose
+                // courier we pay, what the carrier just kept replaces the city's rate as the
+                // order's delivery cost. Profit is announced at «تم التسوية» below, so the
+                // investors' share follows by itself; the fund's cash is worked out here.
+                if (($this->recalculateDeliveryCost)($order)) {
+                    ($this->recalculatePayments)($order);
+                }
             }
 
             // **Two statuses can be the one where stock leaves, and `stock_deducted_at` decides

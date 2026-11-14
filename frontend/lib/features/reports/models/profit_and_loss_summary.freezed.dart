@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProfitAndLossSummary {
 
- PnlPeriod get period; PnlRevenue get revenue;@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold get costOfGoodsSold;@JsonKey(name: 'gross_profit') String get grossProfit;/// Money that came in over these same days — and nothing more than that. See [PnlPeriod]
+ PnlPeriod get period; PnlRevenue get revenue;@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold get costOfGoodsSold;@JsonKey(name: 'gross_profit') String get grossProfit;/// The courier's fee on the orders where we paid it — already taken off [grossProfit], and
+/// not part of [costOfGoodsSold]. Null from a server that predates «التوصيل علينا».
+@JsonKey(name: 'delivery_costs') String? get deliveryCosts;/// Money that came in over these same days — and nothing more than that. See [PnlPeriod]
 /// for what the days mean and the class note on the screen for why it is never netted.
 @JsonKey(name: 'cash_collected') String get cashCollected;/// What the business decided it will never collect — the difference on an order that came
 /// back short, closed on the record rather than typed in as a payment nobody received.
@@ -59,16 +61,16 @@ $ProfitAndLossSummaryCopyWith<ProfitAndLossSummary> get copyWith => _$ProfitAndL
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.deliveryCosts, deliveryCosts) || other.deliveryCosts == deliveryCosts)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,cashCollected,writeOffs,losses,ordersRecognized);
+int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,deliveryCosts,cashCollected,writeOffs,losses,ordersRecognized);
 
 @override
 String toString() {
-  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
+  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, deliveryCosts: $deliveryCosts, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
 }
 
 
@@ -79,7 +81,7 @@ abstract mixin class $ProfitAndLossSummaryCopyWith<$Res>  {
   factory $ProfitAndLossSummaryCopyWith(ProfitAndLossSummary value, $Res Function(ProfitAndLossSummary) _then) = _$ProfitAndLossSummaryCopyWithImpl;
 @useResult
 $Res call({
- PnlPeriod period, PnlRevenue revenue,@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold costOfGoodsSold,@JsonKey(name: 'gross_profit') String grossProfit,@JsonKey(name: 'cash_collected') String cashCollected,@JsonKey(name: 'write_offs') String? writeOffs, PnlLosses? losses,@JsonKey(name: 'orders_recognized') int ordersRecognized
+ PnlPeriod period, PnlRevenue revenue,@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold costOfGoodsSold,@JsonKey(name: 'gross_profit') String grossProfit,@JsonKey(name: 'delivery_costs') String? deliveryCosts,@JsonKey(name: 'cash_collected') String cashCollected,@JsonKey(name: 'write_offs') String? writeOffs, PnlLosses? losses,@JsonKey(name: 'orders_recognized') int ordersRecognized
 });
 
 
@@ -96,13 +98,14 @@ class _$ProfitAndLossSummaryCopyWithImpl<$Res>
 
 /// Create a copy of ProfitAndLossSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? revenue = null,Object? costOfGoodsSold = null,Object? grossProfit = null,Object? cashCollected = null,Object? writeOffs = freezed,Object? losses = freezed,Object? ordersRecognized = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? revenue = null,Object? costOfGoodsSold = null,Object? grossProfit = null,Object? deliveryCosts = freezed,Object? cashCollected = null,Object? writeOffs = freezed,Object? losses = freezed,Object? ordersRecognized = null,}) {
   return _then(_self.copyWith(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as PnlPeriod,revenue: null == revenue ? _self.revenue : revenue // ignore: cast_nullable_to_non_nullable
 as PnlRevenue,costOfGoodsSold: null == costOfGoodsSold ? _self.costOfGoodsSold : costOfGoodsSold // ignore: cast_nullable_to_non_nullable
 as PnlCostOfGoodsSold,grossProfit: null == grossProfit ? _self.grossProfit : grossProfit // ignore: cast_nullable_to_non_nullable
-as String,cashCollected: null == cashCollected ? _self.cashCollected : cashCollected // ignore: cast_nullable_to_non_nullable
+as String,deliveryCosts: freezed == deliveryCosts ? _self.deliveryCosts : deliveryCosts // ignore: cast_nullable_to_non_nullable
+as String?,cashCollected: null == cashCollected ? _self.cashCollected : cashCollected // ignore: cast_nullable_to_non_nullable
 as String,writeOffs: freezed == writeOffs ? _self.writeOffs : writeOffs // ignore: cast_nullable_to_non_nullable
 as String?,losses: freezed == losses ? _self.losses : losses // ignore: cast_nullable_to_non_nullable
 as PnlLosses?,ordersRecognized: null == ordersRecognized ? _self.ordersRecognized : ordersRecognized // ignore: cast_nullable_to_non_nullable
@@ -230,10 +233,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'delivery_costs')  String? deliveryCosts, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfitAndLossSummary() when $default != null:
-return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
+return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.deliveryCosts,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
   return orElse();
 
 }
@@ -251,10 +254,10 @@ return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProf
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'delivery_costs')  String? deliveryCosts, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)  $default,) {final _that = this;
 switch (_that) {
 case _ProfitAndLossSummary():
-return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
+return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.deliveryCosts,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -271,10 +274,10 @@ return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProf
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PnlPeriod period,  PnlRevenue revenue, @JsonKey(name: 'cost_of_goods_sold')  PnlCostOfGoodsSold costOfGoodsSold, @JsonKey(name: 'gross_profit')  String grossProfit, @JsonKey(name: 'delivery_costs')  String? deliveryCosts, @JsonKey(name: 'cash_collected')  String cashCollected, @JsonKey(name: 'write_offs')  String? writeOffs,  PnlLosses? losses, @JsonKey(name: 'orders_recognized')  int ordersRecognized)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfitAndLossSummary() when $default != null:
-return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
+return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProfit,_that.deliveryCosts,_that.cashCollected,_that.writeOffs,_that.losses,_that.ordersRecognized);case _:
   return null;
 
 }
@@ -286,13 +289,16 @@ return $default(_that.period,_that.revenue,_that.costOfGoodsSold,_that.grossProf
 @JsonSerializable()
 
 class _ProfitAndLossSummary extends ProfitAndLossSummary {
-  const _ProfitAndLossSummary({required this.period, required this.revenue, @JsonKey(name: 'cost_of_goods_sold') required this.costOfGoodsSold, @JsonKey(name: 'gross_profit') required this.grossProfit, @JsonKey(name: 'cash_collected') required this.cashCollected, @JsonKey(name: 'write_offs') this.writeOffs, this.losses, @JsonKey(name: 'orders_recognized') required this.ordersRecognized}): super._();
+  const _ProfitAndLossSummary({required this.period, required this.revenue, @JsonKey(name: 'cost_of_goods_sold') required this.costOfGoodsSold, @JsonKey(name: 'gross_profit') required this.grossProfit, @JsonKey(name: 'delivery_costs') this.deliveryCosts, @JsonKey(name: 'cash_collected') required this.cashCollected, @JsonKey(name: 'write_offs') this.writeOffs, this.losses, @JsonKey(name: 'orders_recognized') required this.ordersRecognized}): super._();
   factory _ProfitAndLossSummary.fromJson(Map<String, dynamic> json) => _$ProfitAndLossSummaryFromJson(json);
 
 @override final  PnlPeriod period;
 @override final  PnlRevenue revenue;
 @override@JsonKey(name: 'cost_of_goods_sold') final  PnlCostOfGoodsSold costOfGoodsSold;
 @override@JsonKey(name: 'gross_profit') final  String grossProfit;
+/// The courier's fee on the orders where we paid it — already taken off [grossProfit], and
+/// not part of [costOfGoodsSold]. Null from a server that predates «التوصيل علينا».
+@override@JsonKey(name: 'delivery_costs') final  String? deliveryCosts;
 /// Money that came in over these same days — and nothing more than that. See [PnlPeriod]
 /// for what the days mean and the class note on the screen for why it is never netted.
 @override@JsonKey(name: 'cash_collected') final  String cashCollected;
@@ -342,16 +348,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.deliveryCosts, deliveryCosts) || other.deliveryCosts == deliveryCosts)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,cashCollected,writeOffs,losses,ordersRecognized);
+int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,deliveryCosts,cashCollected,writeOffs,losses,ordersRecognized);
 
 @override
 String toString() {
-  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
+  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, deliveryCosts: $deliveryCosts, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
 }
 
 
@@ -362,7 +368,7 @@ abstract mixin class _$ProfitAndLossSummaryCopyWith<$Res> implements $ProfitAndL
   factory _$ProfitAndLossSummaryCopyWith(_ProfitAndLossSummary value, $Res Function(_ProfitAndLossSummary) _then) = __$ProfitAndLossSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- PnlPeriod period, PnlRevenue revenue,@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold costOfGoodsSold,@JsonKey(name: 'gross_profit') String grossProfit,@JsonKey(name: 'cash_collected') String cashCollected,@JsonKey(name: 'write_offs') String? writeOffs, PnlLosses? losses,@JsonKey(name: 'orders_recognized') int ordersRecognized
+ PnlPeriod period, PnlRevenue revenue,@JsonKey(name: 'cost_of_goods_sold') PnlCostOfGoodsSold costOfGoodsSold,@JsonKey(name: 'gross_profit') String grossProfit,@JsonKey(name: 'delivery_costs') String? deliveryCosts,@JsonKey(name: 'cash_collected') String cashCollected,@JsonKey(name: 'write_offs') String? writeOffs, PnlLosses? losses,@JsonKey(name: 'orders_recognized') int ordersRecognized
 });
 
 
@@ -379,13 +385,14 @@ class __$ProfitAndLossSummaryCopyWithImpl<$Res>
 
 /// Create a copy of ProfitAndLossSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? period = null,Object? revenue = null,Object? costOfGoodsSold = null,Object? grossProfit = null,Object? cashCollected = null,Object? writeOffs = freezed,Object? losses = freezed,Object? ordersRecognized = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? period = null,Object? revenue = null,Object? costOfGoodsSold = null,Object? grossProfit = null,Object? deliveryCosts = freezed,Object? cashCollected = null,Object? writeOffs = freezed,Object? losses = freezed,Object? ordersRecognized = null,}) {
   return _then(_ProfitAndLossSummary(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as PnlPeriod,revenue: null == revenue ? _self.revenue : revenue // ignore: cast_nullable_to_non_nullable
 as PnlRevenue,costOfGoodsSold: null == costOfGoodsSold ? _self.costOfGoodsSold : costOfGoodsSold // ignore: cast_nullable_to_non_nullable
 as PnlCostOfGoodsSold,grossProfit: null == grossProfit ? _self.grossProfit : grossProfit // ignore: cast_nullable_to_non_nullable
-as String,cashCollected: null == cashCollected ? _self.cashCollected : cashCollected // ignore: cast_nullable_to_non_nullable
+as String,deliveryCosts: freezed == deliveryCosts ? _self.deliveryCosts : deliveryCosts // ignore: cast_nullable_to_non_nullable
+as String?,cashCollected: null == cashCollected ? _self.cashCollected : cashCollected // ignore: cast_nullable_to_non_nullable
 as String,writeOffs: freezed == writeOffs ? _self.writeOffs : writeOffs // ignore: cast_nullable_to_non_nullable
 as String?,losses: freezed == losses ? _self.losses : losses // ignore: cast_nullable_to_non_nullable
 as PnlLosses?,ordersRecognized: null == ordersRecognized ? _self.ordersRecognized : ordersRecognized // ignore: cast_nullable_to_non_nullable
@@ -990,7 +997,9 @@ mixin _$PnlLosses {
 
 /// تلف — spoiled during production.
  String get scrap;/// ما لم يستلمه العميل — made, counted, refused.
-@JsonKey(name: 'partial_delivery') String get partialDelivery; String get total;
+@JsonKey(name: 'partial_delivery') String get partialDelivery;/// «خسائر التعويض» — what the goods sent out free on compensation orders cost. Null from a
+/// server that predates them.
+ String? get compensation; String get total;
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1003,16 +1012,16 @@ $PnlLossesCopyWith<PnlLosses> get copyWith => _$PnlLossesCopyWithImpl<PnlLosses>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.total, total) || other.total == total));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,total);
+int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, total: $total)';
+  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
 }
 
 
@@ -1023,7 +1032,7 @@ abstract mixin class $PnlLossesCopyWith<$Res>  {
   factory $PnlLossesCopyWith(PnlLosses value, $Res Function(PnlLosses) _then) = _$PnlLossesCopyWithImpl;
 @useResult
 $Res call({
- String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String total
+ String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String? compensation, String total
 });
 
 
@@ -1040,11 +1049,12 @@ class _$PnlLossesCopyWithImpl<$Res>
 
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? scrap = null,Object? partialDelivery = null,Object? total = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? scrap = null,Object? partialDelivery = null,Object? compensation = freezed,Object? total = null,}) {
   return _then(_self.copyWith(
 scrap: null == scrap ? _self.scrap : scrap // ignore: cast_nullable_to_non_nullable
 as String,partialDelivery: null == partialDelivery ? _self.partialDelivery : partialDelivery // ignore: cast_nullable_to_non_nullable
-as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,compensation: freezed == compensation ? _self.compensation : compensation // ignore: cast_nullable_to_non_nullable
+as String?,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -1130,10 +1140,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PnlLosses() when $default != null:
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   return orElse();
 
 }
@@ -1151,10 +1161,10 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)  $default,) {final _that = this;
 switch (_that) {
 case _PnlLosses():
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1171,10 +1181,10 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String total)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String scrap, @JsonKey(name: 'partial_delivery')  String partialDelivery,  String? compensation,  String total)?  $default,) {final _that = this;
 switch (_that) {
 case _PnlLosses() when $default != null:
-return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
+return $default(_that.scrap,_that.partialDelivery,_that.compensation,_that.total);case _:
   return null;
 
 }
@@ -1186,13 +1196,16 @@ return $default(_that.scrap,_that.partialDelivery,_that.total);case _:
 @JsonSerializable()
 
 class _PnlLosses implements PnlLosses {
-  const _PnlLosses({required this.scrap, @JsonKey(name: 'partial_delivery') required this.partialDelivery, required this.total});
+  const _PnlLosses({required this.scrap, @JsonKey(name: 'partial_delivery') required this.partialDelivery, this.compensation, required this.total});
   factory _PnlLosses.fromJson(Map<String, dynamic> json) => _$PnlLossesFromJson(json);
 
 /// تلف — spoiled during production.
 @override final  String scrap;
 /// ما لم يستلمه العميل — made, counted, refused.
 @override@JsonKey(name: 'partial_delivery') final  String partialDelivery;
+/// «خسائر التعويض» — what the goods sent out free on compensation orders cost. Null from a
+/// server that predates them.
+@override final  String? compensation;
 @override final  String total;
 
 /// Create a copy of PnlLosses
@@ -1208,16 +1221,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.total, total) || other.total == total));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,total);
+int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, total: $total)';
+  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
 }
 
 
@@ -1228,7 +1241,7 @@ abstract mixin class _$PnlLossesCopyWith<$Res> implements $PnlLossesCopyWith<$Re
   factory _$PnlLossesCopyWith(_PnlLosses value, $Res Function(_PnlLosses) _then) = __$PnlLossesCopyWithImpl;
 @override @useResult
 $Res call({
- String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String total
+ String scrap,@JsonKey(name: 'partial_delivery') String partialDelivery, String? compensation, String total
 });
 
 
@@ -1245,11 +1258,12 @@ class __$PnlLossesCopyWithImpl<$Res>
 
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? scrap = null,Object? partialDelivery = null,Object? total = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? scrap = null,Object? partialDelivery = null,Object? compensation = freezed,Object? total = null,}) {
   return _then(_PnlLosses(
 scrap: null == scrap ? _self.scrap : scrap // ignore: cast_nullable_to_non_nullable
 as String,partialDelivery: null == partialDelivery ? _self.partialDelivery : partialDelivery // ignore: cast_nullable_to_non_nullable
-as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as String,compensation: freezed == compensation ? _self.compensation : compensation // ignore: cast_nullable_to_non_nullable
+as String?,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

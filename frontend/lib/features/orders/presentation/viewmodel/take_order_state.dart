@@ -40,6 +40,12 @@ extension TakeOrderStateX on TakeOrderState {
 
   String? get discountError => _fieldError('discount');
 
+  /// «طلبية تعويض» refused — no grant, no reason, or an original that is not this customer's.
+  String? get compensationReasonError =>
+      _fieldError('compensation_reason') ?? _fieldError('compensation_note') ?? _fieldError('is_compensation');
+
+  String? get compensatesOrderError => _fieldError('compensates_order_id');
+
   String? get designFeeError => _fieldError('design_fee');
 
   /// Why the artwork was refused, under the picker rather than in a snackbar.

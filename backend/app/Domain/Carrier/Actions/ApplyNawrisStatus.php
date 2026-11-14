@@ -10,6 +10,7 @@ use App\Domain\Carrier\Enums\NawrisStatusCode;
 use App\Domain\Carrier\Models\NawrisParcel;
 use App\Domain\Carrier\Models\NawrisWebhookEvent;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Actions\ChangeDeliveryPayer;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\RecordCarrierSettlement;
 use App\Domain\Order\Actions\RecordOrderPayment;
@@ -40,6 +41,7 @@ final class ApplyNawrisStatus
         private readonly RecordCarrierSettlement $recordCarrierSettlement,
         private readonly ReadNawrisParcelTerms $readTerms,
         private readonly EditNawrisParcel $edit,
+        private readonly ChangeDeliveryPayer $changePayer,
     ) {}
 
     public function __invoke(
@@ -61,6 +63,10 @@ final class ApplyNawrisStatus
         // The raw label lands whatever happens — mapped, unmapped, legal or parked. It is what
         // support reads, and it is never interpreted.
         $this->recordCarrierState($parcel, $payload, $code, $terms);
+
+        // Before the unmapped-code return as well: a flip of who pays arrives as an edit under
+        // whatever status the parcel is in.
+        $this->followTheirPayer($event, $parcel, $payload);
 
         // Before the unmapped-code return too: their hand corrections arrive as edits under
         // whatever status the parcel is in.
@@ -536,6 +542,43 @@ final class ApplyNawrisStatus
         }
 
         $event->forceFill(['error' => $current === '' ? $line : $current.' · '.$line])->save();
+    }
+
+    /**
+     * Someone at Nawris changed who pays their fee: the orders follow, because that is what the
+     * courier will collect (owner's decision, 2026-11-13 — DELIVERY-PAYER.md §5).
+     *
+     * **Only on an event that carries the change itself.** A refused edit of ours leaves the
+     * parcel at its old value and the order at the new one; reading the parcel's terms here
+     * instead would quietly undo the person's choice on the next webhook. An echo of our own
+     * accepted edit names what the order already says, and changes nothing.
+     *
+     * An order past «جاري التوصيل» is not moved — the fee was paid at the door — and the event
+     * says so, for a person to look at.
+     */
+    private function followTheirPayer(NawrisWebhookEvent $event, NawrisParcel $parcel, NawrisWebhookPayload $payload): void
+    {
+        $theirs = NawrisParcelTerms::payerFor($payload->shipmentOnSenderAfter);
+
+        if ($theirs === null) {
+            return;
+        }
+
+        foreach ($parcel->orders()->get() as $order) {
+            if ($order->delivery_paid_by === $theirs) {
+                continue;
+            }
+
+            if (! $order->deliveryPayerIsEditable()) {
+                $this->note($event, "غيّرت نورس من يدفع أجرتها إلى «{$theirs->label()}» والطلبية {$order->code} «{$order->status->label()}» — لم تُغيَّر، راجِعها");
+
+                continue;
+            }
+
+            ($this->changePayer)($order, $theirs);
+
+            $this->note($event, "غيّرت نورس من يدفع أجرتها: التوصيل صار «{$theirs->label()}» في الطلبية {$order->code} — تبعتها الطلبية وأُعيد حساب ربحها");
+        }
     }
 
     private function codeDiffers(NawrisParcel $parcel, NawrisWebhookPayload $payload): bool

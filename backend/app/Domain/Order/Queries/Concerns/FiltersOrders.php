@@ -63,6 +63,7 @@ trait FiltersOrders
             // is why it is compared against rather than treated as «no filter»; see
             // OrderFilters::boolOrNull().
             ->when($filters->isUrgent !== null, fn (Builder $q) => $q->where('is_urgent', $filters->isUrgent))
+            ->when($filters->isCompensation !== null, fn (Builder $q) => $q->where('is_compensation', $filters->isCompensation))
             // **A fourth axis, and the one place a filter means more than its column.** See
             // {@see applyReadyMessage()} — and note it is written once, here, so the box's own
             // number and the screen that box opens cannot describe two different sets.

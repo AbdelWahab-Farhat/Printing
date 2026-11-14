@@ -99,11 +99,11 @@ final class BuildNawrisPayload
 
             'return_amount' => 0.0,
 
-            // **Who pays the courier's own fee.** We always create with `0`, the customer at the
-            // door — delivery is no longer part of what we bill, see {@see amountToCollect()} —
-            // and `0` is also their default. An edit replays whatever the parcel stands at now:
-            // someone at Nawris may have switched it to us, and every edit re-sends the whole
-            // payload, so sending `0` regardless would quietly put the fee back on the customer.
+            // **Who pays the courier's own fee — what the orders say** (`delivery_paid_by`, since
+            // 2026-11-13): `0` the customer at the door, `1` us. Dispatch and every edit pass the
+            // orders' answer, because every edit re-sends the whole payload and a fixed `0` would
+            // quietly put the fee back on a customer we promised free delivery. See
+            // Docs/orders/DELIVERY-PAYER.md.
             'shipment_on_sender' => $shipmentOnSender,
 
             'can_open' => (int) ($defaults['can_open'] ?? 0),

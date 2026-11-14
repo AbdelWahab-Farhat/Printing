@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Order\DTOs;
 
 use App\Domain\Order\Enums\AdditionalCostReason;
+use App\Domain\Order\Enums\CompensationReason;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\DesignSource;
 
 /**
@@ -77,6 +79,15 @@ final readonly class OrderData
          * @var array<int, array<int, array<string, mixed>>>
          */
         public array $designColors = [],
+        public ?DeliveryPayer $deliveryPaidBy = null,
+        /**
+         * «طلبية تعويض» and its why. Read on creation only; afterwards it moves through
+         * `ChangeOrderCompensation`, like the delivery payer moves through its own endpoint.
+         */
+        public bool $isCompensation = false,
+        public ?CompensationReason $compensationReason = null,
+        public ?string $compensationNote = null,
+        public ?int $compensatesOrderId = null,
     ) {}
 
     /**
@@ -119,6 +130,19 @@ final readonly class OrderData
                 ? array_values(array_map(intval(...), $validated['design_ids']))
                 : [],
             designColors: self::designColors($validated['design_colors'] ?? null),
+            // Read on creation only; afterwards the payer moves through ChangeDeliveryPayer,
+            // which tells the carrier. Absent means the recipient, the default.
+            deliveryPaidBy: isset($validated['delivery_paid_by'])
+                ? DeliveryPayer::from((string) $validated['delivery_paid_by'])
+                : null,
+            isCompensation: (bool) ($validated['is_compensation'] ?? false),
+            compensationReason: isset($validated['compensation_reason'])
+                ? CompensationReason::from((string) $validated['compensation_reason'])
+                : null,
+            compensationNote: self::textOrNull($validated['compensation_note'] ?? null),
+            compensatesOrderId: isset($validated['compensates_order_id'])
+                ? (int) $validated['compensates_order_id']
+                : null,
             items: array_key_exists('items', $validated) && is_array($validated['items'])
                 ? array_values(array_map(
                     fn (array $item, int $index) => OrderItemData::fromArray($item, $index),

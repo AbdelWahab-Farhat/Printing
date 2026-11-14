@@ -114,6 +114,17 @@ class _Header extends StatelessWidget {
                   color: tone.foreground,
                 ),
               ),
+              // «تعويض» — why this order's price reads 0: the shop is sending it free.
+              if (order.isCompensation)
+                Text(
+                  'تعويض — بلا مقابل',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.4,
+                    color: scheme.primary,
+                  ),
+                ),
               if (order.placedAt case final placedAt?)
                 Text(
                   placedAt.relativeDayLabel,

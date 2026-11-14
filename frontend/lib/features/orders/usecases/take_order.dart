@@ -75,6 +75,17 @@ class TakeOrder {
     /// «مستعجلة», as the clerk ticked it at the counter. Passed straight through: it is one
     /// boolean the server takes at its word, unlike the fee and the discount around it.
     bool? isUrgent,
+
+    /// «التوصيل علينا». False sends nothing, which the server reads as the recipient.
+    bool wePayDelivery = false,
+
+    /// «طلبية تعويض». False sends nothing. True sends its reason, its words and the original,
+    /// and drops the discount and the additional cost — the server refuses both on an order
+    /// that owes nothing.
+    bool isCompensation = false,
+    String? compensationReason,
+    String? compensationNote,
+    int? compensatesOrderId,
   }) {
     final fee = _number(designFee);
     final artwork = designSource == noDesign && !printsHere ? const <int>[] : designIds;
@@ -88,7 +99,7 @@ class TakeOrder {
     // charging says nothing about the charge at all — unlike an edit, where a cleared box means
     // «ألغِ التكلفة» and has to be spelled out. See [UpdateOrderInvoice] for that half.
     final charge = _number(additionalCost);
-    final isCharging = (double.tryParse(charge ?? '') ?? 0) > 0;
+    final isCharging = !isCompensation && (double.tryParse(charge ?? '') ?? 0) > 0;
 
     return _repository.create(
       NewOrder(
@@ -104,12 +115,17 @@ class TakeOrder {
         // list would be the app claiming it does.
         designIds: artwork.isEmpty ? null : artwork,
         designColors: typedColors.isEmpty ? null : typedColors,
-        discount: _number(discount),
+        discount: isCompensation ? null : _number(discount),
         additionalCost: isCharging ? charge : null,
         additionalCostReason: isCharging ? additionalCostReason : null,
         additionalCostNote: isCharging ? _text(additionalCostNote) : null,
         vendorId: vendorId,
         isUrgent: isUrgent,
+        deliveryPaidBy: wePayDelivery ? 'us' : null,
+        isCompensation: isCompensation ? true : null,
+        compensationReason: isCompensation ? compensationReason : null,
+        compensationNote: isCompensation ? _text(compensationNote) : null,
+        compensatesOrderId: isCompensation ? compensatesOrderId : null,
         recipientPhone: _text(recipientPhone),
         notes: _text(notes),
         items: [

@@ -181,8 +181,9 @@ class _OrdersViewState extends State<_OrdersView> {
                         selected: cubit.status,
                         selectedPayments: cubit.paymentStatuses,
                         selectedUrgency: cubit.isUrgent,
+                        selectedCompensation: cubit.isCompensation,
                         counts: cubit.counts,
-                        onApplied: (status, payments, isUrgent) {
+                        onApplied: (status, payments, isUrgent, isCompensation) {
                           // Picking belongs to the queue it started in: the picks may not
                           // even be on the next one.
                           if (_picking && status != cubit.status) _stopPicking();
@@ -191,6 +192,7 @@ class _OrdersViewState extends State<_OrdersView> {
                                 status: status,
                                 paymentStatuses: payments,
                                 isUrgent: isUrgent,
+                                isCompensation: isCompensation,
                               )
                               .ignore();
                         },

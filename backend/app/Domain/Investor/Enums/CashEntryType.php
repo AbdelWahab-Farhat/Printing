@@ -102,6 +102,16 @@ enum CashEntryType: string
      */
     case ExpenseCoveredByCompany = 'expense_covered_by_company';
 
+    /**
+     * What the company pays the fund for goods a compensation order gave away — at cost, sourced
+     * to the order (owner's decision 2026-11-14, ORDER-COMPENSATION.md §5, option a).
+     *
+     * Nothing was sold, so the fund earns no profit on them; it gets back what the goods cost it.
+     * Written when the order reaches «تم الاستلام» and reversed if that is undone —
+     * {@see PostFundProceedsForOrder} reconciles it to its target like the write-off above.
+     */
+    case CompensationCoveredByCompany = 'compensation_by_company';
+
     /** يُبطل صفّاً واحداً سابقاً، حاملاً مبلغَه كما هو. */
     case Reversal = 'reversal';
 
@@ -120,6 +130,7 @@ enum CashEntryType: string
             self::LegacyTransfer => 'تحويل من صفقة سابقة',
             self::WriteOffCoveredByCompany => 'شطب تحمّلته الشركة',
             self::ExpenseCoveredByCompany => 'نصيب الشركة من المصروف',
+            self::CompensationCoveredByCompany => 'بضاعة تعويض تحمّلتها الشركة',
             self::Reversal => 'عكس حركة',
         };
     }
@@ -134,7 +145,8 @@ enum CashEntryType: string
     {
         return match ($this) {
             self::Deposit, self::SaleProceeds, self::StockSoldToPress, self::LegacyTransfer,
-            self::WriteOffCoveredByCompany, self::ExpenseCoveredByCompany => true,
+            self::WriteOffCoveredByCompany, self::ExpenseCoveredByCompany,
+            self::CompensationCoveredByCompany => true,
             default => false,
         };
     }

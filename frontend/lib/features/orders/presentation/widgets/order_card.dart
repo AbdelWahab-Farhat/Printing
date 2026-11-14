@@ -8,6 +8,7 @@ import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart';
 import 'package:dayaa/features/orders/models/order.dart';
+import 'package:dayaa/features/orders/presentation/widgets/compensation_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deleted_badge.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:dayaa/features/orders/presentation/widgets/partial_delivery_badge.dart';
@@ -107,6 +108,11 @@ class OrderCard extends StatelessWidget {
                       // تفتح ورقة «قبل وبعد» — انظر [PartialDeliveryBadge].
                       if (order.isPartiallyDelivered ?? false) ...[
                         PartialDeliveryBadge(order: order),
+                        SizedBox(width: 8.w),
+                      ],
+                      // «تعويض» — why this card's total reads 0.
+                      if (order.isCompensation) ...[
+                        const CompensationBadge(),
                         SizedBox(width: 8.w),
                       ],
                       Expanded(

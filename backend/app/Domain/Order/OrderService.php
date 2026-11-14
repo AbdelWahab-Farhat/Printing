@@ -6,6 +6,8 @@ namespace App\Domain\Order;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AddOrderDesign;
+use App\Domain\Order\Actions\ChangeDeliveryPayer;
+use App\Domain\Order\Actions\ChangeOrderCompensation;
 use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
@@ -37,9 +39,16 @@ use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderLineShortage;
 use App\Domain\Order\DTOs\OrderPaymentData;
+use App\Domain\Order\Enums\CompensationReason;
+use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\ShortageRevision;
+use App\Domain\Order\Exceptions\CompensatedOrderIsInvalid;
+use App\Domain\Order\Exceptions\CompensationCannotChange;
+use App\Domain\Order\Exceptions\CompensationRequiresPermission;
+use App\Domain\Order\Exceptions\CompensationTakesNoCharges;
+use App\Domain\Order\Exceptions\DeliveryPayerCannotChange;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
@@ -70,6 +79,7 @@ use App\Domain\Order\Queries\StockPurchaseAttributionQuery;
 use App\Domain\Order\Support\CheckoutDeposit;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The Order module's public front door.
@@ -124,6 +134,8 @@ class OrderService
         private readonly OrderStatusCountsQuery $statusCounts,
         private readonly OrderPaymentStatusCountsQuery $paymentStatusCounts,
         private readonly OrderTotalsQuery $totals,
+        private readonly ChangeDeliveryPayer $changeDeliveryPayer,
+        private readonly ChangeOrderCompensation $changeCompensation,
         private readonly ManufacturingCostRateListQuery $manufacturingCostRateListQuery,
     ) {}
 
@@ -358,6 +370,44 @@ class OrderService
      *
      * @throws ReadyMessageNeedsAReadyOrder
      */
+    /**
+     * «التوصيل على: المستلم / علينا» on this order and on every order sharing its parcel — one
+     * transaction, so a parcel never holds two answers. Telling the carrier is the caller's.
+     *
+     * @param  list<Order>  $alongWith  the orders that share its open parcel, from the carrier
+     *
+     * @throws DeliveryPayerCannotChange
+     */
+    public function changeDeliveryPayer(Order $order, DeliveryPayer $payer, array $alongWith = []): Order
+    {
+        return DB::transaction(function () use ($order, $payer, $alongWith): Order {
+            foreach ($alongWith as $sibling) {
+                ($this->changeDeliveryPayer)($sibling, $payer);
+            }
+
+            return ($this->changeDeliveryPayer)($order, $payer);
+        });
+    }
+
+    /**
+     * «طلبية تعويض» on, with its reason and optional original, or off.
+     *
+     * @throws CompensationCannotChange
+     * @throws CompensationRequiresPermission
+     * @throws CompensationTakesNoCharges
+     * @throws CompensatedOrderIsInvalid
+     */
+    public function changeCompensation(
+        Order $order,
+        bool $isCompensation,
+        ?CompensationReason $reason,
+        ?string $note,
+        ?int $originalId,
+        ?User $actor,
+    ): Order {
+        return ($this->changeCompensation)($order, $isCompensation, $reason, $note, $originalId, $actor);
+    }
+
     public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order
     {
         return ($this->markReadyMessageSent)($order, $sent, $actor);
@@ -736,6 +786,9 @@ class OrderService
             // The shelf behind each line, for the unit its per-unit cost is quoted in — see
             // OrderItemResource. Two queries for the whole order, not two per line.
             'items.variant.stockItem',
+            // «تعويض عن #…» and «عُوِّضت بالطلبية #…» — numbers only, on the order screen.
+            'compensatedOrder:id,code,customer_id,is_compensation',
+            'compensations:id,code,compensates_order_id',
         ]);
     }
 
@@ -885,6 +938,15 @@ class OrderService
     public function profitAttributionFor(int $orderId): ?array
     {
         return ($this->profitAttribution)($orderId);
+    }
+
+    /**
+     * Whether this order — archived ones included — is a «طلبية تعويض». What Investment asks
+     * before treating its delivery as the moment the fund is paid back.
+     */
+    public function isCompensation(int $orderId): bool
+    {
+        return Order::withTrashed()->whereKey($orderId)->where('is_compensation', true)->exists();
     }
 
     /**
