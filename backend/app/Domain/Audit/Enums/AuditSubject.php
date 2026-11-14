@@ -56,6 +56,7 @@ use App\Domain\Investor\Models\InvestorDealSupply;
 use App\Domain\Investor\Models\InvestorWalletEntry;
 use App\Domain\Marketing\Models\Billboard;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\Notification\Models\NotificationPreference;
 use App\Domain\OnlinePayment\Models\OnlinePaymentMethod;
 use App\Domain\OnlinePayment\Models\PaymentIntent;
 use App\Domain\Order\Models\ManufacturingCostRate;
@@ -223,6 +224,9 @@ enum AuditSubject: string
     // same bargain every other case here makes.
     case Notification = 'notification';
 
+    // An employee's push switch, set by an administrator — Docs/notifications/PUSH-PREFERENCES.md.
+    case NotificationPreference = 'notification_preference';
+
     // الحسابات والكاش. The movement is the one `source_type` names back — a treasury operation
     // is itself the source of the movements it writes, under this same alias.
     case TreasuryAccount = 'treasury_account';
@@ -318,6 +322,7 @@ enum AuditSubject: string
             self::InternalTicketCategory => InternalTicketCategory::class,
             self::CompanySetting => CompanySetting::class,
             self::Notification => Notification::class,
+            self::NotificationPreference => NotificationPreference::class,
             self::TreasuryAccount => TreasuryAccount::class,
             self::TreasuryOperation => TreasuryOperation::class,
             self::TreasuryMovement => TreasuryMovement::class,
@@ -407,6 +412,7 @@ enum AuditSubject: string
             self::InternalTicketCategory => 'نوع تذكرة داخلية',
             self::CompanySetting => 'إعدادات الشركة',
             self::Notification => 'إشعار عام',
+            self::NotificationPreference => 'إعداد إشعارات موظف',
             self::TreasuryAccount => 'حساب',
             self::TreasuryOperation => 'عملية على الحسابات',
             self::TreasuryMovement => 'حركة حساب',

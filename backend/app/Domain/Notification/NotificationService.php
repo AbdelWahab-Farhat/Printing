@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Notification;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Notification\Actions\MarkAllAsRead;
 use App\Domain\Notification\Actions\MarkAsRead;
 use App\Domain\Notification\Actions\MarkSubjectAsRead;
@@ -13,10 +14,12 @@ use App\Domain\Notification\Actions\RegisterDeviceToken;
 use App\Domain\Notification\Actions\ReleaseCustomerDevice;
 use App\Domain\Notification\Actions\ReleaseDeviceToken;
 use App\Domain\Notification\Actions\SendAnnouncement;
+use App\Domain\Notification\Actions\SetPushPreference;
 use App\Domain\Notification\Channels\CustomerPushChannel;
 use App\Domain\Notification\DTOs\AnnouncementData;
 use App\Domain\Notification\DTOs\CustomerPush;
 use App\Domain\Notification\DTOs\PendingNotification;
+use App\Domain\Notification\DTOs\PushPreferenceGroup;
 use App\Domain\Notification\Enums\DevicePlatform;
 use App\Domain\Notification\Enums\NotificationType;
 use App\Domain\Notification\Models\CustomerDeviceToken;
@@ -24,6 +27,7 @@ use App\Domain\Notification\Models\DeviceToken;
 use App\Domain\Notification\Models\Notification;
 use App\Domain\Notification\Models\NotificationRecipient;
 use App\Domain\Notification\Queries\NotificationListQuery;
+use App\Domain\Notification\Queries\PushPreferencesQuery;
 use App\Domain\Notification\Queries\UnreadBySubjectQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -53,6 +57,8 @@ final readonly class NotificationService
         private RegisterCustomerDevice $registerCustomerDevice,
         private ReleaseCustomerDevice $releaseCustomerDevice,
         private CustomerPushChannel $customerPush,
+        private PushPreferencesQuery $pushPreferences,
+        private SetPushPreference $setPushPreference,
     ) {}
 
     /**
@@ -161,5 +167,23 @@ final readonly class NotificationService
     public function pushToCustomer(CustomerPush $push): void
     {
         $this->customerPush->deliver($push);
+    }
+
+    /**
+     * An employee's push switches, only for the group notifications they can receive.
+     *
+     * @return list<PushPreferenceGroup>
+     */
+    public function pushPreferencesFor(User $user): array
+    {
+        return $this->pushPreferences->for($user);
+    }
+
+    /**
+     * Turn one push switch on or off for an employee. The bell is never switched off.
+     */
+    public function setPushPreference(User $user, NotificationType $type, string $scope, bool $push): void
+    {
+        $this->setPushPreference->handle($user, $type, $scope, $push);
     }
 }

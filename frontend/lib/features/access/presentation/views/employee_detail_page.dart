@@ -624,6 +624,17 @@ class _Actions extends StatelessWidget {
             permission: AppPermission.manageUsers,
             onTap: _toggleActive,
           ),
+        // Which group notifications wake their phone — the administrator decides, not the
+        // employee. Docs/notifications/PUSH-PREFERENCES.md.
+        AppAction(
+          label: 'إشعارات الهاتف',
+          icon: AppIcons.notifications,
+          permission: AppPermission.manageUsers,
+          onTap: (context) => context.push(
+            Routes.employeeNotifications(user.id),
+            extra: user.name,
+          ),
+        ),
         AppAction(
           label: 'سجل التغييرات',
           icon: AppIcons.history,

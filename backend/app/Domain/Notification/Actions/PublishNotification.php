@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domain\Notification\Actions;
 
+use App\Domain\Notification\Audience\AudienceKind;
+use App\Domain\Notification\Audience\NotificationAudience;
 use App\Domain\Notification\Audience\ResolveRecipients;
 use App\Domain\Notification\Channels\DatabaseChannel;
 use App\Domain\Notification\Channels\PushChannel;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
 use App\Domain\Notification\DTOs\PendingNotification;
 use App\Domain\Notification\Models\Notification;
+use App\Domain\Notification\Queries\MutedPushQuery;
 use Illuminate\Support\Carbon;
 
 /**
@@ -51,6 +55,7 @@ final readonly class PublishNotification
         private ResolveRecipients $recipients,
         private DatabaseChannel $database,
         private PushChannel $push,
+        private MutedPushQuery $muted,
     ) {}
 
     /**
@@ -75,8 +80,10 @@ final readonly class PublishNotification
         $notification->causer_id = $pending->causerId;
         $notification->save();
 
+        $audience = $definition->audience($pending->payload);
+
         $userIds = $this->recipients->handle(
-            $definition->audience($pending->payload),
+            $audience,
             $pending->causerId,
             $definition->notifiesCauser(),
         );
@@ -84,9 +91,34 @@ final readonly class PublishNotification
         // The mailbox first and always; the push is a courtesy on top of a record that already
         // exists. Ordered this way so a push that fails still leaves something to come back to.
         $this->database->deliver($notification, $userIds);
-        $this->push->deliver($notification, $userIds);
+        $this->push->deliver($notification, $this->pushRecipients($definition, $audience, $pending, $userIds));
 
         return $notification;
+    }
+
+    /**
+     * Everyone in the mailbox, less those whose push an administrator switched off.
+     *
+     * **Only a group delivery is filtered.** The same type addressed to one person by name — a
+     * support ticket they took, a design ticket given to them — always pushes: that is work handed
+     * to them, and the setting is about noise from the group. See {@see GroupNotification}.
+     *
+     * @param  list<int>  $userIds
+     * @return list<int>
+     */
+    private function pushRecipients(
+        NotificationDefinition $definition,
+        NotificationAudience $audience,
+        PendingNotification $pending,
+        array $userIds,
+    ): array {
+        if (! $definition instanceof GroupNotification || $audience->kind !== AudienceKind::Permission) {
+            return $userIds;
+        }
+
+        $muted = $this->muted->among($userIds, $pending->type, $definition->pushScopeOf($pending->payload));
+
+        return array_values(array_diff($userIds, $muted));
     }
 
     /**

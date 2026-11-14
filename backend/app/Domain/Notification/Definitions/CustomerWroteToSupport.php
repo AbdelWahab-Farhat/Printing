@@ -6,7 +6,9 @@ namespace App\Domain\Notification\Definitions;
 
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Notification\Audience\NotificationAudience;
+use App\Domain\Notification\Contracts\GroupNotification;
 use App\Domain\Notification\Contracts\NotificationDefinition;
+use App\Domain\Notification\Definitions\Concerns\OneSwitch;
 use App\Domain\Notification\DTOs\RenderedNotification;
 
 /**
@@ -22,8 +24,16 @@ use App\Domain\Notification\DTOs\RenderedNotification;
  * **ونصُّ الرسالة لا يُذكر**: الدفعُ يُقرأ على شاشةٍ مقفلة، كما تقول {@see DesignTicketCommentPosted}.
  * اسمُ العميل والموضوع يكفيان ليعرف القارئ مَن ينتظره وفي أيّ شيء.
  */
-final readonly class CustomerWroteToSupport implements NotificationDefinition
+final readonly class CustomerWroteToSupport implements GroupNotification, NotificationDefinition
 {
+    use OneSwitch;
+
+    /** The queue only — a ticket somebody took always reaches them. */
+    public function groupPermission(): PermissionName
+    {
+        return PermissionName::ManageSupportTickets;
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -33,7 +43,7 @@ final readonly class CustomerWroteToSupport implements NotificationDefinition
 
         return $assignee > 0
             ? NotificationAudience::user($assignee)
-            : NotificationAudience::permission(PermissionName::ManageSupportTickets);
+            : NotificationAudience::permission($this->groupPermission());
     }
 
     /**
