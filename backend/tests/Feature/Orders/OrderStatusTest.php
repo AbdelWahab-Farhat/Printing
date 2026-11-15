@@ -83,13 +83,13 @@ class OrderStatusTest extends TestCase
                 OrderStatus::OutForDelivery,
                 [OrderStatus::Delivered, OrderStatus::ReturnedCourier],
             ],
-            'a parcel the courier still holds goes back to the company that sent him' => [
+            'a parcel the courier still holds goes back to the company, or is handed over after all' => [
                 OrderStatus::ReturnedCourier,
-                [OrderStatus::ReturnedCarrier],
+                [OrderStatus::ReturnedCarrier, OrderStatus::Delivered],
             ],
-            'from the company, back to our office — or straight out for a second attempt' => [
+            'from the company: back to our office, out for a second attempt, or handed over' => [
                 OrderStatus::ReturnedCarrier,
-                [OrderStatus::ReturnedOffice, OrderStatus::Resend],
+                [OrderStatus::ReturnedOffice, OrderStatus::Resend, OrderStatus::Delivered],
             ],
             'back on our shelf: collected here, sent out again, or written off' => [
                 OrderStatus::ReturnedOffice,
@@ -160,8 +160,8 @@ class OrderStatusTest extends TestCase
             'printing is unreachable, but its own arm is untouched' => $shared['printing ends ready, and may go back to the drawing board'],
             'the shelf leaves the same two ways' => $shared['ready leaves for the customer or is written off — the bags exist, so it never goes back'],
             'the road is the same' => $shared['an order on the road either arrives or comes back to the courier who carried it'],
-            'the return chain is the same' => $shared['a parcel the courier still holds goes back to the company that sent him'],
-            'the depot is the same' => $shared['from the company, back to our office — or straight out for a second attempt'],
+            'the return chain is the same' => $shared['a parcel the courier still holds goes back to the company, or is handed over after all'],
+            'the depot is the same' => $shared['from the company: back to our office, out for a second attempt, or handed over'],
             'our shelf is the same' => $shared['back on our shelf: collected here, sent out again, or written off'],
             'a re-send is the same' => $shared['a re-send leaves the same two ways any order leaves'],
             'the money is still owed' => $shared['the customer has it — all that is left is the money'],
@@ -592,13 +592,27 @@ class OrderStatusTest extends TestCase
 
         // Assert — a return is a chain of custody, and coming *home* is walked one link at a
         // time: the courier hands the parcel back to the company that sent him, and the company
-        // hands it back to us. Skipping a link would record a hand-over that never happened —
-        // a parcel still in somebody's van marked as being on our shelf, or in the customer's
-        // hands without anybody having taken it there.
-        $this->assertSame([OrderStatus::ReturnedCarrier], $fromCourier);
+        // hands it back to us. Skipping a link would record a parcel still in somebody's van as
+        // being on our shelf.
+        $this->assertNotContains(OrderStatus::ReturnedOffice, $fromCourier);
+        $this->assertContains(OrderStatus::ReturnedCarrier, $fromCourier);
         $this->assertContains(OrderStatus::ReturnedOffice, $fromCarrier);
-        $this->assertNotContains(OrderStatus::Delivered, $fromCarrier);
         $this->assertNotContains(OrderStatus::ReturnedCourier, $fromCarrier);
+    }
+
+    public function test_a_returning_parcel_can_still_be_handed_over(): void
+    {
+        // Assert — a parcel marked as coming back is often delivered after all: the customer
+        // answers and the courier goes round again. It is delivered from wherever it stands,
+        // on every road, rather than walked to our shelf first (owner's decision, 2026-11-15).
+        foreach (OrderFlow::cases() as $flow) {
+            foreach ([OrderStatus::ReturnedCourier, OrderStatus::ReturnedCarrier, OrderStatus::ReturnedOffice] as $return) {
+                $this->assertTrue(
+                    $return->canMoveTo(OrderStatus::Delivered, $flow),
+                    "{$return->value} should reach delivered on the {$flow->value} road",
+                );
+            }
+        }
     }
 
     public function test_the_carrier_may_try_again_without_the_parcel_coming_home(): void
@@ -685,11 +699,14 @@ class OrderStatusTest extends TestCase
             fn (OrderStatus $s) => in_array(OrderStatus::Delivered, $s->allowedNext(), true),
         ));
 
-        // Assert — nothing jumps from the shelf to the customer's hands. «راجع مكتب» is on the
-        // list for a real reason: a parcel that came back is sitting at the counter, and the
-        // customer coming in for it is the happiest ending it has left.
+        // Assert — nothing jumps from the shelf to the customer's hands. The three returns are on
+        // the list for a real reason: a parcel marked as coming back is often handed over after
+        // all, wherever it stands (owner's decision, 2026-11-15).
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::OfficePickup, OrderStatus::OutForDelivery, OrderStatus::ReturnedOffice],
+            [
+                OrderStatus::OfficePickup, OrderStatus::OutForDelivery,
+                OrderStatus::ReturnedCourier, OrderStatus::ReturnedCarrier, OrderStatus::ReturnedOffice,
+            ],
             $canDeliver,
         );
     }

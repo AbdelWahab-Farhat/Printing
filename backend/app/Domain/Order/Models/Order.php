@@ -1130,9 +1130,9 @@ class Order extends Model implements HasAuditTrail
     /**
      * Where a delivered order stood before it reached «تم الاستلام», or null.
      *
-     * The same reading as {@see statusBeforeCancellation()} and for the same reason: three
-     * statuses lead to «تم الاستلام» — «جاري التوصيل», «استلام مكتب» and «راجع مكتب» — and only
-     * the timeline says which one this order came from. It is what {@see UndoOrderDelivery} puts
+     * The same reading as {@see statusBeforeCancellation()} and for the same reason: five
+     * statuses lead to «تم الاستلام» — «جاري التوصيل», «استلام مكتب» and the three returns — and
+     * only the timeline says which one this order came from. It is what {@see UndoOrderDelivery} puts
      * the order back to.
      *
      * **An un-settlement is not a delivery**, though it too lands on «تم الاستلام». Its row reads

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  * **Not a status transition**, for the reasons {@see ReinstateCancelledOrder} gives. «تم الاستلام»
  * keeps its one road forward on {@see OrderStatus}; this is an undo of one recorded move, and
  * **its destination is read from the timeline, never chosen** — «جاري التوصيل», «استلام مكتب» or
- * «راجع مكتب», whichever the order actually came from.
+ * one of the three returns, whichever the order actually came from.
  *
  * **What comes off with it.** `delivered_at`, which describes the delivery. And the investors'
  * profit: the delivery is what made it final ({@see OrderProfitFinalised}), so

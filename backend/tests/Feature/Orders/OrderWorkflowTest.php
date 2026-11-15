@@ -228,6 +228,38 @@ class OrderWorkflowTest extends TestCase
         $out->assertOk()->assertJsonPath('data.status', 'out_for_delivery');
     }
 
+    public function test_a_returning_parcel_can_be_handed_over_where_it_stands(): void
+    {
+        // Arrange — one with the courier, one at the delivery company's depot.
+        $withCourier = Order::factory()->status(OrderStatus::ReturnedCourier)->create();
+        $atCarrier = Order::factory()->status(OrderStatus::ReturnedCarrier)->create();
+        $headers = $this->foreman();
+
+        // Act — the customer answered and took it; nobody walks it to our shelf first.
+        $fromCourier = $this->move($headers, $withCourier, OrderStatus::Delivered);
+        $fromCarrier = $this->move($headers, $atCarrier, OrderStatus::Delivered);
+
+        // Assert
+        $fromCourier->assertOk()->assertJsonPath('data.status', 'delivered');
+        $fromCarrier->assertOk()->assertJsonPath('data.status', 'delivered');
+        $this->assertNotNull($withCourier->fresh()->delivered_at);
+        $this->assertNotNull($atCarrier->fresh()->delivered_at);
+    }
+
+    public function test_a_parcel_with_the_courier_still_cannot_skip_to_our_shelf(): void
+    {
+        // Arrange
+        $order = Order::factory()->status(OrderStatus::ReturnedCourier)->create();
+        $headers = $this->foreman();
+
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::ReturnedOffice);
+
+        // Assert — only the way forward to the customer opened; coming home is still link by link.
+        $response->assertStatus(422);
+        $this->assertSame(OrderStatus::ReturnedCourier, $order->fresh()->status);
+    }
+
     public function test_a_delivered_order_is_closed(): void
     {
         // Arrange

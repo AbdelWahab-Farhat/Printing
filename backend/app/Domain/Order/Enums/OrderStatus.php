@@ -490,7 +490,7 @@ enum OrderStatus: string
             // A customer who has not come yet is simply still waiting.
             self::OfficePickup => [self::Delivered, self::Cancelled],
 
-            // **A return is a chain of custody, walked one link at a time.** The parcel is with
+            // **Coming home is a chain of custody, walked one link at a time.** The parcel is with
             // the courier, who hands it back to the company that sent him, who hands it back to
             // us — and each of those hand-overs is a real event somebody is answerable for.
             // Allowing «جاري التوصيل» to jump straight to «راجع مكتب» would let the system
@@ -501,7 +501,12 @@ enum OrderStatus: string
             // «راجع مكتب» is where that decision is taken.
             self::OutForDelivery => [self::Delivered, self::ReturnedCourier],
 
-            self::ReturnedCourier => [self::ReturnedCarrier],
+            // **Delivered from any return, wherever the parcel stands** (owner's decision,
+            // 2026-11-15). A parcel marked as coming back is often handed over after all — the
+            // customer answers, the courier goes round again. Making it walk to «راجع مكتب»
+            // first would record a hand-over to our shelf that never happened, which is the
+            // lie the chain exists to prevent. Only the way *home* is walked link by link.
+            self::ReturnedCourier => [self::ReturnedCarrier, self::Delivered],
 
             // **Coming home is one link at a time; going out again is not.** A parcel sitting at
             // the delivery company's depot is most often waiting on nothing more than the
@@ -510,8 +515,9 @@ enum OrderStatus: string
             // have staff record the parcel onto a shelf it never reached in order to describe a
             // second attempt that was never interrupted, which is the same lie the chain exists
             // to prevent, told in the other direction. «راجع مكتب» stays for the parcel that
-            // genuinely does come back.
-            self::ReturnedCarrier => [self::ReturnedOffice, self::Resend],
+            // genuinely does come back. «تم الاستلام» is here for the same reason it is on the
+            // courier's arm above: the company's second attempt can simply succeed.
+            self::ReturnedCarrier => [self::ReturnedOffice, self::Resend, self::Delivered],
 
             // Back on our shelf, and three real endings: the customer comes in for it, it goes
             // out again, or it is written off.
