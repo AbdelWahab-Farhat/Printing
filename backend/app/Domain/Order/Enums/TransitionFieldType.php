@@ -149,4 +149,16 @@ enum TransitionFieldType: string
      * the answer as «لا» and refuses — exactly what it did before the question existed.
      */
     case Confirmation = 'confirmation';
+
+    /**
+     * **Where the order goes now: a delivery city, and its region where the city has them.**
+     *
+     * Offered on one move: «استلام مكتب» → «إعادة إرسال», for the customer who asks for delivery
+     * instead of coming in. The answer is an object, `{city_id, region_id}`, so the region always
+     * travels with the city it belongs to. The options do not travel with it: the app already
+     * has the delivery map.
+     *
+     * An app that predates the type cannot answer it, so it cannot make this move.
+     */
+    case Destination = 'destination';
 }

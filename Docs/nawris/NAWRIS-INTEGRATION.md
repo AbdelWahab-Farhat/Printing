@@ -669,6 +669,7 @@ roll back a legitimate status change.
 |---|---|---|
 | Order → «جاري التوصيل» | `add-order` | Delivery city with a Nawris mapping; no open parcel already |
 | Order → «إعادة إرسال» | `resend-request` | The parcel came back; a new code arrives by webhook, often with an `N` suffix |
+| «استلام مكتب» → «إعادة إرسال» (customer asked for delivery) | `add-order` — a first parcel, not `resend-request` | The move carries a delivery city ([ORDERS-DESIGN §٢ «من استلام مكتب إلى توصيل»](../orders/ORDERS-DESIGN.md)). There is no parcel to re-send, so the app shows «إرسال للنورس» at «إعادة إرسال» when the order has none |
 | Payment or write-off recorded while a parcel is open | `edit-order` | **The only edit trigger there is** — see below |
 | Operator calls off a live shipment | `canceled` | A parcel-level action that **does not move the order** — see below |
 | *(none)* | `delete-order` | **No legal trigger. Not built** — [§11](#11-deliberately-not-built) |

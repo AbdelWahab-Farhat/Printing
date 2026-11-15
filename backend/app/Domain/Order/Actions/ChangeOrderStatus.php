@@ -7,10 +7,12 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Delivery\DeliveryService;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
+use App\Domain\Order\DTOs\OrderDestination;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\CustomerMessage;
 use App\Domain\Order\Enums\OrderFlow;
@@ -31,6 +33,7 @@ use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
 use App\Domain\Order\Exceptions\PrintOrderNeedsADesign;
 use App\Domain\Order\Exceptions\PrintOrderNeedsColors;
+use App\Domain\Order\Exceptions\ResendFromPickupNeedsADeliveryCity;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\Exceptions\ShortageMustBeResolved;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
@@ -106,6 +109,8 @@ final class ChangeOrderStatus
         // DELIVERY-PAYER.md §3.
         private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
         private readonly RecalculateOrderPayments $recalculatePayments,
+        // The same resolver the edit form uses, for «استلام مكتب» → «إعادة إرسال».
+        private readonly ResolveOrderDestination $resolveDestination,
     ) {}
 
     /**
@@ -141,6 +146,7 @@ final class ChangeOrderStatus
      * @throws PaymentRequiresAnActor
      * @throws PrintOrderNeedsADesign
      * @throws PrintOrderNeedsColors
+     * @throws ResendFromPickupNeedsADeliveryCity
      */
     public function __invoke(
         Order $order,
@@ -261,10 +267,22 @@ final class ChangeOrderStatus
             throw OutsourcedLinesNeedACost::make($uncostedAfterFields);
         }
 
-        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest): Order {
+        // **The customer asked for delivery instead of coming in.** Resolved before the
+        // transaction, like the vendor above: a wrong region is refused before anything is
+        // written. Null on every other move.
+        $deliverTo = $this->deliveryInsteadOfPickup($from, $target, $fields);
+
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest, $deliverTo): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
+
+            // **The new address lands with the status, never without it.** Written first so
+            // everything below reads a delivery order, and in this transaction so a refused move
+            // leaves the order at the counter, still a pickup.
+            if ($deliverTo !== null) {
+                $this->sendToTheDoor($order, $deliverTo, $fields);
+            }
 
             // **The vendor the accept dialog named, written before anything reads the order
             // again.** Inside the transaction, so a move that fails further down does not leave
@@ -845,6 +863,69 @@ final class ChangeOrderStatus
         $order->refresh();
 
         return $restocked;
+    }
+
+    /**
+     * The delivery city an order leaving the counter for «إعادة إرسال» is going to, or null on
+     * every other move.
+     *
+     * **Required, and never a branch.** An order that left the counter still a pickup would land
+     * straight back at the counter on its next «out», and nothing on screen would say why.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws ResendFromPickupNeedsADeliveryCity
+     */
+    private function deliveryInsteadOfPickup(OrderStatus $from, OrderStatus $target, array $fields): ?OrderDestination
+    {
+        if ($from !== OrderStatus::OfficePickup || $target !== OrderStatus::Resend) {
+            return null;
+        }
+
+        $answer = $fields[TransitionFields::DESTINATION] ?? null;
+        $cityId = is_array($answer) ? self::idIn($answer, 'city_id') : null;
+
+        if ($cityId === null) {
+            throw ResendFromPickupNeedsADeliveryCity::make();
+        }
+
+        $destination = ($this->resolveDestination)($cityId, self::idIn($answer, 'region_id'));
+
+        if ($destination->fulfilmentType !== FulfilmentType::Delivery) {
+            throw ResendFromPickupNeedsADeliveryCity::make();
+        }
+
+        return $destination;
+    }
+
+    /**
+     * Writes the delivery address an order is leaving the counter for — the columns the edit
+     * form writes, through the same {@see OrderDestination::columns()} — and the street beside
+     * it when the move carried one.
+     *
+     * **Then the delivery cost, as an edit to the city would.** When we pay the courier, the
+     * city's rate is what delivery costs us, and the investors' share and the fund's cash were
+     * worked out without it. `UpdateOrder::reworkTheMoney()` is the same two lines for the same
+     * reason.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function sendToTheDoor(Order $order, OrderDestination $destination, array $fields): void
+    {
+        $attributes = $destination->columns();
+
+        if (array_key_exists(TransitionFields::ADDRESS_DETAILS, $fields)) {
+            $street = trim((string) ($fields[TransitionFields::ADDRESS_DETAILS] ?? ''));
+            $attributes['address_details'] = $street === '' ? null : $street;
+        }
+
+        $order->forceFill($attributes)->save();
+
+        if (($this->recalculateDeliveryCost)($order)) {
+            OrderProfitFinalised::dispatch((int) $order->getKey());
+
+            ($this->recalculatePayments)($order);
+        }
     }
 
     /**

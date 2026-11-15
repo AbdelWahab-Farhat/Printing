@@ -99,6 +99,8 @@ sealed class OrderStatusState with _$OrderStatusState {
           final String text => text.trim().isNotEmpty,
           // A colour named without its swatch is not an answer the press can use (§9).
           final List<PrintColor> colors => PrintColor.listIsComplete(colors),
+          // A city that needs a region is not an address without one.
+          final DeliveryDestination destination => destination.isComplete,
           final Iterable<Object?> many => many.isNotEmpty,
           _ => true,
         });

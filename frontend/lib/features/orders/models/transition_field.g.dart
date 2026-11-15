@@ -91,6 +91,7 @@ const _$TransitionFieldTypeEnumMap = {
   TransitionFieldType.vendor: 'vendor',
   TransitionFieldType.treasuryAccount: 'treasury_account',
   TransitionFieldType.confirmation: 'confirmation',
+  TransitionFieldType.destination: 'destination',
   TransitionFieldType.unknown: 'unknown',
 };
 

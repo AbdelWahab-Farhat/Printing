@@ -11,10 +11,12 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dropdown.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/customers/presentation/widgets/design_thumbnail.dart';
 import 'package:dayaa/features/orders/models/transition_field.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/shipping_company_picker_sheet.dart';
 import 'package:dayaa/features/shipping_companies/models/shipping_company.dart';
 import 'package:dayaa/features/treasury/presentation/widgets/treasury_account_picker.dart';
@@ -131,6 +133,11 @@ class TransitionFieldInput extends StatelessWidget {
         field: field,
         chosen: value is String ? value! as String : null,
         errorText: errorText,
+        onChanged: onChanged,
+      ),
+      TransitionFieldType.destination => _Destination(
+        field: field,
+        chosen: value is DeliveryDestination ? value! as DeliveryDestination : null,
         onChanged: onChanged,
       ),
       // Asked by the screen when the button is pressed, never drawn as a control.
@@ -481,6 +488,86 @@ class _Carrier extends StatelessWidget {
           icon: AppIcons.warehouse,
           onPressed: () => _pick(context),
         ),
+      ],
+    );
+  }
+}
+
+/// Where an order waiting at the counter is delivered instead: a city, then its region.
+///
+/// **Delivery cities only.** A branch would turn the move back into a pickup, and the server
+/// refuses one; the picker hides them. Picking another city drops the region, because a region
+/// belongs to one city.
+class _Destination extends StatelessWidget {
+  const _Destination({required this.field, required this.chosen, required this.onChanged});
+
+  /// Keys for tests: the two buttons.
+  static const Key cityKey = Key('transition-destination-city');
+  static const Key regionKey = Key('transition-destination-region');
+
+  final TransitionField field;
+  final DeliveryDestination? chosen;
+  final ValueChanged<Object?> onChanged;
+
+  Future<void> _pickCity(BuildContext context) async {
+    final city = await showCityPicker(
+      context: context,
+      selectedId: chosen?.city.id,
+      deliveryOnly: true,
+    );
+
+    if (city == null || city.id == chosen?.city.id) return;
+
+    onChanged(DeliveryDestination(city: city));
+  }
+
+  Future<void> _pickRegion(BuildContext context, City city) async {
+    final region = await showRegionPicker(
+      context: context,
+      cityId: city.id,
+      selectedId: chosen?.region?.id,
+    );
+
+    if (region != null) onChanged(DeliveryDestination(city: city, region: region));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final city = chosen?.city;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          field.label,
+          style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        if (field.hint case final hint?) ...[
+          SizedBox(height: 4.h),
+          Text(
+            hint,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        AppButton.tonal(
+          key: cityKey,
+          label: city?.name ?? 'اختيار المدينة',
+          icon: AppIcons.city,
+          onPressed: () => _pickCity(context),
+        ),
+        if (city != null) ...[
+          SizedBox(height: 8.h),
+          AppButton.tonal(
+            key: regionKey,
+            label:
+                chosen?.region?.name ??
+                (city.isRegionRequired ? 'اختيار المنطقة' : 'اختيار المنطقة (اختياري)'),
+            icon: AppIcons.mapPin,
+            onPressed: () => _pickRegion(context, city),
+          ),
+        ],
       ],
     );
   }

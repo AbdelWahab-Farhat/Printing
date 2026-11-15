@@ -1222,14 +1222,15 @@ class _Body extends StatelessWidget {
   /// «استلام مكتب» never leaves the building — the server refuses both by name, and this only
   /// decides whether to offer a button that would earn one of those refusals.
   ///
-  /// **«إعادة إرسال» is deliberately not offered here** even though the server accepts it: a
-  /// returned order goes out again through the status screen, and a second door onto the same
-  /// act is a second thing to keep in step. The retry after a failed hand-over is the
-  /// not-lodged queue's job, which is a screen this app does not have yet.
+  /// **«إعادة إرسال» only for an order Nawris has never had** — one that left the counter for
+  /// delivery (ORDERS-DESIGN «من استلام مكتب إلى توصيل»). There is no parcel to re-send, so this
+  /// is its first. A returned order that does have one still goes out through
+  /// [_mayResendToCarrier] or the status screen, as before.
   bool get _maySendToCarrier =>
       onSendToCarrier != null &&
-      order.status == OrderStatus.ready &&
-      !order.isOfficePickup;
+      !order.isOfficePickup &&
+      (order.status == OrderStatus.ready ||
+          (order.status == OrderStatus.resend && order.nawrisParcel == null));
 
   /// Either moment: goods about to go, or goods that came back.
   bool get _mayTouchTheCarrier => _maySendToCarrier || _mayResendToCarrier;
@@ -1247,10 +1248,13 @@ class _Body extends StatelessWidget {
   /// them nothing has come back, and «تم الاستلام» is the end.
   ///
   /// Whether the parcel is *still open* at their end is the server's question, not this one's: it
-  /// answers «لا توجد شحنة مفتوحة» when the return chain has already closed it.
+  /// answers «لا توجد شحنة مفتوحة» when the return chain has already closed it. **At «إعادة
+  /// إرسال» with no parcel at all there is nothing to re-send** — the order left the counter for
+  /// delivery — so it gets [_maySendToCarrier] instead, and the two stay exclusive.
   bool get _mayResendToCarrier =>
       onResendShipment != null &&
       !order.isOfficePickup &&
+      (order.status != OrderStatus.resend || order.nawrisParcel != null) &&
       const {
         OrderStatus.returnedCourier,
         OrderStatus.returnedCarrier,

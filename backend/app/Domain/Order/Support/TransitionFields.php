@@ -103,6 +103,14 @@ final class TransitionFields
     public const VENDOR_ID = 'vendor_id';
 
     /**
+     * Where an order waiting at the counter is delivered instead — `{city_id, region_id}` — and
+     * the street beside it. Asked on «استلام مكتب» → «إعادة إرسال» alone.
+     */
+    public const DESTINATION = 'destination';
+
+    public const ADDRESS_DETAILS = 'address_details';
+
+    /**
      * [$actor] is who is making the move, and it decides one thing only: whether the money box
      * is offered. A driver may hand a parcel over without being trusted with the till, so the
      * field is withheld rather than the move. Null — a console command, an importer — is treated
@@ -258,6 +266,25 @@ final class TransitionFields
                 // The company is answerable; the driver is merely reachable, and often nobody
                 // has his number at the moment the parcel goes out.
                 hint: 'رقم المندوب الذي أخذ الطلبية، إن توفّر',
+            );
+        }
+
+        // **The customer asked for delivery instead of coming in.** The order cannot leave as a
+        // delivery while its city is a branch, so the new city is asked in the same tap that
+        // moves it — `ChangeOrderStatus` writes both together. The edit form refuses a delivery
+        // city on «استلام مكتب» and sends people here instead; see `UpdateOrder`.
+        if ($order->status === OrderStatus::OfficePickup && $target === OrderStatus::Resend) {
+            $fields[] = TransitionField::destination(
+                key: self::DESTINATION,
+                label: 'مدينة التوصيل',
+                hint: 'تتحوّل الطلبية إلى توصيل، ثم تُرسل للنورس أو مع المندوب',
+            );
+
+            $fields[] = TransitionField::text(
+                key: self::ADDRESS_DETAILS,
+                label: 'العنوان بالتفصيل',
+                multiline: true,
+                value: $order->address_details,
             );
         }
 

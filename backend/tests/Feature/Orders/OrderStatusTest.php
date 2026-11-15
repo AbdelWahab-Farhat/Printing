@@ -75,9 +75,9 @@ class OrderStatusTest extends TestCase
                     OrderStatus::Cancelled,
                 ],
             ],
-            'an order waiting at the counter is collected or cancelled — never returned' => [
+            'an order waiting at the counter is collected, sent out instead, or cancelled — never returned' => [
                 OrderStatus::OfficePickup,
-                [OrderStatus::Delivered, OrderStatus::Cancelled],
+                [OrderStatus::Delivered, OrderStatus::Resend, OrderStatus::Cancelled],
             ],
             'an order on the road either arrives or comes back to the courier who carried it' => [
                 OrderStatus::OutForDelivery,

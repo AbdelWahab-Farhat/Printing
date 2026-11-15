@@ -199,7 +199,10 @@ enum OrderStatus: string
     /** Physically back on our shelf. */
     case ReturnedOffice = 'returned_office';
 
-    /** Going out a second time — off our shelf, or from the carrier's depot without coming back. */
+    /**
+     * Going out a second time — off our shelf, or from the carrier's depot without coming back.
+     * Also where an order waiting at the counter goes when the customer asks for delivery.
+     */
     case Resend = 'resend';
 
     case Cancelled = 'cancelled';
@@ -488,7 +491,12 @@ enum OrderStatus: string
 
             // No returns: it never left the building, so there is no courier and no carrier.
             // A customer who has not come yet is simply still waiting.
-            self::OfficePickup => [self::Delivered, self::Cancelled],
+            //
+            // **«إعادة إرسال» is for the customer who asks for delivery instead** (owner's
+            // decision, 2026-11-15). The move carries the new city, so the order arrives there
+            // as a delivery order and leaves the way any re-send does: Nawris, or our courier.
+            // See ORDERS-DESIGN.md «من استلام مكتب إلى توصيل».
+            self::OfficePickup => [self::Delivered, self::Resend, self::Cancelled],
 
             // **Coming home is a chain of custody, walked one link at a time.** The parcel is with
             // the courier, who hands it back to the company that sent him, who hands it back to
