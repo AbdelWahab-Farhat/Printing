@@ -235,9 +235,9 @@ class OrderStockShortfallTest extends TestCase
      */
     public function test_the_shortage_form_prints_what_the_shelves_hold(): void
     {
-        // Arrange
+        // Arrange — past the deposit question, which is where «نواقص» is offered from.
         $headers = $this->storeman();
-        $order = Order::factory()->status(OrderStatus::New)->create();
+        $order = Order::factory()->status(OrderStatus::NoDeposit)->create();
         $variant = $this->stockedVariant('25*35');
         $item = $this->line($order, $variant, '300.000');
 
@@ -269,9 +269,9 @@ class OrderStockShortfallTest extends TestCase
 
     public function test_a_size_with_no_shelf_says_nothing_about_stock(): void
     {
-        // Arrange — a variant the warehouse does not carry.
+        // Arrange — a variant the warehouse does not carry, on an order past its deposit question.
         $headers = $this->storeman();
-        $order = Order::factory()->status(OrderStatus::New)->create();
+        $order = Order::factory()->status(OrderStatus::NoDeposit)->create();
         $item = OrderItem::factory()->for($order)->create(['quantity' => '300.000']);
 
         ProductVariant::query()->whereKey($item->product_variant_id)->update(['stock_item_id' => null]);

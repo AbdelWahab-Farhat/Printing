@@ -47,6 +47,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -67,6 +68,7 @@ use Tests\TestCase;
 class FundExpenseOnGoodsTest extends TestCase
 {
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -288,6 +290,7 @@ class FundExpenseOnGoodsTest extends TestCase
     {
         $order = $this->sale($size, $kilos);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($this->foreman())->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->getKey()],

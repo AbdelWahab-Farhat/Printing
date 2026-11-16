@@ -140,6 +140,12 @@ class TransitionFieldInput extends StatelessWidget {
         chosen: value is DeliveryDestination ? value! as DeliveryDestination : null,
         onChanged: onChanged,
       ),
+      TransitionFieldType.checkbox => _Checkbox(
+        field: field,
+        ticked: value == true,
+        errorText: errorText,
+        onChanged: onChanged,
+      ),
       // Asked by the screen when the button is pressed, never drawn as a control.
       TransitionFieldType.confirmation => const SizedBox.shrink(),
       TransitionFieldType.unknown => _Unsupported(field: field),
@@ -856,6 +862,62 @@ class _Notice extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// A box the person ticks — «اعتماد التصميم رقم ٣».
+///
+/// **Unticked is sent as nothing, not as `false`**, so a required box left alone keeps the button
+/// grey and an optional one is simply absent from the request.
+class _Checkbox extends StatelessWidget {
+  const _Checkbox({
+    required this.field,
+    required this.ticked,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  final TransitionField field;
+  final bool ticked;
+  final String? errorText;
+  final ValueChanged<Object?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final hint = field.hint;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CheckboxListTile(
+          value: ticked,
+          onChanged: (value) => onChanged(value == true ? true : null),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: Text(
+            field.label,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: hint != null && hint.isNotEmpty
+              ? Text(
+                  hint,
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                )
+              : null,
+        ),
+        if (errorText case final error? when error.isNotEmpty)
+          Text(
+            error,
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.error),
+          ),
       ],
     );
   }

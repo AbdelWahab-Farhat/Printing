@@ -155,6 +155,11 @@ enum AppPermission {
   // for every reader and enabled only for a holder, and the box, which is not drawn at all
   // without it. See ORDER-READY-MESSAGE.md §٤.
   confirmReadyMessage('orders.ready_message', 'رسائل الزبائن (الجاهزية والراجع)'),
+  // The warehouse starting to gather an order's goods — before it hands them over below.
+  moveOrderToPreparing(
+    'orders.status.preparing',
+    'تحويل الطلبية إلى تجهيز للطباعة',
+  ),
   // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
   // the order to the press. Separate from the two production grants beside it because a
   // different desk does it — the wording is `PermissionName.php`'s, word for word.
@@ -187,6 +192,8 @@ enum AppPermission {
     'تحويل الطلبية إلى انتظار العربون',
   ),
   moveOrderToDepositPaid('orders.status.deposit_paid', 'تحويل الطلبية إلى عربون مدفوع'),
+  // Taking an order on without a عربون — a credit decision, so a grant of its own.
+  moveOrderToNoDeposit('orders.status.no_deposit', 'تحويل الطلبية إلى بدون عربون'),
   markOrdersDelivered('orders.status.delivered', 'تأكيد استلام العميل للطلبية'),
 
   /// Recording that the customer took only part of the order — which shrinks the invoice.

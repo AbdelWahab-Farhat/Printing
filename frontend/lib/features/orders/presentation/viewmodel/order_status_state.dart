@@ -76,7 +76,8 @@ sealed class OrderStatusState with _$OrderStatusState {
     TransitionFieldType.text ||
     TransitionFieldType.number ||
     TransitionFieldType.printColorsInput ||
-    TransitionFieldType.treasuryAccount => true,
+    TransitionFieldType.treasuryAccount ||
+    TransitionFieldType.checkbox => true,
     _ => false,
   };
 
@@ -102,6 +103,8 @@ sealed class OrderStatusState with _$OrderStatusState {
           // A city that needs a region is not an address without one.
           final DeliveryDestination destination => destination.isComplete,
           final Iterable<Object?> many => many.isNotEmpty,
+          // A required tick is answered only when ticked.
+          final bool ticked => ticked,
           _ => true,
         });
   }

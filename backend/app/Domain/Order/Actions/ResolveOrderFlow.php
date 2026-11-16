@@ -61,8 +61,8 @@ final class ResolveOrderFlow
      * *started*, not about the status being «جديدة».** Resolving a request's road at intake is
      * what lets the review screen say «هذه تحتاج وسيطاً» before anybody accepts it.
      *
-     * **And so are the two عربون statuses**, for the same reason: an order waiting on its deposit
-     * has been weighed by nobody and queued nowhere, and every road has both statuses on it — a
+     * **And so are the three عربون statuses**, for the same reason: an order whose deposit is
+     * being decided has been weighed by nobody and queued nowhere, and every road has them — a
      * printed line added there must put the order back on the press's road, or it would skip it.
      *
      * **«نواقص» only between the two roads that have it.** The وسيط road never passes through it,
@@ -75,7 +75,8 @@ final class ResolveOrderFlow
             OrderStatus::New,
             OrderStatus::Requested,
             OrderStatus::AwaitingDeposit,
-            OrderStatus::DepositPaid => true,
+            OrderStatus::DepositPaid,
+            OrderStatus::NoDeposit => true,
             OrderStatus::Shortage => $flow !== OrderFlow::Outsourced,
             default => false,
         };

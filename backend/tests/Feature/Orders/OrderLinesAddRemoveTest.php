@@ -37,6 +37,7 @@ use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -57,6 +58,7 @@ use Tests\TestCase;
 class OrderLinesAddRemoveTest extends TestCase
 {
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -199,6 +201,9 @@ class OrderLinesAddRemoveTest extends TestCase
     /** @param array<string, mixed> $fields */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
+        // «جديدة» only asks the deposit question now — see WalksPastIntake.
+        $this->walkPastIntake($order, $to);
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter(['status' => $to->value, 'fields' => $fields ?: null]),

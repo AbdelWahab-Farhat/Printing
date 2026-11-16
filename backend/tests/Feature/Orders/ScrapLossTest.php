@@ -16,6 +16,7 @@ use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ class ScrapLossTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -89,6 +91,7 @@ class ScrapLossTest extends TestCase
         // The warehouse is named at the handover now — that is where the stock actually leaves —
         // and «جاهزة» no longer offers the picker, because by then there is nothing left to
         // choose: a correction goes back to the shelf it came off.
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],

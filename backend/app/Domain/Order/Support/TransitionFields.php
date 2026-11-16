@@ -111,6 +111,13 @@ final class TransitionFields
     public const ADDRESS_DETAILS = 'address_details';
 
     /**
+     * «اعتماد آخر نسخة» — ticked on the move into «تجهيز للطباعة» to approve the version the
+     * press would print, so approving and moving are one step. See
+     * `ChangeOrderStatus::approveDesignForPreparing()`.
+     */
+    public const APPROVE_DESIGN = 'approve_design';
+
+    /**
      * [$actor] is who is making the move, and it decides one thing only: whether the money box
      * is offered. A driver may hand a parcel over without being trusted with the till, so the
      * field is withheld rather than the move. Null — a console command, an importer — is treated
@@ -151,8 +158,12 @@ final class TransitionFields
         // was* — the only one of the two questions that may move money — and not whether there
         // is a file. A reprint that goes back into design because the customer wants the logo
         // moved has artwork to look at like any other.
+        //
+        // **«تجهيز للطباعة» takes artwork too**, now that the warehouse comes after the design:
+        // leaving «قيد التصميم» for it is the designer's finished file arriving.
         $artworkTravels = $target === OrderStatus::Designing
-            || ($target === OrderStatus::Printing && $order->designsAreEditable());
+            || (($target === OrderStatus::Preparing || $target === OrderStatus::Printing)
+                && $order->designsAreEditable());
 
         if ($artworkTravels) {
             $fields[] = TransitionField::customerDesigns(
@@ -166,6 +177,15 @@ final class TransitionFields
                 required: false,
                 hint: 'تُرفع إلى مكتبة العميل ثم تُربط بالطلبية',
             );
+        }
+
+        // «اعتماد آخر نسخة» — the warehouse gathers goods for an approved file only.
+        if ($target === OrderStatus::Preparing) {
+            $approval = self::designApproval($order, $artworkTravels);
+
+            if ($approval !== null) {
+                $fields[] = $approval;
+            }
         }
 
         // «ألوان الطباعة» once more, on the way to the press — PRINT-COLORS.md. The last moment
@@ -467,18 +487,21 @@ final class TransitionFields
             }
         }
 
-        // **Leaving «نواقص» is the same question from the other end.** The stock arrived, and
-        // what arrived of it is the number the person holding the delivery note has — so that is
-        // what is asked, rather than making them subtract to reach what is left.
+        // **Going to the warehouse with a shortage on the order is the same question from the
+        // other end.** The stock arrived, and what arrived of it is the number the person holding
+        // the delivery note has — so that is what is asked, rather than making them subtract to
+        // reach what is left.
         //
-        // **Pre-filled with the whole shortage**, because leaving this status nearly always
-        // means all of it came: the common answer is a tap, and typing is for the exception. And
-        // only the lines that are actually short are asked about — a form listing every size of
-        // a five-line order to ask about the one that was missing is a form to be scrolled past.
+        // **Asked on the move into «تجهيز للطباعة», not on leaving «نواقص».** «نواقص» may be left
+        // for «قيد التصميم» while the stock is still awaited, so leaving it no longer means the
+        // goods came; going to the warehouse does. Asked only where the shortage can still be
+        // written — the same condition `ChangeOrderStatus::recordArrivedShortages()` reads.
         //
-        // Not offered on the way to «إلغاء تام»: an order written off while short keeps the
-        // record of what it was short of.
-        if ($order->status === OrderStatus::Shortage && ! $target->isFinal()) {
+        // **Pre-filled with the whole shortage**, because this move nearly always means all of
+        // it came: the common answer is a tap, and typing is for the exception. And only the
+        // lines that are actually short are asked about — a form listing every size of a
+        // five-line order to ask about the one that was missing is a form to be scrolled past.
+        if ($target === OrderStatus::Preparing && $order->shortagesAreEditable()) {
             foreach ($order->items as $item) {
                 /*
                  * **A line nobody has weighed has no figure in the shelf's unit**, and there is
@@ -565,7 +588,13 @@ final class TransitionFields
 
         $fields[] = TransitionField::text(
             key: 'reason',
-            label: $mustExplain ? 'السبب' : 'ملاحظة',
+            // «يحفظ سبب النقص وملاحظاته» (owner's status document, 2026-11-15): the same note,
+            // named for what a shortage owes the next person to read it.
+            label: match (true) {
+                $mustExplain => 'السبب',
+                $target === OrderStatus::Shortage => 'سبب النقص وملاحظات',
+                default => 'ملاحظة',
+            },
             required: $mustExplain,
             multiline: true,
             hint: 'تُسجَّل في سجل الطلبية',
@@ -652,6 +681,47 @@ final class TransitionFields
             // الخسارةُ أولاً في العنوان كما هي أولاً في المتن: هي التي لا رجعةَ فيها.
             label: $lost === [] ? 'ما يعود إلى المخزن' : 'تحذير — بضاعةٌ لن تعود',
             hint: implode("\n", $body),
+        );
+    }
+
+    /**
+     * «اعتماد آخر نسخة» on the move into «تجهيز للطباعة», or null when nothing needs approving.
+     *
+     * - An approved version already: nothing to ask.
+     * - A version nobody approved or turned down: a required tick naming it — the move is refused
+     *   without an approved version, so the button greys until the person says «this is the file».
+     * - No version yet, but the move can carry one: an optional tick that approves what is
+     *   attached on the same move.
+     *
+     * The version named is {@see Order::designForPress()}, the same one the domain approves.
+     */
+    private static function designApproval(Order $order, bool $artworkTravels): ?TransitionField
+    {
+        $order->loadMissing('designs');
+
+        if ($order->designs->contains(fn ($design) => $design->status === OrderDesignStatus::Approved)) {
+            return null;
+        }
+
+        $candidate = $order->designForPress();
+
+        if ($candidate !== null) {
+            return TransitionField::checkbox(
+                key: self::APPROVE_DESIGN,
+                label: "اعتماد التصميم رقم {$candidate->version}",
+                required: true,
+                hint: 'لا يُجهَّز إلا على تصميم معتمد — إن لم يكن هذا هو الملف النهائي فأرسل الطلبية إلى «قيد التصميم»',
+            );
+        }
+
+        if (! $artworkTravels) {
+            return null;
+        }
+
+        return TransitionField::checkbox(
+            key: self::APPROVE_DESIGN,
+            label: 'اعتماد التصميم المرفق',
+            hint: 'يُعتمد التصميم الذي تختاره أعلاه ويُجهَّز عليه',
         );
     }
 
@@ -748,6 +818,21 @@ final class TransitionFields
      */
     private static function deposit(Order $order, OrderStatus $target): array
     {
+        // **«بدون عربون» closes the customer's own deposit offer.** An app order accepted out of
+        // review is offered the عربون on the customer's phone for as long as it stays «جديدة» —
+        // see {@see CheckoutDeposit::isOfferedAfterReview()}. Moving it on answers that question
+        // for them, so the person about to do it is told, not stopped: going ahead without one
+        // is a decision the shop may take.
+        if ($target === OrderStatus::NoDeposit) {
+            return CheckoutDeposit::isOfferedAfterReview($order)
+                ? [TransitionField::notice(
+                    key: 'deposit_offer_open',
+                    label: 'الزبون لم يختر العربون بعد',
+                    hint: 'طلبيته من التطبيق وما زال خيار العربون مفتوحاً له — «بدون عربون» يُغلقه',
+                )]
+                : [];
+        }
+
         if ($target !== OrderStatus::AwaitingDeposit) {
             return [];
         }

@@ -129,6 +129,8 @@ class OrderStatusChip extends StatelessWidget {
     // weighed, and the shelf has dropped; drawing it with a printer would put the order at a
     // machine nobody has started yet.
     OrderStatus.readyToPrint => AppIcons.warehouse,
+    // The same desk a step earlier: the goods are still being gathered.
+    OrderStatus.preparing => AppIcons.preparing,
     OrderStatus.designing => AppIcons.designs,
     // The press itself, where «قيد الطباعة» actually is — not the bag it will become.
     OrderStatus.printing => AppIcons.printedProduct,
@@ -144,6 +146,7 @@ class OrderStatusChip extends StatelessWidget {
     // Banknotes, never a tick: the tick belongs to the person who confirms the money landed,
     // and that is a different control and a different person.
     OrderStatus.depositPaid => AppIcons.depositPaid,
+    OrderStatus.noDeposit => AppIcons.noDeposit,
     OrderStatus.officePickup => AppIcons.officePickup,
     OrderStatus.outForDelivery => AppIcons.outForDelivery,
     OrderStatus.delivered => AppIcons.ordersReceived,

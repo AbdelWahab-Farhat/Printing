@@ -27,6 +27,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,7 @@ class OrderWorkflowTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -70,6 +72,8 @@ class OrderWorkflowTest extends TestCase
             PermissionName::ViewOrders,
             PermissionName::ManageOrders,
             PermissionName::ManageOrderDesigns,
+            PermissionName::MoveOrderToNoDeposit,
+            PermissionName::MoveOrderToPreparing,
             PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
@@ -92,6 +96,15 @@ class OrderWorkflowTest extends TestCase
         // the road, so the artwork is supplied rather than tested.
         if ($to === OrderStatus::Printing) {
             $this->givePrintableArtwork($order);
+        }
+
+        // **The handover is walked, not skipped**: an order still at intake answers the deposit
+        // question and is gathered by the warehouse first, through the real moves, so the
+        // timeline these tests read is the one the shop would see. Not from «نواقص» — whether a
+        // shortage may go straight to the handover is what one of these tests asks.
+        if ($to === OrderStatus::ReadyToPrint && $order->fresh()->status !== OrderStatus::Shortage) {
+            $this->toTheWarehouse($headers, $order);
+            $order->refresh();
         }
 
         return $this->withHeaders($headers)->postJson(
@@ -131,6 +144,33 @@ class OrderWorkflowTest extends TestCase
         $this->move($headers, $order, OrderStatus::ReadyToPrint)->assertOk();
 
         return $this->move($headers, $order->refresh(), $to);
+    }
+
+    /**
+     * «جديدة» → «بدون عربون» → «تجهيز للطباعة», through the real moves, approving the latest
+     * version on the way when the order has one nobody approved.
+     */
+    private function toTheWarehouse(array $headers, Order $order): void
+    {
+        if ($order->fresh()->status === OrderStatus::New) {
+            $this->withHeaders($headers)
+                ->postJson("/api/v1/orders/{$order->id}/status", ['status' => OrderStatus::NoDeposit->value])
+                ->assertOk();
+        }
+
+        $order->refresh()->unsetRelation('designs');
+
+        if (! $order->status->canMoveTo(OrderStatus::Preparing, $order->production_flow)) {
+            return;
+        }
+
+        $needsTheTick = $order->designs()->exists()
+            && ! $order->designs()->where('status', OrderDesignStatus::Approved)->exists();
+
+        $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", array_filter([
+            'status' => OrderStatus::Preparing->value,
+            'fields' => $needsTheTick ? ['approve_design' => true] : null,
+        ]))->assertOk();
     }
 
     /** One carrier, made once and reused, so a fixture is never the subject of the test. */
@@ -199,16 +239,14 @@ class OrderWorkflowTest extends TestCase
         $headers = $this->foreman();
 
         // Act
-        $handedOver = $this->move($headers, $short, OrderStatus::ReadyToPrint);
-        $tooFar = $this->move($headers, $stillShort, OrderStatus::Ready);
+        $gathered = $this->move($headers, $short, OrderStatus::Preparing);
+        $tooFar = $this->move($headers, $stillShort, OrderStatus::ReadyToPrint);
         $straightToThePress = $this->move($headers, $alsoShort, OrderStatus::Printing);
 
-        // Assert — the stock arrives and the order rejoins the road, **at the handover it was
-        // taken off before**. It no longer goes straight to a production status: the press is
-        // entered through one door whether an order reaches it from «جديدة» or from «نواقص», and
-        // the goods have to be weighed and let go of on the way. «جاهزة» was never among them —
-        // nothing has been printed, so there is nothing on the shelf.
-        $handedOver->assertOk()->assertJsonPath('data.status', 'ready_to_print');
+        // Assert — the stock arrives and the order rejoins the road **at the warehouse**, by hand
+        // (owner's status document, 2026-11-15). It does not skip the gathering to the press's
+        // queue, and it never goes straight to the press.
+        $gathered->assertOk()->assertJsonPath('data.status', 'preparing');
         $tooFar->assertStatus(422);
         $straightToThePress->assertStatus(422);
     }
@@ -362,6 +400,16 @@ class OrderWorkflowTest extends TestCase
         $this->assertDatabaseHas('order_status_transitions', [
             'order_id' => $order->id,
             'from_status' => OrderStatus::New->value,
+            'to_status' => OrderStatus::NoDeposit->value,
+        ]);
+        $this->assertDatabaseHas('order_status_transitions', [
+            'order_id' => $order->id,
+            'from_status' => OrderStatus::NoDeposit->value,
+            'to_status' => OrderStatus::Preparing->value,
+        ]);
+        $this->assertDatabaseHas('order_status_transitions', [
+            'order_id' => $order->id,
+            'from_status' => OrderStatus::Preparing->value,
             'to_status' => OrderStatus::ReadyToPrint->value,
         ]);
         $this->assertDatabaseHas('order_status_transitions', [
@@ -549,17 +597,17 @@ class OrderWorkflowTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
 
-        // Assert — جديدة → جاهزة للطباعة → قيد التصميم → قيد الطباعة → جاهزة → التسليم →
-        // تم الاستلام → تم التسوية. The handover is on the line and not beside it, because every
-        // printed order passes through it: it is the step where the warehouse finishes and the
-        // press begins. The last step is money rather than bags, and it is on the line because an
-        // order whose cash never came back is not a finished order.
+        // Assert — جديدة → قيد التصميم → تجهيز للطباعة → جاهزة للطباعة → قيد الطباعة → جاهزة →
+        // التسليم → تم الاستلام → تم التسوية (owner's status document, 2026-11-15): the artwork
+        // before the warehouse. The last step is money rather than bags, and it is on the line
+        // because an order whose cash never came back is not a finished order.
         $steps = array_column($response->json('data.progress.steps'), 'status');
 
         $this->assertSame([
             OrderStatus::New->value,
-            OrderStatus::ReadyToPrint->value,
             OrderStatus::Designing->value,
+            OrderStatus::Preparing->value,
+            OrderStatus::ReadyToPrint->value,
             OrderStatus::Printing->value,
             OrderStatus::Ready->value,
             OrderStatus::OutForDelivery->value,
@@ -610,7 +658,7 @@ class OrderWorkflowTest extends TestCase
     public function test_a_shortage_is_a_detour_not_a_step(): void
     {
         // Arrange — a shortage says what is short, so the move carries a line's own field. It is
-        // declared off «جديدة»: the stock was not there when the job was picked up.
+        // declared once the deposit is answered: the stock was not there when the job was picked up.
         $order = Order::factory()->create();
         $item = OrderItem::factory()->for($order)->create(['quantity' => '100']);
         // Enough stock for entering `printing` to actually deduct it — the same warehouse
@@ -620,6 +668,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $this->shelfOf($item),
         ]);
         $headers = $this->foreman();
+        $this->move($headers, $order, OrderStatus::NoDeposit)->assertOk();
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Shortage->value,
@@ -728,29 +777,27 @@ class OrderWorkflowTest extends TestCase
     }
 
     /**
-     * The design step is **optional**, whatever the order says its artwork source is.
+     * The warehouse gathers goods for an approved file only (owner's status document,
+     * 2026-11-15, rule 2).
      *
-     * This used to be a guard: an order whose `design_source` was anything but `none` could not
-     * be printed without an approved version. It was removed rather than narrowed, because the
-     * cases it refused are ordinary work — plain (سادة) bags with nothing printed on them, and
-     * jobs whose artwork was settled before the order was ever taken. A guard that fires on the
-     * normal case only teaches staff to invent a version to get past it.
-     *
-     * `design_source` still decides whether a design fee may be charged; it no longer decides
-     * what the press is allowed to do.
+     * **A guard like this existed once and was removed**, because it fired on ordinary work:
+     * plain (سادة) bags, and artwork settled before the order was taken. Neither case comes back
+     * with it. Plain bags walk the no-production road and never reach «تجهيز»; a version nobody
+     * approved is approved by a tick on the same move, so it is one tap rather than a second
+     * screen. What it refuses is an order marked as having artwork with no version to approve.
      */
-    public function test_printing_does_not_require_an_approved_design(): void
+    public function test_the_warehouse_waits_for_an_approved_design(): void
     {
-        // Arrange — the customer supplied the artwork, and no version has been approved here.
+        // Arrange — the customer is supplying the artwork, and no version is on the order yet.
         [$order] = $this->orderNeedingArtwork();
         $headers = $this->foreman();
 
-        // Act — already in the designer's queue, so it goes to the press directly rather than
-        // back through the handover: «جاهزة للطباعة» is how an order *enters* production.
-        $response = $this->move($headers, $order, OrderStatus::Printing);
+        // Act
+        $response = $this->move($headers, $order, OrderStatus::Preparing);
 
         // Assert
-        $response->assertOk()->assertJsonPath('data.status', 'printing');
+        $response->assertStatus(422);
+        $this->assertSame(OrderStatus::Designing, $order->fresh()->status);
     }
 
     public function test_an_order_skips_the_design_step_entirely(): void
@@ -918,7 +965,7 @@ class OrderWorkflowTest extends TestCase
             ->assertJsonPath('data.rejection_reason', 'الألوان غير مطابقة');
     }
 
-    public function test_approving_a_design_unblocks_printing(): void
+    public function test_approving_a_design_unblocks_the_warehouse(): void
     {
         // Arrange
         [$order, $design] = $this->orderNeedingArtwork();
@@ -934,10 +981,10 @@ class OrderWorkflowTest extends TestCase
                 'status' => OrderDesignStatus::Approved->value,
             ])->assertOk();
 
-        $response = $this->move($headers, $order->fresh(), OrderStatus::Printing);
+        $response = $this->move($headers, $order->fresh(), OrderStatus::Preparing);
 
         // Assert
-        $response->assertOk()->assertJsonPath('data.status', 'printing');
+        $response->assertOk()->assertJsonPath('data.status', 'preparing');
     }
 
     public function test_a_version_is_judged_once(): void
@@ -1062,6 +1109,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $this->shelfOf($item),
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1098,6 +1146,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $this->shelfOf($item),
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1239,6 +1288,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $this->shelfOf($item),
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1250,7 +1300,7 @@ class OrderWorkflowTest extends TestCase
         $response->assertStatus(422);
         $this->assertSame('5.000', $this->stockOf($warehouse, $this->shelfOf($item)));
         $this->assertDatabaseCount('stock_movements', 0);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Preparing, $order->fresh()->status);
         $this->assertNull($order->fresh()->stock_deducted_at);
     }
 
@@ -1275,6 +1325,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $shelf->id,
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1327,6 +1378,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $shelf->id,
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1372,6 +1424,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $shelf->id,
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1420,6 +1473,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $shipping->id,
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
@@ -1435,7 +1489,7 @@ class OrderWorkflowTest extends TestCase
             '«كيس نايلون 30*40»: المتوفر (0.000) والمطلوب (80.000)',
         ], $response->json('errors')['fields.warehouse_id']);
         $this->assertDatabaseCount('stock_movements', 0);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Preparing, $order->fresh()->status);
     }
 
     public function test_two_lines_of_the_same_size_are_weighed_against_the_shelf_together(): void
@@ -1464,6 +1518,7 @@ class OrderWorkflowTest extends TestCase
             'stock_item_id' => $this->shelfOf($first),
         ]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -38,6 +39,7 @@ class OrderDepositTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -104,6 +106,9 @@ class OrderDepositTest extends TestCase
         if ($to === OrderStatus::Printing) {
             $this->givePrintableArtwork($order);
         }
+
+        // «جديدة» only asks the deposit question now — see WalksPastIntake.
+        $this->walkPastIntake($order, $to);
 
         return $this->withHeaders($headers)->post(
             "/api/v1/orders/{$order->id}/status",

@@ -43,6 +43,7 @@ use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Investors\PlainStockPurchaseTest;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -79,6 +80,7 @@ class OrderRestoreCostingTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -130,6 +132,7 @@ class OrderRestoreCostingTest extends TestCase
             'quantity' => '300.000',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::ReadyToPrint,
@@ -454,6 +457,8 @@ class OrderRestoreCostingTest extends TestCase
     /** The move that takes the stock off the shelf on the printing road. */
     private function toThePress(array $headers, Order $order, Warehouse $warehouse): TestResponse
     {
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             ['status' => OrderStatus::ReadyToPrint->value, 'fields' => ['warehouse_id' => $warehouse->getKey()]],

@@ -124,6 +124,12 @@ enum TransitionFieldType {
   @JsonValue('destination')
   destination,
 
+  /// A box the person ticks — «اعتماد التصميم رقم ٣» on the move into «تجهيز للطباعة». Sent as
+  /// `true` when ticked and left out when not. When [TransitionField.isRequired], the button stays
+  /// grey until it is ticked.
+  @JsonValue('checkbox')
+  checkbox,
+
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
   /// submitted with nothing on screen to explain why.

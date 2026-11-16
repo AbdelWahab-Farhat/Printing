@@ -116,6 +116,8 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
             // broadcast to the whole shop. See Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٦.
             OrderStatus::AwaitingDeposit,
             OrderStatus::DepositPaid,
+            OrderStatus::NoDeposit,
+            OrderStatus::Preparing,
             OrderStatus::ReadyToPrint,
             OrderStatus::Designing,
             OrderStatus::Printing,

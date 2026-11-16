@@ -92,4 +92,6 @@ const Set<String> _wireValues = {
   'confirmation',
   // «مدينة التوصيل» on «استلام مكتب» → «إعادة إرسال».
   'destination',
+  // «اعتماد التصميم» on the move into «تجهيز للطباعة».
+  'checkbox',
 };

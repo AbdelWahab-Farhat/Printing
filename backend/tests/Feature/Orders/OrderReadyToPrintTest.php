@@ -23,6 +23,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -45,6 +46,7 @@ class OrderReadyToPrintTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -78,6 +80,7 @@ class OrderReadyToPrintTest extends TestCase
         return $this->auth(
             PermissionName::ViewOrders,
             PermissionName::ManageOrders,
+            PermissionName::MoveOrderToPreparing,
             PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
@@ -153,6 +156,9 @@ class OrderReadyToPrintTest extends TestCase
             $this->givePrintableArtwork($order);
         }
 
+        // «جديدة» only asks the deposit question now — see WalksPastIntake.
+        $this->walkPastIntake($order, $to);
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter(['status' => $to->value, 'fields' => $fields ?: null]),
@@ -188,18 +194,20 @@ class OrderReadyToPrintTest extends TestCase
 
     // ─────────────────────────── the door into the press ───────────────────────────
 
-    public function test_a_new_order_is_offered_the_handover_and_not_the_press(): void
+    public function test_an_order_past_the_deposit_is_offered_the_warehouse_and_not_the_press(): void
     {
-        // Arrange
+        // Arrange — the deposit question answered.
         [$order] = $this->order($this->sellableSize());
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::Preparing);
 
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — inventory's own two moves. The press is a department away, and an order
-        // reaches it through one door rather than by somebody noticing.
-        $this->assertEqualsCanonicalizing(['ready_to_print', 'shortage'], $offered);
+        // Assert — the warehouse gathering it, the artwork, or the shortage that stops it. The
+        // press's queue is a step further, and the press itself two (owner's status document,
+        // 2026-11-15).
+        $this->assertEqualsCanonicalizing(['preparing', 'designing', 'shortage', 'cancelled'], $offered);
     }
 
     public function test_the_handover_leads_into_either_half_of_the_press(): void
@@ -253,9 +261,10 @@ class OrderReadyToPrintTest extends TestCase
         $steps = array_column($this->show($headers, $order)->json('data.progress.steps'), 'status');
 
         // Assert — every printed order passes through it, so it is a step on the road and not a
-        // detour beside it.
+        // detour beside it — after the artwork and the gathering (owner's status document,
+        // 2026-11-15).
         $this->assertSame([
-            'new', 'ready_to_print', 'designing', 'printing',
+            'new', 'designing', 'preparing', 'ready_to_print', 'printing',
             'ready', 'out_for_delivery', 'delivered', 'settled',
         ], $steps);
     }
@@ -273,7 +282,7 @@ class OrderReadyToPrintTest extends TestCase
 
         // Assert — the stock leaves here, so somewhere has to give it up.
         $response->assertStatus(422)->assertJsonValidationErrors('fields.warehouse_id');
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Preparing, $order->fresh()->status);
     }
 
     public function test_a_line_stocked_in_another_unit_must_be_weighed_before_it_is_handed_over(): void
@@ -308,6 +317,7 @@ class OrderReadyToPrintTest extends TestCase
         // Arrange — sold by the piece off a shelf counted in pieces.
         [$order, , $warehouse] = $this->order($this->sellableSize(PricingUnit::Piece));
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
 
         // Act
         $fields = array_column(
@@ -340,14 +350,14 @@ class OrderReadyToPrintTest extends TestCase
         $this->move($headers, $order, OrderStatus::Shortage, ["shortage_{$item->id}" => '100'])
             ->assertOk();
 
-        // Act — zero typed over the prefill: none of it turned up.
-        $response = $this->move($headers, $order->refresh(), OrderStatus::ReadyToPrint, [
-            'warehouse_id' => $warehouse->getKey(),
+        // Act — zero typed over the prefill: none of it turned up. Asked on the way into the
+        // warehouse, which is where the delivery note is (ORDERS-STATUS-FLOW.md §٢١).
+        $response = $this->move($headers, $order->refresh(), OrderStatus::Preparing, [
             "received_{$item->id}" => '0',
         ]);
 
-        // Assert — «جاهزة للطباعة» promises another department a complete order. The message names
-        // the size, because the person being refused is standing at the shelves.
+        // Assert — the warehouse is promised a complete order. The message names the size,
+        // because the person being refused is standing at the shelves.
         $response->assertStatus(422);
         $this->assertStringContainsString('25*35', $response->json('message'));
         $this->assertSame(OrderStatus::Shortage, $order->fresh()->status);
@@ -363,15 +373,14 @@ class OrderReadyToPrintTest extends TestCase
         $this->move($headers, $order, OrderStatus::Shortage, ["shortage_{$item->id}" => '100'])
             ->assertOk();
 
-        // Act — the whole hundred came in, on the same move that hands the order over.
-        $response = $this->move($headers, $order->refresh(), OrderStatus::ReadyToPrint, [
-            'warehouse_id' => $warehouse->getKey(),
+        // Act — the whole hundred came in, on the same move that sends the order to the warehouse.
+        $response = $this->move($headers, $order->refresh(), OrderStatus::Preparing, [
             "received_{$item->id}" => '100',
         ]);
 
         // Assert — the delivery is counted in *before* the gate judges the order, so a shortage
         // that has genuinely been resolved clears itself and passes on one move rather than two.
-        $response->assertOk()->assertJsonPath('data.status', 'ready_to_print');
+        $response->assertOk()->assertJsonPath('data.status', 'preparing');
         $this->assertNull($item->refresh()->shortage_quantity);
     }
 
@@ -589,6 +598,8 @@ class OrderReadyToPrintTest extends TestCase
         [$order, , $warehouse] = $this->order($this->sellableSize(PricingUnit::Piece, $category));
         app(ResolveOrderFlow::class)($order->load('items'));
         $headers = $this->foreman();
+        // The deposit question answered — the work is dispatched from there.
+        $this->walkPastIntake($order, OrderStatus::Ready);
 
         // Act
         $offered = array_column(
@@ -597,10 +608,10 @@ class OrderReadyToPrintTest extends TestCase
         );
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
 
-        // Assert — «جاهزة للطباعة» is a handover to a department this order never reaches, so
-        // putting it on that road would be a status naming work nobody does. Its «جاهزة» is
+        // Assert — «تجهيز» and «جاهزة للطباعة» are a department this order never reaches, so
+        // putting them on that road would be statuses naming work nobody does. Its «جاهزة» is
         // therefore still the first and only deduction, and asks for the warehouse in full.
-        $this->assertEqualsCanonicalizing(['ready', 'shortage'], $offered);
+        $this->assertEqualsCanonicalizing(['ready', 'shortage', 'cancelled'], $offered);
         $this->assertContains('warehouse_id', array_column($ready['fields'], 'key'));
 
         $this->move($headers, $order, OrderStatus::Ready, ['warehouse_id' => $warehouse->getKey()])

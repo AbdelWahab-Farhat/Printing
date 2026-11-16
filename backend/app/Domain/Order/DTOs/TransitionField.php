@@ -158,6 +158,21 @@ final class TransitionField
     }
 
     /**
+     * A box the person ticks — {@see TransitionFieldType::Checkbox}. Required means it must be
+     * ticked, not merely answered.
+     */
+    public static function checkbox(string $key, string $label, bool $required = false, ?string $hint = null): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Checkbox,
+            label: $label,
+            required: $required,
+            hint: $hint,
+        );
+    }
+
+    /**
      * تحذيرٌ يُقرأ ولا يُجاب — {@see TransitionFieldType::Notice}.
      *
      * `required: false` دائماً و`key` له رغم أنه لا يُرسَل: القائمة تُرسم بمفاتيحها، ومفتاحٌ
@@ -543,6 +558,11 @@ final class TransitionField
                 "fields.{$this->key}" => ['nullable', 'boolean'],
             ],
 
+            // Required means ticked: `accepted` takes true, 1, "1", "true", "yes" and "on".
+            TransitionFieldType::Checkbox => [
+                "fields.{$this->key}" => $this->required ? ['accepted'] : ['nullable', 'boolean'],
+            ],
+
             // A delivery city — never a branch, which would turn the move back into a pickup —
             // and a region that exists. Whether the region belongs to the city, and whether the
             // city needs one, is `ResolveOrderDestination`'s rule, the same one the edit form
@@ -716,6 +736,11 @@ final class TransitionField
             ],
             TransitionFieldType::Confirmation => [
                 "fields.{$this->key}.boolean" => 'التأكيد يجب أن يكون نعم أو لا',
+            ],
+            // The sentence says what ticking it means, so the refusal reads as the next step.
+            TransitionFieldType::Checkbox => [
+                "fields.{$this->key}.accepted" => "ضع علامة على «{$this->label}» للمتابعة",
+                "fields.{$this->key}.boolean" => "{$this->label}: نعم أو لا",
             ],
             TransitionFieldType::Destination => [
                 "fields.{$this->key}.required" => 'اختر مدينة التوصيل',
