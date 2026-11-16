@@ -204,6 +204,10 @@ abstract class DesignTicket with _$DesignTicket {
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
+
+    /// When the status last moved: what the list is ordered by, and the time on the card. Null
+    /// only from a server older than the column.
+    @JsonKey(name: 'status_changed_at') DateTime? statusChangedAt,
   }) = _DesignTicket;
 
   const DesignTicket._();

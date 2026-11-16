@@ -194,6 +194,8 @@ class DesignTicketResource extends JsonResource
 
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            // When the status last moved — what the list is ordered by, and the time on the card.
+            'status_changed_at' => $this->status_changed_at?->toIso8601String(),
         ];
     }
 

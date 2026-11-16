@@ -61,6 +61,7 @@ button the API would refuse.
 | `order_id` | nullable — a card is asked for before any order exists |
 | `title`, `description`, `instructions` | the brief |
 | `status` | the enum below; never written by a request |
+| `status_changed_at` | when `status` last moved; the list's order — see §13 |
 | `requested_by_user_id` | who asked |
 | `assigned_designer_id` | who it is **addressed to** — nullable, null = shared pool |
 | `accepted_by_user_id`, `accepted_at` | who actually **took** it |
@@ -418,6 +419,8 @@ and it must never be a move the app can offer.
 | `DesignTicketReviewTest` | the own-work refusal, note required, judged once, briefs not reviewable |
 | `DesignTicketAccessTest` | the 404s, the pool, `view_all`, customer name without a grant, the picker filter |
 | `DesignTicketHistoryTest` | audit across ticket + files + comments, the conversation, counts matching the list |
+| `DesignTicketStatusChangedAtTest` | every move stamps `status_changed_at`, acceptance included; messages, reads and edits do not; the list order; the order screen's date |
+| `DesignTicketStatusChangedAtMigrationTest` | how existing tickets are dated when the column is added |
 
 **The two roles are built from permissions rather than from the seeded role.** A test that asked
 for «مصمم» would be asserting that `RoleSeeder` is correct, which is a different claim — and the
@@ -426,6 +429,44 @@ charge is grants, so that is what the tests hand out.
 
 Real personal access tokens rather than `Sanctum::actingAs()`, which produces a `TransientToken` and
 skips the path the app actually uses.
+
+---
+
+## 13. The list order: last status change first (2026-11-16)
+
+`GET design-tickets` is ordered by `status_changed_at` desc, then `id` desc. It used to be `id`
+desc, which kept a month-old ticket that had just come back for review buried under newer ones.
+
+**Why a column, and not `updated_at`.** `updated_at` also moves on a pay edit, a title edit, and
+every time somebody opens the conversation, because the read markers live on the ticket row. A list
+ordered by it would reshuffle for reasons that say nothing about where the work stands.
+
+**What stamps it.** The model, on create and on every save where `status` is dirty. That covers
+create, submit, review (approve or request changes), withdraw, cancel and the release back to the
+pool. `AcceptDesignTicket` writes the status with a query-builder `update()`, which fires no model
+events, so it sets the column itself.
+
+**What does not.** Messages, read receipts, edits and pay changes. Unread messages have their own
+badge on the card; letting them reorder the list would make it a chat inbox.
+
+**Existing tickets** were dated by the migration with the latest of `created_at`, `accepted_at`,
+`completed_at` and the newest audit entry whose changed attributes include `status`. Acceptance
+never reached the audit log as a status change (see above), which is why `accepted_at` is in the
+list.
+
+**Shown, not just used.** The resource returns `status_changed_at`, and the card draws it as
+«منذ 3 ساعات» beside the code; without it an old ticket jumping to the top reads as a random order.
+The column is hidden on the history screen (`AuditHiddenAttributes`), since the status line in the
+same entry already carries the time.
+
+**The order screen's «التذاكر المرتبطة»** dates a design ticket by `status_changed_at` too, for the
+same `updated_at` reason.
+
+**Left as is.**
+- Accepting from the list patches the row where it stands, so a designer working down the queue
+  keeps their place. It moves to the top on the next refresh.
+- A status change while somebody is between pages can show a row twice or skip one until they
+  refresh. The internal tickets list, ordered by last message, already behaves this way.
 
 ---
 

@@ -42,6 +42,9 @@ class _StubRepository implements DesignTicketRepository {
   /// حالة الصفّ في القائمة.
   DesignTicketStatus status = DesignTicketStatus.fresh;
 
+  /// When the row's status last moved, or null for a server older than the column.
+  DateTime? statusChangedAt;
+
   /// The ids the accept endpoint was called with.
   final List<int> accepted = <int>[];
 
@@ -75,6 +78,7 @@ class _StubRepository implements DesignTicketRepository {
             canAccept: offersAcceptance,
             latestVersion: latestVersion,
             designerPay: pay,
+            statusChangedAt: statusChangedAt,
           ),
         ],
         meta: const PageMeta(currentPage: 1, perPage: 20, lastPage: 1, total: 1),
@@ -549,6 +553,33 @@ void main() {
 
     // Assert
     expect(find.byType(DesignTicketFileThumbnail), findsOneWidget);
+  });
+
+  testWidgets('the row says how long ago its status last moved', (tester) async {
+    // Arrange — the list is ordered by this, so the card has to say it.
+    signInWith([AppPermission.viewDesignTickets, AppPermission.viewOrders]);
+    repository.statusChangedAt = DateTime.now().subtract(const Duration(hours: 3, minutes: 5));
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.text('منذ 3 ساعات'), findsOneWidget);
+  });
+
+  testWidgets('a row from an older server, with no such time, says nothing', (tester) async {
+    // Arrange
+    signInWith([AppPermission.viewDesignTickets, AppPermission.viewOrders]);
+    repository.statusChangedAt = null;
+
+    // Act
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.textContaining('منذ'), findsNothing);
+    expect(find.text('D1'), findsOneWidget);
   });
 
   testWidgets('a ticket nobody has drawn for carries no square', (tester) async {

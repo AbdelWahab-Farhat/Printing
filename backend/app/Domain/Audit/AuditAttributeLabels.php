@@ -882,6 +882,9 @@ final class AuditAttributeLabels
             'approved_customer_design_id' => 'التصميم المعتمد في حساب الزبون',
             'cancellation_reason' => 'سبب الإلغاء',
             'print_colors' => 'ألوان الطباعة المطلوبة',
+            // Hidden on the history screen (`AuditHiddenAttributes`), named for the same reason
+            // the read markers below are.
+            'status_changed_at' => 'وقت آخر تغيير للحالة',
             // خارج السجلّ (`DesignTicket::attributesNeverWorthLogging()`)، ومسمّاةٌ لأن الاختبار
             // يسأل عن كلّ عمود — ولأن الاسم الصحيح لا يكلّف شيئاً لو دخلت يوماً.
             'requester_read_message_id' => 'قرأ الطالب حتى الرسالة',
