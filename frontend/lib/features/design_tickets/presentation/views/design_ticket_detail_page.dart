@@ -9,6 +9,7 @@ import 'package:dayaa/core/print_colors/print_colors_editor.dart';
 import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
+import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
@@ -24,7 +25,6 @@ import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_tick
 import 'package:dayaa/features/design_tickets/presentation/widgets/accept_ticket_prompt.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_attachments.dart';
-import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_order_chip.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/edit_ticket_sheet.dart';
@@ -478,17 +478,51 @@ class _DesignTicketDetailView extends StatelessWidget {
             ),
             label: const Text('المحادثة'),
           ),
+          // Design ب (2026-11-15) without its status track: header, the next step, the two ways
+          // out, the people, then the brief, the attachments and the versions on a rail.
           body: RefreshIndicator(
             onRefresh: cubit.load,
             child: ListView(
-              // ٩٦ في الأسفل لا ٣٢: آخرُ زرٍّ في الصفحة يُسحب فوق الزرّ العائم لا تحته.
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 96.h),
+              // 96 at the bottom, not 32: the last row scrolls above the floating button.
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 96.h),
               children: [
                 _Header(ticket: ticket),
-                SizedBox(height: 16.h),
+                if (_NextStep.offers(ticket)) ...[
+                  SizedBox(height: 14.h),
+                  _NextStep(
+                    ticket: ticket,
+                    isWorking: state.isWorking,
+                    onAccept: () => _accept(context, ticket),
+                    onSubmit: () => _upload(context, asVersion: true),
+                    onReview: () {
+                      final pending = ticket.pendingVersion;
+
+                      if (pending != null) _review(context, ticket, pending);
+                    },
+                    onWithdraw: () {
+                      final pending = ticket.pendingVersion;
+
+                      if (pending != null) _withdraw(context, pending);
+                    },
+                  ),
+                ],
+                if (_WaysOut.hasAny(ticket)) ...[
+                  SizedBox(height: 14.h),
+                  _WaysOut(ticket: ticket),
+                ],
+                if (_People.hasAny(ticket)) ...[
+                  SizedBox(height: 10.h),
+                  _People(
+                    ticket: ticket,
+                    isWorking: state.isWorking,
+                    onAssign: () => _assign(context, ticket),
+                  ),
+                ],
+                SizedBox(height: 24.h),
                 _Brief(ticket: ticket),
-                if (ticket.attachments.isNotEmpty) ...[
-                  SizedBox(height: 16.h),
+                // Shown to a manager even when empty: the «add» tile lives in it.
+                if (ticket.attachments.isNotEmpty || ticket.canManage) ...[
+                  SizedBox(height: 24.h),
                   DesignTicketAttachments(
                     files: ticket.attachments,
                     // Null hides the delete affordance rather than drawing one that refuses:
@@ -496,31 +530,19 @@ class _DesignTicketDetailView extends StatelessWidget {
                     onRemove: ticket.canManage
                         ? (file) => _removeAttachment(context, file)
                         : null,
+                    onAdd: ticket.canManage
+                        ? () {
+                            // A tile has no busy state of its own, so a second tap while an
+                            // upload is running is ignored here.
+                            if (!state.isWorking) unawaited(_upload(context, asVersion: false));
+                          }
+                        : null,
                   ),
                 ],
-                SizedBox(height: 16.h),
+                SizedBox(height: 24.h),
                 _Versions(
                   ticket: ticket,
                   onReview: (version) => _review(context, ticket, version),
-                ),
-                SizedBox(height: 20.h),
-                _Actions(
-                  ticket: ticket,
-                  isWorking: state.isWorking,
-                  onAssign: () => _assign(context, ticket),
-                  onAccept: () => _accept(context, ticket),
-                  onSubmit: () => _upload(context, asVersion: true),
-                  onAttach: () => _upload(context, asVersion: false),
-                  onReview: () {
-                    final pending = ticket.pendingVersion;
-
-                    if (pending != null) _review(context, ticket, pending);
-                  },
-                  onWithdraw: () {
-                    final pending = ticket.pendingVersion;
-
-                    if (pending != null) _withdraw(context, pending);
-                  },
                 ),
               ],
             ),
@@ -531,6 +553,10 @@ class _DesignTicketDetailView extends StatelessWidget {
   }
 }
 
+/// The title, the status beside it, and the customer's name under it.
+///
+/// **The current status only.** Design ب drew a four-step track here; the owner kept the screen
+/// and dropped the track (2026-11-15) — the step the ticket stands on is the whole answer.
 class _Header extends StatelessWidget {
   const _Header({required this.ticket});
 
@@ -540,12 +566,6 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final text = context.textTheme;
-
-    // الطريق إلى صفحة المصمم ومحفظته، كرابط العميل: لمن تفتح له تلك الصفحة فقط.
-    VoidCallback? toEmployee(DesignTicketActor person) =>
-        sl<Session>().can(AppPermission.viewUsers)
-        ? () => context.push(Routes.employee(person.id))
-        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,171 +580,419 @@ class _Header extends StatelessWidget {
               ),
             ),
             SizedBox(width: 8.w),
-            DesignTicketStatusPill(status: ticket.status, label: ticket.statusLabel),
+            Padding(
+              padding: EdgeInsets.only(top: 4.h),
+              child: DesignTicketStatusPill(status: ticket.status, label: ticket.statusLabel),
+            ),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 2.h),
         // The snapshot, never a fetched customer: a designer holds no grant on that table.
         Text(
           ticket.customerName,
           style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
-        // «تصميم طلبية»: on approval the design goes onto this order (PRINT-COLORS.md §10).
-        if (ticket.order case final order?) ...[
-          SizedBox(height: 8.h),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: DesignTicketOrderChip(
-              orderCode: order.code,
-              onTap: sl<Session>().can(AppPermission.viewOrders)
+        if (ticket.cancellationReason case final reason?) ...[
+          SizedBox(height: 12.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(14.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'سبب الإلغاء',
+                  style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                SizedBox(height: 2.h),
+                Text(reason, style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The move the server offers this reader now, under the header where the eye lands first.
+///
+/// **Drawn from the `can*` flags, never from the status.** The flags already fold in the reader's
+/// role on this ticket and, for the review, whether they uploaded the version themselves — which
+/// no status can say.
+class _NextStep extends StatelessWidget {
+  const _NextStep({
+    required this.ticket,
+    required this.isWorking,
+    required this.onAccept,
+    required this.onReview,
+    required this.onWithdraw,
+    required this.onSubmit,
+  });
+
+  final DesignTicket ticket;
+  final bool isWorking;
+  final VoidCallback onAccept;
+  final VoidCallback onReview;
+  final VoidCallback onWithdraw;
+  final VoidCallback onSubmit;
+
+  /// Whether there is anything to draw. A closed ticket answers no, which is what
+  /// «read-only after closing» looks like.
+  static bool offers(DesignTicket ticket) =>
+      ticket.canAccept || ticket.canReview || ticket.canWithdraw || ticket.canSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final buttons = <Widget>[
+      if (ticket.canAccept)
+        AppButton(label: 'قبول الطلب', isLoading: isWorking, onPressed: onAccept),
+      if (ticket.canReview)
+        AppButton(label: 'مراجعة التصميم', isLoading: isWorking, onPressed: onReview),
+      // The designer who uploaded the wrong file takes it back, and the upload button returns.
+      if (ticket.canWithdraw)
+        AppButton.tonal(label: 'سحب النسخة', isLoading: isWorking, onPressed: onWithdraw),
+      if (ticket.canSubmit)
+        AppButton(
+          label: ticket.versionCount == 0 ? 'رفع التصميم' : 'رفع نسخة معدّلة',
+          isLoading: isWorking,
+          onPressed: onSubmit,
+        ),
+    ];
+
+    return Column(
+      children: [
+        for (var index = 0; index < buttons.length; index++) ...[
+          if (index > 0) SizedBox(height: 10.h),
+          buttons[index],
+        ],
+      ],
+    );
+  }
+}
+
+/// The customer and the order: the two places a design ticket leads back to, side by side.
+///
+/// **A tile opens its page only for a reader holding that page's grant.** The ticket carries the
+/// customer as a snapshot precisely so a designer needs no grant on customers, and a link that
+/// answers 403 is worse than no link. The order follows the same rule on `orders.view`. Without
+/// the grant the tile still names the code, which is what somebody says on the telephone.
+class _WaysOut extends StatelessWidget {
+  const _WaysOut({required this.ticket});
+
+  final DesignTicket ticket;
+
+  static bool hasAny(DesignTicket ticket) => ticket.customerCode != null || ticket.order != null;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = sl<Session>();
+    final customerCode = ticket.customerCode;
+    final order = ticket.order;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (customerCode != null)
+          Expanded(
+            child: _LinkTile(
+              icon: AppIcons.person,
+              label: 'العميل',
+              value: customerCode,
+              onTap: session.can(AppPermission.viewCustomers)
+                  ? () => context.push(Routes.customer(ticket.customerId))
+                  : null,
+            ),
+          ),
+        if (customerCode != null && order != null) SizedBox(width: 10.w),
+        // On approval the design goes onto this order (PRINT-COLORS.md §10).
+        if (order != null)
+          Expanded(
+            child: _LinkTile(
+              icon: AppIcons.orders,
+              label: 'الطلبية',
+              // Bare, like an order number everywhere: the label says what the number is.
+              value: order.code,
+              onTap: session.can(AppPermission.viewOrders)
                   ? () => context.push(Routes.order(order.id))
                   : null,
             ),
           ),
-        ],
-        SizedBox(height: 14.h),
-        // **Two to a line, label over value, at reading size.** These were a `Wrap` of
-        // «العميل: A713   المصمم: محمد علي   استلمها: …» in `bodySmall` — four facts crushed
-        // onto one 12sp line where the labels and the names ran together and nothing could be
-        // found by glancing. Paired rows give each one a column of its own and let the value
-        // take body size, which is what every other list in this app settled on.
-        _Facts(
-          facts: [
-            // **The customer's code, and it is the way back to them.** «طلبها: فرحات» stood
-            // here — who keyed the request in, which the history already records and which
-            // nobody on this screen has to act on. «A713» is what somebody says on the
-            // telephone, and tapping it opens the account the design will land on.
-            //
-            // The tap is offered only to a reader holding `customers.view`: the ticket carries
-            // the customer as a snapshot precisely so a designer needs no grant on that table,
-            // and a link that 403s is worse than no link.
-            if (ticket.customerCode case final code?)
-              _Fact(
-                label: 'العميل',
-                value: code,
-                onTap: sl<Session>().can(AppPermission.viewCustomers)
-                    ? () => context.push(Routes.customer(ticket.customerId))
-                    : null,
-              ),
-            // **Two facts, not one.** Who it is addressed to, and who actually took it — a
-            // reassignment moves the first and never the second.
-            if (ticket.designer case final designer?)
-              _Fact(label: 'المصمم', value: designer.name, onTap: toEmployee(designer)),
-            if (ticket.acceptedBy case final taker?)
-              _Fact(label: 'استلمها', value: taker.name, onTap: toEmployee(taker)),
-            if (ticket.approvedBy != null)
-              _Fact(label: 'اعتمدها', value: ticket.approvedBy!.name),
-            // **«المصمم», not «الحالة».** It was labelled «الحالة» and sat a centimetre under
-            // the pill that says «جديد» — which is the status — so one screen used the same
-            // word for two different things. This answers who is drawing it, and the honest
-            // answer while nobody has claimed it is that it is still in the pool.
-            if (ticket.isInSharedPool)
-              const _Fact(label: 'المصمم', value: 'الطابور المشترك'),
-            // يغيب عمّن لا يقرؤه ولا يكتبه، و«لم يُحدَّد» لمن يكتبه.
-            if (ticket.designerPay != null || ticket.canSetPay)
-              _Fact(
-                label: 'أجر التصميم',
-                value: switch (ticket.designerPay) {
-                  final pay? => '${groupedDecimal(pay)} د.ل',
-                  null => 'لم يُحدَّد',
-                },
-              ),
-          ],
-        ),
-        if (ticket.cancellationReason != null) ...[
-          SizedBox(height: 12.h),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Text('سبب الإلغاء: ${ticket.cancellationReason}', style: text.bodySmall),
-          ),
-        ],
       ],
     );
   }
 }
 
-/// The header's facts, two to a line.
+/// One way out: an icon, what it is, and its code.
 ///
-/// A `Column` of `Row`s rather than a `Wrap`: a wrap sizes each child to its own text, so
-/// «العميل: A713» and «اعتمدها: عبدالوهاب فرحات» end up different widths and the second column
-/// never lines up. Pairs of `Expanded` give every fact the same half of the row.
-class _Facts extends StatelessWidget {
-  const _Facts({required this.facts});
+/// **A link looks like one.** The code takes the primary colour and a chevron follows it; a tile
+/// with no [onTap] keeps neither, so a tile that does nothing never invites a tap.
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({required this.icon, required this.label, required this.value, this.onTap});
 
-  final List<_Fact> facts;
-
-  @override
-  Widget build(BuildContext context) {
-    if (facts.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var row = 0; row < facts.length; row += 2) ...[
-          if (row > 0) SizedBox(height: 12.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: facts[row]),
-              SizedBox(width: 12.w),
-              // An empty half rather than a stretched one: a lone fact on the last line keeps
-              // the column it would have had if there were two.
-              Expanded(
-                child: row + 1 < facts.length ? facts[row + 1] : const SizedBox.shrink(),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// One fact: what it is, then what it says.
-class _Fact extends StatelessWidget {
-  const _Fact({required this.label, required this.value, this.onTap});
-
+  final IconData icon;
   final String label;
   final String value;
-
-  /// Where the value leads, when it leads anywhere. Null leaves the fact as plain text — and it
-  /// is null on most of them, so the one that *is* a link has to look like one: it takes the
-  /// primary colour and an underline rather than only becoming tappable, which nothing on a
-  /// line of grey text advertises.
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final text = context.textTheme;
     final scheme = context.colorScheme;
+    final text = context.textTheme;
+    final isLink = onTap != null;
 
-    final fact = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-        SizedBox(height: 2.h),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: text.bodyMedium?.copyWith(
-            color: onTap == null ? scheme.onSurface : scheme.primary,
-            fontWeight: FontWeight.w700,
-            decoration: onTap == null ? null : TextDecoration.underline,
-            decorationColor: scheme.primary,
+    return Material(
+      color: scheme.surfaceContainer,
+      borderRadius: BorderRadius.circular(18.r),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(12.w),
+          child: Row(
+            children: [
+              Container(
+                width: 40.r,
+                height: 40.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isLink ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                ),
+                child: Icon(
+                  icon,
+                  size: 20.r,
+                  color: isLink ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: isLink ? scheme.primary : scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isLink) Icon(AppIcons.forward, size: 18.r, color: scheme.primary),
+            ],
           ),
         ),
-      ],
+      ),
     );
+  }
+}
 
-    return onTap == null
-        ? fact
-        : InkWell(onTap: onTap, borderRadius: BorderRadius.circular(6.r), child: fact);
+/// Who holds the ticket — addressed to, taken by, approved by — and the pay that goes with it.
+///
+/// **[DesignTicket.designer] and [DesignTicket.acceptedBy] are two facts.** The first is who the
+/// ticket is addressed to, the second who actually took it; a reassignment moves the first and
+/// never the second. They share one row only when they are the same person.
+class _People extends StatelessWidget {
+  const _People({required this.ticket, required this.isWorking, required this.onAssign});
+
+  final DesignTicket ticket;
+  final bool isWorking;
+  final VoidCallback onAssign;
+
+  static bool hasAny(DesignTicket ticket) =>
+      ticket.isInSharedPool ||
+      ticket.designer != null ||
+      ticket.acceptedBy != null ||
+      ticket.approvedBy != null ||
+      ticket.designerPay != null ||
+      ticket.canSetPay ||
+      ticket.canAssign;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    // The way to the employee's page and wallet, like the customer's tile: only for a reader
+    // that page opens for.
+    VoidCallback? toEmployee(DesignTicketActor person) =>
+        sl<Session>().can(AppPermission.viewUsers)
+        ? () => context.push(Routes.employee(person.id))
+        : null;
+
+    final designer = ticket.designer;
+    final taker = ticket.acceptedBy;
+
+    final rows = <Widget>[
+      if (ticket.isInSharedPool)
+        const _PersonRow.pool()
+      else if (designer != null && taker != null && designer.id == taker.id)
+        _PersonRow(person: designer, role: 'المصمم · استلمها', onTap: toEmployee(designer))
+      else ...[
+        if (designer != null)
+          _PersonRow(person: designer, role: 'المصمم', onTap: toEmployee(designer)),
+        if (taker != null) _PersonRow(person: taker, role: 'استلمها', onTap: toEmployee(taker)),
+      ],
+      if (ticket.approvedBy case final approver?) _PersonRow(person: approver, role: 'اعتمدها'),
+      // Absent for a reader who neither reads nor writes it; «not set» for one who writes it.
+      if (ticket.designerPay != null || ticket.canSetPay)
+        _PayRow(
+          value: switch (ticket.designerPay) {
+            final pay? => '${groupedDecimal(pay)} د.ل',
+            null => 'لم يُحدَّد',
+          },
+        ),
+    ];
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < rows.length; index++) ...[
+            if (index > 0)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: scheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            rows[index],
+          ],
+          if (ticket.canAssign)
+            Padding(
+              padding: EdgeInsets.only(top: rows.isEmpty ? 16.h : 4.h, bottom: 16.h),
+              child: AppButton.tonal(
+                label: ticket.isInSharedPool ? 'إسناد إلى مصمم' : 'تغيير المصمم',
+                isLoading: isWorking,
+                // **Dead while a version is waiting on a verdict.** Moving the ticket at «under
+                // review» hands somebody a design they did not draw and are about to be judged
+                // on. Judge the version first: approval closes the ticket, a change request
+                // sends it back to «in progress» and this button wakes up again.
+                onPressed: ticket.status == DesignTicketStatus.underReview ? null : onAssign,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One person on the ticket: the initial in a circle, the name, and the role under it.
+class _PersonRow extends StatelessWidget {
+  const _PersonRow({required DesignTicketActor this.person, required this.role, this.onTap});
+
+  /// Addressed to nobody and taken by nobody — the honest answer to «who is drawing it».
+  const _PersonRow.pool() : person = null, role = 'المصمم', onTap = null;
+
+  final DesignTicketActor? person;
+  final String role;
+
+  /// Where the name leads, when it leads anywhere. A link takes the primary colour and a chevron.
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final text = context.textTheme;
+    final name = person?.name ?? 'الطابور المشترك';
+    final isLink = onTap != null;
+
+    final avatar = person == null
+        ? Container(
+            width: 40.r,
+            height: 40.r,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: scheme.outline),
+            ),
+            child: Icon(AppIcons.unassigned, size: 20.r, color: scheme.onSurfaceVariant),
+          )
+        : Container(
+            width: 40.r,
+            height: 40.r,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.secondaryContainer),
+            child: Text(
+              name.isEmpty ? '' : name.characters.first,
+              style: text.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.onSecondaryContainer,
+              ),
+            ),
+          );
+
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: 64.h),
+        child: Row(
+          children: [
+            avatar,
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: isLink ? scheme.primary : scheme.onSurface,
+                    ),
+                  ),
+                  Text(role, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            if (isLink) Icon(AppIcons.forward, size: 18.r, color: scheme.primary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «أجر التصميم»: a figure that only reads. The pencil in the app bar is the way to change it.
+class _PayRow extends StatelessWidget {
+  const _PayRow({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = context.textTheme;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: 56.h),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'أجر التصميم',
+              style: text.bodyMedium?.copyWith(color: context.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          Text(value, style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
   }
 }
 
@@ -745,21 +1013,24 @@ class _Brief extends StatelessWidget {
         // opened — a split nobody filling the form could act on, so it got the request cut down
         // the middle and made the designer read two blocks to know what was asked. The form
         // asks one question now; see `DesignTicketFormPage`.
-        Text('الطلب', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+        Text('الطلب', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
         SizedBox(height: 6.h),
-        Text(ticket.description, style: text.bodyMedium),
+        Text(ticket.description, style: text.bodyMedium?.copyWith(height: 1.7)),
         // **Drawn under the same heading rather than dropped.** Nothing writes `instructions`
         // any more, but a ticket raised before the merge still carries one, and hiding words
         // somebody typed is worse than an extra paragraph.
         if (ticket.instructions case final instructions? when instructions.isNotEmpty) ...[
           SizedBox(height: 6.h),
-          Text(instructions, style: text.bodyMedium),
+          Text(instructions, style: text.bodyMedium?.copyWith(height: 1.7)),
         ],
         // What the customer asked the inks to be. Under the request, because it is part of it;
         // each version below says what it was actually drawn in.
         if (ticket.printColors.isNotEmpty) ...[
           SizedBox(height: 12.h),
-          Text('ألوان الطباعة المطلوبة', style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'ألوان الطباعة المطلوبة',
+            style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
           SizedBox(height: 6.h),
           PrintColorsView(colors: ticket.printColors),
         ],
@@ -768,145 +1039,137 @@ class _Brief extends StatelessWidget {
   }
 }
 
+/// Every version ever uploaded, newest first, on a rail — each dot coloured by its verdict.
 class _Versions extends StatelessWidget {
   const _Versions({required this.ticket, required this.onReview});
 
   final DesignTicket ticket;
   final void Function(DesignTicketFile version) onReview;
 
+  Color _dot(ColorScheme scheme, DesignTicketFile version) => switch (version.status) {
+    DesignSubmissionStatus.approved => scheme.paid,
+    DesignSubmissionStatus.changesRequested => scheme.error,
+    DesignSubmissionStatus.proposed => scheme.tertiary,
+    _ => scheme.outline,
+  };
+
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
     final text = context.textTheme;
+
+    // **None is ever removed.** That is what «keep every earlier version» looks like on a
+    // screen. The API sends them oldest first — `newestVersion` reads `.last` — so the flip is
+    // here and only here.
+    final versions = ticket.versions.reversed.toList(growable: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'التصاميم (${ticket.versionCount})',
-          style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
-        SizedBox(height: 8.h),
-        if (ticket.versions.isEmpty)
-          Text(
-            'لم يُرفع أي تصميم بعد',
-            style: text.bodySmall?.copyWith(color: context.colorScheme.onSurfaceVariant),
+        SizedBox(height: 12.h),
+        if (versions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 22.h, horizontal: 12.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18.r),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Text(
+              'لم يُرفع أي تصميم بعد',
+              textAlign: TextAlign.center,
+              style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
           )
         else
-          // **Every version ever uploaded, newest first, and none is ever removed.** That is what
-          // «الاحتفاظ بجميع نسخ التصميم السابقة» looks like on a screen. The API sends them
-          // oldest first — `newestVersion` reads `.last` — so the flip is here and only here.
-          for (final version in ticket.versions.reversed)
-            DesignVersionTile(
-              version: version,
-              onTap: () {
-                if (version.isAwaitingReview && ticket.canReview) {
-                  onReview(version);
-
-                  return;
-                }
-
-                // **Every other tap opens the picture**, through the same viewer the list card
-                // uses. A tile that did nothing at all for anybody who could not judge it —
-                // the designer who drew it, or anybody reading a closed ticket — was a
-                // thumbnail too small to see and no way to make it bigger.
-                //
-                // The whole conversation is handed over rather than the one tile, so the
-                // reviewer swipes between rounds instead of closing and reopening: comparing
-                // «قبل» with «بعد» is the reason to open one at all.
-                final pictures = [
-                  for (final file in ticket.versions.reversed)
-                    if (file.thumbnailUrl ?? file.fileUrl case final url?) (file, url),
-                ];
-
-                unawaited(
-                  openImageViewer(
-                    context,
-                    urls: [for (final (_, url) in pictures) url],
-                    initialIndex: pictures.indexWhere((pair) => pair.$1.id == version.id),
-                    cacheKeys: [
-                      for (final (file, _) in pictures) 'design-ticket-file-${file.id}',
-                    ],
-                  ),
-                );
-              },
+          for (var index = 0; index < versions.length; index++)
+            _railed(
+              context,
+              version: versions[index],
+              isFirst: index == 0,
+              isLast: index == versions.length - 1,
+              tile: Opacity(
+                // Kept in the record under its number, but no longer in play.
+                opacity: versions[index].isWithdrawn ? 0.55 : 1,
+                child: DesignVersionTile(
+                  version: versions[index],
+                  onTap: () => _open(context, versions[index]),
+                ),
+              ),
             ),
       ],
     );
   }
-}
 
-class _Actions extends StatelessWidget {
-  const _Actions({
-    required this.ticket,
-    required this.isWorking,
-    required this.onAssign,
-    required this.onAccept,
-    required this.onSubmit,
-    required this.onAttach,
-    required this.onReview,
-    required this.onWithdraw,
-  });
+  /// The rail is drawn beside the tile rather than measured against it: a `Stack` sized by the
+  /// tile, so no intrinsic-height pass runs over the thumbnail and the colour chips.
+  Widget _railed(
+    BuildContext context, {
+    required DesignTicketFile version,
+    required bool isFirst,
+    required bool isLast,
+    required Widget tile,
+  }) {
+    final scheme = context.colorScheme;
+    final dotTop = 22.h;
+    final dotSize = 12.r;
+    final dotCentre = dotTop + dotSize / 2;
+    final rail = scheme.surfaceContainerHighest;
 
-  final DesignTicket ticket;
-  final bool isWorking;
-  final VoidCallback onAssign;
-  final VoidCallback onAccept;
-  final VoidCallback onSubmit;
-  final VoidCallback onAttach;
-  final VoidCallback onReview;
-  final VoidCallback onWithdraw;
+    return Stack(
+      children: [
+        if (!(isFirst && isLast))
+          PositionedDirectional(
+            start: 5.w,
+            top: isFirst ? dotCentre : 0,
+            bottom: isLast ? null : 0,
+            height: isLast ? dotCentre : null,
+            child: Container(width: 2, color: rail),
+          ),
+        PositionedDirectional(
+          start: 0,
+          top: dotTop,
+          child: Container(
+            width: dotSize,
+            height: dotSize,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: _dot(scheme, version)),
+          ),
+        ),
+        Padding(padding: EdgeInsetsDirectional.only(start: 24.w), child: tile),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    // Nothing the server says this reader may do — so nothing is drawn. A closed ticket lands
-    // here too, which is what «بعد الإغلاق: قراءة فقط» looks like.
-    if (!ticket.canAccept &&
-        !ticket.canSubmit &&
-        !ticket.canReview &&
-        !ticket.canWithdraw &&
-        !ticket.canManage) {
-      return const SizedBox.shrink();
+  void _open(BuildContext context, DesignTicketFile version) {
+    if (version.isAwaitingReview && ticket.canReview) {
+      onReview(version);
+
+      return;
     }
 
-    return Column(
-      children: [
-        if (ticket.canAccept)
-          AppButton(label: 'قبول الطلب', isLoading: isWorking, onPressed: onAccept),
-        if (ticket.canSubmit) ...[
-          SizedBox(height: 10.h),
-          AppButton(
-            label: ticket.versionCount == 0 ? 'رفع التصميم' : 'رفع نسخة معدّلة',
-            isLoading: isWorking,
-            onPressed: onSubmit,
-          ),
-        ],
-        if (ticket.canReview) ...[
-          SizedBox(height: 10.h),
-          AppButton(label: 'مراجعة التصميم', isLoading: isWorking, onPressed: onReview),
-        ],
-        // للمصمّم الذي رفع ملفاً خطأً: يسحبه بنفسه، فيعود زرُّ الرفع.
-        if (ticket.canWithdraw) ...[
-          SizedBox(height: 10.h),
-          AppButton.tonal(label: 'سحب النسخة', isLoading: isWorking, onPressed: onWithdraw),
-        ],
-        if (ticket.canAssign) ...[
-          SizedBox(height: 10.h),
-          AppButton.tonal(
-            label: ticket.isInSharedPool ? 'إسناد إلى مصمم' : 'تغيير المصمم',
-            isLoading: isWorking,
-            // **Dead while a version is waiting on a verdict.** Moving the ticket to somebody
-            // else at «بانتظار المراجعة» hands them a design they did not draw and are about
-            // to be judged on, and leaves the person who did draw it holding nothing. Judge
-            // the version first — «اعتماد» closes the ticket, «تعديل مطلوب» sends it back to
-            // «قيد التصميم» and this button wakes up again.
-            onPressed: ticket.status == DesignTicketStatus.underReview ? null : onAssign,
-          ),
-        ],
-        if (ticket.canManage) ...[
-          SizedBox(height: 10.h),
-          AppButton.tonal(label: 'إضافة مرفق', isLoading: isWorking, onPressed: onAttach),
-        ],
-      ],
+    // **Every other tap opens the picture**, through the same viewer the list card uses. A tile
+    // that did nothing for anybody who could not judge it — the designer who drew it, or anybody
+    // reading a closed ticket — was a thumbnail too small to see and no way to make it bigger.
+    //
+    // The whole conversation is handed over rather than the one tile, so the reviewer swipes
+    // between rounds instead of closing and reopening: comparing «before» with «after» is the
+    // reason to open one at all.
+    final pictures = [
+      for (final file in ticket.versions.reversed)
+        if (file.thumbnailUrl ?? file.fileUrl case final url?) (file, url),
+    ];
+
+    unawaited(
+      openImageViewer(
+        context,
+        urls: [for (final (_, url) in pictures) url],
+        initialIndex: pictures.indexWhere((pair) => pair.$1.id == version.id),
+        cacheKeys: [for (final (file, _) in pictures) 'design-ticket-file-${file.id}'],
+      ),
     );
   }
 }

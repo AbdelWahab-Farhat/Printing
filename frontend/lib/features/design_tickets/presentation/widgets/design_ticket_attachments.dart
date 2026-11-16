@@ -13,19 +13,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// «المرفقات»: ما أرسله الموظف مع الطلب — الشعار، رمز QR، صورة كيسٍ مشابه — وهو ما يرسم منه
 /// المصمم.
 ///
-/// **بطاقتان في الصف، كـ«تصاميم العميل».** كانت شريطاً من صورٍ بعرض ٧٢ لا يفعل الضغط عليها
-/// شيئاً، والحذف وحده خلف ضغطةٍ مطوّلة — فالمصمم الذي أُرسل له الشعار لم يستطع أن يكبّره ولا
-/// أن يأخذه إلى هاتفه، وهما كل ما يريده منه.
+/// **One horizontal strip of 120-wide tiles** (design ب, 2026-11-15), each with its name under
+/// it — the name is what tells two PDFs apart. The «add» tile closes the strip for whoever
+/// manages the ticket. An older strip of 72-wide pictures did nothing when tapped, so the
+/// designer sent the logo could neither enlarge it nor take it to the phone; these tiles open.
 ///
 /// الضغطة تفتح الملف، و«⋯» (أو الضغطة المطوّلة) فيها فتحٌ وتحميلٌ وحذف — القاعدة نفسها التي
 /// في مكتبة العميل: ما على البطاقة يُرى، وما يغيّره في الخيارات.
 class DesignTicketAttachments extends StatelessWidget {
-  const DesignTicketAttachments({required this.files, this.onRemove, super.key});
+  const DesignTicketAttachments({required this.files, this.onRemove, this.onAdd, super.key});
 
   final List<DesignTicketFile> files;
 
   /// `null` حين لا يملك القارئ الحذف — فلا يُرسم «حذف» يرفضه الخادم.
   final void Function(DesignTicketFile file)? onRemove;
+
+  /// Adds a file. Null draws no «add» tile, for a reader the server would refuse.
+  final VoidCallback? onAdd;
 
   /// يفتح الملف: الصورة بملء الشاشة **بين أخواتها**، وما سواها لما يفتح به الهاتف ملفات PDF.
   ///
@@ -127,30 +131,33 @@ class DesignTicketAttachments extends StatelessWidget {
       children: [
         Text(
           'المرفقات (${files.length})',
-          style: text.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
-        SizedBox(height: 8.h),
-        // صفوفٌ من اثنين لا `GridView`: الشبكة تُثبّت نسبة البطاقة، والاسم تحت الصورة يطول بخطّ
-        // النظام المكبَّر فيفيض. هنا الصورة مربّعة والاسم يأخذ ما يحتاجه.
-        for (var row = 0; row < files.length; row += 2) ...[
-          if (row > 0) SizedBox(height: 12.h),
-          Row(
+        SizedBox(height: 10.h),
+        // A scrolling row rather than a `ListView`: the strip takes the height of its tallest
+        // tile, so a name drawn in an enlarged system font grows the strip instead of clipping.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _tile(context, files[row])),
-              SizedBox(width: 12.w),
-              // نصفٌ فارغ لا بطاقةٌ ممدودة: المرفق الوحيد في آخر صفّ يبقى بعرض أخواته.
-              Expanded(
-                child: row + 1 < files.length
-                    ? _tile(context, files[row + 1])
-                    : const SizedBox.shrink(),
-              ),
+              for (var index = 0; index < files.length; index++) ...[
+                if (index > 0) SizedBox(width: 10.w),
+                SizedBox(width: _tileSide.w, child: _tile(context, files[index])),
+              ],
+              if (onAdd case final add?) ...[
+                if (files.isNotEmpty) SizedBox(width: 10.w),
+                _AddTile(onTap: add),
+              ],
             ],
           ),
-        ],
+        ),
       ],
     );
   }
+
+  /// One side of a tile's square picture.
+  static const double _tileSide = 120;
 
   Widget _tile(BuildContext context, DesignTicketFile file) => _AttachmentTile(
     file: file,
@@ -215,9 +222,54 @@ class _AttachmentTile extends StatelessWidget {
           file.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
+    );
+  }
+}
+
+/// The last tile of the strip: adds a file to the brief.
+class _AddTile extends StatelessWidget {
+  const _AddTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final corner = BorderRadius.circular(16.r);
+    final side = DesignTicketAttachments._tileSide.w;
+
+    return SizedBox(
+      width: side,
+      height: side,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: corner,
+          side: BorderSide(color: scheme.outlineVariant, width: 1.5),
+        ),
+        child: InkWell(
+          borderRadius: corner,
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(AppIcons.add, size: 22.r, color: scheme.primary),
+              SizedBox(height: 6.h),
+              Text(
+                'إضافة مرفق',
+                textAlign: TextAlign.center,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
