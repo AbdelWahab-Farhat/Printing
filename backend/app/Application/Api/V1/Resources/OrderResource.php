@@ -190,7 +190,17 @@ class OrderResource extends JsonResource
 
             // Strings: money that is summed must reach the client exactly as it was stored.
             'items_total' => (string) $this->items_total,
-            'design_fee' => (string) $this->design_fee,
+            // «أجرة التصميم» for whoever holds `orders.design_fee`; `0.00` for everybody else
+            // rather than absent, because builds before ORDER-DESIGN-FEE.md read it as required.
+            'design_fee' => $this->readsDesignFee($request) ? (string) $this->design_fee : '0.00',
+            // The line the customer is charged, for the invoice and the copied message only: the
+            // customer pays it whoever prints the invoice (owner's decision, 2026-11-15).
+            'invoice_design_fee' => $this->design_source->isChargeable() ? (string) $this->design_fee : '0.00',
+            // «تلقائية» — filled from «أجرة المصمم» and nobody has set it since.
+            'design_fee_is_auto' => $this->when(
+                $this->readsDesignFee($request),
+                fn (): bool => $this->designFeeIsAutomatic(),
+            ),
             'delivery_price' => (string) $this->delivery_price,
             // Who pays the courier, and what that costs us — 0 unless we pay. When we do, it is
             // already inside `gross_profit` and the investors' share (DELIVERY-PAYER.md).
@@ -598,6 +608,9 @@ class OrderResource extends JsonResource
             'can_change_delivery_payer' => $this->deliveryPayerIsEditable()
                 && (bool) $request->user()?->can(PermissionName::ManageOrders->value),
 
+            // «أجرة التصميم» — while the order is open, for whoever holds the grant.
+            'can_set_design_fee' => $this->designFeeIsEditable() && $this->readsDesignFee($request),
+
             // «طلبية تعويض» on or off — while the lines are open, for whoever holds the grant.
             'can_change_compensation' => $this->compensationIsEditable()
                 && (bool) $request->user()?->can(PermissionName::ManageOrders->value)
@@ -608,6 +621,11 @@ class OrderResource extends JsonResource
             // move somebody's money. Empty when the switch is not offered.
             'delivery_payer_warnings' => $this->deliveryPayerWarnings($request),
         ];
+    }
+
+    private function readsDesignFee(Request $request): bool
+    {
+        return (bool) $request->user()?->can(PermissionName::SetOrderDesignFee->value);
     }
 
     private function payer(): DeliveryPayer

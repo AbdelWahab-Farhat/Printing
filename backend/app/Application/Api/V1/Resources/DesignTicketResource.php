@@ -135,7 +135,7 @@ class DesignTicketResource extends JsonResource
 
             'cancellation_reason' => $this->cancellation_reason,
 
-            // «أجر التصميم» — ما يدخل محفظة المصمم عند الاعتماد. والمفتاح غائبٌ عمّن لا يقرؤه، لا
+            // «أجرة المصمم» — ما يدخل محفظة المصمم عند الاعتماد. والمفتاح غائبٌ عمّن لا يقرؤه، لا
             // `null`: الفراغ يعني أن أحداً لم يكتب أجراً. انظر `DesignTicket::mayReadPay()`.
             'designer_pay' => $this->when(
                 $this->resource->mayReadPay($reader),

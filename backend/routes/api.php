@@ -606,6 +606,11 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('orders/{order}/compensation', [OrderController::class, 'changeCompensation'])
             ->middleware('can:orders.manage')->name('orders.compensation');
 
+        // «أجرة التصميم» — its own route because employees never see the fee, so the edit form
+        // they send cannot carry it. The grant is the whole guard. ORDER-DESIGN-FEE.md.
+        Route::patch('orders/{order}/design-fee', [OrderController::class, 'setDesignFee'])
+            ->middleware('can:orders.design_fee')->name('orders.design-fee');
+
         Route::patch('orders/{order}/ready-message', [OrderController::class, 'confirmReadyMessage'])
             ->middleware('can:orders.ready_message')->name('orders.ready-message');
 

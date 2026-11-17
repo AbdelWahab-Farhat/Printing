@@ -45,8 +45,8 @@ class StoreOrderRequest extends FormRequest
             'address_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
-            // Only counted when design_source is in_house; sending it otherwise is harmless and
-            // is kept rather than blanked, so flipping the source back does not lose the number.
+            // Only counted when design_source is in_house and the sender holds
+            // `orders.design_fee`; the app no longer sends it at all (ORDER-DESIGN-FEE.md).
             'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('design_fee')],
 
             // The artwork, chosen from the customer's library as it is everywhere else — never

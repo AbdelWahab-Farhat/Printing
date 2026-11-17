@@ -277,8 +277,9 @@ class PushPreferenceTest extends TestCase
             $this->auth($this->admin()),
         )->json('data'), 'type');
 
-        // Assert
-        $this->assertCount(7, $types);
+        // Assert — «أجرة تصميم تلقائية» made it eight (ORDER-DESIGN-FEE.md).
+        $this->assertCount(8, $types);
+        $this->assertContains(NotificationType::OrderDesignFeeFilled->value, $types);
         $this->assertNotContains(NotificationType::Announcement->value, $types);
         $this->assertNotContains(NotificationType::InternalTicketMessage->value, $types);
     }

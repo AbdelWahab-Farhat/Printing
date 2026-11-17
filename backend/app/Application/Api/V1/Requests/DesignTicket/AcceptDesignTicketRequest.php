@@ -7,7 +7,7 @@ namespace App\Application\Api\V1\Requests\DesignTicket;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * القبول، ومعه «أجر التصميم» حين لا أجر على التذكرة: مَن يأخذها من الطابور هو من يعرفه.
+ * القبول، ومعه «أجرة المصمم» حين لا أجر على التذكرة: مَن يأخذها من الطابور هو من يعرفه.
  */
 class AcceptDesignTicketRequest extends FormRequest
 {
@@ -32,8 +32,8 @@ class AcceptDesignTicketRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'designer_pay.numeric' => 'أجر التصميم يجب أن يكون رقماً',
-            'designer_pay.min' => 'أجر التصميم لا يمكن أن يكون سالباً',
+            'designer_pay.numeric' => 'أجرة المصمم يجب أن تكون رقماً',
+            'designer_pay.min' => 'أجرة المصمم لا يمكن أن تكون سالبة',
         ];
     }
 
@@ -42,7 +42,7 @@ class AcceptDesignTicketRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['designer_pay' => 'أجر التصميم'];
+        return ['designer_pay' => 'أجرة المصمم'];
     }
 
     /** نصٌّ عشري لا float، كأيّ مبلغ. */

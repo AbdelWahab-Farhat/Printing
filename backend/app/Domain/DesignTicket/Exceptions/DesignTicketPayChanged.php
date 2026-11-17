@@ -11,6 +11,6 @@ final class DesignTicketPayChanged extends DomainException
 {
     public static function make(): self
     {
-        return new self('تغيّر أجر التصميم. راجعه ثم اعتمد من جديد');
+        return new self('تغيّرت أجرة المصمم. راجعها ثم اعتمد من جديد');
     }
 }

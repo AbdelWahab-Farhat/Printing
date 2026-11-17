@@ -8,6 +8,7 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeDeliveryPayerRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderCompensationRequest;
+use App\Application\Api\V1\Requests\Order\SetOrderDesignFeeRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
@@ -551,6 +552,24 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             $on ? 'صارت الطلبية طلبية تعويض' : 'صارت الطلبية طلبية عادية',
+        );
+    }
+
+    /**
+     * Set the design fee
+     *
+     * «أجرة التصميم» — what the customer pays for the design, apart from «أجرة المصمم» on the
+     * ticket. Needs `orders.design_fee`. A fee above zero makes the design «تصميم من عندنا»;
+     * `0` clears it. Refused with 422 once the order is delivered, cancelled or rejected, and on a
+     * compensation order. See Docs/orders/ORDER-DESIGN-FEE.md.
+     */
+    public function setDesignFee(SetOrderDesignFeeRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->setDesignFee($order, $request->fee(), $request->user());
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            'تم تحديث أجرة التصميم',
         );
     }
 

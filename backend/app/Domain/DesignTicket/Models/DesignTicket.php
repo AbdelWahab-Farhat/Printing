@@ -239,7 +239,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
         return $this->assigned_designer_id === null && ! $this->isAccepted();
     }
 
-    // ───────────────────────────────── أجر التصميم ─────────────────────────────────
+    // ───────────────────────────────── أجرة المصمم ─────────────────────────────────
 
     /**
      * مَن يُقال له كم أجر هذه التذكرة — SERVICE-PAY-DESIGN §٣.

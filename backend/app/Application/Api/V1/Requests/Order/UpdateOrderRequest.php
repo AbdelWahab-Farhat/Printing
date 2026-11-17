@@ -40,7 +40,8 @@ class UpdateOrderRequest extends StoreOrderRequest
             'address_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
-            'design_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('design_fee')],
+            // No `design_fee`: an edit never moves it, and older builds that still send it are
+            // simply not read. It has its own route — see SetOrderDesignFeeRequest.
             'discount' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99', $this->wholeDinars('discount')],
 
             // The same three as on the way in — see StoreOrderRequest for why the reason is

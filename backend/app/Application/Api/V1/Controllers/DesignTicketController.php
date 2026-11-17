@@ -278,7 +278,7 @@ class DesignTicketController extends Controller
 
         return $this->success(
             new DesignTicketResource($this->loadForDisplay($request, $updated)),
-            'تم تحديث أجر التصميم',
+            'تم تحديث أجرة المصمم',
         );
     }
 

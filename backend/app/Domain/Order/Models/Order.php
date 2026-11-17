@@ -117,6 +117,9 @@ class Order extends Model implements HasAuditTrail
             // Strings, not floats: these are summed, and money that is summed must stay exact.
             'items_total' => 'decimal:2',
             'design_fee' => 'decimal:2',
+            // When a person decided «أجرة التصميم». Null while nobody has, which is what lets an
+            // approved ticket fill it from «أجرة المصمم» — see FillDesignFeeFromTickets.
+            'design_fee_set_at' => 'datetime',
             'delivery_price' => 'decimal:2',
             // Who pays the courier, and what that costs us — see DeliveryPayer. Both stay out of
             // the fillable list: the payer moves only through ChangeDeliveryPayer, which tells
@@ -1070,6 +1073,28 @@ class Order extends Model implements HasAuditTrail
     public function destinationIsEditable(): bool
     {
         return $this->status !== OrderStatus::OutForDelivery && ! $this->status->isClosed();
+    }
+
+    /**
+     * Whether «أجرة التصميم» may still be set (ORDER-DESIGN-FEE.md).
+     *
+     * **Open until the order closes**, owner's decision 2026-11-15: «تسوية وتم دفع خلاص لا يمكن
+     * تعديل». From «تم الاستلام» the investors' share has been worked out from this total, so a
+     * later fee would reopen money the order already settled. Unlike the discount, which stays
+     * open after delivery on purpose. A compensation order owes nothing, so it takes none.
+     */
+    public function designFeeIsEditable(): bool
+    {
+        return ! $this->status->isClosed() && ! $this->is_compensation && ! $this->trashed();
+    }
+
+    /**
+     * A fee nobody decided: filled from «أجرة المصمم» by an approved ticket. It reads
+     * «تلقائية» until a person sets it.
+     */
+    public function designFeeIsAutomatic(): bool
+    {
+        return $this->design_fee_set_at === null && bccomp((string) $this->design_fee, '0', 2) > 0;
     }
 
     /**

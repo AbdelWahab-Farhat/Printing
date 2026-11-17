@@ -47,7 +47,7 @@ use App\Domain\Identity\Models\User;
 final class AcceptDesignTicket
 {
     /**
-     * @param  string|null  $pay  «أجر التصميم» يكتبه مَن يأخذها، حين لا أجر عليها. `null` يتركه كما هو.
+     * @param  string|null  $pay  «أجرة المصمم» يكتبه مَن يأخذها، حين لا أجر عليها. `null` يتركه كما هو.
      *
      * @throws DesignTicketIsClosed
      * @throws DesignTicketAlreadyAccepted

@@ -140,7 +140,17 @@ final class CreateOrder
 
         $payer = $data->deliveryPaidBy ?? DeliveryPayer::Recipient;
 
-        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus, $payer): Order {
+        // «أجرة التصميم» is not typed when an order is taken (ORDER-DESIGN-FEE.md). An older
+        // build still sends the box: kept from whoever holds the fee, dropped from anybody else,
+        // who would otherwise be pricing a number they are not allowed to read.
+        $designFee = $data->designSource->isChargeable()
+            && $actor?->can(PermissionName::SetOrderDesignFee->value) === true
+            && ! $data->isCompensation
+                ? $data->designFee
+                : '0.00';
+        $designFeeDecided = bccomp($designFee, '0', 2) > 0;
+
+        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus, $payer, $designFee, $designFeeDecided): Order {
             $order = new Order;
 
             $order->fill([
@@ -176,7 +186,9 @@ final class CreateOrder
             $order->forceFill([
                 'customer_id' => $customer->getKey(),
                 'status' => $initialStatus,
-                'design_fee' => $data->designSource->isChargeable() ? $data->designFee : '0.00',
+                'design_fee' => $designFee,
+                'design_fee_set_at' => $designFeeDecided ? now() : null,
+                'design_fee_set_by' => $designFeeDecided ? $actor?->getKey() : null,
                 'delivery_price' => $destination->deliveryPrice,
                 // The recipient unless the form said otherwise; when we pay, the city's rate is
                 // the order's delivery cost until settlement shows the real one.

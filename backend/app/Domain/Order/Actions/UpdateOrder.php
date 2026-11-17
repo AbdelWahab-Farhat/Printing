@@ -152,8 +152,10 @@ final class UpdateOrder
                 ...($data->isUrgent === null ? [] : ['is_urgent' => $data->isUrgent]),
             ]);
 
+            // **`design_fee` is not here, deliberately** (ORDER-DESIGN-FEE.md): employees never
+            // read it, so the order every edit sends back carries a fee they never had. It moves
+            // only through SetOrderDesignFee and FillDesignFeeFromTickets.
             $order->forceFill([
-                'design_fee' => $data->designFee,
                 'delivery_price' => $destination->deliveryPrice,
                 'discount' => $data->discount,
                 'additional_cost' => $data->additionalCost,
@@ -293,7 +295,6 @@ final class UpdateOrder
             && $data->notes === $text($order->notes)
             && $data->trackingNumber === $text($order->tracking_number)
             && ($data->isUrgent === null || $data->isUrgent === (bool) $order->is_urgent)
-            && $sameMoney($data->designFee, $order->design_fee)
             // The amount alone, as guardAdditionalCost() compares it.
             && $sameMoney($data->additionalCost, $order->additional_cost);
     }
