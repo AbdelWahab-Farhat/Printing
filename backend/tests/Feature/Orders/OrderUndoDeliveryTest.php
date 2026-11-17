@@ -139,6 +139,26 @@ class OrderUndoDeliveryTest extends TestCase
         $this->assertSame(OrderStatus::OfficePickup, $order->refresh()->status);
     }
 
+    public function test_an_order_delivered_from_a_return_goes_back_to_that_return(): void
+    {
+        // Arrange — delivered for real through the status endpoint, straight from the courier's
+        // return, so the timeline row is the one the move itself wrote.
+        $order = Order::factory()->status(OrderStatus::ReturnedCourier)->create();
+        OrderItem::factory()->create(['order_id' => $order->getKey()]);
+        $headers = $this->dispatcher();
+
+        $this->withHeaders($headers)
+            ->postJson("/api/v1/orders/{$order->id}/status", ['status' => OrderStatus::Delivered->value])
+            ->assertOk();
+
+        // Act
+        $this->undo($headers, $order->refresh())->assertOk();
+
+        // Assert
+        $this->assertSame(OrderStatus::ReturnedCourier, $order->refresh()->status);
+        $this->assertNull($order->delivered_at);
+    }
+
     public function test_an_order_that_was_settled_and_unsettled_goes_back_to_where_it_was_delivered_from(): void
     {
         // Arrange — the timeline of order 1258: «استلام مكتب» → «تم الاستلام» → «تم التسوية»,

@@ -143,6 +143,16 @@ enum PermissionName: string
     case MoveOrderToAwaitingDeposit = 'orders.status.awaiting_deposit';
     case MoveOrderToDepositPaid = 'orders.status.deposit_paid';
 
+    // Taking an order on without a عربون — a credit decision, so its own grant rather than a
+    // ride on the deposit pair. Seeded onto every role that may ask for a deposit
+    // (`grant_no_deposit_and_preparing`).
+    case MoveOrderToNoDeposit = 'orders.status.no_deposit';
+
+    // The warehouse starting to gather an order's goods. Its own grant beside «جاهزة للطباعة»,
+    // and seeded onto the same roles, so the business may later split who starts and who hands
+    // over.
+    case MoveOrderToPreparing = 'orders.status.preparing';
+
     // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
     // the order to the press. Separate from the two production statuses beside it because a
     // different desk does it.
@@ -484,6 +494,8 @@ enum PermissionName: string
             self::ConfirmReadyMessage => 'رسائل الزبائن (الجاهزية والراجع)',
             self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
             self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
+            self::MoveOrderToNoDeposit => 'تحويل الطلبية إلى بدون عربون',
+            self::MoveOrderToPreparing => 'تحويل الطلبية إلى تجهيز للطباعة',
             self::ConfirmDepositReceipt => 'تأكيد استلام العربون',
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',
@@ -602,7 +614,8 @@ enum PermissionName: string
             // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
             self::ConfirmReadyMessage => 'الطلبيات',
             self::MoveOrderToAwaitingDeposit, self::MoveOrderToDepositPaid,
-            self::MoveOrderToReadyToPrint,
+            self::MoveOrderToNoDeposit,
+            self::MoveOrderToPreparing, self::MoveOrderToReadyToPrint,
             self::MoveOrderToDesigning, self::MoveOrderToPrinting,
             self::MoveOrderToManufacturing, self::MoveOrderToReady,
             self::MoveOrderToShortage, self::DispatchOrders, self::MarkOrdersDelivered,

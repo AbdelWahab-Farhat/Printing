@@ -149,4 +149,29 @@ enum TransitionFieldType: string
      * the answer as «لا» and refuses — exactly what it did before the question existed.
      */
     case Confirmation = 'confirmation';
+
+    /**
+     * **Where the order goes now: a delivery city, and its region where the city has them.**
+     *
+     * Offered on one move: «استلام مكتب» → «إعادة إرسال», for the customer who asks for delivery
+     * instead of coming in. The answer is an object, `{city_id, region_id}`, so the region always
+     * travels with the city it belongs to. The options do not travel with it: the app already
+     * has the delivery map.
+     *
+     * An app that predates the type cannot answer it, so it cannot make this move.
+     */
+    case Destination = 'destination';
+
+    /**
+     * **A yes the person ticks on the form** — `true` or nothing.
+     *
+     * Offered on the move into «تجهيز للطباعة» as «اعتماد آخر نسخة», when the order's artwork
+     * has a version nobody has approved yet. Unlike {@see Confirmation} it is a box on the form,
+     * not a question at the moment of sending. When `required`, only `true` is accepted, so the
+     * app greys the button until it is ticked.
+     *
+     * An app that predates the type skips it and sends nothing, and the domain refuses the move
+     * with a sentence saying why — the same answer as an unticked box.
+     */
+    case Checkbox = 'checkbox';
 }

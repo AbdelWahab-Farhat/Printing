@@ -25,6 +25,7 @@ use App\Domain\Order\Models\OrderItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -46,6 +47,7 @@ use Tests\TestCase;
 class OrderProductionFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -74,6 +76,7 @@ class OrderProductionFlowTest extends TestCase
             PermissionName::ViewOrders,
             PermissionName::ManageOrders,
             PermissionName::ManageOrderDesigns,
+            PermissionName::MoveOrderToPreparing,
             PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
@@ -225,6 +228,10 @@ class OrderProductionFlowTest extends TestCase
      */
     private function move(array $headers, Order $order, OrderStatus $to, array $fields = []): TestResponse
     {
+        // «جديدة» only asks the deposit question now — see WalksPastIntake. A move the order's
+        // road does not offer from there is still refused.
+        $this->walkPastIntake($order, $to);
+
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
             array_filter(['status' => $to->value, 'fields' => $fields ?: null]),
@@ -376,19 +383,20 @@ class OrderProductionFlowTest extends TestCase
 
     // ──────────────────────────── what the machine offers ────────────────────────────
 
-    public function test_a_plain_order_is_offered_the_shelf_from_the_moment_it_is_taken(): void
+    public function test_a_plain_order_is_offered_the_shelf_once_the_deposit_is_answered(): void
     {
         // Arrange
         $order = $this->orderOf([$this->sizeUnder($this->blankCategory())]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::Ready);
 
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — «جاهزة» and «نواقص», and neither of the two statuses that name work. The
-        // shortage stays because the stock for a plain bag is exactly the thing that turns out
-        // not to be there.
-        $this->assertEqualsCanonicalizing(['ready', 'shortage'], $offered);
+        // Assert — «جاهزة» and «نواقص», and none of the statuses that name work. The shortage
+        // stays because the stock for a plain bag is exactly the thing that turns out not to be
+        // there.
+        $this->assertEqualsCanonicalizing(['ready', 'shortage', 'cancelled'], $offered);
     }
 
     public function test_a_plain_order_draws_a_shorter_progress_bar(): void
@@ -407,7 +415,7 @@ class OrderProductionFlowTest extends TestCase
         // standing on the shelf ready to go.
         $this->assertSame(['new', 'ready', 'out_for_delivery', 'delivered', 'settled'], $plainSteps);
         $this->assertSame([
-            'new', 'ready_to_print', 'designing', 'printing',
+            'new', 'designing', 'preparing', 'ready_to_print', 'printing',
             'ready', 'out_for_delivery', 'delivered', 'settled',
         ], $printedSteps);
     }
@@ -484,6 +492,7 @@ class OrderProductionFlowTest extends TestCase
             OrderStatus::Printing,
         );
         $headers = $this->foreman();
+        $this->walkPastIntake($plain, OrderStatus::Ready);
 
         // Act
         $onPlain = $this->transition($this->show($headers, $plain), OrderStatus::Ready)['fields'];
@@ -532,7 +541,7 @@ class OrderProductionFlowTest extends TestCase
         // Assert — `ChangeOrderStatusRequest` builds its rules from the same `TransitionFields`
         // list the form was drawn from, so the requirement reaches the short road too.
         $response->assertStatus(422)->assertJsonValidationErrors('fields.warehouse_id');
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::NoDeposit, $order->fresh()->status);
     }
 
     public function test_reaching_the_shelf_without_the_press_still_takes_the_stock(): void
@@ -567,10 +576,11 @@ class OrderProductionFlowTest extends TestCase
 
     public function test_flipping_a_heading_does_not_re_route_an_order_already_taken(): void
     {
-        // Arrange — an ordinary printed order, taken and sitting in «جديدة».
+        // Arrange — an ordinary printed order, taken and past the deposit question.
         $category = $this->printedCategory();
         $order = $this->orderOf([$this->sizeUnder($category)]);
         $headers = $this->foreman();
+        $this->walkPastIntake($order, OrderStatus::Preparing);
 
         // Act — somebody decides this heading needs no press after all.
         $category->update(['production_mode' => ProductionMode::None]);
@@ -580,8 +590,8 @@ class OrderProductionFlowTest extends TestCase
         // drawing itself as a detour from the status it is standing in.
         $this->assertSame(OrderFlow::Standard, $order->fresh()->production_flow);
         $this->assertContains(
-            // The road into the press, which is what a printed order in «جديدة» is offered.
-            'ready_to_print',
+            // The road into the press, which is what a printed order past its deposit is offered.
+            'preparing',
             array_column($this->show($headers, $order)->json('data.available_transitions'), 'status'),
         );
     }

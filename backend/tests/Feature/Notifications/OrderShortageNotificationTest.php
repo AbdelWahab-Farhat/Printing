@@ -21,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -36,6 +37,7 @@ use Tests\TestCase;
 class OrderShortageNotificationTest extends TestCase
 {
     use RefreshDatabase;
+    use WalksPastIntake;
 
     private function employeeWhoCanSeeOrders(): User
     {
@@ -66,7 +68,9 @@ class OrderShortageNotificationTest extends TestCase
         $actor = User::factory()->create(['is_active' => true]);
 
         // Act — «كم الناقص» is a question about a size, so the move carries a figure per line
-        // and the domain insists on at least one of them.
+        // and the domain insists on at least one of them. Past the deposit question first,
+        // which is where «نواقص» is offered from.
+        $this->walkPastIntake($order, OrderStatus::Shortage);
         app(ChangeOrderStatus::class)(
             $order,
             OrderStatus::Shortage,

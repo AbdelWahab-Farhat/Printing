@@ -38600,6 +38600,12 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "status_changed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -38627,7 +38633,8 @@
                     "can_assign",
                     "can_manage",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
+                    "status_changed_at"
                 ],
                 "title": "DesignTicketResource"
             },

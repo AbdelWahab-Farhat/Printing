@@ -34,7 +34,7 @@ enum CustomerOrderStage: string
      * Sent from the app and not looked at yet, or taken and not started.
      *
      * **«جديدة» reads here, not as «قيد التجهيز»** (owner, 2026-10-23). Nothing is being got
-     * ready while an order sits in «جديدة»: the work starts at «جاهزة للطباعة», or at the deposit.
+     * ready while an order sits in «جديدة»: the work starts once the deposit question is answered.
      */
     case UnderReview = 'under_review';
 
@@ -119,9 +119,12 @@ enum CustomerOrderStage: string
             // The one workshop status that waits on the customer — see the case's own docblock.
             OrderStatus::AwaitingDeposit => self::AwaitingDeposit,
 
-            // «عربون مدفوع» is the deposit settled, which to the customer is simply the order
-            // going ahead; «جاهزة للطباعة» is the stock leaving the shelf for the press.
+            // «عربون مدفوع» and «بدون عربون» are the deposit question answered, which to the
+            // customer is simply the order going ahead; «تجهيز للطباعة» and «جاهزة للطباعة» are
+            // the warehouse gathering the goods and handing them to the press.
             OrderStatus::DepositPaid,
+            OrderStatus::NoDeposit,
+            OrderStatus::Preparing,
             OrderStatus::ReadyToPrint => self::Preparing,
 
             OrderStatus::Shortage => self::Shortage,

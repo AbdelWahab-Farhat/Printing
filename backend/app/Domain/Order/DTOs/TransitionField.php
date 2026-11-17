@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\DTOs;
 
 use App\Domain\Customer\Support\PrintColors;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\TransitionFieldType;
 use App\Domain\Order\Support\TransitionFields;
@@ -157,6 +158,21 @@ final class TransitionField
     }
 
     /**
+     * A box the person ticks — {@see TransitionFieldType::Checkbox}. Required means it must be
+     * ticked, not merely answered.
+     */
+    public static function checkbox(string $key, string $label, bool $required = false, ?string $hint = null): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Checkbox,
+            label: $label,
+            required: $required,
+            hint: $hint,
+        );
+    }
+
+    /**
      * تحذيرٌ يُقرأ ولا يُجاب — {@see TransitionFieldType::Notice}.
      *
      * `required: false` دائماً و`key` له رغم أنه لا يُرسَل: القائمة تُرسم بمفاتيحها، ومفتاحٌ
@@ -173,12 +189,17 @@ final class TransitionField
         );
     }
 
+    /**
+     * [$value] is what the box opens holding — the address already on the order, when a move
+     * asks for it again.
+     */
     public static function text(
         string $key,
         string $label,
         bool $required = false,
         bool $multiline = false,
         ?string $hint = null,
+        ?string $value = null,
     ): self {
         return new self(
             key: $key,
@@ -186,6 +207,22 @@ final class TransitionField
             label: $label,
             required: $required,
             multiline: $multiline,
+            hint: $hint,
+            value: $value,
+        );
+    }
+
+    /**
+     * A delivery city and its region — {@see TransitionFieldType::Destination}. Always required:
+     * the move it sits on means nothing without somewhere to deliver to.
+     */
+    public static function destination(string $key, string $label, ?string $hint = null): self
+    {
+        return new self(
+            key: $key,
+            type: TransitionFieldType::Destination,
+            label: $label,
+            required: true,
             hint: $hint,
         );
     }
@@ -521,6 +558,31 @@ final class TransitionField
                 "fields.{$this->key}" => ['nullable', 'boolean'],
             ],
 
+            // Required means ticked: `accepted` takes true, 1, "1", "true", "yes" and "on".
+            TransitionFieldType::Checkbox => [
+                "fields.{$this->key}" => $this->required ? ['accepted'] : ['nullable', 'boolean'],
+            ],
+
+            // A delivery city — never a branch, which would turn the move back into a pickup —
+            // and a region that exists. Whether the region belongs to the city, and whether the
+            // city needs one, is `ResolveOrderDestination`'s rule, the same one the edit form
+            // answers to.
+            TransitionFieldType::Destination => [
+                "fields.{$this->key}" => [$presence, 'array'],
+                "fields.{$this->key}.city_id" => [
+                    'required',
+                    'integer',
+                    Rule::exists('cities', 'id')
+                        ->where('fulfilment_type', FulfilmentType::Delivery->value)
+                        ->withoutTrashed(),
+                ],
+                "fields.{$this->key}.region_id" => [
+                    'nullable',
+                    'integer',
+                    Rule::exists('regions', 'id')->withoutTrashed(),
+                ],
+            ],
+
             TransitionFieldType::Text => [
                 "fields.{$this->key}" => [$presence, 'string', 'max:1000'],
             ],
@@ -674,6 +736,17 @@ final class TransitionField
             ],
             TransitionFieldType::Confirmation => [
                 "fields.{$this->key}.boolean" => 'التأكيد يجب أن يكون نعم أو لا',
+            ],
+            // The sentence says what ticking it means, so the refusal reads as the next step.
+            TransitionFieldType::Checkbox => [
+                "fields.{$this->key}.accepted" => "ضع علامة على «{$this->label}» للمتابعة",
+                "fields.{$this->key}.boolean" => "{$this->label}: نعم أو لا",
+            ],
+            TransitionFieldType::Destination => [
+                "fields.{$this->key}.required" => 'اختر مدينة التوصيل',
+                "fields.{$this->key}.city_id.required" => 'اختر مدينة التوصيل',
+                "fields.{$this->key}.city_id.exists" => 'اختر مدينة توصيل، لا مكتب استلام',
+                "fields.{$this->key}.region_id.exists" => 'المنطقة المختارة غير موجودة',
             ],
         };
     }

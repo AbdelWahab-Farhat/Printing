@@ -40,6 +40,7 @@ use App\Domain\Treasury\Models\TreasuryAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -67,6 +68,7 @@ class OrderDeletionMoneyTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     private function actor(): User
     {
@@ -511,6 +513,7 @@ class OrderDeletionMoneyTest extends TestCase
             ]);
         }
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::ReadyToPrint,
@@ -588,6 +591,7 @@ class OrderDeletionMoneyTest extends TestCase
 
     private function walkToDelivered(Order $order, Warehouse $warehouse, User $actor): void
     {
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::ReadyToPrint,

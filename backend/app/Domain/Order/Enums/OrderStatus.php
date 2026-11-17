@@ -46,15 +46,14 @@ enum OrderStatus: string
     //
     // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
     // in beside what could not be started; «انتظار العربون»/«عربون مدفوع» is the money the job
-    // waits on beside the money that arrived; «قيد التصميم»/«جاهزة للطباعة» is the artwork beside
-    // the queue it feeds; «قيد الطباعة»/«قيد التصنيع» is our press beside the vendor's bench.
-    // The deposit pair sits third rather than first because it is a road most orders never walk
-    // — a board opens on what the shop has, and «جديدة» is what the shop has. That is the shop
-    // asking «ما الذي عندي الآن؟», and it is not the order the state machine walks — «جاهزة
-    // للطباعة» comes *before* «قيد التصميم» in {@see allowedNext()} and after it here. Both are
-    // right: one answers what may follow what, the other answers what a person reads down a
-    // phone. The app holds no list of its own, so this sequence is the board — see
-    // `HomeSummaryResource`.
+    // waits on beside the money that arrived; «بدون عربون»/«قيد التصميم» is the order going
+    // ahead without one beside the first desk it usually reaches; «تجهيز للطباعة»/«جاهزة
+    // للطباعة» is the warehouse at work beside the queue it hands to the press; «قيد
+    // الطباعة»/«قيد التصنيع» is our press beside the vendor's bench. A board opens on what the
+    // shop has, and «جديدة» is what the shop has — that is the shop asking «ما الذي عندي الآن؟»,
+    // which is not quite the order the state machine walks. Both are right: one answers what may
+    // follow what, the other answers what a person reads down a phone. The app holds no list of
+    // its own, so this sequence is the board — see `HomeSummaryResource`.
 
     /**
      * A customer placed this from the app, and nobody has looked at it yet.
@@ -65,8 +64,8 @@ enum OrderStatus: string
      * API and by nothing else.
      *
      * It exists because «جديدة» means *verified*. An order a clerk types in carries an invisible
-     * check — a person spoke to the customer before writing it down — and from «جديدة» the next
-     * move is «جاهزة للطباعة», which takes the goods off the shelf. An order that arrived at 2am
+     * check — a person spoke to the customer before writing it down — and from «جديدة» the work
+     * starts, one deposit decision later. An order that arrived at 2am
      * from a phone carries no such check, and landing it in «جديدة» would put it in the same
      * column of the same board as one that does.
      *
@@ -113,8 +112,14 @@ enum OrderStatus: string
     case New = 'new';
 
     /**
-     * The stock to start the job is not there. Reachable from «جديدة» and nowhere else — it
-     * describes an order that could not be begun, not a run that came out short.
+     * The stock to start the job is not there — discovered before the warehouse lets anything
+     * go: right after the deposit decision, while the artwork is being agreed, or while the
+     * order is being prepared. It describes an order that could not be begun, not a run that
+     * came out short, so it is refused once the stock has left the shelf.
+     *
+     * **Leaving it is a person's choice, never automatic** (owner's status document,
+     * 2026-11-15): back to «قيد التصميم» when the artwork is not settled, or on to «تجهيز
+     * للطباعة» when it is.
      */
     case Shortage = 'shortage';
 
@@ -126,9 +131,9 @@ enum OrderStatus: string
      * to arrive; neither is money that has moved, and neither writes anything to the ledger —
      * see `TransitionFields` and Docs/orders/ORDER-DEPOSIT-PLAN.md §٣٫٢.
      *
-     * **Optional, and reached from «جديدة» alone.** An order nobody asks a deposit for never
-     * comes near this status: «جديدة» keeps every arm it had. A deposit demanded halfway through
-     * printing is a different conversation from this one, and not one the map offers.
+     * **One of the two ways out of «جديدة».** Every order now says which deal it was taken on:
+     * this, or {@see NoDeposit}. A deposit demanded halfway through printing is a different
+     * conversation from this one, and not one the map offers.
      */
     case AwaitingDeposit = 'awaiting_deposit';
 
@@ -145,22 +150,49 @@ enum OrderStatus: string
      * ordinary payment through `RecordOrderPayment`, exactly as «تم الاستلام» does — there is no
      * such thing here as a deposit that counts differently from any other money.
      *
-     * Leads to the same places «جديدة» does, because that is where the order was going before
-     * the deposit stopped it — and back to «انتظار العربون», for the claim that turns out to be
-     * wrong. That way back is the only move on this pair that touches the ledger.
+     * Leads to where the work starts — the same places {@see NoDeposit} does — and back to
+     * «انتظار العربون», for the claim that turns out to be wrong. That way back is the only move
+     * on this pair that touches the ledger.
      */
     case DepositPaid = 'deposit_paid';
 
-    /** Artwork is being agreed with the customer — see {@see OrderDesignStatus}. */
+    /**
+     * The order goes ahead without a عربون — «بدون عربون».
+     *
+     * **The other answer to the question «جديدة» asks**, and the one most orders give. It is a
+     * statement about the deal, not about the money: the order is not paid for, and everything it
+     * costs is still owed. Nothing is written to the ledger and no figure is asked for.
+     *
+     * Leads where «عربون مدفوع» leads, and to «انتظار العربون» for the customer who is asked for
+     * one after all — nothing has been paid, so there is nothing to unwind.
+     */
+    case NoDeposit = 'no_deposit';
+
+    /**
+     * Artwork is being agreed with the customer — see {@see OrderDesignStatus}.
+     *
+     * **Before the warehouse, not after it** (owner's status document, 2026-11-15). The order
+     * leaves for «تجهيز للطباعة» once a version is approved, so no stock is drawn for an order
+     * that then waits weeks on a logo.
+     */
     case Designing = 'designing';
 
     /**
-     * Prepped by the warehouse and handed to the press.
+     * The warehouse is gathering the goods for the press — «تجهيز للطباعة».
      *
-     * **The line between two departments, and the reason this status exists.** «جديدة» and
-     * «نواقص» are inventory's — the goods are being found, counted and weighed — while «قيد
-     * التصميم» and «قيد الطباعة» belong to printing. An order used to cross that line invisibly,
-     * so the press had no queue to read and no moment marked the handover.
+     * **Work, not a queue.** Somebody is counting and weighing the order's sizes; when they have
+     * put them in the press's place they move it to «جاهزة للطباعة», and that move is where the
+     * stock leaves the shelf. Entered only with an approved design when the order has artwork,
+     * and only with nothing still short — see `ChangeOrderStatus`.
+     */
+    case Preparing = 'preparing';
+
+    /**
+     * Prepared by the warehouse and waiting for the press.
+     *
+     * **The line between two departments.** «تجهيز للطباعة» is inventory's — the goods are being
+     * found, counted and weighed — while «قيد الطباعة» belongs to printing. This status is the
+     * press's queue and the moment that marks the handover.
      *
      * **It is also where the stock leaves the warehouse**, which is what makes it more than a
      * label: entering it names a warehouse and a weight, and the shelf drops. «جاهزة» later
@@ -199,7 +231,10 @@ enum OrderStatus: string
     /** Physically back on our shelf. */
     case ReturnedOffice = 'returned_office';
 
-    /** Going out a second time — off our shelf, or from the carrier's depot without coming back. */
+    /**
+     * Going out a second time — off our shelf, or from the carrier's depot without coming back.
+     * Also where an order waiting at the counter goes when the customer asks for delivery.
+     */
     case Resend = 'resend';
 
     case Cancelled = 'cancelled';
@@ -225,6 +260,8 @@ enum OrderStatus: string
             self::New => 'جديدة',
             self::AwaitingDeposit => 'انتظار العربون',
             self::DepositPaid => 'عربون مدفوع',
+            self::NoDeposit => 'بدون عربون',
+            self::Preparing => 'تجهيز للطباعة',
             self::ReadyToPrint => 'جاهزة للطباعة',
             self::Designing => 'قيد التصميم',
             self::Printing => 'قيد الطباعة',
@@ -264,8 +301,8 @@ enum OrderStatus: string
      *
      * **[$flow] is the second thing the map reads, and each road answers for itself.** An order
      * made entirely of goods that are not printed has no artwork to agree and no press to run, so
-     * «جديدة» offers «جاهزة» directly; an order a vendor makes for us is sent out instead of
-     * printed, so «جديدة» offers «قيد التصنيع» — see {@see OrderFlow}. Everything past «جاهزة» is
+     * once the deposit is decided it goes to «جاهزة» directly; an order a vendor makes for us is
+     * sent out instead of printed, so it goes to «قيد التصنيع» — see {@see OrderFlow}. Everything past «جاهزة» is
      * the same road whatever is in the bags: a parcel comes back from a courier the same way
      * whether it was printed, pulled off a shelf, or made by somebody else.
      *
@@ -291,14 +328,14 @@ enum OrderStatus: string
     }
 
     /**
-     * Goods that are already made: nothing is designed, nothing is printed, and «جديدة» leads
-     * straight to the shelf.
+     * Goods that are already made: nothing is designed, nothing is printed, and once the deposit
+     * is decided the order goes straight to the shelf.
      *
-     * **Both arms that differ are about the same absent thing: the work.** «جديدة» is where an
-     * order is sent to the designer or the press; «نواقص» is where it goes when it could not be
-     * started and is where it rejoins from. Neither has anything to offer an order whose goods
-     * are already made, and offering it anyway would put two buttons on the screen that describe
-     * work nobody is going to do.
+     * **Every arm that differs is about the same absent thing: the work.** The two deposit
+     * answers are where an order is sent to the designer or the warehouse; «نواقص» is where it
+     * goes when it could not be started and is where it rejoins from. None of them has anything
+     * to offer an order whose goods are already made, and offering it anyway would put buttons on
+     * the screen that describe work nobody is going to do.
      *
      * @return list<self>
      */
@@ -309,14 +346,14 @@ enum OrderStatus: string
             // plain bag is exactly the thing that can turn out not to be there, which is what
             // that status has always meant — see the arm below.
             //
-            // **The deposit is on every road**, unlike the two production statuses: asking for
-            // money up front is about the deal, not about whether anything gets printed.
-            self::New => [self::AwaitingDeposit, self::Ready, self::Shortage],
-
-            // Where «جديدة» leads on this road, plus the ending. «انتظار العربون» itself needs no
-            // arm here — it offers the same two moves whatever the order is made of, so it falls
-            // through to the standard map.
+            // **The deposit is on every road**, unlike the production statuses: asking for money
+            // up front is about the deal, not about whether anything gets printed. «جديدة» itself
+            // falls through to the standard map, because the question it asks is the same here.
             self::DepositPaid => [
+                self::AwaitingDeposit, self::Ready, self::Shortage, self::Cancelled,
+            ],
+
+            self::NoDeposit => [
                 self::AwaitingDeposit, self::Ready, self::Shortage, self::Cancelled,
             ],
 
@@ -340,10 +377,10 @@ enum OrderStatus: string
     private function outsourcedNext(): array
     {
         return match ($this) {
-            // **Two ways out, and no «جاهزة للطباعة» between them.** That status is the door into
-            // *our* press and the moment *our* warehouse lets the goods go, and neither happens
-            // on this road — the business named its absence as a requirement. So the job either
-            // goes to the designer first, or straight out to the vendor.
+            // **Two ways out of the deposit answer, and no «تجهيز» or «جاهزة للطباعة» between
+            // them.** Those are *our* warehouse gathering the goods and *our* press's queue, and
+            // neither happens on this road — the business named their absence as a requirement.
+            // So the job either goes to the designer first, or straight out to the vendor.
             //
             // **«نواقص» is absent too**, and for the plainer reason: we hold no stock of a وسيط
             // product, so there is nothing to be short of. The vendor being slow is «قيد
@@ -351,10 +388,12 @@ enum OrderStatus: string
             //
             // **«انتظار العربون» is here too**, and it is if anything the road that wants it
             // most: a وسيط job is money paid to somebody else before any of it comes back.
-            self::New => [self::AwaitingDeposit, self::Designing, self::Manufacturing],
-
-            // The two ways «جديدة» offers on this road, plus the ending.
+            // «جديدة» falls through to the standard map: the deposit question is the same here.
             self::DepositPaid => [
+                self::AwaitingDeposit, self::Designing, self::Manufacturing, self::Cancelled,
+            ],
+
+            self::NoDeposit => [
                 self::AwaitingDeposit, self::Designing, self::Manufacturing, self::Cancelled,
             ],
 
@@ -387,17 +426,6 @@ enum OrderStatus: string
     private function standardNext(): array
     {
         return match ($this) {
-            // The one open status that cannot be cancelled, and it is deliberate: a job nobody
-            // has started is two taps from being started, and cancelling would compete with the
-            // moves that matter. Cancelling is still available from every status after this one
-            // — the order has cost something by then, which is when writing it off is a decision
-            // rather than a stray tap. «نواقص» is here for the opposite reason: it is not an
-            // ending, it is the job failing to start.
-            //
-            // **«انتظار العربون» is offered beside the work rather than in front of it.** Most
-            // orders are started without one, so making the deposit compulsory would put a hop
-            // through an empty figure on every order in the shop. The clerk takes the road that
-            // matches the deal they made.
             // **Accepted, or refused.** Nothing else: a request under review has no deposit to
             // ask for, no shortage to discover and no press to queue for, because none of that
             // has been agreed with anybody yet. Accepting makes it «جديدة» and every arm below
@@ -418,7 +446,16 @@ enum OrderStatus: string
             // nothing happened — which is exactly what separates it from a cancellation.
             self::RequestRejected => [self::Requested],
 
-            self::New => [self::AwaitingDeposit, self::ReadyToPrint, self::Shortage],
+            // **One question, two answers: is this order taken on a عربون or not** (owner's
+            // status document, 2026-11-15). Every road asks it, which is why the other two
+            // fall through to this arm. The work starts from either answer, never from here.
+            //
+            // The one open status that cannot be cancelled, and it is deliberate: a job nobody
+            // has started is a tap from being started, and cancelling would compete with the
+            // moves that matter. Cancelling is available from every status after this one — the
+            // order has cost something by then, which is when writing it off is a decision rather
+            // than a stray tap.
+            self::New => [self::AwaitingDeposit, self::NoDeposit],
 
             // Waiting on money: it arrives, or the order is written off. Nothing else can happen
             // to an order the shop has decided not to start — and «إلغاء تام» is offered here
@@ -426,31 +463,39 @@ enum OrderStatus: string
             // money and calling that off is a decision somebody took rather than a stray tap.
             self::AwaitingDeposit => [self::DepositPaid, self::Cancelled],
 
-            // **Exactly where «جديدة» leads**, because that is where the order was going before
-            // the deposit stopped it — the handover to the press, or the shortage that stops it
-            // again. Written out rather than borrowed from the arm above so this status keeps
-            // answering for itself, and so «إلغاء تام» can be on it while «جديدة» goes without.
+            // **Where the work starts**, three ways: the shortage that stops it, the designer, or
+            // straight to the warehouse when the artwork is already approved. Written out rather
+            // than shared with the arm below so each status keeps answering for itself.
             //
             // **And back, which is the one move on this pair that moves money.** A عربون declared
             // paid and then not there — the حوالة never landed, the customer changed their mind
             // — is an ordinary Tuesday, and the order goes back to waiting for it. The entry the
             // forward move wrote is reversed by `ChangeOrderStatus` in the same transaction, so
-            // the ledger never carries a deposit the shop has stopped claiming. Nothing else on
-            // this road rewinds; this does, because what it rewinds is a statement rather than a
-            // piece of work.
+            // the ledger never carries a deposit the shop has stopped claiming.
             self::DepositPaid => [
-                self::AwaitingDeposit, self::ReadyToPrint, self::Shortage, self::Cancelled,
+                self::AwaitingDeposit, self::Shortage, self::Designing, self::Preparing, self::Cancelled,
             ],
 
-            // **The handover, and the only way into the press.** «جديدة» used to lead straight to
-            // the designer or the machine, which meant the moment inventory finished with an
-            // order was recorded nowhere: the press found out by somebody noticing. Routing both
-            // through one status gives printing a queue to read, and gives the warehouse one
-            // place to weigh the goods and let them go — see {@see ReadyToPrint}.
-            self::ReadyToPrint => [self::Designing, self::Printing, self::Cancelled],
+            // The same three starts, and «انتظار العربون» for the customer who is asked for one
+            // after all — nothing was paid, so going there unwinds nothing.
+            self::NoDeposit => [
+                self::AwaitingDeposit, self::Shortage, self::Designing, self::Preparing, self::Cancelled,
+            ],
 
-            // Never straight to ready: artwork that has been agreed still has to be printed.
-            self::Designing => [self::Printing, self::Cancelled],
+            // **The artwork, before the warehouse.** Out once a version is approved — the domain
+            // refuses «تجهيز» without one — or to «نواقص» when the stock turns out to be missing
+            // while the design is being agreed.
+            self::Designing => [self::Shortage, self::Preparing, self::Cancelled],
+
+            // **The warehouse at work.** Forward is the handover to the press, where the stock
+            // leaves the shelf. «نواقص» is here because gathering the sizes is exactly when a
+            // missing one is found.
+            self::Preparing => [self::ReadyToPrint, self::Shortage, self::Cancelled],
+
+            // **The press's queue, and the only way into it.** Back to «قيد التصميم» for artwork
+            // that has to change after the goods were gathered — the stock has already left, and
+            // the way forward again does not draw it twice.
+            self::ReadyToPrint => [self::Printing, self::Designing, self::Cancelled],
 
             self::Printing => [self::Ready, self::Designing, self::Cancelled],
 
@@ -470,27 +515,29 @@ enum OrderStatus: string
             // saying the finished bags do not exist while they sat on the shelf.
             self::Ready => [self::OfficePickup, self::OutForDelivery, self::Cancelled],
 
-            // **Only «جديدة» leads here, and that is the whole meaning of the status.** «نواقص»
-            // is what the shop finds when it goes to start a job it has taken: the stock for one
-            // of the sizes is not on the floor, so the order is parked before any work is done
-            // on it. Offering the same status from «قيد الطباعة» and «جاهزة» made it a second
-            // name for «the run came up short» — a different event, at a different desk, which
-            // the press already answers by going back a step to print the rest.
+            // **Only statuses before the warehouse lets go lead here**, and that is the whole
+            // meaning of the status: the stock for one of the sizes is not on the floor, so the
+            // order is parked before it reaches the press. Offering the same status from «قيد
+            // الطباعة» and «جاهزة» made it a second name for «the run came up short» — a different
+            // event, at a different desk, which the press answers by going back to print the rest.
             //
-            // Out of it is the way back on to the road it was taken off, plus the ending: a
-            // shortage that is never resolved is written off rather than left parked forever.
-            // It rejoins at «جاهزة للطباعة» rather than at the two production statuses for the
-            // same reason «جديدة» does — an order reaches the press through one door, and the
-            // missing stock has to be found and weighed before it goes through it. The domain
-            // refuses the move while anything is still short; see
-            // `ShortageMustBeResolved`.
-            self::Shortage => [self::ReadyToPrint, self::Cancelled],
+            // **Out of it is a person's choice** (owner's status document, 2026-11-15): «قيد
+            // التصميم» when the artwork is not settled — it may go on while the stock is awaited
+            // — or «تجهيز للطباعة» when it is, which the domain refuses while anything is still
+            // short; see `ShortageMustBeResolved`. And the ending: a shortage never resolved is
+            // written off rather than left parked forever.
+            self::Shortage => [self::Designing, self::Preparing, self::Cancelled],
 
             // No returns: it never left the building, so there is no courier and no carrier.
             // A customer who has not come yet is simply still waiting.
-            self::OfficePickup => [self::Delivered, self::Cancelled],
+            //
+            // **«إعادة إرسال» is for the customer who asks for delivery instead** (owner's
+            // decision, 2026-11-15). The move carries the new city, so the order arrives there
+            // as a delivery order and leaves the way any re-send does: Nawris, or our courier.
+            // See ORDERS-DESIGN.md «من استلام مكتب إلى توصيل».
+            self::OfficePickup => [self::Delivered, self::Resend, self::Cancelled],
 
-            // **A return is a chain of custody, walked one link at a time.** The parcel is with
+            // **Coming home is a chain of custody, walked one link at a time.** The parcel is with
             // the courier, who hands it back to the company that sent him, who hands it back to
             // us — and each of those hand-overs is a real event somebody is answerable for.
             // Allowing «جاري التوصيل» to jump straight to «راجع مكتب» would let the system
@@ -501,7 +548,12 @@ enum OrderStatus: string
             // «راجع مكتب» is where that decision is taken.
             self::OutForDelivery => [self::Delivered, self::ReturnedCourier],
 
-            self::ReturnedCourier => [self::ReturnedCarrier],
+            // **Delivered from any return, wherever the parcel stands** (owner's decision,
+            // 2026-11-15). A parcel marked as coming back is often handed over after all — the
+            // customer answers, the courier goes round again. Making it walk to «راجع مكتب»
+            // first would record a hand-over to our shelf that never happened, which is the
+            // lie the chain exists to prevent. Only the way *home* is walked link by link.
+            self::ReturnedCourier => [self::ReturnedCarrier, self::Delivered],
 
             // **Coming home is one link at a time; going out again is not.** A parcel sitting at
             // the delivery company's depot is most often waiting on nothing more than the
@@ -510,8 +562,9 @@ enum OrderStatus: string
             // have staff record the parcel onto a shelf it never reached in order to describe a
             // second attempt that was never interrupted, which is the same lie the chain exists
             // to prevent, told in the other direction. «راجع مكتب» stays for the parcel that
-            // genuinely does come back.
-            self::ReturnedCarrier => [self::ReturnedOffice, self::Resend],
+            // genuinely does come back. «تم الاستلام» is here for the same reason it is on the
+            // courier's arm above: the company's second attempt can simply succeed.
+            self::ReturnedCarrier => [self::ReturnedOffice, self::Resend, self::Delivered],
 
             // Back on our shelf, and three real endings: the customer comes in for it, it goes
             // out again, or it is written off.
@@ -631,6 +684,12 @@ enum OrderStatus: string
             // claim — see ConfirmDepositReceipt.
             self::AwaitingDeposit => PermissionName::MoveOrderToAwaitingDeposit,
             self::DepositPaid => PermissionName::MoveOrderToDepositPaid,
+            // Its own grant rather than the deposit pair's: going ahead without money up front is
+            // a credit decision, and the business composes who may make it.
+            self::NoDeposit => PermissionName::MoveOrderToNoDeposit,
+            // The warehouse's, beside «جاهزة للطباعة» and separate from it, so the person who
+            // starts gathering and the one who hands over may be different people.
+            self::Preparing => PermissionName::MoveOrderToPreparing,
             self::ReadyToPrint => PermissionName::MoveOrderToReadyToPrint,
             self::Designing => PermissionName::MoveOrderToDesigning,
             self::Printing => PermissionName::MoveOrderToPrinting,
@@ -691,9 +750,16 @@ enum OrderStatus: string
             // quietly lose the first. `order_status_transitions` holds every visit, and nothing
             // yet asks a question a column would answer faster.
             self::AwaitingDeposit => null,
-            // Unlike «نواقص», something does ask this question: «كم تقعد الطلبية بين المخزن
-            // والمطبعة؟» is the whole reason the status was added, and it cannot be answered
-            // from a status that is entered at most once without a column to read.
+            // Null for the same reason as «انتظار العربون»: nothing asks «متى قيل بدون عربون؟»,
+            // and the transitions table already answers it.
+            self::NoDeposit => null,
+            // «كم يأخذ التجهيز؟» is the question this status was added to answer, read against
+            // `ready_to_print_at`. Entered again after a shortage or a design correction, it
+            // keeps the latest start — the one the handover that follows it is measured from.
+            self::Preparing => 'preparing_started_at',
+            // Something does ask this question: «كم تقعد الطلبية بين المخزن والمطبعة؟». A design
+            // correction can bring an order back through it, and the column keeps the latest
+            // handover; the stock itself leaves once — see `stock_deducted_at`.
             self::ReadyToPrint => 'ready_to_print_at',
             self::Designing => 'design_started_at',
             self::Printing => 'printing_started_at',
@@ -710,11 +776,9 @@ enum OrderStatus: string
             self::RequestRejected => 'request_rejected_at',
             // A re-send is visited more than once by the orders that visit it at all — a parcel
             // goes out, comes back and goes out again — so a single column would keep the last
-            // visit and quietly lose the first. A shortage is entered at most once now that
-            // «جديدة» is its only way in, so a column *could* hold it honestly; it stays null
-            // because nothing asks the question yet, and the transitions table already has the
-            // answer. The day a report wants "orders parked short this week", this is a `case`
-            // and a migration.
+            // visit and quietly lose the first. A shortage can be entered more than once too — from
+            // the deposit answer, from design, from the warehouse — so it stays null; the
+            // transitions table already has every visit.
             self::Shortage, self::Resend => null,
 
             // **Null, and now reachable — which it was not before.** Nothing used to lead to
@@ -729,13 +793,13 @@ enum OrderStatus: string
     /**
      * The route an order is *meant* to take, in order.
      *
-     * جديدة → قيد التصميم → قيد الطباعة → جاهزة → (التسليم) → تم الاستلام → تم التسوية. This is
-     * the sequence the business described, and it is what a progress bar on the order screen
-     * walks. The last step is money rather than bags, and it is on the line because an order
-     * whose cash never came back is not a finished order.
+     * جديدة → قيد التصميم → تجهيز للطباعة → جاهزة للطباعة → قيد الطباعة → جاهزة → (التسليم) → تم
+     * الاستلام → تم التسوية. This is the sequence the business described, and it is what a
+     * progress bar on the order screen walks. The last step is money rather than bags, and it is
+     * on the line because an order whose cash never came back is not a finished order.
      *
-     * **Not every status is on it, and that is the point.** «نواقص»، الرواجع الثلاثة و«إعادة
-     * إرسال» are detours — real, common, and off the line. Putting them in the sequence would
+     * **Not every status is on it, and that is the point.** The three deposit statuses, «نواقص»،
+     * الرواجع الثلاثة و«إعادة إرسال» are detours — real, common, and off the line. Putting them in the sequence would
      * make the bar claim every order passes through a shortage on its way to being ready. They
      * are reported beside the line instead, as where the order actually is.
      *
@@ -759,11 +823,11 @@ enum OrderStatus: string
     public static function mainLine(FulfilmentType $fulfilment, OrderFlow $flow = OrderFlow::Standard): array
     {
         $work = match ($flow) {
-            OrderFlow::Standard => [self::ReadyToPrint, self::Designing, self::Printing],
+            OrderFlow::Standard => [self::Designing, self::Preparing, self::ReadyToPrint, self::Printing],
             // Nothing between being taken and being on the shelf: that is the road.
             OrderFlow::NoProduction => [],
-            // Design is on this road and «جاهزة للطباعة» is not — the job is sent out, not
-            // prepared for a press of ours.
+            // Design is on this road and «تجهيز» and «جاهزة للطباعة» are not — the job is sent
+            // out, not prepared for a press of ours.
             OrderFlow::Outsourced => [self::Designing, self::Manufacturing],
         };
 
@@ -785,9 +849,9 @@ enum OrderStatus: string
      * cases repeated wherever the short road is drawn.
      */
     /**
-     * **«جاهزة للطباعة» counts as production**, and that is what keeps it off the blank-goods
-     * line: it is the door into the press, so an order that never goes near the press never goes
-     * near it either.
+     * **«تجهيز للطباعة» and «جاهزة للطباعة» count as production**, and that is what keeps them
+     * off the blank-goods line: they are the way into the press, so an order that never goes near
+     * the press never goes near them either.
      *
      * **«قيد التصنيع» counts too, and it is work nobody here does.** The question this answers is
      * «هل هذه الحالة هي الشغل نفسه؟» — being made is being made, whether the machine is ours or a
@@ -796,7 +860,8 @@ enum OrderStatus: string
      */
     public function isProduction(): bool
     {
-        return $this === self::ReadyToPrint
+        return $this === self::Preparing
+            || $this === self::ReadyToPrint
             || $this === self::Designing
             || $this === self::Printing
             || $this === self::Manufacturing;

@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
-use App\Domain\Catalog\Models\ProductVariant;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
-use App\Domain\Inventory\Models\Warehouse;
-use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Order\Actions\RecalculateOrderTotals;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -65,32 +62,11 @@ class OrderShortageTest extends TestCase
         return $this->auth(
             PermissionName::ViewOrders,
             PermissionName::MoveOrderToShortage,
+            PermissionName::MoveOrderToPreparing,
             PermissionName::MoveOrderToReadyToPrint,
             PermissionName::MoveOrderToDesigning,
             PermissionName::MoveOrderToPrinting,
         );
-    }
-
-    /**
-     * A shelf holding far more than the order will draw.
-     *
-     * Leaving «نواقص» now lands on «جاهزة للطباعة», and that is where the stock goes out — so
-     * these tests need a warehouse that can cover the run. It is deliberately generous: what is
-     * under test here is the *invoice* following the shortage, and a run refused for a balance
-     * would be a different test failing in this one's name.
-     */
-    private function stockedWarehouse(OrderItem $item): Warehouse
-    {
-        $warehouse = Warehouse::factory()->create();
-
-        WarehouseStock::factory()->quantity('1000')->create([
-            'warehouse_id' => $warehouse->id,
-            'stock_item_id' => ProductVariant::query()
-                ->whereKey($item->product_variant_id)
-                ->value('stock_item_id'),
-        ]);
-
-        return $warehouse;
     }
 
     /**
@@ -262,7 +238,9 @@ class OrderShortageTest extends TestCase
         $this->assertSame('-155.00', $order->fresh()->remainingAmount());
     }
 
-    // ──────────────────────────── leaving «نواقص» ────────────────────────────
+    // ───────────────────── leaving «نواقص» for the warehouse ─────────────────────
+    // Asked on the move into «تجهيز للطباعة», which is where the delivery note is — «نواقص» may
+    // also be left for the designer while the stock is still awaited (ORDERS-STATUS-FLOW.md §٢١).
 
     public function test_leaving_a_shortage_asks_what_arrived_of_it(): void
     {
@@ -277,10 +255,13 @@ class OrderShortageTest extends TestCase
             ->getJson("/api/v1/orders/{$order->id}")
             ->json('data.available_transitions');
 
-        $handover = collect($transitions)->firstWhere('status', OrderStatus::ReadyToPrint->value);
+        $handover = collect($transitions)->firstWhere('status', OrderStatus::Preparing->value);
+        $toTheDesigner = collect($transitions)->firstWhere('status', OrderStatus::Designing->value);
 
         // Assert — one field per short line, bounded by what is missing from it and filled in
-        // with the whole of it, because «وصل الكل» is what leaving this status usually means.
+        // with the whole of it, because «وصل الكل» is what going to the warehouse usually means.
+        // The designer is not asked: the stock may still be on its way.
+        $this->assertNotContains("received_{$item->id}", array_column($toTheDesigner['fields'], 'key'));
         $field = collect($handover['fields'])->firstWhere('key', "received_{$item->id}");
 
         $this->assertNotNull($field);
@@ -296,20 +277,17 @@ class OrderShortageTest extends TestCase
         app(RecalculateOrderTotals::class)($order->refresh());
         $headers = $this->storeman();
 
-        $warehouse = $this->stockedWarehouse($item);
-
         // Act
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::ReadyToPrint->value,
+            'status' => OrderStatus::Preparing->value,
             'fields' => [
                 "received_{$item->id}" => '100',
-                'warehouse_id' => $warehouse->id,
             ],
         ]);
 
         // Assert — the move and the money in one transaction. The stock all arrived, so the
-        // order is complete and may be handed to the press.
-        $response->assertOk()->assertJsonPath('data.status', 'ready_to_print');
+        // order is complete and may go to the warehouse.
+        $response->assertOk()->assertJsonPath('data.status', 'preparing');
         $this->assertNull($item->fresh()->shortage_quantity);
         $this->assertSame('465.00', (string) $order->fresh()->items_total);
     }
@@ -326,18 +304,15 @@ class OrderShortageTest extends TestCase
         // what is left standing afterwards.
         $this->setShortages($headers, $order, [$item->id => '100'])->assertOk();
 
-        $warehouse = $this->stockedWarehouse($item);
-
         // Act — sixty of the hundred came in, so forty are still missing.
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::ReadyToPrint->value,
+            'status' => OrderStatus::Preparing->value,
             'fields' => [
                 "received_{$item->id}" => '60',
-                'warehouse_id' => $warehouse->id,
             ],
         ]);
 
-        // Assert — **refused, and nothing of it kept.** «جاهزة للطباعة» promises the press a
+        // Assert — **refused, and nothing of it kept.** «تجهيز للطباعة» promises the warehouse a
         // complete order, and forty bags are still missing; the whole move is one transaction, so
         // the partial arrival it carried goes back with it rather than leaving the order half
         // corrected by a move that failed.
@@ -365,14 +340,11 @@ class OrderShortageTest extends TestCase
         // what is left standing afterwards.
         $this->setShortages($headers, $order, [$item->id => '100'])->assertOk();
 
-        $warehouse = $this->stockedWarehouse($item);
-
         // Act — zero typed over the prefill: nothing came in.
         $response = $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
-            'status' => OrderStatus::ReadyToPrint->value,
+            'status' => OrderStatus::Preparing->value,
             'fields' => [
                 "received_{$item->id}" => '0',
-                'warehouse_id' => $warehouse->id,
             ],
         ]);
 

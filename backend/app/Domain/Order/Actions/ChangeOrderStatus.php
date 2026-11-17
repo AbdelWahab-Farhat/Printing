@@ -7,12 +7,16 @@ namespace App\Domain\Order\Actions;
 use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Delivery\DeliveryService;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
+use App\Domain\Order\DTOs\OrderDestination;
 use App\Domain\Order\DTOs\OrderPaymentData;
 use App\Domain\Order\Enums\CustomerMessage;
+use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
@@ -29,9 +33,12 @@ use App\Domain\Order\Exceptions\OrderLinesNeedAPrice;
 use App\Domain\Order\Exceptions\OutsourcedLinesNeedACost;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PaymentRequiresAnActor;
+use App\Domain\Order\Exceptions\PreparingNeedsAnApprovedDesign;
 use App\Domain\Order\Exceptions\PrintOrderNeedsADesign;
 use App\Domain\Order\Exceptions\PrintOrderNeedsColors;
+use App\Domain\Order\Exceptions\ResendFromPickupNeedsADeliveryCity;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
+use App\Domain\Order\Exceptions\ShortageAfterStockDrawn;
 use App\Domain\Order\Exceptions\ShortageMustBeResolved;
 use App\Domain\Order\Exceptions\ShortageNeedsAQuantity;
 use App\Domain\Order\Exceptions\TransitionNotAllowed;
@@ -106,6 +113,11 @@ final class ChangeOrderStatus
         // DELIVERY-PAYER.md §3.
         private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
         private readonly RecalculateOrderPayments $recalculatePayments,
+        // The same resolver the edit form uses, for «استلام مكتب» → «إعادة إرسال».
+        private readonly ResolveOrderDestination $resolveDestination,
+        // «اعتماد آخر نسخة» on the way into «تجهيز للطباعة» is the same verdict the design
+        // screen records, through the same action.
+        private readonly ReviewOrderDesign $reviewDesign,
     ) {}
 
     /**
@@ -141,6 +153,9 @@ final class ChangeOrderStatus
      * @throws PaymentRequiresAnActor
      * @throws PrintOrderNeedsADesign
      * @throws PrintOrderNeedsColors
+     * @throws ResendFromPickupNeedsADeliveryCity
+     * @throws PreparingNeedsAnApprovedDesign
+     * @throws ShortageAfterStockDrawn
      */
     public function __invoke(
         Order $order,
@@ -236,7 +251,10 @@ final class ChangeOrderStatus
         // **No press while a design ticket opened for this order is still open**
         // (PRINT-COLORS.md §10). Its approval puts the design on the order; printing first
         // would print a file nobody approved. Ours is «قيد الطباعة», the vendor's «قيد التصنيع».
+        // **Nor the warehouse**: «تجهيز للطباعة» comes after the artwork now, so gathering goods
+        // for a design still being drawn is the same mistake one step earlier.
         $headsForThePress = $target === OrderStatus::Printing
+            || $target === OrderStatus::Preparing
             || ($target === OrderStatus::Manufacturing && $order->production_flow === OrderFlow::Outsourced);
 
         if ($headsForThePress) {
@@ -249,8 +267,18 @@ final class ChangeOrderStatus
                 ->all();
 
             if ($openTickets !== []) {
-                throw OrderHasOpenDesignTicket::make($openTickets);
+                throw OrderHasOpenDesignTicket::make(
+                    $openTickets,
+                    $target === OrderStatus::Preparing ? 'التجهيز' : 'الطباعة',
+                );
             }
+        }
+
+        // **A shortage is found before the stock leaves, never after.** An order sent back to
+        // «قيد التصميم» from the press's queue already has its goods; declaring them missing
+        // would park a drawn order and ask for an arrival nobody is waiting on.
+        if ($target === OrderStatus::Shortage && $order->stock_deducted_at !== null) {
+            throw ShortageAfterStockDrawn::make();
         }
 
         $uncostedAfterFields = $target === OrderStatus::Ready && $order->ready_at === null
@@ -261,10 +289,22 @@ final class ChangeOrderStatus
             throw OutsourcedLinesNeedACost::make($uncostedAfterFields);
         }
 
-        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest): Order {
+        // **The customer asked for delivery instead of coming in.** Resolved before the
+        // transaction, like the vendor above: a wrong region is refused before anything is
+        // written. Null on every other move.
+        $deliverTo = $this->deliveryInsteadOfPickup($from, $target, $fields);
+
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest, $deliverTo): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
+
+            // **The new address lands with the status, never without it.** Written first so
+            // everything below reads a delivery order, and in this transaction so a refused move
+            // leaves the order at the counter, still a pickup.
+            if ($deliverTo !== null) {
+                $this->sendToTheDoor($order, $deliverTo, $fields);
+            }
 
             // **The vendor the accept dialog named, written before anything reads the order
             // again.** Inside the transaction, so a move that fails further down does not leave
@@ -565,14 +605,13 @@ final class ChangeOrderStatus
             }
 
             // **Before the status moves, for the same reason the artwork sometimes is.** What
-            // arrived of a shortage is a fact about the order as it still stands in «نواقص»,
-            // where its lines are open; the status it is heading for closes them. See the
-            // method's own docblock.
-            $this->recordArrivedShortages($order, $from, $target, $fields, $actor);
+            // arrived of a shortage is a fact about the order as it still stands where its
+            // shortages are open. See the method's own docblock.
+            $this->recordArrivedShortages($order, $target, $fields, $actor);
 
             // And judged immediately after, so the order is refused on what it actually still
             // owes rather than on what it owed before the delivery was counted in.
-            $this->guardShortageIsResolved($order, $from, $target);
+            $this->guardShortageIsResolved($order, $target);
 
             $order->forceFill($attributes)->save();
 
@@ -581,6 +620,13 @@ final class ChangeOrderStatus
                 // Back in a status that takes artwork — out of «نواقص», say — so a design
                 // ticket approved meanwhile lands now (PRINT-COLORS.md §11).
                 ($this->attachApprovedTicketDesigns)($order, $actor);
+            }
+
+            // **The warehouse gathers goods for an approved file only.** Judged once every
+            // version the move carried is on the order, and inside the transaction so a refusal
+            // takes the status and the artwork back with it.
+            if ($target === OrderStatus::Preparing) {
+                $this->approveDesignForPreparing($order, $fields, $actor);
             }
 
             // **The colours, judged once the artwork the move carried is on** (PRINT-COLORS.md
@@ -848,6 +894,69 @@ final class ChangeOrderStatus
     }
 
     /**
+     * The delivery city an order leaving the counter for «إعادة إرسال» is going to, or null on
+     * every other move.
+     *
+     * **Required, and never a branch.** An order that left the counter still a pickup would land
+     * straight back at the counter on its next «out», and nothing on screen would say why.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws ResendFromPickupNeedsADeliveryCity
+     */
+    private function deliveryInsteadOfPickup(OrderStatus $from, OrderStatus $target, array $fields): ?OrderDestination
+    {
+        if ($from !== OrderStatus::OfficePickup || $target !== OrderStatus::Resend) {
+            return null;
+        }
+
+        $answer = $fields[TransitionFields::DESTINATION] ?? null;
+        $cityId = is_array($answer) ? self::idIn($answer, 'city_id') : null;
+
+        if ($cityId === null) {
+            throw ResendFromPickupNeedsADeliveryCity::make();
+        }
+
+        $destination = ($this->resolveDestination)($cityId, self::idIn($answer, 'region_id'));
+
+        if ($destination->fulfilmentType !== FulfilmentType::Delivery) {
+            throw ResendFromPickupNeedsADeliveryCity::make();
+        }
+
+        return $destination;
+    }
+
+    /**
+     * Writes the delivery address an order is leaving the counter for — the columns the edit
+     * form writes, through the same {@see OrderDestination::columns()} — and the street beside
+     * it when the move carried one.
+     *
+     * **Then the delivery cost, as an edit to the city would.** When we pay the courier, the
+     * city's rate is what delivery costs us, and the investors' share and the fund's cash were
+     * worked out without it. `UpdateOrder::reworkTheMoney()` is the same two lines for the same
+     * reason.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    private function sendToTheDoor(Order $order, OrderDestination $destination, array $fields): void
+    {
+        $attributes = $destination->columns();
+
+        if (array_key_exists(TransitionFields::ADDRESS_DETAILS, $fields)) {
+            $street = trim((string) ($fields[TransitionFields::ADDRESS_DETAILS] ?? ''));
+            $attributes['address_details'] = $street === '' ? null : $street;
+        }
+
+        $order->forceFill($attributes)->save();
+
+        if (($this->recalculateDeliveryCost)($order)) {
+            OrderProfitFinalised::dispatch((int) $order->getKey());
+
+            ($this->recalculatePayments)($order);
+        }
+    }
+
+    /**
      * Either dispatch status means "it is leaving"; the city says which one that is.
      */
     private function resolve(Order $order, OrderStatus $target): OrderStatus
@@ -870,6 +979,50 @@ final class ChangeOrderStatus
     {
         foreach ((array) ($fields['design_ids'] ?? []) as $designId) {
             ($this->addDesign)($order, (int) $designId);
+        }
+    }
+
+    /**
+     * Approves the latest version when the move says so, then refuses «تجهيز للطباعة» to an order
+     * with artwork and no approved version (owner's status document, 2026-11-15, rule 2).
+     *
+     * **What gets approved is what the press would print**: {@see Order::designForPress()} — the
+     * newest version nobody turned down. The tick is how the person moving the order says «this is
+     * the file», so approving and moving are one step, not two screens.
+     *
+     * **"Has artwork" is any version, or a design source other than «بدون تصميم».** An order
+     * marked «تصميم من عندنا» with nothing drawn yet has to go through «قيد التصميم» first, which
+     * is what the refusal tells it.
+     *
+     * @param  array<string, mixed>  $fields
+     *
+     * @throws PreparingNeedsAnApprovedDesign
+     */
+    private function approveDesignForPreparing(Order $order, array $fields, ?User $actor): void
+    {
+        $order->unsetRelation('designs');
+
+        $candidate = $order->designForPress();
+
+        if ($candidate !== null
+            && $candidate->status === OrderDesignStatus::Proposed
+            && filter_var($fields[TransitionFields::APPROVE_DESIGN] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            ($this->reviewDesign)($order, $candidate, OrderDesignStatus::Approved, null, $actor);
+
+            $order->unsetRelation('designs');
+        }
+
+        $hasAVersion = $order->designs()->exists();
+        $needsOne = $hasAVersion || ($order->design_source ?? DesignSource::None) !== DesignSource::None;
+
+        if (! $needsOne) {
+            return;
+        }
+
+        $approved = $order->designs()->where('status', OrderDesignStatus::Approved)->exists();
+
+        if (! $approved) {
+            throw PreparingNeedsAnApprovedDesign::make($hasAVersion);
         }
     }
 
@@ -928,30 +1081,37 @@ final class ChangeOrderStatus
     }
 
     /**
-     * What arrived of the shortage, written **before** the order leaves «نواقص».
+     * What arrived of the shortage, written on the move into «تجهيز للطباعة», **before** the
+     * status is.
+     *
+     * **On that move, and only that one.** «نواقص» may be left for «قيد التصميم» while the stock
+     * is still awaited — the artwork goes on in parallel — so leaving it no longer means the goods
+     * came. Going to the warehouse does: that is where somebody has the delivery note in hand. So
+     * the question is asked there, of an order coming from «نواقص» or from «قيد التصميم» alike.
      *
      * **The side of the status write this falls on is decided by the same rule the artwork
-     * follows.** {@see SetOrderShortages} refuses an order whose lines are locked, and «نواقص» is
-     * one of the four statuses where they are not — but «جاهزة للطباعة», the status this move
-     * usually lands on, is not: the goods have been weighed and the stock has already left the
-     * warehouse by then, so the lines close there on purpose. Recorded after the save, this would
-     * refuse every delivery that resolved a shortage.
-     *
-     * So it is recorded while the order still stands in the status that permits it — exactly as
-     * `$artworkGoesFirst` decides which side of the write the designs go on.
+     * follows.** {@see SetOrderShortages} refuses an order whose shortages are locked, so it is
+     * recorded while the order still stands in the status it came from. An order coming from a
+     * status that does not take shortages records nothing here, and the guard below tells it what
+     * is still missing.
      *
      * @param  array<string, mixed>  $fields
      */
     private function recordArrivedShortages(
         Order $order,
-        OrderStatus $from,
         OrderStatus $target,
         array $fields,
         ?User $actor,
     ): void {
-        if ($from === OrderStatus::Shortage && ! $target->isFinal()) {
-            ($this->setShortages)($order, $this->remaining($order, $fields), $actor, ShortageRevision::Received);
+        if ($target !== OrderStatus::Preparing || ! $order->shortagesAreEditable()) {
+            return;
         }
+
+        if ($order->load('items')->unresolvedShortages() === []) {
+            return;
+        }
+
+        ($this->setShortages)($order, $this->remaining($order, $fields), $actor, ShortageRevision::Received);
     }
 
     /**
@@ -1136,21 +1296,23 @@ final class ChangeOrderStatus
     }
 
     /**
-     * An order still short of something is not ready for the press.
+     * An order still short of something goes neither to the warehouse nor to the press.
      *
-     * **Only on the way into «جاهزة للطباعة», and only from «نواقص».** That move is a promise to
+     * **On the way into «تجهيز للطباعة» and «جاهزة للطباعة», from wherever.** Each is a promise to
      * another department that the goods are all here; every other move an order short of stock
-     * can make — being written off, having the shortage corrected — is left alone, because none
-     * of them tells anybody the order is complete.
+     * can make — to the designer while the stock is awaited, being written off, having the
+     * shortage corrected — is left alone, because none of them tells anybody the order is
+     * complete. «جاهزة للطباعة» is asked again because a shortage can be declared on the
+     * shortages screen while the order is being gathered.
      *
-     * Reads the lines fresh: `recordShortages()` has just written to them on this same move, and
-     * the whole point is to judge the order as it stands *after* that.
+     * Reads the lines fresh: `recordArrivedShortages()` has just written to them on this same
+     * move, and the whole point is to judge the order as it stands *after* that.
      *
      * @throws ShortageMustBeResolved
      */
-    private function guardShortageIsResolved(Order $order, OrderStatus $from, OrderStatus $target): void
+    private function guardShortageIsResolved(Order $order, OrderStatus $target): void
     {
-        if ($from !== OrderStatus::Shortage || $target !== OrderStatus::ReadyToPrint) {
+        if ($target !== OrderStatus::Preparing && $target !== OrderStatus::ReadyToPrint) {
             return;
         }
 

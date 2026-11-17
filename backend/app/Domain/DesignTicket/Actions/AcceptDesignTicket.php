@@ -88,6 +88,8 @@ final class AcceptDesignTicket
                 'accepted_by_user_id' => $designer->getKey(),
                 'accepted_at' => $now,
                 'status' => DesignTicketStatus::InProgress,
+                // Set by hand: a mass update skips the model hook that stamps it everywhere else.
+                'status_changed_at' => $now,
                 'updated_at' => $now,
             ]);
 

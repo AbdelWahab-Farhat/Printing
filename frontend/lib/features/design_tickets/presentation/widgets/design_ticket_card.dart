@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dayaa/core/theme/app_tones.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/dates.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/image_viewer.dart';
@@ -216,6 +217,17 @@ class _Details extends StatelessWidget {
                       style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                   ),
+                  // **How long it has stood in this status.** The list is ordered by the last
+                  // status change, and without the time an old ticket jumping to the top reads
+                  // as a random order.
+                  if (ticket.statusChangedAt case final at?) ...[
+                    SizedBox(width: 8.w),
+                    Text(
+                      at.agoLabel,
+                      style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                    SizedBox(width: 6.w),
+                  ],
                   Text(
                     ticket.code,
                     style: text.labelSmall?.copyWith(

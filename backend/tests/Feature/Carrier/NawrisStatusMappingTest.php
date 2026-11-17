@@ -14,6 +14,7 @@ use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -361,6 +362,34 @@ class NawrisStatusMappingTest extends TestCase
 
         // Assert
         $this->assertSame(OrderStatus::ReturnedOffice, $order->fresh()->status);
+    }
+
+    /**
+     * @return array<string, array{OrderStatus}>
+     */
+    public static function returnsStillOutOfOurHands(): array
+    {
+        return [
+            'with the courier' => [OrderStatus::ReturnedCourier],
+            'at the carrier' => [OrderStatus::ReturnedCarrier],
+        ];
+    }
+
+    #[DataProvider('returnsStillOutOfOurHands')]
+    public function test_a_delivery_lands_on_a_parcel_that_was_coming_back(OrderStatus $status): void
+    {
+        // Arrange — the courier went round again and the customer took it.
+        [$order, $parcel] = $this->outForDelivery($status);
+
+        // Act
+        $this->send($this->body());
+
+        // Assert — delivered and paid exactly as from the road, not parked.
+        $order->refresh();
+        $this->assertSame(OrderStatus::Delivered, $order->status);
+        $this->assertNull($this->lastEvent()->error);
+        $this->assertSame('100.00', (string) $order->paid_amount);
+        $this->assertNotNull($parcel->fresh()->closed_at);
     }
 
     // ── the codes themselves ─────────────────────────────────────────────────────────────

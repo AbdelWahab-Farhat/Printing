@@ -16,6 +16,7 @@ use App\Domain\Inventory\Models\StockItem;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DesignSource;
+use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderDesign;
@@ -26,6 +27,7 @@ use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -43,6 +45,7 @@ class OrderTransitionFieldsTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -63,6 +66,9 @@ class OrderTransitionFieldsTest extends TestCase
             PermissionName::ViewOrders->value,
             PermissionName::ManageOrders->value,
             PermissionName::ManageOrderDesigns->value,
+            PermissionName::MoveOrderToAwaitingDeposit->value,
+            PermissionName::MoveOrderToNoDeposit->value,
+            PermissionName::MoveOrderToPreparing->value,
             PermissionName::MoveOrderToReadyToPrint->value,
             PermissionName::MoveOrderToDesigning->value,
             PermissionName::MoveOrderToPrinting->value,
@@ -121,6 +127,9 @@ class OrderTransitionFieldsTest extends TestCase
         if ($to === OrderStatus::Printing && ! isset($payload['fields']['design_ids'])) {
             $this->givePrintableArtwork($order);
         }
+
+        // «جديدة» only asks the deposit question now — see WalksPastIntake.
+        $this->walkPastIntake($order, $to);
 
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
@@ -253,7 +262,7 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertFalse($designing['fields'][0]['required']);
     }
 
-    public function test_a_new_order_starts_work_or_says_it_cannot_and_is_never_cancelled(): void
+    public function test_a_new_order_is_asked_the_deposit_question_and_is_never_cancelled(): void
     {
         // Arrange
         $order = Order::factory()->create();
@@ -265,16 +274,14 @@ class OrderTransitionFieldsTest extends TestCase
             'status',
         );
 
-        // Assert — the handover to the press, and «نواقص» for the case where the job cannot be
-        // started at all. **Which half of the press it goes to is no longer asked here**: an
-        // order crosses to the printing department through one door, and that department chooses
-        // between designing and printing once it has it. Cancelling is not among them either: a
-        // job nobody has begun is two taps from being begun, and an ending competed with the
-        // moves that matter.
+        // Assert — on a deposit or without one, and nothing else (owner's status document,
+        // 2026-11-15): the work starts from either answer. Cancelling is not among them: a job
+        // nobody has begun is a tap from being begun, and an ending competed with the moves that
+        // matter.
         $this->assertSame(
             [
-                OrderStatus::ReadyToPrint->value,
-                OrderStatus::Shortage->value,
+                OrderStatus::AwaitingDeposit->value,
+                OrderStatus::NoDeposit->value,
             ],
             $offered,
         );
@@ -333,22 +340,23 @@ class OrderTransitionFieldsTest extends TestCase
         $this->assertFalse($printing['fields'][1]['required']);
     }
 
-    public function test_leaving_design_for_the_press_offers_the_artwork_one_last_time(): void
+    public function test_leaving_design_for_the_warehouse_offers_the_artwork_and_its_approval(): void
     {
-        // Arrange — the order has been waiting in the designer's queue.
+        // Arrange — the order has been waiting in the designer's queue, with no version yet.
         [$order] = $this->orderNeedingArtwork();
         $order->forceFill(['status' => OrderStatus::Designing])->save();
         $headers = $this->foreman();
 
         // Act
-        $printing = $this->transition($this->show($headers, $order), OrderStatus::Printing);
+        $preparing = $this->transition($this->show($headers, $order), OrderStatus::Preparing);
 
-        // Assert — this is the move the finished artwork arrives with: «قيد التصميم» is the one
-        // status that accepts a version, and this is the last moment the order stands in it.
-        // `press_colors` (PRINT-COLORS.md §12): asked beside the artwork, optional while there is
-        // no version yet — the file picked here may bring its own colours.
-        $this->assertSame(['design_ids', 'press_colors', 'reason'], array_column($printing['fields'], 'key'));
-        $this->assertFalse($printing['fields'][0]['required']);
+        // Assert — this is the move the finished artwork arrives with (owner's status document,
+        // 2026-11-15: the design before the warehouse). Nothing is on the order to approve yet,
+        // so the tick is offered for the file picked on this move, and not demanded.
+        $this->assertSame(['design_ids', 'approve_design', 'reason'], array_column($preparing['fields'], 'key'));
+        $this->assertFalse($preparing['fields'][0]['required']);
+        $this->assertSame('checkbox', $preparing['fields'][1]['type']);
+        $this->assertFalse($preparing['fields'][1]['required']);
     }
 
     public function test_reaching_ready_asks_for_a_warehouse(): void
@@ -1156,26 +1164,23 @@ class OrderTransitionFieldsTest extends TestCase
     public function test_the_artwork_is_attached_while_the_order_is_still_in_design(): void
     {
         // Arrange — the whole point of the waiting: the designer finished, and sends the order
-        // to the press with the file in the same hand. Stock already left a warehouse for this
-        // run, so the move is not asked for one and this test stays about the artwork.
+        // to the warehouse with the file in the same hand.
         [$order, $customer] = $this->orderNeedingArtwork();
         $design = CustomerDesign::factory()->for($customer)->printable()->create();
-        $order->forceFill([
-            'status' => OrderStatus::Designing,
-            'stock_deducted_at' => now(),
-        ])->save();
+        $order->forceFill(['status' => OrderStatus::Designing])->save();
         $headers = $this->foreman();
 
-        // Act
-        $response = $this->move($headers, $order, OrderStatus::Printing, [
-            'fields' => ['design_ids' => [$design->id]],
+        // Act — the file, and its approval, on one move.
+        $response = $this->move($headers, $order, OrderStatus::Preparing, [
+            'fields' => ['design_ids' => [$design->id], 'approve_design' => true],
         ]);
 
         // Assert — the mirror image of the correction path: there the status is written first
         // because the *new* status is the one that accepts artwork, here it is written last for
-        // the same reason about the old one. Either way the version lands.
-        $response->assertOk()->assertJsonPath('data.status', 'printing');
+        // the same reason about the old one. Either way the version lands, and is the approved one.
+        $response->assertOk()->assertJsonPath('data.status', 'preparing');
         $this->assertSame(1, $order->designs()->count());
+        $this->assertSame(OrderDesignStatus::Approved, $order->designs()->sole()->status);
     }
 
     /**
@@ -1273,9 +1278,8 @@ class OrderTransitionFieldsTest extends TestCase
 
     public function test_a_shortage_is_asked_for_line_by_line(): void
     {
-        // Arrange — two sizes on one order, priced differently. «نواقص» is offered off «جديدة»,
-        // which is the only status it is reachable from.
-        $order = Order::factory()->create();
+        // Arrange — two sizes on one order, priced differently, past the deposit question.
+        $order = Order::factory()->status(OrderStatus::NoDeposit)->create();
         $pieces = OrderItem::factory()->for($order)->create([
             'variant_label' => '30*30',
             'pricing_unit' => PricingUnit::Piece,
@@ -1345,7 +1349,7 @@ class OrderTransitionFieldsTest extends TestCase
 
         // Assert — a «نواقص» that does not say what is missing is a status nobody can act on.
         $response->assertStatus(422);
-        $this->assertSame(OrderStatus::New, $order->fresh()->status);
+        $this->assertSame(OrderStatus::NoDeposit, $order->fresh()->status);
     }
 
     public function test_what_is_missing_is_recorded_against_the_size_it_is_missing_from(): void

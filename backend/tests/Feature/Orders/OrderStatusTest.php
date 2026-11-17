@@ -37,36 +37,47 @@ class OrderStatusTest extends TestCase
     public static function transitions(): array
     {
         return [
-            'a new order is prepped for the press, parked for its deposit, or found short at intake' => [
+            'a new order is taken on a deposit or without one — nothing else' => [
                 OrderStatus::New,
-                [OrderStatus::AwaitingDeposit, OrderStatus::ReadyToPrint, OrderStatus::Shortage],
+                [OrderStatus::AwaitingDeposit, OrderStatus::NoDeposit],
             ],
             'an order waiting on its deposit gets it, or is written off' => [
                 OrderStatus::AwaitingDeposit,
                 [OrderStatus::DepositPaid, OrderStatus::Cancelled],
             ],
-            'a paid deposit rejoins the road where «جديدة» leaves it — or goes back to waiting' => [
+            'a paid deposit starts the work three ways — or goes back to waiting' => [
                 OrderStatus::DepositPaid,
                 [
-                    OrderStatus::AwaitingDeposit, OrderStatus::ReadyToPrint,
-                    OrderStatus::Shortage, OrderStatus::Cancelled,
+                    OrderStatus::AwaitingDeposit, OrderStatus::Shortage, OrderStatus::Designing,
+                    OrderStatus::Preparing, OrderStatus::Cancelled,
                 ],
             ],
-            'the handover leads into the press, either door — or is written off' => [
-                OrderStatus::ReadyToPrint,
-                [OrderStatus::Designing, OrderStatus::Printing, OrderStatus::Cancelled],
+            'no deposit starts the work the same three ways — or asks for one after all' => [
+                OrderStatus::NoDeposit,
+                [
+                    OrderStatus::AwaitingDeposit, OrderStatus::Shortage, OrderStatus::Designing,
+                    OrderStatus::Preparing, OrderStatus::Cancelled,
+                ],
             ],
-            'a design must pass through printing — never straight to ready' => [
+            'the artwork goes to the warehouse once approved, or finds the stock short' => [
                 OrderStatus::Designing,
-                [OrderStatus::Printing, OrderStatus::Cancelled],
+                [OrderStatus::Shortage, OrderStatus::Preparing, OrderStatus::Cancelled],
+            ],
+            'the warehouse hands over to the press, or finds a size missing' => [
+                OrderStatus::Preparing,
+                [OrderStatus::ReadyToPrint, OrderStatus::Shortage, OrderStatus::Cancelled],
+            ],
+            'the press queue starts printing, or goes back for a design correction' => [
+                OrderStatus::ReadyToPrint,
+                [OrderStatus::Printing, OrderStatus::Designing, OrderStatus::Cancelled],
             ],
             'printing ends ready, and may go back to the drawing board' => [
                 OrderStatus::Printing,
                 [OrderStatus::Ready, OrderStatus::Designing, OrderStatus::Cancelled],
             ],
-            'a shortage rejoins the route at the handover it was taken off before' => [
+            'a shortage is left by hand — to the artwork or to the warehouse' => [
                 OrderStatus::Shortage,
-                [OrderStatus::ReadyToPrint, OrderStatus::Cancelled],
+                [OrderStatus::Designing, OrderStatus::Preparing, OrderStatus::Cancelled],
             ],
             'ready leaves for the customer or is written off — the bags exist, so it never goes back' => [
                 OrderStatus::Ready,
@@ -75,21 +86,21 @@ class OrderStatusTest extends TestCase
                     OrderStatus::Cancelled,
                 ],
             ],
-            'an order waiting at the counter is collected or cancelled — never returned' => [
+            'an order waiting at the counter is collected, sent out instead, or cancelled — never returned' => [
                 OrderStatus::OfficePickup,
-                [OrderStatus::Delivered, OrderStatus::Cancelled],
+                [OrderStatus::Delivered, OrderStatus::Resend, OrderStatus::Cancelled],
             ],
             'an order on the road either arrives or comes back to the courier who carried it' => [
                 OrderStatus::OutForDelivery,
                 [OrderStatus::Delivered, OrderStatus::ReturnedCourier],
             ],
-            'a parcel the courier still holds goes back to the company that sent him' => [
+            'a parcel the courier still holds goes back to the company, or is handed over after all' => [
                 OrderStatus::ReturnedCourier,
-                [OrderStatus::ReturnedCarrier],
+                [OrderStatus::ReturnedCarrier, OrderStatus::Delivered],
             ],
-            'from the company, back to our office — or straight out for a second attempt' => [
+            'from the company: back to our office, out for a second attempt, or handed over' => [
                 OrderStatus::ReturnedCarrier,
-                [OrderStatus::ReturnedOffice, OrderStatus::Resend],
+                [OrderStatus::ReturnedOffice, OrderStatus::Resend, OrderStatus::Delivered],
             ],
             'back on our shelf: collected here, sent out again, or written off' => [
                 OrderStatus::ReturnedOffice,
@@ -140,12 +151,16 @@ class OrderStatusTest extends TestCase
         $shared = self::transitions();
 
         return [
-            'goods that are already made go straight to the shelf' => [
-                OrderStatus::New,
-                [OrderStatus::AwaitingDeposit, OrderStatus::Ready, OrderStatus::Shortage],
-            ],
-            'a paid deposit reaches the shelf directly too — the deposit is about the deal, not the work' => [
+            'the deposit question is the same whatever is in the bags' => $shared['a new order is taken on a deposit or without one — nothing else'],
+            'a paid deposit reaches the shelf directly — the deposit is about the deal, not the work' => [
                 OrderStatus::DepositPaid,
+                [
+                    OrderStatus::AwaitingDeposit, OrderStatus::Ready,
+                    OrderStatus::Shortage, OrderStatus::Cancelled,
+                ],
+            ],
+            'no deposit reaches the shelf directly too' => [
+                OrderStatus::NoDeposit,
                 [
                     OrderStatus::AwaitingDeposit, OrderStatus::Ready,
                     OrderStatus::Shortage, OrderStatus::Cancelled,
@@ -160,8 +175,8 @@ class OrderStatusTest extends TestCase
             'printing is unreachable, but its own arm is untouched' => $shared['printing ends ready, and may go back to the drawing board'],
             'the shelf leaves the same two ways' => $shared['ready leaves for the customer or is written off — the bags exist, so it never goes back'],
             'the road is the same' => $shared['an order on the road either arrives or comes back to the courier who carried it'],
-            'the return chain is the same' => $shared['a parcel the courier still holds goes back to the company that sent him'],
-            'the depot is the same' => $shared['from the company, back to our office — or straight out for a second attempt'],
+            'the return chain is the same' => $shared['a parcel the courier still holds goes back to the company, or is handed over after all'],
+            'the depot is the same' => $shared['from the company: back to our office, out for a second attempt, or handed over'],
             'our shelf is the same' => $shared['back on our shelf: collected here, sent out again, or written off'],
             'a re-send is the same' => $shared['a re-send leaves the same two ways any order leaves'],
             'the money is still owed' => $shared['the customer has it — all that is left is the money'],
@@ -273,12 +288,13 @@ class OrderStatusTest extends TestCase
         ));
 
         // Assert — the whole cost of the feature, stated as a list. Every entry is a status the
-        // work is *dispatched from*: «جديدة» sends it, «نواقص» rejoins it, «عربون مدفوع» sends
-        // it once the money is in. Nothing else about an order's life depends on whether the
-        // press ran — and an entry appearing here that is not one of those three is a change
-        // worth arguing about rather than one worth discovering later.
+        // work is *dispatched from*: the two deposit answers send it, «نواقص» rejoins it.
+        // «جديدة» only asks the deposit question, which is the same on every road. Nothing else
+        // about an order's life depends on whether the press ran — and an entry appearing here
+        // that is not one of those three is a change worth arguing about rather than one worth
+        // discovering later.
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::New, OrderStatus::Shortage, OrderStatus::DepositPaid],
+            [OrderStatus::Shortage, OrderStatus::DepositPaid, OrderStatus::NoDeposit],
             $differing,
         );
     }
@@ -292,24 +308,22 @@ class OrderStatusTest extends TestCase
         // Act
         $fromIntake = OrderStatus::New->allowedNext(OrderFlow::Outsourced);
 
-        // Assert — «يمكن الانتقال من جديدة مباشرة إلى قيد التصنيع»، و«يمكن المرور بقيد التصميم
-        // أولاً إذا كان الطلب يحتاج تصميماً». Two doors into the work, and «انتظار العربون»
-        // beside them: a وسيط job is money paid to somebody else before any of it comes back,
-        // so asking for a deposit first is if anything commoner here than on our own road.
-        $this->assertSame(
-            [OrderStatus::AwaitingDeposit, OrderStatus::Designing, OrderStatus::Manufacturing],
-            $fromIntake,
-        );
+        // Assert — «جديدة» asks the deposit question on this road too, and nothing else.
+        $this->assertSame([OrderStatus::AwaitingDeposit, OrderStatus::NoDeposit], $fromIntake);
 
-        // And a deposit paid on this road opens the same two doors «جديدة» did, plus the way back
-        // to waiting and the ending.
-        $this->assertSame(
-            [
-                OrderStatus::AwaitingDeposit, OrderStatus::Designing,
-                OrderStatus::Manufacturing, OrderStatus::Cancelled,
-            ],
-            OrderStatus::DepositPaid->allowedNext(OrderFlow::Outsourced),
-        );
+        // «يمكن الانتقال مباشرة إلى قيد التصنيع»، و«يمكن المرور بقيد التصميم أولاً إذا كان الطلب
+        // يحتاج تصميماً». Either deposit answer opens those two doors, plus the way to waiting
+        // for a deposit and the ending: a وسيط job is money paid to somebody else before any of
+        // it comes back.
+        foreach ([OrderStatus::DepositPaid, OrderStatus::NoDeposit] as $answered) {
+            $this->assertSame(
+                [
+                    OrderStatus::AwaitingDeposit, OrderStatus::Designing,
+                    OrderStatus::Manufacturing, OrderStatus::Cancelled,
+                ],
+                $answered->allowedNext(OrderFlow::Outsourced),
+            );
+        }
 
         // And the design queue leads to the vendor rather than to a press of ours.
         $this->assertSame(
@@ -325,7 +339,9 @@ class OrderStatusTest extends TestCase
 
         // Assert — «عدم إضافة حالة جاهز للتصنيع»: دعاية does not run the manufacturing, so there
         // is nothing to be ready *for*. Absent from the whole road by walking it, not merely
-        // missing from «جديدة». «قيد الطباعة» goes with it: the press is not on this road either.
+        // missing from «جديدة». «قيد الطباعة» goes with it: the press is not on this road either,
+        // and nor is our warehouse gathering goods for it.
+        $this->assertNotContains(OrderStatus::Preparing, $reachable);
         $this->assertNotContains(OrderStatus::ReadyToPrint, $reachable);
         $this->assertNotContains(OrderStatus::Printing, $reachable);
 
@@ -443,6 +459,7 @@ class OrderStatusTest extends TestCase
             OrderStatus::Shortage,
             OrderStatus::AwaitingDeposit,
             OrderStatus::DepositPaid,
+            OrderStatus::NoDeposit,
             OrderStatus::OfficePickup,
             OrderStatus::ReturnedCourier,
             OrderStatus::ReturnedCarrier,
@@ -456,42 +473,41 @@ class OrderStatusTest extends TestCase
 
     public function test_the_press_is_entered_through_one_door(): void
     {
-        // Arrange — the two statuses the printing department owns.
-        $press = [OrderStatus::Designing, OrderStatus::Printing];
-
-        // Act — every status inventory owns, and what it can reach.
-        $fromIntake = OrderStatus::New->allowedNext();
-        $fromShortage = OrderStatus::Shortage->allowedNext();
-
-        // Assert — **the whole point of «جاهزة للطباعة».** An order used to cross from the
-        // warehouse to the press invisibly, so the moment inventory finished was recorded
-        // nowhere and the press found out by somebody noticing. Neither of the two statuses
-        // inventory owns may reach a production status directly any more.
-        foreach ($press as $status) {
-            $this->assertNotContains($status, $fromIntake);
-            $this->assertNotContains($status, $fromShortage);
-        }
-
-        $this->assertContains(OrderStatus::ReadyToPrint, $fromIntake);
-        $this->assertContains(OrderStatus::ReadyToPrint, $fromShortage);
-    }
-
-    public function test_the_handover_is_reached_from_intake_and_from_a_resolved_shortage(): void
-    {
-        // Act
-        $waysIn = array_values(array_filter(
+        // Act — every status that can reach the press, and every one that can reach its queue.
+        $waysIntoThePress = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::Printing, $s->allowedNext(), true),
+        ));
+        $waysIntoTheQueue = array_values(array_filter(
             OrderStatus::cases(),
             fn (OrderStatus $s) => in_array(OrderStatus::ReadyToPrint, $s->allowedNext(), true),
         ));
 
-        // Assert — the places an order can be while inventory still has it. «عربون مدفوع» is one
-        // of them and is intake wearing a second name: the order has not been started, it has
-        // been *paid for*, and the next thing that happens to it is the same handover «جديدة»
-        // leads to. Nothing comes *back* to the handover: once the press has the order,
-        // finishing it is the press's business and re-handing it over would describe a second
-        // delivery that never happened.
+        // Assert — **the whole point of «جاهزة للطباعة».** An order used to cross from the
+        // warehouse to the press invisibly, so the moment inventory finished was recorded
+        // nowhere and the press found out by somebody noticing. The press is entered from its
+        // queue alone, and the queue from the warehouse's own «تجهيز للطباعة» alone.
+        $this->assertSame([OrderStatus::ReadyToPrint], $waysIntoThePress);
+        $this->assertSame([OrderStatus::Preparing], $waysIntoTheQueue);
+    }
+
+    public function test_the_warehouse_is_reached_from_the_deposit_answers_the_design_and_a_shortage(): void
+    {
+        // Act
+        $waysIn = array_values(array_filter(
+            OrderStatus::cases(),
+            fn (OrderStatus $s) => in_array(OrderStatus::Preparing, $s->allowedNext(), true),
+        ));
+
+        // Assert — the places an order can be before the goods are gathered (owner's status
+        // document, 2026-11-15): either deposit answer when the artwork is already approved, the
+        // design queue once it is, and a shortage resolved by hand. «جديدة» is not one of them —
+        // it only asks the deposit question.
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::New, OrderStatus::Shortage, OrderStatus::DepositPaid],
+            [
+                OrderStatus::DepositPaid, OrderStatus::NoDeposit,
+                OrderStatus::Designing, OrderStatus::Shortage,
+            ],
             $waysIn,
         );
     }
@@ -560,12 +576,14 @@ class OrderStatusTest extends TestCase
         }
     }
 
-    public function test_a_shortage_is_declared_at_intake_and_nowhere_else(): void
+    public function test_a_shortage_is_declared_before_the_stock_leaves_and_nowhere_else(): void
     {
-        // Arrange — intake is both doors an un-started order can be standing in: taken, or taken
-        // and paid for. Neither has had a hand laid on the goods yet, which is the whole of what
-        // this test is about.
-        $intake = [OrderStatus::New, OrderStatus::DepositPaid];
+        // Arrange — every status an order stands in before «جاهزة للطباعة» draws its stock, once
+        // the deposit question is answered (owner's status document, 2026-11-15).
+        $beforeTheDraw = [
+            OrderStatus::DepositPaid, OrderStatus::NoDeposit,
+            OrderStatus::Designing, OrderStatus::Preparing,
+        ];
 
         // Act
         $waysIn = array_values(array_filter(
@@ -574,14 +592,12 @@ class OrderStatusTest extends TestCase
         ));
 
         // Assert — «نواقص» is what the shop finds when it goes to start the job: the stock is not
-        // there, and the order is parked before any work is done on it. Offering it from «قيد
+        // there, and the order is parked before it reaches the press. Offering it from «قيد
         // الطباعة» and «جاهزة» too made it a second name for «the run came up short», which is a
-        // different event and one the press already answers by going back a step.
-        //
-        // **Both intake statuses offer it, and that is the same rule rather than a second one.**
-        // The stock is discovered missing when somebody goes to start the job, and a deposit
-        // being paid is exactly when they go to start it.
-        $this->assertEqualsCanonicalizing($intake, $waysIn);
+        // different event and one the press already answers by going back a step. An order sent
+        // back to «قيد التصميم» after the draw is refused by the domain — see
+        // `ShortageAfterStockDrawn`.
+        $this->assertEqualsCanonicalizing($beforeTheDraw, $waysIn);
     }
 
     public function test_a_parcel_comes_back_the_way_it_went_out(): void
@@ -592,13 +608,27 @@ class OrderStatusTest extends TestCase
 
         // Assert — a return is a chain of custody, and coming *home* is walked one link at a
         // time: the courier hands the parcel back to the company that sent him, and the company
-        // hands it back to us. Skipping a link would record a hand-over that never happened —
-        // a parcel still in somebody's van marked as being on our shelf, or in the customer's
-        // hands without anybody having taken it there.
-        $this->assertSame([OrderStatus::ReturnedCarrier], $fromCourier);
+        // hands it back to us. Skipping a link would record a parcel still in somebody's van as
+        // being on our shelf.
+        $this->assertNotContains(OrderStatus::ReturnedOffice, $fromCourier);
+        $this->assertContains(OrderStatus::ReturnedCarrier, $fromCourier);
         $this->assertContains(OrderStatus::ReturnedOffice, $fromCarrier);
-        $this->assertNotContains(OrderStatus::Delivered, $fromCarrier);
         $this->assertNotContains(OrderStatus::ReturnedCourier, $fromCarrier);
+    }
+
+    public function test_a_returning_parcel_can_still_be_handed_over(): void
+    {
+        // Assert — a parcel marked as coming back is often delivered after all: the customer
+        // answers and the courier goes round again. It is delivered from wherever it stands,
+        // on every road, rather than walked to our shelf first (owner's decision, 2026-11-15).
+        foreach (OrderFlow::cases() as $flow) {
+            foreach ([OrderStatus::ReturnedCourier, OrderStatus::ReturnedCarrier, OrderStatus::ReturnedOffice] as $return) {
+                $this->assertTrue(
+                    $return->canMoveTo(OrderStatus::Delivered, $flow),
+                    "{$return->value} should reach delivered on the {$flow->value} road",
+                );
+            }
+        }
     }
 
     public function test_the_carrier_may_try_again_without_the_parcel_coming_home(): void
@@ -685,11 +715,14 @@ class OrderStatusTest extends TestCase
             fn (OrderStatus $s) => in_array(OrderStatus::Delivered, $s->allowedNext(), true),
         ));
 
-        // Assert — nothing jumps from the shelf to the customer's hands. «راجع مكتب» is on the
-        // list for a real reason: a parcel that came back is sitting at the counter, and the
-        // customer coming in for it is the happiest ending it has left.
+        // Assert — nothing jumps from the shelf to the customer's hands. The three returns are on
+        // the list for a real reason: a parcel marked as coming back is often handed over after
+        // all, wherever it stands (owner's decision, 2026-11-15).
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::OfficePickup, OrderStatus::OutForDelivery, OrderStatus::ReturnedOffice],
+            [
+                OrderStatus::OfficePickup, OrderStatus::OutForDelivery,
+                OrderStatus::ReturnedCourier, OrderStatus::ReturnedCarrier, OrderStatus::ReturnedOffice,
+            ],
             $canDeliver,
         );
     }
@@ -811,7 +844,7 @@ class OrderStatusTest extends TestCase
         // holds no list of its own, so this sequence *is* the board.
         $opening = array_map(
             fn (OrderStatus $s) => $s->value,
-            array_slice(OrderStatus::cases(), 0, 10),
+            array_slice(OrderStatus::cases(), 0, 12),
         );
 
         // Assert — two cards to a row on the phone, and each row pairs the work with the thing
@@ -835,7 +868,11 @@ class OrderStatusTest extends TestCase
             'requested', 'request_rejected',
             'new', 'shortage',
             'awaiting_deposit', 'deposit_paid',
-            'designing', 'ready_to_print',
+            // The order going ahead without a deposit beside the first desk it usually reaches,
+            // and the warehouse at work beside the queue it hands to the press (owner's status
+            // document, 2026-11-15).
+            'no_deposit', 'designing',
+            'preparing', 'ready_to_print',
             'printing', 'manufacturing',
         ], $opening);
     }

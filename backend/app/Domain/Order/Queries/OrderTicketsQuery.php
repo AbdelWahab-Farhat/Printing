@@ -102,7 +102,8 @@ final class OrderTicketsQuery
                 status: $ticket->status->value,
                 statusLabel: $ticket->status->label(),
                 isOpen: $ticket->status->isOpen(),
-                activityAt: $ticket->updated_at,
+                // Not `updated_at`: opening the conversation moves that one too.
+                activityAt: $ticket->status_changed_at,
             ))
             ->values()
             ->all();

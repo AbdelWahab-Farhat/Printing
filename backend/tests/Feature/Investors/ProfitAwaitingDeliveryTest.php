@@ -34,6 +34,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -55,6 +56,7 @@ class ProfitAwaitingDeliveryTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -208,6 +210,7 @@ class ProfitAwaitingDeliveryTest extends TestCase
     /** إلى «جاهزة للطباعة» — تخرج البضاعةُ من الرفّ، ولم تُحسب تكلفةُ الإنتاج بعد. */
     private function toThePress(array $headers, Order $order, Warehouse $warehouse): void
     {
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->getKey()],

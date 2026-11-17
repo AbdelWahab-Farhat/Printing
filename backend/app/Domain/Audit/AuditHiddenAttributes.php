@@ -93,6 +93,8 @@ final class AuditHiddenAttributes
             'staff_read_message_id',
             'last_message_at',
         ],
+        // Moves with `status`, and the entry's own date already says when.
+        'design_ticket' => ['status_changed_at'],
         'ticket_message' => ['client_token'],
         'treasury_operation' => ['client_token'],
         'vendor_payment' => ['client_token'],

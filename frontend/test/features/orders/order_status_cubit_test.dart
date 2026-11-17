@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart' hide Order;
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_status.dart';
@@ -856,5 +857,68 @@ void main() {
         fields: any(named: 'fields'),
       ),
     );
+  });
+
+  group('«مدينة التوصيل» for an order leaving the counter', () {
+    const destination = TransitionField(
+      key: 'destination',
+      type: TransitionFieldType.destination,
+      label: 'مدينة التوصيل',
+      isRequired: true,
+    );
+    const toResend = OrderTransition(
+      status: OrderStatus.resend,
+      label: 'إعادة إرسال',
+      fields: [destination],
+    );
+    const janzour = City(id: 21, name: 'جنزور', isRegionRequired: true);
+    const ghiran = Region(id: 210, cityId: 21, name: 'الغيران');
+
+    setUp(() {
+      when(() => repository.order(7))
+          .thenAnswer((_) async => Right(orderWith(transitions: [toResend])));
+      when(
+        () => repository.changeStatus(
+          7,
+          status: any(named: 'status'),
+          reason: any(named: 'reason'),
+          fields: any(named: 'fields'),
+        ),
+      ).thenAnswer((_) async => Right(orderWith()));
+    });
+
+    test('a city that needs a region cannot be sent without one', () async {
+      // Arrange
+      await cubit.load();
+
+      // Act
+      cubit.setValue('destination', const DeliveryDestination(city: janzour));
+
+      // Assert
+      expect(cubit.state.canSubmit, isFalse);
+    });
+
+    test('travels as the city and region ids', () async {
+      // Arrange
+      await cubit.load();
+      cubit.setValue('destination', const DeliveryDestination(city: janzour, region: ghiran));
+
+      // Act
+      await cubit.submit();
+
+      // Assert
+      final sent = verify(
+        () => repository.changeStatus(
+          7,
+          status: any(named: 'status'),
+          reason: any(named: 'reason'),
+          fields: captureAny(named: 'fields'),
+        ),
+      ).captured.last;
+
+      expect(sent, {
+        'destination': {'city_id': 21, 'region_id': 210},
+      });
+    });
   });
 }

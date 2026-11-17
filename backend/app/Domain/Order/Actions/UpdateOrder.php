@@ -6,6 +6,7 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
+use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
@@ -21,6 +22,7 @@ use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\EditWouldChangeTheRoad;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
+use App\Domain\Order\Exceptions\PickupBecomesDeliveryThroughResend;
 use App\Domain\Order\Exceptions\RecipientPhoneCannotChange;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
@@ -44,9 +46,10 @@ use Illuminate\Support\Facades\DB;
  * - **The lines close when printing starts**, enforced by {@see SyncOrderItems} — which also
  *   moves the stock behind them once it has left the shelf.
  *
- * Changing the city re-snapshots its name and its rate, and re-derives the fulfilment type. An
- * order already dispatched cannot reach this code, so there is no case where that silently
- * contradicts the status it is sitting in.
+ * Changing the city re-snapshots its name and its rate, and re-derives the fulfilment type.
+ * «جاري التوصيل» cannot reach that code at all, and «استلام مكتب» may change branch but not
+ * become a delivery — that goes through «إعادة إرسال» — so the fulfilment type never
+ * contradicts the status the order is sitting in.
  */
 final class UpdateOrder
 {
@@ -107,6 +110,18 @@ final class UpdateOrder
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);
 
+        // **An order waiting at the counter does not become a delivery here** (owner's decision,
+        // 2026-11-15). Its status would still say «استلام مكتب», which leads nowhere a delivery
+        // can go. The move into «إعادة إرسال» asks for the city instead and writes both together.
+        // Another branch, the street or the phone are still ordinary edits — and so is any edit
+        // that leaves the city where it is, so an order stuck this way before the rule existed
+        // can still have its notes corrected.
+        if ($destinationMoved
+            && $order->status === OrderStatus::OfficePickup
+            && $destination->fulfilmentType === FulfilmentType::Delivery) {
+            throw PickupBecomesDeliveryThroughResend::make();
+        }
+
         // Re-read on every edit, like the city name beside it: moving the job to another vendor
         // moves the name with it, and clearing the vendor clears both.
         $vendorName = $data->vendorId === null
@@ -134,11 +149,6 @@ final class UpdateOrder
                 'customer_shop_name' => $shopName,
                 'vendor_id' => $data->vendorId,
                 'vendor_name' => $vendorName,
-                'city_id' => $destination->cityId,
-                'region_id' => $destination->regionId,
-                'city_name' => $destination->cityName,
-                'region_name' => $destination->regionName,
-                'fulfilment_type' => $destination->fulfilmentType,
                 'design_source' => $data->designSource,
                 'recipient_name' => $data->recipientName,
                 'recipient_phone' => $data->recipientPhone,
@@ -156,7 +166,8 @@ final class UpdateOrder
             // read it, so the order every edit sends back carries a fee they never had. It moves
             // only through SetOrderDesignFee and FillDesignFeeFromTickets.
             $order->forceFill([
-                'delivery_price' => $destination->deliveryPrice,
+                // The city, region, their names, the fulfilment type and the city's rate.
+                ...$destination->columns(),
                 'discount' => $data->discount,
                 'additional_cost' => $data->additionalCost,
                 'additional_cost_reason' => $data->additionalCostReason,

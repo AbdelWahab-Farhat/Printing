@@ -74,7 +74,7 @@ class OrderTicketsTest extends TestCase
         $staff = InternalTicket::factory()->between(User::factory()->create(), $me)
             ->create(['order_id' => $order->id, 'last_message_at' => now()->subHours(3)]);
         $design = DesignTicket::factory()
-            ->create(['order_id' => $order->id, 'status' => DesignTicketStatus::ChangesRequested, 'updated_at' => now()->subHour()]);
+            ->create(['order_id' => $order->id, 'status' => DesignTicketStatus::ChangesRequested, 'status_changed_at' => now()->subHour()]);
         $support = SupportTicket::factory()
             ->create(['order_id' => $order->id, 'last_message_at' => now()->subHours(2)]);
         InternalTicket::factory()->between($me, User::factory()->create())->create();

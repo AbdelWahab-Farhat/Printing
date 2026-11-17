@@ -460,6 +460,17 @@ abstract final class AppIcons {
   static IconData get depositPaid =>
       _pick(Icons.payments_rounded, CupertinoIcons.money_dollar);
 
+  /// «بدون عربون» — taken on without money up front. Banknotes struck through: the other answer
+  /// to the question [depositPaid] answers, and never a sign that anything is wrong.
+  static IconData get noDeposit =>
+      _pick(Icons.money_off_rounded, CupertinoIcons.money_dollar_circle);
+
+  /// «تجهيز للطباعة» — the warehouse gathering the goods into the press's place. A basket being
+  /// filled, against «جاهزة للطباعة»'s closed box: the same desk, before and after. Not
+  /// [returnedOffice]'s tray, which is a parcel come home.
+  static IconData get preparing =>
+      _pick(Icons.shopping_basket_rounded, CupertinoIcons.cart_fill);
+
   /// Orders nobody has finished with — «الطلبات الجارية».
   ///
   /// A clock over a list, not [history]'s clock-with-an-arrow: the two sit on the same customer

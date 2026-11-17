@@ -22,4 +22,23 @@ final readonly class OrderDestination
         public FulfilmentType $fulfilmentType,
         public string $deliveryPrice,
     ) {}
+
+    /**
+     * The `orders` columns this destination writes, for `forceFill()` — `delivery_price` is not
+     * fillable. One list, so the edit form and the move into «إعادة إرسال» cannot write
+     * different halves of an address.
+     *
+     * @return array<string, mixed>
+     */
+    public function columns(): array
+    {
+        return [
+            'city_id' => $this->cityId,
+            'region_id' => $this->regionId,
+            'city_name' => $this->cityName,
+            'region_name' => $this->regionName,
+            'fulfilment_type' => $this->fulfilmentType,
+            'delivery_price' => $this->deliveryPrice,
+        ];
+    }
 }

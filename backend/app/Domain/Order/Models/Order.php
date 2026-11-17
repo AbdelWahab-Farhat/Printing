@@ -183,6 +183,7 @@ class Order extends Model implements HasAuditTrail
             // answers exactly. See `TransitionFields::money()`.
             'collected_amount' => 'decimal:2',
             'placed_at' => 'datetime',
+            'preparing_started_at' => 'datetime',
             'ready_to_print_at' => 'datetime',
             'design_started_at' => 'datetime',
             'printing_started_at' => 'datetime',
@@ -370,9 +371,10 @@ class Order extends Model implements HasAuditTrail
     /**
      * Whether «رسالة المورد» is a question this order is asking now.
      *
-     * Only on the outsourced road, and only before «جاهزة»: in «جديدة», «قيد التصميم» and «قيد
-     * التصنيع» the vendor still has something to be told. Once the goods are ready there is
-     * nothing left to send, and the copy button and the switch both go away.
+     * Only on the outsourced road, and only before «جاهزة»: in «جديدة», the two deposit answers
+     * that lead to the vendor, «قيد التصميم» and «قيد التصنيع» the vendor still has something to
+     * be told. Once the goods are ready there is nothing left to send, and the copy button and
+     * the switch both go away.
      */
     public function vendorMessageApplies(): bool
     {
@@ -388,7 +390,15 @@ class Order extends Model implements HasAuditTrail
      */
     public static function vendorMessageStatuses(): array
     {
-        return [OrderStatus::New, OrderStatus::Designing, OrderStatus::Manufacturing];
+        // «عربون مدفوع» and «بدون عربون» are where an order now waits to be sent out, since
+        // «جديدة» only asks the deposit question (owner's status document, 2026-11-15).
+        return [
+            OrderStatus::New,
+            OrderStatus::DepositPaid,
+            OrderStatus::NoDeposit,
+            OrderStatus::Designing,
+            OrderStatus::Manufacturing,
+        ];
     }
 
     /**
@@ -811,8 +821,8 @@ class Order extends Model implements HasAuditTrail
      * a list somebody can argue with — the customer rings and adds a size, or drops one. Once
      * the press runs, the order is ink on bags.
      *
-     * **«جاهزة للطباعة» and the standard road's «قيد التصميم» are open although the stock has
-     * already left the shelf.** An edit there moves each changed line's stock as well — see
+     * **«جاهزة للطباعة» is open although the stock has already left the shelf**, and so is «قيد
+     * التصميم» for an order sent back to it from there. An edit there moves each changed line's stock as well — see
      * `SyncOrderItems` and Docs/orders/ORDER-LINES-ADD-REMOVE.md §6. That is why
      * `stock_deducted_at`, not the status, decides how an edit is carried out.
      *
@@ -830,9 +840,11 @@ class Order extends Model implements HasAuditTrail
                 OrderStatus::New,
                 OrderStatus::AwaitingDeposit,
                 OrderStatus::DepositPaid,
+                OrderStatus::NoDeposit,
                 OrderStatus::Shortage,
-                OrderStatus::ReadyToPrint,
                 OrderStatus::Designing,
+                OrderStatus::Preparing,
+                OrderStatus::ReadyToPrint,
             ],
             true,
         );
@@ -857,6 +869,8 @@ class Order extends Model implements HasAuditTrail
                 // not fix it: an order parked on a shortage is exactly where somebody argues the
                 // number — and the number now moves the invoice.
                 OrderStatus::Shortage,
+                // Gathering the sizes is exactly when the warehouse finds one missing.
+                OrderStatus::Preparing,
                 OrderStatus::Printing,
             ],
             true,
@@ -1030,8 +1044,10 @@ class Order extends Model implements HasAuditTrail
             OrderStatus::New,
             OrderStatus::AwaitingDeposit,
             OrderStatus::DepositPaid,
-            OrderStatus::ReadyToPrint,
+            OrderStatus::NoDeposit,
             OrderStatus::Designing,
+            OrderStatus::Preparing,
+            OrderStatus::ReadyToPrint,
         ];
     }
 
@@ -1045,8 +1061,8 @@ class Order extends Model implements HasAuditTrail
      *
      * While that is true the order's `items_total` and `grand_total` are understatements, and
      * the resources send null instead of them rather than show a customer a total that is not
-     * the price. {@see \App\Domain\Order\Actions\RecalculateOrderTotals} explains why the stored
-     * columns are allowed to be wrong, and {@see \App\Domain\Order\Actions\ChangeOrderStatus}
+     * the price. {@see RecalculateOrderTotals} explains why the stored
+     * columns are allowed to be wrong, and {@see ChangeOrderStatus}
      * is what keeps the wrongness confined to a status nothing bills from.
      */
     public function hasUnpricedLines(): bool
@@ -1155,9 +1171,9 @@ class Order extends Model implements HasAuditTrail
     /**
      * Where a delivered order stood before it reached «تم الاستلام», or null.
      *
-     * The same reading as {@see statusBeforeCancellation()} and for the same reason: three
-     * statuses lead to «تم الاستلام» — «جاري التوصيل», «استلام مكتب» and «راجع مكتب» — and only
-     * the timeline says which one this order came from. It is what {@see UndoOrderDelivery} puts
+     * The same reading as {@see statusBeforeCancellation()} and for the same reason: five
+     * statuses lead to «تم الاستلام» — «جاري التوصيل», «استلام مكتب» and the three returns — and
+     * only the timeline says which one this order came from. It is what {@see UndoOrderDelivery} puts
      * the order back to.
      *
      * **An un-settlement is not a delivery**, though it too lands on «تم الاستلام». Its row reads

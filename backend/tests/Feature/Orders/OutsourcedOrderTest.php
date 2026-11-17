@@ -25,6 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -44,6 +45,7 @@ class OutsourcedOrderTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -148,6 +150,9 @@ class OutsourcedOrderTest extends TestCase
         if ($to === OrderStatus::Printing) {
             $this->givePrintableArtwork($order);
         }
+
+        // «جديدة» only asks the deposit question now — see WalksPastIntake.
+        $this->walkPastIntake($order, $to);
 
         return $this->withHeaders($headers)->postJson(
             "/api/v1/orders/{$order->id}/status",
@@ -330,14 +335,17 @@ class OutsourcedOrderTest extends TestCase
         // Arrange
         $headers = $this->coordinator();
         $order = $this->takenOrder($headers);
+        // The deposit question answered: that is where the work is now dispatched from.
+        $this->walkPastIntake($order, OrderStatus::Manufacturing);
 
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
 
-        // Assert — «عدم إضافة حالة جاهز للتصنيع»، ولا «قيد الطباعة»، ولا «نواقص» لبضاعة ليست
-        // عندنا أصلاً. What is offered at intake is the designer or the vendor.
+        // Assert — «عدم إضافة حالة جاهز للتصنيع»، ولا «تجهيز»، ولا «قيد الطباعة»، ولا «نواقص»
+        // لبضاعة ليست عندنا أصلاً. What is offered once the deposit is answered is the designer
+        // or the vendor — and the ending.
         $offered = array_column($response->json('data.available_transitions'), 'status');
-        $this->assertEqualsCanonicalizing(['designing', 'manufacturing'], $offered);
+        $this->assertEqualsCanonicalizing(['designing', 'manufacturing', 'cancelled'], $offered);
     }
 
     public function test_the_move_into_ready_asks_for_no_warehouse(): void

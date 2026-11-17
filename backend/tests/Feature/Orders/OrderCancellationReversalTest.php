@@ -27,6 +27,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -45,6 +46,7 @@ class OrderCancellationReversalTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -113,6 +115,7 @@ class OrderCancellationReversalTest extends TestCase
         ]);
 
         foreach ([OrderStatus::ReadyToPrint, OrderStatus::Printing, OrderStatus::Ready] as $step) {
+            $this->walkPastIntake($order, $step);
             $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", array_filter([
                 'status' => $step->value,
                 'fields' => $step === OrderStatus::ReadyToPrint
@@ -157,6 +160,7 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -195,6 +199,7 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -250,6 +255,7 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -302,7 +308,8 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '90',
         ]);
 
-        // بضاعةٌ سادة لا تمرّ بالمكينة: «جديدة ← جاهزة» خطوةً واحدة، وعندها تخرج من الرفّ.
+        // بضاعةٌ سادة لا تمرّ بالمكينة: بعد جواب العربون «← جاهزة» خطوةً واحدة، وعندها تخرج من الرفّ.
+        $this->walkPastIntake($order, OrderStatus::Ready);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -365,6 +372,7 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -413,6 +421,7 @@ class OrderCancellationReversalTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],
@@ -471,6 +480,7 @@ class OrderCancellationReversalTest extends TestCase
         // The stock leaves at the handover, so that is where the warehouse is named — and then on
         // through the press to «جاهزة», because labour and overhead are costed there rather than
         // at the handover: that is where the run has actually happened.
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],

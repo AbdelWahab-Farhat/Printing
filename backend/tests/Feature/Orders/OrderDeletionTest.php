@@ -46,6 +46,7 @@ use App\Domain\Order\Models\ProductionCostEntry;
 use App\Domain\Order\Support\StockEffectPreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -73,6 +74,7 @@ class OrderDeletionTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     private function actor(): User
     {
@@ -117,6 +119,7 @@ class OrderDeletionTest extends TestCase
             'quantity' => '300.000',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::ReadyToPrint,
@@ -316,6 +319,7 @@ class OrderDeletionTest extends TestCase
         ]);
         app(ResolveOrderFlow::class)($order->load('items'));
 
+        $this->walkPastIntake($order, OrderStatus::Manufacturing);
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Manufacturing, null, $actor);
         app(ChangeOrderStatus::class)($order->refresh(), OrderStatus::Ready, null, $actor);
 
@@ -352,6 +356,7 @@ class OrderDeletionTest extends TestCase
         ]);
         app(ResolveOrderFlow::class)($order->load('items'));
 
+        $this->walkPastIntake($order, OrderStatus::Ready);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::Ready,
@@ -623,6 +628,7 @@ class OrderDeletionTest extends TestCase
             ]);
         }
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             $order->refresh(),
             OrderStatus::ReadyToPrint,
@@ -793,6 +799,7 @@ class OrderDeletionTest extends TestCase
         // for it, and no index catches it because a deduction has no reversal to collide with.
         $this->expectException(OrderIsDeletedForStatusChange::class);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         app(ChangeOrderStatus::class)(
             Order::withTrashed()->findOrFail($order->getKey()),
             OrderStatus::ReadyToPrint,

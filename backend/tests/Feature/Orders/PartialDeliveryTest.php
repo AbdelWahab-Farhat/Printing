@@ -27,6 +27,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,7 @@ class PartialDeliveryTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     protected function setUp(): void
     {
@@ -208,6 +210,8 @@ class PartialDeliveryTest extends TestCase
                 && $order->refresh()->stock_deducted_at === null
                 && ($step === OrderStatus::ReadyToPrint || $step === OrderStatus::Ready);
 
+            $this->walkPastIntake($order, $step);
+
             $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", array_filter([
                 'status' => $step->value,
                 'fields' => $drawsHere ? ['warehouse_id' => $warehouse->getKey()] : null,
@@ -290,6 +294,7 @@ class PartialDeliveryTest extends TestCase
             'line_total' => '330.00',
         ]);
         app(ResolveOrderFlow::class)($order->load('items'));
+        $this->walkPastIntake($order, OrderStatus::Ready);
 
         $this->withHeaders($headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::Ready->value,

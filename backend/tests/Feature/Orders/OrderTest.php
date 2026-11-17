@@ -1152,9 +1152,10 @@ class OrderTest extends TestCase
         // Eloquent arms its lazy-loading guard only for a query that returned several rows,
         // which is exactly the shape a page has and a single-row fixture does not — so a list
         // test with one order proves nothing about the list.
-        $withLines = Order::factory()->create();
+        // Past the deposit question, which is where «نواقص» is offered from.
+        $withLines = Order::factory()->status(OrderStatus::NoDeposit)->create();
         OrderItem::factory()->for($withLines)->create(['variant_label' => '30*30']);
-        Order::factory()->create();
+        Order::factory()->status(OrderStatus::NoDeposit)->create();
         // Someone who may actually record a shortage: the fields of a move are only described
         // for the moves this user is offered.
         $headers = $this->auth(PermissionName::ViewOrders, PermissionName::MoveOrderToShortage);
@@ -1162,7 +1163,7 @@ class OrderTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson('/api/v1/orders');
 
-        // Assert — every new order is offered «نواقص», and that offer is a field per line,
+        // Assert — every order past its deposit is offered «نواقص», and that offer is a field per line,
         // so the list cannot render without the lines. Loaded with the page rather than fetched
         // per row: a query per order is what turns a work queue into a slow screen.
         $shortage = collect($response->assertOk()->json('data.1.available_transitions'))

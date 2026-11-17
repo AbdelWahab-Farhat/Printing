@@ -1,4 +1,5 @@
 import 'package:dayaa/core/print_colors/print_color.dart';
+import 'package:dayaa/features/cities/models/city.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'transition_field.freezed.dart';
@@ -116,6 +117,18 @@ enum TransitionFieldType {
   /// `true` on a yes. Never drawn.
   @JsonValue('confirmation')
   confirmation,
+
+  /// Where the order is delivered instead: a delivery city, and its region where the city has
+  /// them. Asked on «استلام مكتب» → «إعادة إرسال», for the customer who asks for delivery rather
+  /// than coming in. Held as a [DeliveryDestination]; sent as `{city_id, region_id}`.
+  @JsonValue('destination')
+  destination,
+
+  /// A box the person ticks — «اعتماد التصميم رقم ٣» on the move into «تجهيز للطباعة». Sent as
+  /// `true` when ticked and left out when not. When [TransitionField.isRequired], the button stays
+  /// grey until it is ticked.
+  @JsonValue('checkbox')
+  checkbox,
 
   /// A kind this build has no widget for. Rendered as a note rather than silently skipped: a
   /// field the server thinks is required and the screen never shows is a form that cannot be
@@ -271,6 +284,22 @@ abstract class TransitionField with _$TransitionField {
 
     return null;
   }
+}
+
+/// The answer to a [TransitionFieldType.destination] field.
+///
+/// Holds the whole city and region rather than their ids, so the buttons can say what was picked;
+/// [toJson] is what crosses the wire.
+class DeliveryDestination {
+  const DeliveryDestination({required this.city, this.region});
+
+  final City city;
+  final Region? region;
+
+  /// Whether the server will take it: a city that needs a region has one.
+  bool get isComplete => !city.isRegionRequired || region != null;
+
+  Map<String, Object?> toJson() => {'city_id': city.id, 'region_id': region?.id};
 }
 
 /// «هذا الحقل مطلوب حين تكون إجابة ذاك كذا» — a rule the server states and this app applies.

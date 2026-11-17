@@ -79,6 +79,8 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
                 $ticket->id = $identifier->id;
                 $ticket->code = $identifier->code;
             }
+
+            $ticket->status_changed_at ??= $ticket->freshTimestamp();
         });
 
         // **المصمّمُ الجديد لم يقرأ شيئاً.** هنا لا في `AssignDesignTicket` وحده، لأن «المصمّم»
@@ -90,6 +92,13 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
             if ($before !== $ticket->designerId() && ! $ticket->isDirty('designer_read_message_id')) {
                 $ticket->designer_read_message_id = null;
             }
+
+            // What the list is ordered by. Stamped here rather than in each action, because
+            // five of them move the status. `AcceptDesignTicket` is the one that bypasses this
+            // hook, with a query-builder update, so it sets the column itself.
+            if ($ticket->isDirty('status') && ! $ticket->isDirty('status_changed_at')) {
+                $ticket->status_changed_at = $ticket->freshTimestamp();
+            }
         });
     }
 
@@ -100,6 +109,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
     {
         return [
             'status' => DesignTicketStatus::class,
+            'status_changed_at' => 'datetime',
             'designer_pay' => 'decimal:2',
             'accepted_at' => 'datetime',
             'completed_at' => 'datetime',

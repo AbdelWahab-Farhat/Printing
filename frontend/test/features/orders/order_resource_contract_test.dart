@@ -109,6 +109,7 @@ void main() {
 
     // The per-status stamps. The timeline is built from `transitions`, which carries who and
     // when for every move — these columns would be a second, thinner copy of the same history.
+    'preparing_started_at': 'the timeline reads `transitions`, not the per-status columns',
     'ready_to_print_at': 'the timeline reads `transitions`, not the per-status columns',
     'design_started_at': 'the timeline reads `transitions`, not the per-status columns',
     'printing_started_at': 'the timeline reads `transitions`, not the per-status columns',

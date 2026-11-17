@@ -65,8 +65,8 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
         (failure) => OrderStatusState.failure(failure: failure, order: state.order),
         (order) {
           // The one move on offer is chosen already. A list of one that still has to be tapped
-          // is a tap that tells nobody anything — and «تم الاستلام» from «استلام مكتب» is
-          // exactly that list.
+          // is a tap that tells nobody anything — «تم التسوية» from «تم الاستلام» is exactly
+          // that list.
           final only = order.availableTransitions.length == 1
               ? order.availableTransitions.single
               : null;
@@ -332,6 +332,9 @@ class OrderStatusCubit extends Cubit<OrderStatusState> {
             // And for the وسيط who makes a request: the server validates an integer, and the
             // whole vendor falling through to the default below was refused as one.
             final Vendor vendor => vendor.id,
+            // The delivery city and region for an order leaving the counter: `{city_id,
+            // region_id}`, the one object the server's destination field takes.
+            final DeliveryDestination destination => destination.toJson(),
             final String text => text.trim(),
             _ => value,
           },

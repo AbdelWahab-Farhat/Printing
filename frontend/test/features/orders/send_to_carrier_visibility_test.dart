@@ -50,7 +50,9 @@ void main() {
     OrderStatus status = OrderStatus.ready,
     String statusLabel = 'جاهزة',
     bool officePickup = false,
+    NawrisParcelRef? parcel,
   }) => Order(
+    nawrisParcel: parcel,
     id: 55,
     code: '55',
     status: status,
@@ -218,6 +220,46 @@ void main() {
     // Assert
     expect(find.byKey(OrderDetailHeader.sendToCarrierKey), findsOneWidget);
     expect(find.byKey(OrderDetailHeader.resendShipmentKey), findsNothing);
+  });
+
+  testWidgets('a resend Nawris never had is offered the send and not the re-send', (tester) async {
+    // Arrange — the order left the counter for delivery: no parcel exists, so this is its first.
+    await sign(
+      ['orders.view', 'carrier.manage'],
+      order(status: OrderStatus.resend, statusLabel: 'إعادة إرسال'),
+    );
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(OrderDetailHeader.overflowKey));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byKey(OrderDetailHeader.sendToCarrierKey), findsOneWidget);
+    expect(find.byKey(OrderDetailHeader.resendShipmentKey), findsNothing);
+  });
+
+  testWidgets('a resend with a parcel is offered the re-send and not the send', (tester) async {
+    // Arrange — it came back from Nawris, so their parcel is the one going out again.
+    await sign(
+      ['orders.view', 'carrier.manage'],
+      order(
+        status: OrderStatus.resend,
+        statusLabel: 'إعادة إرسال',
+        parcel: const NawrisParcelRef(code: '3702994', isOpen: true),
+      ),
+    );
+
+    // Act
+    await tester.pumpWidget(detail());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(OrderDetailHeader.overflowKey));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(find.byKey(OrderDetailHeader.resendShipmentKey), findsOneWidget);
+    expect(find.byKey(OrderDetailHeader.sendToCarrierKey), findsNothing);
   });
 
   testWidgets('both moments can still take a hand-over back', (tester) async {

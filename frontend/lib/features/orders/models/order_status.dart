@@ -67,10 +67,20 @@ enum OrderStatus {
   @JsonValue('deposit_paid')
   depositPaid('deposit_paid', 'عربون مدفوع'),
 
+  /// The order goes ahead without a عربون. A statement about the deal, not the money: nothing is
+  /// paid, and everything is still owed.
+  @JsonValue('no_deposit')
+  noDeposit('no_deposit', 'بدون عربون'),
+
   @JsonValue('designing')
   designing('designing', 'قيد التصميم'),
 
-  /// Prepped and weighed by the warehouse, waiting for the press to pick it up.
+  /// The warehouse is gathering the goods for the press. Entered with an approved design and
+  /// nothing short — the server refuses otherwise, and says why.
+  @JsonValue('preparing')
+  preparing('preparing', 'تجهيز للطباعة'),
+
+  /// Prepared and weighed by the warehouse, waiting for the press to pick it up.
   ///
   /// The handover between two departments — see `OrderStatus.php`. It is also where the stock
   /// leaves the shelf, but nothing here needs to know that: the sheet draws whatever fields the
@@ -205,6 +215,7 @@ enum OrderStatus {
     OrderStatus.taken => OrderStatusTone.fresh,
     // In the workshop's hands and moving: prepped is no longer untouched, and it is a long way
     // from being finished goods.
+    OrderStatus.preparing ||
     OrderStatus.readyToPrint ||
     OrderStatus.designing ||
     OrderStatus.printing ||
@@ -223,9 +234,11 @@ enum OrderStatus {
     // «بانتظار المراجعة» takes «جديدة»'s quiet too: it is the very start of an order and there
     // is nothing wrong with it. What it needs is somebody to *read* it, which is a queue
     // position rather than an alarm.
+    // «بدون عربون» is the other answer to the same question, and just as calm.
     OrderStatus.requested ||
     OrderStatus.awaitingDeposit ||
-    OrderStatus.depositPaid => OrderStatusTone.fresh,
+    OrderStatus.depositPaid ||
+    OrderStatus.noDeposit => OrderStatusTone.fresh,
     OrderStatus.officePickup || OrderStatus.outForDelivery => OrderStatusTone.moving,
     OrderStatus.delivered || OrderStatus.settled => OrderStatusTone.done,
     OrderStatus.returnedCourier ||

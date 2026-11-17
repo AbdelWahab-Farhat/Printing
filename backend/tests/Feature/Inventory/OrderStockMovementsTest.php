@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\GivesPrintableArtwork;
+use Tests\Support\WalksPastIntake;
 use Tests\TestCase;
 
 /**
@@ -32,6 +33,7 @@ class OrderStockMovementsTest extends TestCase
 {
     use GivesPrintableArtwork;
     use RefreshDatabase;
+    use WalksPastIntake;
 
     private User $foreman;
 
@@ -83,6 +85,7 @@ class OrderStockMovementsTest extends TestCase
             'product_id' => $product->id, 'product_variant_id' => $variant->id, 'quantity' => '40',
         ]);
 
+        $this->walkPastIntake($order, OrderStatus::ReadyToPrint);
         $this->withHeaders($this->headers)->postJson("/api/v1/orders/{$order->id}/status", [
             'status' => OrderStatus::ReadyToPrint->value,
             'fields' => ['warehouse_id' => $warehouse->id],

@@ -168,14 +168,20 @@ already stands. Read down the column the order is in.
 | Order is in… | Codes that land | Codes that park |
 |---|---|---|
 | «جاري التوصيل» — the normal dispatch state | `7` → «تم الاستلام» · `15`/`5`/`4` → «راجع لدى المندوب» · `3` → no-op, already there | `19` `6` `10` `12` |
-| «راجع لدى المندوب» | `19` → «راجع لدى شركة التوصيل» | `6` `7` `10` `12` |
-| «راجع لدى شركة التوصيل» | `6` → «راجع مكتب» · `10` → «إعادة إرسال» | `7` `12` `15` |
+| «راجع لدى المندوب» | `19` → «راجع لدى شركة التوصيل» · `7` → «تم الاستلام» | `6` `10` `12` |
+| «راجع لدى شركة التوصيل» | `6` → «راجع مكتب» · `10` → «إعادة إرسال» · `7` → «تم الاستلام» | `12` `15` |
 | «راجع مكتب» | `7` → «تم الاستلام» · `10` → «إعادة إرسال» · `12` → «إلغاء تام» | `19` `15` |
 | «إعادة إرسال» | `3` → «جاري التوصيل» · `12` → «إلغاء تام» | `7` `6` `15` `19` |
 | «تم الاستلام» | *none* | everything — `allowedNext()` is `[Settled]`, which no carrier code maps to |
 
 **The happy path is clean.** Dispatch → `7` → delivered is one legal move, and it is the overwhelming
 majority of traffic. The full return chain also walks correctly *if* Nawris emits each link.
+
+**A delivery after a return lands from any of the three returns** (owner's decision, 2026-11-15).
+A parcel marked as coming back is often handed over after all, so `7` is applied from «راجع لدى
+المندوب» and «راجع لدى شركة التوصيل» as it always was from «راجع مكتب», with the same payment into
+Nawris's custody. Code-7 events parked before that change are not replayed; staff move those
+orders by hand.
 
 **The parked column is the operational cost of [§3.1](#31-the-conflict-and-the-recommendation), and
 it should be sized before building.** If Nawris skips intermediates — announcing `19` while we still
@@ -663,6 +669,7 @@ roll back a legitimate status change.
 |---|---|---|
 | Order → «جاري التوصيل» | `add-order` | Delivery city with a Nawris mapping; no open parcel already |
 | Order → «إعادة إرسال» | `resend-request` | The parcel came back; a new code arrives by webhook, often with an `N` suffix |
+| «استلام مكتب» → «إعادة إرسال» (customer asked for delivery) | `add-order` — a first parcel, not `resend-request` | The move carries a delivery city ([ORDERS-DESIGN §٢ «من استلام مكتب إلى توصيل»](../orders/ORDERS-DESIGN.md)). There is no parcel to re-send, so the app shows «إرسال للنورس» at «إعادة إرسال» when the order has none |
 | Payment or write-off recorded while a parcel is open | `edit-order` | **The only edit trigger there is** — see below |
 | Operator calls off a live shipment | `canceled` | A parcel-level action that **does not move the order** — see below |
 | *(none)* | `delete-order` | **No legal trigger. Not built** — [§11](#11-deliberately-not-built) |

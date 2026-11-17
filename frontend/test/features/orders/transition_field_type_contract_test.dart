@@ -90,4 +90,8 @@ const Set<String> _wireValues = {
   'treasury_account',
   // Asked on sending rather than drawn — «تسجيل الزائد للزبون؟».
   'confirmation',
+  // «مدينة التوصيل» on «استلام مكتب» → «إعادة إرسال».
+  'destination',
+  // «اعتماد التصميم» on the move into «تجهيز للطباعة».
+  'checkbox',
 };
