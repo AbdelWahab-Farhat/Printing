@@ -45,10 +45,13 @@ class DesignTicketFactory extends Factory
         ];
     }
 
-    /** Addressed to a named designer, still waiting to be accepted. */
+    /** Addressed to a named designer, still waiting to be accepted — «مُسنَد». */
     public function assignedTo(int $designerId): static
     {
-        return $this->state(fn (): array => ['assigned_designer_id' => $designerId]);
+        return $this->state(fn (): array => [
+            'assigned_designer_id' => $designerId,
+            'status' => DesignTicketStatus::Assigned,
+        ]);
     }
 
     /**

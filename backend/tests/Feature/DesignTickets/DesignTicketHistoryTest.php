@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\DesignTickets;
 
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
+use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Enums\PermissionName;
 
@@ -134,7 +135,7 @@ class DesignTicketHistoryTest extends DesignTicketTestCase
         $list->assertOk()->assertJsonCount(0, 'data');
 
         // Every status present, zeros included, so the app draws a stable row.
-        $this->assertCount(6, $summary->json('data.counts'));
+        $this->assertCount(count(DesignTicketStatus::cases()), $summary->json('data.counts'));
     }
 
     public function test_the_history_of_a_file_says_what_happened_not_where_it_is_kept(): void

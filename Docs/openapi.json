@@ -6461,7 +6461,7 @@
         "/v1/design-tickets/{ticket}/designer": {
             "patch": {
                 "operationId": "design-tickets.designer",
-                "description": "Send `assigned_designer_id: null` to return it to the shared pool \u2014 the field must be\npresent either way, so an omission is a mistake rather than an instruction.\n\n**It does not change the status.** A ticket addressed to somebody who has not yet said yes\nis still \u00ab\u062c\u062f\u064a\u062f\u00bb: the claim that work has started is the designer's to make by accepting, not\na supervisor's to make by routing. And reassigning after acceptance does not rewrite who did\nthe work \u2014 `accepted_by` is a record of what happened.",
+                "description": "Send `assigned_designer_id: null` to return it to the shared pool \u2014 the field must be\npresent either way, so an omission is a mistake rather than an instruction.\n\n**On a ticket nobody has accepted, the status follows the address**: `assigned` (\u00ab\u0645\u064f\u0633\u0646\u064e\u062f\u00bb)\nwith a designer, `new` (\u00ab\u062c\u062f\u064a\u062f\u00bb) without. It never reaches `in_progress` \u2014 that is the\ndesigner's to claim by accepting. On an accepted ticket, naming another designer leaves the\nstatus and `accepted_by` alone; returning it to the pool releases the claim and makes it\n`new` again.",
                 "summary": "Assign a design ticket",
                 "tags": [
                     "DesignTicket"

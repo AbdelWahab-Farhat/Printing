@@ -90,13 +90,16 @@ final class CreateDesignTicket
                 ]);
 
                 // Force-filled rather than mass-assigned, all of it: the customer and its snapshot
-                // must agree and neither may come from a body, the status is where every ticket
-                // starts, and the requester is the signed-in user — attribution nobody can set is
+                // must agree and neither may come from a body, the status follows from whether a
+                // designer is named, and the requester is the signed-in user — attribution nobody can set is
                 // attribution nobody can forge.
                 $ticket->forceFill([
                     'customer_id' => $customer->getKey(),
                     'customer_name' => $customer->name,
-                    'status' => DesignTicketStatus::New,
+                    // Addressed to a designer from the start is already «مُسنَد».
+                    'status' => $data->assignedDesignerId === null
+                        ? DesignTicketStatus::New
+                        : DesignTicketStatus::Assigned,
                     'requested_by_user_id' => $actor?->getKey(),
                     'assigned_designer_id' => $data->assignedDesignerId,
                     'designer_pay' => $data->designerPay,

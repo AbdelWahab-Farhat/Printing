@@ -44,6 +44,7 @@ Map<String, dynamic> _$DesignThreadTicketToJson(_DesignThreadTicket instance) =>
 
 const _$DesignTicketStatusEnumMap = {
   DesignTicketStatus.fresh: 'new',
+  DesignTicketStatus.assigned: 'assigned',
   DesignTicketStatus.inProgress: 'in_progress',
   DesignTicketStatus.underReview: 'under_review',
   DesignTicketStatus.changesRequested: 'changes_requested',

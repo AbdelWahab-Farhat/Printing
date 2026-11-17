@@ -196,10 +196,11 @@ class DesignTicketController extends Controller
      * Send `assigned_designer_id: null` to return it to the shared pool — the field must be
      * present either way, so an omission is a mistake rather than an instruction.
      *
-     * **It does not change the status.** A ticket addressed to somebody who has not yet said yes
-     * is still «جديد»: the claim that work has started is the designer's to make by accepting, not
-     * a supervisor's to make by routing. And reassigning after acceptance does not rewrite who did
-     * the work — `accepted_by` is a record of what happened.
+     * **On a ticket nobody has accepted, the status follows the address**: `assigned` («مُسنَد»)
+     * with a designer, `new` («جديد») without. It never reaches `in_progress` — that is the
+     * designer's to claim by accepting. On an accepted ticket, naming another designer leaves the
+     * status and `accepted_by` alone; returning it to the pool releases the claim and makes it
+     * `new` again.
      */
     public function assign(AssignDesignTicketRequest $request, DesignTicket $ticket): JsonResponse
     {
@@ -215,7 +216,7 @@ class DesignTicketController extends Controller
 
         return $this->success(
             new DesignTicketResource($this->loadForDisplay($request, $updated)),
-            $designerId === null ? 'تم إرجاع التذكرة إلى الطابور المشترك' : 'تم إسناد التذكرة',
+            $designerId === null ? 'تم إلغاء الإسناد — غير مُسنَد لمصمم' : 'تم إسناد التذكرة',
         );
     }
 

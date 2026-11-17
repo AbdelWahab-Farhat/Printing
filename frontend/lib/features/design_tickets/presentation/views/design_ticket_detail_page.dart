@@ -310,7 +310,7 @@ class _DesignTicketDetailView extends StatelessWidget {
     await _run(
       context,
       () => cubit.assign(choice.userId),
-      choice.userId == null ? 'تم إرجاع التذكرة إلى الطابور المشترك' : 'تم إسناد التذكرة',
+      choice.userId == null ? 'تم إلغاء الإسناد — غير مُسنَد لمصمم' : 'تم إسناد التذكرة',
     );
   }
 
@@ -908,7 +908,7 @@ class _PersonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
     final text = context.textTheme;
-    final name = person?.name ?? 'الطابور المشترك';
+    final name = person?.name ?? 'غير مُسنَد لمصمم';
     final isLink = onTap != null;
 
     final avatar = person == null

@@ -227,7 +227,7 @@ void main() {
       expect(find.text('اعتمدها'), findsOneWidget);
     });
 
-    testWidgets('a ticket nobody holds says it is in the shared pool', (tester) async {
+    testWidgets('a ticket nobody holds says it is not assigned to a designer', (tester) async {
       // Arrange
       arrange(
         _forOrder.copyWith(
@@ -245,7 +245,8 @@ void main() {
       await open(tester);
 
       // Assert
-      expect(find.text('الطابور المشترك'), findsOneWidget);
+      expect(find.text('غير مُسنَد لمصمم'), findsOneWidget);
+      expect(find.text('الطابور المشترك'), findsNothing);
       expect(find.text('المصمم'), findsOneWidget);
     });
   });

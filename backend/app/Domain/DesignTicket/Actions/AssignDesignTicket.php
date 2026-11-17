@@ -18,11 +18,15 @@ use App\Domain\Identity\Models\User;
  * would mean three endpoints and three permissions for one column. The shape `AssignShortage`
  * settled on.
  *
- * **Addressing a ticket to somebody does not change the status, and that is the difference from
- * `AssignShortage`.** There, assigning meant work had started, so «جديد» became «جاري البحث». Here
- * the equivalent claim is made by the designer accepting, not by a supervisor routing — the whole
- * reason the acceptance step exists. A ticket addressed to somebody who has not yet said yes is
- * still «جديد», and saying otherwise would make «جديد: ١٢» count work nobody has agreed to do.
+ * **Addressing an unaccepted ticket to somebody makes it «مُسنَد», and taking the name off makes
+ * it «جديد» again.** It used to leave the status at «جديد», on the grounds that only the
+ * designer's «قبول» says work has started. That stays true — «مُسنَد» is not «قيد التصميم», and
+ * acceptance is still the step that moves it there — but from the outside an addressed ticket was
+ * indistinguishable from one nobody had routed, so a supervisor could not see which tickets still
+ * needed a designer. «جديد» now means exactly that: addressed to nobody, taken by nobody.
+ *
+ * Once a designer has accepted, assigning somebody else leaves the status alone: the ticket is
+ * past routing, and its status describes the work.
  *
  * **Returning an accepted ticket to the pool releases the claim, not just the address**, and the
  * three columns move together because the pool is defined by all of them: `FiltersDesignTickets`
@@ -57,20 +61,28 @@ final class AssignDesignTicket
             throw DesignTicketIsClosed::make($ticket->status);
         }
 
-        // Only a ticket somebody had actually taken has a claim to release. Unassigning one that
-        // was merely addressed to a designer leaves the status alone — it is still «جديد», and
-        // rewriting it to the value it already holds would put a no-op in the history.
+        // Only a ticket somebody had actually taken has a claim to release.
         $releasesClaim = $designer === null && $ticket->isAccepted();
+
+        // An unaccepted ticket's status is its routing: «مُسنَد» with a name, «جديد» without.
+        // An accepted one keeps its status unless the claim is released.
+        $status = match (true) {
+            $releasesClaim => DesignTicketStatus::New,
+            $ticket->isAccepted() => $ticket->status,
+            default => $designer === null ? DesignTicketStatus::New : DesignTicketStatus::Assigned,
+        };
 
         $ticket->forceFill([
             'assigned_designer_id' => $designer?->getKey(),
             ...$releasesClaim ? [
                 'accepted_by_user_id' => null,
                 'accepted_at' => null,
-                // Back to the front of the queue. Any versions already uploaded stay: they are
-                // what the next designer needs in order not to start the job twice.
-                'status' => DesignTicketStatus::New,
             ] : [],
+            // Writing the value it already holds is not dirty, so a reassignment between two
+            // designers puts no status change in the history and does not reset its time.
+            // Any versions already uploaded stay on a released ticket: they are what the next
+            // designer needs in order not to start the job twice.
+            'status' => $status,
         ])->save();
 
         // Only for a real assignment. Returning a ticket to the pool is not news anybody needs on

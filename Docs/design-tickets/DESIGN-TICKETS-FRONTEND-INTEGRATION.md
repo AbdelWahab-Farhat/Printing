@@ -172,7 +172,8 @@ reached. All four are now built.
 A searchable sheet over the staff, on the `assign_shortage_sheet` shape. Two things in it are
 decisions rather than details:
 
-**«الطابور المشترك» is an option at the top, not the absence of one.** The server reads null as an
+**«غير مُسنَد لمصمم» is an option at the top, not the absence of one.** (It read «الطابور المشترك»
+until 2026-11-17; see DESIGN-TICKETS-BACKEND §14.) The server reads null as an
 instruction, so the sheet offers it rather than making somebody cancel out. That is why it answers
 a `DesignerChoice` rather than a bare `AuthUser?` — null is already taken by
 `showModalBottomSheet` returning null on dismissal, and «أرجِعها إلى الطابور» is a decision while

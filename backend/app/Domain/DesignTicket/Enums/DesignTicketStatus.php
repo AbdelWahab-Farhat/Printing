@@ -14,9 +14,14 @@ use App\Domain\Shortage\Enums\ShortageStatus;
  * Where a design request stands, and the only moves it may make from there.
  *
  * ```
- * New ──accept──► InProgress ──submit──► UnderReview ──approve──► Completed
- *                      ▲                      │
- *                      └───submit─── ChangesRequested ◄──request changes──┘
+ * New ──assign──► Assigned
+ *  │  ◄─unassign──   │
+ *  │               accept
+ *  └──accept──┐      │
+ *             ▼      ▼
+ *            InProgress ──submit──► UnderReview ──approve──► Completed
+ *                 ▲                      │
+ *                 └───submit─── ChangesRequested ◄──request changes──┘
  * ```
  *
  * **There is no endpoint that changes a status, and that is this enum's whole shape.** Not one of
@@ -45,8 +50,17 @@ use App\Domain\Shortage\Enums\ShortageStatus;
  */
 enum DesignTicketStatus: string
 {
-    /** Written down and sent. Nobody has picked it up. Where every ticket begins. */
+    /** Written down and sent, addressed to nobody, and nobody has picked it up. */
     case New = 'new';
+
+    /**
+     * Addressed to a named designer who has not accepted yet.
+     *
+     * Written by `AssignDesignTicket` (and by `CreateDesignTicket` when the request names a
+     * designer), and undone by the same action when the ticket goes back to nobody. It is a
+     * routing fact, not a claim of work: the designer's «قبول» is still what moves it on.
+     */
+    case Assigned = 'assigned';
 
     /** A named designer has taken it and is working. */
     case InProgress = 'in_progress';
@@ -67,6 +81,7 @@ enum DesignTicketStatus: string
     {
         return match ($this) {
             self::New => 'جديد',
+            self::Assigned => 'مُسنَد',
             self::InProgress => 'قيد التصميم',
             self::UnderReview => 'بانتظار المراجعة',
             self::ChangesRequested => 'تعديل مطلوب',
@@ -87,18 +102,22 @@ enum DesignTicketStatus: string
      * reasons nobody did.
      *
      * **`AssignDesignTicket` is the single exception, and it is deliberately not listed here.**
-     * Returning an accepted ticket to the shared pool unaccepts it and sends it back to «جديد» —
-     * the count goes up, but for a reason a named person is recorded as having caused, which is
+     * Unassigning a ticket — «مُسنَد», or accepted and in work — sends it back to «جديد». The
+     * count goes up, but for a reason a named person is recorded as having caused, which is
      * exactly what the rule above is protecting. It stays out of the map because this map is
-     * published as `available_transitions`, and «جديد» must never be a move the app can offer: a
-     * release is the consequence of unassigning, not a status somebody picks.
+     * published as `available_transitions`, and «جديد» must never be a move the app can offer: it
+     * is the consequence of unassigning, not a status somebody picks.
      *
      * @return list<self>
      */
     public function allowedNext(): array
     {
         return match ($this) {
-            self::New => [self::InProgress, self::Cancelled],
+            // Assigned by a dispatcher, or straight to InProgress when a designer accepts it
+            // from the unassigned list.
+            self::New => [self::Assigned, self::InProgress, self::Cancelled],
+            // Another designer is a reassignment, not a move, so it is not listed.
+            self::Assigned => [self::InProgress, self::Cancelled],
             // Straight to UnderReview on a submission. A designer who has taken the job does not
             // announce that they are about to start.
             self::InProgress => [self::UnderReview, self::Cancelled],

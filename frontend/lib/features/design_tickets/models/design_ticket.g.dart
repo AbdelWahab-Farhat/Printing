@@ -181,6 +181,7 @@ Map<String, dynamic> _$DesignTicketToJson(_DesignTicket instance) =>
 
 const _$DesignTicketStatusEnumMap = {
   DesignTicketStatus.fresh: 'new',
+  DesignTicketStatus.assigned: 'assigned',
   DesignTicketStatus.inProgress: 'in_progress',
   DesignTicketStatus.underReview: 'under_review',
   DesignTicketStatus.changesRequested: 'changes_requested',

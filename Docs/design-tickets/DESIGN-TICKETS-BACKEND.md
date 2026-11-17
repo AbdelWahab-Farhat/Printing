@@ -96,12 +96,18 @@ Additive only, so nothing that already writes to this table changed:
 ## 4. The status enum
 
 ```
-New ──accept──► InProgress ──submit──► UnderReview ──approve──► Completed
-                    ▲                       │
-                    └──submit── ChangesRequested ◄── request changes ──┘
+New ──assign──► Assigned
+ │  ◄─unassign──   │
+ │               accept
+ └──accept──┐      │
+            ▼      ▼
+           InProgress ──submit──► UnderReview ──approve──► Completed
+                ▲                       │
+                └──submit── ChangesRequested ◄── request changes ──┘
 ```
 
-Plus `Cancelled`, reachable from every open state, always with a reason.
+Plus `Cancelled`, reachable from every open state, always with a reason. `Assigned` («مُسنَد») was
+added on 2026-11-17 — see §14.
 
 **No endpoint sets a status.** Each is written by the action that earns it — `AcceptDesignTicket`,
 `SubmitDesignVersion`, `ReviewDesignVersion`, `CancelDesignTicket`. `allowedNext()` is therefore
@@ -299,7 +305,8 @@ PATCH /api/v1/design-tickets/42/designer
 a `422`, because a half-built request must not quietly clear somebody's queue.
 
 Assigning does **not** start the work. That claim is made by the designer accepting, not by a
-supervisor routing — the whole reason the acceptance step exists.
+supervisor routing — the whole reason the acceptance step exists. On an unaccepted ticket it does
+set the status, though: `assigned` with a designer, `new` without (§14).
 
 ### Who can do this job?
 
@@ -467,6 +474,55 @@ same `updated_at` reason.
   keeps their place. It moves to the top on the next refresh.
 - A status change while somebody is between pages can show a row twice or skip one until they
   refresh. The internal tickets list, ordered by last message, already behaves this way.
+
+---
+
+## 14. «مُسنَد»: assigned, not yet accepted (2026-11-17)
+
+**The problem.** Assigning a ticket left it at «جديد» until the designer accepted, so from the
+outside an assigned ticket looked exactly like one nobody had routed. A supervisor could not tell
+which tickets still needed a designer.
+
+**The status.** `assigned`, label «مُسنَد», between `new` and `in_progress`. «جديد» now means
+addressed to nobody and taken by nobody.
+
+| Move | Status |
+|---|---|
+| Assign a `new` ticket | → `assigned` |
+| Assign an `assigned` ticket to another designer | stays `assigned` (no stamp, no history entry) |
+| Unassign an `assigned` ticket | → `new` |
+| Raise a ticket with `assigned_designer_id` | starts `assigned` |
+| The designer accepts | `assigned` → `in_progress` |
+| Cancel | `assigned` → `cancelled` |
+| Reassign or unassign an *accepted* ticket | unchanged from §11 |
+
+`allowedNext()`: `new → assigned | in_progress | cancelled`, `assigned → in_progress | cancelled`.
+The way back to `new` stays out of the map, for the reason §11 gives.
+
+**Acceptance is unchanged.** `AcceptDesignTicket` checks `accepted_at` and the address, not the
+status, so it accepts from `new` and from `assigned` alike.
+
+**The time on the card moves.** Assigning is now a status change, so it stamps
+`status_changed_at` and the ticket moves up the list.
+
+**No new notification.** `DesignTicketAssigned` already tells the designer.
+
+**Existing tickets.** Migration `2026_11_17_100000_mark_addressed_design_tickets_assigned` moves
+every `new` ticket that has a designer and no acceptance to `assigned`. It leaves
+`status_changed_at` alone, because the assignment time is not recorded anywhere. `down()` puts every
+`assigned` ticket back to `new`.
+
+**The wording.** «الطابور المشترك» is gone from what people read; the app and the server say
+«غير مُسنَد لمصمم» instead: the card, the detail page, the assign sheet's first option, the
+unassign message («تم إلغاء الإسناد — غير مُسنَد لمصمم») and the dispatcher refusal («من يوزّع العمل
+لا يقبل تذكرة «غير مُسنَد لمصمم» — استعمل «إسناد إلى مصمم»»). The filter value is still
+`designer=none` and the resource field is still `is_in_shared_pool`; only the words changed.
+
+**Older app builds** read `assigned` as an unknown status. The pill shows the server's label, so
+they still say «مُسنَد», in the neutral colour.
+
+Tests: `DesignTicketAssignedStatusTest`, `DesignTicketAssignedMigrationTest`, and the assign cases
+in `DesignTicketAcceptanceTest`.
 
 ---
 

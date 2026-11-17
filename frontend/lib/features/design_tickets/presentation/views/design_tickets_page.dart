@@ -262,7 +262,7 @@ class _DesignTicketsViewState extends State<_DesignTicketsView> {
                   (final search?, _, _) when search.isNotEmpty =>
                     'لا توجد تذاكر تطابق «$search»',
                   (_, _, 'me') => 'لا تذاكر مسندة إليك',
-                  (_, _, 'none') => 'لا يوجد عمل في الطابور المشترك',
+                  (_, _, 'none') => 'لا توجد تذاكر «غير مُسنَد لمصمم»',
                   (_, final status?, _) => 'لا توجد تذاكر في «${status.label}»',
                   _ => 'لا توجد تذاكر تصميم',
                 },
