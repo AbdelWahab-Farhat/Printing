@@ -109,10 +109,10 @@ abstract interface class DesignTicketRepository {
   /// than by a check. A designer who loses the race gets a 422 **naming whoever holds it**, which
   /// is the message to show as sent: it is the answer to «من أخذها؟».
   ///
-  /// [designerPay] «أجر التصميم» حين لا أجر على التذكرة، ومن يأخذها هو من يكتبه.
+  /// [designerPay] «أجرة المصمم» حين لا أجر على التذكرة، ومن يأخذها هو من يكتبه.
   Future<Either<Failure, DesignTicket>> accept(int ticketId, {String? designerPay});
 
-  /// يكتب «أجر التصميم» أو يمحوه بـ`null`. يُرسل المفتاح دائماً: الفراغ قرارٌ لا سهو.
+  /// يكتب «أجرة المصمم» أو يمحوه بـ`null`. يُرسل المفتاح دائماً: الفراغ قرارٌ لا سهو.
   Future<Either<Failure, DesignTicket>> setPay(int ticketId, {required String? designerPay});
 
   /// Calling a request off. The reason is required.

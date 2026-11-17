@@ -228,7 +228,7 @@ void main() {
     expect(repository.sentDesignerId, isNull);
   });
 
-  Finder payField() => find.widgetWithText(TextFormField, 'أجر التصميم');
+  Finder payField() => find.widgetWithText(TextFormField, 'أجرة المصمم');
 
   testWidgets('the pay written on the form travels with the request', (tester) async {
     // Arrange

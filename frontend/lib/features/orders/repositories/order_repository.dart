@@ -248,6 +248,11 @@ abstract interface class OrderRepository {
     int? originalId,
   });
 
+  /// «أجرة التصميم» — what the customer pays for the design, in whole dinars; `'0'` clears it.
+  /// A fee above zero makes the design ours. Refused with the server's Arabic once the order
+  /// is delivered, and on a compensation order. Docs/orders/ORDER-DESIGN-FEE.md.
+  Future<Either<Failure, Order>> setDesignFee(int orderId, {required String fee});
+
   /// Records that the عربون actually arrived — or takes that back.
   ///
   /// **A second person's tick over somebody else's claim.** Moving an order to «عربون مدفوع»

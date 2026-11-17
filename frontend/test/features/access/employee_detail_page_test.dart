@@ -160,7 +160,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('أجر التصميم المقترح'), findsOneWidget);
+    expect(find.text('أجرة المصمم المقترحة'), findsOneWidget);
     expect(find.text('75 د.ل'), findsOneWidget);
   });
 
@@ -175,7 +175,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('أجر التصميم المقترح'), findsNothing);
+    expect(find.text('أجرة المصمم المقترحة'), findsNothing);
   });
 
   testWidgets('the price card shows that it opens for editing', (tester) async {

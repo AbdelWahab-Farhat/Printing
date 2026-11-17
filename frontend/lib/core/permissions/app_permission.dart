@@ -145,6 +145,9 @@ enum AppPermission {
   // «طلبية تعويض» — goods sent out for free. Its own grant, not the discount's: this gives the
   // goods away and books them as a loss. Held by nobody until a role is given it.
   compensationOrders('orders.compensation', 'إنشاء طلبية تعويض (بضاعة بلا مقابل)'),
+  // «أجرة التصميم» — what the customer pays for the design: read and set from the order. Held
+  // by nobody until a role is given it. Docs/orders/ORDER-DESIGN-FEE.md.
+  setOrderDesignFee('orders.design_fee', 'رؤية وتحديد أجرة التصميم على الطلبية'),
 
   // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the tick an employee puts on an order to say they told
   // the customer, and the box on the home screen counting the orders nobody has told yet.

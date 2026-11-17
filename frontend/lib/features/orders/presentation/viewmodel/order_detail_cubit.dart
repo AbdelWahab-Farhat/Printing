@@ -12,6 +12,7 @@ import 'package:dayaa/features/orders/usecases/confirm_ready_message.dart';
 import 'package:dayaa/features/orders/usecases/get_order.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
+import 'package:dayaa/features/orders/usecases/set_order_design_fee.dart';
 import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -51,6 +52,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
     required ConfirmDepositReceipt confirmDepositReceipt,
     ChangeDeliveryPayer? changeDeliveryPayer,
     ChangeOrderCompensation? changeCompensation,
+    SetOrderDesignFee? setDesignFee,
   }) : _orderId = orderId,
        _getOrder = getOrder,
        _addDesign = addDesign,
@@ -66,6 +68,7 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
        _confirmDepositReceipt = confirmDepositReceipt,
        _changeDeliveryPayer = changeDeliveryPayer,
        _changeCompensation = changeCompensation,
+       _setDesignFee = setDesignFee,
        super(const OrderDetailState.loading());
 
   final int _orderId;
@@ -110,6 +113,9 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
 
   /// «طلبية تعويض» on or off — optional for the reason [_changeDeliveryPayer] is.
   final ChangeOrderCompensation? _changeCompensation;
+
+  /// «أجرة التصميم» — optional for the reason [_changeDeliveryPayer] is.
+  final SetOrderDesignFee? _setDesignFee;
 
   /// What the last [changeDeliveryPayer] answered beside the order — read once by the screen.
   DeliveryPayerChange? _lastPayerChange;
@@ -315,6 +321,15 @@ class OrderDetailCubit extends Cubit<OrderDetailState> {
         originalId: originalId,
       ),
     );
+  }
+
+  /// «أجرة التصميم» — [fee] as the amount sheet answered it, null to clear. The order redraws
+  /// from the answer, its total with it; a refusal leaves it where it was.
+  Future<Failure?> setDesignFee(String? fee) {
+    final set = _setDesignFee;
+    if (set == null) return Future.value();
+
+    return _write(() => set(_orderId, fee: fee));
   }
 
   /// The last change's carrier answer and shared-parcel codes, handed over once.

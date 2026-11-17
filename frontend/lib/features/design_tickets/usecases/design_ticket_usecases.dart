@@ -150,7 +150,7 @@ class AcceptDesignTicket {
       _repository.accept(ticketId, designerPay: designerPay);
 }
 
-/// يكتب «أجر التصميم» أو يمحوه.
+/// يكتب «أجرة المصمم» أو يمحوه.
 class SetDesignTicketPay {
   const SetDesignTicketPay(this._repository);
 

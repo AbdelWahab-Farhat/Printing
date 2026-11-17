@@ -36,7 +36,7 @@ class _StubRepository implements DesignTicketRepository {
   /// The newest version the list sends back, or null for a ticket nobody has drawn for.
   DesignTicketFile? latestVersion;
 
-  /// «أجر التصميم» كما يرسله الخادم لهذا القارئ، و`null` لمن لا يُقال له.
+  /// «أجرة المصمم» كما يرسله الخادم لهذا القارئ، و`null` لمن لا يُقال له.
   String? pay;
 
   /// حالة الصفّ في القائمة.
@@ -450,7 +450,7 @@ void main() {
     expect(find.text('قيد التصميم'), findsOneWidget);
   });
 
-  group('«أجر التصميم» على الصفّ', () {
+  group('«أجرة المصمم» على الصفّ', () {
     Color? colorOf(WidgetTester tester, String text) =>
         tester.widget<Text>(find.text(text)).style?.color;
 
@@ -464,7 +464,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('أجر التصميم'), findsOneWidget);
+      expect(find.text('أجرة المصمم'), findsOneWidget);
       expect(find.text('1,500 د.ل'), findsOneWidget);
     });
 
@@ -477,7 +477,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('أجر التصميم'), findsNothing);
+      expect(find.text('أجرة المصمم'), findsNothing);
       expect(find.text('لم يُحدَّد'), findsNothing);
     });
 

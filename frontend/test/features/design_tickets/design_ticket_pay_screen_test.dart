@@ -122,7 +122,7 @@ DesignTicket _ticket({
   versions: versions,
 );
 
-/// «أجر التصميم» على شاشة التذكرة — SERVICE-PAY-DESIGN §٣ و§٥.
+/// «أجرة المصمم» على شاشة التذكرة — SERVICE-PAY-DESIGN §٣ و§٥.
 ///
 /// Arrange - Act - Assert في كل اختبار.
 void main() {
@@ -211,7 +211,7 @@ void main() {
     await open(tester);
 
     // Assert
-    expect(find.text('أجر التصميم'), findsOneWidget);
+    expect(find.text('أجرة المصمم'), findsOneWidget);
     expect(find.text('50 د.ل'), findsOneWidget);
     expect(find.textContaining('محفظتك'), findsNothing);
   });
@@ -224,7 +224,7 @@ void main() {
     await open(tester);
 
     // Assert
-    expect(find.text('أجر التصميم'), findsNothing);
+    expect(find.text('أجرة المصمم'), findsNothing);
   });
 
   testWidgets('a reader who may write it is told it is not set', (tester) async {
@@ -282,7 +282,7 @@ void main() {
       await open(tester);
 
       // Act
-      await pencil(tester, 'تعديل أجر التصميم');
+      await pencil(tester, 'تعديل أجرة المصمم');
       final opened = find.widgetWithText(TextFormField, '75');
       expect(opened, findsOneWidget);
       expect(find.text('عنوان الطلب'), findsNothing);
@@ -302,7 +302,7 @@ void main() {
       await open(tester);
 
       // Act
-      await pencil(tester, 'تعديل أجر التصميم');
+      await pencil(tester, 'تعديل أجرة المصمم');
       await tester.enterText(find.widgetWithText(TextFormField, '50'), '');
       await tester.pump();
       await save(tester);
@@ -435,7 +435,7 @@ void main() {
       await pencil(tester, 'تعديل الطلب');
 
       // Assert
-      expect(find.text('أجر التصميم'), findsNothing);
+      expect(find.text('أجرة المصمم'), findsNothing);
       expect(find.text('عنوان الطلب'), findsOneWidget);
     });
   });

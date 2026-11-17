@@ -88,7 +88,7 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   /// second half of «لا تضيع هوية المصمم الذي استلم الطلب».
   Future<Failure?> accept({String? pay}) => _write(() => _accept(_id, designerPay: pay));
 
-  /// يكتب «أجر التصميم» أو يمحوه.
+  /// يكتب «أجرة المصمم» أو يمحوه.
   Future<Failure?> setPay(String? pay) => _write(() => _setPay(_id, designerPay: pay));
 
   /// Corrects the words of an open request.

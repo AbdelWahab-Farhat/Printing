@@ -258,20 +258,19 @@ void main() {
     });
   });
 
-  testWidgets('the design fee appears only when the design is ours', (tester) async {
-    // Arrange — the fee is the one thing `design_source` changes about the money, and the
-    // server only counts it for `in_house`.
-    session.adopt(userWith(['orders.manage']));
+  testWidgets('the design fee is never typed when an order is taken', (tester) async {
+    // Arrange — employees never see it; whoever holds `orders.design_fee` sets it from the
+    // order (ORDER-DESIGN-FEE.md).
+    session.adopt(userWith(['orders.manage', 'orders.design_fee']));
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
-    expect(find.text('أجرة التصميم'), findsNothing);
 
-    // Act
+    // Act — even on our own work, where it is charged.
     await tester.tap(find.text('من عندنا'));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('أجرة التصميم'), findsOneWidget);
+    expect(find.text('أجرة التصميم'), findsNothing);
   });
 
   testWidgets('artwork is chosen while the order is being taken', (tester) async {
@@ -302,8 +301,7 @@ void main() {
     await tester.tap(find.text('من عندنا'));
     await tester.pumpAndSettle();
 
-    // Assert — the fee and the files, side by side.
-    expect(find.text('أجرة التصميم'), findsOneWidget);
+    // Assert
     expect(find.text('اختيار التصميم'), findsOneWidget);
   });
 

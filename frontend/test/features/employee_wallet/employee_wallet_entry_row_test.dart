@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// سطر المحفظة: «أجر التصميم» عنوانُه، ولا يتكرر تحته.
+/// سطر المحفظة: «أجرة المصمم» عنوانُه، ولا يتكرر تحته.
 ///
 /// Arrange - Act - Assert في كل اختبار.
 void main() {
@@ -38,14 +38,14 @@ void main() {
 
   testWidgets('design pay reads once, as the title', (tester) async {
     // Arrange
-    final row = entry(label: 'أجر التصميم', category: 'أجر التصميم');
+    final row = entry(label: 'أجرة المصمم', category: 'أجرة المصمم');
 
     // Act
     await tester.pumpWidget(host(row));
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('أجر التصميم'), findsOneWidget);
+    expect(find.text('أجرة المصمم'), findsOneWidget);
     expect(find.text('أجر تصميم D12'), findsOneWidget);
   });
 

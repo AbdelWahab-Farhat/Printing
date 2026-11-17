@@ -439,7 +439,7 @@ class _SalaryCard extends StatelessWidget {
   }
 }
 
-/// «أجر التصميم المقترح» — يظهر في الحقل على التذكرة ولا يحدد شيئاً.
+/// «أجرة المصمم المقترحة» — يظهر في الحقل على التذكرة ولا يحدد شيئاً.
 class _DesignPriceCard extends StatelessWidget {
   const _DesignPriceCard({required this.service});
 
@@ -450,7 +450,7 @@ class _DesignPriceCard extends StatelessWidget {
 
     final choice = await showAmountSheet(
       context: context,
-      title: 'أجر التصميم المقترح',
+      title: 'أجرة المصمم المقترحة',
       label: 'المبلغ',
       confirmLabel: 'حفظ',
       initial: service.suggestedPrice,
@@ -471,7 +471,7 @@ class _DesignPriceCard extends StatelessWidget {
     return CardPressable(
       onTap: () => _edit(context),
       child: _Card(
-        title: 'أجر التصميم المقترح',
+        title: 'أجرة المصمم المقترحة',
         child: Row(
           children: [
             Expanded(

@@ -226,6 +226,7 @@ import 'package:dayaa/features/orders/usecases/record_scrap_loss.dart';
 import 'package:dayaa/features/orders/usecases/record_vendor_cost.dart';
 import 'package:dayaa/features/orders/usecases/reinstate_order.dart';
 import 'package:dayaa/features/orders/usecases/save_order_invoice_pdf.dart';
+import 'package:dayaa/features/orders/usecases/set_order_design_fee.dart';
 import 'package:dayaa/features/orders/usecases/set_order_shortages.dart';
 import 'package:dayaa/features/orders/usecases/take_order.dart';
 import 'package:dayaa/features/orders/usecases/undo_order_step.dart';
@@ -1252,6 +1253,11 @@ abstract final class Injector {
       ..registerLazySingleton<ChangeOrderCompensation>(
         () => ChangeOrderCompensation(sl<OrderRepository>()),
       )
+      // «أجرة التصميم» — the same shape: the amount sheet asks, the order redraws from the
+      // answer. Docs/orders/ORDER-DESIGN-FEE.md.
+      ..registerLazySingleton<SetOrderDesignFee>(
+        () => SetOrderDesignFee(sl<OrderRepository>()),
+      )
       // Spoiled stock, written off against the line that was being printed. A use case rather
       // than a Cubit because there is no state to hold: the sheet asks twice and pops.
       ..registerLazySingleton<RecordScrapLoss>(
@@ -1457,6 +1463,7 @@ abstract final class Injector {
           confirmDepositReceipt: sl<ConfirmDepositReceipt>(),
           changeDeliveryPayer: sl<ChangeDeliveryPayer>(),
           changeCompensation: sl<ChangeOrderCompensation>(),
+          setDesignFee: sl<SetOrderDesignFee>(),
         ),
       )
       ..registerFactory<OrderTicketsCubit>(
