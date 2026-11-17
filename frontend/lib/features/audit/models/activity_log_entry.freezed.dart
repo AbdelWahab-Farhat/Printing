@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'activity_log_entry.dart';
@@ -9,6 +9,7 @@ part of 'activity_log_entry.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -52,16 +53,21 @@ $ActivityLogEntryCopyWith<ActivityLogEntry> get copyWith => _$ActivityLogEntryCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&const DeepCollectionEquality().equals(other.attributeLabels, attributeLabels)&&(identical(other.valueLabels, valueLabels) || other.valueLabels == valueLabels)&&const DeepCollectionEquality().equals(other.propertyLabels, propertyLabels)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as ActivityLogEntry;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityLogEntry&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.event, _this.event) || other.event == _this.event)&&(identical(other.eventLabel, _this.eventLabel) || other.eventLabel == _this.eventLabel)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.subjectType, _this.subjectType) || other.subjectType == _this.subjectType)&&(identical(other.subjectTypeLabel, _this.subjectTypeLabel) || other.subjectTypeLabel == _this.subjectTypeLabel)&&(identical(other.subjectId, _this.subjectId) || other.subjectId == _this.subjectId)&&(identical(other.causer, _this.causer) || other.causer == _this.causer)&&(identical(other.changes, _this.changes) || other.changes == _this.changes)&&const DeepCollectionEquality().equals(other.attributeLabels, _this.attributeLabels)&&(identical(other.valueLabels, _this.valueLabels) || other.valueLabels == _this.valueLabels)&&const DeepCollectionEquality().equals(other.propertyLabels, _this.propertyLabels)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,const DeepCollectionEquality().hash(attributeLabels),valueLabels,const DeepCollectionEquality().hash(propertyLabels),createdAt);
+int get hashCode {
+  final _this = this as ActivityLogEntry;
+  return Object.hash(runtimeType,_this.id,_this.event,_this.eventLabel,_this.description,_this.subjectType,_this.subjectTypeLabel,_this.subjectId,_this.causer,_this.changes,const DeepCollectionEquality().hash(_this.attributeLabels),_this.valueLabels,const DeepCollectionEquality().hash(_this.propertyLabels),_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, attributeLabels: $attributeLabels, valueLabels: $valueLabels, propertyLabels: $propertyLabels, createdAt: $createdAt)';
+  final _this = this as ActivityLogEntry;
+  return 'ActivityLogEntry(id: ${_this.id}, event: ${_this.event}, eventLabel: ${_this.eventLabel}, description: ${_this.description}, subjectType: ${_this.subjectType}, subjectTypeLabel: ${_this.subjectTypeLabel}, subjectId: ${_this.subjectId}, causer: ${_this.causer}, changes: ${_this.changes}, attributeLabels: ${_this.attributeLabels}, valueLabels: ${_this.valueLabels}, propertyLabels: ${_this.propertyLabels}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -90,7 +96,7 @@ class _$ActivityLogEntryCopyWithImpl<$Res>
 /// Create a copy of ActivityLogEntry
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? event = null,Object? eventLabel = freezed,Object? description = freezed,Object? subjectType = freezed,Object? subjectTypeLabel = freezed,Object? subjectId = freezed,Object? causer = freezed,Object? changes = freezed,Object? attributeLabels = freezed,Object? valueLabels = freezed,Object? propertyLabels = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ActivityLogEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,event: null == event ? _self.event : event // ignore: cast_nullable_to_non_nullable
 as String,eventLabel: freezed == eventLabel ? _self.eventLabel : eventLabel // ignore: cast_nullable_to_non_nullable
@@ -281,7 +287,7 @@ return $default(_that.id,_that.event,_that.eventLabel,_that.description,_that.su
 @JsonSerializable()
 
 class _ActivityLogEntry extends ActivityLogEntry {
-  const _ActivityLogEntry({required this.id, required this.event, @JsonKey(name: 'event_label') this.eventLabel, this.description, @JsonKey(name: 'subject_type') this.subjectType, @JsonKey(name: 'subject_type_label') this.subjectTypeLabel, @JsonKey(name: 'subject_id') this.subjectId, this.causer, this.changes, @JsonKey(name: 'attribute_labels') final  Map<String, String>? attributeLabels, @JsonKey(name: 'value_labels') this.valueLabels, @JsonKey(name: 'property_labels') final  Map<String, Map<String, String>>? propertyLabels, @JsonKey(name: 'created_at') this.createdAt}): _attributeLabels = attributeLabels,_propertyLabels = propertyLabels,super._();
+  const _ActivityLogEntry({required this.id, required this.event, @JsonKey(name: 'event_label') this.eventLabel, this.description, @JsonKey(name: 'subject_type') this.subjectType, @JsonKey(name: 'subject_type_label') this.subjectTypeLabel, @JsonKey(name: 'subject_id') this.subjectId, this.causer, this.changes, @JsonKey(name: 'attribute_labels')  Map<String, String>? attributeLabels, @JsonKey(name: 'value_labels') this.valueLabels, @JsonKey(name: 'property_labels')  Map<String, Map<String, String>>? propertyLabels, @JsonKey(name: 'created_at') this.createdAt}): _attributeLabels = attributeLabels,_propertyLabels = propertyLabels,super._();
   factory _ActivityLogEntry.fromJson(Map<String, dynamic> json) => _$ActivityLogEntryFromJson(json);
 
 @override final  int id;
@@ -360,16 +366,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&const DeepCollectionEquality().equals(other._attributeLabels, _attributeLabels)&&(identical(other.valueLabels, valueLabels) || other.valueLabels == valueLabels)&&const DeepCollectionEquality().equals(other._propertyLabels, _propertyLabels)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityLogEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.event, event) || other.event == event)&&(identical(other.eventLabel, eventLabel) || other.eventLabel == eventLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectTypeLabel, subjectTypeLabel) || other.subjectTypeLabel == subjectTypeLabel)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.causer, causer) || other.causer == causer)&&(identical(other.changes, changes) || other.changes == changes)&&const DeepCollectionEquality().equals(other.attributeLabels, _attributeLabels)&&(identical(other.valueLabels, valueLabels) || other.valueLabels == valueLabels)&&const DeepCollectionEquality().equals(other.propertyLabels, _propertyLabels)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,const DeepCollectionEquality().hash(_attributeLabels),valueLabels,const DeepCollectionEquality().hash(_propertyLabels),createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,event,eventLabel,description,subjectType,subjectTypeLabel,subjectId,causer,changes,const DeepCollectionEquality().hash(_attributeLabels),valueLabels,const DeepCollectionEquality().hash(_propertyLabels),createdAt);
+}
 
 @override
 String toString() {
-  return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, attributeLabels: $attributeLabels, valueLabels: $valueLabels, propertyLabels: $propertyLabels, createdAt: $createdAt)';
+    return 'ActivityLogEntry(id: $id, event: $event, eventLabel: $eventLabel, description: $description, subjectType: $subjectType, subjectTypeLabel: $subjectTypeLabel, subjectId: $subjectId, causer: $causer, changes: $changes, attributeLabels: $attributeLabels, valueLabels: $valueLabels, propertyLabels: $propertyLabels, createdAt: $createdAt)';
 }
 
 
@@ -472,16 +480,21 @@ $AuditValueLabelsCopyWith<AuditValueLabels> get copyWith => _$AuditValueLabelsCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditValueLabels&&const DeepCollectionEquality().equals(other.old, old)&&const DeepCollectionEquality().equals(other.attributes, attributes));
+  final _this = this as AuditValueLabels;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditValueLabels&&const DeepCollectionEquality().equals(other.old, _this.old)&&const DeepCollectionEquality().equals(other.attributes, _this.attributes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(old),const DeepCollectionEquality().hash(attributes));
+int get hashCode {
+  final _this = this as AuditValueLabels;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.old),const DeepCollectionEquality().hash(_this.attributes));
+}
 
 @override
 String toString() {
-  return 'AuditValueLabels(old: $old, attributes: $attributes)';
+  final _this = this as AuditValueLabels;
+  return 'AuditValueLabels(old: ${_this.old}, attributes: ${_this.attributes})';
 }
 
 
@@ -510,7 +523,7 @@ class _$AuditValueLabelsCopyWithImpl<$Res>
 /// Create a copy of AuditValueLabels
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? old = freezed,Object? attributes = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(AuditValueLabels(
 old: freezed == old ? _self.old : old // ignore: cast_nullable_to_non_nullable
 as Map<String, String>?,attributes: freezed == attributes ? _self.attributes : attributes // ignore: cast_nullable_to_non_nullable
 as Map<String, String>?,
@@ -654,7 +667,7 @@ return $default(_that.old,_that.attributes);case _:
 @JsonSerializable()
 
 class _AuditValueLabels implements AuditValueLabels {
-  const _AuditValueLabels({final  Map<String, String>? old, final  Map<String, String>? attributes}): _old = old,_attributes = attributes;
+  const _AuditValueLabels({ Map<String, String>? old,  Map<String, String>? attributes}): _old = old,_attributes = attributes;
   factory _AuditValueLabels.fromJson(Map<String, dynamic> json) => _$AuditValueLabelsFromJson(json);
 
  final  Map<String, String>? _old;
@@ -689,16 +702,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditValueLabels&&const DeepCollectionEquality().equals(other._old, _old)&&const DeepCollectionEquality().equals(other._attributes, _attributes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditValueLabels&&const DeepCollectionEquality().equals(other.old, _old)&&const DeepCollectionEquality().equals(other.attributes, _attributes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_old),const DeepCollectionEquality().hash(_attributes));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_old),const DeepCollectionEquality().hash(_attributes));
+}
 
 @override
 String toString() {
-  return 'AuditValueLabels(old: $old, attributes: $attributes)';
+    return 'AuditValueLabels(old: $old, attributes: $attributes)';
 }
 
 
@@ -754,16 +769,21 @@ $AuditCauserCopyWith<AuditCauser> get copyWith => _$AuditCauserCopyWithImpl<Audi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditCauser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+  final _this = this as AuditCauser;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditCauser&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+  final _this = this as AuditCauser;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.employeeCode);
+}
 
 @override
 String toString() {
-  return 'AuditCauser(id: $id, name: $name, employeeCode: $employeeCode)';
+  final _this = this as AuditCauser;
+  return 'AuditCauser(id: ${_this.id}, name: ${_this.name}, employeeCode: ${_this.employeeCode})';
 }
 
 
@@ -792,7 +812,7 @@ class _$AuditCauserCopyWithImpl<$Res>
 /// Create a copy of AuditCauser
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? name = null,Object? employeeCode = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(AuditCauser(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
@@ -957,16 +977,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditCauser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditCauser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,employeeCode);
+}
 
 @override
 String toString() {
-  return 'AuditCauser(id: $id, name: $name, employeeCode: $employeeCode)';
+    return 'AuditCauser(id: $id, name: $name, employeeCode: $employeeCode)';
 }
 
 
@@ -1023,16 +1045,21 @@ $AuditChangesCopyWith<AuditChanges> get copyWith => _$AuditChangesCopyWithImpl<A
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditChanges&&const DeepCollectionEquality().equals(other.old, old)&&const DeepCollectionEquality().equals(other.attributes, attributes));
+  final _this = this as AuditChanges;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuditChanges&&const DeepCollectionEquality().equals(other.old, _this.old)&&const DeepCollectionEquality().equals(other.attributes, _this.attributes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(old),const DeepCollectionEquality().hash(attributes));
+int get hashCode {
+  final _this = this as AuditChanges;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.old),const DeepCollectionEquality().hash(_this.attributes));
+}
 
 @override
 String toString() {
-  return 'AuditChanges(old: $old, attributes: $attributes)';
+  final _this = this as AuditChanges;
+  return 'AuditChanges(old: ${_this.old}, attributes: ${_this.attributes})';
 }
 
 
@@ -1061,7 +1088,7 @@ class _$AuditChangesCopyWithImpl<$Res>
 /// Create a copy of AuditChanges
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? old = freezed,Object? attributes = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(AuditChanges(
 old: freezed == old ? _self.old : old // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,attributes: freezed == attributes ? _self.attributes : attributes // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>?,
@@ -1205,7 +1232,7 @@ return $default(_that.old,_that.attributes);case _:
 @JsonSerializable()
 
 class _AuditChanges extends AuditChanges {
-  const _AuditChanges({final  Map<String, dynamic>? old, final  Map<String, dynamic>? attributes}): _old = old,_attributes = attributes,super._();
+  const _AuditChanges({ Map<String, dynamic>? old,  Map<String, dynamic>? attributes}): _old = old,_attributes = attributes,super._();
   factory _AuditChanges.fromJson(Map<String, dynamic> json) => _$AuditChangesFromJson(json);
 
  final  Map<String, dynamic>? _old;
@@ -1240,16 +1267,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditChanges&&const DeepCollectionEquality().equals(other._old, _old)&&const DeepCollectionEquality().equals(other._attributes, _attributes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuditChanges&&const DeepCollectionEquality().equals(other.old, _old)&&const DeepCollectionEquality().equals(other.attributes, _attributes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_old),const DeepCollectionEquality().hash(_attributes));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_old),const DeepCollectionEquality().hash(_attributes));
+}
 
 @override
 String toString() {
-  return 'AuditChanges(old: $old, attributes: $attributes)';
+    return 'AuditChanges(old: $old, attributes: $attributes)';
 }
 
 

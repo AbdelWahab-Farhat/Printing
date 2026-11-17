@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'failure.dart';
@@ -9,6 +9,7 @@ part of 'failure.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $FailureCopyWith<Failure> get copyWith => _$FailureCopyWithImpl<Failure>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Failure&&(identical(other.message, message) || other.message == message));
+  final _this = this as Failure;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Failure&&(identical(other.message, _this.message) || other.message == _this.message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+  final _this = this as Failure;
+  return Object.hash(runtimeType,_this.message);
+}
 
 @override
 String toString() {
-  return 'Failure(message: $message)';
+  final _this = this as Failure;
+  return 'Failure(message: ${_this.message})';
 }
 
 
@@ -224,7 +230,7 @@ return unexpected(_that.message,_that.cause);case _:
 
 
 class ServerFailure implements Failure {
-  const ServerFailure({required this.message, this.statusCode, final  Map<String, List<String>>? fieldErrors}): _fieldErrors = fieldErrors;
+  const ServerFailure({required this.message, this.statusCode,  Map<String, List<String>>? fieldErrors}): _fieldErrors = fieldErrors;
   
 
 @override final  String message;
@@ -253,16 +259,18 @@ $ServerFailureCopyWith<ServerFailure> get copyWith => _$ServerFailureCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerFailure&&(identical(other.message, message) || other.message == message)&&(identical(other.statusCode, statusCode) || other.statusCode == statusCode)&&const DeepCollectionEquality().equals(other._fieldErrors, _fieldErrors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerFailure&&(identical(other.message, message) || other.message == message)&&(identical(other.statusCode, statusCode) || other.statusCode == statusCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _fieldErrors));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,statusCode,const DeepCollectionEquality().hash(_fieldErrors));
+int get hashCode {
+    return Object.hash(runtimeType,message,statusCode,const DeepCollectionEquality().hash(_fieldErrors));
+}
 
 @override
 String toString() {
-  return 'Failure.server(message: $message, statusCode: $statusCode, fieldErrors: $fieldErrors)';
+    return 'Failure.server(message: $message, statusCode: $statusCode, fieldErrors: $fieldErrors)';
 }
 
 
@@ -321,16 +329,18 @@ $NetworkFailureCopyWith<NetworkFailure> get copyWith => _$NetworkFailureCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NetworkFailure&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NetworkFailure&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+    return Object.hash(runtimeType,message);
+}
 
 @override
 String toString() {
-  return 'Failure.network(message: $message)';
+    return 'Failure.network(message: $message)';
 }
 
 
@@ -387,16 +397,18 @@ $UnauthorizedFailureCopyWith<UnauthorizedFailure> get copyWith => _$Unauthorized
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnauthorizedFailure&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnauthorizedFailure&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+    return Object.hash(runtimeType,message);
+}
 
 @override
 String toString() {
-  return 'Failure.unauthorized(message: $message)';
+    return 'Failure.unauthorized(message: $message)';
 }
 
 
@@ -453,16 +465,18 @@ $ForbiddenFailureCopyWith<ForbiddenFailure> get copyWith => _$ForbiddenFailureCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ForbiddenFailure&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ForbiddenFailure&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode {
+    return Object.hash(runtimeType,message);
+}
 
 @override
 String toString() {
-  return 'Failure.forbidden(message: $message)';
+    return 'Failure.forbidden(message: $message)';
 }
 
 
@@ -520,16 +534,18 @@ $UnexpectedFailureCopyWith<UnexpectedFailure> get copyWith => _$UnexpectedFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.message, message) || other.message == message)&&(identical(other.cause, cause) || other.cause == cause));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.message, message) || other.message == message)&&(identical(other.cause, cause) || other.cause == cause));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,cause);
+int get hashCode {
+    return Object.hash(runtimeType,message,cause);
+}
 
 @override
 String toString() {
-  return 'Failure.unexpected(message: $message, cause: $cause)';
+    return 'Failure.unexpected(message: $message, cause: $cause)';
 }
 
 

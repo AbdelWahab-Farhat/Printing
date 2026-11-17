@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'home_cubit.dart';
@@ -9,6 +9,7 @@ part of 'home_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$HomeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HomeState()';
+    return 'HomeState()';
 }
 
 
@@ -197,7 +198,7 @@ class HomeInitial implements HomeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HomeState.initial()';
+    return 'HomeState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class HomeLoading implements HomeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'HomeState.loading()';
+    return 'HomeState.loading()';
 }
 
 
@@ -270,16 +271,18 @@ $HomeLoadedCopyWith<HomeLoaded> get copyWith => _$HomeLoadedCopyWithImpl<HomeLoa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeLoaded&&(identical(other.user, user) || other.user == user)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeLoaded&&(identical(other.user, user) || other.user == user)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,user,summary,isRefreshing);
+int get hashCode {
+    return Object.hash(runtimeType,user,summary,isRefreshing);
+}
 
 @override
 String toString() {
-  return 'HomeState.loaded(user: $user, summary: $summary, isRefreshing: $isRefreshing)';
+    return 'HomeState.loaded(user: $user, summary: $summary, isRefreshing: $isRefreshing)';
 }
 
 
@@ -356,16 +359,18 @@ $HomeFailureCopyWith<HomeFailure> get copyWith => _$HomeFailureCopyWithImpl<Home
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'HomeState.failure(failure: $failure)';
+    return 'HomeState.failure(failure: $failure)';
 }
 
 

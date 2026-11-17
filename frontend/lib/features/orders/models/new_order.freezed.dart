@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'new_order.dart';
@@ -9,6 +9,7 @@ part of 'new_order.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -75,16 +76,21 @@ $NewOrderCopyWith<NewOrder> get copyWith => _$NewOrderCopyWithImpl<NewOrder>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&const DeepCollectionEquality().equals(other.designColors, designColors)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.additionalCost, additionalCost) || other.additionalCost == additionalCost)&&(identical(other.additionalCostReason, additionalCostReason) || other.additionalCostReason == additionalCostReason)&&(identical(other.additionalCostNote, additionalCostNote) || other.additionalCostNote == additionalCostNote)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.compensationReason, compensationReason) || other.compensationReason == compensationReason)&&(identical(other.compensationNote, compensationNote) || other.compensationNote == compensationNote)&&(identical(other.compensatesOrderId, compensatesOrderId) || other.compensatesOrderId == compensatesOrderId)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isUrgent, isUrgent) || other.isUrgent == isUrgent));
+  final _this = this as NewOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&(identical(other.designSource, _this.designSource) || other.designSource == _this.designSource)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.customerShopId, _this.customerShopId) || other.customerShopId == _this.customerShopId)&&(identical(other.regionId, _this.regionId) || other.regionId == _this.regionId)&&(identical(other.designFee, _this.designFee) || other.designFee == _this.designFee)&&const DeepCollectionEquality().equals(other.designIds, _this.designIds)&&const DeepCollectionEquality().equals(other.designColors, _this.designColors)&&(identical(other.discount, _this.discount) || other.discount == _this.discount)&&(identical(other.additionalCost, _this.additionalCost) || other.additionalCost == _this.additionalCost)&&(identical(other.additionalCostReason, _this.additionalCostReason) || other.additionalCostReason == _this.additionalCostReason)&&(identical(other.additionalCostNote, _this.additionalCostNote) || other.additionalCostNote == _this.additionalCostNote)&&(identical(other.vendorId, _this.vendorId) || other.vendorId == _this.vendorId)&&(identical(other.deliveryPaidBy, _this.deliveryPaidBy) || other.deliveryPaidBy == _this.deliveryPaidBy)&&(identical(other.isCompensation, _this.isCompensation) || other.isCompensation == _this.isCompensation)&&(identical(other.compensationReason, _this.compensationReason) || other.compensationReason == _this.compensationReason)&&(identical(other.compensationNote, _this.compensationNote) || other.compensationNote == _this.compensationNote)&&(identical(other.compensatesOrderId, _this.compensatesOrderId) || other.compensatesOrderId == _this.compensatesOrderId)&&(identical(other.recipientName, _this.recipientName) || other.recipientName == _this.recipientName)&&(identical(other.recipientPhone, _this.recipientPhone) || other.recipientPhone == _this.recipientPhone)&&(identical(other.addressDetails, _this.addressDetails) || other.addressDetails == _this.addressDetails)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.isUrgent, _this.isUrgent) || other.isUrgent == _this.isUrgent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(designIds),const DeepCollectionEquality().hash(designColors),discount,additionalCost,additionalCostReason,additionalCostNote,vendorId,deliveryPaidBy,isCompensation,compensationReason,compensationNote,compensatesOrderId,recipientName,recipientPhone,addressDetails,notes,isUrgent]);
+int get hashCode {
+  final _this = this as NewOrder;
+  return Object.hashAll([runtimeType,_this.customerId,_this.cityId,_this.designSource,const DeepCollectionEquality().hash(_this.items),_this.customerShopId,_this.regionId,_this.designFee,const DeepCollectionEquality().hash(_this.designIds),const DeepCollectionEquality().hash(_this.designColors),_this.discount,_this.additionalCost,_this.additionalCostReason,_this.additionalCostNote,_this.vendorId,_this.deliveryPaidBy,_this.isCompensation,_this.compensationReason,_this.compensationNote,_this.compensatesOrderId,_this.recipientName,_this.recipientPhone,_this.addressDetails,_this.notes,_this.isUrgent]);
+}
 
 @override
 String toString() {
-  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, designColors: $designColors, discount: $discount, additionalCost: $additionalCost, additionalCostReason: $additionalCostReason, additionalCostNote: $additionalCostNote, vendorId: $vendorId, deliveryPaidBy: $deliveryPaidBy, isCompensation: $isCompensation, compensationReason: $compensationReason, compensationNote: $compensationNote, compensatesOrderId: $compensatesOrderId, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, isUrgent: $isUrgent)';
+  final _this = this as NewOrder;
+  return 'NewOrder(customerId: ${_this.customerId}, cityId: ${_this.cityId}, designSource: ${_this.designSource}, items: ${_this.items}, customerShopId: ${_this.customerShopId}, regionId: ${_this.regionId}, designFee: ${_this.designFee}, designIds: ${_this.designIds}, designColors: ${_this.designColors}, discount: ${_this.discount}, additionalCost: ${_this.additionalCost}, additionalCostReason: ${_this.additionalCostReason}, additionalCostNote: ${_this.additionalCostNote}, vendorId: ${_this.vendorId}, deliveryPaidBy: ${_this.deliveryPaidBy}, isCompensation: ${_this.isCompensation}, compensationReason: ${_this.compensationReason}, compensationNote: ${_this.compensationNote}, compensatesOrderId: ${_this.compensatesOrderId}, recipientName: ${_this.recipientName}, recipientPhone: ${_this.recipientPhone}, addressDetails: ${_this.addressDetails}, notes: ${_this.notes}, isUrgent: ${_this.isUrgent})';
 }
 
 
@@ -113,7 +119,7 @@ class _$NewOrderCopyWithImpl<$Res>
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? customerId = null,Object? cityId = null,Object? designSource = null,Object? items = null,Object? customerShopId = freezed,Object? regionId = freezed,Object? designFee = freezed,Object? designIds = freezed,Object? designColors = freezed,Object? discount = freezed,Object? additionalCost = freezed,Object? additionalCostReason = freezed,Object? additionalCostNote = freezed,Object? vendorId = freezed,Object? deliveryPaidBy = freezed,Object? isCompensation = freezed,Object? compensationReason = freezed,Object? compensationNote = freezed,Object? compensatesOrderId = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? addressDetails = freezed,Object? notes = freezed,Object? isUrgent = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NewOrder(
 customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
 as int,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,designSource: null == designSource ? _self.designSource : designSource // ignore: cast_nullable_to_non_nullable
@@ -279,7 +285,7 @@ return $default(_that.customerId,_that.cityId,_that.designSource,_that.items,_th
 @JsonSerializable()
 
 class _NewOrder implements NewOrder {
-  const _NewOrder({@JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, required final  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false) this.customerShopId, @JsonKey(name: 'region_id', includeIfNull: false) this.regionId, @JsonKey(name: 'design_fee', includeIfNull: false) this.designFee, @JsonKey(name: 'design_ids', includeIfNull: false) final  List<int>? designIds, @JsonKey(name: 'design_colors', includeIfNull: false) final  List<Map<String, dynamic>>? designColors, @JsonKey(includeIfNull: false) this.discount, @JsonKey(name: 'additional_cost', includeIfNull: false) this.additionalCost, @JsonKey(name: 'additional_cost_reason', includeIfNull: false) this.additionalCostReason, @JsonKey(name: 'additional_cost_note', includeIfNull: false) this.additionalCostNote, @JsonKey(name: 'vendor_id', includeIfNull: false) this.vendorId, @JsonKey(name: 'delivery_paid_by', includeIfNull: false) this.deliveryPaidBy, @JsonKey(name: 'is_compensation', includeIfNull: false) this.isCompensation, @JsonKey(name: 'compensation_reason', includeIfNull: false) this.compensationReason, @JsonKey(name: 'compensation_note', includeIfNull: false) this.compensationNote, @JsonKey(name: 'compensates_order_id', includeIfNull: false) this.compensatesOrderId, @JsonKey(name: 'recipient_name', includeIfNull: false) this.recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false) this.recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false) this.addressDetails, @JsonKey(includeIfNull: false) this.notes, @JsonKey(name: 'is_urgent', includeIfNull: false) this.isUrgent}): _items = items,_designIds = designIds,_designColors = designColors;
+  const _NewOrder({@JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'city_id') required this.cityId, @JsonKey(name: 'design_source') required this.designSource, required  List<NewOrderItem> items, @JsonKey(name: 'customer_shop_id', includeIfNull: false) this.customerShopId, @JsonKey(name: 'region_id', includeIfNull: false) this.regionId, @JsonKey(name: 'design_fee', includeIfNull: false) this.designFee, @JsonKey(name: 'design_ids', includeIfNull: false)  List<int>? designIds, @JsonKey(name: 'design_colors', includeIfNull: false)  List<Map<String, dynamic>>? designColors, @JsonKey(includeIfNull: false) this.discount, @JsonKey(name: 'additional_cost', includeIfNull: false) this.additionalCost, @JsonKey(name: 'additional_cost_reason', includeIfNull: false) this.additionalCostReason, @JsonKey(name: 'additional_cost_note', includeIfNull: false) this.additionalCostNote, @JsonKey(name: 'vendor_id', includeIfNull: false) this.vendorId, @JsonKey(name: 'delivery_paid_by', includeIfNull: false) this.deliveryPaidBy, @JsonKey(name: 'is_compensation', includeIfNull: false) this.isCompensation, @JsonKey(name: 'compensation_reason', includeIfNull: false) this.compensationReason, @JsonKey(name: 'compensation_note', includeIfNull: false) this.compensationNote, @JsonKey(name: 'compensates_order_id', includeIfNull: false) this.compensatesOrderId, @JsonKey(name: 'recipient_name', includeIfNull: false) this.recipientName, @JsonKey(name: 'recipient_phone', includeIfNull: false) this.recipientPhone, @JsonKey(name: 'address_details', includeIfNull: false) this.addressDetails, @JsonKey(includeIfNull: false) this.notes, @JsonKey(name: 'is_urgent', includeIfNull: false) this.isUrgent}): _items = items,_designIds = designIds,_designColors = designColors;
   factory _NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);
 
 @override@JsonKey(name: 'customer_id') final  int customerId;
@@ -398,16 +404,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&const DeepCollectionEquality().equals(other._designColors, _designColors)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.additionalCost, additionalCost) || other.additionalCost == additionalCost)&&(identical(other.additionalCostReason, additionalCostReason) || other.additionalCostReason == additionalCostReason)&&(identical(other.additionalCostNote, additionalCostNote) || other.additionalCostNote == additionalCostNote)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.compensationReason, compensationReason) || other.compensationReason == compensationReason)&&(identical(other.compensationNote, compensationNote) || other.compensationNote == compensationNote)&&(identical(other.compensatesOrderId, compensatesOrderId) || other.compensatesOrderId == compensatesOrderId)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isUrgent, isUrgent) || other.isUrgent == isUrgent));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.designSource, designSource) || other.designSource == designSource)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&const DeepCollectionEquality().equals(other.designIds, _designIds)&&const DeepCollectionEquality().equals(other.designColors, _designColors)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.additionalCost, additionalCost) || other.additionalCost == additionalCost)&&(identical(other.additionalCostReason, additionalCostReason) || other.additionalCostReason == additionalCostReason)&&(identical(other.additionalCostNote, additionalCostNote) || other.additionalCostNote == additionalCostNote)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.compensationReason, compensationReason) || other.compensationReason == compensationReason)&&(identical(other.compensationNote, compensationNote) || other.compensationNote == compensationNote)&&(identical(other.compensatesOrderId, compensatesOrderId) || other.compensatesOrderId == compensatesOrderId)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isUrgent, isUrgent) || other.isUrgent == isUrgent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(_items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(_designIds),const DeepCollectionEquality().hash(_designColors),discount,additionalCost,additionalCostReason,additionalCostNote,vendorId,deliveryPaidBy,isCompensation,compensationReason,compensationNote,compensatesOrderId,recipientName,recipientPhone,addressDetails,notes,isUrgent]);
+int get hashCode {
+    return Object.hashAll([runtimeType,customerId,cityId,designSource,const DeepCollectionEquality().hash(_items),customerShopId,regionId,designFee,const DeepCollectionEquality().hash(_designIds),const DeepCollectionEquality().hash(_designColors),discount,additionalCost,additionalCostReason,additionalCostNote,vendorId,deliveryPaidBy,isCompensation,compensationReason,compensationNote,compensatesOrderId,recipientName,recipientPhone,addressDetails,notes,isUrgent]);
+}
 
 @override
 String toString() {
-  return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, designColors: $designColors, discount: $discount, additionalCost: $additionalCost, additionalCostReason: $additionalCostReason, additionalCostNote: $additionalCostNote, vendorId: $vendorId, deliveryPaidBy: $deliveryPaidBy, isCompensation: $isCompensation, compensationReason: $compensationReason, compensationNote: $compensationNote, compensatesOrderId: $compensatesOrderId, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, isUrgent: $isUrgent)';
+    return 'NewOrder(customerId: $customerId, cityId: $cityId, designSource: $designSource, items: $items, customerShopId: $customerShopId, regionId: $regionId, designFee: $designFee, designIds: $designIds, designColors: $designColors, discount: $discount, additionalCost: $additionalCost, additionalCostReason: $additionalCostReason, additionalCostNote: $additionalCostNote, vendorId: $vendorId, deliveryPaidBy: $deliveryPaidBy, isCompensation: $isCompensation, compensationReason: $compensationReason, compensationNote: $compensationNote, compensatesOrderId: $compensatesOrderId, recipientName: $recipientName, recipientPhone: $recipientPhone, addressDetails: $addressDetails, notes: $notes, isUrgent: $isUrgent)';
 }
 
 
@@ -493,16 +501,21 @@ $NewOrderItemCopyWith<NewOrderItem> get copyWith => _$NewOrderItemCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  final _this = this as NewOrderItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderItem&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.productVariantId, _this.productVariantId) || other.productVariantId == _this.productVariantId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.unitCost, _this.unitCost) || other.unitCost == _this.unitCost)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,unitCost,notes,sortOrder);
+int get hashCode {
+  final _this = this as NewOrderItem;
+  return Object.hash(runtimeType,_this.productId,_this.productVariantId,_this.quantity,_this.unitPrice,_this.unitCost,_this.notes,_this.sortOrder);
+}
 
 @override
 String toString() {
-  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, unitCost: $unitCost, notes: $notes, sortOrder: $sortOrder)';
+  final _this = this as NewOrderItem;
+  return 'NewOrderItem(productId: ${_this.productId}, productVariantId: ${_this.productVariantId}, quantity: ${_this.quantity}, unitPrice: ${_this.unitPrice}, unitCost: ${_this.unitCost}, notes: ${_this.notes}, sortOrder: ${_this.sortOrder})';
 }
 
 
@@ -531,7 +544,7 @@ class _$NewOrderItemCopyWithImpl<$Res>
 /// Create a copy of NewOrderItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,Object? unitPrice = freezed,Object? unitCost = freezed,Object? notes = freezed,Object? sortOrder = null,}) {
-  return _then(_self.copyWith(
+  return _then(NewOrderItem(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
@@ -712,16 +725,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderItem&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,unitCost,notes,sortOrder);
+int get hashCode {
+    return Object.hash(runtimeType,productId,productVariantId,quantity,unitPrice,unitCost,notes,sortOrder);
+}
 
 @override
 String toString() {
-  return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, unitCost: $unitCost, notes: $notes, sortOrder: $sortOrder)';
+    return 'NewOrderItem(productId: $productId, productVariantId: $productVariantId, quantity: $quantity, unitPrice: $unitPrice, unitCost: $unitCost, notes: $notes, sortOrder: $sortOrder)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'internal_ticket.dart';
@@ -9,6 +9,7 @@ part of 'internal_ticket.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $InternalCustomerRefCopyWith<InternalCustomerRef> get copyWith => _$InternalCust
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+  final _this = this as InternalCustomerRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalCustomerRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone);
+int get hashCode {
+  final _this = this as InternalCustomerRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.phone);
+}
 
 @override
 String toString() {
-  return 'InternalCustomerRef(id: $id, code: $code, name: $name, phone: $phone)';
+  final _this = this as InternalCustomerRef;
+  return 'InternalCustomerRef(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, phone: ${_this.phone})';
 }
 
 
@@ -66,7 +72,7 @@ class _$InternalCustomerRefCopyWithImpl<$Res>
 /// Create a copy of InternalCustomerRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = freezed,Object? name = freezed,Object? phone = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalCustomerRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -233,16 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,phone);
+}
 
 @override
 String toString() {
-  return 'InternalCustomerRef(id: $id, code: $code, name: $name, phone: $phone)';
+    return 'InternalCustomerRef(id: $id, code: $code, name: $name, phone: $phone)';
 }
 
 
@@ -300,16 +308,21 @@ $InternalOrderRefCopyWith<InternalOrderRef> get copyWith => _$InternalOrderRefCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+  final _this = this as InternalOrderRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalOrderRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+  final _this = this as InternalOrderRef;
+  return Object.hash(runtimeType,_this.id,_this.code);
+}
 
 @override
 String toString() {
-  return 'InternalOrderRef(id: $id, code: $code)';
+  final _this = this as InternalOrderRef;
+  return 'InternalOrderRef(id: ${_this.id}, code: ${_this.code})';
 }
 
 
@@ -338,7 +351,7 @@ class _$InternalOrderRefCopyWithImpl<$Res>
 /// Create a copy of InternalOrderRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,}) {
-  return _then(_self.copyWith(
+  return _then(InternalOrderRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,
@@ -501,16 +514,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+    return Object.hash(runtimeType,id,code);
+}
 
 @override
 String toString() {
-  return 'InternalOrderRef(id: $id, code: $code)';
+    return 'InternalOrderRef(id: $id, code: $code)';
 }
 
 
@@ -566,16 +581,21 @@ $InternalCategoryCopyWith<InternalCategory> get copyWith => _$InternalCategoryCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as InternalCategory;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalCategory&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as InternalCategory;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'InternalCategory(id: $id, name: $name)';
+  final _this = this as InternalCategory;
+  return 'InternalCategory(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -604,7 +624,7 @@ class _$InternalCategoryCopyWithImpl<$Res>
 /// Create a copy of InternalCategory
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(InternalCategory(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -767,16 +787,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'InternalCategory(id: $id, name: $name)';
+    return 'InternalCategory(id: $id, name: $name)';
 }
 
 
@@ -833,16 +855,21 @@ $InternalLastMessageCopyWith<InternalLastMessage> get copyWith => _$InternalLast
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalLastMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.authorId, authorId) || other.authorId == authorId)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+  final _this = this as InternalLastMessage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalLastMessage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.authorId, _this.authorId) || other.authorId == _this.authorId)&&(identical(other.authorName, _this.authorName) || other.authorName == _this.authorName)&&(identical(other.preview, _this.preview) || other.preview == _this.preview)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.durationSeconds, _this.durationSeconds) || other.durationSeconds == _this.durationSeconds)&&(identical(other.sentAt, _this.sentAt) || other.sentAt == _this.sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,authorId,authorName,preview,kind,durationSeconds,sentAt);
+int get hashCode {
+  final _this = this as InternalLastMessage;
+  return Object.hash(runtimeType,_this.id,_this.authorId,_this.authorName,_this.preview,_this.kind,_this.durationSeconds,_this.sentAt);
+}
 
 @override
 String toString() {
-  return 'InternalLastMessage(id: $id, authorId: $authorId, authorName: $authorName, preview: $preview, kind: $kind, durationSeconds: $durationSeconds, sentAt: $sentAt)';
+  final _this = this as InternalLastMessage;
+  return 'InternalLastMessage(id: ${_this.id}, authorId: ${_this.authorId}, authorName: ${_this.authorName}, preview: ${_this.preview}, kind: ${_this.kind}, durationSeconds: ${_this.durationSeconds}, sentAt: ${_this.sentAt})';
 }
 
 
@@ -871,7 +898,7 @@ class _$InternalLastMessageCopyWithImpl<$Res>
 /// Create a copy of InternalLastMessage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? authorId = freezed,Object? authorName = freezed,Object? preview = null,Object? kind = null,Object? durationSeconds = freezed,Object? sentAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalLastMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,authorId: freezed == authorId ? _self.authorId : authorId // ignore: cast_nullable_to_non_nullable
 as int?,authorName: freezed == authorName ? _self.authorName : authorName // ignore: cast_nullable_to_non_nullable
@@ -1045,16 +1072,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalLastMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.authorId, authorId) || other.authorId == authorId)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalLastMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.authorId, authorId) || other.authorId == authorId)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,authorId,authorName,preview,kind,durationSeconds,sentAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,authorId,authorName,preview,kind,durationSeconds,sentAt);
+}
 
 @override
 String toString() {
-  return 'InternalLastMessage(id: $id, authorId: $authorId, authorName: $authorName, preview: $preview, kind: $kind, durationSeconds: $durationSeconds, sentAt: $sentAt)';
+    return 'InternalLastMessage(id: $id, authorId: $authorId, authorName: $authorName, preview: $preview, kind: $kind, durationSeconds: $durationSeconds, sentAt: $sentAt)';
 }
 
 
@@ -1115,16 +1144,21 @@ $InternalReadUpToCopyWith<InternalReadUpTo> get copyWith => _$InternalReadUpToCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalReadUpTo&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee));
+  final _this = this as InternalReadUpTo;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalReadUpTo&&(identical(other.opener, _this.opener) || other.opener == _this.opener)&&(identical(other.assignee, _this.assignee) || other.assignee == _this.assignee));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,opener,assignee);
+int get hashCode {
+  final _this = this as InternalReadUpTo;
+  return Object.hash(runtimeType,_this.opener,_this.assignee);
+}
 
 @override
 String toString() {
-  return 'InternalReadUpTo(opener: $opener, assignee: $assignee)';
+  final _this = this as InternalReadUpTo;
+  return 'InternalReadUpTo(opener: ${_this.opener}, assignee: ${_this.assignee})';
 }
 
 
@@ -1153,7 +1187,7 @@ class _$InternalReadUpToCopyWithImpl<$Res>
 /// Create a copy of InternalReadUpTo
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? opener = freezed,Object? assignee = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalReadUpTo(
 opener: freezed == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
 as int?,assignee: freezed == assignee ? _self.assignee : assignee // ignore: cast_nullable_to_non_nullable
 as int?,
@@ -1316,16 +1350,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalReadUpTo&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalReadUpTo&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,opener,assignee);
+int get hashCode {
+    return Object.hash(runtimeType,opener,assignee);
+}
 
 @override
 String toString() {
-  return 'InternalReadUpTo(opener: $opener, assignee: $assignee)';
+    return 'InternalReadUpTo(opener: $opener, assignee: $assignee)';
 }
 
 
@@ -1385,16 +1421,21 @@ $InternalTicketCopyWith<InternalTicket> get copyWith => _$InternalTicketCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.priorityLabel, priorityLabel) || other.priorityLabel == priorityLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.counterpart, counterpart) || other.counterpart == counterpart)&&(identical(other.iOpenedIt, iOpenedIt) || other.iOpenedIt == iOpenedIt)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.lastMessage, lastMessage) || other.lastMessage == lastMessage)&&const DeepCollectionEquality().equals(other.messages, messages)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.canClose, canClose) || other.canClose == canClose)&&(identical(other.canTransfer, canTransfer) || other.canTransfer == canTransfer)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.closedBy, closedBy) || other.closedBy == closedBy)&&(identical(other.closedForSilence, closedForSilence) || other.closedForSilence == closedForSilence)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as InternalTicket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicket&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.priority, _this.priority) || other.priority == _this.priority)&&(identical(other.priorityLabel, _this.priorityLabel) || other.priorityLabel == _this.priorityLabel)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.opener, _this.opener) || other.opener == _this.opener)&&(identical(other.assignee, _this.assignee) || other.assignee == _this.assignee)&&(identical(other.counterpart, _this.counterpart) || other.counterpart == _this.counterpart)&&(identical(other.iOpenedIt, _this.iOpenedIt) || other.iOpenedIt == _this.iOpenedIt)&&(identical(other.isParty, _this.isParty) || other.isParty == _this.isParty)&&(identical(other.customer, _this.customer) || other.customer == _this.customer)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.unreadCount, _this.unreadCount) || other.unreadCount == _this.unreadCount)&&(identical(other.counterpartReadUpTo, _this.counterpartReadUpTo) || other.counterpartReadUpTo == _this.counterpartReadUpTo)&&(identical(other.readUpTo, _this.readUpTo) || other.readUpTo == _this.readUpTo)&&(identical(other.awaitingMyReply, _this.awaitingMyReply) || other.awaitingMyReply == _this.awaitingMyReply)&&(identical(other.lastMessage, _this.lastMessage) || other.lastMessage == _this.lastMessage)&&const DeepCollectionEquality().equals(other.messages, _this.messages)&&(identical(other.canReply, _this.canReply) || other.canReply == _this.canReply)&&(identical(other.canClose, _this.canClose) || other.canClose == _this.canClose)&&(identical(other.canTransfer, _this.canTransfer) || other.canTransfer == _this.canTransfer)&&(identical(other.lastMessageAt, _this.lastMessageAt) || other.lastMessageAt == _this.lastMessageAt)&&(identical(other.closedAt, _this.closedAt) || other.closedAt == _this.closedAt)&&(identical(other.closedBy, _this.closedBy) || other.closedBy == _this.closedBy)&&(identical(other.closedForSilence, _this.closedForSilence) || other.closedForSilence == _this.closedForSilence)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,title,status,statusLabel,priority,priorityLabel,category,opener,assignee,counterpart,iOpenedIt,isParty,customer,order,unreadCount,counterpartReadUpTo,readUpTo,awaitingMyReply,lastMessage,const DeepCollectionEquality().hash(messages),canReply,canClose,canTransfer,lastMessageAt,closedAt,closedBy,closedForSilence,createdAt]);
+int get hashCode {
+  final _this = this as InternalTicket;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.title,_this.status,_this.statusLabel,_this.priority,_this.priorityLabel,_this.category,_this.opener,_this.assignee,_this.counterpart,_this.iOpenedIt,_this.isParty,_this.customer,_this.order,_this.unreadCount,_this.counterpartReadUpTo,_this.readUpTo,_this.awaitingMyReply,_this.lastMessage,const DeepCollectionEquality().hash(_this.messages),_this.canReply,_this.canClose,_this.canTransfer,_this.lastMessageAt,_this.closedAt,_this.closedBy,_this.closedForSilence,_this.createdAt]);
+}
 
 @override
 String toString() {
-  return 'InternalTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, priority: $priority, priorityLabel: $priorityLabel, category: $category, opener: $opener, assignee: $assignee, counterpart: $counterpart, iOpenedIt: $iOpenedIt, isParty: $isParty, customer: $customer, order: $order, unreadCount: $unreadCount, counterpartReadUpTo: $counterpartReadUpTo, readUpTo: $readUpTo, awaitingMyReply: $awaitingMyReply, lastMessage: $lastMessage, messages: $messages, canReply: $canReply, canClose: $canClose, canTransfer: $canTransfer, lastMessageAt: $lastMessageAt, closedAt: $closedAt, closedBy: $closedBy, closedForSilence: $closedForSilence, createdAt: $createdAt)';
+  final _this = this as InternalTicket;
+  return 'InternalTicket(id: ${_this.id}, code: ${_this.code}, title: ${_this.title}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, priority: ${_this.priority}, priorityLabel: ${_this.priorityLabel}, category: ${_this.category}, opener: ${_this.opener}, assignee: ${_this.assignee}, counterpart: ${_this.counterpart}, iOpenedIt: ${_this.iOpenedIt}, isParty: ${_this.isParty}, customer: ${_this.customer}, order: ${_this.order}, unreadCount: ${_this.unreadCount}, counterpartReadUpTo: ${_this.counterpartReadUpTo}, readUpTo: ${_this.readUpTo}, awaitingMyReply: ${_this.awaitingMyReply}, lastMessage: ${_this.lastMessage}, messages: ${_this.messages}, canReply: ${_this.canReply}, canClose: ${_this.canClose}, canTransfer: ${_this.canTransfer}, lastMessageAt: ${_this.lastMessageAt}, closedAt: ${_this.closedAt}, closedBy: ${_this.closedBy}, closedForSilence: ${_this.closedForSilence}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -1423,7 +1464,7 @@ class _$InternalTicketCopyWithImpl<$Res>
 /// Create a copy of InternalTicket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? title = null,Object? status = null,Object? statusLabel = null,Object? priority = null,Object? priorityLabel = null,Object? category = freezed,Object? opener = freezed,Object? assignee = freezed,Object? counterpart = freezed,Object? iOpenedIt = null,Object? isParty = null,Object? customer = freezed,Object? order = freezed,Object? unreadCount = null,Object? counterpartReadUpTo = freezed,Object? readUpTo = freezed,Object? awaitingMyReply = null,Object? lastMessage = freezed,Object? messages = null,Object? canReply = null,Object? canClose = null,Object? canTransfer = null,Object? lastMessageAt = freezed,Object? closedAt = freezed,Object? closedBy = freezed,Object? closedForSilence = null,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -1702,7 +1743,7 @@ return $default(_that.id,_that.code,_that.title,_that.status,_that.statusLabel,_
 @JsonSerializable()
 
 class _InternalTicket extends InternalTicket {
-  const _InternalTicket({required this.id, required this.code, required this.title, @JsonKey(unknownEnumValue: InternalTicketStatus.unknown) this.status = InternalTicketStatus.unknown, @JsonKey(name: 'status_label') this.statusLabel = '', @JsonKey(unknownEnumValue: InternalTicketPriority.unknown) this.priority = InternalTicketPriority.medium, @JsonKey(name: 'priority_label') this.priorityLabel = '', this.category, this.opener, this.assignee, this.counterpart, @JsonKey(name: 'i_opened_it') this.iOpenedIt = false, @JsonKey(name: 'is_party') this.isParty = false, this.customer, this.order, @JsonKey(name: 'unread_count') this.unreadCount = 0, @JsonKey(name: 'counterpart_read_up_to') this.counterpartReadUpTo, @JsonKey(name: 'read_up_to') this.readUpTo, @JsonKey(name: 'awaiting_my_reply') this.awaitingMyReply = false, @JsonKey(name: 'last_message') this.lastMessage, final  List<ChatMessage> messages = const <ChatMessage>[], @JsonKey(name: 'can_reply') this.canReply = false, @JsonKey(name: 'can_close') this.canClose = false, @JsonKey(name: 'can_transfer') this.canTransfer = false, @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'closed_by') this.closedBy, @JsonKey(name: 'closed_for_silence') this.closedForSilence = false, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages,super._();
+  const _InternalTicket({required this.id, required this.code, required this.title, @JsonKey(unknownEnumValue: InternalTicketStatus.unknown) this.status = InternalTicketStatus.unknown, @JsonKey(name: 'status_label') this.statusLabel = '', @JsonKey(unknownEnumValue: InternalTicketPriority.unknown) this.priority = InternalTicketPriority.medium, @JsonKey(name: 'priority_label') this.priorityLabel = '', this.category, this.opener, this.assignee, this.counterpart, @JsonKey(name: 'i_opened_it') this.iOpenedIt = false, @JsonKey(name: 'is_party') this.isParty = false, this.customer, this.order, @JsonKey(name: 'unread_count') this.unreadCount = 0, @JsonKey(name: 'counterpart_read_up_to') this.counterpartReadUpTo, @JsonKey(name: 'read_up_to') this.readUpTo, @JsonKey(name: 'awaiting_my_reply') this.awaitingMyReply = false, @JsonKey(name: 'last_message') this.lastMessage,  List<ChatMessage> messages = const <ChatMessage>[], @JsonKey(name: 'can_reply') this.canReply = false, @JsonKey(name: 'can_close') this.canClose = false, @JsonKey(name: 'can_transfer') this.canTransfer = false, @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'closed_by') this.closedBy, @JsonKey(name: 'closed_for_silence') this.closedForSilence = false, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages,super._();
   factory _InternalTicket.fromJson(Map<String, dynamic> json) => _$InternalTicketFromJson(json);
 
 @override final  int id;
@@ -1759,16 +1800,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.priorityLabel, priorityLabel) || other.priorityLabel == priorityLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.counterpart, counterpart) || other.counterpart == counterpart)&&(identical(other.iOpenedIt, iOpenedIt) || other.iOpenedIt == iOpenedIt)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.lastMessage, lastMessage) || other.lastMessage == lastMessage)&&const DeepCollectionEquality().equals(other._messages, _messages)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.canClose, canClose) || other.canClose == canClose)&&(identical(other.canTransfer, canTransfer) || other.canTransfer == canTransfer)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.closedBy, closedBy) || other.closedBy == closedBy)&&(identical(other.closedForSilence, closedForSilence) || other.closedForSilence == closedForSilence)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.priorityLabel, priorityLabel) || other.priorityLabel == priorityLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.counterpart, counterpart) || other.counterpart == counterpart)&&(identical(other.iOpenedIt, iOpenedIt) || other.iOpenedIt == iOpenedIt)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.lastMessage, lastMessage) || other.lastMessage == lastMessage)&&const DeepCollectionEquality().equals(other.messages, _messages)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.canClose, canClose) || other.canClose == canClose)&&(identical(other.canTransfer, canTransfer) || other.canTransfer == canTransfer)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.closedBy, closedBy) || other.closedBy == closedBy)&&(identical(other.closedForSilence, closedForSilence) || other.closedForSilence == closedForSilence)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,title,status,statusLabel,priority,priorityLabel,category,opener,assignee,counterpart,iOpenedIt,isParty,customer,order,unreadCount,counterpartReadUpTo,readUpTo,awaitingMyReply,lastMessage,const DeepCollectionEquality().hash(_messages),canReply,canClose,canTransfer,lastMessageAt,closedAt,closedBy,closedForSilence,createdAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,title,status,statusLabel,priority,priorityLabel,category,opener,assignee,counterpart,iOpenedIt,isParty,customer,order,unreadCount,counterpartReadUpTo,readUpTo,awaitingMyReply,lastMessage,const DeepCollectionEquality().hash(_messages),canReply,canClose,canTransfer,lastMessageAt,closedAt,closedBy,closedForSilence,createdAt]);
+}
 
 @override
 String toString() {
-  return 'InternalTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, priority: $priority, priorityLabel: $priorityLabel, category: $category, opener: $opener, assignee: $assignee, counterpart: $counterpart, iOpenedIt: $iOpenedIt, isParty: $isParty, customer: $customer, order: $order, unreadCount: $unreadCount, counterpartReadUpTo: $counterpartReadUpTo, readUpTo: $readUpTo, awaitingMyReply: $awaitingMyReply, lastMessage: $lastMessage, messages: $messages, canReply: $canReply, canClose: $canClose, canTransfer: $canTransfer, lastMessageAt: $lastMessageAt, closedAt: $closedAt, closedBy: $closedBy, closedForSilence: $closedForSilence, createdAt: $createdAt)';
+    return 'InternalTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, priority: $priority, priorityLabel: $priorityLabel, category: $category, opener: $opener, assignee: $assignee, counterpart: $counterpart, iOpenedIt: $iOpenedIt, isParty: $isParty, customer: $customer, order: $order, unreadCount: $unreadCount, counterpartReadUpTo: $counterpartReadUpTo, readUpTo: $readUpTo, awaitingMyReply: $awaitingMyReply, lastMessage: $lastMessage, messages: $messages, canReply: $canReply, canClose: $canClose, canTransfer: $canTransfer, lastMessageAt: $lastMessageAt, closedAt: $closedAt, closedBy: $closedBy, closedForSilence: $closedForSilence, createdAt: $createdAt)';
 }
 
 
@@ -1959,16 +2002,21 @@ $InternalTicketsHomeCopyWith<InternalTicketsHome> get copyWith => _$InternalTick
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHome&&const DeepCollectionEquality().equals(other.tickets, tickets)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.totalOpen, totalOpen) || other.totalOpen == totalOpen)&&(identical(other.unreadTickets, unreadTickets) || other.unreadTickets == unreadTickets));
+  final _this = this as InternalTicketsHome;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHome&&const DeepCollectionEquality().equals(other.tickets, _this.tickets)&&(identical(other.awaitingMyReply, _this.awaitingMyReply) || other.awaitingMyReply == _this.awaitingMyReply)&&(identical(other.hasMore, _this.hasMore) || other.hasMore == _this.hasMore)&&(identical(other.totalOpen, _this.totalOpen) || other.totalOpen == _this.totalOpen)&&(identical(other.unreadTickets, _this.unreadTickets) || other.unreadTickets == _this.unreadTickets));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(tickets),awaitingMyReply,hasMore,totalOpen,unreadTickets);
+int get hashCode {
+  final _this = this as InternalTicketsHome;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.tickets),_this.awaitingMyReply,_this.hasMore,_this.totalOpen,_this.unreadTickets);
+}
 
 @override
 String toString() {
-  return 'InternalTicketsHome(tickets: $tickets, awaitingMyReply: $awaitingMyReply, hasMore: $hasMore, totalOpen: $totalOpen, unreadTickets: $unreadTickets)';
+  final _this = this as InternalTicketsHome;
+  return 'InternalTicketsHome(tickets: ${_this.tickets}, awaitingMyReply: ${_this.awaitingMyReply}, hasMore: ${_this.hasMore}, totalOpen: ${_this.totalOpen}, unreadTickets: ${_this.unreadTickets})';
 }
 
 
@@ -1997,7 +2045,7 @@ class _$InternalTicketsHomeCopyWithImpl<$Res>
 /// Create a copy of InternalTicketsHome
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? tickets = null,Object? awaitingMyReply = null,Object? hasMore = null,Object? totalOpen = null,Object? unreadTickets = null,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicketsHome(
 tickets: null == tickets ? _self.tickets : tickets // ignore: cast_nullable_to_non_nullable
 as List<InternalTicket>,awaitingMyReply: null == awaitingMyReply ? _self.awaitingMyReply : awaitingMyReply // ignore: cast_nullable_to_non_nullable
 as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
@@ -2144,7 +2192,7 @@ return $default(_that.tickets,_that.awaitingMyReply,_that.hasMore,_that.totalOpe
 @JsonSerializable()
 
 class _InternalTicketsHome implements InternalTicketsHome {
-  const _InternalTicketsHome({final  List<InternalTicket> tickets = const <InternalTicket>[], @JsonKey(name: 'awaiting_my_reply') this.awaitingMyReply = 0, @JsonKey(name: 'has_more') this.hasMore = false, @JsonKey(name: 'total_open') this.totalOpen = 0, @JsonKey(name: 'unread_tickets') this.unreadTickets = 0}): _tickets = tickets;
+  const _InternalTicketsHome({ List<InternalTicket> tickets = const <InternalTicket>[], @JsonKey(name: 'awaiting_my_reply') this.awaitingMyReply = 0, @JsonKey(name: 'has_more') this.hasMore = false, @JsonKey(name: 'total_open') this.totalOpen = 0, @JsonKey(name: 'unread_tickets') this.unreadTickets = 0}): _tickets = tickets;
   factory _InternalTicketsHome.fromJson(Map<String, dynamic> json) => _$InternalTicketsHomeFromJson(json);
 
  final  List<InternalTicket> _tickets;
@@ -2172,16 +2220,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketsHome&&const DeepCollectionEquality().equals(other._tickets, _tickets)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.totalOpen, totalOpen) || other.totalOpen == totalOpen)&&(identical(other.unreadTickets, unreadTickets) || other.unreadTickets == unreadTickets));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketsHome&&const DeepCollectionEquality().equals(other.tickets, _tickets)&&(identical(other.awaitingMyReply, awaitingMyReply) || other.awaitingMyReply == awaitingMyReply)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.totalOpen, totalOpen) || other.totalOpen == totalOpen)&&(identical(other.unreadTickets, unreadTickets) || other.unreadTickets == unreadTickets));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_tickets),awaitingMyReply,hasMore,totalOpen,unreadTickets);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_tickets),awaitingMyReply,hasMore,totalOpen,unreadTickets);
+}
 
 @override
 String toString() {
-  return 'InternalTicketsHome(tickets: $tickets, awaitingMyReply: $awaitingMyReply, hasMore: $hasMore, totalOpen: $totalOpen, unreadTickets: $unreadTickets)';
+    return 'InternalTicketsHome(tickets: $tickets, awaitingMyReply: $awaitingMyReply, hasMore: $hasMore, totalOpen: $totalOpen, unreadTickets: $unreadTickets)';
 }
 
 
@@ -2240,16 +2290,21 @@ $ColleagueCopyWith<Colleague> get copyWith => _$ColleagueCopyWithImpl<Colleague>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Colleague&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.openTicketsWithMe, openTicketsWithMe) || other.openTicketsWithMe == openTicketsWithMe));
+  final _this = this as Colleague;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Colleague&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&(identical(other.openTicketsWithMe, _this.openTicketsWithMe) || other.openTicketsWithMe == _this.openTicketsWithMe));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode,const DeepCollectionEquality().hash(roles),openTicketsWithMe);
+int get hashCode {
+  final _this = this as Colleague;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.employeeCode,const DeepCollectionEquality().hash(_this.roles),_this.openTicketsWithMe);
+}
 
 @override
 String toString() {
-  return 'Colleague(id: $id, name: $name, employeeCode: $employeeCode, roles: $roles, openTicketsWithMe: $openTicketsWithMe)';
+  final _this = this as Colleague;
+  return 'Colleague(id: ${_this.id}, name: ${_this.name}, employeeCode: ${_this.employeeCode}, roles: ${_this.roles}, openTicketsWithMe: ${_this.openTicketsWithMe})';
 }
 
 
@@ -2278,7 +2333,7 @@ class _$ColleagueCopyWithImpl<$Res>
 /// Create a copy of Colleague
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? employeeCode = freezed,Object? roles = null,Object? openTicketsWithMe = null,}) {
-  return _then(_self.copyWith(
+  return _then(Colleague(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
@@ -2425,7 +2480,7 @@ return $default(_that.id,_that.name,_that.employeeCode,_that.roles,_that.openTic
 @JsonSerializable()
 
 class _Colleague implements Colleague {
-  const _Colleague({required this.id, required this.name, @JsonKey(name: 'employee_code') this.employeeCode, final  List<String> roles = const <String>[], @JsonKey(name: 'open_tickets_with_me') this.openTicketsWithMe = 0}): _roles = roles;
+  const _Colleague({required this.id, required this.name, @JsonKey(name: 'employee_code') this.employeeCode,  List<String> roles = const <String>[], @JsonKey(name: 'open_tickets_with_me') this.openTicketsWithMe = 0}): _roles = roles;
   factory _Colleague.fromJson(Map<String, dynamic> json) => _$ColleagueFromJson(json);
 
 @override final  int id;
@@ -2453,16 +2508,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Colleague&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.openTicketsWithMe, openTicketsWithMe) || other.openTicketsWithMe == openTicketsWithMe));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Colleague&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, _roles)&&(identical(other.openTicketsWithMe, openTicketsWithMe) || other.openTicketsWithMe == openTicketsWithMe));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode,const DeepCollectionEquality().hash(_roles),openTicketsWithMe);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,employeeCode,const DeepCollectionEquality().hash(_roles),openTicketsWithMe);
+}
 
 @override
 String toString() {
-  return 'Colleague(id: $id, name: $name, employeeCode: $employeeCode, roles: $roles, openTicketsWithMe: $openTicketsWithMe)';
+    return 'Colleague(id: $id, name: $name, employeeCode: $employeeCode, roles: $roles, openTicketsWithMe: $openTicketsWithMe)';
 }
 
 
@@ -2522,16 +2579,21 @@ $InternalTicketChangeCopyWith<InternalTicketChange> get copyWith => _$InternalTi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketChange&&(identical(other.change, change) || other.change == change)&&(identical(other.ticket, ticket) || other.ticket == ticket)&&(identical(other.message, message) || other.message == message));
+  final _this = this as InternalTicketChange;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketChange&&(identical(other.change, _this.change) || other.change == _this.change)&&(identical(other.ticket, _this.ticket) || other.ticket == _this.ticket)&&(identical(other.message, _this.message) || other.message == _this.message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,change,ticket,message);
+int get hashCode {
+  final _this = this as InternalTicketChange;
+  return Object.hash(runtimeType,_this.change,_this.ticket,_this.message);
+}
 
 @override
 String toString() {
-  return 'InternalTicketChange(change: $change, ticket: $ticket, message: $message)';
+  final _this = this as InternalTicketChange;
+  return 'InternalTicketChange(change: ${_this.change}, ticket: ${_this.ticket}, message: ${_this.message})';
 }
 
 
@@ -2560,7 +2622,7 @@ class _$InternalTicketChangeCopyWithImpl<$Res>
 /// Create a copy of InternalTicketChange
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? change = null,Object? ticket = null,Object? message = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicketChange(
 change: null == change ? _self.change : change // ignore: cast_nullable_to_non_nullable
 as String,ticket: null == ticket ? _self.ticket : ticket // ignore: cast_nullable_to_non_nullable
 as InternalTicket,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
@@ -2747,16 +2809,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketChange&&(identical(other.change, change) || other.change == change)&&(identical(other.ticket, ticket) || other.ticket == ticket)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketChange&&(identical(other.change, change) || other.change == change)&&(identical(other.ticket, ticket) || other.ticket == ticket)&&(identical(other.message, message) || other.message == message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,change,ticket,message);
+int get hashCode {
+    return Object.hash(runtimeType,change,ticket,message);
+}
 
 @override
 String toString() {
-  return 'InternalTicketChange(change: $change, ticket: $ticket, message: $message)';
+    return 'InternalTicketChange(change: $change, ticket: $ticket, message: $message)';
 }
 
 

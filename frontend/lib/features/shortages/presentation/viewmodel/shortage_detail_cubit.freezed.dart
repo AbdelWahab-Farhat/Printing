@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shortage_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'shortage_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ShortageDetailStateCopyWith<ShortageDetailState> get copyWith => _$ShortageDeta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailState&&(identical(other.shortage, shortage) || other.shortage == shortage));
+  final _this = this as ShortageDetailState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailState&&(identical(other.shortage, _this.shortage) || other.shortage == _this.shortage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,shortage);
+int get hashCode {
+  final _this = this as ShortageDetailState;
+  return Object.hash(runtimeType,_this.shortage);
+}
 
 @override
 String toString() {
-  return 'ShortageDetailState(shortage: $shortage)';
+  final _this = this as ShortageDetailState;
+  return 'ShortageDetailState(shortage: ${_this.shortage})';
 }
 
 
@@ -245,16 +251,18 @@ $ShortageDetailLoadingCopyWith<ShortageDetailLoading> get copyWith => _$Shortage
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailLoading&&(identical(other.shortage, shortage) || other.shortage == shortage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailLoading&&(identical(other.shortage, shortage) || other.shortage == shortage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,shortage);
+int get hashCode {
+    return Object.hash(runtimeType,shortage);
+}
 
 @override
 String toString() {
-  return 'ShortageDetailState.loading(shortage: $shortage)';
+    return 'ShortageDetailState.loading(shortage: $shortage)';
 }
 
 
@@ -323,16 +331,18 @@ $ShortageDetailReadyCopyWith<ShortageDetailReady> get copyWith => _$ShortageDeta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailReady&&(identical(other.shortage, shortage) || other.shortage == shortage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailReady&&(identical(other.shortage, shortage) || other.shortage == shortage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,shortage);
+int get hashCode {
+    return Object.hash(runtimeType,shortage);
+}
 
 @override
 String toString() {
-  return 'ShortageDetailState.ready(shortage: $shortage)';
+    return 'ShortageDetailState.ready(shortage: $shortage)';
 }
 
 
@@ -398,16 +408,18 @@ $ShortageDetailWorkingCopyWith<ShortageDetailWorking> get copyWith => _$Shortage
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailWorking&&(identical(other.shortage, shortage) || other.shortage == shortage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailWorking&&(identical(other.shortage, shortage) || other.shortage == shortage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,shortage);
+int get hashCode {
+    return Object.hash(runtimeType,shortage);
+}
 
 @override
 String toString() {
-  return 'ShortageDetailState.working(shortage: $shortage)';
+    return 'ShortageDetailState.working(shortage: $shortage)';
 }
 
 
@@ -474,16 +486,18 @@ $ShortageDetailFailureCopyWith<ShortageDetailFailure> get copyWith => _$Shortage
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.shortage, shortage) || other.shortage == shortage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.shortage, shortage) || other.shortage == shortage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,shortage);
+int get hashCode {
+    return Object.hash(runtimeType,failure,shortage);
+}
 
 @override
 String toString() {
-  return 'ShortageDetailState.failure(failure: $failure, shortage: $shortage)';
+    return 'ShortageDetailState.failure(failure: $failure, shortage: $shortage)';
 }
 
 

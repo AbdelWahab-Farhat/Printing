@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'chat_message.dart';
@@ -9,6 +9,7 @@ part of 'chat_message.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $ChatPersonCopyWith<ChatPerson> get copyWith => _$ChatPersonCopyWithImpl<ChatPer
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatPerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as ChatPerson;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatPerson&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as ChatPerson;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'ChatPerson(id: $id, name: $name)';
+  final _this = this as ChatPerson;
+  return 'ChatPerson(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -66,7 +72,7 @@ class _$ChatPersonCopyWithImpl<$Res>
 /// Create a copy of ChatPerson
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(ChatPerson(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatPerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatPerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'ChatPerson(id: $id, name: $name)';
+    return 'ChatPerson(id: $id, name: $name)';
 }
 
 
@@ -296,16 +304,21 @@ $ChatAttachmentCopyWith<ChatAttachment> get copyWith => _$ChatAttachmentCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.name, name) || other.name == name)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, waveform)&&(identical(other.url, url) || other.url == url));
+  final _this = this as ChatAttachment;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatAttachment&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.mimeType, _this.mimeType) || other.mimeType == _this.mimeType)&&(identical(other.sizeBytes, _this.sizeBytes) || other.sizeBytes == _this.sizeBytes)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx)&&(identical(other.durationSeconds, _this.durationSeconds) || other.durationSeconds == _this.durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, _this.waveform)&&(identical(other.url, _this.url) || other.url == _this.url));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,name,mimeType,sizeBytes,widthPx,heightPx,durationSeconds,const DeepCollectionEquality().hash(waveform),url);
+int get hashCode {
+  final _this = this as ChatAttachment;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.name,_this.mimeType,_this.sizeBytes,_this.widthPx,_this.heightPx,_this.durationSeconds,const DeepCollectionEquality().hash(_this.waveform),_this.url);
+}
 
 @override
 String toString() {
-  return 'ChatAttachment(id: $id, kind: $kind, name: $name, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, durationSeconds: $durationSeconds, waveform: $waveform, url: $url)';
+  final _this = this as ChatAttachment;
+  return 'ChatAttachment(id: ${_this.id}, kind: ${_this.kind}, name: ${_this.name}, mimeType: ${_this.mimeType}, sizeBytes: ${_this.sizeBytes}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx}, durationSeconds: ${_this.durationSeconds}, waveform: ${_this.waveform}, url: ${_this.url})';
 }
 
 
@@ -334,7 +347,7 @@ class _$ChatAttachmentCopyWithImpl<$Res>
 /// Create a copy of ChatAttachment
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? name = freezed,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? durationSeconds = freezed,Object? waveform = freezed,Object? url = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ChatAttachment(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as ChatAttachmentKind,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -486,7 +499,7 @@ return $default(_that.id,_that.kind,_that.name,_that.mimeType,_that.sizeBytes,_t
 @JsonSerializable()
 
 class _ChatAttachment implements ChatAttachment {
-  const _ChatAttachment({required this.id, @JsonKey(unknownEnumValue: ChatAttachmentKind.unknown) this.kind = ChatAttachmentKind.unknown, this.name, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'duration_seconds') this.durationSeconds, final  List<int>? waveform, this.url}): _waveform = waveform;
+  const _ChatAttachment({required this.id, @JsonKey(unknownEnumValue: ChatAttachmentKind.unknown) this.kind = ChatAttachmentKind.unknown, this.name, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'duration_seconds') this.durationSeconds,  List<int>? waveform, this.url}): _waveform = waveform;
   factory _ChatAttachment.fromJson(Map<String, dynamic> json) => _$ChatAttachmentFromJson(json);
 
 @override final  int id;
@@ -524,16 +537,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.name, name) || other.name == name)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other._waveform, _waveform)&&(identical(other.url, url) || other.url == url));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatAttachment&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.name, name) || other.name == name)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, _waveform)&&(identical(other.url, url) || other.url == url));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,name,mimeType,sizeBytes,widthPx,heightPx,durationSeconds,const DeepCollectionEquality().hash(_waveform),url);
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,name,mimeType,sizeBytes,widthPx,heightPx,durationSeconds,const DeepCollectionEquality().hash(_waveform),url);
+}
 
 @override
 String toString() {
-  return 'ChatAttachment(id: $id, kind: $kind, name: $name, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, durationSeconds: $durationSeconds, waveform: $waveform, url: $url)';
+    return 'ChatAttachment(id: $id, kind: $kind, name: $name, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, durationSeconds: $durationSeconds, waveform: $waveform, url: $url)';
 }
 
 
@@ -597,16 +612,21 @@ $ChatQuoteCopyWith<ChatQuote> get copyWith => _$ChatQuoteCopyWithImpl<ChatQuote>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatQuote&&(identical(other.id, id) || other.id == id)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted));
+  final _this = this as ChatQuote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatQuote&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.authorName, _this.authorName) || other.authorName == _this.authorName)&&(identical(other.preview, _this.preview) || other.preview == _this.preview)&&(identical(other.isDeleted, _this.isDeleted) || other.isDeleted == _this.isDeleted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,authorName,preview,isDeleted);
+int get hashCode {
+  final _this = this as ChatQuote;
+  return Object.hash(runtimeType,_this.id,_this.authorName,_this.preview,_this.isDeleted);
+}
 
 @override
 String toString() {
-  return 'ChatQuote(id: $id, authorName: $authorName, preview: $preview, isDeleted: $isDeleted)';
+  final _this = this as ChatQuote;
+  return 'ChatQuote(id: ${_this.id}, authorName: ${_this.authorName}, preview: ${_this.preview}, isDeleted: ${_this.isDeleted})';
 }
 
 
@@ -635,7 +655,7 @@ class _$ChatQuoteCopyWithImpl<$Res>
 /// Create a copy of ChatQuote
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? authorName = freezed,Object? preview = null,Object? isDeleted = null,}) {
-  return _then(_self.copyWith(
+  return _then(ChatQuote(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,authorName: freezed == authorName ? _self.authorName : authorName // ignore: cast_nullable_to_non_nullable
 as String?,preview: null == preview ? _self.preview : preview // ignore: cast_nullable_to_non_nullable
@@ -802,16 +822,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatQuote&&(identical(other.id, id) || other.id == id)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatQuote&&(identical(other.id, id) || other.id == id)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,authorName,preview,isDeleted);
+int get hashCode {
+    return Object.hash(runtimeType,id,authorName,preview,isDeleted);
+}
 
 @override
 String toString() {
-  return 'ChatQuote(id: $id, authorName: $authorName, preview: $preview, isDeleted: $isDeleted)';
+    return 'ChatQuote(id: $id, authorName: $authorName, preview: $preview, isDeleted: $isDeleted)';
 }
 
 
@@ -871,16 +893,21 @@ $ChatMessageCopyWith<ChatMessage> get copyWith => _$ChatMessageCopyWithImpl<Chat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.ticketId, ticketId) || other.ticketId == ticketId)&&(identical(other.author, author) || other.author == author)&&(identical(other.isMine, isMine) || other.isMine == isMine)&&(identical(other.body, body) || other.body == body)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.isEdited, isEdited) || other.isEdited == isEdited)&&(identical(other.replyTo, replyTo) || other.replyTo == replyTo)&&const DeepCollectionEquality().equals(other.attachments, attachments)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete)&&(identical(other.mutationBlockReason, mutationBlockReason) || other.mutationBlockReason == mutationBlockReason)&&(identical(other.mutableUntil, mutableUntil) || other.mutableUntil == mutableUntil));
+  final _this = this as ChatMessage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChatMessage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.ticketId, _this.ticketId) || other.ticketId == _this.ticketId)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.isMine, _this.isMine) || other.isMine == _this.isMine)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.isDeleted, _this.isDeleted) || other.isDeleted == _this.isDeleted)&&(identical(other.isEdited, _this.isEdited) || other.isEdited == _this.isEdited)&&(identical(other.replyTo, _this.replyTo) || other.replyTo == _this.replyTo)&&const DeepCollectionEquality().equals(other.attachments, _this.attachments)&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken)&&(identical(other.sentAt, _this.sentAt) || other.sentAt == _this.sentAt)&&(identical(other.canEdit, _this.canEdit) || other.canEdit == _this.canEdit)&&(identical(other.canDelete, _this.canDelete) || other.canDelete == _this.canDelete)&&(identical(other.mutationBlockReason, _this.mutationBlockReason) || other.mutationBlockReason == _this.mutationBlockReason)&&(identical(other.mutableUntil, _this.mutableUntil) || other.mutableUntil == _this.mutableUntil));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ticketId,author,isMine,body,isDeleted,isEdited,replyTo,const DeepCollectionEquality().hash(attachments),clientToken,sentAt,canEdit,canDelete,mutationBlockReason,mutableUntil);
+int get hashCode {
+  final _this = this as ChatMessage;
+  return Object.hash(runtimeType,_this.id,_this.ticketId,_this.author,_this.isMine,_this.body,_this.isDeleted,_this.isEdited,_this.replyTo,const DeepCollectionEquality().hash(_this.attachments),_this.clientToken,_this.sentAt,_this.canEdit,_this.canDelete,_this.mutationBlockReason,_this.mutableUntil);
+}
 
 @override
 String toString() {
-  return 'ChatMessage(id: $id, ticketId: $ticketId, author: $author, isMine: $isMine, body: $body, isDeleted: $isDeleted, isEdited: $isEdited, replyTo: $replyTo, attachments: $attachments, clientToken: $clientToken, sentAt: $sentAt, canEdit: $canEdit, canDelete: $canDelete, mutationBlockReason: $mutationBlockReason, mutableUntil: $mutableUntil)';
+  final _this = this as ChatMessage;
+  return 'ChatMessage(id: ${_this.id}, ticketId: ${_this.ticketId}, author: ${_this.author}, isMine: ${_this.isMine}, body: ${_this.body}, isDeleted: ${_this.isDeleted}, isEdited: ${_this.isEdited}, replyTo: ${_this.replyTo}, attachments: ${_this.attachments}, clientToken: ${_this.clientToken}, sentAt: ${_this.sentAt}, canEdit: ${_this.canEdit}, canDelete: ${_this.canDelete}, mutationBlockReason: ${_this.mutationBlockReason}, mutableUntil: ${_this.mutableUntil})';
 }
 
 
@@ -909,7 +936,7 @@ class _$ChatMessageCopyWithImpl<$Res>
 /// Create a copy of ChatMessage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ticketId = freezed,Object? author = freezed,Object? isMine = null,Object? body = freezed,Object? isDeleted = null,Object? isEdited = null,Object? replyTo = freezed,Object? attachments = null,Object? clientToken = freezed,Object? sentAt = freezed,Object? canEdit = null,Object? canDelete = null,Object? mutationBlockReason = freezed,Object? mutableUntil = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ChatMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,ticketId: freezed == ticketId ? _self.ticketId : ticketId // ignore: cast_nullable_to_non_nullable
 as int?,author: freezed == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
@@ -1090,7 +1117,7 @@ return $default(_that.id,_that.ticketId,_that.author,_that.isMine,_that.body,_th
 @JsonSerializable()
 
 class _ChatMessage extends ChatMessage {
-  const _ChatMessage({required this.id, @JsonKey(name: 'ticket_id') this.ticketId, this.author, @JsonKey(name: 'is_mine') this.isMine = false, this.body, @JsonKey(name: 'is_deleted') this.isDeleted = false, @JsonKey(name: 'is_edited') this.isEdited = false, @JsonKey(name: 'reply_to') this.replyTo, final  List<ChatAttachment> attachments = const <ChatAttachment>[], @JsonKey(name: 'client_token') this.clientToken, @JsonKey(name: 'sent_at') this.sentAt, @JsonKey(name: 'can_edit') this.canEdit = false, @JsonKey(name: 'can_delete') this.canDelete = false, @JsonKey(name: 'mutation_block_reason') this.mutationBlockReason, @JsonKey(name: 'mutable_until') this.mutableUntil}): _attachments = attachments,super._();
+  const _ChatMessage({required this.id, @JsonKey(name: 'ticket_id') this.ticketId, this.author, @JsonKey(name: 'is_mine') this.isMine = false, this.body, @JsonKey(name: 'is_deleted') this.isDeleted = false, @JsonKey(name: 'is_edited') this.isEdited = false, @JsonKey(name: 'reply_to') this.replyTo,  List<ChatAttachment> attachments = const <ChatAttachment>[], @JsonKey(name: 'client_token') this.clientToken, @JsonKey(name: 'sent_at') this.sentAt, @JsonKey(name: 'can_edit') this.canEdit = false, @JsonKey(name: 'can_delete') this.canDelete = false, @JsonKey(name: 'mutation_block_reason') this.mutationBlockReason, @JsonKey(name: 'mutable_until') this.mutableUntil}): _attachments = attachments,super._();
   factory _ChatMessage.fromJson(Map<String, dynamic> json) => _$ChatMessageFromJson(json);
 
 @override final  int id;
@@ -1130,16 +1157,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.ticketId, ticketId) || other.ticketId == ticketId)&&(identical(other.author, author) || other.author == author)&&(identical(other.isMine, isMine) || other.isMine == isMine)&&(identical(other.body, body) || other.body == body)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.isEdited, isEdited) || other.isEdited == isEdited)&&(identical(other.replyTo, replyTo) || other.replyTo == replyTo)&&const DeepCollectionEquality().equals(other._attachments, _attachments)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete)&&(identical(other.mutationBlockReason, mutationBlockReason) || other.mutationBlockReason == mutationBlockReason)&&(identical(other.mutableUntil, mutableUntil) || other.mutableUntil == mutableUntil));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChatMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.ticketId, ticketId) || other.ticketId == ticketId)&&(identical(other.author, author) || other.author == author)&&(identical(other.isMine, isMine) || other.isMine == isMine)&&(identical(other.body, body) || other.body == body)&&(identical(other.isDeleted, isDeleted) || other.isDeleted == isDeleted)&&(identical(other.isEdited, isEdited) || other.isEdited == isEdited)&&(identical(other.replyTo, replyTo) || other.replyTo == replyTo)&&const DeepCollectionEquality().equals(other.attachments, _attachments)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete)&&(identical(other.mutationBlockReason, mutationBlockReason) || other.mutationBlockReason == mutationBlockReason)&&(identical(other.mutableUntil, mutableUntil) || other.mutableUntil == mutableUntil));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ticketId,author,isMine,body,isDeleted,isEdited,replyTo,const DeepCollectionEquality().hash(_attachments),clientToken,sentAt,canEdit,canDelete,mutationBlockReason,mutableUntil);
+int get hashCode {
+    return Object.hash(runtimeType,id,ticketId,author,isMine,body,isDeleted,isEdited,replyTo,const DeepCollectionEquality().hash(_attachments),clientToken,sentAt,canEdit,canDelete,mutationBlockReason,mutableUntil);
+}
 
 @override
 String toString() {
-  return 'ChatMessage(id: $id, ticketId: $ticketId, author: $author, isMine: $isMine, body: $body, isDeleted: $isDeleted, isEdited: $isEdited, replyTo: $replyTo, attachments: $attachments, clientToken: $clientToken, sentAt: $sentAt, canEdit: $canEdit, canDelete: $canDelete, mutationBlockReason: $mutationBlockReason, mutableUntil: $mutableUntil)';
+    return 'ChatMessage(id: $id, ticketId: $ticketId, author: $author, isMine: $isMine, body: $body, isDeleted: $isDeleted, isEdited: $isEdited, replyTo: $replyTo, attachments: $attachments, clientToken: $clientToken, sentAt: $sentAt, canEdit: $canEdit, canDelete: $canDelete, mutationBlockReason: $mutationBlockReason, mutableUntil: $mutableUntil)';
 }
 
 
@@ -1229,16 +1258,21 @@ $PendingVoiceCopyWith<PendingVoice> get copyWith => _$PendingVoiceCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingVoice&&(identical(other.path, path) || other.path == path)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, waveform)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.replyToMessageId, replyToMessageId) || other.replyToMessageId == replyToMessageId));
+  final _this = this as PendingVoice;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingVoice&&(identical(other.path, _this.path) || other.path == _this.path)&&(identical(other.durationSeconds, _this.durationSeconds) || other.durationSeconds == _this.durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, _this.waveform)&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken)&&(identical(other.replyToMessageId, _this.replyToMessageId) || other.replyToMessageId == _this.replyToMessageId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path,durationSeconds,const DeepCollectionEquality().hash(waveform),clientToken,replyToMessageId);
+int get hashCode {
+  final _this = this as PendingVoice;
+  return Object.hash(runtimeType,_this.path,_this.durationSeconds,const DeepCollectionEquality().hash(_this.waveform),_this.clientToken,_this.replyToMessageId);
+}
 
 @override
 String toString() {
-  return 'PendingVoice(path: $path, durationSeconds: $durationSeconds, waveform: $waveform, clientToken: $clientToken, replyToMessageId: $replyToMessageId)';
+  final _this = this as PendingVoice;
+  return 'PendingVoice(path: ${_this.path}, durationSeconds: ${_this.durationSeconds}, waveform: ${_this.waveform}, clientToken: ${_this.clientToken}, replyToMessageId: ${_this.replyToMessageId})';
 }
 
 
@@ -1267,7 +1301,7 @@ class _$PendingVoiceCopyWithImpl<$Res>
 /// Create a copy of PendingVoice
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? path = null,Object? durationSeconds = null,Object? waveform = null,Object? clientToken = null,Object? replyToMessageId = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PendingVoice(
 path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
 as String,durationSeconds: null == durationSeconds ? _self.durationSeconds : durationSeconds // ignore: cast_nullable_to_non_nullable
 as int,waveform: null == waveform ? _self.waveform : waveform // ignore: cast_nullable_to_non_nullable
@@ -1414,7 +1448,7 @@ return $default(_that.path,_that.durationSeconds,_that.waveform,_that.clientToke
 
 
 class _PendingVoice implements PendingVoice {
-  const _PendingVoice({required this.path, required this.durationSeconds, required final  List<int> waveform, required this.clientToken, this.replyToMessageId}): _waveform = waveform;
+  const _PendingVoice({required this.path, required this.durationSeconds, required  List<int> waveform, required this.clientToken, this.replyToMessageId}): _waveform = waveform;
   
 
 @override final  String path;
@@ -1439,16 +1473,18 @@ _$PendingVoiceCopyWith<_PendingVoice> get copyWith => __$PendingVoiceCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingVoice&&(identical(other.path, path) || other.path == path)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other._waveform, _waveform)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.replyToMessageId, replyToMessageId) || other.replyToMessageId == replyToMessageId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingVoice&&(identical(other.path, path) || other.path == path)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&const DeepCollectionEquality().equals(other.waveform, _waveform)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.replyToMessageId, replyToMessageId) || other.replyToMessageId == replyToMessageId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path,durationSeconds,const DeepCollectionEquality().hash(_waveform),clientToken,replyToMessageId);
+int get hashCode {
+    return Object.hash(runtimeType,path,durationSeconds,const DeepCollectionEquality().hash(_waveform),clientToken,replyToMessageId);
+}
 
 @override
 String toString() {
-  return 'PendingVoice(path: $path, durationSeconds: $durationSeconds, waveform: $waveform, clientToken: $clientToken, replyToMessageId: $replyToMessageId)';
+    return 'PendingVoice(path: $path, durationSeconds: $durationSeconds, waveform: $waveform, clientToken: $clientToken, replyToMessageId: $replyToMessageId)';
 }
 
 

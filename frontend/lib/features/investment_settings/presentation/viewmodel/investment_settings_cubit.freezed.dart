@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'investment_settings_cubit.dart';
@@ -9,6 +9,7 @@ part of 'investment_settings_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$InvestmentSettingsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InvestmentSettingsState()';
+    return 'InvestmentSettingsState()';
 }
 
 
@@ -191,7 +192,7 @@ class InvestmentSettingsLoading implements InvestmentSettingsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InvestmentSettingsState.loading()';
+    return 'InvestmentSettingsState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $InvestmentSettingsLoadedCopyWith<InvestmentSettingsLoaded> get copyWith => _$In
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsLoaded&&(identical(other.settings, settings) || other.settings == settings));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsLoaded&&(identical(other.settings, settings) || other.settings == settings));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,settings);
+int get hashCode {
+    return Object.hash(runtimeType,settings);
+}
 
 @override
 String toString() {
-  return 'InvestmentSettingsState.loaded(settings: $settings)';
+    return 'InvestmentSettingsState.loaded(settings: $settings)';
 }
 
 
@@ -303,16 +306,18 @@ $InvestmentSettingsFailureCopyWith<InvestmentSettingsFailure> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettingsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'InvestmentSettingsState.failure(failure: $failure)';
+    return 'InvestmentSettingsState.failure(failure: $failure)';
 }
 
 

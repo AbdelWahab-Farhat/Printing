@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'internal_ticket_query.dart';
@@ -9,6 +9,7 @@ part of 'internal_ticket_query.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -28,16 +29,21 @@ $InternalTicketQueryCopyWith<InternalTicketQuery> get copyWith => _$InternalTick
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketQuery&&(identical(other.allTickets, allTickets) || other.allTickets == allTickets)&&(identical(other.status, status) || other.status == status)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.unreadOnly, unreadOnly) || other.unreadOnly == unreadOnly)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.oldestFirst, oldestFirst) || other.oldestFirst == oldestFirst));
+  final _this = this as InternalTicketQuery;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketQuery&&(identical(other.allTickets, _this.allTickets) || other.allTickets == _this.allTickets)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.unreadOnly, _this.unreadOnly) || other.unreadOnly == _this.unreadOnly)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.oldestFirst, _this.oldestFirst) || other.oldestFirst == _this.oldestFirst));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,allTickets,status,categoryId,userId,unreadOnly,orderId,customerId,oldestFirst);
+int get hashCode {
+  final _this = this as InternalTicketQuery;
+  return Object.hash(runtimeType,_this.allTickets,_this.status,_this.categoryId,_this.userId,_this.unreadOnly,_this.orderId,_this.customerId,_this.oldestFirst);
+}
 
 @override
 String toString() {
-  return 'InternalTicketQuery(allTickets: $allTickets, status: $status, categoryId: $categoryId, userId: $userId, unreadOnly: $unreadOnly, orderId: $orderId, customerId: $customerId, oldestFirst: $oldestFirst)';
+  final _this = this as InternalTicketQuery;
+  return 'InternalTicketQuery(allTickets: ${_this.allTickets}, status: ${_this.status}, categoryId: ${_this.categoryId}, userId: ${_this.userId}, unreadOnly: ${_this.unreadOnly}, orderId: ${_this.orderId}, customerId: ${_this.customerId}, oldestFirst: ${_this.oldestFirst})';
 }
 
 
@@ -66,7 +72,7 @@ class _$InternalTicketQueryCopyWithImpl<$Res>
 /// Create a copy of InternalTicketQuery
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? allTickets = null,Object? status = null,Object? categoryId = freezed,Object? userId = freezed,Object? unreadOnly = null,Object? orderId = freezed,Object? customerId = freezed,Object? oldestFirst = null,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicketQuery(
 allTickets: null == allTickets ? _self.allTickets : allTickets // ignore: cast_nullable_to_non_nullable
 as bool,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as InternalTicketStatus,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
@@ -241,16 +247,18 @@ _$InternalTicketQueryCopyWith<_InternalTicketQuery> get copyWith => __$InternalT
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketQuery&&(identical(other.allTickets, allTickets) || other.allTickets == allTickets)&&(identical(other.status, status) || other.status == status)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.unreadOnly, unreadOnly) || other.unreadOnly == unreadOnly)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.oldestFirst, oldestFirst) || other.oldestFirst == oldestFirst));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketQuery&&(identical(other.allTickets, allTickets) || other.allTickets == allTickets)&&(identical(other.status, status) || other.status == status)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.unreadOnly, unreadOnly) || other.unreadOnly == unreadOnly)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.oldestFirst, oldestFirst) || other.oldestFirst == oldestFirst));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,allTickets,status,categoryId,userId,unreadOnly,orderId,customerId,oldestFirst);
+int get hashCode {
+    return Object.hash(runtimeType,allTickets,status,categoryId,userId,unreadOnly,orderId,customerId,oldestFirst);
+}
 
 @override
 String toString() {
-  return 'InternalTicketQuery(allTickets: $allTickets, status: $status, categoryId: $categoryId, userId: $userId, unreadOnly: $unreadOnly, orderId: $orderId, customerId: $customerId, oldestFirst: $oldestFirst)';
+    return 'InternalTicketQuery(allTickets: $allTickets, status: $status, categoryId: $categoryId, userId: $userId, unreadOnly: $unreadOnly, orderId: $orderId, customerId: $customerId, oldestFirst: $oldestFirst)';
 }
 
 
@@ -309,16 +317,21 @@ $InternalTicketSubjectCopyWith<InternalTicketSubject> get copyWith => _$Internal
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketSubject&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+  final _this = this as InternalTicketSubject;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketSubject&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.orderCode, _this.orderCode) || other.orderCode == _this.orderCode)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,orderId,orderCode,customerId,customerName);
+int get hashCode {
+  final _this = this as InternalTicketSubject;
+  return Object.hash(runtimeType,_this.orderId,_this.orderCode,_this.customerId,_this.customerName);
+}
 
 @override
 String toString() {
-  return 'InternalTicketSubject(orderId: $orderId, orderCode: $orderCode, customerId: $customerId, customerName: $customerName)';
+  final _this = this as InternalTicketSubject;
+  return 'InternalTicketSubject(orderId: ${_this.orderId}, orderCode: ${_this.orderCode}, customerId: ${_this.customerId}, customerName: ${_this.customerName})';
 }
 
 
@@ -347,7 +360,7 @@ class _$InternalTicketSubjectCopyWithImpl<$Res>
 /// Create a copy of InternalTicketSubject
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? orderId = freezed,Object? orderCode = freezed,Object? customerId = freezed,Object? customerName = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicketSubject(
 orderId: freezed == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int?,orderCode: freezed == orderCode ? _self.orderCode : orderCode // ignore: cast_nullable_to_non_nullable
 as String?,customerId: freezed == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -511,16 +524,18 @@ _$InternalTicketSubjectCopyWith<_InternalTicketSubject> get copyWith => __$Inter
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketSubject&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketSubject&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,orderId,orderCode,customerId,customerName);
+int get hashCode {
+    return Object.hash(runtimeType,orderId,orderCode,customerId,customerName);
+}
 
 @override
 String toString() {
-  return 'InternalTicketSubject(orderId: $orderId, orderCode: $orderCode, customerId: $customerId, customerName: $customerName)';
+    return 'InternalTicketSubject(orderId: $orderId, orderCode: $orderCode, customerId: $customerId, customerName: $customerName)';
 }
 
 
@@ -575,16 +590,21 @@ $InternalTicketDraftCopyWith<InternalTicketDraft> get copyWith => _$InternalTick
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketDraft&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.orderId, orderId) || other.orderId == orderId));
+  final _this = this as InternalTicketDraft;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketDraft&&(identical(other.assigneeId, _this.assigneeId) || other.assigneeId == _this.assigneeId)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.priority, _this.priority) || other.priority == _this.priority)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,assigneeId,title,description,priority,categoryId,customerId,orderId);
+int get hashCode {
+  final _this = this as InternalTicketDraft;
+  return Object.hash(runtimeType,_this.assigneeId,_this.title,_this.description,_this.priority,_this.categoryId,_this.customerId,_this.orderId);
+}
 
 @override
 String toString() {
-  return 'InternalTicketDraft(assigneeId: $assigneeId, title: $title, description: $description, priority: $priority, categoryId: $categoryId, customerId: $customerId, orderId: $orderId)';
+  final _this = this as InternalTicketDraft;
+  return 'InternalTicketDraft(assigneeId: ${_this.assigneeId}, title: ${_this.title}, description: ${_this.description}, priority: ${_this.priority}, categoryId: ${_this.categoryId}, customerId: ${_this.customerId}, orderId: ${_this.orderId})';
 }
 
 
@@ -613,7 +633,7 @@ class _$InternalTicketDraftCopyWithImpl<$Res>
 /// Create a copy of InternalTicketDraft
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? assigneeId = null,Object? title = null,Object? description = null,Object? priority = null,Object? categoryId = freezed,Object? customerId = freezed,Object? orderId = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InternalTicketDraft(
 assigneeId: null == assigneeId ? _self.assigneeId : assigneeId // ignore: cast_nullable_to_non_nullable
 as int,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -783,16 +803,18 @@ _$InternalTicketDraftCopyWith<_InternalTicketDraft> get copyWith => __$InternalT
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketDraft&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.orderId, orderId) || other.orderId == orderId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InternalTicketDraft&&(identical(other.assigneeId, assigneeId) || other.assigneeId == assigneeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.orderId, orderId) || other.orderId == orderId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,assigneeId,title,description,priority,categoryId,customerId,orderId);
+int get hashCode {
+    return Object.hash(runtimeType,assigneeId,title,description,priority,categoryId,customerId,orderId);
+}
 
 @override
 String toString() {
-  return 'InternalTicketDraft(assigneeId: $assigneeId, title: $title, description: $description, priority: $priority, categoryId: $categoryId, customerId: $customerId, orderId: $orderId)';
+    return 'InternalTicketDraft(assigneeId: $assigneeId, title: $title, description: $description, priority: $priority, categoryId: $categoryId, customerId: $customerId, orderId: $orderId)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'nawris_settlement.dart';
@@ -9,6 +9,7 @@ part of 'nawris_settlement.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $NawrisSettlementWarningCopyWith<NawrisSettlementWarning> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementWarning&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message));
+  final _this = this as NawrisSettlementWarning;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementWarning&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.message, _this.message) || other.message == _this.message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,message);
+int get hashCode {
+  final _this = this as NawrisSettlementWarning;
+  return Object.hash(runtimeType,_this.code,_this.message);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementWarning(code: $code, message: $message)';
+  final _this = this as NawrisSettlementWarning;
+  return 'NawrisSettlementWarning(code: ${_this.code}, message: ${_this.message})';
 }
 
 
@@ -66,7 +72,7 @@ class _$NawrisSettlementWarningCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementWarning
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? message = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementWarning(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementWarning&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementWarning&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,message);
+int get hashCode {
+    return Object.hash(runtimeType,code,message);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementWarning(code: $code, message: $message)';
+    return 'NawrisSettlementWarning(code: $code, message: $message)';
 }
 
 
@@ -298,16 +306,21 @@ $NawrisSettlementLineCopyWith<NawrisSettlementLine> get copyWith => _$NawrisSett
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementLine&&(identical(other.rowNumber, rowNumber) || other.rowNumber == rowNumber)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.outcomeLabel, outcomeLabel) || other.outcomeLabel == outcomeLabel)&&(identical(other.rawCode, rawCode) || other.rawCode == rawCode)&&(identical(other.rawReceiver, rawReceiver) || other.rawReceiver == rawReceiver)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.previousStatusLabel, previousStatusLabel) || other.previousStatusLabel == previousStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&const DeepCollectionEquality().equals(other.warnings, warnings)&&(identical(other.heldAmount, heldAmount) || other.heldAmount == heldAmount)&&(identical(other.feeAmount, feeAmount) || other.feeAmount == feeAmount));
+  final _this = this as NawrisSettlementLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementLine&&(identical(other.rowNumber, _this.rowNumber) || other.rowNumber == _this.rowNumber)&&(identical(other.outcome, _this.outcome) || other.outcome == _this.outcome)&&(identical(other.outcomeLabel, _this.outcomeLabel) || other.outcomeLabel == _this.outcomeLabel)&&(identical(other.rawCode, _this.rawCode) || other.rawCode == _this.rawCode)&&(identical(other.rawReceiver, _this.rawReceiver) || other.rawReceiver == _this.rawReceiver)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.orderCode, _this.orderCode) || other.orderCode == _this.orderCode)&&(identical(other.previousStatusLabel, _this.previousStatusLabel) || other.previousStatusLabel == _this.previousStatusLabel)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&const DeepCollectionEquality().equals(other.warnings, _this.warnings)&&(identical(other.heldAmount, _this.heldAmount) || other.heldAmount == _this.heldAmount)&&(identical(other.feeAmount, _this.feeAmount) || other.feeAmount == _this.feeAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rowNumber,outcome,outcomeLabel,rawCode,rawReceiver,orderId,orderCode,previousStatusLabel,reason,const DeepCollectionEquality().hash(warnings),heldAmount,feeAmount);
+int get hashCode {
+  final _this = this as NawrisSettlementLine;
+  return Object.hash(runtimeType,_this.rowNumber,_this.outcome,_this.outcomeLabel,_this.rawCode,_this.rawReceiver,_this.orderId,_this.orderCode,_this.previousStatusLabel,_this.reason,const DeepCollectionEquality().hash(_this.warnings),_this.heldAmount,_this.feeAmount);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementLine(rowNumber: $rowNumber, outcome: $outcome, outcomeLabel: $outcomeLabel, rawCode: $rawCode, rawReceiver: $rawReceiver, orderId: $orderId, orderCode: $orderCode, previousStatusLabel: $previousStatusLabel, reason: $reason, warnings: $warnings, heldAmount: $heldAmount, feeAmount: $feeAmount)';
+  final _this = this as NawrisSettlementLine;
+  return 'NawrisSettlementLine(rowNumber: ${_this.rowNumber}, outcome: ${_this.outcome}, outcomeLabel: ${_this.outcomeLabel}, rawCode: ${_this.rawCode}, rawReceiver: ${_this.rawReceiver}, orderId: ${_this.orderId}, orderCode: ${_this.orderCode}, previousStatusLabel: ${_this.previousStatusLabel}, reason: ${_this.reason}, warnings: ${_this.warnings}, heldAmount: ${_this.heldAmount}, feeAmount: ${_this.feeAmount})';
 }
 
 
@@ -336,7 +349,7 @@ class _$NawrisSettlementLineCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? rowNumber = null,Object? outcome = null,Object? outcomeLabel = null,Object? rawCode = freezed,Object? rawReceiver = freezed,Object? orderId = freezed,Object? orderCode = freezed,Object? previousStatusLabel = freezed,Object? reason = freezed,Object? warnings = null,Object? heldAmount = null,Object? feeAmount = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementLine(
 rowNumber: null == rowNumber ? _self.rowNumber : rowNumber // ignore: cast_nullable_to_non_nullable
 as int,outcome: null == outcome ? _self.outcome : outcome // ignore: cast_nullable_to_non_nullable
 as NawrisSettlementOutcome,outcomeLabel: null == outcomeLabel ? _self.outcomeLabel : outcomeLabel // ignore: cast_nullable_to_non_nullable
@@ -490,7 +503,7 @@ return $default(_that.rowNumber,_that.outcome,_that.outcomeLabel,_that.rawCode,_
 @JsonSerializable()
 
 class _NawrisSettlementLine extends NawrisSettlementLine {
-  const _NawrisSettlementLine({@JsonKey(name: 'row_number') required this.rowNumber, @JsonKey(unknownEnumValue: NawrisSettlementOutcome.unknown) required this.outcome, @JsonKey(name: 'outcome_label') required this.outcomeLabel, @JsonKey(name: 'raw_code') this.rawCode, @JsonKey(name: 'raw_receiver') this.rawReceiver, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'order_code') this.orderCode, @JsonKey(name: 'previous_status_label') this.previousStatusLabel, this.reason, final  List<NawrisSettlementWarning> warnings = const <NawrisSettlementWarning>[], @JsonKey(name: 'held_amount') this.heldAmount = '0.00', @JsonKey(name: 'fee_amount') this.feeAmount = '0.00'}): _warnings = warnings,super._();
+  const _NawrisSettlementLine({@JsonKey(name: 'row_number') required this.rowNumber, @JsonKey(unknownEnumValue: NawrisSettlementOutcome.unknown) required this.outcome, @JsonKey(name: 'outcome_label') required this.outcomeLabel, @JsonKey(name: 'raw_code') this.rawCode, @JsonKey(name: 'raw_receiver') this.rawReceiver, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'order_code') this.orderCode, @JsonKey(name: 'previous_status_label') this.previousStatusLabel, this.reason,  List<NawrisSettlementWarning> warnings = const <NawrisSettlementWarning>[], @JsonKey(name: 'held_amount') this.heldAmount = '0.00', @JsonKey(name: 'fee_amount') this.feeAmount = '0.00'}): _warnings = warnings,super._();
   factory _NawrisSettlementLine.fromJson(Map<String, dynamic> json) => _$NawrisSettlementLineFromJson(json);
 
 /// رقم الصف بعد الترويسة. الصف المركّب يعطي أسطراً بالرقم نفسه.
@@ -529,16 +542,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementLine&&(identical(other.rowNumber, rowNumber) || other.rowNumber == rowNumber)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.outcomeLabel, outcomeLabel) || other.outcomeLabel == outcomeLabel)&&(identical(other.rawCode, rawCode) || other.rawCode == rawCode)&&(identical(other.rawReceiver, rawReceiver) || other.rawReceiver == rawReceiver)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.previousStatusLabel, previousStatusLabel) || other.previousStatusLabel == previousStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&const DeepCollectionEquality().equals(other._warnings, _warnings)&&(identical(other.heldAmount, heldAmount) || other.heldAmount == heldAmount)&&(identical(other.feeAmount, feeAmount) || other.feeAmount == feeAmount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementLine&&(identical(other.rowNumber, rowNumber) || other.rowNumber == rowNumber)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.outcomeLabel, outcomeLabel) || other.outcomeLabel == outcomeLabel)&&(identical(other.rawCode, rawCode) || other.rawCode == rawCode)&&(identical(other.rawReceiver, rawReceiver) || other.rawReceiver == rawReceiver)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderCode, orderCode) || other.orderCode == orderCode)&&(identical(other.previousStatusLabel, previousStatusLabel) || other.previousStatusLabel == previousStatusLabel)&&(identical(other.reason, reason) || other.reason == reason)&&const DeepCollectionEquality().equals(other.warnings, _warnings)&&(identical(other.heldAmount, heldAmount) || other.heldAmount == heldAmount)&&(identical(other.feeAmount, feeAmount) || other.feeAmount == feeAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rowNumber,outcome,outcomeLabel,rawCode,rawReceiver,orderId,orderCode,previousStatusLabel,reason,const DeepCollectionEquality().hash(_warnings),heldAmount,feeAmount);
+int get hashCode {
+    return Object.hash(runtimeType,rowNumber,outcome,outcomeLabel,rawCode,rawReceiver,orderId,orderCode,previousStatusLabel,reason,const DeepCollectionEquality().hash(_warnings),heldAmount,feeAmount);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementLine(rowNumber: $rowNumber, outcome: $outcome, outcomeLabel: $outcomeLabel, rawCode: $rawCode, rawReceiver: $rawReceiver, orderId: $orderId, orderCode: $orderCode, previousStatusLabel: $previousStatusLabel, reason: $reason, warnings: $warnings, heldAmount: $heldAmount, feeAmount: $feeAmount)';
+    return 'NawrisSettlementLine(rowNumber: $rowNumber, outcome: $outcome, outcomeLabel: $outcomeLabel, rawCode: $rawCode, rawReceiver: $rawReceiver, orderId: $orderId, orderCode: $orderCode, previousStatusLabel: $previousStatusLabel, reason: $reason, warnings: $warnings, heldAmount: $heldAmount, feeAmount: $feeAmount)';
 }
 
 
@@ -605,16 +620,21 @@ $NawrisSettlementSummaryCopyWith<NawrisSettlementSummary> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSummary&&(identical(other.rowsCount, rowsCount) || other.rowsCount == rowsCount)&&(identical(other.ordersCount, ordersCount) || other.ordersCount == ordersCount)&&(identical(other.settledCount, settledCount) || other.settledCount == settledCount)&&(identical(other.skippedCount, skippedCount) || other.skippedCount == skippedCount)&&(identical(other.rejectedCount, rejectedCount) || other.rejectedCount == rejectedCount)&&(identical(other.warningsCount, warningsCount) || other.warningsCount == warningsCount)&&(identical(other.leftOutCount, leftOutCount) || other.leftOutCount == leftOutCount));
+  final _this = this as NawrisSettlementSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSummary&&(identical(other.rowsCount, _this.rowsCount) || other.rowsCount == _this.rowsCount)&&(identical(other.ordersCount, _this.ordersCount) || other.ordersCount == _this.ordersCount)&&(identical(other.settledCount, _this.settledCount) || other.settledCount == _this.settledCount)&&(identical(other.skippedCount, _this.skippedCount) || other.skippedCount == _this.skippedCount)&&(identical(other.rejectedCount, _this.rejectedCount) || other.rejectedCount == _this.rejectedCount)&&(identical(other.warningsCount, _this.warningsCount) || other.warningsCount == _this.warningsCount)&&(identical(other.leftOutCount, _this.leftOutCount) || other.leftOutCount == _this.leftOutCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rowsCount,ordersCount,settledCount,skippedCount,rejectedCount,warningsCount,leftOutCount);
+int get hashCode {
+  final _this = this as NawrisSettlementSummary;
+  return Object.hash(runtimeType,_this.rowsCount,_this.ordersCount,_this.settledCount,_this.skippedCount,_this.rejectedCount,_this.warningsCount,_this.leftOutCount);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementSummary(rowsCount: $rowsCount, ordersCount: $ordersCount, settledCount: $settledCount, skippedCount: $skippedCount, rejectedCount: $rejectedCount, warningsCount: $warningsCount, leftOutCount: $leftOutCount)';
+  final _this = this as NawrisSettlementSummary;
+  return 'NawrisSettlementSummary(rowsCount: ${_this.rowsCount}, ordersCount: ${_this.ordersCount}, settledCount: ${_this.settledCount}, skippedCount: ${_this.skippedCount}, rejectedCount: ${_this.rejectedCount}, warningsCount: ${_this.warningsCount}, leftOutCount: ${_this.leftOutCount})';
 }
 
 
@@ -643,7 +663,7 @@ class _$NawrisSettlementSummaryCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? rowsCount = null,Object? ordersCount = null,Object? settledCount = null,Object? skippedCount = null,Object? rejectedCount = null,Object? warningsCount = null,Object? leftOutCount = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementSummary(
 rowsCount: null == rowsCount ? _self.rowsCount : rowsCount // ignore: cast_nullable_to_non_nullable
 as int,ordersCount: null == ordersCount ? _self.ordersCount : ordersCount // ignore: cast_nullable_to_non_nullable
 as int,settledCount: null == settledCount ? _self.settledCount : settledCount // ignore: cast_nullable_to_non_nullable
@@ -817,16 +837,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementSummary&&(identical(other.rowsCount, rowsCount) || other.rowsCount == rowsCount)&&(identical(other.ordersCount, ordersCount) || other.ordersCount == ordersCount)&&(identical(other.settledCount, settledCount) || other.settledCount == settledCount)&&(identical(other.skippedCount, skippedCount) || other.skippedCount == skippedCount)&&(identical(other.rejectedCount, rejectedCount) || other.rejectedCount == rejectedCount)&&(identical(other.warningsCount, warningsCount) || other.warningsCount == warningsCount)&&(identical(other.leftOutCount, leftOutCount) || other.leftOutCount == leftOutCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementSummary&&(identical(other.rowsCount, rowsCount) || other.rowsCount == rowsCount)&&(identical(other.ordersCount, ordersCount) || other.ordersCount == ordersCount)&&(identical(other.settledCount, settledCount) || other.settledCount == settledCount)&&(identical(other.skippedCount, skippedCount) || other.skippedCount == skippedCount)&&(identical(other.rejectedCount, rejectedCount) || other.rejectedCount == rejectedCount)&&(identical(other.warningsCount, warningsCount) || other.warningsCount == warningsCount)&&(identical(other.leftOutCount, leftOutCount) || other.leftOutCount == leftOutCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rowsCount,ordersCount,settledCount,skippedCount,rejectedCount,warningsCount,leftOutCount);
+int get hashCode {
+    return Object.hash(runtimeType,rowsCount,ordersCount,settledCount,skippedCount,rejectedCount,warningsCount,leftOutCount);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementSummary(rowsCount: $rowsCount, ordersCount: $ordersCount, settledCount: $settledCount, skippedCount: $skippedCount, rejectedCount: $rejectedCount, warningsCount: $warningsCount, leftOutCount: $leftOutCount)';
+    return 'NawrisSettlementSummary(rowsCount: $rowsCount, ordersCount: $ordersCount, settledCount: $settledCount, skippedCount: $skippedCount, rejectedCount: $rejectedCount, warningsCount: $warningsCount, leftOutCount: $leftOutCount)';
 }
 
 
@@ -891,16 +913,21 @@ $NawrisSettlementPreviewCopyWith<NawrisSettlementPreview> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementPreview&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.knownFees, knownFees) || other.knownFees == knownFees)&&(identical(other.expectedReceived, expectedReceived) || other.expectedReceived == expectedReceived)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&const DeepCollectionEquality().equals(other.fields, fields)&&const DeepCollectionEquality().equals(other.lines, lines));
+  final _this = this as NawrisSettlementPreview;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementPreview&&(identical(other.summary, _this.summary) || other.summary == _this.summary)&&(identical(other.totalHeld, _this.totalHeld) || other.totalHeld == _this.totalHeld)&&(identical(other.knownFees, _this.knownFees) || other.knownFees == _this.knownFees)&&(identical(other.expectedReceived, _this.expectedReceived) || other.expectedReceived == _this.expectedReceived)&&(identical(other.fingerprint, _this.fingerprint) || other.fingerprint == _this.fingerprint)&&const DeepCollectionEquality().equals(other.fields, _this.fields)&&const DeepCollectionEquality().equals(other.lines, _this.lines));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,summary,totalHeld,knownFees,expectedReceived,fingerprint,const DeepCollectionEquality().hash(fields),const DeepCollectionEquality().hash(lines));
+int get hashCode {
+  final _this = this as NawrisSettlementPreview;
+  return Object.hash(runtimeType,_this.summary,_this.totalHeld,_this.knownFees,_this.expectedReceived,_this.fingerprint,const DeepCollectionEquality().hash(_this.fields),const DeepCollectionEquality().hash(_this.lines));
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementPreview(summary: $summary, totalHeld: $totalHeld, knownFees: $knownFees, expectedReceived: $expectedReceived, fingerprint: $fingerprint, fields: $fields, lines: $lines)';
+  final _this = this as NawrisSettlementPreview;
+  return 'NawrisSettlementPreview(summary: ${_this.summary}, totalHeld: ${_this.totalHeld}, knownFees: ${_this.knownFees}, expectedReceived: ${_this.expectedReceived}, fingerprint: ${_this.fingerprint}, fields: ${_this.fields}, lines: ${_this.lines})';
 }
 
 
@@ -929,7 +956,7 @@ class _$NawrisSettlementPreviewCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementPreview
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? summary = null,Object? totalHeld = null,Object? knownFees = null,Object? expectedReceived = null,Object? fingerprint = null,Object? fields = null,Object? lines = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementPreview(
 summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
 as NawrisSettlementSummary,totalHeld: null == totalHeld ? _self.totalHeld : totalHeld // ignore: cast_nullable_to_non_nullable
 as String,knownFees: null == knownFees ? _self.knownFees : knownFees // ignore: cast_nullable_to_non_nullable
@@ -1087,7 +1114,7 @@ return $default(_that.summary,_that.totalHeld,_that.knownFees,_that.expectedRece
 @JsonSerializable()
 
 class _NawrisSettlementPreview extends NawrisSettlementPreview {
-  const _NawrisSettlementPreview({required this.summary, @JsonKey(name: 'total_held') required this.totalHeld, @JsonKey(name: 'known_fees') required this.knownFees, @JsonKey(name: 'expected_received') required this.expectedReceived, required this.fingerprint, final  List<TransitionField> fields = const <TransitionField>[], final  List<NawrisSettlementLine> lines = const <NawrisSettlementLine>[]}): _fields = fields,_lines = lines,super._();
+  const _NawrisSettlementPreview({required this.summary, @JsonKey(name: 'total_held') required this.totalHeld, @JsonKey(name: 'known_fees') required this.knownFees, @JsonKey(name: 'expected_received') required this.expectedReceived, required this.fingerprint,  List<TransitionField> fields = const <TransitionField>[],  List<NawrisSettlementLine> lines = const <NawrisSettlementLine>[]}): _fields = fields,_lines = lines,super._();
   factory _NawrisSettlementPreview.fromJson(Map<String, dynamic> json) => _$NawrisSettlementPreviewFromJson(json);
 
 @override final  NawrisSettlementSummary summary;
@@ -1128,16 +1155,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementPreview&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.knownFees, knownFees) || other.knownFees == knownFees)&&(identical(other.expectedReceived, expectedReceived) || other.expectedReceived == expectedReceived)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&const DeepCollectionEquality().equals(other._fields, _fields)&&const DeepCollectionEquality().equals(other._lines, _lines));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementPreview&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.knownFees, knownFees) || other.knownFees == knownFees)&&(identical(other.expectedReceived, expectedReceived) || other.expectedReceived == expectedReceived)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&const DeepCollectionEquality().equals(other.fields, _fields)&&const DeepCollectionEquality().equals(other.lines, _lines));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,summary,totalHeld,knownFees,expectedReceived,fingerprint,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_lines));
+int get hashCode {
+    return Object.hash(runtimeType,summary,totalHeld,knownFees,expectedReceived,fingerprint,const DeepCollectionEquality().hash(_fields),const DeepCollectionEquality().hash(_lines));
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementPreview(summary: $summary, totalHeld: $totalHeld, knownFees: $knownFees, expectedReceived: $expectedReceived, fingerprint: $fingerprint, fields: $fields, lines: $lines)';
+    return 'NawrisSettlementPreview(summary: $summary, totalHeld: $totalHeld, knownFees: $knownFees, expectedReceived: $expectedReceived, fingerprint: $fingerprint, fields: $fields, lines: $lines)';
 }
 
 
@@ -1207,16 +1236,21 @@ $NawrisSettlementImporterCopyWith<NawrisSettlementImporter> get copyWith => _$Na
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementImporter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as NawrisSettlementImporter;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementImporter&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as NawrisSettlementImporter;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementImporter(id: $id, name: $name)';
+  final _this = this as NawrisSettlementImporter;
+  return 'NawrisSettlementImporter(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -1245,7 +1279,7 @@ class _$NawrisSettlementImporterCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementImporter
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementImporter(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1408,16 +1442,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementImporter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementImporter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementImporter(id: $id, name: $name)';
+    return 'NawrisSettlementImporter(id: $id, name: $name)';
 }
 
 
@@ -1473,16 +1509,21 @@ $NawrisSettlementImportCopyWith<NawrisSettlementImport> get copyWith => _$Nawris
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementImport&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.receivedAmount, receivedAmount) || other.receivedAmount == receivedAmount)&&(identical(other.feeTotal, feeTotal) || other.feeTotal == feeTotal)&&(identical(other.importedBy, importedBy) || other.importedBy == importedBy)&&(identical(other.differenceReason, differenceReason) || other.differenceReason == differenceReason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.items, items));
+  final _this = this as NawrisSettlementImport;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementImport&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.fileName, _this.fileName) || other.fileName == _this.fileName)&&(identical(other.summary, _this.summary) || other.summary == _this.summary)&&(identical(other.totalHeld, _this.totalHeld) || other.totalHeld == _this.totalHeld)&&(identical(other.receivedAmount, _this.receivedAmount) || other.receivedAmount == _this.receivedAmount)&&(identical(other.feeTotal, _this.feeTotal) || other.feeTotal == _this.feeTotal)&&(identical(other.importedBy, _this.importedBy) || other.importedBy == _this.importedBy)&&(identical(other.differenceReason, _this.differenceReason) || other.differenceReason == _this.differenceReason)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&const DeepCollectionEquality().equals(other.items, _this.items));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fileName,summary,totalHeld,receivedAmount,feeTotal,importedBy,differenceReason,createdAt,const DeepCollectionEquality().hash(items));
+int get hashCode {
+  final _this = this as NawrisSettlementImport;
+  return Object.hash(runtimeType,_this.id,_this.fileName,_this.summary,_this.totalHeld,_this.receivedAmount,_this.feeTotal,_this.importedBy,_this.differenceReason,_this.createdAt,const DeepCollectionEquality().hash(_this.items));
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementImport(id: $id, fileName: $fileName, summary: $summary, totalHeld: $totalHeld, receivedAmount: $receivedAmount, feeTotal: $feeTotal, importedBy: $importedBy, differenceReason: $differenceReason, createdAt: $createdAt, items: $items)';
+  final _this = this as NawrisSettlementImport;
+  return 'NawrisSettlementImport(id: ${_this.id}, fileName: ${_this.fileName}, summary: ${_this.summary}, totalHeld: ${_this.totalHeld}, receivedAmount: ${_this.receivedAmount}, feeTotal: ${_this.feeTotal}, importedBy: ${_this.importedBy}, differenceReason: ${_this.differenceReason}, createdAt: ${_this.createdAt}, items: ${_this.items})';
 }
 
 
@@ -1511,7 +1552,7 @@ class _$NawrisSettlementImportCopyWithImpl<$Res>
 /// Create a copy of NawrisSettlementImport
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fileName = null,Object? summary = null,Object? totalHeld = null,Object? receivedAmount = null,Object? feeTotal = null,Object? importedBy = freezed,Object? differenceReason = freezed,Object? createdAt = freezed,Object? items = null,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisSettlementImport(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
 as String,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
@@ -1684,7 +1725,7 @@ return $default(_that.id,_that.fileName,_that.summary,_that.totalHeld,_that.rece
 @JsonSerializable()
 
 class _NawrisSettlementImport implements NawrisSettlementImport {
-  const _NawrisSettlementImport({required this.id, @JsonKey(name: 'file_name') required this.fileName, required this.summary, @JsonKey(name: 'total_held') required this.totalHeld, @JsonKey(name: 'received_amount') required this.receivedAmount, @JsonKey(name: 'fee_total') required this.feeTotal, @JsonKey(name: 'imported_by') this.importedBy, @JsonKey(name: 'difference_reason') this.differenceReason, @JsonKey(name: 'created_at') this.createdAt, final  List<NawrisSettlementLine> items = const <NawrisSettlementLine>[]}): _items = items;
+  const _NawrisSettlementImport({required this.id, @JsonKey(name: 'file_name') required this.fileName, required this.summary, @JsonKey(name: 'total_held') required this.totalHeld, @JsonKey(name: 'received_amount') required this.receivedAmount, @JsonKey(name: 'fee_total') required this.feeTotal, @JsonKey(name: 'imported_by') this.importedBy, @JsonKey(name: 'difference_reason') this.differenceReason, @JsonKey(name: 'created_at') this.createdAt,  List<NawrisSettlementLine> items = const <NawrisSettlementLine>[]}): _items = items;
   factory _NawrisSettlementImport.fromJson(Map<String, dynamic> json) => _$NawrisSettlementImportFromJson(json);
 
 @override final  int id;
@@ -1717,16 +1758,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementImport&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.receivedAmount, receivedAmount) || other.receivedAmount == receivedAmount)&&(identical(other.feeTotal, feeTotal) || other.feeTotal == feeTotal)&&(identical(other.importedBy, importedBy) || other.importedBy == importedBy)&&(identical(other.differenceReason, differenceReason) || other.differenceReason == differenceReason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other._items, _items));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisSettlementImport&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.totalHeld, totalHeld) || other.totalHeld == totalHeld)&&(identical(other.receivedAmount, receivedAmount) || other.receivedAmount == receivedAmount)&&(identical(other.feeTotal, feeTotal) || other.feeTotal == feeTotal)&&(identical(other.importedBy, importedBy) || other.importedBy == importedBy)&&(identical(other.differenceReason, differenceReason) || other.differenceReason == differenceReason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.items, _items));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fileName,summary,totalHeld,receivedAmount,feeTotal,importedBy,differenceReason,createdAt,const DeepCollectionEquality().hash(_items));
+int get hashCode {
+    return Object.hash(runtimeType,id,fileName,summary,totalHeld,receivedAmount,feeTotal,importedBy,differenceReason,createdAt,const DeepCollectionEquality().hash(_items));
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementImport(id: $id, fileName: $fileName, summary: $summary, totalHeld: $totalHeld, receivedAmount: $receivedAmount, feeTotal: $feeTotal, importedBy: $importedBy, differenceReason: $differenceReason, createdAt: $createdAt, items: $items)';
+    return 'NawrisSettlementImport(id: $id, fileName: $fileName, summary: $summary, totalHeld: $totalHeld, receivedAmount: $receivedAmount, feeTotal: $feeTotal, importedBy: $importedBy, differenceReason: $differenceReason, createdAt: $createdAt, items: $items)';
 }
 
 

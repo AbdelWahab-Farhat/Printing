@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_item_links_cubit.dart';
@@ -9,6 +9,7 @@ part of 'stock_item_links_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$StockItemLinksState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemLinksState()';
+    return 'StockItemLinksState()';
 }
 
 
@@ -197,7 +198,7 @@ class StockItemLinksInitial implements StockItemLinksState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemLinksState.initial()';
+    return 'StockItemLinksState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class StockItemLinksLoading implements StockItemLinksState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemLinksState.loading()';
+    return 'StockItemLinksState.loading()';
 }
 
 
@@ -251,7 +252,7 @@ String toString() {
 
 
 class StockItemLinksLoaded implements StockItemLinksState {
-  const StockItemLinksLoaded(final  List<StockItemVariantRef> variants, {final  Set<int>? selected}): _variants = variants,_selected = selected;
+  const StockItemLinksLoaded( List<StockItemVariantRef> variants, { Set<int>? selected}): _variants = variants,_selected = selected;
   
 
  final  List<StockItemVariantRef> _variants;
@@ -281,16 +282,18 @@ $StockItemLinksLoadedCopyWith<StockItemLinksLoaded> get copyWith => _$StockItemL
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksLoaded&&const DeepCollectionEquality().equals(other._variants, _variants)&&const DeepCollectionEquality().equals(other._selected, _selected));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksLoaded&&const DeepCollectionEquality().equals(other.variants, _variants)&&const DeepCollectionEquality().equals(other.selected, _selected));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_selected));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_selected));
+}
 
 @override
 String toString() {
-  return 'StockItemLinksState.loaded(variants: $variants, selected: $selected)';
+    return 'StockItemLinksState.loaded(variants: $variants, selected: $selected)';
 }
 
 
@@ -348,16 +351,18 @@ $StockItemLinksFailureCopyWith<StockItemLinksFailure> get copyWith => _$StockIte
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemLinksFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'StockItemLinksState.failure(failure: $failure)';
+    return 'StockItemLinksState.failure(failure: $failure)';
 }
 
 

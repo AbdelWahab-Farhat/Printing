@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'product_category.dart';
@@ -9,6 +9,7 @@ part of 'product_category.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -77,16 +78,21 @@ $ProductCategoryCopyWith<ProductCategory> get copyWith => _$ProductCategoryCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.productionMode, productionMode) || other.productionMode == productionMode)&&(identical(other.productionModeLabel, productionModeLabel) || other.productionModeLabel == productionModeLabel)&&(identical(other.isInvestable, isInvestable) || other.isInvestable == isInvestable)&&(identical(other.skipsProduction, skipsProduction) || other.skipsProduction == skipsProduction)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as ProductCategory;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductCategory&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.productionMode, _this.productionMode) || other.productionMode == _this.productionMode)&&(identical(other.productionModeLabel, _this.productionModeLabel) || other.productionModeLabel == _this.productionModeLabel)&&(identical(other.isInvestable, _this.isInvestable) || other.isInvestable == _this.isInvestable)&&(identical(other.skipsProduction, _this.skipsProduction) || other.skipsProduction == _this.skipsProduction)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.productsCount, _this.productsCount) || other.productsCount == _this.productsCount)&&(identical(other.childrenCount, _this.childrenCount) || other.childrenCount == _this.childrenCount)&&(identical(other.totalProductsCount, _this.totalProductsCount) || other.totalProductsCount == _this.totalProductsCount)&&(identical(other.imageUrl, _this.imageUrl) || other.imageUrl == _this.imageUrl)&&(identical(other.imageWidthPx, _this.imageWidthPx) || other.imageWidthPx == _this.imageWidthPx)&&(identical(other.imageHeightPx, _this.imageHeightPx) || other.imageHeightPx == _this.imageHeightPx)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,productionMode,productionModeLabel,isInvestable,skipsProduction,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
+int get hashCode {
+  final _this = this as ProductCategory;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.isActive,_this.sortOrder,_this.productionMode,_this.productionModeLabel,_this.isInvestable,_this.skipsProduction,_this.parentId,_this.productsCount,_this.childrenCount,_this.totalProductsCount,_this.imageUrl,_this.imageWidthPx,_this.imageHeightPx,_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, productionMode: $productionMode, productionModeLabel: $productionModeLabel, isInvestable: $isInvestable, skipsProduction: $skipsProduction, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as ProductCategory;
+  return 'ProductCategory(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, isActive: ${_this.isActive}, sortOrder: ${_this.sortOrder}, productionMode: ${_this.productionMode}, productionModeLabel: ${_this.productionModeLabel}, isInvestable: ${_this.isInvestable}, skipsProduction: ${_this.skipsProduction}, parentId: ${_this.parentId}, productsCount: ${_this.productsCount}, childrenCount: ${_this.childrenCount}, totalProductsCount: ${_this.totalProductsCount}, imageUrl: ${_this.imageUrl}, imageWidthPx: ${_this.imageWidthPx}, imageHeightPx: ${_this.imageHeightPx}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -115,7 +121,7 @@ class _$ProductCategoryCopyWithImpl<$Res>
 /// Create a copy of ProductCategory
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? productionMode = null,Object? productionModeLabel = freezed,Object? isInvestable = freezed,Object? skipsProduction = null,Object? parentId = freezed,Object? productsCount = freezed,Object? childrenCount = freezed,Object? totalProductsCount = freezed,Object? imageUrl = freezed,Object? imageWidthPx = freezed,Object? imageHeightPx = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProductCategory(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -359,16 +365,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.productionMode, productionMode) || other.productionMode == productionMode)&&(identical(other.productionModeLabel, productionModeLabel) || other.productionModeLabel == productionModeLabel)&&(identical(other.isInvestable, isInvestable) || other.isInvestable == isInvestable)&&(identical(other.skipsProduction, skipsProduction) || other.skipsProduction == skipsProduction)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductCategory&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.productionMode, productionMode) || other.productionMode == productionMode)&&(identical(other.productionModeLabel, productionModeLabel) || other.productionModeLabel == productionModeLabel)&&(identical(other.isInvestable, isInvestable) || other.isInvestable == isInvestable)&&(identical(other.skipsProduction, skipsProduction) || other.skipsProduction == skipsProduction)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&(identical(other.childrenCount, childrenCount) || other.childrenCount == childrenCount)&&(identical(other.totalProductsCount, totalProductsCount) || other.totalProductsCount == totalProductsCount)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.imageWidthPx, imageWidthPx) || other.imageWidthPx == imageWidthPx)&&(identical(other.imageHeightPx, imageHeightPx) || other.imageHeightPx == imageHeightPx)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,isActive,sortOrder,productionMode,productionModeLabel,isInvestable,skipsProduction,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,description,isActive,sortOrder,productionMode,productionModeLabel,isInvestable,skipsProduction,parentId,productsCount,childrenCount,totalProductsCount,imageUrl,imageWidthPx,imageHeightPx,createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, productionMode: $productionMode, productionModeLabel: $productionModeLabel, isInvestable: $isInvestable, skipsProduction: $skipsProduction, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ProductCategory(id: $id, name: $name, description: $description, isActive: $isActive, sortOrder: $sortOrder, productionMode: $productionMode, productionModeLabel: $productionModeLabel, isInvestable: $isInvestable, skipsProduction: $skipsProduction, parentId: $parentId, productsCount: $productsCount, childrenCount: $childrenCount, totalProductsCount: $totalProductsCount, imageUrl: $imageUrl, imageWidthPx: $imageWidthPx, imageHeightPx: $imageHeightPx, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 

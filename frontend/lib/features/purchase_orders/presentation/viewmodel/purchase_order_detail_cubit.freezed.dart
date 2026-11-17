@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'purchase_order_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'purchase_order_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $PurchaseOrderDetailStateCopyWith<PurchaseOrderDetailState> get copyWith => _$Pu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailState&&(identical(other.order, order) || other.order == order));
+  final _this = this as PurchaseOrderDetailState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailState&&(identical(other.order, _this.order) || other.order == _this.order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode {
+  final _this = this as PurchaseOrderDetailState;
+  return Object.hash(runtimeType,_this.order);
+}
 
 @override
 String toString() {
-  return 'PurchaseOrderDetailState(order: $order)';
+  final _this = this as PurchaseOrderDetailState;
+  return 'PurchaseOrderDetailState(order: ${_this.order})';
 }
 
 
@@ -245,16 +251,18 @@ $PurchaseOrderDetailLoadingCopyWith<PurchaseOrderDetailLoading> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailLoading&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailLoading&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode {
+    return Object.hash(runtimeType,order);
+}
 
 @override
 String toString() {
-  return 'PurchaseOrderDetailState.loading(order: $order)';
+    return 'PurchaseOrderDetailState.loading(order: $order)';
 }
 
 
@@ -323,16 +331,18 @@ $PurchaseOrderDetailReadyCopyWith<PurchaseOrderDetailReady> get copyWith => _$Pu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailReady&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailReady&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode {
+    return Object.hash(runtimeType,order);
+}
 
 @override
 String toString() {
-  return 'PurchaseOrderDetailState.ready(order: $order)';
+    return 'PurchaseOrderDetailState.ready(order: $order)';
 }
 
 
@@ -398,16 +408,18 @@ $PurchaseOrderDetailWorkingCopyWith<PurchaseOrderDetailWorking> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailWorking&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailWorking&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode {
+    return Object.hash(runtimeType,order);
+}
 
 @override
 String toString() {
-  return 'PurchaseOrderDetailState.working(order: $order)';
+    return 'PurchaseOrderDetailState.working(order: $order)';
 }
 
 
@@ -474,16 +486,18 @@ $PurchaseOrderDetailFailureCopyWith<PurchaseOrderDetailFailure> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PurchaseOrderDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,order);
+int get hashCode {
+    return Object.hash(runtimeType,failure,order);
+}
 
 @override
 String toString() {
-  return 'PurchaseOrderDetailState.failure(failure: $failure, order: $order)';
+    return 'PurchaseOrderDetailState.failure(failure: $failure, order: $order)';
 }
 
 

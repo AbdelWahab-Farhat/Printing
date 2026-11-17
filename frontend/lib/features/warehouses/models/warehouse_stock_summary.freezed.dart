@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'warehouse_stock_summary.dart';
@@ -9,6 +9,7 @@ part of 'warehouse_stock_summary.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -35,16 +36,21 @@ $WarehouseStockSummaryCopyWith<WarehouseStockSummary> get copyWith => _$Warehous
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStockSummary&&(identical(other.totalLines, totalLines) || other.totalLines == totalLines)&&(identical(other.totalQuantity, totalQuantity) || other.totalQuantity == totalQuantity)&&(identical(other.lowStockCount, lowStockCount) || other.lowStockCount == lowStockCount)&&(identical(other.outOfStockCount, outOfStockCount) || other.outOfStockCount == outOfStockCount)&&(identical(other.healthyCount, healthyCount) || other.healthyCount == healthyCount));
+  final _this = this as WarehouseStockSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStockSummary&&(identical(other.totalLines, _this.totalLines) || other.totalLines == _this.totalLines)&&(identical(other.totalQuantity, _this.totalQuantity) || other.totalQuantity == _this.totalQuantity)&&(identical(other.lowStockCount, _this.lowStockCount) || other.lowStockCount == _this.lowStockCount)&&(identical(other.outOfStockCount, _this.outOfStockCount) || other.outOfStockCount == _this.outOfStockCount)&&(identical(other.healthyCount, _this.healthyCount) || other.healthyCount == _this.healthyCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalLines,totalQuantity,lowStockCount,outOfStockCount,healthyCount);
+int get hashCode {
+  final _this = this as WarehouseStockSummary;
+  return Object.hash(runtimeType,_this.totalLines,_this.totalQuantity,_this.lowStockCount,_this.outOfStockCount,_this.healthyCount);
+}
 
 @override
 String toString() {
-  return 'WarehouseStockSummary(totalLines: $totalLines, totalQuantity: $totalQuantity, lowStockCount: $lowStockCount, outOfStockCount: $outOfStockCount, healthyCount: $healthyCount)';
+  final _this = this as WarehouseStockSummary;
+  return 'WarehouseStockSummary(totalLines: ${_this.totalLines}, totalQuantity: ${_this.totalQuantity}, lowStockCount: ${_this.lowStockCount}, outOfStockCount: ${_this.outOfStockCount}, healthyCount: ${_this.healthyCount})';
 }
 
 
@@ -73,7 +79,7 @@ class _$WarehouseStockSummaryCopyWithImpl<$Res>
 /// Create a copy of WarehouseStockSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? totalLines = null,Object? totalQuantity = null,Object? lowStockCount = null,Object? outOfStockCount = null,Object? healthyCount = null,}) {
-  return _then(_self.copyWith(
+  return _then(WarehouseStockSummary(
 totalLines: null == totalLines ? _self.totalLines : totalLines // ignore: cast_nullable_to_non_nullable
 as int,totalQuantity: null == totalQuantity ? _self.totalQuantity : totalQuantity // ignore: cast_nullable_to_non_nullable
 as String,lowStockCount: null == lowStockCount ? _self.lowStockCount : lowStockCount // ignore: cast_nullable_to_non_nullable
@@ -249,16 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStockSummary&&(identical(other.totalLines, totalLines) || other.totalLines == totalLines)&&(identical(other.totalQuantity, totalQuantity) || other.totalQuantity == totalQuantity)&&(identical(other.lowStockCount, lowStockCount) || other.lowStockCount == lowStockCount)&&(identical(other.outOfStockCount, outOfStockCount) || other.outOfStockCount == outOfStockCount)&&(identical(other.healthyCount, healthyCount) || other.healthyCount == healthyCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStockSummary&&(identical(other.totalLines, totalLines) || other.totalLines == totalLines)&&(identical(other.totalQuantity, totalQuantity) || other.totalQuantity == totalQuantity)&&(identical(other.lowStockCount, lowStockCount) || other.lowStockCount == lowStockCount)&&(identical(other.outOfStockCount, outOfStockCount) || other.outOfStockCount == outOfStockCount)&&(identical(other.healthyCount, healthyCount) || other.healthyCount == healthyCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalLines,totalQuantity,lowStockCount,outOfStockCount,healthyCount);
+int get hashCode {
+    return Object.hash(runtimeType,totalLines,totalQuantity,lowStockCount,outOfStockCount,healthyCount);
+}
 
 @override
 String toString() {
-  return 'WarehouseStockSummary(totalLines: $totalLines, totalQuantity: $totalQuantity, lowStockCount: $lowStockCount, outOfStockCount: $outOfStockCount, healthyCount: $healthyCount)';
+    return 'WarehouseStockSummary(totalLines: $totalLines, totalQuantity: $totalQuantity, lowStockCount: $lowStockCount, outOfStockCount: $outOfStockCount, healthyCount: $healthyCount)';
 }
 
 

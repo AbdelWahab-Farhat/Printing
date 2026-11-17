@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'investor_deal.dart';
@@ -9,6 +9,7 @@ part of 'investor_deal.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -48,16 +49,21 @@ $InvestorDealCopyWith<InvestorDeal> get copyWith => _$InvestorDealCopyWithImpl<I
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, investors)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
+  final _this = this as InvestorDeal;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorDeal&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.isFund, _this.isFund) || other.isFund == _this.isFund)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.canBeEdited, _this.canBeEdited) || other.canBeEdited == _this.canBeEdited)&&(identical(other.investorProfitSharePercent, _this.investorProfitSharePercent) || other.investorProfitSharePercent == _this.investorProfitSharePercent)&&(identical(other.companyStake, _this.companyStake) || other.companyStake == _this.companyStake)&&(identical(other.investorFundedPercent, _this.investorFundedPercent) || other.investorFundedPercent == _this.investorFundedPercent)&&(identical(other.printingSalePrice, _this.printingSalePrice) || other.printingSalePrice == _this.printingSalePrice)&&(identical(other.openedOn, _this.openedOn) || other.openedOn == _this.openedOn)&&(identical(other.closedAt, _this.closedAt) || other.closedAt == _this.closedAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&const DeepCollectionEquality().equals(other.investors, _this.investors)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.balances, _this.balances) || other.balances == _this.balances)&&(identical(other.stock, _this.stock) || other.stock == _this.stock)&&(identical(other.ordersProfit, _this.ordersProfit) || other.ordersProfit == _this.ordersProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isFund,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(investors),const DeepCollectionEquality().hash(items),balances,stock,ordersProfit);
+int get hashCode {
+  final _this = this as InvestorDeal;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.isFund,_this.status,_this.statusLabel,_this.canBeEdited,_this.investorProfitSharePercent,_this.companyStake,_this.investorFundedPercent,_this.printingSalePrice,_this.openedOn,_this.closedAt,_this.notes,const DeepCollectionEquality().hash(_this.investors),const DeepCollectionEquality().hash(_this.items),_this.balances,_this.stock,_this.ordersProfit);
+}
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, isFund: $isFund, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
+  final _this = this as InvestorDeal;
+  return 'InvestorDeal(id: ${_this.id}, code: ${_this.code}, isFund: ${_this.isFund}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, canBeEdited: ${_this.canBeEdited}, investorProfitSharePercent: ${_this.investorProfitSharePercent}, companyStake: ${_this.companyStake}, investorFundedPercent: ${_this.investorFundedPercent}, printingSalePrice: ${_this.printingSalePrice}, openedOn: ${_this.openedOn}, closedAt: ${_this.closedAt}, notes: ${_this.notes}, investors: ${_this.investors}, items: ${_this.items}, balances: ${_this.balances}, stock: ${_this.stock}, ordersProfit: ${_this.ordersProfit})';
 }
 
 
@@ -86,7 +92,7 @@ class _$InvestorDealCopyWithImpl<$Res>
 /// Create a copy of InvestorDeal
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? isFund = null,Object? status = null,Object? statusLabel = null,Object? canBeEdited = null,Object? investorProfitSharePercent = null,Object? companyStake = null,Object? investorFundedPercent = null,Object? printingSalePrice = freezed,Object? openedOn = freezed,Object? closedAt = freezed,Object? notes = freezed,Object? investors = null,Object? items = null,Object? balances = freezed,Object? stock = freezed,Object? ordersProfit = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InvestorDeal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,isFund: null == isFund ? _self.isFund : isFund // ignore: cast_nullable_to_non_nullable
@@ -282,7 +288,7 @@ return $default(_that.id,_that.code,_that.isFund,_that.status,_that.statusLabel,
 @JsonSerializable()
 
 class _InvestorDeal implements InvestorDeal {
-  const _InvestorDeal({required this.id, required this.code, @JsonKey(name: 'is_fund') this.isFund = false, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'printing_sale_price') this.printingSalePrice, @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes, final  List<DealParticipant> investors = const <DealParticipant>[], final  List<DealItem> items = const <DealItem>[], this.balances, this.stock, @JsonKey(name: 'orders_profit') this.ordersProfit}): _investors = investors,_items = items;
+  const _InvestorDeal({required this.id, required this.code, @JsonKey(name: 'is_fund') this.isFund = false, required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'can_be_edited') this.canBeEdited = false, @JsonKey(name: 'investor_profit_share_percent') required this.investorProfitSharePercent, @JsonKey(name: 'company_stake') this.companyStake = '0.00', @JsonKey(name: 'investor_funded_percent') this.investorFundedPercent = '100.0000', @JsonKey(name: 'printing_sale_price') this.printingSalePrice, @JsonKey(name: 'opened_on') this.openedOn, @JsonKey(name: 'closed_at') this.closedAt, this.notes,  List<DealParticipant> investors = const <DealParticipant>[],  List<DealItem> items = const <DealItem>[], this.balances, this.stock, @JsonKey(name: 'orders_profit') this.ordersProfit}): _investors = investors,_items = items;
   factory _InvestorDeal.fromJson(Map<String, dynamic> json) => _$InvestorDealFromJson(json);
 
 @override final  int id;
@@ -349,16 +355,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other._investors, _investors)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.canBeEdited, canBeEdited) || other.canBeEdited == canBeEdited)&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.companyStake, companyStake) || other.companyStake == companyStake)&&(identical(other.investorFundedPercent, investorFundedPercent) || other.investorFundedPercent == investorFundedPercent)&&(identical(other.printingSalePrice, printingSalePrice) || other.printingSalePrice == printingSalePrice)&&(identical(other.openedOn, openedOn) || other.openedOn == openedOn)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.notes, notes) || other.notes == notes)&&const DeepCollectionEquality().equals(other.investors, _investors)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.ordersProfit, ordersProfit) || other.ordersProfit == ordersProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isFund,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock,ordersProfit);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,isFund,status,statusLabel,canBeEdited,investorProfitSharePercent,companyStake,investorFundedPercent,printingSalePrice,openedOn,closedAt,notes,const DeepCollectionEquality().hash(_investors),const DeepCollectionEquality().hash(_items),balances,stock,ordersProfit);
+}
 
 @override
 String toString() {
-  return 'InvestorDeal(id: $id, code: $code, isFund: $isFund, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
+    return 'InvestorDeal(id: $id, code: $code, isFund: $isFund, status: $status, statusLabel: $statusLabel, canBeEdited: $canBeEdited, investorProfitSharePercent: $investorProfitSharePercent, companyStake: $companyStake, investorFundedPercent: $investorFundedPercent, printingSalePrice: $printingSalePrice, openedOn: $openedOn, closedAt: $closedAt, notes: $notes, investors: $investors, items: $items, balances: $balances, stock: $stock, ordersProfit: $ordersProfit)';
 }
 
 
@@ -469,16 +477,21 @@ $DealParticipantCopyWith<DealParticipant> get copyWith => _$DealParticipantCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealParticipant&&(identical(other.id, id) || other.id == id)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+  final _this = this as DealParticipant;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealParticipant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.investorId, _this.investorId) || other.investorId == _this.investorId)&&(identical(other.investor, _this.investor) || other.investor == _this.investor)&&(identical(other.committedAmount, _this.committedAmount) || other.committedAmount == _this.committedAmount)&&(identical(other.sharePercent, _this.sharePercent) || other.sharePercent == _this.sharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,investorId,investor,committedAmount,sharePercent);
+int get hashCode {
+  final _this = this as DealParticipant;
+  return Object.hash(runtimeType,_this.id,_this.investorId,_this.investor,_this.committedAmount,_this.sharePercent);
+}
 
 @override
 String toString() {
-  return 'DealParticipant(id: $id, investorId: $investorId, investor: $investor, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+  final _this = this as DealParticipant;
+  return 'DealParticipant(id: ${_this.id}, investorId: ${_this.investorId}, investor: ${_this.investor}, committedAmount: ${_this.committedAmount}, sharePercent: ${_this.sharePercent})';
 }
 
 
@@ -507,7 +520,7 @@ class _$DealParticipantCopyWithImpl<$Res>
 /// Create a copy of DealParticipant
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? investorId = null,Object? investor = freezed,Object? committedAmount = null,Object? sharePercent = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealParticipant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
 as int,investor: freezed == investor ? _self.investor : investor // ignore: cast_nullable_to_non_nullable
@@ -691,16 +704,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealParticipant&&(identical(other.id, id) || other.id == id)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealParticipant&&(identical(other.id, id) || other.id == id)&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.investor, investor) || other.investor == investor)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,investorId,investor,committedAmount,sharePercent);
+int get hashCode {
+    return Object.hash(runtimeType,id,investorId,investor,committedAmount,sharePercent);
+}
 
 @override
 String toString() {
-  return 'DealParticipant(id: $id, investorId: $investorId, investor: $investor, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+    return 'DealParticipant(id: $id, investorId: $investorId, investor: $investor, committedAmount: $committedAmount, sharePercent: $sharePercent)';
 }
 
 
@@ -771,16 +786,21 @@ $DealInvestorRefCopyWith<DealInvestorRef> get copyWith => _$DealInvestorRefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealInvestorRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+  final _this = this as DealInvestorRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealInvestorRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name);
+int get hashCode {
+  final _this = this as DealInvestorRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name);
+}
 
 @override
 String toString() {
-  return 'DealInvestorRef(id: $id, code: $code, name: $name)';
+  final _this = this as DealInvestorRef;
+  return 'DealInvestorRef(id: ${_this.id}, code: ${_this.code}, name: ${_this.name})';
 }
 
 
@@ -809,7 +829,7 @@ class _$DealInvestorRefCopyWithImpl<$Res>
 /// Create a copy of DealInvestorRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealInvestorRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -974,16 +994,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealInvestorRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealInvestorRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name);
+}
 
 @override
 String toString() {
-  return 'DealInvestorRef(id: $id, code: $code, name: $name)';
+    return 'DealInvestorRef(id: $id, code: $code, name: $name)';
 }
 
 
@@ -1040,16 +1062,21 @@ $DealItemCopyWith<DealItem> get copyWith => _$DealItemCopyWithImpl<DealItem>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealItem&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.quantityExpected, quantityExpected) || other.quantityExpected == quantityExpected)&&(identical(other.expectedUnitCost, expectedUnitCost) || other.expectedUnitCost == expectedUnitCost)&&(identical(other.expectedUnitPrice, expectedUnitPrice) || other.expectedUnitPrice == expectedUnitPrice));
+  final _this = this as DealItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.stockItem, _this.stockItem) || other.stockItem == _this.stockItem)&&(identical(other.quantityExpected, _this.quantityExpected) || other.quantityExpected == _this.quantityExpected)&&(identical(other.expectedUnitCost, _this.expectedUnitCost) || other.expectedUnitCost == _this.expectedUnitCost)&&(identical(other.expectedUnitPrice, _this.expectedUnitPrice) || other.expectedUnitPrice == _this.expectedUnitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,stockItem,quantityExpected,expectedUnitCost,expectedUnitPrice);
+int get hashCode {
+  final _this = this as DealItem;
+  return Object.hash(runtimeType,_this.id,_this.stockItemId,_this.stockItem,_this.quantityExpected,_this.expectedUnitCost,_this.expectedUnitPrice);
+}
 
 @override
 String toString() {
-  return 'DealItem(id: $id, stockItemId: $stockItemId, stockItem: $stockItem, quantityExpected: $quantityExpected, expectedUnitCost: $expectedUnitCost, expectedUnitPrice: $expectedUnitPrice)';
+  final _this = this as DealItem;
+  return 'DealItem(id: ${_this.id}, stockItemId: ${_this.stockItemId}, stockItem: ${_this.stockItem}, quantityExpected: ${_this.quantityExpected}, expectedUnitCost: ${_this.expectedUnitCost}, expectedUnitPrice: ${_this.expectedUnitPrice})';
 }
 
 
@@ -1078,7 +1105,7 @@ class _$DealItemCopyWithImpl<$Res>
 /// Create a copy of DealItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? stockItemId = null,Object? stockItem = freezed,Object? quantityExpected = freezed,Object? expectedUnitCost = freezed,Object? expectedUnitPrice = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DealItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int,stockItem: freezed == stockItem ? _self.stockItem : stockItem // ignore: cast_nullable_to_non_nullable
@@ -1261,16 +1288,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealItem&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.quantityExpected, quantityExpected) || other.quantityExpected == quantityExpected)&&(identical(other.expectedUnitCost, expectedUnitCost) || other.expectedUnitCost == expectedUnitCost)&&(identical(other.expectedUnitPrice, expectedUnitPrice) || other.expectedUnitPrice == expectedUnitPrice));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealItem&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.quantityExpected, quantityExpected) || other.quantityExpected == quantityExpected)&&(identical(other.expectedUnitCost, expectedUnitCost) || other.expectedUnitCost == expectedUnitCost)&&(identical(other.expectedUnitPrice, expectedUnitPrice) || other.expectedUnitPrice == expectedUnitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,stockItem,quantityExpected,expectedUnitCost,expectedUnitPrice);
+int get hashCode {
+    return Object.hash(runtimeType,id,stockItemId,stockItem,quantityExpected,expectedUnitCost,expectedUnitPrice);
+}
 
 @override
 String toString() {
-  return 'DealItem(id: $id, stockItemId: $stockItemId, stockItem: $stockItem, quantityExpected: $quantityExpected, expectedUnitCost: $expectedUnitCost, expectedUnitPrice: $expectedUnitPrice)';
+    return 'DealItem(id: $id, stockItemId: $stockItemId, stockItem: $stockItem, quantityExpected: $quantityExpected, expectedUnitCost: $expectedUnitCost, expectedUnitPrice: $expectedUnitPrice)';
 }
 
 
@@ -1342,16 +1371,21 @@ $DealStockItemRefCopyWith<DealStockItemRef> get copyWith => _$DealStockItemRefCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.displayName, displayName) || other.displayName == displayName));
+  final _this = this as DealStockItemRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStockItemRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,displayName);
+int get hashCode {
+  final _this = this as DealStockItemRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.displayName);
+}
 
 @override
 String toString() {
-  return 'DealStockItemRef(id: $id, code: $code, displayName: $displayName)';
+  final _this = this as DealStockItemRef;
+  return 'DealStockItemRef(id: ${_this.id}, code: ${_this.code}, displayName: ${_this.displayName})';
 }
 
 
@@ -1380,7 +1414,7 @@ class _$DealStockItemRefCopyWithImpl<$Res>
 /// Create a copy of DealStockItemRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = freezed,Object? displayName = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DealStockItemRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,displayName: freezed == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -1545,16 +1579,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.displayName, displayName) || other.displayName == displayName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.displayName, displayName) || other.displayName == displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,displayName);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,displayName);
+}
 
 @override
 String toString() {
-  return 'DealStockItemRef(id: $id, code: $code, displayName: $displayName)';
+    return 'DealStockItemRef(id: $id, code: $code, displayName: $displayName)';
 }
 
 
@@ -1611,16 +1647,21 @@ $DealBalancesCopyWith<DealBalances> get copyWith => _$DealBalancesCopyWithImpl<D
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealBalances&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&const DeepCollectionEquality().equals(other.perInvestor, perInvestor));
+  final _this = this as DealBalances;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealBalances&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.profit, _this.profit) || other.profit == _this.profit)&&const DeepCollectionEquality().equals(other.perInvestor, _this.perInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit,const DeepCollectionEquality().hash(perInvestor));
+int get hashCode {
+  final _this = this as DealBalances;
+  return Object.hash(runtimeType,_this.capital,_this.profit,const DeepCollectionEquality().hash(_this.perInvestor));
+}
 
 @override
 String toString() {
-  return 'DealBalances(capital: $capital, profit: $profit, perInvestor: $perInvestor)';
+  final _this = this as DealBalances;
+  return 'DealBalances(capital: ${_this.capital}, profit: ${_this.profit}, perInvestor: ${_this.perInvestor})';
 }
 
 
@@ -1649,7 +1690,7 @@ class _$DealBalancesCopyWithImpl<$Res>
 /// Create a copy of DealBalances
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? capital = null,Object? profit = null,Object? perInvestor = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealBalances(
 capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,perInvestor: null == perInvestor ? _self.perInvestor : perInvestor // ignore: cast_nullable_to_non_nullable
@@ -1794,7 +1835,7 @@ return $default(_that.capital,_that.profit,_that.perInvestor);case _:
 @JsonSerializable()
 
 class _DealBalances implements DealBalances {
-  const _DealBalances({required this.capital, required this.profit, @JsonKey(name: 'per_investor') final  List<DealInvestorStanding> perInvestor = const <DealInvestorStanding>[]}): _perInvestor = perInvestor;
+  const _DealBalances({required this.capital, required this.profit, @JsonKey(name: 'per_investor')  List<DealInvestorStanding> perInvestor = const <DealInvestorStanding>[]}): _perInvestor = perInvestor;
   factory _DealBalances.fromJson(Map<String, dynamic> json) => _$DealBalancesFromJson(json);
 
 @override final  String capital;
@@ -1820,16 +1861,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealBalances&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&const DeepCollectionEquality().equals(other._perInvestor, _perInvestor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealBalances&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&const DeepCollectionEquality().equals(other.perInvestor, _perInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit,const DeepCollectionEquality().hash(_perInvestor));
+int get hashCode {
+    return Object.hash(runtimeType,capital,profit,const DeepCollectionEquality().hash(_perInvestor));
+}
 
 @override
 String toString() {
-  return 'DealBalances(capital: $capital, profit: $profit, perInvestor: $perInvestor)';
+    return 'DealBalances(capital: $capital, profit: $profit, perInvestor: $perInvestor)';
 }
 
 
@@ -1886,16 +1929,21 @@ $DealInvestorStandingCopyWith<DealInvestorStanding> get copyWith => _$DealInvest
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealInvestorStanding&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+  final _this = this as DealInvestorStanding;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealInvestorStanding&&(identical(other.investorId, _this.investorId) || other.investorId == _this.investorId)&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.profit, _this.profit) || other.profit == _this.profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,capital,profit);
+int get hashCode {
+  final _this = this as DealInvestorStanding;
+  return Object.hash(runtimeType,_this.investorId,_this.capital,_this.profit);
+}
 
 @override
 String toString() {
-  return 'DealInvestorStanding(investorId: $investorId, capital: $capital, profit: $profit)';
+  final _this = this as DealInvestorStanding;
+  return 'DealInvestorStanding(investorId: ${_this.investorId}, capital: ${_this.capital}, profit: ${_this.profit})';
 }
 
 
@@ -1924,7 +1972,7 @@ class _$DealInvestorStandingCopyWithImpl<$Res>
 /// Create a copy of DealInvestorStanding
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? investorId = null,Object? capital = null,Object? profit = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealInvestorStanding(
 investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
 as int,capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
@@ -2089,16 +2137,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealInvestorStanding&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealInvestorStanding&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,capital,profit);
+int get hashCode {
+    return Object.hash(runtimeType,investorId,capital,profit);
+}
 
 @override
 String toString() {
-  return 'DealInvestorStanding(investorId: $investorId, capital: $capital, profit: $profit)';
+    return 'DealInvestorStanding(investorId: $investorId, capital: $capital, profit: $profit)';
 }
 
 
@@ -2155,16 +2205,21 @@ $DealStockCopyWith<DealStock> get copyWith => _$DealStockCopyWithImpl<DealStock>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
+  final _this = this as DealStock;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealStock&&(identical(other.quantityReceived, _this.quantityReceived) || other.quantityReceived == _this.quantityReceived)&&(identical(other.quantityRemaining, _this.quantityRemaining) || other.quantityRemaining == _this.quantityRemaining)&&(identical(other.quantitySold, _this.quantitySold) || other.quantitySold == _this.quantitySold)&&(identical(other.quantityDamaged, _this.quantityDamaged) || other.quantityDamaged == _this.quantityDamaged)&&(identical(other.quantityShort, _this.quantityShort) || other.quantityShort == _this.quantityShort)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.costRemaining, _this.costRemaining) || other.costRemaining == _this.costRemaining)&&(identical(other.costSold, _this.costSold) || other.costSold == _this.costSold)&&(identical(other.costDamaged, _this.costDamaged) || other.costDamaged == _this.costDamaged)&&(identical(other.costShort, _this.costShort) || other.costShort == _this.costShort));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,unit,unitLabel,costRemaining,costSold,costDamaged,costShort);
+int get hashCode {
+  final _this = this as DealStock;
+  return Object.hash(runtimeType,_this.quantityReceived,_this.quantityRemaining,_this.quantitySold,_this.quantityDamaged,_this.quantityShort,_this.unit,_this.unitLabel,_this.costRemaining,_this.costSold,_this.costDamaged,_this.costShort);
+}
 
 @override
 String toString() {
-  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, unit: $unit, unitLabel: $unitLabel, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
+  final _this = this as DealStock;
+  return 'DealStock(quantityReceived: ${_this.quantityReceived}, quantityRemaining: ${_this.quantityRemaining}, quantitySold: ${_this.quantitySold}, quantityDamaged: ${_this.quantityDamaged}, quantityShort: ${_this.quantityShort}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, costRemaining: ${_this.costRemaining}, costSold: ${_this.costSold}, costDamaged: ${_this.costDamaged}, costShort: ${_this.costShort})';
 }
 
 
@@ -2193,7 +2248,7 @@ class _$DealStockCopyWithImpl<$Res>
 /// Create a copy of DealStock
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantitySold = null,Object? quantityDamaged = null,Object? quantityShort = null,Object? unit = freezed,Object? unitLabel = freezed,Object? costRemaining = null,Object? costSold = null,Object? costDamaged = null,Object? costShort = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealStock(
 quantityReceived: null == quantityReceived ? _self.quantityReceived : quantityReceived // ignore: cast_nullable_to_non_nullable
 as String,quantityRemaining: null == quantityRemaining ? _self.quantityRemaining : quantityRemaining // ignore: cast_nullable_to_non_nullable
 as String,quantitySold: null == quantitySold ? _self.quantitySold : quantitySold // ignore: cast_nullable_to_non_nullable
@@ -2374,16 +2429,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealStock&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantitySold, quantitySold) || other.quantitySold == quantitySold)&&(identical(other.quantityDamaged, quantityDamaged) || other.quantityDamaged == quantityDamaged)&&(identical(other.quantityShort, quantityShort) || other.quantityShort == quantityShort)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.costRemaining, costRemaining) || other.costRemaining == costRemaining)&&(identical(other.costSold, costSold) || other.costSold == costSold)&&(identical(other.costDamaged, costDamaged) || other.costDamaged == costDamaged)&&(identical(other.costShort, costShort) || other.costShort == costShort));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,unit,unitLabel,costRemaining,costSold,costDamaged,costShort);
+int get hashCode {
+    return Object.hash(runtimeType,quantityReceived,quantityRemaining,quantitySold,quantityDamaged,quantityShort,unit,unitLabel,costRemaining,costSold,costDamaged,costShort);
+}
 
 @override
 String toString() {
-  return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, unit: $unit, unitLabel: $unitLabel, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
+    return 'DealStock(quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantitySold: $quantitySold, quantityDamaged: $quantityDamaged, quantityShort: $quantityShort, unit: $unit, unitLabel: $unitLabel, costRemaining: $costRemaining, costSold: $costSold, costDamaged: $costDamaged, costShort: $costShort)';
 }
 
 
@@ -2448,16 +2505,21 @@ $DealOrdersProfitCopyWith<DealOrdersProfit> get copyWith => _$DealOrdersProfitCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealOrdersProfit&&(identical(other.inFlight, inFlight) || other.inFlight == inFlight)&&(identical(other.delivered, delivered) || other.delivered == delivered)&&(identical(other.total, total) || other.total == total));
+  final _this = this as DealOrdersProfit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealOrdersProfit&&(identical(other.inFlight, _this.inFlight) || other.inFlight == _this.inFlight)&&(identical(other.delivered, _this.delivered) || other.delivered == _this.delivered)&&(identical(other.total, _this.total) || other.total == _this.total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,inFlight,delivered,total);
+int get hashCode {
+  final _this = this as DealOrdersProfit;
+  return Object.hash(runtimeType,_this.inFlight,_this.delivered,_this.total);
+}
 
 @override
 String toString() {
-  return 'DealOrdersProfit(inFlight: $inFlight, delivered: $delivered, total: $total)';
+  final _this = this as DealOrdersProfit;
+  return 'DealOrdersProfit(inFlight: ${_this.inFlight}, delivered: ${_this.delivered}, total: ${_this.total})';
 }
 
 
@@ -2486,7 +2548,7 @@ class _$DealOrdersProfitCopyWithImpl<$Res>
 /// Create a copy of DealOrdersProfit
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? inFlight = null,Object? delivered = null,Object? total = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealOrdersProfit(
 inFlight: null == inFlight ? _self.inFlight : inFlight // ignore: cast_nullable_to_non_nullable
 as DealProfitBucket,delivered: null == delivered ? _self.delivered : delivered // ignore: cast_nullable_to_non_nullable
 as DealProfitBucket,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
@@ -2678,16 +2740,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealOrdersProfit&&(identical(other.inFlight, inFlight) || other.inFlight == inFlight)&&(identical(other.delivered, delivered) || other.delivered == delivered)&&(identical(other.total, total) || other.total == total));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealOrdersProfit&&(identical(other.inFlight, inFlight) || other.inFlight == inFlight)&&(identical(other.delivered, delivered) || other.delivered == delivered)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,inFlight,delivered,total);
+int get hashCode {
+    return Object.hash(runtimeType,inFlight,delivered,total);
+}
 
 @override
 String toString() {
-  return 'DealOrdersProfit(inFlight: $inFlight, delivered: $delivered, total: $total)';
+    return 'DealOrdersProfit(inFlight: $inFlight, delivered: $delivered, total: $total)';
 }
 
 
@@ -2771,16 +2835,21 @@ $DealProfitBucketCopyWith<DealProfitBucket> get copyWith => _$DealProfitBucketCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealProfitBucket&&(identical(other.orders, orders) || other.orders == orders)&&(identical(other.profit, profit) || other.profit == profit));
+  final _this = this as DealProfitBucket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealProfitBucket&&(identical(other.orders, _this.orders) || other.orders == _this.orders)&&(identical(other.profit, _this.profit) || other.profit == _this.profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,orders,profit);
+int get hashCode {
+  final _this = this as DealProfitBucket;
+  return Object.hash(runtimeType,_this.orders,_this.profit);
+}
 
 @override
 String toString() {
-  return 'DealProfitBucket(orders: $orders, profit: $profit)';
+  final _this = this as DealProfitBucket;
+  return 'DealProfitBucket(orders: ${_this.orders}, profit: ${_this.profit})';
 }
 
 
@@ -2809,7 +2878,7 @@ class _$DealProfitBucketCopyWithImpl<$Res>
 /// Create a copy of DealProfitBucket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? orders = null,Object? profit = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealProfitBucket(
 orders: null == orders ? _self.orders : orders // ignore: cast_nullable_to_non_nullable
 as int,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,
@@ -2972,16 +3041,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealProfitBucket&&(identical(other.orders, orders) || other.orders == orders)&&(identical(other.profit, profit) || other.profit == profit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealProfitBucket&&(identical(other.orders, orders) || other.orders == orders)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,orders,profit);
+int get hashCode {
+    return Object.hash(runtimeType,orders,profit);
+}
 
 @override
 String toString() {
-  return 'DealProfitBucket(orders: $orders, profit: $profit)';
+    return 'DealProfitBucket(orders: $orders, profit: $profit)';
 }
 
 

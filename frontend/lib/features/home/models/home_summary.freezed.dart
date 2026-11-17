@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'home_summary.dart';
@@ -9,6 +9,7 @@ part of 'home_summary.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -50,16 +51,21 @@ $HomeSummaryCopyWith<HomeSummary> get copyWith => _$HomeSummaryCopyWithImpl<Home
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, statuses)&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
+  final _this = this as HomeSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, _this.totalOrders) || other.totalOrders == _this.totalOrders)&&(identical(other.customersCount, _this.customersCount) || other.customersCount == _this.customersCount)&&(identical(other.dailyOrders, _this.dailyOrders) || other.dailyOrders == _this.dailyOrders)&&(identical(other.monthlyOrders, _this.monthlyOrders) || other.monthlyOrders == _this.monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _this.statuses)&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.readyMessage, _this.readyMessage) || other.readyMessage == _this.readyMessage)&&(identical(other.returnMessage, _this.returnMessage) || other.returnMessage == _this.returnMessage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(statuses),const DeepCollectionEquality().hash(payments),readyMessage,returnMessage);
+int get hashCode {
+  final _this = this as HomeSummary;
+  return Object.hash(runtimeType,_this.totalOrders,_this.customersCount,_this.dailyOrders,_this.monthlyOrders,const DeepCollectionEquality().hash(_this.statuses),const DeepCollectionEquality().hash(_this.payments),_this.readyMessage,_this.returnMessage);
+}
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
+  final _this = this as HomeSummary;
+  return 'HomeSummary(totalOrders: ${_this.totalOrders}, customersCount: ${_this.customersCount}, dailyOrders: ${_this.dailyOrders}, monthlyOrders: ${_this.monthlyOrders}, statuses: ${_this.statuses}, payments: ${_this.payments}, readyMessage: ${_this.readyMessage}, returnMessage: ${_this.returnMessage})';
 }
 
 
@@ -88,7 +94,7 @@ class _$HomeSummaryCopyWithImpl<$Res>
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(HomeSummary(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
 as int,dailyOrders: null == dailyOrders ? _self.dailyOrders : dailyOrders // ignore: cast_nullable_to_non_nullable
@@ -262,7 +268,7 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 @JsonSerializable()
 
 class _HomeSummary extends HomeSummary {
-  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders, final  List<OrderStatusCount> statuses = const <OrderStatusCount>[], final  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage, @JsonKey(name: 'return_message') this.returnMessage}): _statuses = statuses,_payments = payments,super._();
+  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders,  List<OrderStatusCount> statuses = const <OrderStatusCount>[],  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage, @JsonKey(name: 'return_message') this.returnMessage}): _statuses = statuses,_payments = payments,super._();
   factory _HomeSummary.fromJson(Map<String, dynamic> json) => _$HomeSummaryFromJson(json);
 
 @override@JsonKey(name: 'total_orders') final  int totalOrders;
@@ -332,16 +338,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other._statuses, _statuses)&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _statuses)&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage,returnMessage);
+int get hashCode {
+    return Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage,returnMessage);
+}
 
 @override
 String toString() {
-  return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
+    return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
 }
 
 
@@ -427,16 +435,21 @@ $ReadyMessageQueueCopyWith<ReadyMessageQueue> get copyWith => _$ReadyMessageQueu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReadyMessageQueue&&(identical(other.count, count) || other.count == count)&&(identical(other.label, label) || other.label == label));
+  final _this = this as ReadyMessageQueue;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReadyMessageQueue&&(identical(other.count, _this.count) || other.count == _this.count)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,count,label);
+int get hashCode {
+  final _this = this as ReadyMessageQueue;
+  return Object.hash(runtimeType,_this.count,_this.label);
+}
 
 @override
 String toString() {
-  return 'ReadyMessageQueue(count: $count, label: $label)';
+  final _this = this as ReadyMessageQueue;
+  return 'ReadyMessageQueue(count: ${_this.count}, label: ${_this.label})';
 }
 
 
@@ -465,7 +478,7 @@ class _$ReadyMessageQueueCopyWithImpl<$Res>
 /// Create a copy of ReadyMessageQueue
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? count = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(ReadyMessageQueue(
 count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -628,16 +641,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReadyMessageQueue&&(identical(other.count, count) || other.count == count)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReadyMessageQueue&&(identical(other.count, count) || other.count == count)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,count,label);
+int get hashCode {
+    return Object.hash(runtimeType,count,label);
+}
 
 @override
 String toString() {
-  return 'ReadyMessageQueue(count: $count, label: $label)';
+    return 'ReadyMessageQueue(count: $count, label: $label)';
 }
 
 
@@ -696,16 +711,21 @@ $OrderStatusCountCopyWith<OrderStatusCount> get copyWith => _$OrderStatusCountCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count));
+  final _this = this as OrderStatusCount;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusCount&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.count, _this.count) || other.count == _this.count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,label,count);
+int get hashCode {
+  final _this = this as OrderStatusCount;
+  return Object.hash(runtimeType,_this.status,_this.label,_this.count);
+}
 
 @override
 String toString() {
-  return 'OrderStatusCount(status: $status, label: $label, count: $count)';
+  final _this = this as OrderStatusCount;
+  return 'OrderStatusCount(status: ${_this.status}, label: ${_this.label}, count: ${_this.count})';
 }
 
 
@@ -734,7 +754,7 @@ class _$OrderStatusCountCopyWithImpl<$Res>
 /// Create a copy of OrderStatusCount
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? label = null,Object? count = null,}) {
-  return _then(_self.copyWith(
+  return _then(OrderStatusCount(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
@@ -902,16 +922,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderStatusCount&&(identical(other.status, status) || other.status == status)&&(identical(other.label, label) || other.label == label)&&(identical(other.count, count) || other.count == count));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,label,count);
+int get hashCode {
+    return Object.hash(runtimeType,status,label,count);
+}
 
 @override
 String toString() {
-  return 'OrderStatusCount(status: $status, label: $label, count: $count)';
+    return 'OrderStatusCount(status: $status, label: $label, count: $count)';
 }
 
 

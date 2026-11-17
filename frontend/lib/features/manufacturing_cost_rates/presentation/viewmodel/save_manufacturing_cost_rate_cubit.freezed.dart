@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'save_manufacturing_cost_rate_cubit.dart';
@@ -9,6 +9,7 @@ part of 'save_manufacturing_cost_rate_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SaveManufacturingCostRateState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveManufacturingCostRateState()';
+    return 'SaveManufacturingCostRateState()';
 }
 
 
@@ -197,7 +198,7 @@ class SaveManufacturingCostRateInitial implements SaveManufacturingCostRateState
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveManufacturingCostRateState.initial()';
+    return 'SaveManufacturingCostRateState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class SaveManufacturingCostRateSubmitting implements SaveManufacturingCostRateSt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveManufacturingCostRateState.submitting()';
+    return 'SaveManufacturingCostRateState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $SaveManufacturingCostRateSuccessCopyWith<SaveManufacturingCostRateSuccess> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateSuccess&&(identical(other.rate, rate) || other.rate == rate));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateSuccess&&(identical(other.rate, rate) || other.rate == rate));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,rate);
+int get hashCode {
+    return Object.hash(runtimeType,rate);
+}
 
 @override
 String toString() {
-  return 'SaveManufacturingCostRateState.success(rate: $rate)';
+    return 'SaveManufacturingCostRateState.success(rate: $rate)';
 }
 
 
@@ -341,16 +344,18 @@ $SaveManufacturingCostRateFailureCopyWith<SaveManufacturingCostRateFailure> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveManufacturingCostRateFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SaveManufacturingCostRateState.failure(failure: $failure)';
+    return 'SaveManufacturingCostRateState.failure(failure: $failure)';
 }
 
 

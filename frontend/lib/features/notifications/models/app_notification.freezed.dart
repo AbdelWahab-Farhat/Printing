@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'app_notification.dart';
@@ -9,6 +9,7 @@ part of 'app_notification.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -41,16 +42,21 @@ $AppNotificationCopyWith<AppNotification> get copyWith => _$AppNotificationCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppNotification&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.route, route) || other.route == route)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.isRead, isRead) || other.isRead == isRead)&&(identical(other.readAt, readAt) || other.readAt == readAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as AppNotification;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppNotification&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.typeLabel, _this.typeLabel) || other.typeLabel == _this.typeLabel)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.icon, _this.icon) || other.icon == _this.icon)&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.subjectType, _this.subjectType) || other.subjectType == _this.subjectType)&&(identical(other.subjectId, _this.subjectId) || other.subjectId == _this.subjectId)&&(identical(other.isRead, _this.isRead) || other.isRead == _this.isRead)&&(identical(other.readAt, _this.readAt) || other.readAt == _this.readAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,title,body,icon,route,subjectType,subjectId,isRead,readAt,createdAt);
+int get hashCode {
+  final _this = this as AppNotification;
+  return Object.hash(runtimeType,_this.id,_this.type,_this.typeLabel,_this.title,_this.body,_this.icon,_this.route,_this.subjectType,_this.subjectId,_this.isRead,_this.readAt,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'AppNotification(id: $id, type: $type, typeLabel: $typeLabel, title: $title, body: $body, icon: $icon, route: $route, subjectType: $subjectType, subjectId: $subjectId, isRead: $isRead, readAt: $readAt, createdAt: $createdAt)';
+  final _this = this as AppNotification;
+  return 'AppNotification(id: ${_this.id}, type: ${_this.type}, typeLabel: ${_this.typeLabel}, title: ${_this.title}, body: ${_this.body}, icon: ${_this.icon}, route: ${_this.route}, subjectType: ${_this.subjectType}, subjectId: ${_this.subjectId}, isRead: ${_this.isRead}, readAt: ${_this.readAt}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -79,7 +85,7 @@ class _$AppNotificationCopyWithImpl<$Res>
 /// Create a copy of AppNotification
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? title = null,Object? body = null,Object? icon = null,Object? route = freezed,Object? subjectType = freezed,Object? subjectId = freezed,Object? isRead = null,Object? readAt = freezed,Object? createdAt = null,}) {
-  return _then(_self.copyWith(
+  return _then(AppNotification(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,typeLabel: null == typeLabel ? _self.typeLabel : typeLabel // ignore: cast_nullable_to_non_nullable
@@ -275,16 +281,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppNotification&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.route, route) || other.route == route)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.isRead, isRead) || other.isRead == isRead)&&(identical(other.readAt, readAt) || other.readAt == readAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppNotification&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.route, route) || other.route == route)&&(identical(other.subjectType, subjectType) || other.subjectType == subjectType)&&(identical(other.subjectId, subjectId) || other.subjectId == subjectId)&&(identical(other.isRead, isRead) || other.isRead == isRead)&&(identical(other.readAt, readAt) || other.readAt == readAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,title,body,icon,route,subjectType,subjectId,isRead,readAt,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,type,typeLabel,title,body,icon,route,subjectType,subjectId,isRead,readAt,createdAt);
+}
 
 @override
 String toString() {
-  return 'AppNotification(id: $id, type: $type, typeLabel: $typeLabel, title: $title, body: $body, icon: $icon, route: $route, subjectType: $subjectType, subjectId: $subjectId, isRead: $isRead, readAt: $readAt, createdAt: $createdAt)';
+    return 'AppNotification(id: $id, type: $type, typeLabel: $typeLabel, title: $title, body: $body, icon: $icon, route: $route, subjectType: $subjectType, subjectId: $subjectId, isRead: $isRead, readAt: $readAt, createdAt: $createdAt)';
 }
 
 

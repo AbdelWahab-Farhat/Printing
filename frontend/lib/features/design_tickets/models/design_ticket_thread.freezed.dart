@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'design_ticket_thread.dart';
@@ -9,6 +9,7 @@ part of 'design_ticket_thread.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -29,16 +30,21 @@ $DesignThreadTicketCopyWith<DesignThreadTicket> get copyWith => _$DesignThreadTi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignThreadTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
+  final _this = this as DesignThreadTicket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignThreadTicket&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.requester, _this.requester) || other.requester == _this.requester)&&(identical(other.designer, _this.designer) || other.designer == _this.designer));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,title,status,statusLabel,isOpen,customerName,requester,designer);
+int get hashCode {
+  final _this = this as DesignThreadTicket;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.title,_this.status,_this.statusLabel,_this.isOpen,_this.customerName,_this.requester,_this.designer);
+}
 
 @override
 String toString() {
-  return 'DesignThreadTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, customerName: $customerName, requester: $requester, designer: $designer)';
+  final _this = this as DesignThreadTicket;
+  return 'DesignThreadTicket(id: ${_this.id}, code: ${_this.code}, title: ${_this.title}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, isOpen: ${_this.isOpen}, customerName: ${_this.customerName}, requester: ${_this.requester}, designer: ${_this.designer})';
 }
 
 
@@ -67,7 +73,7 @@ class _$DesignThreadTicketCopyWithImpl<$Res>
 /// Create a copy of DesignThreadTicket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? title = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? customerName = freezed,Object? requester = freezed,Object? designer = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignThreadTicket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -269,16 +275,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignThreadTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignThreadTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,title,status,statusLabel,isOpen,customerName,requester,designer);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,title,status,statusLabel,isOpen,customerName,requester,designer);
+}
 
 @override
 String toString() {
-  return 'DesignThreadTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, customerName: $customerName, requester: $requester, designer: $designer)';
+    return 'DesignThreadTicket(id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, customerName: $customerName, requester: $requester, designer: $designer)';
 }
 
 
@@ -365,16 +373,21 @@ $DesignThreadReadUpToCopyWith<DesignThreadReadUpTo> get copyWith => _$DesignThre
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignThreadReadUpTo&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
+  final _this = this as DesignThreadReadUpTo;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignThreadReadUpTo&&(identical(other.requester, _this.requester) || other.requester == _this.requester)&&(identical(other.designer, _this.designer) || other.designer == _this.designer));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,requester,designer);
+int get hashCode {
+  final _this = this as DesignThreadReadUpTo;
+  return Object.hash(runtimeType,_this.requester,_this.designer);
+}
 
 @override
 String toString() {
-  return 'DesignThreadReadUpTo(requester: $requester, designer: $designer)';
+  final _this = this as DesignThreadReadUpTo;
+  return 'DesignThreadReadUpTo(requester: ${_this.requester}, designer: ${_this.designer})';
 }
 
 
@@ -403,7 +416,7 @@ class _$DesignThreadReadUpToCopyWithImpl<$Res>
 /// Create a copy of DesignThreadReadUpTo
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? requester = freezed,Object? designer = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignThreadReadUpTo(
 requester: freezed == requester ? _self.requester : requester // ignore: cast_nullable_to_non_nullable
 as int?,designer: freezed == designer ? _self.designer : designer // ignore: cast_nullable_to_non_nullable
 as int?,
@@ -566,16 +579,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignThreadReadUpTo&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignThreadReadUpTo&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,requester,designer);
+int get hashCode {
+    return Object.hash(runtimeType,requester,designer);
+}
 
 @override
 String toString() {
-  return 'DesignThreadReadUpTo(requester: $requester, designer: $designer)';
+    return 'DesignThreadReadUpTo(requester: $requester, designer: $designer)';
 }
 
 
@@ -634,16 +649,21 @@ $DesignTicketThreadCopyWith<DesignTicketThread> get copyWith => _$DesignTicketTh
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketThread&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other.messages, messages)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo));
+  final _this = this as DesignTicketThread;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketThread&&(identical(other.ticket, _this.ticket) || other.ticket == _this.ticket)&&const DeepCollectionEquality().equals(other.messages, _this.messages)&&(identical(other.isParty, _this.isParty) || other.isParty == _this.isParty)&&(identical(other.canReply, _this.canReply) || other.canReply == _this.canReply)&&(identical(other.closedNote, _this.closedNote) || other.closedNote == _this.closedNote)&&(identical(other.readUpTo, _this.readUpTo) || other.readUpTo == _this.readUpTo)&&(identical(other.counterpartReadUpTo, _this.counterpartReadUpTo) || other.counterpartReadUpTo == _this.counterpartReadUpTo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(messages),isParty,canReply,closedNote,readUpTo,counterpartReadUpTo);
+int get hashCode {
+  final _this = this as DesignTicketThread;
+  return Object.hash(runtimeType,_this.ticket,const DeepCollectionEquality().hash(_this.messages),_this.isParty,_this.canReply,_this.closedNote,_this.readUpTo,_this.counterpartReadUpTo);
+}
 
 @override
 String toString() {
-  return 'DesignTicketThread(ticket: $ticket, messages: $messages, isParty: $isParty, canReply: $canReply, closedNote: $closedNote, readUpTo: $readUpTo, counterpartReadUpTo: $counterpartReadUpTo)';
+  final _this = this as DesignTicketThread;
+  return 'DesignTicketThread(ticket: ${_this.ticket}, messages: ${_this.messages}, isParty: ${_this.isParty}, canReply: ${_this.canReply}, closedNote: ${_this.closedNote}, readUpTo: ${_this.readUpTo}, counterpartReadUpTo: ${_this.counterpartReadUpTo})';
 }
 
 
@@ -672,7 +692,7 @@ class _$DesignTicketThreadCopyWithImpl<$Res>
 /// Create a copy of DesignTicketThread
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? ticket = null,Object? messages = null,Object? isParty = null,Object? canReply = null,Object? closedNote = freezed,Object? readUpTo = freezed,Object? counterpartReadUpTo = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketThread(
 ticket: null == ticket ? _self.ticket : ticket // ignore: cast_nullable_to_non_nullable
 as DesignThreadTicket,messages: null == messages ? _self.messages : messages // ignore: cast_nullable_to_non_nullable
 as List<ChatMessage>,isParty: null == isParty ? _self.isParty : isParty // ignore: cast_nullable_to_non_nullable
@@ -842,7 +862,7 @@ return $default(_that.ticket,_that.messages,_that.isParty,_that.canReply,_that.c
 @JsonSerializable()
 
 class _DesignTicketThread extends DesignTicketThread {
-  const _DesignTicketThread({required this.ticket, final  List<ChatMessage> messages = const <ChatMessage>[], @JsonKey(name: 'is_party') this.isParty = false, @JsonKey(name: 'can_reply') this.canReply = false, @JsonKey(name: 'closed_note') this.closedNote, @JsonKey(name: 'read_up_to') this.readUpTo, @JsonKey(name: 'counterpart_read_up_to') this.counterpartReadUpTo}): _messages = messages,super._();
+  const _DesignTicketThread({required this.ticket,  List<ChatMessage> messages = const <ChatMessage>[], @JsonKey(name: 'is_party') this.isParty = false, @JsonKey(name: 'can_reply') this.canReply = false, @JsonKey(name: 'closed_note') this.closedNote, @JsonKey(name: 'read_up_to') this.readUpTo, @JsonKey(name: 'counterpart_read_up_to') this.counterpartReadUpTo}): _messages = messages,super._();
   factory _DesignTicketThread.fromJson(Map<String, dynamic> json) => _$DesignTicketThreadFromJson(json);
 
 @override final  DesignThreadTicket ticket;
@@ -875,16 +895,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketThread&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other._messages, _messages)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketThread&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other.messages, _messages)&&(identical(other.isParty, isParty) || other.isParty == isParty)&&(identical(other.canReply, canReply) || other.canReply == canReply)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&(identical(other.readUpTo, readUpTo) || other.readUpTo == readUpTo)&&(identical(other.counterpartReadUpTo, counterpartReadUpTo) || other.counterpartReadUpTo == counterpartReadUpTo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(_messages),isParty,canReply,closedNote,readUpTo,counterpartReadUpTo);
+int get hashCode {
+    return Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(_messages),isParty,canReply,closedNote,readUpTo,counterpartReadUpTo);
+}
 
 @override
 String toString() {
-  return 'DesignTicketThread(ticket: $ticket, messages: $messages, isParty: $isParty, canReply: $canReply, closedNote: $closedNote, readUpTo: $readUpTo, counterpartReadUpTo: $counterpartReadUpTo)';
+    return 'DesignTicketThread(ticket: $ticket, messages: $messages, isParty: $isParty, canReply: $canReply, closedNote: $closedNote, readUpTo: $readUpTo, counterpartReadUpTo: $counterpartReadUpTo)';
 }
 
 
@@ -968,16 +990,21 @@ $DesignTicketThreadChangeCopyWith<DesignTicketThreadChange> get copyWith => _$De
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketThreadChange&&(identical(other.change, change) || other.change == change)&&(identical(other.thread, thread) || other.thread == thread)&&(identical(other.message, message) || other.message == message));
+  final _this = this as DesignTicketThreadChange;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketThreadChange&&(identical(other.change, _this.change) || other.change == _this.change)&&(identical(other.thread, _this.thread) || other.thread == _this.thread)&&(identical(other.message, _this.message) || other.message == _this.message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,change,thread,message);
+int get hashCode {
+  final _this = this as DesignTicketThreadChange;
+  return Object.hash(runtimeType,_this.change,_this.thread,_this.message);
+}
 
 @override
 String toString() {
-  return 'DesignTicketThreadChange(change: $change, thread: $thread, message: $message)';
+  final _this = this as DesignTicketThreadChange;
+  return 'DesignTicketThreadChange(change: ${_this.change}, thread: ${_this.thread}, message: ${_this.message})';
 }
 
 
@@ -1006,7 +1033,7 @@ class _$DesignTicketThreadChangeCopyWithImpl<$Res>
 /// Create a copy of DesignTicketThreadChange
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? change = null,Object? thread = null,Object? message = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketThreadChange(
 change: null == change ? _self.change : change // ignore: cast_nullable_to_non_nullable
 as String,thread: null == thread ? _self.thread : thread // ignore: cast_nullable_to_non_nullable
 as DesignTicketThread,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
@@ -1194,16 +1221,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketThreadChange&&(identical(other.change, change) || other.change == change)&&(identical(other.thread, thread) || other.thread == thread)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketThreadChange&&(identical(other.change, change) || other.change == change)&&(identical(other.thread, thread) || other.thread == thread)&&(identical(other.message, message) || other.message == message));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,change,thread,message);
+int get hashCode {
+    return Object.hash(runtimeType,change,thread,message);
+}
 
 @override
 String toString() {
-  return 'DesignTicketThreadChange(change: $change, thread: $thread, message: $message)';
+    return 'DesignTicketThreadChange(change: $change, thread: $thread, message: $message)';
 }
 
 

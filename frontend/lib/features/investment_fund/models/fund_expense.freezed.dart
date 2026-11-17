@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'fund_expense.dart';
@@ -9,6 +9,7 @@ part of 'fund_expense.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $FundExpensePeriodCopyWith<FundExpensePeriod> get copyWith => _$FundExpensePerio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpensePeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
+  final _this = this as FundExpensePeriod;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpensePeriod&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel);
+int get hashCode {
+  final _this = this as FundExpensePeriod;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.status,_this.statusLabel);
+}
 
 @override
 String toString() {
-  return 'FundExpensePeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel)';
+  final _this = this as FundExpensePeriod;
+  return 'FundExpensePeriod(id: ${_this.id}, code: ${_this.code}, status: ${_this.status}, statusLabel: ${_this.statusLabel})';
 }
 
 
@@ -66,7 +72,7 @@ class _$FundExpensePeriodCopyWithImpl<$Res>
 /// Create a copy of FundExpensePeriod
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = null,Object? statusLabel = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundExpensePeriod(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -233,16 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpensePeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpensePeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,statusLabel);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,status,statusLabel);
+}
 
 @override
 String toString() {
-  return 'FundExpensePeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel)';
+    return 'FundExpensePeriod(id: $id, code: $code, status: $status, statusLabel: $statusLabel)';
 }
 
 
@@ -300,16 +308,21 @@ $FundExpensePurchaseOrderCopyWith<FundExpensePurchaseOrder> get copyWith => _$Fu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpensePurchaseOrder&&(identical(other.id, id) || other.id == id));
+  final _this = this as FundExpensePurchaseOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpensePurchaseOrder&&(identical(other.id, _this.id) || other.id == _this.id));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode {
+  final _this = this as FundExpensePurchaseOrder;
+  return Object.hash(runtimeType,_this.id);
+}
 
 @override
 String toString() {
-  return 'FundExpensePurchaseOrder(id: $id)';
+  final _this = this as FundExpensePurchaseOrder;
+  return 'FundExpensePurchaseOrder(id: ${_this.id})';
 }
 
 
@@ -338,7 +351,7 @@ class _$FundExpensePurchaseOrderCopyWithImpl<$Res>
 /// Create a copy of FundExpensePurchaseOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundExpensePurchaseOrder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -499,16 +512,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpensePurchaseOrder&&(identical(other.id, id) || other.id == id));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpensePurchaseOrder&&(identical(other.id, id) || other.id == id));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode {
+    return Object.hash(runtimeType,id);
+}
 
 @override
 String toString() {
-  return 'FundExpensePurchaseOrder(id: $id)';
+    return 'FundExpensePurchaseOrder(id: $id)';
 }
 
 
@@ -563,16 +578,21 @@ $FundExpenseSplitCopyWith<FundExpenseSplit> get copyWith => _$FundExpenseSplitCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpenseSplit&&(identical(other.onGoods, onGoods) || other.onGoods == onGoods)&&(identical(other.onSales, onSales) || other.onSales == onSales));
+  final _this = this as FundExpenseSplit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpenseSplit&&(identical(other.onGoods, _this.onGoods) || other.onGoods == _this.onGoods)&&(identical(other.onSales, _this.onSales) || other.onSales == _this.onSales));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,onGoods,onSales);
+int get hashCode {
+  final _this = this as FundExpenseSplit;
+  return Object.hash(runtimeType,_this.onGoods,_this.onSales);
+}
 
 @override
 String toString() {
-  return 'FundExpenseSplit(onGoods: $onGoods, onSales: $onSales)';
+  final _this = this as FundExpenseSplit;
+  return 'FundExpenseSplit(onGoods: ${_this.onGoods}, onSales: ${_this.onSales})';
 }
 
 
@@ -601,7 +621,7 @@ class _$FundExpenseSplitCopyWithImpl<$Res>
 /// Create a copy of FundExpenseSplit
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? onGoods = null,Object? onSales = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundExpenseSplit(
 onGoods: null == onGoods ? _self.onGoods : onGoods // ignore: cast_nullable_to_non_nullable
 as String,onSales: null == onSales ? _self.onSales : onSales // ignore: cast_nullable_to_non_nullable
 as String,
@@ -764,16 +784,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpenseSplit&&(identical(other.onGoods, onGoods) || other.onGoods == onGoods)&&(identical(other.onSales, onSales) || other.onSales == onSales));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpenseSplit&&(identical(other.onGoods, onGoods) || other.onGoods == onGoods)&&(identical(other.onSales, onSales) || other.onSales == onSales));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,onGoods,onSales);
+int get hashCode {
+    return Object.hash(runtimeType,onGoods,onSales);
+}
 
 @override
 String toString() {
-  return 'FundExpenseSplit(onGoods: $onGoods, onSales: $onSales)';
+    return 'FundExpenseSplit(onGoods: $onGoods, onSales: $onSales)';
 }
 
 
@@ -829,16 +851,21 @@ $FundExpenseGoodsCostCopyWith<FundExpenseGoodsCost> get copyWith => _$FundExpens
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpenseGoodsCost&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.costBefore, costBefore) || other.costBefore == costBefore)&&(identical(other.costAfter, costAfter) || other.costAfter == costAfter));
+  final _this = this as FundExpenseGoodsCost;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpenseGoodsCost&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.costBefore, _this.costBefore) || other.costBefore == _this.costBefore)&&(identical(other.costAfter, _this.costAfter) || other.costAfter == _this.costAfter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,name,unitLabel,quantity,costBefore,costAfter);
+int get hashCode {
+  final _this = this as FundExpenseGoodsCost;
+  return Object.hash(runtimeType,_this.stockItemId,_this.name,_this.unitLabel,_this.quantity,_this.costBefore,_this.costAfter);
+}
 
 @override
 String toString() {
-  return 'FundExpenseGoodsCost(stockItemId: $stockItemId, name: $name, unitLabel: $unitLabel, quantity: $quantity, costBefore: $costBefore, costAfter: $costAfter)';
+  final _this = this as FundExpenseGoodsCost;
+  return 'FundExpenseGoodsCost(stockItemId: ${_this.stockItemId}, name: ${_this.name}, unitLabel: ${_this.unitLabel}, quantity: ${_this.quantity}, costBefore: ${_this.costBefore}, costAfter: ${_this.costAfter})';
 }
 
 
@@ -867,7 +894,7 @@ class _$FundExpenseGoodsCostCopyWithImpl<$Res>
 /// Create a copy of FundExpenseGoodsCost
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? stockItemId = null,Object? name = null,Object? unitLabel = freezed,Object? quantity = null,Object? costBefore = freezed,Object? costAfter = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FundExpenseGoodsCost(
 stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
@@ -1038,16 +1065,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpenseGoodsCost&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.costBefore, costBefore) || other.costBefore == costBefore)&&(identical(other.costAfter, costAfter) || other.costAfter == costAfter));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpenseGoodsCost&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.name, name) || other.name == name)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.costBefore, costBefore) || other.costBefore == costBefore)&&(identical(other.costAfter, costAfter) || other.costAfter == costAfter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stockItemId,name,unitLabel,quantity,costBefore,costAfter);
+int get hashCode {
+    return Object.hash(runtimeType,stockItemId,name,unitLabel,quantity,costBefore,costAfter);
+}
 
 @override
 String toString() {
-  return 'FundExpenseGoodsCost(stockItemId: $stockItemId, name: $name, unitLabel: $unitLabel, quantity: $quantity, costBefore: $costBefore, costAfter: $costAfter)';
+    return 'FundExpenseGoodsCost(stockItemId: $stockItemId, name: $name, unitLabel: $unitLabel, quantity: $quantity, costBefore: $costBefore, costAfter: $costAfter)';
 }
 
 
@@ -1110,16 +1139,21 @@ $FundExpenseCopyWith<FundExpense> get copyWith => _$FundExpenseCopyWithImpl<Fund
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split)&&const DeepCollectionEquality().equals(other.goods, goods));
+  final _this = this as FundExpense;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundExpense&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.incurredOn, _this.incurredOn) || other.incurredOn == _this.incurredOn)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.treasuryAccount, _this.treasuryAccount) || other.treasuryAccount == _this.treasuryAccount)&&(identical(other.recordedBy, _this.recordedBy) || other.recordedBy == _this.recordedBy)&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.counted, _this.counted) || other.counted == _this.counted)&&(identical(other.recordedAfterClose, _this.recordedAfterClose) || other.recordedAfterClose == _this.recordedAfterClose)&&(identical(other.isReversed, _this.isReversed) || other.isReversed == _this.isReversed)&&(identical(other.reversal, _this.reversal) || other.reversal == _this.reversal)&&(identical(other.expenseAmount, _this.expenseAmount) || other.expenseAmount == _this.expenseAmount)&&(identical(other.purchaseOrder, _this.purchaseOrder) || other.purchaseOrder == _this.purchaseOrder)&&(identical(other.split, _this.split) || other.split == _this.split)&&const DeepCollectionEquality().equals(other.goods, _this.goods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split,const DeepCollectionEquality().hash(goods));
+int get hashCode {
+  final _this = this as FundExpense;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.kindLabel,_this.name,_this.amount,_this.incurredOn,_this.notes,_this.treasuryAccount,_this.recordedBy,_this.period,_this.counted,_this.recordedAfterClose,_this.isReversed,_this.reversal,_this.expenseAmount,_this.purchaseOrder,_this.split,const DeepCollectionEquality().hash(_this.goods));
+}
 
 @override
 String toString() {
-  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split, goods: $goods)';
+  final _this = this as FundExpense;
+  return 'FundExpense(id: ${_this.id}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, name: ${_this.name}, amount: ${_this.amount}, incurredOn: ${_this.incurredOn}, notes: ${_this.notes}, treasuryAccount: ${_this.treasuryAccount}, recordedBy: ${_this.recordedBy}, period: ${_this.period}, counted: ${_this.counted}, recordedAfterClose: ${_this.recordedAfterClose}, isReversed: ${_this.isReversed}, reversal: ${_this.reversal}, expenseAmount: ${_this.expenseAmount}, purchaseOrder: ${_this.purchaseOrder}, split: ${_this.split}, goods: ${_this.goods})';
 }
 
 
@@ -1148,7 +1182,7 @@ class _$FundExpenseCopyWithImpl<$Res>
 /// Create a copy of FundExpense
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? period = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? reversal = freezed,Object? expenseAmount = freezed,Object? purchaseOrder = freezed,Object? split = freezed,Object? goods = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundExpense(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as String,kindLabel: null == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
@@ -1380,7 +1414,7 @@ return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_tha
 @JsonSerializable()
 
 class _FundExpense implements FundExpense {
-  const _FundExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.period, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, this.reversal, @JsonKey(name: 'expense_amount') this.expenseAmount, @JsonKey(name: 'purchase_order') this.purchaseOrder, this.split, final  List<FundExpenseGoodsCost> goods = const <FundExpenseGoodsCost>[]}): _goods = goods;
+  const _FundExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.period, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, this.reversal, @JsonKey(name: 'expense_amount') this.expenseAmount, @JsonKey(name: 'purchase_order') this.purchaseOrder, this.split,  List<FundExpenseGoodsCost> goods = const <FundExpenseGoodsCost>[]}): _goods = goods;
   factory _FundExpense.fromJson(Map<String, dynamic> json) => _$FundExpenseFromJson(json);
 
 @override final  int id;
@@ -1424,16 +1458,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split)&&const DeepCollectionEquality().equals(other._goods, _goods));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.period, period) || other.period == period)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.expenseAmount, expenseAmount) || other.expenseAmount == expenseAmount)&&(identical(other.purchaseOrder, purchaseOrder) || other.purchaseOrder == purchaseOrder)&&(identical(other.split, split) || other.split == split)&&const DeepCollectionEquality().equals(other.goods, _goods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split,const DeepCollectionEquality().hash(_goods));
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,period,counted,recordedAfterClose,isReversed,reversal,expenseAmount,purchaseOrder,split,const DeepCollectionEquality().hash(_goods));
+}
 
 @override
 String toString() {
-  return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split, goods: $goods)';
+    return 'FundExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, period: $period, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, reversal: $reversal, expenseAmount: $expenseAmount, purchaseOrder: $purchaseOrder, split: $split, goods: $goods)';
 }
 
 

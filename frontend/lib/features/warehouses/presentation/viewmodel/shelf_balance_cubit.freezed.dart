@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shelf_balance_cubit.dart';
@@ -9,6 +9,7 @@ part of 'shelf_balance_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ShelfBalanceState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShelfBalanceState()';
+    return 'ShelfBalanceState()';
 }
 
 
@@ -197,7 +198,7 @@ class ShelfBalanceInitial implements ShelfBalanceState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShelfBalanceState.initial()';
+    return 'ShelfBalanceState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class ShelfBalanceLoading implements ShelfBalanceState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShelfBalanceState.loading()';
+    return 'ShelfBalanceState.loading()';
 }
 
 
@@ -266,16 +267,18 @@ $ShelfBalanceLoadedCopyWith<ShelfBalanceLoaded> get copyWith => _$ShelfBalanceLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceLoaded&&(identical(other.stock, stock) || other.stock == stock));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceLoaded&&(identical(other.stock, stock) || other.stock == stock));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,stock);
+int get hashCode {
+    return Object.hash(runtimeType,stock);
+}
 
 @override
 String toString() {
-  return 'ShelfBalanceState.loaded(stock: $stock)';
+    return 'ShelfBalanceState.loaded(stock: $stock)';
 }
 
 
@@ -339,7 +342,7 @@ class ShelfBalanceFailure implements ShelfBalanceState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceFailure);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShelfBalanceFailure);
 }
 
 
@@ -348,7 +351,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShelfBalanceState.failure()';
+    return 'ShelfBalanceState.failure()';
 }
 
 

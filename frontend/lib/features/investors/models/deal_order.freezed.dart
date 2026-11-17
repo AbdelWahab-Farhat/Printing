@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'deal_order.dart';
@@ -9,6 +9,7 @@ part of 'deal_order.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -34,16 +35,21 @@ $DealOrderCopyWith<DealOrder> get copyWith => _$DealOrderCopyWithImpl<DealOrder>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealOrder&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.materialCost, materialCost) || other.materialCost == materialCost)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.conversionCost, conversionCost) || other.conversionCost == conversionCost)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPosted, isPosted) || other.isPosted == isPosted));
+  final _this = this as DealOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealOrder&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.occurredAt, _this.occurredAt) || other.occurredAt == _this.occurredAt)&&(identical(other.grandTotal, _this.grandTotal) || other.grandTotal == _this.grandTotal)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.materialCost, _this.materialCost) || other.materialCost == _this.materialCost)&&(identical(other.revenue, _this.revenue) || other.revenue == _this.revenue)&&(identical(other.conversionCost, _this.conversionCost) || other.conversionCost == _this.conversionCost)&&(identical(other.profit, _this.profit) || other.profit == _this.profit)&&(identical(other.investorsShare, _this.investorsShare) || other.investorsShare == _this.investorsShare)&&(identical(other.companyShare, _this.companyShare) || other.companyShare == _this.companyShare)&&(identical(other.isPosted, _this.isPosted) || other.isPosted == _this.isPosted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,orderId,code,status,statusLabel,customerName,occurredAt,grandTotal,quantity,materialCost,revenue,conversionCost,profit,investorsShare,companyShare,isPosted);
+int get hashCode {
+  final _this = this as DealOrder;
+  return Object.hash(runtimeType,_this.orderId,_this.code,_this.status,_this.statusLabel,_this.customerName,_this.occurredAt,_this.grandTotal,_this.quantity,_this.materialCost,_this.revenue,_this.conversionCost,_this.profit,_this.investorsShare,_this.companyShare,_this.isPosted);
+}
 
 @override
 String toString() {
-  return 'DealOrder(orderId: $orderId, code: $code, status: $status, statusLabel: $statusLabel, customerName: $customerName, occurredAt: $occurredAt, grandTotal: $grandTotal, quantity: $quantity, materialCost: $materialCost, revenue: $revenue, conversionCost: $conversionCost, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPosted: $isPosted)';
+  final _this = this as DealOrder;
+  return 'DealOrder(orderId: ${_this.orderId}, code: ${_this.code}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, customerName: ${_this.customerName}, occurredAt: ${_this.occurredAt}, grandTotal: ${_this.grandTotal}, quantity: ${_this.quantity}, materialCost: ${_this.materialCost}, revenue: ${_this.revenue}, conversionCost: ${_this.conversionCost}, profit: ${_this.profit}, investorsShare: ${_this.investorsShare}, companyShare: ${_this.companyShare}, isPosted: ${_this.isPosted})';
 }
 
 
@@ -72,7 +78,7 @@ class _$DealOrderCopyWithImpl<$Res>
 /// Create a copy of DealOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? orderId = null,Object? code = null,Object? status = null,Object? statusLabel = null,Object? customerName = freezed,Object? occurredAt = freezed,Object? grandTotal = null,Object? quantity = null,Object? materialCost = null,Object? revenue = null,Object? conversionCost = null,Object? profit = null,Object? investorsShare = freezed,Object? companyShare = freezed,Object? isPosted = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealOrder(
 orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -267,16 +273,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealOrder&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.materialCost, materialCost) || other.materialCost == materialCost)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.conversionCost, conversionCost) || other.conversionCost == conversionCost)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPosted, isPosted) || other.isPosted == isPosted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealOrder&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.materialCost, materialCost) || other.materialCost == materialCost)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.conversionCost, conversionCost) || other.conversionCost == conversionCost)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPosted, isPosted) || other.isPosted == isPosted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,orderId,code,status,statusLabel,customerName,occurredAt,grandTotal,quantity,materialCost,revenue,conversionCost,profit,investorsShare,companyShare,isPosted);
+int get hashCode {
+    return Object.hash(runtimeType,orderId,code,status,statusLabel,customerName,occurredAt,grandTotal,quantity,materialCost,revenue,conversionCost,profit,investorsShare,companyShare,isPosted);
+}
 
 @override
 String toString() {
-  return 'DealOrder(orderId: $orderId, code: $code, status: $status, statusLabel: $statusLabel, customerName: $customerName, occurredAt: $occurredAt, grandTotal: $grandTotal, quantity: $quantity, materialCost: $materialCost, revenue: $revenue, conversionCost: $conversionCost, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPosted: $isPosted)';
+    return 'DealOrder(orderId: $orderId, code: $code, status: $status, statusLabel: $statusLabel, customerName: $customerName, occurredAt: $occurredAt, grandTotal: $grandTotal, quantity: $quantity, materialCost: $materialCost, revenue: $revenue, conversionCost: $conversionCost, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPosted: $isPosted)';
 }
 
 

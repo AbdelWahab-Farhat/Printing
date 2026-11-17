@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'support_ticket.dart';
@@ -9,6 +9,7 @@ part of 'support_ticket.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $TicketCustomerCopyWith<TicketCustomer> get copyWith => _$TicketCustomerCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketCustomer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+  final _this = this as TicketCustomer;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketCustomer&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone);
+int get hashCode {
+  final _this = this as TicketCustomer;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.phone);
+}
 
 @override
 String toString() {
-  return 'TicketCustomer(id: $id, code: $code, name: $name, phone: $phone)';
+  final _this = this as TicketCustomer;
+  return 'TicketCustomer(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, phone: ${_this.phone})';
 }
 
 
@@ -66,7 +72,7 @@ class _$TicketCustomerCopyWithImpl<$Res>
 /// Create a copy of TicketCustomer
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = freezed,Object? name = freezed,Object? phone = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(TicketCustomer(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -233,16 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketCustomer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketCustomer&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,phone);
+}
 
 @override
 String toString() {
-  return 'TicketCustomer(id: $id, code: $code, name: $name, phone: $phone)';
+    return 'TicketCustomer(id: $id, code: $code, name: $name, phone: $phone)';
 }
 
 
@@ -300,16 +308,21 @@ $TicketOrderRefCopyWith<TicketOrderRef> get copyWith => _$TicketOrderRefCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+  final _this = this as TicketOrderRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketOrderRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+  final _this = this as TicketOrderRef;
+  return Object.hash(runtimeType,_this.id,_this.code);
+}
 
 @override
 String toString() {
-  return 'TicketOrderRef(id: $id, code: $code)';
+  final _this = this as TicketOrderRef;
+  return 'TicketOrderRef(id: ${_this.id}, code: ${_this.code})';
 }
 
 
@@ -338,7 +351,7 @@ class _$TicketOrderRefCopyWithImpl<$Res>
 /// Create a copy of TicketOrderRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,}) {
-  return _then(_self.copyWith(
+  return _then(TicketOrderRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,
@@ -501,16 +514,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+    return Object.hash(runtimeType,id,code);
+}
 
 @override
 String toString() {
-  return 'TicketOrderRef(id: $id, code: $code)';
+    return 'TicketOrderRef(id: $id, code: $code)';
 }
 
 
@@ -566,16 +581,21 @@ $TicketAssigneeCopyWith<TicketAssignee> get copyWith => _$TicketAssigneeCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketAssignee&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as TicketAssignee;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketAssignee&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as TicketAssignee;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'TicketAssignee(id: $id, name: $name)';
+  final _this = this as TicketAssignee;
+  return 'TicketAssignee(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -604,7 +624,7 @@ class _$TicketAssigneeCopyWithImpl<$Res>
 /// Create a copy of TicketAssignee
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(TicketAssignee(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -767,16 +787,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketAssignee&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketAssignee&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'TicketAssignee(id: $id, name: $name)';
+    return 'TicketAssignee(id: $id, name: $name)';
 }
 
 
@@ -834,16 +856,21 @@ $TicketAttachmentCopyWith<TicketAttachment> get copyWith => _$TicketAttachmentCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketAttachment&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.url, url) || other.url == url));
+  final _this = this as TicketAttachment;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketAttachment&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.sizeBytes, _this.sizeBytes) || other.sizeBytes == _this.sizeBytes)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx)&&(identical(other.url, _this.url) || other.url == _this.url));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,kindLabel,name,sizeBytes,widthPx,heightPx,url);
+int get hashCode {
+  final _this = this as TicketAttachment;
+  return Object.hash(runtimeType,_this.kind,_this.kindLabel,_this.name,_this.sizeBytes,_this.widthPx,_this.heightPx,_this.url);
+}
 
 @override
 String toString() {
-  return 'TicketAttachment(kind: $kind, kindLabel: $kindLabel, name: $name, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, url: $url)';
+  final _this = this as TicketAttachment;
+  return 'TicketAttachment(kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, name: ${_this.name}, sizeBytes: ${_this.sizeBytes}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx}, url: ${_this.url})';
 }
 
 
@@ -872,7 +899,7 @@ class _$TicketAttachmentCopyWithImpl<$Res>
 /// Create a copy of TicketAttachment
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? kindLabel = freezed,Object? name = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? url = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(TicketAttachment(
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as AttachmentKind,kindLabel: freezed == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
 as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1047,16 +1074,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketAttachment&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.url, url) || other.url == url));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketAttachment&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.url, url) || other.url == url));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,kindLabel,name,sizeBytes,widthPx,heightPx,url);
+int get hashCode {
+    return Object.hash(runtimeType,kind,kindLabel,name,sizeBytes,widthPx,heightPx,url);
+}
 
 @override
 String toString() {
-  return 'TicketAttachment(kind: $kind, kindLabel: $kindLabel, name: $name, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, url: $url)';
+    return 'TicketAttachment(kind: $kind, kindLabel: $kindLabel, name: $name, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, url: $url)';
 }
 
 
@@ -1123,16 +1152,21 @@ $TicketMessageCopyWith<TicketMessage> get copyWith => _$TicketMessageCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.body, body) || other.body == body)&&(identical(other.attachment, attachment) || other.attachment == attachment)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+  final _this = this as TicketMessage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketMessage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.authorName, _this.authorName) || other.authorName == _this.authorName)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.attachment, _this.attachment) || other.attachment == _this.attachment)&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken)&&(identical(other.sentAt, _this.sentAt) || other.sentAt == _this.sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,from,authorName,body,attachment,clientToken,sentAt);
+int get hashCode {
+  final _this = this as TicketMessage;
+  return Object.hash(runtimeType,_this.id,_this.from,_this.authorName,_this.body,_this.attachment,_this.clientToken,_this.sentAt);
+}
 
 @override
 String toString() {
-  return 'TicketMessage(id: $id, from: $from, authorName: $authorName, body: $body, attachment: $attachment, clientToken: $clientToken, sentAt: $sentAt)';
+  final _this = this as TicketMessage;
+  return 'TicketMessage(id: ${_this.id}, from: ${_this.from}, authorName: ${_this.authorName}, body: ${_this.body}, attachment: ${_this.attachment}, clientToken: ${_this.clientToken}, sentAt: ${_this.sentAt})';
 }
 
 
@@ -1161,7 +1195,7 @@ class _$TicketMessageCopyWithImpl<$Res>
 /// Create a copy of TicketMessage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? from = null,Object? authorName = freezed,Object? body = freezed,Object? attachment = freezed,Object? clientToken = freezed,Object? sentAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(TicketMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as MessageAuthor,authorName: freezed == authorName ? _self.authorName : authorName // ignore: cast_nullable_to_non_nullable
@@ -1352,16 +1386,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.body, body) || other.body == body)&&(identical(other.attachment, attachment) || other.attachment == attachment)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TicketMessage&&(identical(other.id, id) || other.id == id)&&(identical(other.from, from) || other.from == from)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.body, body) || other.body == body)&&(identical(other.attachment, attachment) || other.attachment == attachment)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.sentAt, sentAt) || other.sentAt == sentAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,from,authorName,body,attachment,clientToken,sentAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,from,authorName,body,attachment,clientToken,sentAt);
+}
 
 @override
 String toString() {
-  return 'TicketMessage(id: $id, from: $from, authorName: $authorName, body: $body, attachment: $attachment, clientToken: $clientToken, sentAt: $sentAt)';
+    return 'TicketMessage(id: $id, from: $from, authorName: $authorName, body: $body, attachment: $attachment, clientToken: $clientToken, sentAt: $sentAt)';
 }
 
 
@@ -1440,16 +1476,21 @@ $SupportTicketCopyWith<SupportTicket> get copyWith => _$SupportTicketCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.customerReadUpTo, customerReadUpTo) || other.customerReadUpTo == customerReadUpTo)&&const DeepCollectionEquality().equals(other.messages, messages)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as SupportTicket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportTicket&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.subject, _this.subject) || other.subject == _this.subject)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.customer, _this.customer) || other.customer == _this.customer)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.assignedTo, _this.assignedTo) || other.assignedTo == _this.assignedTo)&&(identical(other.assignee, _this.assignee) || other.assignee == _this.assignee)&&(identical(other.unreadCount, _this.unreadCount) || other.unreadCount == _this.unreadCount)&&(identical(other.customerReadUpTo, _this.customerReadUpTo) || other.customerReadUpTo == _this.customerReadUpTo)&&const DeepCollectionEquality().equals(other.messages, _this.messages)&&(identical(other.lastMessageAt, _this.lastMessageAt) || other.lastMessageAt == _this.lastMessageAt)&&(identical(other.closedAt, _this.closedAt) || other.closedAt == _this.closedAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,customer,order,assignedTo,assignee,unreadCount,customerReadUpTo,const DeepCollectionEquality().hash(messages),lastMessageAt,closedAt,createdAt);
+int get hashCode {
+  final _this = this as SupportTicket;
+  return Object.hash(runtimeType,_this.id,_this.subject,_this.status,_this.statusLabel,_this.customer,_this.order,_this.assignedTo,_this.assignee,_this.unreadCount,_this.customerReadUpTo,const DeepCollectionEquality().hash(_this.messages),_this.lastMessageAt,_this.closedAt,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, customer: $customer, order: $order, assignedTo: $assignedTo, assignee: $assignee, unreadCount: $unreadCount, customerReadUpTo: $customerReadUpTo, messages: $messages, lastMessageAt: $lastMessageAt, closedAt: $closedAt, createdAt: $createdAt)';
+  final _this = this as SupportTicket;
+  return 'SupportTicket(id: ${_this.id}, subject: ${_this.subject}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, customer: ${_this.customer}, order: ${_this.order}, assignedTo: ${_this.assignedTo}, assignee: ${_this.assignee}, unreadCount: ${_this.unreadCount}, customerReadUpTo: ${_this.customerReadUpTo}, messages: ${_this.messages}, lastMessageAt: ${_this.lastMessageAt}, closedAt: ${_this.closedAt}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -1478,7 +1519,7 @@ class _$SupportTicketCopyWithImpl<$Res>
 /// Create a copy of SupportTicket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? subject = null,Object? status = null,Object? statusLabel = null,Object? customer = freezed,Object? order = freezed,Object? assignedTo = freezed,Object? assignee = freezed,Object? unreadCount = null,Object? customerReadUpTo = freezed,Object? messages = null,Object? lastMessageAt = freezed,Object? closedAt = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(SupportTicket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -1670,7 +1711,7 @@ return $default(_that.id,_that.subject,_that.status,_that.statusLabel,_that.cust
 @JsonSerializable()
 
 class _SupportTicket implements SupportTicket {
-  const _SupportTicket({required this.id, required this.subject, @JsonKey(unknownEnumValue: TicketStatus.unknown) this.status = TicketStatus.unknown, @JsonKey(name: 'status_label') required this.statusLabel, this.customer, this.order, @JsonKey(name: 'assigned_to') this.assignedTo, this.assignee, @JsonKey(name: 'unread_count') this.unreadCount = 0, @JsonKey(name: 'customer_read_up_to') this.customerReadUpTo, final  List<TicketMessage> messages = const <TicketMessage>[], @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages;
+  const _SupportTicket({required this.id, required this.subject, @JsonKey(unknownEnumValue: TicketStatus.unknown) this.status = TicketStatus.unknown, @JsonKey(name: 'status_label') required this.statusLabel, this.customer, this.order, @JsonKey(name: 'assigned_to') this.assignedTo, this.assignee, @JsonKey(name: 'unread_count') this.unreadCount = 0, @JsonKey(name: 'customer_read_up_to') this.customerReadUpTo,  List<TicketMessage> messages = const <TicketMessage>[], @JsonKey(name: 'last_message_at') this.lastMessageAt, @JsonKey(name: 'closed_at') this.closedAt, @JsonKey(name: 'created_at') this.createdAt}): _messages = messages;
   factory _SupportTicket.fromJson(Map<String, dynamic> json) => _$SupportTicketFromJson(json);
 
 @override final  int id;
@@ -1714,16 +1755,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.customerReadUpTo, customerReadUpTo) || other.customerReadUpTo == customerReadUpTo)&&const DeepCollectionEquality().equals(other._messages, _messages)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SupportTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.subject, subject) || other.subject == subject)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.order, order) || other.order == order)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.unreadCount, unreadCount) || other.unreadCount == unreadCount)&&(identical(other.customerReadUpTo, customerReadUpTo) || other.customerReadUpTo == customerReadUpTo)&&const DeepCollectionEquality().equals(other.messages, _messages)&&(identical(other.lastMessageAt, lastMessageAt) || other.lastMessageAt == lastMessageAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,subject,status,statusLabel,customer,order,assignedTo,assignee,unreadCount,customerReadUpTo,const DeepCollectionEquality().hash(_messages),lastMessageAt,closedAt,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,subject,status,statusLabel,customer,order,assignedTo,assignee,unreadCount,customerReadUpTo,const DeepCollectionEquality().hash(_messages),lastMessageAt,closedAt,createdAt);
+}
 
 @override
 String toString() {
-  return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, customer: $customer, order: $order, assignedTo: $assignedTo, assignee: $assignee, unreadCount: $unreadCount, customerReadUpTo: $customerReadUpTo, messages: $messages, lastMessageAt: $lastMessageAt, closedAt: $closedAt, createdAt: $createdAt)';
+    return 'SupportTicket(id: $id, subject: $subject, status: $status, statusLabel: $statusLabel, customer: $customer, order: $order, assignedTo: $assignedTo, assignee: $assignee, unreadCount: $unreadCount, customerReadUpTo: $customerReadUpTo, messages: $messages, lastMessageAt: $lastMessageAt, closedAt: $closedAt, createdAt: $createdAt)';
 }
 
 

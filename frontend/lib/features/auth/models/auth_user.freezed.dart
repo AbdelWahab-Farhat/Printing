@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'auth_user.dart';
@@ -9,6 +9,7 @@ part of 'auth_user.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $EmployeeServicePriceCopyWith<EmployeeServicePrice> get copyWith => _$EmployeeSe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeServicePrice&&(identical(other.service, service) || other.service == service)&&(identical(other.label, label) || other.label == label)&&(identical(other.suggestedPrice, suggestedPrice) || other.suggestedPrice == suggestedPrice));
+  final _this = this as EmployeeServicePrice;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeServicePrice&&(identical(other.service, _this.service) || other.service == _this.service)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.suggestedPrice, _this.suggestedPrice) || other.suggestedPrice == _this.suggestedPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,service,label,suggestedPrice);
+int get hashCode {
+  final _this = this as EmployeeServicePrice;
+  return Object.hash(runtimeType,_this.service,_this.label,_this.suggestedPrice);
+}
 
 @override
 String toString() {
-  return 'EmployeeServicePrice(service: $service, label: $label, suggestedPrice: $suggestedPrice)';
+  final _this = this as EmployeeServicePrice;
+  return 'EmployeeServicePrice(service: ${_this.service}, label: ${_this.label}, suggestedPrice: ${_this.suggestedPrice})';
 }
 
 
@@ -66,7 +72,7 @@ class _$EmployeeServicePriceCopyWithImpl<$Res>
 /// Create a copy of EmployeeServicePrice
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? service = null,Object? label = null,Object? suggestedPrice = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(EmployeeServicePrice(
 service: null == service ? _self.service : service // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,suggestedPrice: freezed == suggestedPrice ? _self.suggestedPrice : suggestedPrice // ignore: cast_nullable_to_non_nullable
@@ -231,16 +237,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeServicePrice&&(identical(other.service, service) || other.service == service)&&(identical(other.label, label) || other.label == label)&&(identical(other.suggestedPrice, suggestedPrice) || other.suggestedPrice == suggestedPrice));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeServicePrice&&(identical(other.service, service) || other.service == service)&&(identical(other.label, label) || other.label == label)&&(identical(other.suggestedPrice, suggestedPrice) || other.suggestedPrice == suggestedPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,service,label,suggestedPrice);
+int get hashCode {
+    return Object.hash(runtimeType,service,label,suggestedPrice);
+}
 
 @override
 String toString() {
-  return 'EmployeeServicePrice(service: $service, label: $label, suggestedPrice: $suggestedPrice)';
+    return 'EmployeeServicePrice(service: $service, label: $label, suggestedPrice: $suggestedPrice)';
 }
 
 
@@ -346,16 +354,21 @@ $AuthUserCopyWith<AuthUser> get copyWith => _$AuthUserCopyWithImpl<AuthUser>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.autoSalary, autoSalary) || other.autoSalary == autoSalary)&&const DeepCollectionEquality().equals(other.services, services)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.isInvestor, isInvestor) || other.isInvestor == isInvestor));
+  final _this = this as AuthUser;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthUser&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&const DeepCollectionEquality().equals(other.permissions, _this.permissions)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.salary, _this.salary) || other.salary == _this.salary)&&(identical(other.autoSalary, _this.autoSalary) || other.autoSalary == _this.autoSalary)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.isAdmin, _this.isAdmin) || other.isAdmin == _this.isAdmin)&&(identical(other.isInvestor, _this.isInvestor) || other.isInvestor == _this.isInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(permissions),isActive,salary,autoSalary,const DeepCollectionEquality().hash(services),isAdmin,isInvestor);
+int get hashCode {
+  final _this = this as AuthUser;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.phone,_this.email,_this.employeeCode,const DeepCollectionEquality().hash(_this.roles),const DeepCollectionEquality().hash(_this.permissions),_this.isActive,_this.salary,_this.autoSalary,const DeepCollectionEquality().hash(_this.services),_this.isAdmin,_this.isInvestor);
+}
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, autoSalary: $autoSalary, services: $services, isAdmin: $isAdmin, isInvestor: $isInvestor)';
+  final _this = this as AuthUser;
+  return 'AuthUser(id: ${_this.id}, name: ${_this.name}, phone: ${_this.phone}, email: ${_this.email}, employeeCode: ${_this.employeeCode}, roles: ${_this.roles}, permissions: ${_this.permissions}, isActive: ${_this.isActive}, salary: ${_this.salary}, autoSalary: ${_this.autoSalary}, services: ${_this.services}, isAdmin: ${_this.isAdmin}, isInvestor: ${_this.isInvestor})';
 }
 
 
@@ -384,7 +397,7 @@ class _$AuthUserCopyWithImpl<$Res>
 /// Create a copy of AuthUser
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? employeeCode = freezed,Object? roles = null,Object? permissions = freezed,Object? isActive = null,Object? salary = freezed,Object? autoSalary = null,Object? services = null,Object? isAdmin = null,Object? isInvestor = null,}) {
-  return _then(_self.copyWith(
+  return _then(AuthUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
@@ -539,7 +552,7 @@ return $default(_that.id,_that.name,_that.phone,_that.email,_that.employeeCode,_
 @JsonSerializable()
 
 class _AuthUser extends AuthUser {
-  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode, final  List<UserRole> roles = const <UserRole>[], final  List<String>? permissions, @JsonKey(name: 'is_active') this.isActive = true, this.salary, @JsonKey(name: 'auto_salary') this.autoSalary = true, final  List<EmployeeServicePrice> services = const <EmployeeServicePrice>[], @JsonKey(name: 'is_admin') this.isAdmin = false, @JsonKey(name: 'is_investor') this.isInvestor = false}): _roles = roles,_permissions = permissions,_services = services,super._();
+  const _AuthUser({required this.id, required this.name, required this.phone, this.email, @JsonKey(name: 'employee_code') this.employeeCode,  List<UserRole> roles = const <UserRole>[],  List<String>? permissions, @JsonKey(name: 'is_active') this.isActive = true, this.salary, @JsonKey(name: 'auto_salary') this.autoSalary = true,  List<EmployeeServicePrice> services = const <EmployeeServicePrice>[], @JsonKey(name: 'is_admin') this.isAdmin = false, @JsonKey(name: 'is_investor') this.isInvestor = false}): _roles = roles,_permissions = permissions,_services = services,super._();
   factory _AuthUser.fromJson(Map<String, dynamic> json) => _$AuthUserFromJson(json);
 
 @override final  int id;
@@ -652,16 +665,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.autoSalary, autoSalary) || other.autoSalary == autoSalary)&&const DeepCollectionEquality().equals(other._services, _services)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.isInvestor, isInvestor) || other.isInvestor == isInvestor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthUser&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode)&&const DeepCollectionEquality().equals(other.roles, _roles)&&const DeepCollectionEquality().equals(other.permissions, _permissions)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.salary, salary) || other.salary == salary)&&(identical(other.autoSalary, autoSalary) || other.autoSalary == autoSalary)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.isAdmin, isAdmin) || other.isAdmin == isAdmin)&&(identical(other.isInvestor, isInvestor) || other.isInvestor == isInvestor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),isActive,salary,autoSalary,const DeepCollectionEquality().hash(_services),isAdmin,isInvestor);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,phone,email,employeeCode,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_permissions),isActive,salary,autoSalary,const DeepCollectionEquality().hash(_services),isAdmin,isInvestor);
+}
 
 @override
 String toString() {
-  return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, autoSalary: $autoSalary, services: $services, isAdmin: $isAdmin, isInvestor: $isInvestor)';
+    return 'AuthUser(id: $id, name: $name, phone: $phone, email: $email, employeeCode: $employeeCode, roles: $roles, permissions: $permissions, isActive: $isActive, salary: $salary, autoSalary: $autoSalary, services: $services, isAdmin: $isAdmin, isInvestor: $isInvestor)';
 }
 
 
@@ -731,16 +746,21 @@ $UserRoleCopyWith<UserRole> get copyWith => _$UserRoleCopyWithImpl<UserRole>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRole&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
+  final _this = this as UserRole;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRole&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,label);
+int get hashCode {
+  final _this = this as UserRole;
+  return Object.hash(runtimeType,_this.name,_this.label);
+}
 
 @override
 String toString() {
-  return 'UserRole(name: $name, label: $label)';
+  final _this = this as UserRole;
+  return 'UserRole(name: ${_this.name}, label: ${_this.label})';
 }
 
 
@@ -769,7 +789,7 @@ class _$UserRoleCopyWithImpl<$Res>
 /// Create a copy of UserRole
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(UserRole(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -935,16 +955,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRole&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRole&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,label);
+int get hashCode {
+    return Object.hash(runtimeType,name,label);
+}
 
 @override
 String toString() {
-  return 'UserRole(name: $name, label: $label)';
+    return 'UserRole(name: $name, label: $label)';
 }
 
 
@@ -1000,16 +1022,21 @@ $AuthSessionCopyWith<AuthSession> get copyWith => _$AuthSessionCopyWithImpl<Auth
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSession&&(identical(other.user, user) || other.user == user)&&(identical(other.token, token) || other.token == token));
+  final _this = this as AuthSession;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSession&&(identical(other.user, _this.user) || other.user == _this.user)&&(identical(other.token, _this.token) || other.token == _this.token));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,user,token);
+int get hashCode {
+  final _this = this as AuthSession;
+  return Object.hash(runtimeType,_this.user,_this.token);
+}
 
 @override
 String toString() {
-  return 'AuthSession(user: $user, token: $token)';
+  final _this = this as AuthSession;
+  return 'AuthSession(user: ${_this.user}, token: ${_this.token})';
 }
 
 
@@ -1038,7 +1065,7 @@ class _$AuthSessionCopyWithImpl<$Res>
 /// Create a copy of AuthSession
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? user = null,Object? token = null,}) {
-  return _then(_self.copyWith(
+  return _then(AuthSession(
 user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as AuthUser,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1210,16 +1237,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSession&&(identical(other.user, user) || other.user == user)&&(identical(other.token, token) || other.token == token));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSession&&(identical(other.user, user) || other.user == user)&&(identical(other.token, token) || other.token == token));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,user,token);
+int get hashCode {
+    return Object.hash(runtimeType,user,token);
+}
 
 @override
 String toString() {
-  return 'AuthSession(user: $user, token: $token)';
+    return 'AuthSession(user: $user, token: $token)';
 }
 
 

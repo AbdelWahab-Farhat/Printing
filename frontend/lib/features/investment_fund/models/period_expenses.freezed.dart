@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'period_expenses.dart';
@@ -9,6 +9,7 @@ part of 'period_expenses.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $PeriodExpenseRefCopyWith<PeriodExpenseRef> get copyWith => _$PeriodExpenseRefCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as PeriodExpenseRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenseRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as PeriodExpenseRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenseRef(id: $id, name: $name)';
+  final _this = this as PeriodExpenseRef;
+  return 'PeriodExpenseRef(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -66,7 +72,7 @@ class _$PeriodExpenseRefCopyWithImpl<$Res>
 /// Create a copy of PeriodExpenseRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(PeriodExpenseRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenseRef(id: $id, name: $name)';
+    return 'PeriodExpenseRef(id: $id, name: $name)';
 }
 
 
@@ -295,16 +303,21 @@ $PeriodExpenseReversalCopyWith<PeriodExpenseReversal> get copyWith => _$PeriodEx
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenseReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.periodCode, periodCode) || other.periodCode == periodCode));
+  final _this = this as PeriodExpenseReversal;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenseReversal&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.incurredOn, _this.incurredOn) || other.incurredOn == _this.incurredOn)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.periodCode, _this.periodCode) || other.periodCode == _this.periodCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,incurredOn,reason,periodCode);
+int get hashCode {
+  final _this = this as PeriodExpenseReversal;
+  return Object.hash(runtimeType,_this.id,_this.incurredOn,_this.reason,_this.periodCode);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenseReversal(id: $id, incurredOn: $incurredOn, reason: $reason, periodCode: $periodCode)';
+  final _this = this as PeriodExpenseReversal;
+  return 'PeriodExpenseReversal(id: ${_this.id}, incurredOn: ${_this.incurredOn}, reason: ${_this.reason}, periodCode: ${_this.periodCode})';
 }
 
 
@@ -333,7 +346,7 @@ class _$PeriodExpenseReversalCopyWithImpl<$Res>
 /// Create a copy of PeriodExpenseReversal
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? incurredOn = freezed,Object? reason = freezed,Object? periodCode = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PeriodExpenseReversal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,incurredOn: freezed == incurredOn ? _self.incurredOn : incurredOn // ignore: cast_nullable_to_non_nullable
 as String?,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
@@ -501,16 +514,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenseReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.periodCode, periodCode) || other.periodCode == periodCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenseReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.periodCode, periodCode) || other.periodCode == periodCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,incurredOn,reason,periodCode);
+int get hashCode {
+    return Object.hash(runtimeType,id,incurredOn,reason,periodCode);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenseReversal(id: $id, incurredOn: $incurredOn, reason: $reason, periodCode: $periodCode)';
+    return 'PeriodExpenseReversal(id: $id, incurredOn: $incurredOn, reason: $reason, periodCode: $periodCode)';
 }
 
 
@@ -571,16 +586,21 @@ $PeriodExpenseCopyWith<PeriodExpense> get copyWith => _$PeriodExpenseCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canReverse, canReverse) || other.canReverse == canReverse)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.investorsAmount, investorsAmount) || other.investorsAmount == investorsAmount)&&const DeepCollectionEquality().equals(other.investors, investors));
+  final _this = this as PeriodExpense;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpense&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.incurredOn, _this.incurredOn) || other.incurredOn == _this.incurredOn)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.treasuryAccount, _this.treasuryAccount) || other.treasuryAccount == _this.treasuryAccount)&&(identical(other.recordedBy, _this.recordedBy) || other.recordedBy == _this.recordedBy)&&(identical(other.counted, _this.counted) || other.counted == _this.counted)&&(identical(other.recordedAfterClose, _this.recordedAfterClose) || other.recordedAfterClose == _this.recordedAfterClose)&&(identical(other.isReversed, _this.isReversed) || other.isReversed == _this.isReversed)&&(identical(other.canReverse, _this.canReverse) || other.canReverse == _this.canReverse)&&(identical(other.reversal, _this.reversal) || other.reversal == _this.reversal)&&(identical(other.investorsAmount, _this.investorsAmount) || other.investorsAmount == _this.investorsAmount)&&const DeepCollectionEquality().equals(other.investors, _this.investors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,counted,recordedAfterClose,isReversed,canReverse,reversal,investorsAmount,const DeepCollectionEquality().hash(investors));
+int get hashCode {
+  final _this = this as PeriodExpense;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.kindLabel,_this.name,_this.amount,_this.incurredOn,_this.notes,_this.treasuryAccount,_this.recordedBy,_this.counted,_this.recordedAfterClose,_this.isReversed,_this.canReverse,_this.reversal,_this.investorsAmount,const DeepCollectionEquality().hash(_this.investors));
+}
 
 @override
 String toString() {
-  return 'PeriodExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, canReverse: $canReverse, reversal: $reversal, investorsAmount: $investorsAmount, investors: $investors)';
+  final _this = this as PeriodExpense;
+  return 'PeriodExpense(id: ${_this.id}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, name: ${_this.name}, amount: ${_this.amount}, incurredOn: ${_this.incurredOn}, notes: ${_this.notes}, treasuryAccount: ${_this.treasuryAccount}, recordedBy: ${_this.recordedBy}, counted: ${_this.counted}, recordedAfterClose: ${_this.recordedAfterClose}, isReversed: ${_this.isReversed}, canReverse: ${_this.canReverse}, reversal: ${_this.reversal}, investorsAmount: ${_this.investorsAmount}, investors: ${_this.investors})';
 }
 
 
@@ -609,7 +629,7 @@ class _$PeriodExpenseCopyWithImpl<$Res>
 /// Create a copy of PeriodExpense
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? kindLabel = null,Object? name = null,Object? amount = null,Object? incurredOn = freezed,Object? notes = freezed,Object? treasuryAccount = freezed,Object? recordedBy = freezed,Object? counted = null,Object? recordedAfterClose = null,Object? isReversed = null,Object? canReverse = null,Object? reversal = freezed,Object? investorsAmount = null,Object? investors = null,}) {
-  return _then(_self.copyWith(
+  return _then(PeriodExpense(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as String,kindLabel: null == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
@@ -803,7 +823,7 @@ return $default(_that.id,_that.kind,_that.kindLabel,_that.name,_that.amount,_tha
 @JsonSerializable()
 
 class _PeriodExpense implements PeriodExpense {
-  const _PeriodExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'can_reverse') this.canReverse = false, this.reversal, @JsonKey(name: 'investors_amount') this.investorsAmount = '0.00', final  List<PeriodInvestorShare> investors = const <PeriodInvestorShare>[]}): _investors = investors;
+  const _PeriodExpense({required this.id, required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.name, required this.amount, @JsonKey(name: 'incurred_on') this.incurredOn, this.notes, @JsonKey(name: 'treasury_account') this.treasuryAccount, @JsonKey(name: 'recorded_by') this.recordedBy, this.counted = true, @JsonKey(name: 'recorded_after_close') this.recordedAfterClose = false, @JsonKey(name: 'is_reversed') this.isReversed = false, @JsonKey(name: 'can_reverse') this.canReverse = false, this.reversal, @JsonKey(name: 'investors_amount') this.investorsAmount = '0.00',  List<PeriodInvestorShare> investors = const <PeriodInvestorShare>[]}): _investors = investors;
   factory _PeriodExpense.fromJson(Map<String, dynamic> json) => _$PeriodExpenseFromJson(json);
 
 @override final  int id;
@@ -845,16 +865,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canReverse, canReverse) || other.canReverse == canReverse)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.investorsAmount, investorsAmount) || other.investorsAmount == investorsAmount)&&const DeepCollectionEquality().equals(other._investors, _investors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.incurredOn, incurredOn) || other.incurredOn == incurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.counted, counted) || other.counted == counted)&&(identical(other.recordedAfterClose, recordedAfterClose) || other.recordedAfterClose == recordedAfterClose)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canReverse, canReverse) || other.canReverse == canReverse)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.investorsAmount, investorsAmount) || other.investorsAmount == investorsAmount)&&const DeepCollectionEquality().equals(other.investors, _investors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,counted,recordedAfterClose,isReversed,canReverse,reversal,investorsAmount,const DeepCollectionEquality().hash(_investors));
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,kindLabel,name,amount,incurredOn,notes,treasuryAccount,recordedBy,counted,recordedAfterClose,isReversed,canReverse,reversal,investorsAmount,const DeepCollectionEquality().hash(_investors));
+}
 
 @override
 String toString() {
-  return 'PeriodExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, canReverse: $canReverse, reversal: $reversal, investorsAmount: $investorsAmount, investors: $investors)';
+    return 'PeriodExpense(id: $id, kind: $kind, kindLabel: $kindLabel, name: $name, amount: $amount, incurredOn: $incurredOn, notes: $notes, treasuryAccount: $treasuryAccount, recordedBy: $recordedBy, counted: $counted, recordedAfterClose: $recordedAfterClose, isReversed: $isReversed, canReverse: $canReverse, reversal: $reversal, investorsAmount: $investorsAmount, investors: $investors)';
 }
 
 
@@ -963,16 +985,21 @@ $PeriodExpensesTotalsCopyWith<PeriodExpensesTotals> get copyWith => _$PeriodExpe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesTotals&&(identical(other.expensesTotal, expensesTotal) || other.expensesTotal == expensesTotal)&&(identical(other.investorsTotal, investorsTotal) || other.investorsTotal == investorsTotal)&&(identical(other.frozenTotal, frozenTotal) || other.frozenTotal == frozenTotal));
+  final _this = this as PeriodExpensesTotals;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesTotals&&(identical(other.expensesTotal, _this.expensesTotal) || other.expensesTotal == _this.expensesTotal)&&(identical(other.investorsTotal, _this.investorsTotal) || other.investorsTotal == _this.investorsTotal)&&(identical(other.frozenTotal, _this.frozenTotal) || other.frozenTotal == _this.frozenTotal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,expensesTotal,investorsTotal,frozenTotal);
+int get hashCode {
+  final _this = this as PeriodExpensesTotals;
+  return Object.hash(runtimeType,_this.expensesTotal,_this.investorsTotal,_this.frozenTotal);
+}
 
 @override
 String toString() {
-  return 'PeriodExpensesTotals(expensesTotal: $expensesTotal, investorsTotal: $investorsTotal, frozenTotal: $frozenTotal)';
+  final _this = this as PeriodExpensesTotals;
+  return 'PeriodExpensesTotals(expensesTotal: ${_this.expensesTotal}, investorsTotal: ${_this.investorsTotal}, frozenTotal: ${_this.frozenTotal})';
 }
 
 
@@ -1001,7 +1028,7 @@ class _$PeriodExpensesTotalsCopyWithImpl<$Res>
 /// Create a copy of PeriodExpensesTotals
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? expensesTotal = null,Object? investorsTotal = null,Object? frozenTotal = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PeriodExpensesTotals(
 expensesTotal: null == expensesTotal ? _self.expensesTotal : expensesTotal // ignore: cast_nullable_to_non_nullable
 as String,investorsTotal: null == investorsTotal ? _self.investorsTotal : investorsTotal // ignore: cast_nullable_to_non_nullable
 as String,frozenTotal: freezed == frozenTotal ? _self.frozenTotal : frozenTotal // ignore: cast_nullable_to_non_nullable
@@ -1169,16 +1196,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpensesTotals&&(identical(other.expensesTotal, expensesTotal) || other.expensesTotal == expensesTotal)&&(identical(other.investorsTotal, investorsTotal) || other.investorsTotal == investorsTotal)&&(identical(other.frozenTotal, frozenTotal) || other.frozenTotal == frozenTotal));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpensesTotals&&(identical(other.expensesTotal, expensesTotal) || other.expensesTotal == expensesTotal)&&(identical(other.investorsTotal, investorsTotal) || other.investorsTotal == investorsTotal)&&(identical(other.frozenTotal, frozenTotal) || other.frozenTotal == frozenTotal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,expensesTotal,investorsTotal,frozenTotal);
+int get hashCode {
+    return Object.hash(runtimeType,expensesTotal,investorsTotal,frozenTotal);
+}
 
 @override
 String toString() {
-  return 'PeriodExpensesTotals(expensesTotal: $expensesTotal, investorsTotal: $investorsTotal, frozenTotal: $frozenTotal)';
+    return 'PeriodExpensesTotals(expensesTotal: $expensesTotal, investorsTotal: $investorsTotal, frozenTotal: $frozenTotal)';
 }
 
 
@@ -1236,16 +1265,21 @@ $PeriodExpensesCopyWith<PeriodExpenses> get copyWith => _$PeriodExpensesCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenses&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.expenses, expenses)&&const DeepCollectionEquality().equals(other.corrections, corrections)&&(identical(other.totals, totals) || other.totals == totals));
+  final _this = this as PeriodExpenses;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpenses&&(identical(other.period, _this.period) || other.period == _this.period)&&const DeepCollectionEquality().equals(other.expenses, _this.expenses)&&const DeepCollectionEquality().equals(other.corrections, _this.corrections)&&(identical(other.totals, _this.totals) || other.totals == _this.totals));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,const DeepCollectionEquality().hash(expenses),const DeepCollectionEquality().hash(corrections),totals);
+int get hashCode {
+  final _this = this as PeriodExpenses;
+  return Object.hash(runtimeType,_this.period,const DeepCollectionEquality().hash(_this.expenses),const DeepCollectionEquality().hash(_this.corrections),_this.totals);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenses(period: $period, expenses: $expenses, corrections: $corrections, totals: $totals)';
+  final _this = this as PeriodExpenses;
+  return 'PeriodExpenses(period: ${_this.period}, expenses: ${_this.expenses}, corrections: ${_this.corrections}, totals: ${_this.totals})';
 }
 
 
@@ -1274,7 +1308,7 @@ class _$PeriodExpensesCopyWithImpl<$Res>
 /// Create a copy of PeriodExpenses
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? expenses = null,Object? corrections = null,Object? totals = null,}) {
-  return _then(_self.copyWith(
+  return _then(PeriodExpenses(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as FundPeriod,expenses: null == expenses ? _self.expenses : expenses // ignore: cast_nullable_to_non_nullable
 as List<PeriodExpense>,corrections: null == corrections ? _self.corrections : corrections // ignore: cast_nullable_to_non_nullable
@@ -1438,7 +1472,7 @@ return $default(_that.period,_that.expenses,_that.corrections,_that.totals);case
 @JsonSerializable()
 
 class _PeriodExpenses implements PeriodExpenses {
-  const _PeriodExpenses({required this.period, final  List<PeriodExpense> expenses = const <PeriodExpense>[], final  List<PeriodExpense> corrections = const <PeriodExpense>[], this.totals = const PeriodExpensesTotals()}): _expenses = expenses,_corrections = corrections;
+  const _PeriodExpenses({required this.period,  List<PeriodExpense> expenses = const <PeriodExpense>[],  List<PeriodExpense> corrections = const <PeriodExpense>[], this.totals = const PeriodExpensesTotals()}): _expenses = expenses,_corrections = corrections;
   factory _PeriodExpenses.fromJson(Map<String, dynamic> json) => _$PeriodExpensesFromJson(json);
 
 @override final  FundPeriod period;
@@ -1473,16 +1507,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenses&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other._expenses, _expenses)&&const DeepCollectionEquality().equals(other._corrections, _corrections)&&(identical(other.totals, totals) || other.totals == totals));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodExpenses&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.expenses, _expenses)&&const DeepCollectionEquality().equals(other.corrections, _corrections)&&(identical(other.totals, totals) || other.totals == totals));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,const DeepCollectionEquality().hash(_expenses),const DeepCollectionEquality().hash(_corrections),totals);
+int get hashCode {
+    return Object.hash(runtimeType,period,const DeepCollectionEquality().hash(_expenses),const DeepCollectionEquality().hash(_corrections),totals);
+}
 
 @override
 String toString() {
-  return 'PeriodExpenses(period: $period, expenses: $expenses, corrections: $corrections, totals: $totals)';
+    return 'PeriodExpenses(period: $period, expenses: $expenses, corrections: $corrections, totals: $totals)';
 }
 
 

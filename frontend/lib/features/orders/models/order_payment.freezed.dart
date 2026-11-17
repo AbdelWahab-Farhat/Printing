@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_payment.dart';
@@ -9,6 +9,7 @@ part of 'order_payment.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -74,16 +75,21 @@ $OrderPaymentCopyWith<OrderPayment> get copyWith => _$OrderPaymentCopyWithImpl<O
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.requiresReview, requiresReview) || other.requiresReview == requiresReview)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canUnreview, canUnreview) || other.canUnreview == canUnreview)&&(identical(other.reviewBlockedReason, reviewBlockedReason) || other.reviewBlockedReason == reviewBlockedReason)&&(identical(other.order, order) || other.order == order)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.settlement, settlement) || other.settlement == settlement)&&(identical(other.canSettle, canSettle) || other.canSettle == canSettle)&&(identical(other.settleBlockedReason, settleBlockedReason) || other.settleBlockedReason == settleBlockedReason)&&(identical(other.settlementTarget, settlementTarget) || other.settlementTarget == settlementTarget)&&(identical(other.canUnsettle, canUnsettle) || other.canUnsettle == canUnsettle)&&(identical(other.unsettleBlockedReason, unsettleBlockedReason) || other.unsettleBlockedReason == unsettleBlockedReason));
+  final _this = this as OrderPayment;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPayment&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.typeLabel, _this.typeLabel) || other.typeLabel == _this.typeLabel)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.excessAmount, _this.excessAmount) || other.excessAmount == _this.excessAmount)&&(identical(other.isReversed, _this.isReversed) || other.isReversed == _this.isReversed)&&(identical(other.isReversible, _this.isReversible) || other.isReversible == _this.isReversible)&&(identical(other.hasReceipt, _this.hasReceipt) || other.hasReceipt == _this.hasReceipt)&&(identical(other.receiptIsImage, _this.receiptIsImage) || other.receiptIsImage == _this.receiptIsImage)&&(identical(other.method, _this.method) || other.method == _this.method)&&(identical(other.methodLabel, _this.methodLabel) || other.methodLabel == _this.methodLabel)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.receiptUrl, _this.receiptUrl) || other.receiptUrl == _this.receiptUrl)&&(identical(other.receiptFilename, _this.receiptFilename) || other.receiptFilename == _this.receiptFilename)&&(identical(other.receiptSizeBytes, _this.receiptSizeBytes) || other.receiptSizeBytes == _this.receiptSizeBytes)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.reversesPaymentId, _this.reversesPaymentId) || other.reversesPaymentId == _this.reversesPaymentId)&&(identical(other.reversal, _this.reversal) || other.reversal == _this.reversal)&&(identical(other.recordedBy, _this.recordedBy) || other.recordedBy == _this.recordedBy)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.requiresReview, _this.requiresReview) || other.requiresReview == _this.requiresReview)&&(identical(other.isReviewed, _this.isReviewed) || other.isReviewed == _this.isReviewed)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt)&&(identical(other.reviewedBy, _this.reviewedBy) || other.reviewedBy == _this.reviewedBy)&&(identical(other.canReview, _this.canReview) || other.canReview == _this.canReview)&&(identical(other.canUnreview, _this.canUnreview) || other.canUnreview == _this.canUnreview)&&(identical(other.reviewBlockedReason, _this.reviewBlockedReason) || other.reviewBlockedReason == _this.reviewBlockedReason)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.treasuryAccount, _this.treasuryAccount) || other.treasuryAccount == _this.treasuryAccount)&&(identical(other.settlement, _this.settlement) || other.settlement == _this.settlement)&&(identical(other.canSettle, _this.canSettle) || other.canSettle == _this.canSettle)&&(identical(other.settleBlockedReason, _this.settleBlockedReason) || other.settleBlockedReason == _this.settleBlockedReason)&&(identical(other.settlementTarget, _this.settlementTarget) || other.settlementTarget == _this.settlementTarget)&&(identical(other.canUnsettle, _this.canUnsettle) || other.canUnsettle == _this.canUnsettle)&&(identical(other.unsettleBlockedReason, _this.unsettleBlockedReason) || other.unsettleBlockedReason == _this.unsettleBlockedReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,excessAmount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt,requiresReview,isReviewed,reviewedAt,reviewedBy,canReview,canUnreview,reviewBlockedReason,order,treasuryAccount,settlement,canSettle,settleBlockedReason,settlementTarget,canUnsettle,unsettleBlockedReason]);
+int get hashCode {
+  final _this = this as OrderPayment;
+  return Object.hashAll([runtimeType,_this.id,_this.orderId,_this.type,_this.typeLabel,_this.amount,_this.excessAmount,_this.isReversed,_this.isReversible,_this.hasReceipt,_this.receiptIsImage,_this.method,_this.methodLabel,_this.reference,_this.receiptUrl,_this.receiptFilename,_this.receiptSizeBytes,_this.notes,_this.reversesPaymentId,_this.reversal,_this.recordedBy,_this.paidAt,_this.createdAt,_this.requiresReview,_this.isReviewed,_this.reviewedAt,_this.reviewedBy,_this.canReview,_this.canUnreview,_this.reviewBlockedReason,_this.order,_this.treasuryAccount,_this.settlement,_this.canSettle,_this.settleBlockedReason,_this.settlementTarget,_this.canUnsettle,_this.unsettleBlockedReason]);
+}
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, excessAmount: $excessAmount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt, requiresReview: $requiresReview, isReviewed: $isReviewed, reviewedAt: $reviewedAt, reviewedBy: $reviewedBy, canReview: $canReview, canUnreview: $canUnreview, reviewBlockedReason: $reviewBlockedReason, order: $order, treasuryAccount: $treasuryAccount, settlement: $settlement, canSettle: $canSettle, settleBlockedReason: $settleBlockedReason, settlementTarget: $settlementTarget, canUnsettle: $canUnsettle, unsettleBlockedReason: $unsettleBlockedReason)';
+  final _this = this as OrderPayment;
+  return 'OrderPayment(id: ${_this.id}, orderId: ${_this.orderId}, type: ${_this.type}, typeLabel: ${_this.typeLabel}, amount: ${_this.amount}, excessAmount: ${_this.excessAmount}, isReversed: ${_this.isReversed}, isReversible: ${_this.isReversible}, hasReceipt: ${_this.hasReceipt}, receiptIsImage: ${_this.receiptIsImage}, method: ${_this.method}, methodLabel: ${_this.methodLabel}, reference: ${_this.reference}, receiptUrl: ${_this.receiptUrl}, receiptFilename: ${_this.receiptFilename}, receiptSizeBytes: ${_this.receiptSizeBytes}, notes: ${_this.notes}, reversesPaymentId: ${_this.reversesPaymentId}, reversal: ${_this.reversal}, recordedBy: ${_this.recordedBy}, paidAt: ${_this.paidAt}, createdAt: ${_this.createdAt}, requiresReview: ${_this.requiresReview}, isReviewed: ${_this.isReviewed}, reviewedAt: ${_this.reviewedAt}, reviewedBy: ${_this.reviewedBy}, canReview: ${_this.canReview}, canUnreview: ${_this.canUnreview}, reviewBlockedReason: ${_this.reviewBlockedReason}, order: ${_this.order}, treasuryAccount: ${_this.treasuryAccount}, settlement: ${_this.settlement}, canSettle: ${_this.canSettle}, settleBlockedReason: ${_this.settleBlockedReason}, settlementTarget: ${_this.settlementTarget}, canUnsettle: ${_this.canUnsettle}, unsettleBlockedReason: ${_this.unsettleBlockedReason})';
 }
 
 
@@ -112,7 +118,7 @@ class _$OrderPaymentCopyWithImpl<$Res>
 /// Create a copy of OrderPayment
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? type = null,Object? typeLabel = null,Object? amount = null,Object? excessAmount = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? receiptSizeBytes = freezed,Object? notes = freezed,Object? reversesPaymentId = freezed,Object? reversal = freezed,Object? recordedBy = freezed,Object? paidAt = freezed,Object? createdAt = freezed,Object? requiresReview = null,Object? isReviewed = null,Object? reviewedAt = freezed,Object? reviewedBy = freezed,Object? canReview = null,Object? canUnreview = null,Object? reviewBlockedReason = freezed,Object? order = freezed,Object? treasuryAccount = freezed,Object? settlement = freezed,Object? canSettle = null,Object? settleBlockedReason = freezed,Object? settlementTarget = freezed,Object? canUnsettle = null,Object? unsettleBlockedReason = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderPayment(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -475,16 +481,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.requiresReview, requiresReview) || other.requiresReview == requiresReview)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canUnreview, canUnreview) || other.canUnreview == canUnreview)&&(identical(other.reviewBlockedReason, reviewBlockedReason) || other.reviewBlockedReason == reviewBlockedReason)&&(identical(other.order, order) || other.order == order)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.settlement, settlement) || other.settlement == settlement)&&(identical(other.canSettle, canSettle) || other.canSettle == canSettle)&&(identical(other.settleBlockedReason, settleBlockedReason) || other.settleBlockedReason == settleBlockedReason)&&(identical(other.settlementTarget, settlementTarget) || other.settlementTarget == settlementTarget)&&(identical(other.canUnsettle, canUnsettle) || other.canUnsettle == canUnsettle)&&(identical(other.unsettleBlockedReason, unsettleBlockedReason) || other.unsettleBlockedReason == unsettleBlockedReason));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPayment&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.receiptSizeBytes, receiptSizeBytes) || other.receiptSizeBytes == receiptSizeBytes)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.reversesPaymentId, reversesPaymentId) || other.reversesPaymentId == reversesPaymentId)&&(identical(other.reversal, reversal) || other.reversal == reversal)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.requiresReview, requiresReview) || other.requiresReview == requiresReview)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canUnreview, canUnreview) || other.canUnreview == canUnreview)&&(identical(other.reviewBlockedReason, reviewBlockedReason) || other.reviewBlockedReason == reviewBlockedReason)&&(identical(other.order, order) || other.order == order)&&(identical(other.treasuryAccount, treasuryAccount) || other.treasuryAccount == treasuryAccount)&&(identical(other.settlement, settlement) || other.settlement == settlement)&&(identical(other.canSettle, canSettle) || other.canSettle == canSettle)&&(identical(other.settleBlockedReason, settleBlockedReason) || other.settleBlockedReason == settleBlockedReason)&&(identical(other.settlementTarget, settlementTarget) || other.settlementTarget == settlementTarget)&&(identical(other.canUnsettle, canUnsettle) || other.canUnsettle == canUnsettle)&&(identical(other.unsettleBlockedReason, unsettleBlockedReason) || other.unsettleBlockedReason == unsettleBlockedReason));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,excessAmount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt,requiresReview,isReviewed,reviewedAt,reviewedBy,canReview,canUnreview,reviewBlockedReason,order,treasuryAccount,settlement,canSettle,settleBlockedReason,settlementTarget,canUnsettle,unsettleBlockedReason]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,orderId,type,typeLabel,amount,excessAmount,isReversed,isReversible,hasReceipt,receiptIsImage,method,methodLabel,reference,receiptUrl,receiptFilename,receiptSizeBytes,notes,reversesPaymentId,reversal,recordedBy,paidAt,createdAt,requiresReview,isReviewed,reviewedAt,reviewedBy,canReview,canUnreview,reviewBlockedReason,order,treasuryAccount,settlement,canSettle,settleBlockedReason,settlementTarget,canUnsettle,unsettleBlockedReason]);
+}
 
 @override
 String toString() {
-  return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, excessAmount: $excessAmount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt, requiresReview: $requiresReview, isReviewed: $isReviewed, reviewedAt: $reviewedAt, reviewedBy: $reviewedBy, canReview: $canReview, canUnreview: $canUnreview, reviewBlockedReason: $reviewBlockedReason, order: $order, treasuryAccount: $treasuryAccount, settlement: $settlement, canSettle: $canSettle, settleBlockedReason: $settleBlockedReason, settlementTarget: $settlementTarget, canUnsettle: $canUnsettle, unsettleBlockedReason: $unsettleBlockedReason)';
+    return 'OrderPayment(id: $id, orderId: $orderId, type: $type, typeLabel: $typeLabel, amount: $amount, excessAmount: $excessAmount, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, method: $method, methodLabel: $methodLabel, reference: $reference, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, receiptSizeBytes: $receiptSizeBytes, notes: $notes, reversesPaymentId: $reversesPaymentId, reversal: $reversal, recordedBy: $recordedBy, paidAt: $paidAt, createdAt: $createdAt, requiresReview: $requiresReview, isReviewed: $isReviewed, reviewedAt: $reviewedAt, reviewedBy: $reviewedBy, canReview: $canReview, canUnreview: $canUnreview, reviewBlockedReason: $reviewBlockedReason, order: $order, treasuryAccount: $treasuryAccount, settlement: $settlement, canSettle: $canSettle, settleBlockedReason: $settleBlockedReason, settlementTarget: $settlementTarget, canUnsettle: $canUnsettle, unsettleBlockedReason: $unsettleBlockedReason)';
 }
 
 
@@ -660,16 +668,21 @@ $PaymentAccountRefCopyWith<PaymentAccountRef> get copyWith => _$PaymentAccountRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentAccountRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind));
+  final _this = this as PaymentAccountRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentAccountRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.kind, _this.kind) || other.kind == _this.kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,kind);
+int get hashCode {
+  final _this = this as PaymentAccountRef;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.kind);
+}
 
 @override
 String toString() {
-  return 'PaymentAccountRef(id: $id, name: $name, kind: $kind)';
+  final _this = this as PaymentAccountRef;
+  return 'PaymentAccountRef(id: ${_this.id}, name: ${_this.name}, kind: ${_this.kind})';
 }
 
 
@@ -698,7 +711,7 @@ class _$PaymentAccountRefCopyWithImpl<$Res>
 /// Create a copy of PaymentAccountRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? kind = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PaymentAccountRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,kind: freezed == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -864,16 +877,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentAccountRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentAccountRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,kind);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,kind);
+}
 
 @override
 String toString() {
-  return 'PaymentAccountRef(id: $id, name: $name, kind: $kind)';
+    return 'PaymentAccountRef(id: $id, name: $name, kind: $kind)';
 }
 
 
@@ -932,16 +947,21 @@ $PaymentSettlementCopyWith<PaymentSettlement> get copyWith => _$PaymentSettlemen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSettlement&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.toAccount, toAccount) || other.toAccount == toAccount)&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.received, received) || other.received == received)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.settledBy, settledBy) || other.settledBy == settledBy));
+  final _this = this as PaymentSettlement;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSettlement&&(identical(other.operationId, _this.operationId) || other.operationId == _this.operationId)&&(identical(other.toAccount, _this.toAccount) || other.toAccount == _this.toAccount)&&(identical(other.fee, _this.fee) || other.fee == _this.fee)&&(identical(other.received, _this.received) || other.received == _this.received)&&(identical(other.settledAt, _this.settledAt) || other.settledAt == _this.settledAt)&&(identical(other.settledBy, _this.settledBy) || other.settledBy == _this.settledBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,operationId,toAccount,fee,received,settledAt,settledBy);
+int get hashCode {
+  final _this = this as PaymentSettlement;
+  return Object.hash(runtimeType,_this.operationId,_this.toAccount,_this.fee,_this.received,_this.settledAt,_this.settledBy);
+}
 
 @override
 String toString() {
-  return 'PaymentSettlement(operationId: $operationId, toAccount: $toAccount, fee: $fee, received: $received, settledAt: $settledAt, settledBy: $settledBy)';
+  final _this = this as PaymentSettlement;
+  return 'PaymentSettlement(operationId: ${_this.operationId}, toAccount: ${_this.toAccount}, fee: ${_this.fee}, received: ${_this.received}, settledAt: ${_this.settledAt}, settledBy: ${_this.settledBy})';
 }
 
 
@@ -970,7 +990,7 @@ class _$PaymentSettlementCopyWithImpl<$Res>
 /// Create a copy of PaymentSettlement
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? operationId = null,Object? toAccount = freezed,Object? fee = null,Object? received = null,Object? settledAt = freezed,Object? settledBy = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PaymentSettlement(
 operationId: null == operationId ? _self.operationId : operationId // ignore: cast_nullable_to_non_nullable
 as int,toAccount: freezed == toAccount ? _self.toAccount : toAccount // ignore: cast_nullable_to_non_nullable
 as PaymentAccountRef?,fee: null == fee ? _self.fee : fee // ignore: cast_nullable_to_non_nullable
@@ -1167,16 +1187,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSettlement&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.toAccount, toAccount) || other.toAccount == toAccount)&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.received, received) || other.received == received)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.settledBy, settledBy) || other.settledBy == settledBy));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSettlement&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.toAccount, toAccount) || other.toAccount == toAccount)&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.received, received) || other.received == received)&&(identical(other.settledAt, settledAt) || other.settledAt == settledAt)&&(identical(other.settledBy, settledBy) || other.settledBy == settledBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,operationId,toAccount,fee,received,settledAt,settledBy);
+int get hashCode {
+    return Object.hash(runtimeType,operationId,toAccount,fee,received,settledAt,settledBy);
+}
 
 @override
 String toString() {
-  return 'PaymentSettlement(operationId: $operationId, toAccount: $toAccount, fee: $fee, received: $received, settledAt: $settledAt, settledBy: $settledBy)';
+    return 'PaymentSettlement(operationId: $operationId, toAccount: $toAccount, fee: $fee, received: $received, settledAt: $settledAt, settledBy: $settledBy)';
 }
 
 
@@ -1260,16 +1282,21 @@ $PaymentOrderRefCopyWith<PaymentOrderRef> get copyWith => _$PaymentOrderRefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+  final _this = this as PaymentOrderRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentOrderRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,customerName);
+int get hashCode {
+  final _this = this as PaymentOrderRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.customerName);
+}
 
 @override
 String toString() {
-  return 'PaymentOrderRef(id: $id, code: $code, customerName: $customerName)';
+  final _this = this as PaymentOrderRef;
+  return 'PaymentOrderRef(id: ${_this.id}, code: ${_this.code}, customerName: ${_this.customerName})';
 }
 
 
@@ -1298,7 +1325,7 @@ class _$PaymentOrderRefCopyWithImpl<$Res>
 /// Create a copy of PaymentOrderRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? customerName = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PaymentOrderRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,customerName: freezed == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
@@ -1463,16 +1490,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,customerName);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,customerName);
+}
 
 @override
 String toString() {
-  return 'PaymentOrderRef(id: $id, code: $code, customerName: $customerName)';
+    return 'PaymentOrderRef(id: $id, code: $code, customerName: $customerName)';
 }
 
 
@@ -1530,16 +1559,21 @@ $OrderPaymentReversalCopyWith<OrderPaymentReversal> get copyWith => _$OrderPayme
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as OrderPaymentReversal;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentReversal&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,reason,createdAt);
+int get hashCode {
+  final _this = this as OrderPaymentReversal;
+  return Object.hash(runtimeType,_this.id,_this.reason,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'OrderPaymentReversal(id: $id, reason: $reason, createdAt: $createdAt)';
+  final _this = this as OrderPaymentReversal;
+  return 'OrderPaymentReversal(id: ${_this.id}, reason: ${_this.reason}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -1568,7 +1602,7 @@ class _$OrderPaymentReversalCopyWithImpl<$Res>
 /// Create a copy of OrderPaymentReversal
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reason = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderPaymentReversal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1734,16 +1768,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPaymentReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderPaymentReversal&&(identical(other.id, id) || other.id == id)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,reason,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,reason,createdAt);
+}
 
 @override
 String toString() {
-  return 'OrderPaymentReversal(id: $id, reason: $reason, createdAt: $createdAt)';
+    return 'OrderPaymentReversal(id: $id, reason: $reason, createdAt: $createdAt)';
 }
 
 
@@ -1800,16 +1836,21 @@ $PaymentRecorderCopyWith<PaymentRecorder> get copyWith => _$PaymentRecorderCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+  final _this = this as PaymentRecorder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentRecorder&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+  final _this = this as PaymentRecorder;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.employeeCode);
+}
 
 @override
 String toString() {
-  return 'PaymentRecorder(id: $id, name: $name, employeeCode: $employeeCode)';
+  final _this = this as PaymentRecorder;
+  return 'PaymentRecorder(id: ${_this.id}, name: ${_this.name}, employeeCode: ${_this.employeeCode})';
 }
 
 
@@ -1838,7 +1879,7 @@ class _$PaymentRecorderCopyWithImpl<$Res>
 /// Create a copy of PaymentRecorder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? employeeCode = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PaymentRecorder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
@@ -2003,16 +2044,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,employeeCode);
+}
 
 @override
 String toString() {
-  return 'PaymentRecorder(id: $id, name: $name, employeeCode: $employeeCode)';
+    return 'PaymentRecorder(id: $id, name: $name, employeeCode: $employeeCode)';
 }
 
 
@@ -2087,16 +2130,21 @@ $PaymentSummaryCopyWith<PaymentSummary> get copyWith => _$PaymentSummaryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.excessRevenueAmount, excessRevenueAmount) || other.excessRevenueAmount == excessRevenueAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance));
+  final _this = this as PaymentSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSummary&&(identical(other.grandTotal, _this.grandTotal) || other.grandTotal == _this.grandTotal)&&(identical(other.paidAmount, _this.paidAmount) || other.paidAmount == _this.paidAmount)&&(identical(other.writtenOffAmount, _this.writtenOffAmount) || other.writtenOffAmount == _this.writtenOffAmount)&&(identical(other.excessAmount, _this.excessAmount) || other.excessAmount == _this.excessAmount)&&(identical(other.excessRevenueAmount, _this.excessRevenueAmount) || other.excessRevenueAmount == _this.excessRevenueAmount)&&(identical(other.remainingAmount, _this.remainingAmount) || other.remainingAmount == _this.remainingAmount)&&(identical(other.paymentStatus, _this.paymentStatus) || other.paymentStatus == _this.paymentStatus)&&(identical(other.paymentStatusLabel, _this.paymentStatusLabel) || other.paymentStatusLabel == _this.paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, _this.hasUnrecordedMoney) || other.hasUnrecordedMoney == _this.hasUnrecordedMoney)&&(identical(other.walletBalance, _this.walletBalance) || other.walletBalance == _this.walletBalance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,excessAmount,excessRevenueAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney,walletBalance);
+int get hashCode {
+  final _this = this as PaymentSummary;
+  return Object.hash(runtimeType,_this.grandTotal,_this.paidAmount,_this.writtenOffAmount,_this.excessAmount,_this.excessRevenueAmount,_this.remainingAmount,_this.paymentStatus,_this.paymentStatusLabel,_this.hasUnrecordedMoney,_this.walletBalance);
+}
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, excessAmount: $excessAmount, excessRevenueAmount: $excessRevenueAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney, walletBalance: $walletBalance)';
+  final _this = this as PaymentSummary;
+  return 'PaymentSummary(grandTotal: ${_this.grandTotal}, paidAmount: ${_this.paidAmount}, writtenOffAmount: ${_this.writtenOffAmount}, excessAmount: ${_this.excessAmount}, excessRevenueAmount: ${_this.excessRevenueAmount}, remainingAmount: ${_this.remainingAmount}, paymentStatus: ${_this.paymentStatus}, paymentStatusLabel: ${_this.paymentStatusLabel}, hasUnrecordedMoney: ${_this.hasUnrecordedMoney}, walletBalance: ${_this.walletBalance})';
 }
 
 
@@ -2125,7 +2173,7 @@ class _$PaymentSummaryCopyWithImpl<$Res>
 /// Create a copy of PaymentSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? grandTotal = null,Object? paidAmount = null,Object? writtenOffAmount = null,Object? excessAmount = null,Object? excessRevenueAmount = null,Object? remainingAmount = null,Object? paymentStatus = null,Object? paymentStatusLabel = null,Object? hasUnrecordedMoney = null,Object? walletBalance = null,}) {
-  return _then(_self.copyWith(
+  return _then(PaymentSummary(
 grandTotal: null == grandTotal ? _self.grandTotal : grandTotal // ignore: cast_nullable_to_non_nullable
 as String,paidAmount: null == paidAmount ? _self.paidAmount : paidAmount // ignore: cast_nullable_to_non_nullable
 as String,writtenOffAmount: null == writtenOffAmount ? _self.writtenOffAmount : writtenOffAmount // ignore: cast_nullable_to_non_nullable
@@ -2322,16 +2370,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.excessRevenueAmount, excessRevenueAmount) || other.excessRevenueAmount == excessRevenueAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSummary&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.writtenOffAmount, writtenOffAmount) || other.writtenOffAmount == writtenOffAmount)&&(identical(other.excessAmount, excessAmount) || other.excessAmount == excessAmount)&&(identical(other.excessRevenueAmount, excessRevenueAmount) || other.excessRevenueAmount == excessRevenueAmount)&&(identical(other.remainingAmount, remainingAmount) || other.remainingAmount == remainingAmount)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.paymentStatusLabel, paymentStatusLabel) || other.paymentStatusLabel == paymentStatusLabel)&&(identical(other.hasUnrecordedMoney, hasUnrecordedMoney) || other.hasUnrecordedMoney == hasUnrecordedMoney)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,excessAmount,excessRevenueAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney,walletBalance);
+int get hashCode {
+    return Object.hash(runtimeType,grandTotal,paidAmount,writtenOffAmount,excessAmount,excessRevenueAmount,remainingAmount,paymentStatus,paymentStatusLabel,hasUnrecordedMoney,walletBalance);
+}
 
 @override
 String toString() {
-  return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, excessAmount: $excessAmount, excessRevenueAmount: $excessRevenueAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney, walletBalance: $walletBalance)';
+    return 'PaymentSummary(grandTotal: $grandTotal, paidAmount: $paidAmount, writtenOffAmount: $writtenOffAmount, excessAmount: $excessAmount, excessRevenueAmount: $excessRevenueAmount, remainingAmount: $remainingAmount, paymentStatus: $paymentStatus, paymentStatusLabel: $paymentStatusLabel, hasUnrecordedMoney: $hasUnrecordedMoney, walletBalance: $walletBalance)';
 }
 
 
@@ -2397,16 +2447,21 @@ $OrderLedgerCopyWith<OrderLedger> get copyWith => _$OrderLedgerCopyWithImpl<Orde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLedger&&const DeepCollectionEquality().equals(other.payments, payments)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.carrier, carrier) || other.carrier == carrier));
+  final _this = this as OrderLedger;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLedger&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.summary, _this.summary) || other.summary == _this.summary)&&(identical(other.carrier, _this.carrier) || other.carrier == _this.carrier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(payments),summary,carrier);
+int get hashCode {
+  final _this = this as OrderLedger;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.payments),_this.summary,_this.carrier);
+}
 
 @override
 String toString() {
-  return 'OrderLedger(payments: $payments, summary: $summary, carrier: $carrier)';
+  final _this = this as OrderLedger;
+  return 'OrderLedger(payments: ${_this.payments}, summary: ${_this.summary}, carrier: ${_this.carrier})';
 }
 
 
@@ -2435,7 +2490,7 @@ class _$OrderLedgerCopyWithImpl<$Res>
 /// Create a copy of OrderLedger
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? payments = null,Object? summary = null,Object? carrier = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderLedger(
 payments: null == payments ? _self.payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderPayment>,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
 as PaymentSummary,carrier: freezed == carrier ? _self.carrier : carrier // ignore: cast_nullable_to_non_nullable
@@ -2589,7 +2644,7 @@ return $default(_that.payments,_that.summary,_that.carrier);case _:
 @JsonSerializable()
 
 class _OrderLedger implements OrderLedger {
-  const _OrderLedger({required final  List<OrderPayment> payments, required this.summary, this.carrier}): _payments = payments;
+  const _OrderLedger({required  List<OrderPayment> payments, required this.summary, this.carrier}): _payments = payments;
   factory _OrderLedger.fromJson(Map<String, dynamic> json) => _$OrderLedgerFromJson(json);
 
  final  List<OrderPayment> _payments;
@@ -2617,16 +2672,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLedger&&const DeepCollectionEquality().equals(other._payments, _payments)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.carrier, carrier) || other.carrier == carrier));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLedger&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.carrier, carrier) || other.carrier == carrier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_payments),summary,carrier);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_payments),summary,carrier);
+}
 
 @override
 String toString() {
-  return 'OrderLedger(payments: $payments, summary: $summary, carrier: $carrier)';
+    return 'OrderLedger(payments: $payments, summary: $summary, carrier: $carrier)';
 }
 
 

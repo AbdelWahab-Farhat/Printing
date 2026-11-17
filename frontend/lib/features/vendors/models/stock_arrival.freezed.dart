@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_arrival.dart';
@@ -9,6 +9,7 @@ part of 'stock_arrival.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -46,16 +47,21 @@ $StockArrivalCopyWith<StockArrival> get copyWith => _$StockArrivalCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&(identical(other.reversedAt, reversedAt) || other.reversedAt == reversedAt)&&(identical(other.reversalReason, reversalReason) || other.reversalReason == reversalReason)&&(identical(other.reversedBy, reversedBy) || other.reversedBy == reversedBy)&&(identical(other.reversedByUser, reversedByUser) || other.reversedByUser == reversedByUser)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as StockArrival;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrival&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.vendorId, _this.vendorId) || other.vendorId == _this.vendorId)&&(identical(other.vendor, _this.vendor) || other.vendor == _this.vendor)&&(identical(other.purchaseOrderId, _this.purchaseOrderId) || other.purchaseOrderId == _this.purchaseOrderId)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.warehouse, _this.warehouse) || other.warehouse == _this.warehouse)&&(identical(other.invoiceNumber, _this.invoiceNumber) || other.invoiceNumber == _this.invoiceNumber)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.receivedBy, _this.receivedBy) || other.receivedBy == _this.receivedBy)&&(identical(other.receivedByUser, _this.receivedByUser) || other.receivedByUser == _this.receivedByUser)&&(identical(other.reversedAt, _this.reversedAt) || other.reversedAt == _this.reversedAt)&&(identical(other.reversalReason, _this.reversalReason) || other.reversalReason == _this.reversalReason)&&(identical(other.reversedBy, _this.reversedBy) || other.reversedBy == _this.reversedBy)&&(identical(other.reversedByUser, _this.reversedByUser) || other.reversedByUser == _this.reversedByUser)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,reversedAt,reversalReason,reversedBy,reversedByUser,const DeepCollectionEquality().hash(items),createdAt);
+int get hashCode {
+  final _this = this as StockArrival;
+  return Object.hash(runtimeType,_this.id,_this.vendorId,_this.vendor,_this.purchaseOrderId,_this.warehouseId,_this.warehouse,_this.invoiceNumber,_this.notes,_this.receivedBy,_this.receivedByUser,_this.reversedAt,_this.reversalReason,_this.reversedBy,_this.reversedByUser,const DeepCollectionEquality().hash(_this.items),_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, reversedAt: $reversedAt, reversalReason: $reversalReason, reversedBy: $reversedBy, reversedByUser: $reversedByUser, items: $items, createdAt: $createdAt)';
+  final _this = this as StockArrival;
+  return 'StockArrival(id: ${_this.id}, vendorId: ${_this.vendorId}, vendor: ${_this.vendor}, purchaseOrderId: ${_this.purchaseOrderId}, warehouseId: ${_this.warehouseId}, warehouse: ${_this.warehouse}, invoiceNumber: ${_this.invoiceNumber}, notes: ${_this.notes}, receivedBy: ${_this.receivedBy}, receivedByUser: ${_this.receivedByUser}, reversedAt: ${_this.reversedAt}, reversalReason: ${_this.reversalReason}, reversedBy: ${_this.reversedBy}, reversedByUser: ${_this.reversedByUser}, items: ${_this.items}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -84,7 +90,7 @@ class _$StockArrivalCopyWithImpl<$Res>
 /// Create a copy of StockArrival
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vendorId = null,Object? vendor = freezed,Object? purchaseOrderId = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? invoiceNumber = freezed,Object? notes = freezed,Object? receivedBy = null,Object? receivedByUser = freezed,Object? reversedAt = freezed,Object? reversalReason = freezed,Object? reversedBy = freezed,Object? reversedByUser = freezed,Object? items = null,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockArrival(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,vendorId: null == vendorId ? _self.vendorId : vendorId // ignore: cast_nullable_to_non_nullable
 as int,vendor: freezed == vendor ? _self.vendor : vendor // ignore: cast_nullable_to_non_nullable
@@ -290,7 +296,7 @@ return $default(_that.id,_that.vendorId,_that.vendor,_that.purchaseOrderId,_that
 @JsonSerializable()
 
 class _StockArrival extends StockArrival {
-  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, @JsonKey(name: 'reversed_at') this.reversedAt, @JsonKey(name: 'reversal_reason') this.reversalReason, @JsonKey(name: 'reversed_by') this.reversedBy, @JsonKey(name: 'reversed_by_user') this.reversedByUser, final  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
+  const _StockArrival({required this.id, @JsonKey(name: 'vendor_id') required this.vendorId, this.vendor, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'warehouse_id') this.warehouseId, this.warehouse, @JsonKey(name: 'invoice_number') this.invoiceNumber, this.notes, @JsonKey(name: 'received_by') required this.receivedBy, @JsonKey(name: 'received_by_user') this.receivedByUser, @JsonKey(name: 'reversed_at') this.reversedAt, @JsonKey(name: 'reversal_reason') this.reversalReason, @JsonKey(name: 'reversed_by') this.reversedBy, @JsonKey(name: 'reversed_by_user') this.reversedByUser,  List<StockArrivalItem> items = const <StockArrivalItem>[], @JsonKey(name: 'created_at') this.createdAt}): _items = items,super._();
   factory _StockArrival.fromJson(Map<String, dynamic> json) => _$StockArrivalFromJson(json);
 
 @override final  int id;
@@ -347,16 +353,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&(identical(other.reversedAt, reversedAt) || other.reversedAt == reversedAt)&&(identical(other.reversalReason, reversalReason) || other.reversalReason == reversalReason)&&(identical(other.reversedBy, reversedBy) || other.reversedBy == reversedBy)&&(identical(other.reversedByUser, reversedByUser) || other.reversedByUser == reversedByUser)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrival&&(identical(other.id, id) || other.id == id)&&(identical(other.vendorId, vendorId) || other.vendorId == vendorId)&&(identical(other.vendor, vendor) || other.vendor == vendor)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.invoiceNumber, invoiceNumber) || other.invoiceNumber == invoiceNumber)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.receivedBy, receivedBy) || other.receivedBy == receivedBy)&&(identical(other.receivedByUser, receivedByUser) || other.receivedByUser == receivedByUser)&&(identical(other.reversedAt, reversedAt) || other.reversedAt == reversedAt)&&(identical(other.reversalReason, reversalReason) || other.reversalReason == reversalReason)&&(identical(other.reversedBy, reversedBy) || other.reversedBy == reversedBy)&&(identical(other.reversedByUser, reversedByUser) || other.reversedByUser == reversedByUser)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,reversedAt,reversalReason,reversedBy,reversedByUser,const DeepCollectionEquality().hash(_items),createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,vendorId,vendor,purchaseOrderId,warehouseId,warehouse,invoiceNumber,notes,receivedBy,receivedByUser,reversedAt,reversalReason,reversedBy,reversedByUser,const DeepCollectionEquality().hash(_items),createdAt);
+}
 
 @override
 String toString() {
-  return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, reversedAt: $reversedAt, reversalReason: $reversalReason, reversedBy: $reversedBy, reversedByUser: $reversedByUser, items: $items, createdAt: $createdAt)';
+    return 'StockArrival(id: $id, vendorId: $vendorId, vendor: $vendor, purchaseOrderId: $purchaseOrderId, warehouseId: $warehouseId, warehouse: $warehouse, invoiceNumber: $invoiceNumber, notes: $notes, receivedBy: $receivedBy, receivedByUser: $receivedByUser, reversedAt: $reversedAt, reversalReason: $reversalReason, reversedBy: $reversedBy, reversedByUser: $reversedByUser, items: $items, createdAt: $createdAt)';
 }
 
 
@@ -497,16 +505,21 @@ $StockArrivalItemCopyWith<StockArrivalItem> get copyWith => _$StockArrivalItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
+  final _this = this as StockArrivalItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockArrivalItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.stockItem, _this.stockItem) || other.stockItem == _this.stockItem)&&(identical(other.unitCost, _this.unitCost) || other.unitCost == _this.unitCost)&&(identical(other.totalCost, _this.totalCost) || other.totalCost == _this.totalCost)&&(identical(other.stockMovementId, _this.stockMovementId) || other.stockMovementId == _this.stockMovementId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,quantity,stockItemId,stockItem,unitCost,totalCost,stockMovementId);
+int get hashCode {
+  final _this = this as StockArrivalItem;
+  return Object.hash(runtimeType,_this.id,_this.quantity,_this.stockItemId,_this.stockItem,_this.unitCost,_this.totalCost,_this.stockMovementId);
+}
 
 @override
 String toString() {
-  return 'StockArrivalItem(id: $id, quantity: $quantity, stockItemId: $stockItemId, stockItem: $stockItem, unitCost: $unitCost, totalCost: $totalCost, stockMovementId: $stockMovementId)';
+  final _this = this as StockArrivalItem;
+  return 'StockArrivalItem(id: ${_this.id}, quantity: ${_this.quantity}, stockItemId: ${_this.stockItemId}, stockItem: ${_this.stockItem}, unitCost: ${_this.unitCost}, totalCost: ${_this.totalCost}, stockMovementId: ${_this.stockMovementId})';
 }
 
 
@@ -535,7 +548,7 @@ class _$StockArrivalItemCopyWithImpl<$Res>
 /// Create a copy of StockArrivalItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? quantity = null,Object? stockItemId = null,Object? stockItem = freezed,Object? unitCost = freezed,Object? totalCost = freezed,Object? stockMovementId = null,}) {
-  return _then(_self.copyWith(
+  return _then(StockArrivalItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
@@ -743,16 +756,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockArrivalItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.totalCost, totalCost) || other.totalCost == totalCost)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,quantity,stockItemId,stockItem,unitCost,totalCost,stockMovementId);
+int get hashCode {
+    return Object.hash(runtimeType,id,quantity,stockItemId,stockItem,unitCost,totalCost,stockMovementId);
+}
 
 @override
 String toString() {
-  return 'StockArrivalItem(id: $id, quantity: $quantity, stockItemId: $stockItemId, stockItem: $stockItem, unitCost: $unitCost, totalCost: $totalCost, stockMovementId: $stockMovementId)';
+    return 'StockArrivalItem(id: $id, quantity: $quantity, stockItemId: $stockItemId, stockItem: $stockItem, unitCost: $unitCost, totalCost: $totalCost, stockMovementId: $stockMovementId)';
 }
 
 
@@ -825,16 +840,21 @@ $ArrivalRefCopyWith<ArrivalRef> get copyWith => _$ArrivalRefCopyWithImpl<Arrival
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ArrivalRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as ArrivalRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ArrivalRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as ArrivalRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'ArrivalRef(id: $id, name: $name)';
+  final _this = this as ArrivalRef;
+  return 'ArrivalRef(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -863,7 +883,7 @@ class _$ArrivalRefCopyWithImpl<$Res>
 /// Create a copy of ArrivalRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(ArrivalRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1026,16 +1046,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ArrivalRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ArrivalRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'ArrivalRef(id: $id, name: $name)';
+    return 'ArrivalRef(id: $id, name: $name)';
 }
 
 

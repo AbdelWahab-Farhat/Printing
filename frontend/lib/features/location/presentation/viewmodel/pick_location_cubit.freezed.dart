@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'pick_location_cubit.dart';
@@ -9,6 +9,7 @@ part of 'pick_location_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$PickLocationState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PickLocationState()';
+    return 'PickLocationState()';
 }
 
 
@@ -203,7 +204,7 @@ class PickLocationIdle implements PickLocationState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationIdle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationIdle);
 }
 
 
@@ -212,7 +213,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PickLocationState.idle()';
+    return 'PickLocationState.idle()';
 }
 
 
@@ -240,16 +241,18 @@ $PickLocationSearchingCopyWith<PickLocationSearching> get copyWith => _$PickLoca
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationSearching&&(identical(other.term, term) || other.term == term));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationSearching&&(identical(other.term, term) || other.term == term));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,term);
+int get hashCode {
+    return Object.hash(runtimeType,term);
+}
 
 @override
 String toString() {
-  return 'PickLocationState.searching(term: $term)';
+    return 'PickLocationState.searching(term: $term)';
 }
 
 
@@ -291,7 +294,7 @@ as String,
 
 
 class PickLocationResults implements PickLocationState {
-  const PickLocationResults(final  List<Place> places): _places = places;
+  const PickLocationResults( List<Place> places): _places = places;
   
 
  final  List<Place> _places;
@@ -312,16 +315,18 @@ $PickLocationResultsCopyWith<PickLocationResults> get copyWith => _$PickLocation
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationResults&&const DeepCollectionEquality().equals(other._places, _places));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationResults&&const DeepCollectionEquality().equals(other.places, _places));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_places));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_places));
+}
 
 @override
 String toString() {
-  return 'PickLocationState.results(places: $places)';
+    return 'PickLocationState.results(places: $places)';
 }
 
 
@@ -378,16 +383,18 @@ $PickLocationNoResultsCopyWith<PickLocationNoResults> get copyWith => _$PickLoca
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationNoResults&&(identical(other.term, term) || other.term == term));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationNoResults&&(identical(other.term, term) || other.term == term));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,term);
+int get hashCode {
+    return Object.hash(runtimeType,term);
+}
 
 @override
 String toString() {
-  return 'PickLocationState.noResults(term: $term)';
+    return 'PickLocationState.noResults(term: $term)';
 }
 
 
@@ -444,16 +451,18 @@ $PickLocationSearchFailedCopyWith<PickLocationSearchFailed> get copyWith => _$Pi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationSearchFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PickLocationSearchFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'PickLocationState.searchFailed(failure: $failure)';
+    return 'PickLocationState.searchFailed(failure: $failure)';
 }
 
 

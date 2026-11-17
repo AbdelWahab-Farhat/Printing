@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'customer_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'customer_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$CustomerDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CustomerDetailState()';
+    return 'CustomerDetailState()';
 }
 
 
@@ -197,7 +198,7 @@ class CustomerDetailLoading implements CustomerDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailLoading);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CustomerDetailState.loading()';
+    return 'CustomerDetailState.loading()';
 }
 
 
@@ -234,16 +235,18 @@ $CustomerDetailLoadedCopyWith<CustomerDetailLoaded> get copyWith => _$CustomerDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailLoaded&&(identical(other.customer, customer) || other.customer == customer));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailLoaded&&(identical(other.customer, customer) || other.customer == customer));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,customer);
+int get hashCode {
+    return Object.hash(runtimeType,customer);
+}
 
 @override
 String toString() {
-  return 'CustomerDetailState.loaded(customer: $customer)';
+    return 'CustomerDetailState.loaded(customer: $customer)';
 }
 
 
@@ -309,16 +312,18 @@ $CustomerDetailChangingCopyWith<CustomerDetailChanging> get copyWith => _$Custom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailChanging&&(identical(other.customer, customer) || other.customer == customer));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailChanging&&(identical(other.customer, customer) || other.customer == customer));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,customer);
+int get hashCode {
+    return Object.hash(runtimeType,customer);
+}
 
 @override
 String toString() {
-  return 'CustomerDetailState.changing(customer: $customer)';
+    return 'CustomerDetailState.changing(customer: $customer)';
 }
 
 
@@ -384,16 +389,18 @@ $CustomerDetailFailureCopyWith<CustomerDetailFailure> get copyWith => _$Customer
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'CustomerDetailState.failure(failure: $failure)';
+    return 'CustomerDetailState.failure(failure: $failure)';
 }
 
 

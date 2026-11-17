@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'settings_cubit.dart';
@@ -9,6 +9,7 @@ part of 'settings_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -31,16 +32,21 @@ $SettingsStateCopyWith<SettingsState> get copyWith => _$SettingsStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled)&&(identical(other.osAllows, osAllows) || other.osAllows == osAllows));
+  final _this = this as SettingsState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettingsState&&(identical(other.notificationsEnabled, _this.notificationsEnabled) || other.notificationsEnabled == _this.notificationsEnabled)&&(identical(other.osAllows, _this.osAllows) || other.osAllows == _this.osAllows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,notificationsEnabled,osAllows);
+int get hashCode {
+  final _this = this as SettingsState;
+  return Object.hash(runtimeType,_this.notificationsEnabled,_this.osAllows);
+}
 
 @override
 String toString() {
-  return 'SettingsState(notificationsEnabled: $notificationsEnabled, osAllows: $osAllows)';
+  final _this = this as SettingsState;
+  return 'SettingsState(notificationsEnabled: ${_this.notificationsEnabled}, osAllows: ${_this.osAllows})';
 }
 
 
@@ -69,7 +75,7 @@ class _$SettingsStateCopyWithImpl<$Res>
 /// Create a copy of SettingsState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? notificationsEnabled = null,Object? osAllows = null,}) {
-  return _then(_self.copyWith(
+  return _then(SettingsState(
 notificationsEnabled: null == notificationsEnabled ? _self.notificationsEnabled : notificationsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,osAllows: null == osAllows ? _self.osAllows : osAllows // ignore: cast_nullable_to_non_nullable
 as bool,
@@ -235,16 +241,18 @@ _$SettingsStateCopyWith<_SettingsState> get copyWith => __$SettingsStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled)&&(identical(other.osAllows, osAllows) || other.osAllows == osAllows));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SettingsState&&(identical(other.notificationsEnabled, notificationsEnabled) || other.notificationsEnabled == notificationsEnabled)&&(identical(other.osAllows, osAllows) || other.osAllows == osAllows));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,notificationsEnabled,osAllows);
+int get hashCode {
+    return Object.hash(runtimeType,notificationsEnabled,osAllows);
+}
 
 @override
 String toString() {
-  return 'SettingsState(notificationsEnabled: $notificationsEnabled, osAllows: $osAllows)';
+    return 'SettingsState(notificationsEnabled: $notificationsEnabled, osAllows: $osAllows)';
 }
 
 

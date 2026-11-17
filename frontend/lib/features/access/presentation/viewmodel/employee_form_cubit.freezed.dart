@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'employee_form_cubit.dart';
@@ -9,6 +9,7 @@ part of 'employee_form_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -27,16 +28,21 @@ $EmployeeFormStateCopyWith<EmployeeFormState> get copyWith => _$EmployeeFormStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeFormState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as EmployeeFormState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeFormState&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&(identical(other.saved, _this.saved) || other.saved == _this.saved)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isSubmitting,saved,failure);
+int get hashCode {
+  final _this = this as EmployeeFormState;
+  return Object.hash(runtimeType,_this.isSubmitting,_this.saved,_this.failure);
+}
 
 @override
 String toString() {
-  return 'EmployeeFormState(isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
+  final _this = this as EmployeeFormState;
+  return 'EmployeeFormState(isSubmitting: ${_this.isSubmitting}, saved: ${_this.saved}, failure: ${_this.failure})';
 }
 
 
@@ -65,7 +71,7 @@ class _$EmployeeFormStateCopyWithImpl<$Res>
 /// Create a copy of EmployeeFormState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isSubmitting = null,Object? saved = freezed,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(EmployeeFormState(
 isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,saved: freezed == saved ? _self.saved : saved // ignore: cast_nullable_to_non_nullable
 as AuthUser?,failure: freezed == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
@@ -253,16 +259,18 @@ _$EmployeeFormStateCopyWith<_EmployeeFormState> get copyWith => __$EmployeeFormS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeFormState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeFormState&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isSubmitting,saved,failure);
+int get hashCode {
+    return Object.hash(runtimeType,isSubmitting,saved,failure);
+}
 
 @override
 String toString() {
-  return 'EmployeeFormState(isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
+    return 'EmployeeFormState(isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
 }
 
 

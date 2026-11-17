@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'add_customer_cubit.dart';
@@ -9,6 +9,7 @@ part of 'add_customer_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$AddCustomerState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddCustomerState()';
+    return 'AddCustomerState()';
 }
 
 
@@ -197,7 +198,7 @@ class AddCustomerInitial implements AddCustomerState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddCustomerState.initial()';
+    return 'AddCustomerState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class AddCustomerSubmitting implements AddCustomerState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddCustomerState.submitting()';
+    return 'AddCustomerState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $AddCustomerSuccessCopyWith<AddCustomerSuccess> get copyWith => _$AddCustomerSuc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerSuccess&&(identical(other.customer, customer) || other.customer == customer));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerSuccess&&(identical(other.customer, customer) || other.customer == customer));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,customer);
+int get hashCode {
+    return Object.hash(runtimeType,customer);
+}
 
 @override
 String toString() {
-  return 'AddCustomerState.success(customer: $customer)';
+    return 'AddCustomerState.success(customer: $customer)';
 }
 
 
@@ -341,16 +344,18 @@ $AddCustomerFailureCopyWith<AddCustomerFailure> get copyWith => _$AddCustomerFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AddCustomerFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'AddCustomerState.failure(failure: $failure)';
+    return 'AddCustomerState.failure(failure: $failure)';
 }
 
 

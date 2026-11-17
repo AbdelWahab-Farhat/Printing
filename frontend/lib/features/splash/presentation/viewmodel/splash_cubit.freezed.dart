@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'splash_cubit.dart';
@@ -9,18 +9,25 @@ part of 'splash_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$SplashState {
-
+mixin _$SplashState implements DiagnosticableTreeMixin {
 
 
 
 
 @override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SplashState'))
+    ;
+}
+
+@override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashState);
 }
 
 
@@ -28,8 +35,8 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
-  return 'SplashState()';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    return 'SplashState()';
 }
 
 
@@ -186,7 +193,7 @@ return unreachable(_that.failure);case _:
 /// @nodoc
 
 
-class SplashChecking implements SplashState {
+class SplashChecking with DiagnosticableTreeMixin implements SplashState {
   const SplashChecking();
   
 
@@ -194,10 +201,16 @@ class SplashChecking implements SplashState {
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SplashState.checking'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashChecking);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashChecking);
 }
 
 
@@ -205,8 +218,8 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
-  return 'SplashState.checking()';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    return 'SplashState.checking()';
 }
 
 
@@ -218,7 +231,7 @@ String toString() {
 /// @nodoc
 
 
-class SplashSignedIn implements SplashState {
+class SplashSignedIn with DiagnosticableTreeMixin implements SplashState {
   const SplashSignedIn();
   
 
@@ -226,10 +239,16 @@ class SplashSignedIn implements SplashState {
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SplashState.signedIn'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashSignedIn);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashSignedIn);
 }
 
 
@@ -237,8 +256,8 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
-  return 'SplashState.signedIn()';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    return 'SplashState.signedIn()';
 }
 
 
@@ -250,7 +269,7 @@ String toString() {
 /// @nodoc
 
 
-class SplashSignedOut implements SplashState {
+class SplashSignedOut with DiagnosticableTreeMixin implements SplashState {
   const SplashSignedOut();
   
 
@@ -258,10 +277,16 @@ class SplashSignedOut implements SplashState {
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SplashState.signedOut'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashSignedOut);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashSignedOut);
 }
 
 
@@ -269,8 +294,8 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
-  return 'SplashState.signedOut()';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    return 'SplashState.signedOut()';
 }
 
 
@@ -282,7 +307,7 @@ String toString() {
 /// @nodoc
 
 
-class SplashUnreachable implements SplashState {
+class SplashUnreachable with DiagnosticableTreeMixin implements SplashState {
   const SplashUnreachable(this.failure);
   
 
@@ -295,19 +320,27 @@ class SplashUnreachable implements SplashState {
 $SplashUnreachableCopyWith<SplashUnreachable> get copyWith => _$SplashUnreachableCopyWithImpl<SplashUnreachable>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    properties
+    ..add(DiagnosticsProperty('type', 'SplashState.unreachable'))
+    ..add(DiagnosticsProperty('failure', failure));
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashUnreachable&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SplashUnreachable&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
-String toString() {
-  return 'SplashState.unreachable(failure: $failure)';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+    return 'SplashState.unreachable(failure: $failure)';
 }
 
 

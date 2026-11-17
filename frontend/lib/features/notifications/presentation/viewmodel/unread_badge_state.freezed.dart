@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'unread_badge_state.dart';
@@ -9,6 +9,7 @@ part of 'unread_badge_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$UnreadBadgeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'UnreadBadgeState()';
+    return 'UnreadBadgeState()';
 }
 
 
@@ -197,7 +198,7 @@ class UnreadBadgeInitial implements UnreadBadgeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'UnreadBadgeState.initial()';
+    return 'UnreadBadgeState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class UnreadBadgeLoading implements UnreadBadgeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'UnreadBadgeState.loading()';
+    return 'UnreadBadgeState.loading()';
 }
 
 
@@ -266,16 +267,18 @@ $UnreadBadgeLoadedCopyWith<UnreadBadgeLoaded> get copyWith => _$UnreadBadgeLoade
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeLoaded&&(identical(other.count, count) || other.count == count));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeLoaded&&(identical(other.count, count) || other.count == count));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,count);
+int get hashCode {
+    return Object.hash(runtimeType,count);
+}
 
 @override
 String toString() {
-  return 'UnreadBadgeState.loaded(count: $count)';
+    return 'UnreadBadgeState.loaded(count: $count)';
 }
 
 
@@ -332,16 +335,18 @@ $UnreadBadgeFailureCopyWith<UnreadBadgeFailure> get copyWith => _$UnreadBadgeFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnreadBadgeFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'UnreadBadgeState.failure(failure: $failure)';
+    return 'UnreadBadgeState.failure(failure: $failure)';
 }
 
 
