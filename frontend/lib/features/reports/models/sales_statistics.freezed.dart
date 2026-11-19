@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'sales_statistics.dart';
@@ -9,6 +9,7 @@ part of 'sales_statistics.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -38,16 +39,21 @@ $SalesStatisticsCopyWith<SalesStatistics> get copyWith => _$SalesStatisticsCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesStatistics&&(identical(other.period, period) || other.period == period)&&(identical(other.salesValue, salesValue) || other.salesValue == salesValue)&&const DeepCollectionEquality().equals(other.byType, byType)&&(identical(other.weightComparison, weightComparison) || other.weightComparison == weightComparison)&&(identical(other.printedPieces, printedPieces) || other.printedPieces == printedPieces)&&(identical(other.ordersCounted, ordersCounted) || other.ordersCounted == ordersCounted));
+  final _this = this as SalesStatistics;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesStatistics&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.salesValue, _this.salesValue) || other.salesValue == _this.salesValue)&&const DeepCollectionEquality().equals(other.byType, _this.byType)&&(identical(other.weightComparison, _this.weightComparison) || other.weightComparison == _this.weightComparison)&&(identical(other.printedPieces, _this.printedPieces) || other.printedPieces == _this.printedPieces)&&(identical(other.ordersCounted, _this.ordersCounted) || other.ordersCounted == _this.ordersCounted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,salesValue,const DeepCollectionEquality().hash(byType),weightComparison,printedPieces,ordersCounted);
+int get hashCode {
+  final _this = this as SalesStatistics;
+  return Object.hash(runtimeType,_this.period,_this.salesValue,const DeepCollectionEquality().hash(_this.byType),_this.weightComparison,_this.printedPieces,_this.ordersCounted);
+}
 
 @override
 String toString() {
-  return 'SalesStatistics(period: $period, salesValue: $salesValue, byType: $byType, weightComparison: $weightComparison, printedPieces: $printedPieces, ordersCounted: $ordersCounted)';
+  final _this = this as SalesStatistics;
+  return 'SalesStatistics(period: ${_this.period}, salesValue: ${_this.salesValue}, byType: ${_this.byType}, weightComparison: ${_this.weightComparison}, printedPieces: ${_this.printedPieces}, ordersCounted: ${_this.ordersCounted})';
 }
 
 
@@ -76,7 +82,7 @@ class _$SalesStatisticsCopyWithImpl<$Res>
 /// Create a copy of SalesStatistics
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? salesValue = null,Object? byType = null,Object? weightComparison = null,Object? printedPieces = null,Object? ordersCounted = null,}) {
-  return _then(_self.copyWith(
+  return _then(SalesStatistics(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as StatisticsPeriod,salesValue: null == salesValue ? _self.salesValue : salesValue // ignore: cast_nullable_to_non_nullable
 as SalesValue,byType: null == byType ? _self.byType : byType // ignore: cast_nullable_to_non_nullable
@@ -260,7 +266,7 @@ return $default(_that.period,_that.salesValue,_that.byType,_that.weightCompariso
 @JsonSerializable()
 
 class _SalesStatistics extends SalesStatistics {
-  const _SalesStatistics({required this.period, @JsonKey(name: 'sales_value') required this.salesValue, @JsonKey(name: 'by_type') required final  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison') required this.weightComparison, @JsonKey(name: 'printed_pieces') required this.printedPieces, @JsonKey(name: 'orders_counted') required this.ordersCounted}): _byType = byType,super._();
+  const _SalesStatistics({required this.period, @JsonKey(name: 'sales_value') required this.salesValue, @JsonKey(name: 'by_type') required  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison') required this.weightComparison, @JsonKey(name: 'printed_pieces') required this.printedPieces, @JsonKey(name: 'orders_counted') required this.ordersCounted}): _byType = byType,super._();
   factory _SalesStatistics.fromJson(Map<String, dynamic> json) => _$SalesStatisticsFromJson(json);
 
 @override final  StatisticsPeriod period;
@@ -299,16 +305,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesStatistics&&(identical(other.period, period) || other.period == period)&&(identical(other.salesValue, salesValue) || other.salesValue == salesValue)&&const DeepCollectionEquality().equals(other._byType, _byType)&&(identical(other.weightComparison, weightComparison) || other.weightComparison == weightComparison)&&(identical(other.printedPieces, printedPieces) || other.printedPieces == printedPieces)&&(identical(other.ordersCounted, ordersCounted) || other.ordersCounted == ordersCounted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesStatistics&&(identical(other.period, period) || other.period == period)&&(identical(other.salesValue, salesValue) || other.salesValue == salesValue)&&const DeepCollectionEquality().equals(other.byType, _byType)&&(identical(other.weightComparison, weightComparison) || other.weightComparison == weightComparison)&&(identical(other.printedPieces, printedPieces) || other.printedPieces == printedPieces)&&(identical(other.ordersCounted, ordersCounted) || other.ordersCounted == ordersCounted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,salesValue,const DeepCollectionEquality().hash(_byType),weightComparison,printedPieces,ordersCounted);
+int get hashCode {
+    return Object.hash(runtimeType,period,salesValue,const DeepCollectionEquality().hash(_byType),weightComparison,printedPieces,ordersCounted);
+}
 
 @override
 String toString() {
-  return 'SalesStatistics(period: $period, salesValue: $salesValue, byType: $byType, weightComparison: $weightComparison, printedPieces: $printedPieces, ordersCounted: $ordersCounted)';
+    return 'SalesStatistics(period: $period, salesValue: $salesValue, byType: $byType, weightComparison: $weightComparison, printedPieces: $printedPieces, ordersCounted: $ordersCounted)';
 }
 
 
@@ -404,16 +412,21 @@ $StatisticsPeriodCopyWith<StatisticsPeriod> get copyWith => _$StatisticsPeriodCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StatisticsPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
+  final _this = this as StatisticsPeriod;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StatisticsPeriod&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,from,to);
+int get hashCode {
+  final _this = this as StatisticsPeriod;
+  return Object.hash(runtimeType,_this.from,_this.to);
+}
 
 @override
 String toString() {
-  return 'StatisticsPeriod(from: $from, to: $to)';
+  final _this = this as StatisticsPeriod;
+  return 'StatisticsPeriod(from: ${_this.from}, to: ${_this.to})';
 }
 
 
@@ -442,7 +455,7 @@ class _$StatisticsPeriodCopyWithImpl<$Res>
 /// Create a copy of StatisticsPeriod
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? from = null,Object? to = null,}) {
-  return _then(_self.copyWith(
+  return _then(StatisticsPeriod(
 from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as String,to: null == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
 as String,
@@ -605,16 +618,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StatisticsPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StatisticsPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,from,to);
+int get hashCode {
+    return Object.hash(runtimeType,from,to);
+}
 
 @override
 String toString() {
-  return 'StatisticsPeriod(from: $from, to: $to)';
+    return 'StatisticsPeriod(from: $from, to: $to)';
 }
 
 
@@ -670,16 +685,21 @@ $SalesValueCopyWith<SalesValue> get copyWith => _$SalesValueCopyWithImpl<SalesVa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesValue&&(identical(other.plain, plain) || other.plain == plain)&&(identical(other.printed, printed) || other.printed == printed)&&(identical(other.total, total) || other.total == total));
+  final _this = this as SalesValue;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesValue&&(identical(other.plain, _this.plain) || other.plain == _this.plain)&&(identical(other.printed, _this.printed) || other.printed == _this.printed)&&(identical(other.total, _this.total) || other.total == _this.total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,plain,printed,total);
+int get hashCode {
+  final _this = this as SalesValue;
+  return Object.hash(runtimeType,_this.plain,_this.printed,_this.total);
+}
 
 @override
 String toString() {
-  return 'SalesValue(plain: $plain, printed: $printed, total: $total)';
+  final _this = this as SalesValue;
+  return 'SalesValue(plain: ${_this.plain}, printed: ${_this.printed}, total: ${_this.total})';
 }
 
 
@@ -708,7 +728,7 @@ class _$SalesValueCopyWithImpl<$Res>
 /// Create a copy of SalesValue
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? plain = null,Object? printed = null,Object? total = null,}) {
-  return _then(_self.copyWith(
+  return _then(SalesValue(
 plain: null == plain ? _self.plain : plain // ignore: cast_nullable_to_non_nullable
 as String,printed: null == printed ? _self.printed : printed // ignore: cast_nullable_to_non_nullable
 as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
@@ -873,16 +893,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesValue&&(identical(other.plain, plain) || other.plain == plain)&&(identical(other.printed, printed) || other.printed == printed)&&(identical(other.total, total) || other.total == total));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesValue&&(identical(other.plain, plain) || other.plain == plain)&&(identical(other.printed, printed) || other.printed == printed)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,plain,printed,total);
+int get hashCode {
+    return Object.hash(runtimeType,plain,printed,total);
+}
 
 @override
 String toString() {
-  return 'SalesValue(plain: $plain, printed: $printed, total: $total)';
+    return 'SalesValue(plain: $plain, printed: $printed, total: $total)';
 }
 
 
@@ -940,16 +962,21 @@ $BagTypeRowCopyWith<BagTypeRow> get copyWith => _$BagTypeRowCopyWithImpl<BagType
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagTypeRow&&(identical(other.type, type) || other.type == type)&&(identical(other.value, value) || other.value == value)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
+  final _this = this as BagTypeRow;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagTypeRow&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg)&&(identical(other.plainKg, _this.plainKg) || other.plainKg == _this.plainKg)&&(identical(other.printedKg, _this.printedKg) || other.printedKg == _this.printedKg)&&(identical(other.pieces, _this.pieces) || other.pieces == _this.pieces));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,value,weightKg,plainKg,printedKg,pieces);
+int get hashCode {
+  final _this = this as BagTypeRow;
+  return Object.hash(runtimeType,_this.type,_this.value,_this.weightKg,_this.plainKg,_this.printedKg,_this.pieces);
+}
 
 @override
 String toString() {
-  return 'BagTypeRow(type: $type, value: $value, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces)';
+  final _this = this as BagTypeRow;
+  return 'BagTypeRow(type: ${_this.type}, value: ${_this.value}, weightKg: ${_this.weightKg}, plainKg: ${_this.plainKg}, printedKg: ${_this.printedKg}, pieces: ${_this.pieces})';
 }
 
 
@@ -978,7 +1005,7 @@ class _$BagTypeRowCopyWithImpl<$Res>
 /// Create a copy of BagTypeRow
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? value = null,Object? weightKg = null,Object? plainKg = null,Object? printedKg = null,Object? pieces = null,}) {
-  return _then(_self.copyWith(
+  return _then(BagTypeRow(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,weightKg: null == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
@@ -1150,16 +1177,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BagTypeRow&&(identical(other.type, type) || other.type == type)&&(identical(other.value, value) || other.value == value)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BagTypeRow&&(identical(other.type, type) || other.type == type)&&(identical(other.value, value) || other.value == value)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,value,weightKg,plainKg,printedKg,pieces);
+int get hashCode {
+    return Object.hash(runtimeType,type,value,weightKg,plainKg,printedKg,pieces);
+}
 
 @override
 String toString() {
-  return 'BagTypeRow(type: $type, value: $value, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces)';
+    return 'BagTypeRow(type: $type, value: $value, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces)';
 }
 
 
@@ -1229,16 +1258,21 @@ $WeightComparisonCopyWith<WeightComparison> get copyWith => _$WeightComparisonCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WeightComparison&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.totalKg, totalKg) || other.totalKg == totalKg)&&(identical(other.printedSharePercent, printedSharePercent) || other.printedSharePercent == printedSharePercent)&&(identical(other.weightCoveragePercent, weightCoveragePercent) || other.weightCoveragePercent == weightCoveragePercent));
+  final _this = this as WeightComparison;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WeightComparison&&(identical(other.plainKg, _this.plainKg) || other.plainKg == _this.plainKg)&&(identical(other.printedKg, _this.printedKg) || other.printedKg == _this.printedKg)&&(identical(other.totalKg, _this.totalKg) || other.totalKg == _this.totalKg)&&(identical(other.printedSharePercent, _this.printedSharePercent) || other.printedSharePercent == _this.printedSharePercent)&&(identical(other.weightCoveragePercent, _this.weightCoveragePercent) || other.weightCoveragePercent == _this.weightCoveragePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,plainKg,printedKg,totalKg,printedSharePercent,weightCoveragePercent);
+int get hashCode {
+  final _this = this as WeightComparison;
+  return Object.hash(runtimeType,_this.plainKg,_this.printedKg,_this.totalKg,_this.printedSharePercent,_this.weightCoveragePercent);
+}
 
 @override
 String toString() {
-  return 'WeightComparison(plainKg: $plainKg, printedKg: $printedKg, totalKg: $totalKg, printedSharePercent: $printedSharePercent, weightCoveragePercent: $weightCoveragePercent)';
+  final _this = this as WeightComparison;
+  return 'WeightComparison(plainKg: ${_this.plainKg}, printedKg: ${_this.printedKg}, totalKg: ${_this.totalKg}, printedSharePercent: ${_this.printedSharePercent}, weightCoveragePercent: ${_this.weightCoveragePercent})';
 }
 
 
@@ -1267,7 +1301,7 @@ class _$WeightComparisonCopyWithImpl<$Res>
 /// Create a copy of WeightComparison
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? plainKg = null,Object? printedKg = null,Object? totalKg = null,Object? printedSharePercent = null,Object? weightCoveragePercent = null,}) {
-  return _then(_self.copyWith(
+  return _then(WeightComparison(
 plainKg: null == plainKg ? _self.plainKg : plainKg // ignore: cast_nullable_to_non_nullable
 as String,printedKg: null == printedKg ? _self.printedKg : printedKg // ignore: cast_nullable_to_non_nullable
 as String,totalKg: null == totalKg ? _self.totalKg : totalKg // ignore: cast_nullable_to_non_nullable
@@ -1446,16 +1480,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WeightComparison&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.totalKg, totalKg) || other.totalKg == totalKg)&&(identical(other.printedSharePercent, printedSharePercent) || other.printedSharePercent == printedSharePercent)&&(identical(other.weightCoveragePercent, weightCoveragePercent) || other.weightCoveragePercent == weightCoveragePercent));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WeightComparison&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.totalKg, totalKg) || other.totalKg == totalKg)&&(identical(other.printedSharePercent, printedSharePercent) || other.printedSharePercent == printedSharePercent)&&(identical(other.weightCoveragePercent, weightCoveragePercent) || other.weightCoveragePercent == weightCoveragePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,plainKg,printedKg,totalKg,printedSharePercent,weightCoveragePercent);
+int get hashCode {
+    return Object.hash(runtimeType,plainKg,printedKg,totalKg,printedSharePercent,weightCoveragePercent);
+}
 
 @override
 String toString() {
-  return 'WeightComparison(plainKg: $plainKg, printedKg: $printedKg, totalKg: $totalKg, printedSharePercent: $printedSharePercent, weightCoveragePercent: $weightCoveragePercent)';
+    return 'WeightComparison(plainKg: $plainKg, printedKg: $printedKg, totalKg: $totalKg, printedSharePercent: $printedSharePercent, weightCoveragePercent: $weightCoveragePercent)';
 }
 
 
@@ -1514,16 +1550,21 @@ $PrintedPiecesCopyWith<PrintedPieces> get copyWith => _$PrintedPiecesCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PrintedPieces&&(identical(other.count, count) || other.count == count)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg));
+  final _this = this as PrintedPieces;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PrintedPieces&&(identical(other.count, _this.count) || other.count == _this.count)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,count,weightKg);
+int get hashCode {
+  final _this = this as PrintedPieces;
+  return Object.hash(runtimeType,_this.count,_this.weightKg);
+}
 
 @override
 String toString() {
-  return 'PrintedPieces(count: $count, weightKg: $weightKg)';
+  final _this = this as PrintedPieces;
+  return 'PrintedPieces(count: ${_this.count}, weightKg: ${_this.weightKg})';
 }
 
 
@@ -1552,7 +1593,7 @@ class _$PrintedPiecesCopyWithImpl<$Res>
 /// Create a copy of PrintedPieces
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? count = null,Object? weightKg = null,}) {
-  return _then(_self.copyWith(
+  return _then(PrintedPieces(
 count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
 as int,weightKg: null == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1715,16 +1756,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PrintedPieces&&(identical(other.count, count) || other.count == count)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PrintedPieces&&(identical(other.count, count) || other.count == count)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,count,weightKg);
+int get hashCode {
+    return Object.hash(runtimeType,count,weightKg);
+}
 
 @override
 String toString() {
-  return 'PrintedPieces(count: $count, weightKg: $weightKg)';
+    return 'PrintedPieces(count: $count, weightKg: $weightKg)';
 }
 
 

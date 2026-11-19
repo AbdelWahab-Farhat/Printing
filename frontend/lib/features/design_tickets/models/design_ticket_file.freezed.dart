@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'design_ticket_file.dart';
@@ -9,6 +9,7 @@ part of 'design_ticket_file.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -42,16 +43,21 @@ $DesignTicketFileCopyWith<DesignTicketFile> get copyWith => _$DesignTicketFileCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketFile&&(identical(other.id, id) || other.id == id)&&(identical(other.designTicketId, designTicketId) || other.designTicketId == designTicketId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.label, label) || other.label == label)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.printColors, printColors)&&(identical(other.fileKind, fileKind) || other.fileKind == fileKind)&&(identical(other.fileKindLabel, fileKindLabel) || other.fileKindLabel == fileKindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isAwaitingReview, isAwaitingReview) || other.isAwaitingReview == isAwaitingReview)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewer, reviewer) || other.reviewer == reviewer)&&(identical(other.uploader, uploader) || other.uploader == uploader)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as DesignTicketFile;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketFile&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.designTicketId, _this.designTicketId) || other.designTicketId == _this.designTicketId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.printColors, _this.printColors)&&(identical(other.fileKind, _this.fileKind) || other.fileKind == _this.fileKind)&&(identical(other.fileKindLabel, _this.fileKindLabel) || other.fileKindLabel == _this.fileKindLabel)&&(identical(other.mimeType, _this.mimeType) || other.mimeType == _this.mimeType)&&(identical(other.originalFilename, _this.originalFilename) || other.originalFilename == _this.originalFilename)&&(identical(other.sizeBytes, _this.sizeBytes) || other.sizeBytes == _this.sizeBytes)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx)&&(identical(other.fileUrl, _this.fileUrl) || other.fileUrl == _this.fileUrl)&&(identical(other.previewUrl, _this.previewUrl) || other.previewUrl == _this.previewUrl)&&(identical(other.version, _this.version) || other.version == _this.version)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.isAwaitingReview, _this.isAwaitingReview) || other.isAwaitingReview == _this.isAwaitingReview)&&(identical(other.reviewNote, _this.reviewNote) || other.reviewNote == _this.reviewNote)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt)&&(identical(other.reviewer, _this.reviewer) || other.reviewer == _this.reviewer)&&(identical(other.uploader, _this.uploader) || other.uploader == _this.uploader)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,designTicketId,kind,kindLabel,label,note,const DeepCollectionEquality().hash(printColors),fileKind,fileKindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,version,status,statusLabel,isAwaitingReview,reviewNote,reviewedAt,reviewer,uploader,createdAt]);
+int get hashCode {
+  final _this = this as DesignTicketFile;
+  return Object.hashAll([runtimeType,_this.id,_this.designTicketId,_this.kind,_this.kindLabel,_this.label,_this.note,const DeepCollectionEquality().hash(_this.printColors),_this.fileKind,_this.fileKindLabel,_this.mimeType,_this.originalFilename,_this.sizeBytes,_this.widthPx,_this.heightPx,_this.fileUrl,_this.previewUrl,_this.version,_this.status,_this.statusLabel,_this.isAwaitingReview,_this.reviewNote,_this.reviewedAt,_this.reviewer,_this.uploader,_this.createdAt]);
+}
 
 @override
 String toString() {
-  return 'DesignTicketFile(id: $id, designTicketId: $designTicketId, kind: $kind, kindLabel: $kindLabel, label: $label, note: $note, printColors: $printColors, fileKind: $fileKind, fileKindLabel: $fileKindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, version: $version, status: $status, statusLabel: $statusLabel, isAwaitingReview: $isAwaitingReview, reviewNote: $reviewNote, reviewedAt: $reviewedAt, reviewer: $reviewer, uploader: $uploader, createdAt: $createdAt)';
+  final _this = this as DesignTicketFile;
+  return 'DesignTicketFile(id: ${_this.id}, designTicketId: ${_this.designTicketId}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, label: ${_this.label}, note: ${_this.note}, printColors: ${_this.printColors}, fileKind: ${_this.fileKind}, fileKindLabel: ${_this.fileKindLabel}, mimeType: ${_this.mimeType}, originalFilename: ${_this.originalFilename}, sizeBytes: ${_this.sizeBytes}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx}, fileUrl: ${_this.fileUrl}, previewUrl: ${_this.previewUrl}, version: ${_this.version}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, isAwaitingReview: ${_this.isAwaitingReview}, reviewNote: ${_this.reviewNote}, reviewedAt: ${_this.reviewedAt}, reviewer: ${_this.reviewer}, uploader: ${_this.uploader}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -80,7 +86,7 @@ class _$DesignTicketFileCopyWithImpl<$Res>
 /// Create a copy of DesignTicketFile
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? designTicketId = null,Object? kind = null,Object? kindLabel = null,Object? label = null,Object? note = freezed,Object? printColors = null,Object? fileKind = null,Object? fileKindLabel = null,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? previewUrl = freezed,Object? version = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? isAwaitingReview = null,Object? reviewNote = freezed,Object? reviewedAt = freezed,Object? reviewer = freezed,Object? uploader = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketFile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,designTicketId: null == designTicketId ? _self.designTicketId : designTicketId // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -271,7 +277,7 @@ return $default(_that.id,_that.designTicketId,_that.kind,_that.kindLabel,_that.l
 @JsonSerializable()
 
 class _DesignTicketFile extends DesignTicketFile {
-  const _DesignTicketFile({required this.id, @JsonKey(name: 'design_ticket_id') required this.designTicketId, @JsonKey(unknownEnumValue: DesignTicketFileKind.unknown) required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.label, this.note, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'file_kind', unknownEnumValue: DesignKind.unknown) required this.fileKind, @JsonKey(name: 'file_kind_label') required this.fileKindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'preview_url') this.previewUrl, this.version, @JsonKey(unknownEnumValue: DesignSubmissionStatus.unknown) this.status, @JsonKey(name: 'status_label') this.statusLabel, @JsonKey(name: 'is_awaiting_review') this.isAwaitingReview = false, @JsonKey(name: 'review_note') this.reviewNote, @JsonKey(name: 'reviewed_at') this.reviewedAt, this.reviewer, this.uploader, @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors,super._();
+  const _DesignTicketFile({required this.id, @JsonKey(name: 'design_ticket_id') required this.designTicketId, @JsonKey(unknownEnumValue: DesignTicketFileKind.unknown) required this.kind, @JsonKey(name: 'kind_label') required this.kindLabel, required this.label, this.note, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'file_kind', unknownEnumValue: DesignKind.unknown) required this.fileKind, @JsonKey(name: 'file_kind_label') required this.fileKindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'preview_url') this.previewUrl, this.version, @JsonKey(unknownEnumValue: DesignSubmissionStatus.unknown) this.status, @JsonKey(name: 'status_label') this.statusLabel, @JsonKey(name: 'is_awaiting_review') this.isAwaitingReview = false, @JsonKey(name: 'review_note') this.reviewNote, @JsonKey(name: 'reviewed_at') this.reviewedAt, this.reviewer, this.uploader, @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors,super._();
   factory _DesignTicketFile.fromJson(Map<String, dynamic> json) => _$DesignTicketFileFromJson(json);
 
 @override final  int id;
@@ -335,16 +341,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketFile&&(identical(other.id, id) || other.id == id)&&(identical(other.designTicketId, designTicketId) || other.designTicketId == designTicketId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.label, label) || other.label == label)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other._printColors, _printColors)&&(identical(other.fileKind, fileKind) || other.fileKind == fileKind)&&(identical(other.fileKindLabel, fileKindLabel) || other.fileKindLabel == fileKindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isAwaitingReview, isAwaitingReview) || other.isAwaitingReview == isAwaitingReview)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewer, reviewer) || other.reviewer == reviewer)&&(identical(other.uploader, uploader) || other.uploader == uploader)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketFile&&(identical(other.id, id) || other.id == id)&&(identical(other.designTicketId, designTicketId) || other.designTicketId == designTicketId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.label, label) || other.label == label)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.printColors, _printColors)&&(identical(other.fileKind, fileKind) || other.fileKind == fileKind)&&(identical(other.fileKindLabel, fileKindLabel) || other.fileKindLabel == fileKindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.previewUrl, previewUrl) || other.previewUrl == previewUrl)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isAwaitingReview, isAwaitingReview) || other.isAwaitingReview == isAwaitingReview)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.reviewer, reviewer) || other.reviewer == reviewer)&&(identical(other.uploader, uploader) || other.uploader == uploader)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,designTicketId,kind,kindLabel,label,note,const DeepCollectionEquality().hash(_printColors),fileKind,fileKindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,version,status,statusLabel,isAwaitingReview,reviewNote,reviewedAt,reviewer,uploader,createdAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,designTicketId,kind,kindLabel,label,note,const DeepCollectionEquality().hash(_printColors),fileKind,fileKindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,previewUrl,version,status,statusLabel,isAwaitingReview,reviewNote,reviewedAt,reviewer,uploader,createdAt]);
+}
 
 @override
 String toString() {
-  return 'DesignTicketFile(id: $id, designTicketId: $designTicketId, kind: $kind, kindLabel: $kindLabel, label: $label, note: $note, printColors: $printColors, fileKind: $fileKind, fileKindLabel: $fileKindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, version: $version, status: $status, statusLabel: $statusLabel, isAwaitingReview: $isAwaitingReview, reviewNote: $reviewNote, reviewedAt: $reviewedAt, reviewer: $reviewer, uploader: $uploader, createdAt: $createdAt)';
+    return 'DesignTicketFile(id: $id, designTicketId: $designTicketId, kind: $kind, kindLabel: $kindLabel, label: $label, note: $note, printColors: $printColors, fileKind: $fileKind, fileKindLabel: $fileKindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, previewUrl: $previewUrl, version: $version, status: $status, statusLabel: $statusLabel, isAwaitingReview: $isAwaitingReview, reviewNote: $reviewNote, reviewedAt: $reviewedAt, reviewer: $reviewer, uploader: $uploader, createdAt: $createdAt)';
 }
 
 
@@ -447,16 +455,21 @@ $DesignTicketActorCopyWith<DesignTicketActor> get copyWith => _$DesignTicketActo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as DesignTicketActor;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketActor&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as DesignTicketActor;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'DesignTicketActor(id: $id, name: $name)';
+  final _this = this as DesignTicketActor;
+  return 'DesignTicketActor(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -485,7 +498,7 @@ class _$DesignTicketActorCopyWithImpl<$Res>
 /// Create a copy of DesignTicketActor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketActor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -648,16 +661,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'DesignTicketActor(id: $id, name: $name)';
+    return 'DesignTicketActor(id: $id, name: $name)';
 }
 
 

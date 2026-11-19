@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'record_movement_cubit.dart';
@@ -9,6 +9,7 @@ part of 'record_movement_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$RecordMovementState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RecordMovementState()';
+    return 'RecordMovementState()';
 }
 
 
@@ -197,7 +198,7 @@ class RecordMovementInitial implements RecordMovementState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RecordMovementState.initial()';
+    return 'RecordMovementState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class RecordMovementSubmitting implements RecordMovementState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RecordMovementState.submitting()';
+    return 'RecordMovementState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $RecordMovementSuccessCopyWith<RecordMovementSuccess> get copyWith => _$RecordMo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementSuccess&&(identical(other.movement, movement) || other.movement == movement));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementSuccess&&(identical(other.movement, movement) || other.movement == movement));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,movement);
+int get hashCode {
+    return Object.hash(runtimeType,movement);
+}
 
 @override
 String toString() {
-  return 'RecordMovementState.success(movement: $movement)';
+    return 'RecordMovementState.success(movement: $movement)';
 }
 
 
@@ -341,16 +344,18 @@ $RecordMovementFailureCopyWith<RecordMovementFailure> get copyWith => _$RecordMo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordMovementFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'RecordMovementState.failure(failure: $failure)';
+    return 'RecordMovementState.failure(failure: $failure)';
 }
 
 

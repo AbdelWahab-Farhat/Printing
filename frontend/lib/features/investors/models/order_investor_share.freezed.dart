@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_investor_share.dart';
@@ -9,6 +9,7 @@ part of 'order_investor_share.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -34,16 +35,21 @@ $OrderInvestorShareCopyWith<OrderInvestorShare> get copyWith => _$OrderInvestorS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderInvestorShare&&(identical(other.dealId, dealId) || other.dealId == dealId)&&(identical(other.dealCode, dealCode) || other.dealCode == dealCode)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.goodsAmount, goodsAmount) || other.goodsAmount == goodsAmount)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPaid, isPaid) || other.isPaid == isPaid)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt));
+  final _this = this as OrderInvestorShare;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderInvestorShare&&(identical(other.dealId, _this.dealId) || other.dealId == _this.dealId)&&(identical(other.dealCode, _this.dealCode) || other.dealCode == _this.dealCode)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.goodsAmount, _this.goodsAmount) || other.goodsAmount == _this.goodsAmount)&&(identical(other.profit, _this.profit) || other.profit == _this.profit)&&(identical(other.investorsShare, _this.investorsShare) || other.investorsShare == _this.investorsShare)&&(identical(other.companyShare, _this.companyShare) || other.companyShare == _this.companyShare)&&(identical(other.isPaid, _this.isPaid) || other.isPaid == _this.isPaid)&&(identical(other.paidAmount, _this.paidAmount) || other.paidAmount == _this.paidAmount)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dealId,dealCode,kind,kindLabel,goodsAmount,profit,investorsShare,companyShare,isPaid,paidAmount,paidAt);
+int get hashCode {
+  final _this = this as OrderInvestorShare;
+  return Object.hash(runtimeType,_this.dealId,_this.dealCode,_this.kind,_this.kindLabel,_this.goodsAmount,_this.profit,_this.investorsShare,_this.companyShare,_this.isPaid,_this.paidAmount,_this.paidAt);
+}
 
 @override
 String toString() {
-  return 'OrderInvestorShare(dealId: $dealId, dealCode: $dealCode, kind: $kind, kindLabel: $kindLabel, goodsAmount: $goodsAmount, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPaid: $isPaid, paidAmount: $paidAmount, paidAt: $paidAt)';
+  final _this = this as OrderInvestorShare;
+  return 'OrderInvestorShare(dealId: ${_this.dealId}, dealCode: ${_this.dealCode}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, goodsAmount: ${_this.goodsAmount}, profit: ${_this.profit}, investorsShare: ${_this.investorsShare}, companyShare: ${_this.companyShare}, isPaid: ${_this.isPaid}, paidAmount: ${_this.paidAmount}, paidAt: ${_this.paidAt})';
 }
 
 
@@ -72,7 +78,7 @@ class _$OrderInvestorShareCopyWithImpl<$Res>
 /// Create a copy of OrderInvestorShare
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? dealId = null,Object? dealCode = null,Object? kind = null,Object? kindLabel = null,Object? goodsAmount = freezed,Object? profit = null,Object? investorsShare = null,Object? companyShare = null,Object? isPaid = null,Object? paidAmount = freezed,Object? paidAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderInvestorShare(
 dealId: null == dealId ? _self.dealId : dealId // ignore: cast_nullable_to_non_nullable
 as int,dealCode: null == dealCode ? _self.dealCode : dealCode // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -259,16 +265,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderInvestorShare&&(identical(other.dealId, dealId) || other.dealId == dealId)&&(identical(other.dealCode, dealCode) || other.dealCode == dealCode)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.goodsAmount, goodsAmount) || other.goodsAmount == goodsAmount)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPaid, isPaid) || other.isPaid == isPaid)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderInvestorShare&&(identical(other.dealId, dealId) || other.dealId == dealId)&&(identical(other.dealCode, dealCode) || other.dealCode == dealCode)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.goodsAmount, goodsAmount) || other.goodsAmount == goodsAmount)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.investorsShare, investorsShare) || other.investorsShare == investorsShare)&&(identical(other.companyShare, companyShare) || other.companyShare == companyShare)&&(identical(other.isPaid, isPaid) || other.isPaid == isPaid)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dealId,dealCode,kind,kindLabel,goodsAmount,profit,investorsShare,companyShare,isPaid,paidAmount,paidAt);
+int get hashCode {
+    return Object.hash(runtimeType,dealId,dealCode,kind,kindLabel,goodsAmount,profit,investorsShare,companyShare,isPaid,paidAmount,paidAt);
+}
 
 @override
 String toString() {
-  return 'OrderInvestorShare(dealId: $dealId, dealCode: $dealCode, kind: $kind, kindLabel: $kindLabel, goodsAmount: $goodsAmount, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPaid: $isPaid, paidAmount: $paidAmount, paidAt: $paidAt)';
+    return 'OrderInvestorShare(dealId: $dealId, dealCode: $dealCode, kind: $kind, kindLabel: $kindLabel, goodsAmount: $goodsAmount, profit: $profit, investorsShare: $investorsShare, companyShare: $companyShare, isPaid: $isPaid, paidAmount: $paidAmount, paidAt: $paidAt)';
 }
 
 

@@ -531,7 +531,8 @@ void main() {
     // on the telephone.
     expect(find.text('العميل: A713'), findsOneWidget);
     expect(find.text('اسامة حماد'), findsNothing);
-    expect(find.text('المصمم: الطابور المشترك'), findsOneWidget);
+    expect(find.text('المصمم: غير مُسنَد لمصمم'), findsOneWidget);
+    expect(find.textContaining('الطابور المشترك'), findsNothing);
   });
 
   testWidgets('the newest design is drawn on the row when there is one', (tester) async {

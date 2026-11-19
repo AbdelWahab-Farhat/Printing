@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'bag_preview_cubit.dart';
@@ -9,6 +9,7 @@ part of 'bag_preview_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $BagPreviewStateCopyWith<BagPreviewState> get copyWith => _$BagPreviewStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewState&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.mockup, mockup) || other.mockup == mockup));
+  final _this = this as BagPreviewState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewState&&(identical(other.bag, _this.bag) || other.bag == _this.bag)&&(identical(other.mockup, _this.mockup) || other.mockup == _this.mockup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bag,mockup);
+int get hashCode {
+  final _this = this as BagPreviewState;
+  return Object.hash(runtimeType,_this.bag,_this.mockup);
+}
 
 @override
 String toString() {
-  return 'BagPreviewState(bag: $bag, mockup: $mockup)';
+  final _this = this as BagPreviewState;
+  return 'BagPreviewState(bag: ${_this.bag}, mockup: ${_this.mockup})';
 }
 
 
@@ -235,16 +241,18 @@ $BagPreviewEmptyCopyWith<BagPreviewEmpty> get copyWith => _$BagPreviewEmptyCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewEmpty&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.mockup, mockup) || other.mockup == mockup));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewEmpty&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.mockup, mockup) || other.mockup == mockup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bag,mockup);
+int get hashCode {
+    return Object.hash(runtimeType,bag,mockup);
+}
 
 @override
 String toString() {
-  return 'BagPreviewState.empty(bag: $bag, mockup: $mockup)';
+    return 'BagPreviewState.empty(bag: $bag, mockup: $mockup)';
 }
 
 
@@ -303,16 +311,18 @@ $BagPreviewLoadingCopyWith<BagPreviewLoading> get copyWith => _$BagPreviewLoadin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewLoading&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.mockup, mockup) || other.mockup == mockup));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewLoading&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.mockup, mockup) || other.mockup == mockup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bag,mockup);
+int get hashCode {
+    return Object.hash(runtimeType,bag,mockup);
+}
 
 @override
 String toString() {
-  return 'BagPreviewState.loading(bag: $bag, mockup: $mockup)';
+    return 'BagPreviewState.loading(bag: $bag, mockup: $mockup)';
 }
 
 
@@ -372,16 +382,18 @@ $BagPreviewReadyCopyWith<BagPreviewReady> get copyWith => _$BagPreviewReadyCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewReady&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.design, design) || other.design == design)&&(identical(other.mockup, mockup) || other.mockup == mockup));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewReady&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.design, design) || other.design == design)&&(identical(other.mockup, mockup) || other.mockup == mockup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bag,design,mockup);
+int get hashCode {
+    return Object.hash(runtimeType,bag,design,mockup);
+}
 
 @override
 String toString() {
-  return 'BagPreviewState.ready(bag: $bag, design: $design, mockup: $mockup)';
+    return 'BagPreviewState.ready(bag: $bag, design: $design, mockup: $mockup)';
 }
 
 
@@ -442,16 +454,18 @@ $BagPreviewFailureCopyWith<BagPreviewFailure> get copyWith => _$BagPreviewFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewFailure&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.mockup, mockup) || other.mockup == mockup));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BagPreviewFailure&&(identical(other.bag, bag) || other.bag == bag)&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.mockup, mockup) || other.mockup == mockup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,bag,failure,mockup);
+int get hashCode {
+    return Object.hash(runtimeType,bag,failure,mockup);
+}
 
 @override
 String toString() {
-  return 'BagPreviewState.failure(bag: $bag, failure: $failure, mockup: $mockup)';
+    return 'BagPreviewState.failure(bag: $bag, failure: $failure, mockup: $mockup)';
 }
 
 

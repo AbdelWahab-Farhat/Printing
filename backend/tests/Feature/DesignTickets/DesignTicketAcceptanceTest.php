@@ -149,7 +149,7 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
         $this->assertSame(0, $ticket->versions()->count());
     }
 
-    public function test_assigning_does_not_start_the_work(): void
+    public function test_assigning_marks_the_ticket_assigned_without_starting_the_work(): void
     {
         // Arrange — routing is a supervisor's act; starting is the designer's.
         [, $employee] = $this->employee();
@@ -168,10 +168,11 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
             $employee,
         );
 
-        // Assert — still «جديد». A ticket addressed to somebody who has not said yet yes is not
-        // work in progress, and counting it as such would make the board's first number wrong.
+        // Assert — «مُسنَد», not «قيد التصميم»: the designer has not said yes yet.
         $response->assertOk()
-            ->assertJsonPath('data.status', DesignTicketStatus::New->value)
+            ->assertJsonPath('data.status', DesignTicketStatus::Assigned->value)
+            ->assertJsonPath('data.status_label', 'مُسنَد')
+            ->assertJsonPath('data.is_in_shared_pool', false)
             ->assertJsonPath('data.designer.id', $designerUser->id)
             ->assertJsonPath('data.accepted_by', null);
     }
@@ -199,9 +200,11 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
         );
 
         // Assert — two columns, two different facts: who it is addressed to now, and who took it.
+        // The status describes the work, so it stays «قيد التصميم» rather than going to «مُسنَد».
         $response->assertOk()
             ->assertJsonPath('data.designer.id', $replacement->id)
-            ->assertJsonPath('data.accepted_by.id', $original->id);
+            ->assertJsonPath('data.accepted_by.id', $original->id)
+            ->assertJsonPath('data.status', DesignTicketStatus::InProgress->value);
     }
 
     public function test_a_ticket_can_be_returned_to_the_shared_pool(): void
@@ -228,6 +231,7 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
 
         // Assert
         $response->assertOk()
+            ->assertJsonPath('message', 'تم إلغاء الإسناد — غير مُسنَد لمصمم')
             ->assertJsonPath('data.designer', null)
             ->assertJsonPath('data.is_in_shared_pool', true);
     }
@@ -256,7 +260,7 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
     }
 
     /**
-     * «أرجِعها إلى الطابور المشترك» after somebody has already taken it — the designer who went
+     * «غير مُسنَد لمصمم» after somebody has already taken it — the designer who went
      * home sick.
      *
      * **Asserted from the next designer's side rather than from the columns**, because the failure
@@ -311,13 +315,10 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
     }
 
     /**
-     * The same move on a ticket nobody had taken yet leaves the status alone.
-     *
-     * A ticket that was merely *addressed* to a designer is still «جديد», so a release has no
-     * claim to undo — and rewriting the status to the value it already held would put a move in
-     * the history that nobody made.
+     * The same move on a ticket nobody had taken yet: «مُسنَد» goes back to «جديد», and there is
+     * no claim to release.
      */
-    public function test_returning_an_unaccepted_ticket_to_the_pool_changes_only_the_address(): void
+    public function test_returning_an_unaccepted_ticket_to_the_pool_makes_it_new_again(): void
     {
         // Arrange
         [, $employee] = $this->employee();
@@ -331,6 +332,7 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
                 $employee,
             )->json('data.id'),
         );
+        $this->assertSame(DesignTicketStatus::Assigned, $ticket->status);
 
         // Act
         $this->patchJson(

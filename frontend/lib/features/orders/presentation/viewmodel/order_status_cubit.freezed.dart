@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_status_cubit.dart';
@@ -9,6 +9,7 @@ part of 'order_status_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$OrderStatusState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderStatusState()';
+    return 'OrderStatusState()';
 }
 
 
@@ -191,7 +192,7 @@ class OrderStatusLoading extends OrderStatusState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderStatusState.loading()';
+    return 'OrderStatusState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class OrderStatusReady extends OrderStatusState {
-  const OrderStatusReady({required this.order, this.selected, final  Map<String, Object?> values = const <String, Object?>{}, this.isSubmitting = false}): _values = values,super._();
+  const OrderStatusReady({required this.order, this.selected,  Map<String, Object?> values = const <String, Object?>{}, this.isSubmitting = false}): _values = values,super._();
   
 
  final  Order order;
@@ -243,16 +244,18 @@ $OrderStatusReadyCopyWith<OrderStatusReady> get copyWith => _$OrderStatusReadyCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusReady&&(identical(other.order, order) || other.order == order)&&(identical(other.selected, selected) || other.selected == selected)&&const DeepCollectionEquality().equals(other._values, _values)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusReady&&(identical(other.order, order) || other.order == order)&&(identical(other.selected, selected) || other.selected == selected)&&const DeepCollectionEquality().equals(other.values, _values)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order,selected,const DeepCollectionEquality().hash(_values),isSubmitting);
+int get hashCode {
+    return Object.hash(runtimeType,order,selected,const DeepCollectionEquality().hash(_values),isSubmitting);
+}
 
 @override
 String toString() {
-  return 'OrderStatusState.ready(order: $order, selected: $selected, values: $values, isSubmitting: $isSubmitting)';
+    return 'OrderStatusState.ready(order: $order, selected: $selected, values: $values, isSubmitting: $isSubmitting)';
 }
 
 
@@ -318,7 +321,7 @@ $OrderTransitionCopyWith<$Res>? get selected {
 
 
 class OrderStatusFailure extends OrderStatusState {
-  const OrderStatusFailure({required this.failure, this.order, this.selected, final  Map<String, Object?> values = const <String, Object?>{}}): _values = values,super._();
+  const OrderStatusFailure({required this.failure, this.order, this.selected,  Map<String, Object?> values = const <String, Object?>{}}): _values = values,super._();
   
 
  final  Failure failure;
@@ -342,16 +345,18 @@ $OrderStatusFailureCopyWith<OrderStatusFailure> get copyWith => _$OrderStatusFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order)&&(identical(other.selected, selected) || other.selected == selected)&&const DeepCollectionEquality().equals(other._values, _values));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderStatusFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order)&&(identical(other.selected, selected) || other.selected == selected)&&const DeepCollectionEquality().equals(other.values, _values));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,order,selected,const DeepCollectionEquality().hash(_values));
+int get hashCode {
+    return Object.hash(runtimeType,failure,order,selected,const DeepCollectionEquality().hash(_values));
+}
 
 @override
 String toString() {
-  return 'OrderStatusState.failure(failure: $failure, order: $order, selected: $selected, values: $values)';
+    return 'OrderStatusState.failure(failure: $failure, order: $order, selected: $selected, values: $values)';
 }
 
 

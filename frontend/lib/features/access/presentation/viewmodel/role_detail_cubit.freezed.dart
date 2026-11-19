@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'role_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'role_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$RoleDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RoleDetailState()';
+    return 'RoleDetailState()';
 }
 
 
@@ -191,7 +192,7 @@ class RoleDetailLoading implements RoleDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RoleDetailState.loading()';
+    return 'RoleDetailState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class RoleDetailLoaded implements RoleDetailState {
-  const RoleDetailLoaded({required this.role, required final  List<PermissionGroup> groups}): _groups = groups;
+  const RoleDetailLoaded({required this.role, required  List<PermissionGroup> groups}): _groups = groups;
   
 
  final  Role role;
@@ -249,16 +250,18 @@ $RoleDetailLoadedCopyWith<RoleDetailLoaded> get copyWith => _$RoleDetailLoadedCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailLoaded&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other._groups, _groups));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailLoaded&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other.groups, _groups));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,role,const DeepCollectionEquality().hash(_groups));
+int get hashCode {
+    return Object.hash(runtimeType,role,const DeepCollectionEquality().hash(_groups));
+}
 
 @override
 String toString() {
-  return 'RoleDetailState.loaded(role: $role, groups: $groups)';
+    return 'RoleDetailState.loaded(role: $role, groups: $groups)';
 }
 
 
@@ -325,16 +328,18 @@ $RoleDetailFailureCopyWith<RoleDetailFailure> get copyWith => _$RoleDetailFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'RoleDetailState.failure(failure: $failure)';
+    return 'RoleDetailState.failure(failure: $failure)';
 }
 
 

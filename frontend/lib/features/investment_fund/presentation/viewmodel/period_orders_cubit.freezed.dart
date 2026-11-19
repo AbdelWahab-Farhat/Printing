@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'period_orders_cubit.dart';
@@ -9,6 +9,7 @@ part of 'period_orders_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$PeriodOrdersState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PeriodOrdersState()';
+    return 'PeriodOrdersState()';
 }
 
 
@@ -191,7 +192,7 @@ class PeriodOrdersLoading implements PeriodOrdersState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PeriodOrdersState.loading()';
+    return 'PeriodOrdersState.loading()';
 }
 
 
@@ -231,16 +232,18 @@ $PeriodOrdersLoadedCopyWith<PeriodOrdersLoaded> get copyWith => _$PeriodOrdersLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoaded&&(identical(other.held, held) || other.held == held)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.query, query) || other.query == query)&&(identical(other.sort, sort) || other.sort == sort));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersLoaded&&(identical(other.held, held) || other.held == held)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.query, query) || other.query == query)&&(identical(other.sort, sort) || other.sort == sort));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,held,filter,query,sort);
+int get hashCode {
+    return Object.hash(runtimeType,held,filter,query,sort);
+}
 
 @override
 String toString() {
-  return 'PeriodOrdersState.loaded(held: $held, filter: $filter, query: $query, sort: $sort)';
+    return 'PeriodOrdersState.loaded(held: $held, filter: $filter, query: $query, sort: $sort)';
 }
 
 
@@ -309,16 +312,18 @@ $PeriodOrdersFailureCopyWith<PeriodOrdersFailure> get copyWith => _$PeriodOrders
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodOrdersFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'PeriodOrdersState.failure(failure: $failure)';
+    return 'PeriodOrdersState.failure(failure: $failure)';
 }
 
 

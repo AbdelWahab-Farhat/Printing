@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'save_business_field_cubit.dart';
@@ -9,6 +9,7 @@ part of 'save_business_field_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SaveBusinessFieldState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveBusinessFieldState()';
+    return 'SaveBusinessFieldState()';
 }
 
 
@@ -197,7 +198,7 @@ class SaveBusinessFieldInitial implements SaveBusinessFieldState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveBusinessFieldState.initial()';
+    return 'SaveBusinessFieldState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class SaveBusinessFieldSubmitting implements SaveBusinessFieldState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveBusinessFieldState.submitting()';
+    return 'SaveBusinessFieldState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $SaveBusinessFieldSuccessCopyWith<SaveBusinessFieldSuccess> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldSuccess&&(identical(other.field, field) || other.field == field));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldSuccess&&(identical(other.field, field) || other.field == field));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field);
+int get hashCode {
+    return Object.hash(runtimeType,field);
+}
 
 @override
 String toString() {
-  return 'SaveBusinessFieldState.success(field: $field)';
+    return 'SaveBusinessFieldState.success(field: $field)';
 }
 
 
@@ -341,16 +344,18 @@ $SaveBusinessFieldFailureCopyWith<SaveBusinessFieldFailure> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveBusinessFieldFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SaveBusinessFieldState.failure(failure: $failure)';
+    return 'SaveBusinessFieldState.failure(failure: $failure)';
 }
 
 

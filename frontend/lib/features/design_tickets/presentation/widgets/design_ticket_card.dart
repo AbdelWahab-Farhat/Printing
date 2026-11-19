@@ -20,7 +20,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// have to be fetched — a designer holds no grant on that table, and this card has to draw for
 /// them exactly as it does for the employee who raised it.
 ///
-/// «الطابور المشترك» is called out rather than left to an absent designer's name: unclaimed work
+/// «غير مُسنَد لمصمم» is called out rather than left to an absent designer's name: unclaimed work
 /// is the one thing a designer is scrolling for, and «—» where a name would be does not say it.
 ///
 /// **«قبول» is on the row, and only where the server says this reader may take this ticket.**
@@ -249,7 +249,7 @@ class _Details extends StatelessWidget {
                   Expanded(
                     child: Text(
                       ticket.isInSharedPool
-                          ? 'المصمم: الطابور المشترك'
+                          ? 'المصمم: غير مُسنَد لمصمم'
                           : 'المصمم: ${designer?.name ?? 'غير مُسنَد'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -272,7 +272,7 @@ class _Details extends StatelessWidget {
                   // **زوجُ أيقونةٍ ورقم لا `Badge` مادّيّة**، خلافاً لزرّ المحادثة في شريط
                   // التفاصيل: هذا الصفُّ كلُّه أزواجٌ من أيقونةٍ وكلمة بقياس ١٤، وشارةٌ حمراء
                   // معلَّقةٌ على أيقونةٍ بهذا الحجم تقتطع نفسها. والتمييزُ يأتي من اللون، وهي
-                  // الحيلة التي يستعملها هذا الصفُّ أصلاً لـ«الطابور المشترك».
+                  // الحيلة التي يستعملها هذا الصفُّ أصلاً لـ«غير مُسنَد لمصمم».
                   if (ticket.unreadComments > 0) ...[
                     SizedBox(width: 8.w),
                     Icon(AppIcons.comments, size: 14.sp, color: scheme.primary),

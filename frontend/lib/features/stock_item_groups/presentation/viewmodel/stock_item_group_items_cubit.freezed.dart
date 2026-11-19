@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_item_group_items_cubit.dart';
@@ -9,6 +9,7 @@ part of 'stock_item_group_items_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$StockItemGroupItemsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemGroupItemsState()';
+    return 'StockItemGroupItemsState()';
 }
 
 
@@ -197,7 +198,7 @@ class StockItemGroupItemsInitial implements StockItemGroupItemsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemGroupItemsState.initial()';
+    return 'StockItemGroupItemsState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class StockItemGroupItemsLoading implements StockItemGroupItemsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockItemGroupItemsState.loading()';
+    return 'StockItemGroupItemsState.loading()';
 }
 
 
@@ -266,16 +267,18 @@ $StockItemGroupItemsLoadedCopyWith<StockItemGroupItemsLoaded> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsLoaded&&(identical(other.group, group) || other.group == group));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsLoaded&&(identical(other.group, group) || other.group == group));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,group);
+int get hashCode {
+    return Object.hash(runtimeType,group);
+}
 
 @override
 String toString() {
-  return 'StockItemGroupItemsState.loaded(group: $group)';
+    return 'StockItemGroupItemsState.loaded(group: $group)';
 }
 
 
@@ -341,16 +344,18 @@ $StockItemGroupItemsFailureCopyWith<StockItemGroupItemsFailure> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupItemsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'StockItemGroupItemsState.failure(failure: $failure)';
+    return 'StockItemGroupItemsState.failure(failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'design_ticket.dart';
@@ -9,6 +9,7 @@ part of 'design_ticket.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $DesignTicketTransitionCopyWith<DesignTicketTransition> get copyWith => _$Design
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+  final _this = this as DesignTicketTransition;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketTransition&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+  final _this = this as DesignTicketTransition;
+  return Object.hash(runtimeType,_this.value,_this.label);
+}
 
 @override
 String toString() {
-  return 'DesignTicketTransition(value: $value, label: $label)';
+  final _this = this as DesignTicketTransition;
+  return 'DesignTicketTransition(value: ${_this.value}, label: ${_this.label})';
 }
 
 
@@ -66,7 +72,7 @@ class _$DesignTicketTransitionCopyWithImpl<$Res>
 /// Create a copy of DesignTicketTransition
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? value = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketTransition(
 value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+    return Object.hash(runtimeType,value,label);
+}
 
 @override
 String toString() {
-  return 'DesignTicketTransition(value: $value, label: $label)';
+    return 'DesignTicketTransition(value: $value, label: $label)';
 }
 
 
@@ -294,16 +302,21 @@ $DesignTicketOrderCopyWith<DesignTicketOrder> get copyWith => _$DesignTicketOrde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
+  final _this = this as DesignTicketOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketOrder&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isArchived);
+int get hashCode {
+  final _this = this as DesignTicketOrder;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.isArchived);
+}
 
 @override
 String toString() {
-  return 'DesignTicketOrder(id: $id, code: $code, isArchived: $isArchived)';
+  final _this = this as DesignTicketOrder;
+  return 'DesignTicketOrder(id: ${_this.id}, code: ${_this.code}, isArchived: ${_this.isArchived})';
 }
 
 
@@ -332,7 +345,7 @@ class _$DesignTicketOrderCopyWithImpl<$Res>
 /// Create a copy of DesignTicketOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? isArchived = null,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicketOrder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
@@ -497,16 +510,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicketOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isArchived);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,isArchived);
+}
 
 @override
 String toString() {
-  return 'DesignTicketOrder(id: $id, code: $code, isArchived: $isArchived)';
+    return 'DesignTicketOrder(id: $id, code: $code, isArchived: $isArchived)';
 }
 
 
@@ -570,7 +585,7 @@ mixin _$DesignTicket {
 /// never the second — «لا تضيع هوية المصمم الذي استلم الطلب» is about the second.
  DesignTicketActor? get designer;@JsonKey(name: 'accepted_by') DesignTicketActor? get acceptedBy;@JsonKey(name: 'accepted_at') DateTime? get acceptedAt;/// Addressed to nobody and taken by nobody — what a designer scrolls to find work.
 @JsonKey(name: 'is_in_shared_pool') bool get isInSharedPool;@JsonKey(name: 'approved_by') DesignTicketActor? get approvedBy;@JsonKey(name: 'completed_at') DateTime? get completedAt;/// What the approval put on the customer's account — the output of the whole flow.
-@JsonKey(name: 'approved_customer_design_id') int? get approvedCustomerDesignId;@JsonKey(name: 'approved_design') CustomerDesign? get approvedDesign;@JsonKey(name: 'cancellation_reason') String? get cancellationReason;/// «أجر التصميم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
+@JsonKey(name: 'approved_customer_design_id') int? get approvedCustomerDesignId;@JsonKey(name: 'approved_design') CustomerDesign? get approvedDesign;@JsonKey(name: 'cancellation_reason') String? get cancellationReason;/// «أجرة المصمم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
 ///
 /// **`null` أمران**: لم يُكتب أجر، أو لا يُقال لهذا القارئ. ويفرّق بينهما [canSetPay] عند الرسم.
 @JsonKey(name: 'designer_pay') String? get designerPay;/// السعر المقترح الذي يظهر في الحقل. تختمه شاشة التذكرة وحدها، ولا يحدد شيئاً.
@@ -589,7 +604,7 @@ mixin _$DesignTicket {
 /// on a ticket nobody has drawn for yet.
 @JsonKey(name: 'latest_version') DesignTicketFile? get latestVersion;/// Only the detail endpoint sends these two; a list row carries neither.
  List<DesignTicketFile> get attachments; List<DesignTicketFile> get versions;@JsonKey(name: 'can_accept') bool get canAccept;@JsonKey(name: 'can_submit') bool get canSubmit;@JsonKey(name: 'can_review') bool get canReview;/// «سحب النسخة» — للمصمّم الذي رفع النسخة التي بانتظار المراجعة، ما دام لم يُحكم عليها.
-@JsonKey(name: 'can_withdraw') bool get canWithdraw;@JsonKey(name: 'can_assign') bool get canAssign;@JsonKey(name: 'can_manage') bool get canManage;/// كتابة «أجر التصميم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
+@JsonKey(name: 'can_withdraw') bool get canWithdraw;@JsonKey(name: 'can_assign') bool get canAssign;@JsonKey(name: 'can_manage') bool get canManage;/// كتابة «أجرة المصمم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
 @JsonKey(name: 'can_set_pay') bool get canSetPay;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;/// When the status last moved: what the list is ordered by, and the time on the card. Null
 /// only from a server older than the column.
 @JsonKey(name: 'status_changed_at') DateTime? get statusChangedAt;
@@ -605,16 +620,21 @@ $DesignTicketCopyWith<DesignTicket> get copyWith => _$DesignTicketCopyWithImpl<D
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&const DeepCollectionEquality().equals(other.printColors, printColors)&&(identical(other.printColorsRequired, printColorsRequired) || other.printColorsRequired == printColorsRequired)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other.availableTransitions, availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerCode, customerCode) || other.customerCode == customerCode)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.order, order) || other.order == order)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer)&&(identical(other.acceptedBy, acceptedBy) || other.acceptedBy == acceptedBy)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.isInSharedPool, isInSharedPool) || other.isInSharedPool == isInSharedPool)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.approvedCustomerDesignId, approvedCustomerDesignId) || other.approvedCustomerDesignId == approvedCustomerDesignId)&&(identical(other.approvedDesign, approvedDesign) || other.approvedDesign == approvedDesign)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.designerPay, designerPay) || other.designerPay == designerPay)&&(identical(other.suggestedPay, suggestedPay) || other.suggestedPay == suggestedPay)&&(identical(other.versionsCount, versionsCount) || other.versionsCount == versionsCount)&&(identical(other.unreadCommentsCount, unreadCommentsCount) || other.unreadCommentsCount == unreadCommentsCount)&&(identical(other.latestVersion, latestVersion) || other.latestVersion == latestVersion)&&const DeepCollectionEquality().equals(other.attachments, attachments)&&const DeepCollectionEquality().equals(other.versions, versions)&&(identical(other.canAccept, canAccept) || other.canAccept == canAccept)&&(identical(other.canSubmit, canSubmit) || other.canSubmit == canSubmit)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canWithdraw, canWithdraw) || other.canWithdraw == canWithdraw)&&(identical(other.canAssign, canAssign) || other.canAssign == canAssign)&&(identical(other.canManage, canManage) || other.canManage == canManage)&&(identical(other.canSetPay, canSetPay) || other.canSetPay == canSetPay)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.statusChangedAt, statusChangedAt) || other.statusChangedAt == statusChangedAt));
+  final _this = this as DesignTicket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicket&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.instructions, _this.instructions) || other.instructions == _this.instructions)&&const DeepCollectionEquality().equals(other.printColors, _this.printColors)&&(identical(other.printColorsRequired, _this.printColorsRequired) || other.printColorsRequired == _this.printColorsRequired)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.isClosed, _this.isClosed) || other.isClosed == _this.isClosed)&&const DeepCollectionEquality().equals(other.availableTransitions, _this.availableTransitions)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.customerCode, _this.customerCode) || other.customerCode == _this.customerCode)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.requester, _this.requester) || other.requester == _this.requester)&&(identical(other.designer, _this.designer) || other.designer == _this.designer)&&(identical(other.acceptedBy, _this.acceptedBy) || other.acceptedBy == _this.acceptedBy)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.isInSharedPool, _this.isInSharedPool) || other.isInSharedPool == _this.isInSharedPool)&&(identical(other.approvedBy, _this.approvedBy) || other.approvedBy == _this.approvedBy)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.approvedCustomerDesignId, _this.approvedCustomerDesignId) || other.approvedCustomerDesignId == _this.approvedCustomerDesignId)&&(identical(other.approvedDesign, _this.approvedDesign) || other.approvedDesign == _this.approvedDesign)&&(identical(other.cancellationReason, _this.cancellationReason) || other.cancellationReason == _this.cancellationReason)&&(identical(other.designerPay, _this.designerPay) || other.designerPay == _this.designerPay)&&(identical(other.suggestedPay, _this.suggestedPay) || other.suggestedPay == _this.suggestedPay)&&(identical(other.versionsCount, _this.versionsCount) || other.versionsCount == _this.versionsCount)&&(identical(other.unreadCommentsCount, _this.unreadCommentsCount) || other.unreadCommentsCount == _this.unreadCommentsCount)&&(identical(other.latestVersion, _this.latestVersion) || other.latestVersion == _this.latestVersion)&&const DeepCollectionEquality().equals(other.attachments, _this.attachments)&&const DeepCollectionEquality().equals(other.versions, _this.versions)&&(identical(other.canAccept, _this.canAccept) || other.canAccept == _this.canAccept)&&(identical(other.canSubmit, _this.canSubmit) || other.canSubmit == _this.canSubmit)&&(identical(other.canReview, _this.canReview) || other.canReview == _this.canReview)&&(identical(other.canWithdraw, _this.canWithdraw) || other.canWithdraw == _this.canWithdraw)&&(identical(other.canAssign, _this.canAssign) || other.canAssign == _this.canAssign)&&(identical(other.canManage, _this.canManage) || other.canManage == _this.canManage)&&(identical(other.canSetPay, _this.canSetPay) || other.canSetPay == _this.canSetPay)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&(identical(other.statusChangedAt, _this.statusChangedAt) || other.statusChangedAt == _this.statusChangedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,title,description,instructions,const DeepCollectionEquality().hash(printColors),printColorsRequired,status,statusLabel,isOpen,isClosed,const DeepCollectionEquality().hash(availableTransitions),customerId,customerName,customerCode,orderId,order,requester,designer,acceptedBy,acceptedAt,isInSharedPool,approvedBy,completedAt,approvedCustomerDesignId,approvedDesign,cancellationReason,designerPay,suggestedPay,versionsCount,unreadCommentsCount,latestVersion,const DeepCollectionEquality().hash(attachments),const DeepCollectionEquality().hash(versions),canAccept,canSubmit,canReview,canWithdraw,canAssign,canManage,canSetPay,createdAt,updatedAt,statusChangedAt]);
+int get hashCode {
+  final _this = this as DesignTicket;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.title,_this.description,_this.instructions,const DeepCollectionEquality().hash(_this.printColors),_this.printColorsRequired,_this.status,_this.statusLabel,_this.isOpen,_this.isClosed,const DeepCollectionEquality().hash(_this.availableTransitions),_this.customerId,_this.customerName,_this.customerCode,_this.orderId,_this.order,_this.requester,_this.designer,_this.acceptedBy,_this.acceptedAt,_this.isInSharedPool,_this.approvedBy,_this.completedAt,_this.approvedCustomerDesignId,_this.approvedDesign,_this.cancellationReason,_this.designerPay,_this.suggestedPay,_this.versionsCount,_this.unreadCommentsCount,_this.latestVersion,const DeepCollectionEquality().hash(_this.attachments),const DeepCollectionEquality().hash(_this.versions),_this.canAccept,_this.canSubmit,_this.canReview,_this.canWithdraw,_this.canAssign,_this.canManage,_this.canSetPay,_this.createdAt,_this.updatedAt,_this.statusChangedAt]);
+}
 
 @override
 String toString() {
-  return 'DesignTicket(id: $id, code: $code, title: $title, description: $description, instructions: $instructions, printColors: $printColors, printColorsRequired: $printColorsRequired, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, customerName: $customerName, customerCode: $customerCode, orderId: $orderId, order: $order, requester: $requester, designer: $designer, acceptedBy: $acceptedBy, acceptedAt: $acceptedAt, isInSharedPool: $isInSharedPool, approvedBy: $approvedBy, completedAt: $completedAt, approvedCustomerDesignId: $approvedCustomerDesignId, approvedDesign: $approvedDesign, cancellationReason: $cancellationReason, designerPay: $designerPay, suggestedPay: $suggestedPay, versionsCount: $versionsCount, unreadCommentsCount: $unreadCommentsCount, latestVersion: $latestVersion, attachments: $attachments, versions: $versions, canAccept: $canAccept, canSubmit: $canSubmit, canReview: $canReview, canWithdraw: $canWithdraw, canAssign: $canAssign, canManage: $canManage, canSetPay: $canSetPay, createdAt: $createdAt, updatedAt: $updatedAt, statusChangedAt: $statusChangedAt)';
+  final _this = this as DesignTicket;
+  return 'DesignTicket(id: ${_this.id}, code: ${_this.code}, title: ${_this.title}, description: ${_this.description}, instructions: ${_this.instructions}, printColors: ${_this.printColors}, printColorsRequired: ${_this.printColorsRequired}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, isOpen: ${_this.isOpen}, isClosed: ${_this.isClosed}, availableTransitions: ${_this.availableTransitions}, customerId: ${_this.customerId}, customerName: ${_this.customerName}, customerCode: ${_this.customerCode}, orderId: ${_this.orderId}, order: ${_this.order}, requester: ${_this.requester}, designer: ${_this.designer}, acceptedBy: ${_this.acceptedBy}, acceptedAt: ${_this.acceptedAt}, isInSharedPool: ${_this.isInSharedPool}, approvedBy: ${_this.approvedBy}, completedAt: ${_this.completedAt}, approvedCustomerDesignId: ${_this.approvedCustomerDesignId}, approvedDesign: ${_this.approvedDesign}, cancellationReason: ${_this.cancellationReason}, designerPay: ${_this.designerPay}, suggestedPay: ${_this.suggestedPay}, versionsCount: ${_this.versionsCount}, unreadCommentsCount: ${_this.unreadCommentsCount}, latestVersion: ${_this.latestVersion}, attachments: ${_this.attachments}, versions: ${_this.versions}, canAccept: ${_this.canAccept}, canSubmit: ${_this.canSubmit}, canReview: ${_this.canReview}, canWithdraw: ${_this.canWithdraw}, canAssign: ${_this.canAssign}, canManage: ${_this.canManage}, canSetPay: ${_this.canSetPay}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt}, statusChangedAt: ${_this.statusChangedAt})';
 }
 
 
@@ -643,7 +663,7 @@ class _$DesignTicketCopyWithImpl<$Res>
 /// Create a copy of DesignTicket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? title = null,Object? description = null,Object? instructions = freezed,Object? printColors = null,Object? printColorsRequired = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? isClosed = null,Object? availableTransitions = null,Object? customerId = null,Object? customerName = null,Object? customerCode = freezed,Object? orderId = freezed,Object? order = freezed,Object? requester = freezed,Object? designer = freezed,Object? acceptedBy = freezed,Object? acceptedAt = freezed,Object? isInSharedPool = null,Object? approvedBy = freezed,Object? completedAt = freezed,Object? approvedCustomerDesignId = freezed,Object? approvedDesign = freezed,Object? cancellationReason = freezed,Object? designerPay = freezed,Object? suggestedPay = freezed,Object? versionsCount = freezed,Object? unreadCommentsCount = freezed,Object? latestVersion = freezed,Object? attachments = null,Object? versions = null,Object? canAccept = null,Object? canSubmit = null,Object? canReview = null,Object? canWithdraw = null,Object? canAssign = null,Object? canManage = null,Object? canSetPay = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? statusChangedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignTicket(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -913,7 +933,7 @@ return $default(_that.id,_that.code,_that.title,_that.description,_that.instruct
 @JsonSerializable()
 
 class _DesignTicket extends DesignTicket {
-  const _DesignTicket({required this.id, required this.code, required this.title, required this.description, this.instructions, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'print_colors_required') this.printColorsRequired = false, @JsonKey(unknownEnumValue: DesignTicketStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'is_closed') this.isClosed = false, @JsonKey(name: 'available_transitions') final  List<DesignTicketTransition> availableTransitions = const <DesignTicketTransition>[], @JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'customer_name') required this.customerName, @JsonKey(name: 'customer_code') this.customerCode, @JsonKey(name: 'order_id') this.orderId, this.order, this.requester, this.designer, @JsonKey(name: 'accepted_by') this.acceptedBy, @JsonKey(name: 'accepted_at') this.acceptedAt, @JsonKey(name: 'is_in_shared_pool') this.isInSharedPool = false, @JsonKey(name: 'approved_by') this.approvedBy, @JsonKey(name: 'completed_at') this.completedAt, @JsonKey(name: 'approved_customer_design_id') this.approvedCustomerDesignId, @JsonKey(name: 'approved_design') this.approvedDesign, @JsonKey(name: 'cancellation_reason') this.cancellationReason, @JsonKey(name: 'designer_pay') this.designerPay, @JsonKey(name: 'suggested_pay') this.suggestedPay, @JsonKey(name: 'versions_count') this.versionsCount, @JsonKey(name: 'unread_comments_count') this.unreadCommentsCount, @JsonKey(name: 'latest_version') this.latestVersion, final  List<DesignTicketFile> attachments = const <DesignTicketFile>[], final  List<DesignTicketFile> versions = const <DesignTicketFile>[], @JsonKey(name: 'can_accept') this.canAccept = false, @JsonKey(name: 'can_submit') this.canSubmit = false, @JsonKey(name: 'can_review') this.canReview = false, @JsonKey(name: 'can_withdraw') this.canWithdraw = false, @JsonKey(name: 'can_assign') this.canAssign = false, @JsonKey(name: 'can_manage') this.canManage = false, @JsonKey(name: 'can_set_pay') this.canSetPay = false, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'status_changed_at') this.statusChangedAt}): _printColors = printColors,_availableTransitions = availableTransitions,_attachments = attachments,_versions = versions,super._();
+  const _DesignTicket({required this.id, required this.code, required this.title, required this.description, this.instructions, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'print_colors_required') this.printColorsRequired = false, @JsonKey(unknownEnumValue: DesignTicketStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'is_closed') this.isClosed = false, @JsonKey(name: 'available_transitions')  List<DesignTicketTransition> availableTransitions = const <DesignTicketTransition>[], @JsonKey(name: 'customer_id') required this.customerId, @JsonKey(name: 'customer_name') required this.customerName, @JsonKey(name: 'customer_code') this.customerCode, @JsonKey(name: 'order_id') this.orderId, this.order, this.requester, this.designer, @JsonKey(name: 'accepted_by') this.acceptedBy, @JsonKey(name: 'accepted_at') this.acceptedAt, @JsonKey(name: 'is_in_shared_pool') this.isInSharedPool = false, @JsonKey(name: 'approved_by') this.approvedBy, @JsonKey(name: 'completed_at') this.completedAt, @JsonKey(name: 'approved_customer_design_id') this.approvedCustomerDesignId, @JsonKey(name: 'approved_design') this.approvedDesign, @JsonKey(name: 'cancellation_reason') this.cancellationReason, @JsonKey(name: 'designer_pay') this.designerPay, @JsonKey(name: 'suggested_pay') this.suggestedPay, @JsonKey(name: 'versions_count') this.versionsCount, @JsonKey(name: 'unread_comments_count') this.unreadCommentsCount, @JsonKey(name: 'latest_version') this.latestVersion,  List<DesignTicketFile> attachments = const <DesignTicketFile>[],  List<DesignTicketFile> versions = const <DesignTicketFile>[], @JsonKey(name: 'can_accept') this.canAccept = false, @JsonKey(name: 'can_submit') this.canSubmit = false, @JsonKey(name: 'can_review') this.canReview = false, @JsonKey(name: 'can_withdraw') this.canWithdraw = false, @JsonKey(name: 'can_assign') this.canAssign = false, @JsonKey(name: 'can_manage') this.canManage = false, @JsonKey(name: 'can_set_pay') this.canSetPay = false, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'status_changed_at') this.statusChangedAt}): _printColors = printColors,_availableTransitions = availableTransitions,_attachments = attachments,_versions = versions,super._();
   factory _DesignTicket.fromJson(Map<String, dynamic> json) => _$DesignTicketFromJson(json);
 
 @override final  int id;
@@ -976,7 +996,7 @@ class _DesignTicket extends DesignTicket {
 @override@JsonKey(name: 'approved_customer_design_id') final  int? approvedCustomerDesignId;
 @override@JsonKey(name: 'approved_design') final  CustomerDesign? approvedDesign;
 @override@JsonKey(name: 'cancellation_reason') final  String? cancellationReason;
-/// «أجر التصميم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
+/// «أجرة المصمم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
 ///
 /// **`null` أمران**: لم يُكتب أجر، أو لا يُقال لهذا القارئ. ويفرّق بينهما [canSetPay] عند الرسم.
 @override@JsonKey(name: 'designer_pay') final  String? designerPay;
@@ -1021,7 +1041,7 @@ class _DesignTicket extends DesignTicket {
 @override@JsonKey(name: 'can_withdraw') final  bool canWithdraw;
 @override@JsonKey(name: 'can_assign') final  bool canAssign;
 @override@JsonKey(name: 'can_manage') final  bool canManage;
-/// كتابة «أجر التصميم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
+/// كتابة «أجرة المصمم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
 @override@JsonKey(name: 'can_set_pay') final  bool canSetPay;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 @override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
@@ -1042,16 +1062,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&const DeepCollectionEquality().equals(other._printColors, _printColors)&&(identical(other.printColorsRequired, printColorsRequired) || other.printColorsRequired == printColorsRequired)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other._availableTransitions, _availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerCode, customerCode) || other.customerCode == customerCode)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.order, order) || other.order == order)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer)&&(identical(other.acceptedBy, acceptedBy) || other.acceptedBy == acceptedBy)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.isInSharedPool, isInSharedPool) || other.isInSharedPool == isInSharedPool)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.approvedCustomerDesignId, approvedCustomerDesignId) || other.approvedCustomerDesignId == approvedCustomerDesignId)&&(identical(other.approvedDesign, approvedDesign) || other.approvedDesign == approvedDesign)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.designerPay, designerPay) || other.designerPay == designerPay)&&(identical(other.suggestedPay, suggestedPay) || other.suggestedPay == suggestedPay)&&(identical(other.versionsCount, versionsCount) || other.versionsCount == versionsCount)&&(identical(other.unreadCommentsCount, unreadCommentsCount) || other.unreadCommentsCount == unreadCommentsCount)&&(identical(other.latestVersion, latestVersion) || other.latestVersion == latestVersion)&&const DeepCollectionEquality().equals(other._attachments, _attachments)&&const DeepCollectionEquality().equals(other._versions, _versions)&&(identical(other.canAccept, canAccept) || other.canAccept == canAccept)&&(identical(other.canSubmit, canSubmit) || other.canSubmit == canSubmit)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canWithdraw, canWithdraw) || other.canWithdraw == canWithdraw)&&(identical(other.canAssign, canAssign) || other.canAssign == canAssign)&&(identical(other.canManage, canManage) || other.canManage == canManage)&&(identical(other.canSetPay, canSetPay) || other.canSetPay == canSetPay)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.statusChangedAt, statusChangedAt) || other.statusChangedAt == statusChangedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignTicket&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&const DeepCollectionEquality().equals(other.printColors, _printColors)&&(identical(other.printColorsRequired, printColorsRequired) || other.printColorsRequired == printColorsRequired)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.isClosed, isClosed) || other.isClosed == isClosed)&&const DeepCollectionEquality().equals(other.availableTransitions, _availableTransitions)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerCode, customerCode) || other.customerCode == customerCode)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.order, order) || other.order == order)&&(identical(other.requester, requester) || other.requester == requester)&&(identical(other.designer, designer) || other.designer == designer)&&(identical(other.acceptedBy, acceptedBy) || other.acceptedBy == acceptedBy)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.isInSharedPool, isInSharedPool) || other.isInSharedPool == isInSharedPool)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.approvedCustomerDesignId, approvedCustomerDesignId) || other.approvedCustomerDesignId == approvedCustomerDesignId)&&(identical(other.approvedDesign, approvedDesign) || other.approvedDesign == approvedDesign)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.designerPay, designerPay) || other.designerPay == designerPay)&&(identical(other.suggestedPay, suggestedPay) || other.suggestedPay == suggestedPay)&&(identical(other.versionsCount, versionsCount) || other.versionsCount == versionsCount)&&(identical(other.unreadCommentsCount, unreadCommentsCount) || other.unreadCommentsCount == unreadCommentsCount)&&(identical(other.latestVersion, latestVersion) || other.latestVersion == latestVersion)&&const DeepCollectionEquality().equals(other.attachments, _attachments)&&const DeepCollectionEquality().equals(other.versions, _versions)&&(identical(other.canAccept, canAccept) || other.canAccept == canAccept)&&(identical(other.canSubmit, canSubmit) || other.canSubmit == canSubmit)&&(identical(other.canReview, canReview) || other.canReview == canReview)&&(identical(other.canWithdraw, canWithdraw) || other.canWithdraw == canWithdraw)&&(identical(other.canAssign, canAssign) || other.canAssign == canAssign)&&(identical(other.canManage, canManage) || other.canManage == canManage)&&(identical(other.canSetPay, canSetPay) || other.canSetPay == canSetPay)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.statusChangedAt, statusChangedAt) || other.statusChangedAt == statusChangedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,title,description,instructions,const DeepCollectionEquality().hash(_printColors),printColorsRequired,status,statusLabel,isOpen,isClosed,const DeepCollectionEquality().hash(_availableTransitions),customerId,customerName,customerCode,orderId,order,requester,designer,acceptedBy,acceptedAt,isInSharedPool,approvedBy,completedAt,approvedCustomerDesignId,approvedDesign,cancellationReason,designerPay,suggestedPay,versionsCount,unreadCommentsCount,latestVersion,const DeepCollectionEquality().hash(_attachments),const DeepCollectionEquality().hash(_versions),canAccept,canSubmit,canReview,canWithdraw,canAssign,canManage,canSetPay,createdAt,updatedAt,statusChangedAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,title,description,instructions,const DeepCollectionEquality().hash(_printColors),printColorsRequired,status,statusLabel,isOpen,isClosed,const DeepCollectionEquality().hash(_availableTransitions),customerId,customerName,customerCode,orderId,order,requester,designer,acceptedBy,acceptedAt,isInSharedPool,approvedBy,completedAt,approvedCustomerDesignId,approvedDesign,cancellationReason,designerPay,suggestedPay,versionsCount,unreadCommentsCount,latestVersion,const DeepCollectionEquality().hash(_attachments),const DeepCollectionEquality().hash(_versions),canAccept,canSubmit,canReview,canWithdraw,canAssign,canManage,canSetPay,createdAt,updatedAt,statusChangedAt]);
+}
 
 @override
 String toString() {
-  return 'DesignTicket(id: $id, code: $code, title: $title, description: $description, instructions: $instructions, printColors: $printColors, printColorsRequired: $printColorsRequired, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, customerName: $customerName, customerCode: $customerCode, orderId: $orderId, order: $order, requester: $requester, designer: $designer, acceptedBy: $acceptedBy, acceptedAt: $acceptedAt, isInSharedPool: $isInSharedPool, approvedBy: $approvedBy, completedAt: $completedAt, approvedCustomerDesignId: $approvedCustomerDesignId, approvedDesign: $approvedDesign, cancellationReason: $cancellationReason, designerPay: $designerPay, suggestedPay: $suggestedPay, versionsCount: $versionsCount, unreadCommentsCount: $unreadCommentsCount, latestVersion: $latestVersion, attachments: $attachments, versions: $versions, canAccept: $canAccept, canSubmit: $canSubmit, canReview: $canReview, canWithdraw: $canWithdraw, canAssign: $canAssign, canManage: $canManage, canSetPay: $canSetPay, createdAt: $createdAt, updatedAt: $updatedAt, statusChangedAt: $statusChangedAt)';
+    return 'DesignTicket(id: $id, code: $code, title: $title, description: $description, instructions: $instructions, printColors: $printColors, printColorsRequired: $printColorsRequired, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, isClosed: $isClosed, availableTransitions: $availableTransitions, customerId: $customerId, customerName: $customerName, customerCode: $customerCode, orderId: $orderId, order: $order, requester: $requester, designer: $designer, acceptedBy: $acceptedBy, acceptedAt: $acceptedAt, isInSharedPool: $isInSharedPool, approvedBy: $approvedBy, completedAt: $completedAt, approvedCustomerDesignId: $approvedCustomerDesignId, approvedDesign: $approvedDesign, cancellationReason: $cancellationReason, designerPay: $designerPay, suggestedPay: $suggestedPay, versionsCount: $versionsCount, unreadCommentsCount: $unreadCommentsCount, latestVersion: $latestVersion, attachments: $attachments, versions: $versions, canAccept: $canAccept, canSubmit: $canSubmit, canReview: $canReview, canWithdraw: $canWithdraw, canAssign: $canAssign, canManage: $canManage, canSetPay: $canSetPay, createdAt: $createdAt, updatedAt: $updatedAt, statusChangedAt: $statusChangedAt)';
 }
 
 

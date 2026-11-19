@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'save_stock_item_cubit.dart';
@@ -9,6 +9,7 @@ part of 'save_stock_item_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SaveStockItemState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveStockItemState()';
+    return 'SaveStockItemState()';
 }
 
 
@@ -215,7 +216,7 @@ class SaveStockItemInitial implements SaveStockItemState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemInitial);
 }
 
 
@@ -224,7 +225,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveStockItemState.initial()';
+    return 'SaveStockItemState.initial()';
 }
 
 
@@ -247,7 +248,7 @@ class SaveStockItemSubmitting implements SaveStockItemState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemSubmitting);
 }
 
 
@@ -256,7 +257,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveStockItemState.submitting()';
+    return 'SaveStockItemState.submitting()';
 }
 
 
@@ -284,16 +285,18 @@ $SaveStockItemSuccessCopyWith<SaveStockItemSuccess> get copyWith => _$SaveStockI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemSuccess&&(identical(other.item, item) || other.item == item));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemSuccess&&(identical(other.item, item) || other.item == item));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,item);
+int get hashCode {
+    return Object.hash(runtimeType,item);
+}
 
 @override
 String toString() {
-  return 'SaveStockItemState.success(item: $item)';
+    return 'SaveStockItemState.success(item: $item)';
 }
 
 
@@ -354,7 +357,7 @@ class SaveStockItemChangingUnit implements SaveStockItemState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemChangingUnit);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemChangingUnit);
 }
 
 
@@ -363,7 +366,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveStockItemState.changingUnit()';
+    return 'SaveStockItemState.changingUnit()';
 }
 
 
@@ -391,16 +394,18 @@ $SaveStockItemUnitChangedCopyWith<SaveStockItemUnitChanged> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemUnitChanged&&(identical(other.item, item) || other.item == item));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemUnitChanged&&(identical(other.item, item) || other.item == item));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,item);
+int get hashCode {
+    return Object.hash(runtimeType,item);
+}
 
 @override
 String toString() {
-  return 'SaveStockItemState.unitChanged(item: $item)';
+    return 'SaveStockItemState.unitChanged(item: $item)';
 }
 
 
@@ -467,16 +472,18 @@ $SaveStockItemLinksRefusedCopyWith<SaveStockItemLinksRefused> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemLinksRefused&&(identical(other.item, item) || other.item == item)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemLinksRefused&&(identical(other.item, item) || other.item == item)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,item,failure);
+int get hashCode {
+    return Object.hash(runtimeType,item,failure);
+}
 
 @override
 String toString() {
-  return 'SaveStockItemState.linksRefused(item: $item, failure: $failure)';
+    return 'SaveStockItemState.linksRefused(item: $item, failure: $failure)';
 }
 
 
@@ -552,16 +559,18 @@ $SaveStockItemFailureCopyWith<SaveStockItemFailure> get copyWith => _$SaveStockI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveStockItemFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SaveStockItemState.failure(failure: $failure)';
+    return 'SaveStockItemState.failure(failure: $failure)';
 }
 
 

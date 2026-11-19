@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'nawris_parcel.dart';
@@ -9,6 +9,7 @@ part of 'nawris_parcel.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -39,16 +40,21 @@ $NawrisParcelCopyWith<NawrisParcel> get copyWith => _$NawrisParcelCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.government, government) || other.government == government)&&(identical(other.area, area) || other.area == area)&&(identical(other.amountToCollect, amountToCollect) || other.amountToCollect == amountToCollect)&&(identical(other.deliveryPriceDeducted, deliveryPriceDeducted) || other.deliveryPriceDeducted == deliveryPriceDeducted)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.remoteStatusCode, remoteStatusCode) || other.remoteStatusCode == remoteStatusCode)&&(identical(other.remoteStatusText, remoteStatusText) || other.remoteStatusText == remoteStatusText)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.hasOpenConflict, hasOpenConflict) || other.hasOpenConflict == hasOpenConflict)&&(identical(other.dispatchedAt, dispatchedAt) || other.dispatchedAt == dispatchedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt));
+  final _this = this as NawrisParcel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisParcel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.barCode, _this.barCode) || other.barCode == _this.barCode)&&(identical(other.government, _this.government) || other.government == _this.government)&&(identical(other.area, _this.area) || other.area == _this.area)&&(identical(other.amountToCollect, _this.amountToCollect) || other.amountToCollect == _this.amountToCollect)&&(identical(other.deliveryPriceDeducted, _this.deliveryPriceDeducted) || other.deliveryPriceDeducted == _this.deliveryPriceDeducted)&&(identical(other.collectedAmount, _this.collectedAmount) || other.collectedAmount == _this.collectedAmount)&&(identical(other.remoteStatusCode, _this.remoteStatusCode) || other.remoteStatusCode == _this.remoteStatusCode)&&(identical(other.remoteStatusText, _this.remoteStatusText) || other.remoteStatusText == _this.remoteStatusText)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.hasOpenConflict, _this.hasOpenConflict) || other.hasOpenConflict == _this.hasOpenConflict)&&(identical(other.dispatchedAt, _this.dispatchedAt) || other.dispatchedAt == _this.dispatchedAt)&&(identical(other.closedAt, _this.closedAt) || other.closedAt == _this.closedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,reference,barCode,government,area,amountToCollect,deliveryPriceDeducted,collectedAmount,remoteStatusCode,remoteStatusText,isOpen,hasOpenConflict,dispatchedAt,closedAt);
+int get hashCode {
+  final _this = this as NawrisParcel;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.reference,_this.barCode,_this.government,_this.area,_this.amountToCollect,_this.deliveryPriceDeducted,_this.collectedAmount,_this.remoteStatusCode,_this.remoteStatusText,_this.isOpen,_this.hasOpenConflict,_this.dispatchedAt,_this.closedAt);
+}
 
 @override
 String toString() {
-  return 'NawrisParcel(id: $id, code: $code, reference: $reference, barCode: $barCode, government: $government, area: $area, amountToCollect: $amountToCollect, deliveryPriceDeducted: $deliveryPriceDeducted, collectedAmount: $collectedAmount, remoteStatusCode: $remoteStatusCode, remoteStatusText: $remoteStatusText, isOpen: $isOpen, hasOpenConflict: $hasOpenConflict, dispatchedAt: $dispatchedAt, closedAt: $closedAt)';
+  final _this = this as NawrisParcel;
+  return 'NawrisParcel(id: ${_this.id}, code: ${_this.code}, reference: ${_this.reference}, barCode: ${_this.barCode}, government: ${_this.government}, area: ${_this.area}, amountToCollect: ${_this.amountToCollect}, deliveryPriceDeducted: ${_this.deliveryPriceDeducted}, collectedAmount: ${_this.collectedAmount}, remoteStatusCode: ${_this.remoteStatusCode}, remoteStatusText: ${_this.remoteStatusText}, isOpen: ${_this.isOpen}, hasOpenConflict: ${_this.hasOpenConflict}, dispatchedAt: ${_this.dispatchedAt}, closedAt: ${_this.closedAt})';
 }
 
 
@@ -77,7 +83,7 @@ class _$NawrisParcelCopyWithImpl<$Res>
 /// Create a copy of NawrisParcel
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? reference = freezed,Object? barCode = freezed,Object? government = freezed,Object? area = freezed,Object? amountToCollect = freezed,Object? deliveryPriceDeducted = freezed,Object? collectedAmount = freezed,Object? remoteStatusCode = freezed,Object? remoteStatusText = freezed,Object? isOpen = null,Object? hasOpenConflict = null,Object? dispatchedAt = freezed,Object? closedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NawrisParcel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -277,16 +283,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.government, government) || other.government == government)&&(identical(other.area, area) || other.area == area)&&(identical(other.amountToCollect, amountToCollect) || other.amountToCollect == amountToCollect)&&(identical(other.deliveryPriceDeducted, deliveryPriceDeducted) || other.deliveryPriceDeducted == deliveryPriceDeducted)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.remoteStatusCode, remoteStatusCode) || other.remoteStatusCode == remoteStatusCode)&&(identical(other.remoteStatusText, remoteStatusText) || other.remoteStatusText == remoteStatusText)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.hasOpenConflict, hasOpenConflict) || other.hasOpenConflict == hasOpenConflict)&&(identical(other.dispatchedAt, dispatchedAt) || other.dispatchedAt == dispatchedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NawrisParcel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.barCode, barCode) || other.barCode == barCode)&&(identical(other.government, government) || other.government == government)&&(identical(other.area, area) || other.area == area)&&(identical(other.amountToCollect, amountToCollect) || other.amountToCollect == amountToCollect)&&(identical(other.deliveryPriceDeducted, deliveryPriceDeducted) || other.deliveryPriceDeducted == deliveryPriceDeducted)&&(identical(other.collectedAmount, collectedAmount) || other.collectedAmount == collectedAmount)&&(identical(other.remoteStatusCode, remoteStatusCode) || other.remoteStatusCode == remoteStatusCode)&&(identical(other.remoteStatusText, remoteStatusText) || other.remoteStatusText == remoteStatusText)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.hasOpenConflict, hasOpenConflict) || other.hasOpenConflict == hasOpenConflict)&&(identical(other.dispatchedAt, dispatchedAt) || other.dispatchedAt == dispatchedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,reference,barCode,government,area,amountToCollect,deliveryPriceDeducted,collectedAmount,remoteStatusCode,remoteStatusText,isOpen,hasOpenConflict,dispatchedAt,closedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,reference,barCode,government,area,amountToCollect,deliveryPriceDeducted,collectedAmount,remoteStatusCode,remoteStatusText,isOpen,hasOpenConflict,dispatchedAt,closedAt);
+}
 
 @override
 String toString() {
-  return 'NawrisParcel(id: $id, code: $code, reference: $reference, barCode: $barCode, government: $government, area: $area, amountToCollect: $amountToCollect, deliveryPriceDeducted: $deliveryPriceDeducted, collectedAmount: $collectedAmount, remoteStatusCode: $remoteStatusCode, remoteStatusText: $remoteStatusText, isOpen: $isOpen, hasOpenConflict: $hasOpenConflict, dispatchedAt: $dispatchedAt, closedAt: $closedAt)';
+    return 'NawrisParcel(id: $id, code: $code, reference: $reference, barCode: $barCode, government: $government, area: $area, amountToCollect: $amountToCollect, deliveryPriceDeducted: $deliveryPriceDeducted, collectedAmount: $collectedAmount, remoteStatusCode: $remoteStatusCode, remoteStatusText: $remoteStatusText, isOpen: $isOpen, hasOpenConflict: $hasOpenConflict, dispatchedAt: $dispatchedAt, closedAt: $closedAt)';
 }
 
 

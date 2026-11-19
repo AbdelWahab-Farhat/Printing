@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_summary_cubit.dart';
@@ -9,6 +9,7 @@ part of 'stock_summary_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$StockSummaryState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockSummaryState()';
+    return 'StockSummaryState()';
 }
 
 
@@ -197,7 +198,7 @@ class StockSummaryInitial implements StockSummaryState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockSummaryState.initial()';
+    return 'StockSummaryState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class StockSummaryLoading implements StockSummaryState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryLoading);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockSummaryState.loading()';
+    return 'StockSummaryState.loading()';
 }
 
 
@@ -266,16 +267,18 @@ $StockSummaryLoadedCopyWith<StockSummaryLoaded> get copyWith => _$StockSummaryLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryLoaded&&(identical(other.summary, summary) || other.summary == summary));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryLoaded&&(identical(other.summary, summary) || other.summary == summary));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,summary);
+int get hashCode {
+    return Object.hash(runtimeType,summary);
+}
 
 @override
 String toString() {
-  return 'StockSummaryState.loaded(summary: $summary)';
+    return 'StockSummaryState.loaded(summary: $summary)';
 }
 
 
@@ -336,7 +339,7 @@ class StockSummaryFailure implements StockSummaryState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryFailure);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StockSummaryFailure);
 }
 
 
@@ -345,7 +348,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StockSummaryState.failure()';
+    return 'StockSummaryState.failure()';
 }
 
 

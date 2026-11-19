@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'vendor_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'vendor_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $VendorDetailStateCopyWith<VendorDetailState> get copyWith => _$VendorDetailStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailState&&(identical(other.vendor, vendor) || other.vendor == vendor));
+  final _this = this as VendorDetailState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailState&&(identical(other.vendor, _this.vendor) || other.vendor == _this.vendor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vendor);
+int get hashCode {
+  final _this = this as VendorDetailState;
+  return Object.hash(runtimeType,_this.vendor);
+}
 
 @override
 String toString() {
-  return 'VendorDetailState(vendor: $vendor)';
+  final _this = this as VendorDetailState;
+  return 'VendorDetailState(vendor: ${_this.vendor})';
 }
 
 
@@ -245,16 +251,18 @@ $VendorDetailLoadingCopyWith<VendorDetailLoading> get copyWith => _$VendorDetail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailLoading&&(identical(other.vendor, vendor) || other.vendor == vendor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailLoading&&(identical(other.vendor, vendor) || other.vendor == vendor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vendor);
+int get hashCode {
+    return Object.hash(runtimeType,vendor);
+}
 
 @override
 String toString() {
-  return 'VendorDetailState.loading(vendor: $vendor)';
+    return 'VendorDetailState.loading(vendor: $vendor)';
 }
 
 
@@ -323,16 +331,18 @@ $VendorDetailReadyCopyWith<VendorDetailReady> get copyWith => _$VendorDetailRead
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailReady&&(identical(other.vendor, vendor) || other.vendor == vendor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailReady&&(identical(other.vendor, vendor) || other.vendor == vendor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vendor);
+int get hashCode {
+    return Object.hash(runtimeType,vendor);
+}
 
 @override
 String toString() {
-  return 'VendorDetailState.ready(vendor: $vendor)';
+    return 'VendorDetailState.ready(vendor: $vendor)';
 }
 
 
@@ -398,16 +408,18 @@ $VendorDetailWorkingCopyWith<VendorDetailWorking> get copyWith => _$VendorDetail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailWorking&&(identical(other.vendor, vendor) || other.vendor == vendor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailWorking&&(identical(other.vendor, vendor) || other.vendor == vendor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,vendor);
+int get hashCode {
+    return Object.hash(runtimeType,vendor);
+}
 
 @override
 String toString() {
-  return 'VendorDetailState.working(vendor: $vendor)';
+    return 'VendorDetailState.working(vendor: $vendor)';
 }
 
 
@@ -474,16 +486,18 @@ $VendorDetailFailureCopyWith<VendorDetailFailure> get copyWith => _$VendorDetail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.vendor, vendor) || other.vendor == vendor));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VendorDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.vendor, vendor) || other.vendor == vendor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,vendor);
+int get hashCode {
+    return Object.hash(runtimeType,failure,vendor);
+}
 
 @override
 String toString() {
-  return 'VendorDetailState.failure(failure: $failure, vendor: $vendor)';
+    return 'VendorDetailState.failure(failure: $failure, vendor: $vendor)';
 }
 
 

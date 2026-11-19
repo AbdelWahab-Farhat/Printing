@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'take_order_cubit.dart';
@@ -9,6 +9,7 @@ part of 'take_order_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$TakeOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TakeOrderState()';
+    return 'TakeOrderState()';
 }
 
 
@@ -197,7 +198,7 @@ class TakeOrderInitial implements TakeOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TakeOrderState.initial()';
+    return 'TakeOrderState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class TakeOrderSubmitting implements TakeOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TakeOrderState.submitting()';
+    return 'TakeOrderState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $TakeOrderSuccessCopyWith<TakeOrderSuccess> get copyWith => _$TakeOrderSuccessCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderSuccess&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderSuccess&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order);
+int get hashCode {
+    return Object.hash(runtimeType,order);
+}
 
 @override
 String toString() {
-  return 'TakeOrderState.success(order: $order)';
+    return 'TakeOrderState.success(order: $order)';
 }
 
 
@@ -341,16 +344,18 @@ $TakeOrderFailureCopyWith<TakeOrderFailure> get copyWith => _$TakeOrderFailureCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TakeOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'TakeOrderState.failure(failure: $failure)';
+    return 'TakeOrderState.failure(failure: $failure)';
 }
 
 

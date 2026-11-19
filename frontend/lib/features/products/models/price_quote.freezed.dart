@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'price_quote.dart';
@@ -9,6 +9,7 @@ part of 'price_quote.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -32,16 +33,21 @@ $PriceQuoteCopyWith<PriceQuote> get copyWith => _$PriceQuoteCopyWithImpl<PriceQu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PriceQuote&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.total, total) || other.total == total)&&(identical(other.appliedTierMinQuantity, appliedTierMinQuantity) || other.appliedTierMinQuantity == appliedTierMinQuantity)&&(identical(other.nextTier, nextTier) || other.nextTier == nextTier));
+  final _this = this as PriceQuote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PriceQuote&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.total, _this.total) || other.total == _this.total)&&(identical(other.appliedTierMinQuantity, _this.appliedTierMinQuantity) || other.appliedTierMinQuantity == _this.appliedTierMinQuantity)&&(identical(other.nextTier, _this.nextTier) || other.nextTier == _this.nextTier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantity,unit,unitLabel,unitPrice,total,appliedTierMinQuantity,nextTier);
+int get hashCode {
+  final _this = this as PriceQuote;
+  return Object.hash(runtimeType,_this.quantity,_this.unit,_this.unitLabel,_this.unitPrice,_this.total,_this.appliedTierMinQuantity,_this.nextTier);
+}
 
 @override
 String toString() {
-  return 'PriceQuote(quantity: $quantity, unit: $unit, unitLabel: $unitLabel, unitPrice: $unitPrice, total: $total, appliedTierMinQuantity: $appliedTierMinQuantity, nextTier: $nextTier)';
+  final _this = this as PriceQuote;
+  return 'PriceQuote(quantity: ${_this.quantity}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, unitPrice: ${_this.unitPrice}, total: ${_this.total}, appliedTierMinQuantity: ${_this.appliedTierMinQuantity}, nextTier: ${_this.nextTier})';
 }
 
 
@@ -70,7 +76,7 @@ class _$PriceQuoteCopyWithImpl<$Res>
 /// Create a copy of PriceQuote
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? unitPrice = null,Object? total = null,Object? appliedTierMinQuantity = null,Object? nextTier = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(PriceQuote(
 quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
 as String,unitLabel: null == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
@@ -259,16 +265,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PriceQuote&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.total, total) || other.total == total)&&(identical(other.appliedTierMinQuantity, appliedTierMinQuantity) || other.appliedTierMinQuantity == appliedTierMinQuantity)&&(identical(other.nextTier, nextTier) || other.nextTier == nextTier));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PriceQuote&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.total, total) || other.total == total)&&(identical(other.appliedTierMinQuantity, appliedTierMinQuantity) || other.appliedTierMinQuantity == appliedTierMinQuantity)&&(identical(other.nextTier, nextTier) || other.nextTier == nextTier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quantity,unit,unitLabel,unitPrice,total,appliedTierMinQuantity,nextTier);
+int get hashCode {
+    return Object.hash(runtimeType,quantity,unit,unitLabel,unitPrice,total,appliedTierMinQuantity,nextTier);
+}
 
 @override
 String toString() {
-  return 'PriceQuote(quantity: $quantity, unit: $unit, unitLabel: $unitLabel, unitPrice: $unitPrice, total: $total, appliedTierMinQuantity: $appliedTierMinQuantity, nextTier: $nextTier)';
+    return 'PriceQuote(quantity: $quantity, unit: $unit, unitLabel: $unitLabel, unitPrice: $unitPrice, total: $total, appliedTierMinQuantity: $appliedTierMinQuantity, nextTier: $nextTier)';
 }
 
 
@@ -341,16 +349,21 @@ $NextPriceTierCopyWith<NextPriceTier> get copyWith => _$NextPriceTierCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NextPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantityToReach, quantityToReach) || other.quantityToReach == quantityToReach));
+  final _this = this as NextPriceTier;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NextPriceTier&&(identical(other.minQuantity, _this.minQuantity) || other.minQuantity == _this.minQuantity)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.quantityToReach, _this.quantityToReach) || other.quantityToReach == _this.quantityToReach));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,minQuantity,unitPrice,quantityToReach);
+int get hashCode {
+  final _this = this as NextPriceTier;
+  return Object.hash(runtimeType,_this.minQuantity,_this.unitPrice,_this.quantityToReach);
+}
 
 @override
 String toString() {
-  return 'NextPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice, quantityToReach: $quantityToReach)';
+  final _this = this as NextPriceTier;
+  return 'NextPriceTier(minQuantity: ${_this.minQuantity}, unitPrice: ${_this.unitPrice}, quantityToReach: ${_this.quantityToReach})';
 }
 
 
@@ -379,7 +392,7 @@ class _$NextPriceTierCopyWithImpl<$Res>
 /// Create a copy of NextPriceTier
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? minQuantity = null,Object? unitPrice = null,Object? quantityToReach = null,}) {
-  return _then(_self.copyWith(
+  return _then(NextPriceTier(
 minQuantity: null == minQuantity ? _self.minQuantity : minQuantity // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,quantityToReach: null == quantityToReach ? _self.quantityToReach : quantityToReach // ignore: cast_nullable_to_non_nullable
@@ -544,16 +557,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NextPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantityToReach, quantityToReach) || other.quantityToReach == quantityToReach));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NextPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.quantityToReach, quantityToReach) || other.quantityToReach == quantityToReach));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,minQuantity,unitPrice,quantityToReach);
+int get hashCode {
+    return Object.hash(runtimeType,minQuantity,unitPrice,quantityToReach);
+}
 
 @override
 String toString() {
-  return 'NextPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice, quantityToReach: $quantityToReach)';
+    return 'NextPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice, quantityToReach: $quantityToReach)';
 }
 
 

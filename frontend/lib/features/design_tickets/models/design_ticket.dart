@@ -19,6 +19,8 @@ part 'design_ticket.g.dart';
 enum DesignTicketStatus {
   @JsonValue('new')
   fresh('new', 'جديد'),
+  @JsonValue('assigned')
+  assigned('assigned', 'مُسنَد'),
   @JsonValue('in_progress')
   inProgress('in_progress', 'قيد التصميم'),
   @JsonValue('under_review')
@@ -41,11 +43,11 @@ enum DesignTicketStatus {
 
   final String wire;
 
-  /// Mirrors the server's own `label()`. Held here because the filter row has to name all six
+  /// Mirrors the server's own `label()`. Held here because the filter row has to name all of them
   /// before a single ticket has been loaded.
   final String label;
 
-  /// The six a person may filter by — everything this build can name.
+  /// The statuses a person may filter by — everything this build can name.
   static List<DesignTicketStatus> get offered =>
       values.where((status) => status != DesignTicketStatus.unknown).toList(growable: false);
 }

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'add_employee_cubit.dart';
@@ -9,6 +9,7 @@ part of 'add_employee_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -31,16 +32,21 @@ $AddEmployeeStateCopyWith<AddEmployeeState> get copyWith => _$AddEmployeeStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddEmployeeState&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.selectedRoles, selectedRoles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.created, created) || other.created == created)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as AddEmployeeState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddEmployeeState&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&const DeepCollectionEquality().equals(other.selectedRoles, _this.selectedRoles)&&(identical(other.isLoadingRoles, _this.isLoadingRoles) || other.isLoadingRoles == _this.isLoadingRoles)&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&(identical(other.created, _this.created) || other.created == _this.created)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(selectedRoles),isLoadingRoles,isSubmitting,created,failure);
+int get hashCode {
+  final _this = this as AddEmployeeState;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.roles),const DeepCollectionEquality().hash(_this.selectedRoles),_this.isLoadingRoles,_this.isSubmitting,_this.created,_this.failure);
+}
 
 @override
 String toString() {
-  return 'AddEmployeeState(roles: $roles, selectedRoles: $selectedRoles, isLoadingRoles: $isLoadingRoles, isSubmitting: $isSubmitting, created: $created, failure: $failure)';
+  final _this = this as AddEmployeeState;
+  return 'AddEmployeeState(roles: ${_this.roles}, selectedRoles: ${_this.selectedRoles}, isLoadingRoles: ${_this.isLoadingRoles}, isSubmitting: ${_this.isSubmitting}, created: ${_this.created}, failure: ${_this.failure})';
 }
 
 
@@ -69,7 +75,7 @@ class _$AddEmployeeStateCopyWithImpl<$Res>
 /// Create a copy of AddEmployeeState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? roles = null,Object? selectedRoles = null,Object? isLoadingRoles = null,Object? isSubmitting = null,Object? created = freezed,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(AddEmployeeState(
 roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
 as List<Role>,selectedRoles: null == selectedRoles ? _self.selectedRoles : selectedRoles // ignore: cast_nullable_to_non_nullable
 as Set<String>,isLoadingRoles: null == isLoadingRoles ? _self.isLoadingRoles : isLoadingRoles // ignore: cast_nullable_to_non_nullable
@@ -241,7 +247,7 @@ return $default(_that.roles,_that.selectedRoles,_that.isLoadingRoles,_that.isSub
 
 
 class _AddEmployeeState extends AddEmployeeState {
-  const _AddEmployeeState({final  List<Role> roles = const <Role>[], final  Set<String> selectedRoles = const <String>{}, this.isLoadingRoles = false, this.isSubmitting = false, this.created, this.failure}): _roles = roles,_selectedRoles = selectedRoles,super._();
+  const _AddEmployeeState({ List<Role> roles = const <Role>[],  Set<String> selectedRoles = const <String>{}, this.isLoadingRoles = false, this.isSubmitting = false, this.created, this.failure}): _roles = roles,_selectedRoles = selectedRoles,super._();
   
 
 /// The roles there are to choose from. Empty while loading, and empty again if the list
@@ -283,16 +289,18 @@ _$AddEmployeeStateCopyWith<_AddEmployeeState> get copyWith => __$AddEmployeeStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddEmployeeState&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._selectedRoles, _selectedRoles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.created, created) || other.created == created)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddEmployeeState&&const DeepCollectionEquality().equals(other.roles, _roles)&&const DeepCollectionEquality().equals(other.selectedRoles, _selectedRoles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.created, created) || other.created == created)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_selectedRoles),isLoadingRoles,isSubmitting,created,failure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_selectedRoles),isLoadingRoles,isSubmitting,created,failure);
+}
 
 @override
 String toString() {
-  return 'AddEmployeeState(roles: $roles, selectedRoles: $selectedRoles, isLoadingRoles: $isLoadingRoles, isSubmitting: $isSubmitting, created: $created, failure: $failure)';
+    return 'AddEmployeeState(roles: $roles, selectedRoles: $selectedRoles, isLoadingRoles: $isLoadingRoles, isSubmitting: $isSubmitting, created: $created, failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'fund_share.dart';
@@ -9,6 +9,7 @@ part of 'fund_share.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -37,16 +38,21 @@ $FundShareCopyWith<FundShare> get copyWith => _$FundShareCopyWithImpl<FundShare>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShare&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.deposits, deposits));
+  final _this = this as FundShare;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundShare&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.units, _this.units) || other.units == _this.units)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.sharePercent, _this.sharePercent) || other.sharePercent == _this.sharePercent)&&(identical(other.shareStartsNextPeriod, _this.shareStartsNextPeriod) || other.shareStartsNextPeriod == _this.shareStartsNextPeriod)&&(identical(other.unlockedUnits, _this.unlockedUnits) || other.unlockedUnits == _this.unlockedUnits)&&(identical(other.period, _this.period) || other.period == _this.period)&&const DeepCollectionEquality().equals(other.deposits, _this.deposits));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,units,unitPrice,value,sharePercent,shareStartsNextPeriod,unlockedUnits,period,const DeepCollectionEquality().hash(deposits));
+int get hashCode {
+  final _this = this as FundShare;
+  return Object.hash(runtimeType,_this.capital,_this.units,_this.unitPrice,_this.value,_this.sharePercent,_this.shareStartsNextPeriod,_this.unlockedUnits,_this.period,const DeepCollectionEquality().hash(_this.deposits));
+}
 
 @override
 String toString() {
-  return 'FundShare(capital: $capital, units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, shareStartsNextPeriod: $shareStartsNextPeriod, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
+  final _this = this as FundShare;
+  return 'FundShare(capital: ${_this.capital}, units: ${_this.units}, unitPrice: ${_this.unitPrice}, value: ${_this.value}, sharePercent: ${_this.sharePercent}, shareStartsNextPeriod: ${_this.shareStartsNextPeriod}, unlockedUnits: ${_this.unlockedUnits}, period: ${_this.period}, deposits: ${_this.deposits})';
 }
 
 
@@ -75,7 +81,7 @@ class _$FundShareCopyWithImpl<$Res>
 /// Create a copy of FundShare
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? capital = null,Object? units = null,Object? unitPrice = null,Object? value = null,Object? sharePercent = null,Object? shareStartsNextPeriod = null,Object? unlockedUnits = null,Object? period = freezed,Object? deposits = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundShare(
 capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,units: null == units ? _self.units : units // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
@@ -238,7 +244,7 @@ return $default(_that.capital,_that.units,_that.unitPrice,_that.value,_that.shar
 @JsonSerializable()
 
 class _FundShare implements FundShare {
-  const _FundShare({this.capital = '0.00', required this.units, @JsonKey(name: 'unit_price') required this.unitPrice, required this.value, @JsonKey(name: 'share_percent') required this.sharePercent, @JsonKey(name: 'share_starts_next_period') this.shareStartsNextPeriod = false, @JsonKey(name: 'unlocked_units') this.unlockedUnits = '0.000000', this.period, final  List<FundDeposit> deposits = const <FundDeposit>[]}): _deposits = deposits;
+  const _FundShare({this.capital = '0.00', required this.units, @JsonKey(name: 'unit_price') required this.unitPrice, required this.value, @JsonKey(name: 'share_percent') required this.sharePercent, @JsonKey(name: 'share_starts_next_period') this.shareStartsNextPeriod = false, @JsonKey(name: 'unlocked_units') this.unlockedUnits = '0.000000', this.period,  List<FundDeposit> deposits = const <FundDeposit>[]}): _deposits = deposits;
   factory _FundShare.fromJson(Map<String, dynamic> json) => _$FundShareFromJson(json);
 
 /// ما وضعه في الصندوق ولم يستردّه — سطرُه في لوحة الصندوق، وسقفُ ما يستردّه.
@@ -281,16 +287,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShare&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other._deposits, _deposits));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundShare&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.shareStartsNextPeriod, shareStartsNextPeriod) || other.shareStartsNextPeriod == shareStartsNextPeriod)&&(identical(other.unlockedUnits, unlockedUnits) || other.unlockedUnits == unlockedUnits)&&(identical(other.period, period) || other.period == period)&&const DeepCollectionEquality().equals(other.deposits, _deposits));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,units,unitPrice,value,sharePercent,shareStartsNextPeriod,unlockedUnits,period,const DeepCollectionEquality().hash(_deposits));
+int get hashCode {
+    return Object.hash(runtimeType,capital,units,unitPrice,value,sharePercent,shareStartsNextPeriod,unlockedUnits,period,const DeepCollectionEquality().hash(_deposits));
+}
 
 @override
 String toString() {
-  return 'FundShare(capital: $capital, units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, shareStartsNextPeriod: $shareStartsNextPeriod, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
+    return 'FundShare(capital: $capital, units: $units, unitPrice: $unitPrice, value: $value, sharePercent: $sharePercent, shareStartsNextPeriod: $shareStartsNextPeriod, unlockedUnits: $unlockedUnits, period: $period, deposits: $deposits)';
 }
 
 
@@ -365,16 +373,21 @@ $FundPeriodBriefCopyWith<FundPeriodBrief> get copyWith => _$FundPeriodBriefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundPeriodBrief&&(identical(other.code, code) || other.code == code)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital));
+  final _this = this as FundPeriodBrief;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundPeriodBrief&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.startsOn, _this.startsOn) || other.startsOn == _this.startsOn)&&(identical(other.endsOn, _this.endsOn) || other.endsOn == _this.endsOn)&&(identical(other.acceptsCapital, _this.acceptsCapital) || other.acceptsCapital == _this.acceptsCapital));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,startsOn,endsOn,acceptsCapital);
+int get hashCode {
+  final _this = this as FundPeriodBrief;
+  return Object.hash(runtimeType,_this.code,_this.startsOn,_this.endsOn,_this.acceptsCapital);
+}
 
 @override
 String toString() {
-  return 'FundPeriodBrief(code: $code, startsOn: $startsOn, endsOn: $endsOn, acceptsCapital: $acceptsCapital)';
+  final _this = this as FundPeriodBrief;
+  return 'FundPeriodBrief(code: ${_this.code}, startsOn: ${_this.startsOn}, endsOn: ${_this.endsOn}, acceptsCapital: ${_this.acceptsCapital})';
 }
 
 
@@ -403,7 +416,7 @@ class _$FundPeriodBriefCopyWithImpl<$Res>
 /// Create a copy of FundPeriodBrief
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? startsOn = null,Object? endsOn = null,Object? acceptsCapital = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundPeriodBrief(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,startsOn: null == startsOn ? _self.startsOn : startsOn // ignore: cast_nullable_to_non_nullable
 as String,endsOn: null == endsOn ? _self.endsOn : endsOn // ignore: cast_nullable_to_non_nullable
@@ -570,16 +583,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundPeriodBrief&&(identical(other.code, code) || other.code == code)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundPeriodBrief&&(identical(other.code, code) || other.code == code)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.acceptsCapital, acceptsCapital) || other.acceptsCapital == acceptsCapital));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,startsOn,endsOn,acceptsCapital);
+int get hashCode {
+    return Object.hash(runtimeType,code,startsOn,endsOn,acceptsCapital);
+}
 
 @override
 String toString() {
-  return 'FundPeriodBrief(code: $code, startsOn: $startsOn, endsOn: $endsOn, acceptsCapital: $acceptsCapital)';
+    return 'FundPeriodBrief(code: $code, startsOn: $startsOn, endsOn: $endsOn, acceptsCapital: $acceptsCapital)';
 }
 
 
@@ -637,16 +652,21 @@ $FundDepositCopyWith<FundDeposit> get copyWith => _$FundDepositCopyWithImpl<Fund
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundDeposit&&(identical(other.units, units) || other.units == units)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked));
+  final _this = this as FundDeposit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FundDeposit&&(identical(other.units, _this.units) || other.units == _this.units)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.lockedUntil, _this.lockedUntil) || other.lockedUntil == _this.lockedUntil)&&(identical(other.isLocked, _this.isLocked) || other.isLocked == _this.isLocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,amount,lockedUntil,isLocked);
+int get hashCode {
+  final _this = this as FundDeposit;
+  return Object.hash(runtimeType,_this.units,_this.amount,_this.lockedUntil,_this.isLocked);
+}
 
 @override
 String toString() {
-  return 'FundDeposit(units: $units, amount: $amount, lockedUntil: $lockedUntil, isLocked: $isLocked)';
+  final _this = this as FundDeposit;
+  return 'FundDeposit(units: ${_this.units}, amount: ${_this.amount}, lockedUntil: ${_this.lockedUntil}, isLocked: ${_this.isLocked})';
 }
 
 
@@ -675,7 +695,7 @@ class _$FundDepositCopyWithImpl<$Res>
 /// Create a copy of FundDeposit
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? units = null,Object? amount = null,Object? lockedUntil = freezed,Object? isLocked = null,}) {
-  return _then(_self.copyWith(
+  return _then(FundDeposit(
 units: null == units ? _self.units : units // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as String,lockedUntil: freezed == lockedUntil ? _self.lockedUntil : lockedUntil // ignore: cast_nullable_to_non_nullable
@@ -842,16 +862,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundDeposit&&(identical(other.units, units) || other.units == units)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FundDeposit&&(identical(other.units, units) || other.units == units)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil)&&(identical(other.isLocked, isLocked) || other.isLocked == isLocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,amount,lockedUntil,isLocked);
+int get hashCode {
+    return Object.hash(runtimeType,units,amount,lockedUntil,isLocked);
+}
 
 @override
 String toString() {
-  return 'FundDeposit(units: $units, amount: $amount, lockedUntil: $lockedUntil, isLocked: $isLocked)';
+    return 'FundDeposit(units: $units, amount: $amount, lockedUntil: $lockedUntil, isLocked: $isLocked)';
 }
 
 

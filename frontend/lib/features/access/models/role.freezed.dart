@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'role.dart';
@@ -9,6 +9,7 @@ part of 'role.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -39,16 +40,21 @@ $RoleCopyWith<Role> get copyWith => _$RoleCopyWithImpl<Role>(this as Role, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Role&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label)&&(identical(other.grantsEverything, grantsEverything) || other.grantsEverything == grantsEverything)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.canBeRenamed, canBeRenamed) || other.canBeRenamed == canBeRenamed)&&(identical(other.canBeDeleted, canBeDeleted) || other.canBeDeleted == canBeDeleted)&&(identical(other.canEditPermissions, canEditPermissions) || other.canEditPermissions == canEditPermissions)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount));
+  final _this = this as Role;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Role&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.grantsEverything, _this.grantsEverything) || other.grantsEverything == _this.grantsEverything)&&(identical(other.isSystem, _this.isSystem) || other.isSystem == _this.isSystem)&&(identical(other.canBeRenamed, _this.canBeRenamed) || other.canBeRenamed == _this.canBeRenamed)&&(identical(other.canBeDeleted, _this.canBeDeleted) || other.canBeDeleted == _this.canBeDeleted)&&(identical(other.canEditPermissions, _this.canEditPermissions) || other.canEditPermissions == _this.canEditPermissions)&&const DeepCollectionEquality().equals(other.permissions, _this.permissions)&&(identical(other.usersCount, _this.usersCount) || other.usersCount == _this.usersCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,label,grantsEverything,isSystem,canBeRenamed,canBeDeleted,canEditPermissions,const DeepCollectionEquality().hash(permissions),usersCount);
+int get hashCode {
+  final _this = this as Role;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.label,_this.grantsEverything,_this.isSystem,_this.canBeRenamed,_this.canBeDeleted,_this.canEditPermissions,const DeepCollectionEquality().hash(_this.permissions),_this.usersCount);
+}
 
 @override
 String toString() {
-  return 'Role(id: $id, name: $name, label: $label, grantsEverything: $grantsEverything, isSystem: $isSystem, canBeRenamed: $canBeRenamed, canBeDeleted: $canBeDeleted, canEditPermissions: $canEditPermissions, permissions: $permissions, usersCount: $usersCount)';
+  final _this = this as Role;
+  return 'Role(id: ${_this.id}, name: ${_this.name}, label: ${_this.label}, grantsEverything: ${_this.grantsEverything}, isSystem: ${_this.isSystem}, canBeRenamed: ${_this.canBeRenamed}, canBeDeleted: ${_this.canBeDeleted}, canEditPermissions: ${_this.canEditPermissions}, permissions: ${_this.permissions}, usersCount: ${_this.usersCount})';
 }
 
 
@@ -77,7 +83,7 @@ class _$RoleCopyWithImpl<$Res>
 /// Create a copy of Role
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? label = null,Object? grantsEverything = null,Object? isSystem = null,Object? canBeRenamed = null,Object? canBeDeleted = null,Object? canEditPermissions = null,Object? permissions = null,Object? usersCount = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Role(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
@@ -229,7 +235,7 @@ return $default(_that.id,_that.name,_that.label,_that.grantsEverything,_that.isS
 @JsonSerializable()
 
 class _Role extends Role {
-  const _Role({required this.id, required this.name, required this.label, @JsonKey(name: 'grants_everything') this.grantsEverything = false, @JsonKey(name: 'is_system') this.isSystem = false, @JsonKey(name: 'can_be_renamed') this.canBeRenamed = true, @JsonKey(name: 'can_be_deleted') this.canBeDeleted = false, @JsonKey(name: 'can_edit_permissions') this.canEditPermissions = true, final  List<PermissionOption> permissions = const <PermissionOption>[], @JsonKey(name: 'users_count') this.usersCount}): _permissions = permissions,super._();
+  const _Role({required this.id, required this.name, required this.label, @JsonKey(name: 'grants_everything') this.grantsEverything = false, @JsonKey(name: 'is_system') this.isSystem = false, @JsonKey(name: 'can_be_renamed') this.canBeRenamed = true, @JsonKey(name: 'can_be_deleted') this.canBeDeleted = false, @JsonKey(name: 'can_edit_permissions') this.canEditPermissions = true,  List<PermissionOption> permissions = const <PermissionOption>[], @JsonKey(name: 'users_count') this.usersCount}): _permissions = permissions,super._();
   factory _Role.fromJson(Map<String, dynamic> json) => _$RoleFromJson(json);
 
 @override final  int id;
@@ -275,16 +281,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Role&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label)&&(identical(other.grantsEverything, grantsEverything) || other.grantsEverything == grantsEverything)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.canBeRenamed, canBeRenamed) || other.canBeRenamed == canBeRenamed)&&(identical(other.canBeDeleted, canBeDeleted) || other.canBeDeleted == canBeDeleted)&&(identical(other.canEditPermissions, canEditPermissions) || other.canEditPermissions == canEditPermissions)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Role&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label)&&(identical(other.grantsEverything, grantsEverything) || other.grantsEverything == grantsEverything)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.canBeRenamed, canBeRenamed) || other.canBeRenamed == canBeRenamed)&&(identical(other.canBeDeleted, canBeDeleted) || other.canBeDeleted == canBeDeleted)&&(identical(other.canEditPermissions, canEditPermissions) || other.canEditPermissions == canEditPermissions)&&const DeepCollectionEquality().equals(other.permissions, _permissions)&&(identical(other.usersCount, usersCount) || other.usersCount == usersCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,label,grantsEverything,isSystem,canBeRenamed,canBeDeleted,canEditPermissions,const DeepCollectionEquality().hash(_permissions),usersCount);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,label,grantsEverything,isSystem,canBeRenamed,canBeDeleted,canEditPermissions,const DeepCollectionEquality().hash(_permissions),usersCount);
+}
 
 @override
 String toString() {
-  return 'Role(id: $id, name: $name, label: $label, grantsEverything: $grantsEverything, isSystem: $isSystem, canBeRenamed: $canBeRenamed, canBeDeleted: $canBeDeleted, canEditPermissions: $canEditPermissions, permissions: $permissions, usersCount: $usersCount)';
+    return 'Role(id: $id, name: $name, label: $label, grantsEverything: $grantsEverything, isSystem: $isSystem, canBeRenamed: $canBeRenamed, canBeDeleted: $canBeDeleted, canEditPermissions: $canEditPermissions, permissions: $permissions, usersCount: $usersCount)';
 }
 
 
@@ -350,16 +358,21 @@ $PermissionOptionCopyWith<PermissionOption> get copyWith => _$PermissionOptionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionOption&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
+  final _this = this as PermissionOption;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionOption&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,label);
+int get hashCode {
+  final _this = this as PermissionOption;
+  return Object.hash(runtimeType,_this.name,_this.label);
+}
 
 @override
 String toString() {
-  return 'PermissionOption(name: $name, label: $label)';
+  final _this = this as PermissionOption;
+  return 'PermissionOption(name: ${_this.name}, label: ${_this.label})';
 }
 
 
@@ -388,7 +401,7 @@ class _$PermissionOptionCopyWithImpl<$Res>
 /// Create a copy of PermissionOption
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(PermissionOption(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -553,16 +566,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PermissionOption&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PermissionOption&&(identical(other.name, name) || other.name == name)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,label);
+int get hashCode {
+    return Object.hash(runtimeType,name,label);
+}
 
 @override
 String toString() {
-  return 'PermissionOption(name: $name, label: $label)';
+    return 'PermissionOption(name: $name, label: $label)';
 }
 
 
@@ -619,16 +634,21 @@ $PermissionGroupCopyWith<PermissionGroup> get copyWith => _$PermissionGroupCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionGroup&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.permissions, permissions));
+  final _this = this as PermissionGroup;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionGroup&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.permissions, _this.permissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,const DeepCollectionEquality().hash(permissions));
+int get hashCode {
+  final _this = this as PermissionGroup;
+  return Object.hash(runtimeType,_this.title,const DeepCollectionEquality().hash(_this.permissions));
+}
 
 @override
 String toString() {
-  return 'PermissionGroup(title: $title, permissions: $permissions)';
+  final _this = this as PermissionGroup;
+  return 'PermissionGroup(title: ${_this.title}, permissions: ${_this.permissions})';
 }
 
 
@@ -657,7 +677,7 @@ class _$PermissionGroupCopyWithImpl<$Res>
 /// Create a copy of PermissionGroup
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? permissions = null,}) {
-  return _then(_self.copyWith(
+  return _then(PermissionGroup(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
 as List<PermissionOption>,
@@ -801,7 +821,7 @@ return $default(_that.title,_that.permissions);case _:
 @JsonSerializable()
 
 class _PermissionGroup extends PermissionGroup {
-  const _PermissionGroup({@JsonKey(name: 'group') required this.title, required final  List<PermissionOption> permissions}): _permissions = permissions,super._();
+  const _PermissionGroup({@JsonKey(name: 'group') required this.title, required  List<PermissionOption> permissions}): _permissions = permissions,super._();
   factory _PermissionGroup.fromJson(Map<String, dynamic> json) => _$PermissionGroupFromJson(json);
 
 /// The section heading, in Arabic.
@@ -827,16 +847,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PermissionGroup&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other._permissions, _permissions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PermissionGroup&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.permissions, _permissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,const DeepCollectionEquality().hash(_permissions));
+int get hashCode {
+    return Object.hash(runtimeType,title,const DeepCollectionEquality().hash(_permissions));
+}
 
 @override
 String toString() {
-  return 'PermissionGroup(title: $title, permissions: $permissions)';
+    return 'PermissionGroup(title: $title, permissions: $permissions)';
 }
 
 

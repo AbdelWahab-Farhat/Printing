@@ -24,6 +24,9 @@ class DesignTicketStatusPill extends StatelessWidget {
     final (background, foreground) = switch (status) {
       // Nobody has picked it up yet.
       DesignTicketStatus.fresh => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+      // Routed to a designer who has not accepted yet: the primary family of «قيد التصميم»,
+      // but on a pale surface, so it reads as the step before the work.
+      DesignTicketStatus.assigned => (scheme.surfaceContainerHigh, scheme.primary),
       // Work in hand — the same family as «جاري البحث» on a shortage.
       DesignTicketStatus.inProgress => (scheme.primaryContainer, scheme.onPrimaryContainer),
       // Waiting on a person rather than on work: the tertiary family, which this app uses for

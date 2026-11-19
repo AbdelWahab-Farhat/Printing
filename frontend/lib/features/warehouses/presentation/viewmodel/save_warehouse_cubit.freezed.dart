@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'save_warehouse_cubit.dart';
@@ -9,6 +9,7 @@ part of 'save_warehouse_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SaveWarehouseState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveWarehouseState()';
+    return 'SaveWarehouseState()';
 }
 
 
@@ -197,7 +198,7 @@ class SaveWarehouseInitial implements SaveWarehouseState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveWarehouseState.initial()';
+    return 'SaveWarehouseState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class SaveWarehouseSubmitting implements SaveWarehouseState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SaveWarehouseState.submitting()';
+    return 'SaveWarehouseState.submitting()';
 }
 
 
@@ -266,16 +267,18 @@ $SaveWarehouseSuccessCopyWith<SaveWarehouseSuccess> get copyWith => _$SaveWareho
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseSuccess&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseSuccess&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,warehouse);
+int get hashCode {
+    return Object.hash(runtimeType,warehouse);
+}
 
 @override
 String toString() {
-  return 'SaveWarehouseState.success(warehouse: $warehouse)';
+    return 'SaveWarehouseState.success(warehouse: $warehouse)';
 }
 
 
@@ -341,16 +344,18 @@ $SaveWarehouseFailureCopyWith<SaveWarehouseFailure> get copyWith => _$SaveWareho
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SaveWarehouseFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SaveWarehouseState.failure(failure: $failure)';
+    return 'SaveWarehouseState.failure(failure: $failure)';
 }
 
 

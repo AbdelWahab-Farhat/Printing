@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'product.dart';
@@ -9,6 +9,7 @@ part of 'product.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -59,16 +60,21 @@ $ProductCopyWith<Product> get copyWith => _$ProductCopyWithImpl<Product>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, features)&&(identical(other.productCategory, productCategory) || other.productCategory == productCategory)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.stockItemGroup, stockItemGroup) || other.stockItemGroup == stockItemGroup)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other.variants, variants)&&const DeepCollectionEquality().equals(other.images, images)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as Product;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.features, _this.features)&&(identical(other.productCategory, _this.productCategory) || other.productCategory == _this.productCategory)&&(identical(other.productCategoryId, _this.productCategoryId) || other.productCategoryId == _this.productCategoryId)&&(identical(other.stockItemGroupId, _this.stockItemGroupId) || other.stockItemGroupId == _this.stockItemGroupId)&&(identical(other.stockItemGroup, _this.stockItemGroup) || other.stockItemGroup == _this.stockItemGroup)&&(identical(other.pricingUnit, _this.pricingUnit) || other.pricingUnit == _this.pricingUnit)&&(identical(other.pricingUnitLabel, _this.pricingUnitLabel) || other.pricingUnitLabel == _this.pricingUnitLabel)&&(identical(other.pricingMode, _this.pricingMode) || other.pricingMode == _this.pricingMode)&&(identical(other.pricingModeLabel, _this.pricingModeLabel) || other.pricingModeLabel == _this.pricingModeLabel)&&(identical(other.hasListedPrices, _this.hasListedPrices) || other.hasListedPrices == _this.hasListedPrices)&&(identical(other.minOrderQuantity, _this.minOrderQuantity) || other.minOrderQuantity == _this.minOrderQuantity)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&const DeepCollectionEquality().equals(other.variants, _this.variants)&&const DeepCollectionEquality().equals(other.images, _this.images)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(features),productCategory,productCategoryId,stockItemGroupId,stockItemGroup,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(variants),const DeepCollectionEquality().hash(images),createdAt,updatedAt]);
+int get hashCode {
+  final _this = this as Product;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.slug,_this.name,_this.description,const DeepCollectionEquality().hash(_this.features),_this.productCategory,_this.productCategoryId,_this.stockItemGroupId,_this.stockItemGroup,_this.pricingUnit,_this.pricingUnitLabel,_this.pricingMode,_this.pricingModeLabel,_this.hasListedPrices,_this.minOrderQuantity,_this.isActive,_this.sortOrder,const DeepCollectionEquality().hash(_this.variants),const DeepCollectionEquality().hash(_this.images),_this.createdAt,_this.updatedAt]);
+}
 
 @override
 String toString() {
-  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, productCategory: $productCategory, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, stockItemGroup: $stockItemGroup, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as Product;
+  return 'Product(id: ${_this.id}, code: ${_this.code}, slug: ${_this.slug}, name: ${_this.name}, description: ${_this.description}, features: ${_this.features}, productCategory: ${_this.productCategory}, productCategoryId: ${_this.productCategoryId}, stockItemGroupId: ${_this.stockItemGroupId}, stockItemGroup: ${_this.stockItemGroup}, pricingUnit: ${_this.pricingUnit}, pricingUnitLabel: ${_this.pricingUnitLabel}, pricingMode: ${_this.pricingMode}, pricingModeLabel: ${_this.pricingModeLabel}, hasListedPrices: ${_this.hasListedPrices}, minOrderQuantity: ${_this.minOrderQuantity}, isActive: ${_this.isActive}, sortOrder: ${_this.sortOrder}, variants: ${_this.variants}, images: ${_this.images}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -97,7 +103,7 @@ class _$ProductCopyWithImpl<$Res>
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? slug = null,Object? name = null,Object? description = freezed,Object? features = null,Object? productCategory = freezed,Object? productCategoryId = freezed,Object? stockItemGroupId = freezed,Object? stockItemGroup = freezed,Object? pricingUnit = null,Object? pricingUnitLabel = null,Object? pricingMode = null,Object? pricingModeLabel = null,Object? hasListedPrices = null,Object? minOrderQuantity = null,Object? isActive = null,Object? sortOrder = null,Object? variants = null,Object? images = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -285,7 +291,7 @@ return $default(_that.id,_that.code,_that.slug,_that.name,_that.description,_tha
 @JsonSerializable()
 
 class _Product extends Product {
-  const _Product({required this.id, required this.code, required this.slug, required this.name, this.description, final  List<String> features = const <String>[], @JsonKey(name: 'product_category') this.productCategory, @JsonKey(name: 'product_category_id') this.productCategoryId, @JsonKey(name: 'stock_item_group_id') this.stockItemGroupId, @JsonKey(name: 'stock_item_group') this.stockItemGroup, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'pricing_mode_label') required this.pricingModeLabel, @JsonKey(name: 'has_listed_prices') this.hasListedPrices = false, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, final  List<ProductVariant> variants = const <ProductVariant>[], final  List<ProductImage> images = const <ProductImage>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _features = features,_variants = variants,_images = images,super._();
+  const _Product({required this.id, required this.code, required this.slug, required this.name, this.description,  List<String> features = const <String>[], @JsonKey(name: 'product_category') this.productCategory, @JsonKey(name: 'product_category_id') this.productCategoryId, @JsonKey(name: 'stock_item_group_id') this.stockItemGroupId, @JsonKey(name: 'stock_item_group') this.stockItemGroup, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_unit_label') required this.pricingUnitLabel, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'pricing_mode_label') required this.pricingModeLabel, @JsonKey(name: 'has_listed_prices') this.hasListedPrices = false, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0,  List<ProductVariant> variants = const <ProductVariant>[],  List<ProductImage> images = const <ProductImage>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _features = features,_variants = variants,_images = images,super._();
   factory _Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
 @override final  int id;
@@ -373,16 +379,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._features, _features)&&(identical(other.productCategory, productCategory) || other.productCategory == productCategory)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.stockItemGroup, stockItemGroup) || other.stockItemGroup == stockItemGroup)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other._variants, _variants)&&const DeepCollectionEquality().equals(other._images, _images)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, _features)&&(identical(other.productCategory, productCategory) || other.productCategory == productCategory)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.stockItemGroup, stockItemGroup) || other.stockItemGroup == stockItemGroup)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.pricingModeLabel, pricingModeLabel) || other.pricingModeLabel == pricingModeLabel)&&(identical(other.hasListedPrices, hasListedPrices) || other.hasListedPrices == hasListedPrices)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&const DeepCollectionEquality().equals(other.variants, _variants)&&const DeepCollectionEquality().equals(other.images, _images)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(_features),productCategory,productCategoryId,stockItemGroupId,stockItemGroup,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_images),createdAt,updatedAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,slug,name,description,const DeepCollectionEquality().hash(_features),productCategory,productCategoryId,stockItemGroupId,stockItemGroup,pricingUnit,pricingUnitLabel,pricingMode,pricingModeLabel,hasListedPrices,minOrderQuantity,isActive,sortOrder,const DeepCollectionEquality().hash(_variants),const DeepCollectionEquality().hash(_images),createdAt,updatedAt]);
+}
 
 @override
 String toString() {
-  return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, productCategory: $productCategory, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, stockItemGroup: $stockItemGroup, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Product(id: $id, code: $code, slug: $slug, name: $name, description: $description, features: $features, productCategory: $productCategory, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, stockItemGroup: $stockItemGroup, pricingUnit: $pricingUnit, pricingUnitLabel: $pricingUnitLabel, pricingMode: $pricingMode, pricingModeLabel: $pricingModeLabel, hasListedPrices: $hasListedPrices, minOrderQuantity: $minOrderQuantity, isActive: $isActive, sortOrder: $sortOrder, variants: $variants, images: $images, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -512,16 +520,21 @@ $ProductVariantCopyWith<ProductVariant> get copyWith => _$ProductVariantCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
+  final _this = this as ProductVariant;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductVariant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.stockItem, _this.stockItem) || other.stockItem == _this.stockItem)&&(identical(other.costPrice, _this.costPrice) || other.costPrice == _this.costPrice)&&const DeepCollectionEquality().equals(other.priceTiers, _this.priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,costPrice,const DeepCollectionEquality().hash(priceTiers));
+int get hashCode {
+  final _this = this as ProductVariant;
+  return Object.hash(runtimeType,_this.id,_this.label,_this.widthCm,_this.heightCm,_this.isActive,_this.sortOrder,_this.stockItemId,_this.stockItem,_this.costPrice,const DeepCollectionEquality().hash(_this.priceTiers));
+}
 
 @override
 String toString() {
-  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, costPrice: $costPrice, priceTiers: $priceTiers)';
+  final _this = this as ProductVariant;
+  return 'ProductVariant(id: ${_this.id}, label: ${_this.label}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, isActive: ${_this.isActive}, sortOrder: ${_this.sortOrder}, stockItemId: ${_this.stockItemId}, stockItem: ${_this.stockItem}, costPrice: ${_this.costPrice}, priceTiers: ${_this.priceTiers})';
 }
 
 
@@ -550,7 +563,7 @@ class _$ProductVariantCopyWithImpl<$Res>
 /// Create a copy of ProductVariant
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? sortOrder = null,Object? stockItemId = freezed,Object? stockItem = freezed,Object? costPrice = freezed,Object? priceTiers = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProductVariant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
@@ -714,7 +727,7 @@ return $default(_that.id,_that.label,_that.widthCm,_that.heightCm,_that.isActive
 @JsonSerializable()
 
 class _ProductVariant extends ProductVariant {
-  const _ProductVariant({required this.id, required this.label, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'stock_item_id') this.stockItemId, @JsonKey(name: 'stock_item') this.stockItem, @JsonKey(name: 'cost_price') this.costPrice, @JsonKey(name: 'price_tiers') final  List<ProductPriceTier> priceTiers = const <ProductPriceTier>[]}): _priceTiers = priceTiers,super._();
+  const _ProductVariant({required this.id, required this.label, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'sort_order') this.sortOrder = 0, @JsonKey(name: 'stock_item_id') this.stockItemId, @JsonKey(name: 'stock_item') this.stockItem, @JsonKey(name: 'cost_price') this.costPrice, @JsonKey(name: 'price_tiers')  List<ProductPriceTier> priceTiers = const <ProductPriceTier>[]}): _priceTiers = priceTiers,super._();
   factory _ProductVariant.fromJson(Map<String, dynamic> json) => _$ProductVariantFromJson(json);
 
 @override final  int id;
@@ -777,16 +790,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.stockItem, stockItem) || other.stockItem == stockItem)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&const DeepCollectionEquality().equals(other.priceTiers, _priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,costPrice,const DeepCollectionEquality().hash(_priceTiers));
+int get hashCode {
+    return Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,sortOrder,stockItemId,stockItem,costPrice,const DeepCollectionEquality().hash(_priceTiers));
+}
 
 @override
 String toString() {
-  return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, costPrice: $costPrice, priceTiers: $priceTiers)';
+    return 'ProductVariant(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, sortOrder: $sortOrder, stockItemId: $stockItemId, stockItem: $stockItem, costPrice: $costPrice, priceTiers: $priceTiers)';
 }
 
 
@@ -867,16 +882,21 @@ $ProductMaterialCopyWith<ProductMaterial> get copyWith => _$ProductMaterialCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductMaterial&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel));
+  final _this = this as ProductMaterial;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductMaterial&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.defaultUnit, _this.defaultUnit) || other.defaultUnit == _this.defaultUnit)&&(identical(other.defaultUnitLabel, _this.defaultUnitLabel) || other.defaultUnitLabel == _this.defaultUnitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel);
+int get hashCode {
+  final _this = this as ProductMaterial;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.defaultUnit,_this.defaultUnitLabel);
+}
 
 @override
 String toString() {
-  return 'ProductMaterial(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel)';
+  final _this = this as ProductMaterial;
+  return 'ProductMaterial(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, defaultUnit: ${_this.defaultUnit}, defaultUnitLabel: ${_this.defaultUnitLabel})';
 }
 
 
@@ -905,7 +925,7 @@ class _$ProductMaterialCopyWithImpl<$Res>
 /// Create a copy of ProductMaterial
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? defaultUnit = null,Object? defaultUnitLabel = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProductMaterial(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1079,16 +1099,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductMaterial&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductMaterial&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel);
+}
 
 @override
 String toString() {
-  return 'ProductMaterial(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel)';
+    return 'ProductMaterial(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel)';
 }
 
 
@@ -1155,16 +1177,21 @@ $VariantStockItemCopyWith<VariantStockItem> get copyWith => _$VariantStockItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VariantStockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
+  final _this = this as VariantStockItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VariantStockItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName,unit,unitLabel);
+int get hashCode {
+  final _this = this as VariantStockItem;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.widthCm,_this.heightCm,_this.displayName,_this.unit,_this.unitLabel);
+}
 
 @override
 String toString() {
-  return 'VariantStockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName, unit: $unit, unitLabel: $unitLabel)';
+  final _this = this as VariantStockItem;
+  return 'VariantStockItem(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, displayName: ${_this.displayName}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel})';
 }
 
 
@@ -1193,7 +1220,7 @@ class _$VariantStockItemCopyWithImpl<$Res>
 /// Create a copy of VariantStockItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? displayName = null,Object? unit = null,Object? unitLabel = null,}) {
-  return _then(_self.copyWith(
+  return _then(VariantStockItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1376,16 +1403,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VariantStockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _VariantStockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName,unit,unitLabel);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName,unit,unitLabel);
+}
 
 @override
 String toString() {
-  return 'VariantStockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName, unit: $unit, unitLabel: $unitLabel)';
+    return 'VariantStockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName, unit: $unit, unitLabel: $unitLabel)';
 }
 
 
@@ -1447,16 +1476,21 @@ $ProductPriceTierCopyWith<ProductPriceTier> get copyWith => _$ProductPriceTierCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductPriceTier&&(identical(other.id, id) || other.id == id)&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  final _this = this as ProductPriceTier;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductPriceTier&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.minQuantity, _this.minQuantity) || other.minQuantity == _this.minQuantity)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,minQuantity,unitPrice);
+int get hashCode {
+  final _this = this as ProductPriceTier;
+  return Object.hash(runtimeType,_this.id,_this.minQuantity,_this.unitPrice);
+}
 
 @override
 String toString() {
-  return 'ProductPriceTier(id: $id, minQuantity: $minQuantity, unitPrice: $unitPrice)';
+  final _this = this as ProductPriceTier;
+  return 'ProductPriceTier(id: ${_this.id}, minQuantity: ${_this.minQuantity}, unitPrice: ${_this.unitPrice})';
 }
 
 
@@ -1485,7 +1519,7 @@ class _$ProductPriceTierCopyWithImpl<$Res>
 /// Create a copy of ProductPriceTier
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? minQuantity = null,Object? unitPrice = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProductPriceTier(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,minQuantity: null == minQuantity ? _self.minQuantity : minQuantity // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
@@ -1650,16 +1684,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductPriceTier&&(identical(other.id, id) || other.id == id)&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductPriceTier&&(identical(other.id, id) || other.id == id)&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,minQuantity,unitPrice);
+int get hashCode {
+    return Object.hash(runtimeType,id,minQuantity,unitPrice);
+}
 
 @override
 String toString() {
-  return 'ProductPriceTier(id: $id, minQuantity: $minQuantity, unitPrice: $unitPrice)';
+    return 'ProductPriceTier(id: $id, minQuantity: $minQuantity, unitPrice: $unitPrice)';
 }
 
 
@@ -1718,16 +1754,21 @@ $ProductImageCopyWith<ProductImage> get copyWith => _$ProductImageCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx));
+  final _this = this as ProductImage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.url, _this.url) || other.url == _this.url)&&(identical(other.altText, _this.altText) || other.altText == _this.altText)&&(identical(other.isPrimary, _this.isPrimary) || other.isPrimary == _this.isPrimary)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.mimeType, _this.mimeType) || other.mimeType == _this.mimeType)&&(identical(other.sizeBytes, _this.sizeBytes) || other.sizeBytes == _this.sizeBytes)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder,mimeType,sizeBytes,widthPx,heightPx);
+int get hashCode {
+  final _this = this as ProductImage;
+  return Object.hash(runtimeType,_this.id,_this.url,_this.altText,_this.isPrimary,_this.sortOrder,_this.mimeType,_this.sizeBytes,_this.widthPx,_this.heightPx);
+}
 
 @override
 String toString() {
-  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx)';
+  final _this = this as ProductImage;
+  return 'ProductImage(id: ${_this.id}, url: ${_this.url}, altText: ${_this.altText}, isPrimary: ${_this.isPrimary}, sortOrder: ${_this.sortOrder}, mimeType: ${_this.mimeType}, sizeBytes: ${_this.sizeBytes}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx})';
 }
 
 
@@ -1756,7 +1797,7 @@ class _$ProductImageCopyWithImpl<$Res>
 /// Create a copy of ProductImage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? url = null,Object? altText = freezed,Object? isPrimary = null,Object? sortOrder = null,Object? mimeType = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProductImage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,altText: freezed == altText ? _self.altText : altText // ignore: cast_nullable_to_non_nullable
@@ -1935,16 +1976,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductImage&&(identical(other.id, id) || other.id == id)&&(identical(other.url, url) || other.url == url)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.isPrimary, isPrimary) || other.isPrimary == isPrimary)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder,mimeType,sizeBytes,widthPx,heightPx);
+int get hashCode {
+    return Object.hash(runtimeType,id,url,altText,isPrimary,sortOrder,mimeType,sizeBytes,widthPx,heightPx);
+}
 
 @override
 String toString() {
-  return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx)';
+    return 'ProductImage(id: $id, url: $url, altText: $altText, isPrimary: $isPrimary, sortOrder: $sortOrder, mimeType: $mimeType, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx)';
 }
 
 

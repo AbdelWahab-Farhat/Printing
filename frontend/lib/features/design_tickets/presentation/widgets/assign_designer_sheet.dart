@@ -14,7 +14,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// A sheet over the employees, the shape `showAssignShortageSheet` uses: a name is picked from a
 /// searchable list rather than a dropdown that would have to hold every employee in the shop.
 ///
-/// **«الطابور المشترك» is an option here, at the top.** It is a queue designers actually work
+/// **«غير مُسنَد لمصمم» (the shared pool) is an option here, at the top.** It is a queue designers actually work
 /// from, not the absence of an answer — which is why the server takes a null as an instruction
 /// rather than as «leave it alone», and why this sheet offers it rather than making somebody
 /// cancel out of it.
@@ -86,7 +86,7 @@ class _AssignSheet extends StatelessWidget {
           SizedBox(height: 8.h),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('الطابور المشترك'),
+            title: const Text('غير مُسنَد لمصمم'),
             subtitle: const Text('يراها كل المصممين، ويأخذها أوّل من يقبلها'),
             trailing: currentDesignerId == null ? const Icon(Icons.check) : null,
             onTap: () => Navigator.of(context).pop(const DesignerChoice.sharedPool()),

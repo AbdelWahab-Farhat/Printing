@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'roles_cubit.dart';
@@ -9,6 +9,7 @@ part of 'roles_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$RolesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RolesState()';
+    return 'RolesState()';
 }
 
 
@@ -191,7 +192,7 @@ class RolesLoading implements RolesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'RolesState.loading()';
+    return 'RolesState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class RolesLoaded implements RolesState {
-  const RolesLoaded({required final  List<Role> roles, this.deletingId}): _roles = roles;
+  const RolesLoaded({required  List<Role> roles, this.deletingId}): _roles = roles;
   
 
  final  List<Role> _roles;
@@ -237,16 +238,18 @@ $RolesLoadedCopyWith<RolesLoaded> get copyWith => _$RolesLoadedCopyWithImpl<Role
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesLoaded&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.deletingId, deletingId) || other.deletingId == deletingId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesLoaded&&const DeepCollectionEquality().equals(other.roles, _roles)&&(identical(other.deletingId, deletingId) || other.deletingId == deletingId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_roles),deletingId);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_roles),deletingId);
+}
 
 @override
 String toString() {
-  return 'RolesState.loaded(roles: $roles, deletingId: $deletingId)';
+    return 'RolesState.loaded(roles: $roles, deletingId: $deletingId)';
 }
 
 
@@ -304,16 +307,18 @@ $RolesFailureCopyWith<RolesFailure> get copyWith => _$RolesFailureCopyWithImpl<R
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is RolesFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'RolesState.failure(failure: $failure)';
+    return 'RolesState.failure(failure: $failure)';
 }
 
 

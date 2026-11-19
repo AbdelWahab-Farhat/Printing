@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'push_preference.dart';
@@ -9,6 +9,7 @@ part of 'push_preference.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $PushPreferenceGroupCopyWith<PushPreferenceGroup> get copyWith => _$PushPreferen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PushPreferenceGroup&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.icon, icon) || other.icon == icon)&&const DeepCollectionEquality().equals(other.switches, switches));
+  final _this = this as PushPreferenceGroup;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PushPreferenceGroup&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.icon, _this.icon) || other.icon == _this.icon)&&const DeepCollectionEquality().equals(other.switches, _this.switches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,label,icon,const DeepCollectionEquality().hash(switches));
+int get hashCode {
+  final _this = this as PushPreferenceGroup;
+  return Object.hash(runtimeType,_this.type,_this.label,_this.icon,const DeepCollectionEquality().hash(_this.switches));
+}
 
 @override
 String toString() {
-  return 'PushPreferenceGroup(type: $type, label: $label, icon: $icon, switches: $switches)';
+  final _this = this as PushPreferenceGroup;
+  return 'PushPreferenceGroup(type: ${_this.type}, label: ${_this.label}, icon: ${_this.icon}, switches: ${_this.switches})';
 }
 
 
@@ -66,7 +72,7 @@ class _$PushPreferenceGroupCopyWithImpl<$Res>
 /// Create a copy of PushPreferenceGroup
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? label = null,Object? icon = null,Object? switches = null,}) {
-  return _then(_self.copyWith(
+  return _then(PushPreferenceGroup(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,icon: null == icon ? _self.icon : icon // ignore: cast_nullable_to_non_nullable
@@ -212,7 +218,7 @@ return $default(_that.type,_that.label,_that.icon,_that.switches);case _:
 @JsonSerializable()
 
 class _PushPreferenceGroup extends PushPreferenceGroup {
-  const _PushPreferenceGroup({required this.type, required this.label, required this.icon, required final  List<PushSwitch> switches}): _switches = switches,super._();
+  const _PushPreferenceGroup({required this.type, required this.label, required this.icon, required  List<PushSwitch> switches}): _switches = switches,super._();
   factory _PushPreferenceGroup.fromJson(Map<String, dynamic> json) => _$PushPreferenceGroupFromJson(json);
 
 @override final  String type;
@@ -239,16 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PushPreferenceGroup&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.icon, icon) || other.icon == icon)&&const DeepCollectionEquality().equals(other._switches, _switches));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PushPreferenceGroup&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.icon, icon) || other.icon == icon)&&const DeepCollectionEquality().equals(other.switches, _switches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,label,icon,const DeepCollectionEquality().hash(_switches));
+int get hashCode {
+    return Object.hash(runtimeType,type,label,icon,const DeepCollectionEquality().hash(_switches));
+}
 
 @override
 String toString() {
-  return 'PushPreferenceGroup(type: $type, label: $label, icon: $icon, switches: $switches)';
+    return 'PushPreferenceGroup(type: $type, label: $label, icon: $icon, switches: $switches)';
 }
 
 
@@ -306,16 +314,21 @@ $PushSwitchCopyWith<PushSwitch> get copyWith => _$PushSwitchCopyWithImpl<PushSwi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PushSwitch&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.label, label) || other.label == label)&&(identical(other.push, push) || other.push == push));
+  final _this = this as PushSwitch;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PushSwitch&&(identical(other.scope, _this.scope) || other.scope == _this.scope)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.push, _this.push) || other.push == _this.push));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scope,label,push);
+int get hashCode {
+  final _this = this as PushSwitch;
+  return Object.hash(runtimeType,_this.scope,_this.label,_this.push);
+}
 
 @override
 String toString() {
-  return 'PushSwitch(scope: $scope, label: $label, push: $push)';
+  final _this = this as PushSwitch;
+  return 'PushSwitch(scope: ${_this.scope}, label: ${_this.label}, push: ${_this.push})';
 }
 
 
@@ -344,7 +357,7 @@ class _$PushSwitchCopyWithImpl<$Res>
 /// Create a copy of PushSwitch
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? scope = null,Object? label = null,Object? push = null,}) {
-  return _then(_self.copyWith(
+  return _then(PushSwitch(
 scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,push: null == push ? _self.push : push // ignore: cast_nullable_to_non_nullable
@@ -509,16 +522,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PushSwitch&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.label, label) || other.label == label)&&(identical(other.push, push) || other.push == push));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PushSwitch&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.label, label) || other.label == label)&&(identical(other.push, push) || other.push == push));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scope,label,push);
+int get hashCode {
+    return Object.hash(runtimeType,scope,label,push);
+}
 
 @override
 String toString() {
-  return 'PushSwitch(scope: $scope, label: $label, push: $push)';
+    return 'PushSwitch(scope: $scope, label: $label, push: $push)';
 }
 
 

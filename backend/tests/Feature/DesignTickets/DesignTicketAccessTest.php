@@ -179,7 +179,8 @@ class DesignTicketAccessTest extends DesignTicketTestCase
         // takes it.
         $response->assertCreated()
             ->assertJsonPath('data.is_in_shared_pool', true)
-            ->assertJsonPath('data.designer', null);
+            ->assertJsonPath('data.designer', null)
+            ->assertJsonPath('data.status', 'new');
     }
 
     public function test_a_ticket_cannot_be_raised_against_another_customers_order(): void

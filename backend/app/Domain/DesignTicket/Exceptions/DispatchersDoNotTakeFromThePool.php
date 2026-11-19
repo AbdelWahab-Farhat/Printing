@@ -25,6 +25,6 @@ final class DispatchersDoNotTakeFromThePool extends DomainException
 {
     public static function make(): self
     {
-        return new self('من يوزّع العمل لا يسحب من الطابور المشترك — استعمل «إسناد إلى مصمم»');
+        return new self('من يوزّع العمل لا يقبل تذكرة «غير مُسنَد لمصمم» — استعمل «إسناد إلى مصمم»');
     }
 }

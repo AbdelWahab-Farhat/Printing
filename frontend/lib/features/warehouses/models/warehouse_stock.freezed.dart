@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'warehouse_stock.dart';
@@ -9,6 +9,7 @@ part of 'warehouse_stock.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -38,16 +39,21 @@ $WarehouseStockCopyWith<WarehouseStock> get copyWith => _$WarehouseStockCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.item, item) || other.item == item)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as WarehouseStock;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.lowStockThreshold, _this.lowStockThreshold) || other.lowStockThreshold == _this.lowStockThreshold)&&(identical(other.isLowStock, _this.isLowStock) || other.isLowStock == _this.isLowStock)&&(identical(other.item, _this.item) || other.item == _this.item)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,warehouseId,stockItemId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,item,createdAt,updatedAt);
+int get hashCode {
+  final _this = this as WarehouseStock;
+  return Object.hash(runtimeType,_this.id,_this.warehouseId,_this.stockItemId,_this.quantity,_this.unit,_this.unitLabel,_this.lowStockThreshold,_this.isLowStock,_this.item,_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, item: $item, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as WarehouseStock;
+  return 'WarehouseStock(id: ${_this.id}, warehouseId: ${_this.warehouseId}, stockItemId: ${_this.stockItemId}, quantity: ${_this.quantity}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, lowStockThreshold: ${_this.lowStockThreshold}, isLowStock: ${_this.isLowStock}, item: ${_this.item}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -76,7 +82,7 @@ class _$WarehouseStockCopyWithImpl<$Res>
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? item = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(WarehouseStock(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
@@ -279,16 +285,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.item, item) || other.item == item)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.item, item) || other.item == item)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,warehouseId,stockItemId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,item,createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,warehouseId,stockItemId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,item,createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'WarehouseStock(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, item: $item, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'WarehouseStock(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, item: $item, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -370,16 +378,21 @@ $StockItemRefCopyWith<StockItemRef> get copyWith => _$StockItemRefCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName));
+  final _this = this as StockItemRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName);
+int get hashCode {
+  final _this = this as StockItemRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.widthCm,_this.heightCm,_this.displayName);
+}
 
 @override
 String toString() {
-  return 'StockItemRef(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName)';
+  final _this = this as StockItemRef;
+  return 'StockItemRef(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, displayName: ${_this.displayName})';
 }
 
 
@@ -408,7 +421,7 @@ class _$StockItemRefCopyWithImpl<$Res>
 /// Create a copy of StockItemRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? displayName = null,}) {
-  return _then(_self.copyWith(
+  return _then(StockItemRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -584,16 +597,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.displayName, displayName) || other.displayName == displayName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,widthCm,heightCm,displayName);
+}
 
 @override
 String toString() {
-  return 'StockItemRef(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName)';
+    return 'StockItemRef(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, displayName: $displayName)';
 }
 
 

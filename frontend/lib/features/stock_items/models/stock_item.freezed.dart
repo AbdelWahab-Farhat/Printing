@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_item.dart';
@@ -9,6 +9,7 @@ part of 'stock_item.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -62,16 +63,21 @@ $StockItemCopyWith<StockItem> get copyWith => _$StockItemCopyWithImpl<StockItem>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.group, group) || other.group == group)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.variantsCount, variantsCount) || other.variantsCount == variantsCount)&&const DeepCollectionEquality().equals(other.variants, variants)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as StockItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.stockItemGroupId, _this.stockItemGroupId) || other.stockItemGroupId == _this.stockItemGroupId)&&(identical(other.group, _this.group) || other.group == _this.group)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.variantsCount, _this.variantsCount) || other.variantsCount == _this.variantsCount)&&const DeepCollectionEquality().equals(other.variants, _this.variants)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,stockItemGroupId,group,displayName,unit,unitLabel,description,isActive,sortOrder,variantsCount,const DeepCollectionEquality().hash(variants),createdAt,updatedAt);
+int get hashCode {
+  final _this = this as StockItem;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.widthCm,_this.heightCm,_this.stockItemGroupId,_this.group,_this.displayName,_this.unit,_this.unitLabel,_this.description,_this.isActive,_this.sortOrder,_this.variantsCount,const DeepCollectionEquality().hash(_this.variants),_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'StockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, stockItemGroupId: $stockItemGroupId, group: $group, displayName: $displayName, unit: $unit, unitLabel: $unitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, variantsCount: $variantsCount, variants: $variants, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as StockItem;
+  return 'StockItem(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, stockItemGroupId: ${_this.stockItemGroupId}, group: ${_this.group}, displayName: ${_this.displayName}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, description: ${_this.description}, isActive: ${_this.isActive}, sortOrder: ${_this.sortOrder}, variantsCount: ${_this.variantsCount}, variants: ${_this.variants}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -100,7 +106,7 @@ class _$StockItemCopyWithImpl<$Res>
 /// Create a copy of StockItem
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? stockItemGroupId = freezed,Object? group = freezed,Object? displayName = null,Object? unit = null,Object? unitLabel = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? variantsCount = freezed,Object? variants = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -271,7 +277,7 @@ return $default(_that.id,_that.code,_that.name,_that.widthCm,_that.heightCm,_tha
 @JsonSerializable()
 
 class _StockItem extends StockItem {
-  const _StockItem({required this.id, required this.code, required this.name, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'stock_item_group_id') this.stockItemGroupId, @JsonKey(name: 'stock_item_group') this.group, @JsonKey(name: 'display_name') required this.displayName, @JsonKey(unknownEnumValue: StockUnit.unknown) required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, this.description, @JsonKey(name: 'is_active') required this.isActive, @JsonKey(name: 'sort_order') required this.sortOrder, @JsonKey(name: 'variants_count') this.variantsCount, final  List<StockItemVariantRef> variants = const <StockItemVariantRef>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _variants = variants,super._();
+  const _StockItem({required this.id, required this.code, required this.name, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, @JsonKey(name: 'stock_item_group_id') this.stockItemGroupId, @JsonKey(name: 'stock_item_group') this.group, @JsonKey(name: 'display_name') required this.displayName, @JsonKey(unknownEnumValue: StockUnit.unknown) required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, this.description, @JsonKey(name: 'is_active') required this.isActive, @JsonKey(name: 'sort_order') required this.sortOrder, @JsonKey(name: 'variants_count') this.variantsCount,  List<StockItemVariantRef> variants = const <StockItemVariantRef>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _variants = variants,super._();
   factory _StockItem.fromJson(Map<String, dynamic> json) => _$StockItemFromJson(json);
 
 @override final  int id;
@@ -348,16 +354,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.group, group) || other.group == group)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.variantsCount, variantsCount) || other.variantsCount == variantsCount)&&const DeepCollectionEquality().equals(other._variants, _variants)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItem&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.group, group) || other.group == group)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.variantsCount, variantsCount) || other.variantsCount == variantsCount)&&const DeepCollectionEquality().equals(other.variants, _variants)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,widthCm,heightCm,stockItemGroupId,group,displayName,unit,unitLabel,description,isActive,sortOrder,variantsCount,const DeepCollectionEquality().hash(_variants),createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,widthCm,heightCm,stockItemGroupId,group,displayName,unit,unitLabel,description,isActive,sortOrder,variantsCount,const DeepCollectionEquality().hash(_variants),createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'StockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, stockItemGroupId: $stockItemGroupId, group: $group, displayName: $displayName, unit: $unit, unitLabel: $unitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, variantsCount: $variantsCount, variants: $variants, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'StockItem(id: $id, code: $code, name: $name, widthCm: $widthCm, heightCm: $heightCm, stockItemGroupId: $stockItemGroupId, group: $group, displayName: $displayName, unit: $unit, unitLabel: $unitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, variantsCount: $variantsCount, variants: $variants, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -442,16 +450,21 @@ $StockItemVariantRefCopyWith<StockItemVariantRef> get copyWith => _$StockItemVar
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.product, product) || other.product == product));
+  final _this = this as StockItemVariantRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemVariantRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.product, _this.product) || other.product == _this.product));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,product);
+int get hashCode {
+  final _this = this as StockItemVariantRef;
+  return Object.hash(runtimeType,_this.id,_this.label,_this.widthCm,_this.heightCm,_this.isActive,_this.product);
+}
 
 @override
 String toString() {
-  return 'StockItemVariantRef(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, product: $product)';
+  final _this = this as StockItemVariantRef;
+  return 'StockItemVariantRef(id: ${_this.id}, label: ${_this.label}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, isActive: ${_this.isActive}, product: ${_this.product})';
 }
 
 
@@ -480,7 +493,7 @@ class _$StockItemVariantRefCopyWithImpl<$Res>
 /// Create a copy of StockItemVariantRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? isActive = null,Object? product = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockItemVariantRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
@@ -665,16 +678,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.product, product) || other.product == product));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.product, product) || other.product == product));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,product);
+int get hashCode {
+    return Object.hash(runtimeType,id,label,widthCm,heightCm,isActive,product);
+}
 
 @override
 String toString() {
-  return 'StockItemVariantRef(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, product: $product)';
+    return 'StockItemVariantRef(id: $id, label: $label, widthCm: $widthCm, heightCm: $heightCm, isActive: $isActive, product: $product)';
 }
 
 
@@ -746,16 +761,21 @@ $StockItemVariantProductRefCopyWith<StockItemVariantProductRef> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemVariantProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as StockItemVariantProductRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemVariantProductRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as StockItemVariantProductRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'StockItemVariantProductRef(id: $id, name: $name)';
+  final _this = this as StockItemVariantProductRef;
+  return 'StockItemVariantProductRef(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -784,7 +804,7 @@ class _$StockItemVariantProductRefCopyWithImpl<$Res>
 /// Create a copy of StockItemVariantProductRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(StockItemVariantProductRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -947,16 +967,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemVariantProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemVariantProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'StockItemVariantProductRef(id: $id, name: $name)';
+    return 'StockItemVariantProductRef(id: $id, name: $name)';
 }
 
 
@@ -1013,16 +1035,21 @@ $StockItemGroupRefCopyWith<StockItemGroupRef> get copyWith => _$StockItemGroupRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+  final _this = this as StockItemGroupRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroupRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name);
+int get hashCode {
+  final _this = this as StockItemGroupRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name);
+}
 
 @override
 String toString() {
-  return 'StockItemGroupRef(id: $id, code: $code, name: $name)';
+  final _this = this as StockItemGroupRef;
+  return 'StockItemGroupRef(id: ${_this.id}, code: ${_this.code}, name: ${_this.name})';
 }
 
 
@@ -1051,7 +1078,7 @@ class _$StockItemGroupRefCopyWithImpl<$Res>
 /// Create a copy of StockItemGroupRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(StockItemGroupRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1217,16 +1244,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemGroupRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemGroupRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name);
+}
 
 @override
 String toString() {
-  return 'StockItemGroupRef(id: $id, code: $code, name: $name)';
+    return 'StockItemGroupRef(id: $id, code: $code, name: $name)';
 }
 
 

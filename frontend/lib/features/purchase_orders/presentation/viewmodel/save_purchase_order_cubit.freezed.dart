@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'save_purchase_order_cubit.dart';
@@ -9,6 +9,7 @@ part of 'save_purchase_order_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SavePurchaseOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState()';
+    return 'SavePurchaseOrderState()';
 }
 
 
@@ -197,7 +198,7 @@ class SavePurchaseOrderInitial implements SavePurchaseOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderInitial);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderInitial);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState.initial()';
+    return 'SavePurchaseOrderState.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class SavePurchaseOrderSubmitting implements SavePurchaseOrderState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSubmitting);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSubmitting);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState.submitting()';
+    return 'SavePurchaseOrderState.submitting()';
 }
 
 
@@ -267,16 +268,18 @@ $SavePurchaseOrderSuccessCopyWith<SavePurchaseOrderSuccess> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSuccess&&(identical(other.order, order) || other.order == order)&&(identical(other.fundingFailure, fundingFailure) || other.fundingFailure == fundingFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderSuccess&&(identical(other.order, order) || other.order == order)&&(identical(other.fundingFailure, fundingFailure) || other.fundingFailure == fundingFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order,fundingFailure);
+int get hashCode {
+    return Object.hash(runtimeType,order,fundingFailure);
+}
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState.success(order: $order, fundingFailure: $fundingFailure)';
+    return 'SavePurchaseOrderState.success(order: $order, fundingFailure: $fundingFailure)';
 }
 
 
@@ -355,16 +358,18 @@ $SavePurchaseOrderFailureCopyWith<SavePurchaseOrderFailure> get copyWith => _$Sa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SavePurchaseOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SavePurchaseOrderState.failure(failure: $failure)';
+    return 'SavePurchaseOrderState.failure(failure: $failure)';
 }
 
 

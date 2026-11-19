@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'new_internal_ticket_cubit.dart';
@@ -9,6 +9,7 @@ part of 'new_internal_ticket_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$NewInternalTicketState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'NewInternalTicketState()';
+    return 'NewInternalTicketState()';
 }
 
 
@@ -191,7 +192,7 @@ class NewInternalTicketLoading implements NewInternalTicketState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'NewInternalTicketState.loading()';
+    return 'NewInternalTicketState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $NewInternalTicketFailureCopyWith<NewInternalTicketFailure> get copyWith => _$Ne
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'NewInternalTicketState.failure(failure: $failure)';
+    return 'NewInternalTicketState.failure(failure: $failure)';
 }
 
 
@@ -288,7 +291,7 @@ $FailureCopyWith<$Res> get failure {
 
 
 class NewInternalTicketReady implements NewInternalTicketState {
-  const NewInternalTicketReady({required final  List<Colleague> colleagues, required final  List<InternalCategory> categories, this.isSubmitting = false, this.lastFailure, this.created}): _colleagues = colleagues,_categories = categories;
+  const NewInternalTicketReady({required  List<Colleague> colleagues, required  List<InternalCategory> categories, this.isSubmitting = false, this.lastFailure, this.created}): _colleagues = colleagues,_categories = categories;
   
 
  final  List<Colleague> _colleagues;
@@ -321,16 +324,18 @@ $NewInternalTicketReadyCopyWith<NewInternalTicketReady> get copyWith => _$NewInt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketReady&&const DeepCollectionEquality().equals(other._colleagues, _colleagues)&&const DeepCollectionEquality().equals(other._categories, _categories)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure)&&(identical(other.created, created) || other.created == created));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NewInternalTicketReady&&const DeepCollectionEquality().equals(other.colleagues, _colleagues)&&const DeepCollectionEquality().equals(other.categories, _categories)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure)&&(identical(other.created, created) || other.created == created));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_colleagues),const DeepCollectionEquality().hash(_categories),isSubmitting,lastFailure,created);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_colleagues),const DeepCollectionEquality().hash(_categories),isSubmitting,lastFailure,created);
+}
 
 @override
 String toString() {
-  return 'NewInternalTicketState.ready(colleagues: $colleagues, categories: $categories, isSubmitting: $isSubmitting, lastFailure: $lastFailure, created: $created)';
+    return 'NewInternalTicketState.ready(colleagues: $colleagues, categories: $categories, isSubmitting: $isSubmitting, lastFailure: $lastFailure, created: $created)';
 }
 
 
