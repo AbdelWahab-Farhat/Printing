@@ -113,7 +113,7 @@ final class ChangeOrderStatus
         private readonly RecalculateOrderPayments $recalculatePayments,
         // The same resolver the edit form uses, for «استلام مكتب» → «إعادة إرسال».
         private readonly ResolveOrderDestination $resolveDestination,
-        // «اعتماد آخر نسخة» on the way into «تجهيز للطباعة» is the same verdict the design
+        // «اعتماد آخر نسخة» on the way into «بانتظار التجهيز» is the same verdict the design
         // screen records, through the same action.
         private readonly ReviewOrderDesign $reviewDesign,
         // «قيد التصميم» opens a ticket by itself, and leaving it closes one nobody worked on.
@@ -252,7 +252,7 @@ final class ChangeOrderStatus
         // **No press while a design ticket opened for this order is still open**
         // (PRINT-COLORS.md §10). Its approval puts the design on the order; printing first
         // would print a file nobody approved. Ours is «قيد الطباعة», the vendor's «قيد التصنيع».
-        // **Nor the warehouse**: «تجهيز للطباعة» comes after the artwork now, so gathering goods
+        // **Nor the warehouse**: «بانتظار التجهيز» comes after the artwork now, so gathering goods
         // for a design still being drawn is the same mistake one step earlier.
         $headsForThePress = $target === OrderStatus::Printing
             || $target === OrderStatus::Preparing
@@ -1001,7 +1001,7 @@ final class ChangeOrderStatus
     }
 
     /**
-     * Approves the latest version when the move says so, then refuses «تجهيز للطباعة» to an order
+     * Approves the latest version when the move says so, then refuses «بانتظار التجهيز» to an order
      * with artwork and no approved version (owner's status document, 2026-11-15, rule 2).
      *
      * **What gets approved is what the press would print**: {@see Order::designForPress()} — the
@@ -1099,7 +1099,7 @@ final class ChangeOrderStatus
     }
 
     /**
-     * What arrived of the shortage, written on the move into «تجهيز للطباعة», **before** the
+     * What arrived of the shortage, written on the move into «بانتظار التجهيز», **before** the
      * status is.
      *
      * **On that move, and only that one.** «نواقص» may be left for «قيد التصميم» while the stock
@@ -1316,7 +1316,7 @@ final class ChangeOrderStatus
     /**
      * An order still short of something goes neither to the warehouse nor to the press.
      *
-     * **On the way into «تجهيز للطباعة» and «جاهزة للطباعة», from wherever.** Each is a promise to
+     * **On the way into «بانتظار التجهيز» and «جاهزة للطباعة», from wherever.** Each is a promise to
      * another department that the goods are all here; every other move an order short of stock
      * can make — to the designer while the stock is awaited, being written off, having the
      * shortage corrected — is left alone, because none of them tells anybody the order is
@@ -1328,7 +1328,7 @@ final class ChangeOrderStatus
      *
      * **On a plain order «جاهزة» is asked too**: it is where that road's stock leaves the shelf,
      * the place «جاهزة للطباعة» holds on the printed road, and a shortage can be declared while
-     * the order is in «تجهيز للطباعة».
+     * the order is in «بانتظار التجهيز».
      *
      * @throws ShortageMustBeResolved
      */

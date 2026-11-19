@@ -393,7 +393,7 @@ class OrderProductionFlowTest extends TestCase
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — «تجهيز للطباعة» and «نواقص», and neither the designer nor the press (owner,
+        // Assert — «بانتظار التجهيز» and «نواقص», and neither the designer nor the press (owner,
         // 2026-11-18). The shortage stays because the stock for a plain bag is exactly the thing
         // that turns out not to be there.
         $this->assertEqualsCanonicalizing(['preparing', 'shortage', 'cancelled'], $offered);
@@ -429,7 +429,7 @@ class OrderProductionFlowTest extends TestCase
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — «تجهيز للطباعة», where what arrived is counted, rather than the design queue
+        // Assert — «بانتظار التجهيز», where what arrived is counted, rather than the design queue
         // this order was never going to visit; and never an empty list.
         $this->assertEqualsCanonicalizing(['preparing', 'cancelled'], $offered);
     }

@@ -147,7 +147,7 @@ class OrderWorkflowTest extends TestCase
     }
 
     /**
-     * «جديدة» → «بدون عربون» → «تجهيز للطباعة», through the real moves, approving the latest
+     * «جديدة» → «بدون عربون» → «بانتظار التجهيز», through the real moves, approving the latest
      * version on the way when the order has one nobody approved.
      */
     private function toTheWarehouse(array $headers, Order $order): void
@@ -597,7 +597,7 @@ class OrderWorkflowTest extends TestCase
         // Act
         $response = $this->withHeaders($headers)->getJson("/api/v1/orders/{$order->id}");
 
-        // Assert — جديدة → قيد التصميم → تجهيز للطباعة → جاهزة للطباعة → قيد الطباعة → جاهزة →
+        // Assert — جديدة → قيد التصميم → بانتظار التجهيز → جاهزة للطباعة → قيد الطباعة → جاهزة →
         // التسليم → تم الاستلام → تم التسوية (owner's status document, 2026-11-15): the artwork
         // before the warehouse. The last step is money rather than bags, and it is on the line
         // because an order whose cash never came back is not a finished order.

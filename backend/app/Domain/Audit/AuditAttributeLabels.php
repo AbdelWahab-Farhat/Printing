@@ -341,7 +341,7 @@ final class AuditAttributeLabels
             'tracking_number' => 'رقم التتبّع',
             'courier_name' => 'اسم المندوب',
             'placed_at' => 'تاريخ الطلب',
-            'preparing_started_at' => 'بدء التجهيز للطباعة',
+            'preparing_started_at' => 'بدء التجهيز',
             'ready_to_print_at' => 'تاريخ الجاهزية للطباعة',
             'design_started_at' => 'بدء التصميم',
             'printing_started_at' => 'بدء الطباعة',

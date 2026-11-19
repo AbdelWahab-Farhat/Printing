@@ -47,7 +47,7 @@ enum OrderStatus: string
     // **Two cards to a row on the phone, and each row is a pair.** «جديدة»/«نواقص» is what came
     // in beside what could not be started; «انتظار العربون»/«عربون مدفوع» is the money the job
     // waits on beside the money that arrived; «بدون عربون»/«قيد التصميم» is the order going
-    // ahead without one beside the first desk it usually reaches; «تجهيز للطباعة»/«جاهزة
+    // ahead without one beside the first desk it usually reaches; «بانتظار التجهيز»/«جاهزة
     // للطباعة» is the warehouse at work beside the queue it hands to the press; «قيد
     // الطباعة»/«قيد التصنيع» is our press beside the vendor's bench. A board opens on what the
     // shop has, and «جديدة» is what the shop has — that is the shop asking «ما الذي عندي الآن؟»,
@@ -172,13 +172,14 @@ enum OrderStatus: string
      * Artwork is being agreed with the customer — see {@see OrderDesignStatus}.
      *
      * **Before the warehouse, not after it** (owner's status document, 2026-11-15). The order
-     * leaves for «تجهيز للطباعة» once a version is approved, so no stock is drawn for an order
+     * leaves for «بانتظار التجهيز» once a version is approved, so no stock is drawn for an order
      * that then waits weeks on a logo.
      */
     case Designing = 'designing';
 
     /**
-     * The warehouse is gathering the goods for the press — «تجهيز للطباعة».
+     * The warehouse is gathering the goods — for the press, or for the shelf on the plain road —
+     * «بانتظار التجهيز».
      *
      * **Work, not a queue.** Somebody is counting and weighing the order's sizes; when they have
      * put them in the press's place they move it to «جاهزة للطباعة», and that move is where the
@@ -190,7 +191,7 @@ enum OrderStatus: string
     /**
      * Prepared by the warehouse and waiting for the press.
      *
-     * **The line between two departments.** «تجهيز للطباعة» is inventory's — the goods are being
+     * **The line between two departments.** «بانتظار التجهيز» is inventory's — the goods are being
      * found, counted and weighed — while «قيد الطباعة» belongs to printing. This status is the
      * press's queue and the moment that marks the handover.
      *
@@ -261,7 +262,9 @@ enum OrderStatus: string
             self::AwaitingDeposit => 'انتظار العربون',
             self::DepositPaid => 'عربون مدفوع',
             self::NoDeposit => 'بدون عربون',
-            self::Preparing => 'تجهيز للطباعة',
+            // Named for both roads (owner, 2026-11-20): plain orders are gathered here too, so
+            // «تجهيز للطباعة» described only half the orders that pass through it.
+            self::Preparing => 'بانتظار التجهيز',
             self::ReadyToPrint => 'جاهزة للطباعة',
             self::Designing => 'قيد التصميم',
             self::Printing => 'قيد الطباعة',
@@ -329,10 +332,10 @@ enum OrderStatus: string
 
     /**
      * Goods that are already made: nothing is designed, nothing is printed. Once the deposit is
-     * decided the order is gathered («تجهيز للطباعة»), then it is on the shelf.
+     * decided the order is gathered («بانتظار التجهيز»), then it is on the shelf.
      *
      * **Every arm that differs is about the same absent thing: the press.** The designer's queue
-     * and the press's are not on this road; the warehouse is (owner, 2026-11-18). «تجهيز للطباعة»
+     * and the press's are not on this road; the warehouse is (owner, 2026-11-18). «بانتظار التجهيز»
      * leads straight to «جاهزة», which is where a plain order's stock leaves the shelf.
      *
      * @return list<self>
@@ -523,7 +526,7 @@ enum OrderStatus: string
             //
             // **Out of it is a person's choice** (owner's status document, 2026-11-15): «قيد
             // التصميم» when the artwork is not settled — it may go on while the stock is awaited
-            // — or «تجهيز للطباعة» when it is, which the domain refuses while anything is still
+            // — or «بانتظار التجهيز» when it is, which the domain refuses while anything is still
             // short; see `ShortageMustBeResolved`. And the ending: a shortage never resolved is
             // written off rather than left parked forever.
             self::Shortage => [self::Designing, self::Preparing, self::Cancelled],
@@ -793,7 +796,7 @@ enum OrderStatus: string
     /**
      * The route an order is *meant* to take, in order.
      *
-     * جديدة → قيد التصميم → تجهيز للطباعة → جاهزة للطباعة → قيد الطباعة → جاهزة → (التسليم) → تم
+     * جديدة → قيد التصميم → بانتظار التجهيز → جاهزة للطباعة → قيد الطباعة → جاهزة → (التسليم) → تم
      * الاستلام → تم التسوية. This is the sequence the business described, and it is what a
      * progress bar on the order screen walks. The last step is money rather than bags, and it is
      * on the line because an order whose cash never came back is not a finished order.
@@ -849,7 +852,7 @@ enum OrderStatus: string
      * cases repeated wherever the short road is drawn.
      */
     /**
-     * **«تجهيز للطباعة» and «جاهزة للطباعة» count as production**, and that is what keeps them
+     * **«بانتظار التجهيز» and «جاهزة للطباعة» count as production**, and that is what keeps them
      * off the blank-goods line: they are the way into the press, so an order that never goes near
      * the press never goes near them either.
      *

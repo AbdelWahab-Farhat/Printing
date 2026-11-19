@@ -75,10 +75,11 @@ enum OrderStatus {
   @JsonValue('designing')
   designing('designing', 'قيد التصميم'),
 
-  /// The warehouse is gathering the goods for the press. Entered with an approved design and
-  /// nothing short — the server refuses otherwise, and says why.
+  /// The warehouse is gathering the goods — for the press, or for the shelf on the plain road.
+  /// Entered with an approved design and nothing short — the server refuses otherwise, and says
+  /// why.
   @JsonValue('preparing')
-  preparing('preparing', 'تجهيز للطباعة'),
+  preparing('preparing', 'بانتظار التجهيز'),
 
   /// Prepared and weighed by the warehouse, waiting for the press to pick it up.
   ///

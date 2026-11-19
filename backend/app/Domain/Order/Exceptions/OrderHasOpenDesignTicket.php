@@ -7,7 +7,7 @@ namespace App\Domain\Order\Exceptions;
 use App\Support\Exceptions\DomainException;
 
 /**
- * An order heading for the warehouse («تجهيز للطباعة») or the press — ours («قيد الطباعة») or the
+ * An order heading for the warehouse («بانتظار التجهيز») or the press — ours («قيد الطباعة») or the
  * vendor's («قيد التصنيع») — while a design ticket opened for it is still open. Its approval puts
  * the design on the order (PRINT-COLORS.md §10–§11), so going on before it closes would prepare
  * and print the wrong file.

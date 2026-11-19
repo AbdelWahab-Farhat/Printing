@@ -465,7 +465,7 @@ abstract final class AppIcons {
   static IconData get noDeposit =>
       _pick(Icons.money_off_rounded, CupertinoIcons.money_dollar_circle);
 
-  /// «تجهيز للطباعة» — the warehouse gathering the goods into the press's place. A basket being
+  /// «بانتظار التجهيز» — the warehouse gathering the goods into the press's place. A basket being
   /// filled, against «جاهزة للطباعة»'s closed box: the same desk, before and after. Not
   /// [returnedOffice]'s tray, which is a parcel come home.
   static IconData get preparing =>

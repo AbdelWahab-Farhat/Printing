@@ -156,7 +156,7 @@ final class ReviewDesignVersion
                         $actor === null ? null : (int) $actor->getKey(),
                     );
 
-                    // And on to «تجهيز للطباعة» when the order was waiting in «قيد التصميم» —
+                    // And on to «بانتظار التجهيز» when the order was waiting in «قيد التصميم» —
                     // after the fee, so the order moves with its money already settled.
                     ($this->moveToPreparing)($order, $actor);
                 }

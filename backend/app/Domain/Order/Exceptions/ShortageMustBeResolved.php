@@ -9,7 +9,7 @@ use App\Support\Exceptions\DomainException;
 /**
  * Sending an order to the warehouse, or on to the press, while something is still missing from it.
  *
- * **«تجهيز للطباعة» and «جاهزة للطباعة» are promises to other departments**: the goods are all
+ * **«بانتظار التجهيز» and «جاهزة للطباعة» are promises to other departments**: the goods are all
  * here to be gathered, and then they have been weighed and the press can start. An order that
  * still carries a shortage on any line has made neither true — the warehouse would gather half
  * an order and the press would set up for a run it cannot finish.
@@ -28,7 +28,7 @@ final class ShortageMustBeResolved extends DomainException
     public static function make(array $stillShort): self
     {
         return new self(
-            'لا يمكن تجهيز الطلبية للطباعة وبها نواقص — ما زال ناقصاً: '.implode('، ', $stillShort)
+            'لا يمكن تجهيز الطلبية وبها نواقص — ما زال ناقصاً: '.implode('، ', $stillShort)
         );
     }
 

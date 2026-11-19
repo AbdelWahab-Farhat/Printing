@@ -598,7 +598,7 @@ abstract class Order with _$Order {
   ///
   /// **Only while the order is standing in «نواقص»**, which is the status the sheet exists for:
   /// the job is parked because the stock is not there, and the number is argued about until it
-  /// is. Every other status has its own way of asking — the move into «تجهيز للطباعة» asks what
+  /// is. Every other status has its own way of asking — the move into «بانتظار التجهيز» asks what
   /// arrived, and entering «نواقص» asks what is short — so an arm on the dial elsewhere would be
   /// a third door to a room with two.
   bool get shortagesAreEditable => status == OrderStatus.shortage;

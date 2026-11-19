@@ -25,7 +25,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * «تجهيز للطباعة» on the plain (سادة) road (owner, 2026-11-18): the deposit answer leads to the
+ * «بانتظار التجهيز» on the plain (سادة) road (owner, 2026-11-18): the deposit answer leads to the
  * warehouse, the warehouse to the shelf, and nothing on the way asks for artwork.
  *
  * Arrange - Act - Assert throughout.
@@ -219,7 +219,7 @@ class PlainOrderPreparingTest extends TestCase
             [OrderStatus::New, OrderStatus::Preparing, OrderStatus::Ready],
             array_slice($line, 0, 3),
         );
-        $this->assertSame('تجهيز للطباعة', OrderStatus::Preparing->label());
+        $this->assertSame('بانتظار التجهيز', OrderStatus::Preparing->label());
     }
 
     private function balance(Warehouse $warehouse, Order $order): string

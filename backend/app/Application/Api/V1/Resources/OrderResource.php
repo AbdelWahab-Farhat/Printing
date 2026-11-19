@@ -408,7 +408,7 @@ class OrderResource extends JsonResource
             ),
 
             'placed_at' => $this->placed_at?->toIso8601String(),
-            // When the warehouse last started gathering the goods — «تجهيز للطباعة».
+            // When the warehouse last started gathering the goods — «بانتظار التجهيز».
             'preparing_started_at' => $this->preparing_started_at?->toIso8601String(),
             // When the warehouse finished and handed the order to the press — null for every
             // order taken before that step existed, which is the honest answer for them.

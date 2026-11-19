@@ -26,7 +26,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 /**
- * «بدون عربون» and «تجهيز للطباعة» — the artwork before the warehouse (owner's status document,
+ * «بدون عربون» and «بانتظار التجهيز» — the artwork before the warehouse (owner's status document,
  * 2026-11-15; ORDERS-STATUS-FLOW.md §٢١).
  *
  * `OrderStatusTest` pins the map. This covers what the new road *does*: the approved-design gate

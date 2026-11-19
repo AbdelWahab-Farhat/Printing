@@ -161,7 +161,7 @@ enum AppPermission {
   // The warehouse starting to gather an order's goods — before it hands them over below.
   moveOrderToPreparing(
     'orders.status.preparing',
-    'تحويل الطلبية إلى تجهيز للطباعة',
+    'تحويل الطلبية إلى بانتظار التجهيز',
   ),
   // The warehouse's own grant: it weighs the goods, names the shelf they leave from, and hands
   // the order to the press. Separate from the two production grants beside it because a

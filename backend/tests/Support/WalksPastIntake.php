@@ -12,7 +12,7 @@ use App\Domain\Order\Models\Order;
  * Puts an order where the map expects it before a move, for tests about something else.
  *
  * Since the owner's status document (2026-11-15; ORDERS-STATUS-FLOW.md §٢١) «جديدة» only asks the
- * deposit question, and «جاهزة للطباعة» is entered from «تجهيز للطباعة» alone. A test about stock,
+ * deposit question, and «جاهزة للطباعة» is entered from «بانتظار التجهيز» alone. A test about stock,
  * costs or investors that used to move «جديدة» → «جاهزة للطباعة» in one step is not testing that
  * walk — `OrderStatusTest` and `OrderPreparingTest` do. So this places the order on the status the
  * move now starts from, the way a factory state would, and leaves the move itself to the domain.
@@ -46,7 +46,7 @@ trait WalksPastIntake
             OrderStatus::Designing,
         ];
 
-        // A plain order reaches the shelf from «تجهيز للطباعة» alone (2026-11-18).
+        // A plain order reaches the shelf from «بانتظار التجهيز» alone (2026-11-18).
         $plainToTheShelf = $target === OrderStatus::Ready
             && $flow === OrderFlow::NoProduction
             && in_array($current->status, $beforeThePress, true);

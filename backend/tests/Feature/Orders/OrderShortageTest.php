@@ -239,7 +239,7 @@ class OrderShortageTest extends TestCase
     }
 
     // ───────────────────── leaving «نواقص» for the warehouse ─────────────────────
-    // Asked on the move into «تجهيز للطباعة», which is where the delivery note is — «نواقص» may
+    // Asked on the move into «بانتظار التجهيز», which is where the delivery note is — «نواقص» may
     // also be left for the designer while the stock is still awaited (ORDERS-STATUS-FLOW.md §٢١).
 
     public function test_leaving_a_shortage_asks_what_arrived_of_it(): void
@@ -312,7 +312,7 @@ class OrderShortageTest extends TestCase
             ],
         ]);
 
-        // Assert — **refused, and nothing of it kept.** «تجهيز للطباعة» promises the warehouse a
+        // Assert — **refused, and nothing of it kept.** «بانتظار التجهيز» promises the warehouse a
         // complete order, and forty bags are still missing; the whole move is one transaction, so
         // the partial arrival it carried goes back with it rather than leaving the order half
         // corrected by a move that failed.

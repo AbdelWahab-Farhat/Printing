@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  * Whether the system opened the ticket, rather than a person.
  *
  * An order moved into «قيد التصميم» with no open ticket gets one by itself. When the order then
- * leaves for «تجهيز للطباعة» by hand — the customer sent the final file — that ticket is cancelled
+ * leaves for «بانتظار التجهيز» by hand — the customer sent the final file — that ticket is cancelled
  * if no designer has submitted a version yet. A ticket somebody opened on purpose, with a brief
  * they wrote, is never cancelled that way, so the two have to be told apart.
  *

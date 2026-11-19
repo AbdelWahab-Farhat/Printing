@@ -290,7 +290,7 @@ Full rules in ORDERS-STATUS-FLOW.md §٢٢. What changes here:
   (`OpenAutomaticDesignTicket`), marked `opened_automatically`. It opens **without colours**:
   `CreateDesignTicket` skips the §10 colour rule for it alone, and `SubmitDesignVersion` still
   refuses a version without them.
-- **Approval moves an order waiting in «قيد التصميم» on to «تجهيز للطباعة»**, after §11 has put the
+- **Approval moves an order waiting in «قيد التصميم» on to «بانتظار التجهيز»**, after §11 has put the
   design on it (`MoveApprovedOrderToPreparing`). If the move is refused, the approval stands.
 - **The §10 gate lets through an automatic ticket nobody submitted a version on**, and the move
   cancels it (`CancelAutomaticDesignTickets`). Cancelling the order cancels every open automatic

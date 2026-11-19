@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * When the warehouse last started gathering an order's goods — «تجهيز للطباعة».
+ * When the warehouse last started gathering an order's goods — «بانتظار التجهيز».
  *
  * Read against `ready_to_print_at` to answer «كم يأخذ التجهيز؟», the question the status was
  * added for. Denormalised on the same terms as the milestone columns beside it.

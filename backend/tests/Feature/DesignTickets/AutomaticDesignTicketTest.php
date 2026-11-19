@@ -19,7 +19,7 @@ use App\Domain\Order\Models\OrderStatusTransition;
 use Illuminate\Testing\TestResponse;
 
 /**
- * The ticket «قيد التصميم» opens by itself, what closes it, and the move to «تجهيز للطباعة» its
+ * The ticket «قيد التصميم» opens by itself, what closes it, and the move to «بانتظار التجهيز» its
  * approval makes (owner, 2026-11-18).
  *
  * Arrange - Act - Assert throughout.
@@ -296,7 +296,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
 
     public function test_an_outsourced_order_stays_in_design_after_approval(): void
     {
-        // Arrange — the وسيط road has no «تجهيز للطباعة».
+        // Arrange — the وسيط road has no «بانتظار التجهيز».
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer(), OrderStatus::NoDeposit, OrderFlow::Outsourced);

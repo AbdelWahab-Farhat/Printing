@@ -495,7 +495,7 @@ enum PermissionName: string
             self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
             self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
             self::MoveOrderToNoDeposit => 'تحويل الطلبية إلى بدون عربون',
-            self::MoveOrderToPreparing => 'تحويل الطلبية إلى تجهيز للطباعة',
+            self::MoveOrderToPreparing => 'تحويل الطلبية إلى بانتظار التجهيز',
             self::ConfirmDepositReceipt => 'تأكيد استلام العربون',
             self::MoveOrderToReadyToPrint => 'تحويل الطلبية إلى جاهزة للطباعة',
             self::MoveOrderToDesigning => 'تحويل الطلبية إلى قيد التصميم',

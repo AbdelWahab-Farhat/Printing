@@ -124,7 +124,7 @@ enum TransitionFieldType {
   @JsonValue('destination')
   destination,
 
-  /// A box the person ticks — «اعتماد التصميم رقم ٣» on the move into «تجهيز للطباعة». Sent as
+  /// A box the person ticks — «اعتماد التصميم رقم ٣» on the move into «بانتظار التجهيز». Sent as
   /// `true` when ticked and left out when not. When [TransitionField.isRequired], the button stays
   /// grey until it is ticked.
   @JsonValue('checkbox')

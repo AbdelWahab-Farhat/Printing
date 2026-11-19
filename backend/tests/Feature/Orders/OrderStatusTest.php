@@ -293,7 +293,7 @@ class OrderStatusTest extends TestCase
 
         // Assert — the whole cost of the feature, stated as a list. Every entry is a status the
         // work is *dispatched from*: the two deposit answers send it, «نواقص» rejoins it, and
-        // «تجهيز للطباعة» hands it to the shelf rather than to the press (2026-11-18). «جديدة»
+        // «بانتظار التجهيز» hands it to the shelf rather than to the press (2026-11-18). «جديدة»
         // only asks the deposit question, which is the same on every road — and an entry
         // appearing here that is not one of these four is a change worth arguing about rather
         // than one worth discovering later.
@@ -491,7 +491,7 @@ class OrderStatusTest extends TestCase
         // Assert — **the whole point of «جاهزة للطباعة».** An order used to cross from the
         // warehouse to the press invisibly, so the moment inventory finished was recorded
         // nowhere and the press found out by somebody noticing. The press is entered from its
-        // queue alone, and the queue from the warehouse's own «تجهيز للطباعة» alone.
+        // queue alone, and the queue from the warehouse's own «بانتظار التجهيز» alone.
         $this->assertSame([OrderStatus::ReadyToPrint], $waysIntoThePress);
         $this->assertSame([OrderStatus::Preparing], $waysIntoTheQueue);
     }

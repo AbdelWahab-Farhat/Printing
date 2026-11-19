@@ -598,7 +598,7 @@ class OrderReadyToPrintTest extends TestCase
         [$order, , $warehouse] = $this->order($this->sellableSize(PricingUnit::Piece, $category));
         app(ResolveOrderFlow::class)($order->load('items'));
         $headers = $this->foreman();
-        // Gathered in «تجهيز للطباعة» — the plain road's own warehouse step (2026-11-18).
+        // Gathered in «بانتظار التجهيز» — the plain road's own warehouse step (2026-11-18).
         $this->walkPastIntake($order, OrderStatus::Ready);
 
         // Act

@@ -165,7 +165,7 @@ enum TransitionFieldType: string
     /**
      * **A yes the person ticks on the form** — `true` or nothing.
      *
-     * Offered on the move into «تجهيز للطباعة» as «اعتماد آخر نسخة», when the order's artwork
+     * Offered on the move into «بانتظار التجهيز» as «اعتماد آخر نسخة», when the order's artwork
      * has a version nobody has approved yet. Unlike {@see Confirmation} it is a box on the form,
      * not a question at the moment of sending. When `required`, only `true` is accepted, so the
      * app greys the button until it is ticked.

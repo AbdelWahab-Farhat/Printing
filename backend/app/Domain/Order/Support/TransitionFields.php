@@ -112,7 +112,7 @@ final class TransitionFields
     public const ADDRESS_DETAILS = 'address_details';
 
     /**
-     * «اعتماد آخر نسخة» — ticked on the move into «تجهيز للطباعة» to approve the version the
+     * «اعتماد آخر نسخة» — ticked on the move into «بانتظار التجهيز» to approve the version the
      * press would print, so approving and moving are one step. See
      * `ChangeOrderStatus::approveDesignForPreparing()`.
      */
@@ -160,10 +160,10 @@ final class TransitionFields
         // is a file. A reprint that goes back into design because the customer wants the logo
         // moved has artwork to look at like any other.
         //
-        // **«تجهيز للطباعة» takes artwork too**, now that the warehouse comes after the design:
+        // **«بانتظار التجهيز» takes artwork too**, now that the warehouse comes after the design:
         // leaving «قيد التصميم» for it is the designer's finished file arriving.
         //
-        // **Not on a plain order**: «تجهيز للطباعة» is on its road too now, and it has no artwork.
+        // **Not on a plain order**: «بانتظار التجهيز» is on its road too now, and it has no artwork.
         $artworkTravels = $target === OrderStatus::Designing
             || (($target === OrderStatus::Preparing || $target === OrderStatus::Printing)
                 && $order->designsAreEditable()
@@ -497,7 +497,7 @@ final class TransitionFields
         // the delivery note has — so that is what is asked, rather than making them subtract to
         // reach what is left.
         //
-        // **Asked on the move into «تجهيز للطباعة», not on leaving «نواقص».** «نواقص» may be left
+        // **Asked on the move into «بانتظار التجهيز», not on leaving «نواقص».** «نواقص» may be left
         // for «قيد التصميم» while the stock is still awaited, so leaving it no longer means the
         // goods came; going to the warehouse does. Asked only where the shortage can still be
         // written — the same condition `ChangeOrderStatus::recordArrivedShortages()` reads.
@@ -690,7 +690,7 @@ final class TransitionFields
     }
 
     /**
-     * «اعتماد آخر نسخة» on the move into «تجهيز للطباعة», or null when nothing needs approving.
+     * «اعتماد آخر نسخة» on the move into «بانتظار التجهيز», or null when nothing needs approving.
      *
      * - An approved version already: nothing to ask.
      * - A version nobody approved or turned down: a required tick naming it — the move is refused

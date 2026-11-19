@@ -120,7 +120,7 @@ enum CustomerOrderStage: string
             OrderStatus::AwaitingDeposit => self::AwaitingDeposit,
 
             // «عربون مدفوع» and «بدون عربون» are the deposit question answered, which to the
-            // customer is simply the order going ahead; «تجهيز للطباعة» and «جاهزة للطباعة» are
+            // customer is simply the order going ahead; «بانتظار التجهيز» and «جاهزة للطباعة» are
             // the warehouse gathering the goods and handing them to the press.
             OrderStatus::DepositPaid,
             OrderStatus::NoDeposit,

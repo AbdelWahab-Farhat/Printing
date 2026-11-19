@@ -11,10 +11,10 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 
 /**
- * **A design approved on its ticket sends the order on to «تجهيز للطباعة»** (owner, 2026-11-18).
+ * **A design approved on its ticket sends the order on to «بانتظار التجهيز»** (owner, 2026-11-18).
  *
  * Called by `ReviewDesignVersion` once the approved design is on the order. Only an order still
- * in «قيد التصميم» on the printed road moves: the وسيط road has no «تجهيز للطباعة», and an order
+ * in «قيد التصميم» on the printed road moves: the وسيط road has no «بانتظار التجهيز», and an order
  * somewhere else was moved on purpose by somebody.
  *
  * **Asks before it moves, rather than catching a refusal** — nothing in `app/` catches. The

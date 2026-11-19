@@ -537,7 +537,7 @@ by `ChangeOrderStatus`). Rules in PRINT-COLORS.md §13 and ORDERS-STATUS-FLOW.md
   `cancelled`, `assigned` included.
 - **Closed by the system** (`CancelAutomaticDesignTickets`, through `CancelDesignTicket`): when the
   order moves on by hand and no version was submitted, and when the order is cancelled.
-- **Approval** moves the order to «تجهيز للطباعة» (`MoveApprovedOrderToPreparing`, called by
+- **Approval** moves the order to «بانتظار التجهيز» (`MoveApprovedOrderToPreparing`, called by
   `ReviewDesignVersion`) after the design fee is filled; a refused move leaves the approval
   standing.
 
