@@ -16,6 +16,7 @@ use App\Domain\Order\Actions\RecordPartialDelivery;
 use App\Domain\Order\Actions\ReverseOrderStockDeduction;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderDesignStatus;
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\UndeliveredDisposition;
@@ -161,9 +162,12 @@ final class TransitionFields
         //
         // **«تجهيز للطباعة» takes artwork too**, now that the warehouse comes after the design:
         // leaving «قيد التصميم» for it is the designer's finished file arriving.
+        //
+        // **Not on a plain order**: «تجهيز للطباعة» is on its road too now, and it has no artwork.
         $artworkTravels = $target === OrderStatus::Designing
             || (($target === OrderStatus::Preparing || $target === OrderStatus::Printing)
-                && $order->designsAreEditable());
+                && $order->designsAreEditable()
+                && $order->production_flow !== OrderFlow::NoProduction);
 
         if ($artworkTravels) {
             $fields[] = TransitionField::customerDesigns(
@@ -179,8 +183,9 @@ final class TransitionFields
             );
         }
 
-        // «اعتماد آخر نسخة» — the warehouse gathers goods for an approved file only.
-        if ($target === OrderStatus::Preparing) {
+        // «اعتماد آخر نسخة» — the warehouse gathers goods for an approved file only. A plain
+        // order has no file to approve.
+        if ($target === OrderStatus::Preparing && $order->production_flow !== OrderFlow::NoProduction) {
             $approval = self::designApproval($order, $artworkTravels);
 
             if ($approval !== null) {

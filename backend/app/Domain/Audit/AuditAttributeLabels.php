@@ -888,6 +888,8 @@ final class AuditAttributeLabels
             // Hidden on the history screen (`AuditHiddenAttributes`), named for the same reason
             // the read markers below are.
             'status_changed_at' => 'وقت آخر تغيير للحالة',
+            // Set once, when the system opens the ticket for an order entering «قيد التصميم».
+            'opened_automatically' => 'فُتحت تلقائياً',
             // خارج السجلّ (`DesignTicket::attributesNeverWorthLogging()`)، ومسمّاةٌ لأن الاختبار
             // يسأل عن كلّ عمود — ولأن الاسم الصحيح لا يكلّف شيئاً لو دخلت يوماً.
             'requester_read_message_id' => 'قرأ الطالب حتى الرسالة',

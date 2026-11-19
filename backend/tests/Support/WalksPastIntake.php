@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 
@@ -45,8 +46,14 @@ trait WalksPastIntake
             OrderStatus::Designing,
         ];
 
+        // A plain order reaches the shelf from «تجهيز للطباعة» alone (2026-11-18).
+        $plainToTheShelf = $target === OrderStatus::Ready
+            && $flow === OrderFlow::NoProduction
+            && in_array($current->status, $beforeThePress, true);
+
         $place = match (true) {
             $target === OrderStatus::ReadyToPrint && in_array($current->status, $beforeThePress, true) => OrderStatus::Preparing,
+            $plainToTheShelf => OrderStatus::Preparing,
             $current->status === OrderStatus::New && OrderStatus::NoDeposit->canMoveTo($target, $flow) => OrderStatus::NoDeposit,
             default => null,
         };

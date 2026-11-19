@@ -383,20 +383,20 @@ class OrderProductionFlowTest extends TestCase
 
     // ──────────────────────────── what the machine offers ────────────────────────────
 
-    public function test_a_plain_order_is_offered_the_shelf_once_the_deposit_is_answered(): void
+    public function test_a_plain_order_is_offered_the_warehouse_once_the_deposit_is_answered(): void
     {
-        // Arrange
+        // Arrange — «بدون عربون».
         $order = $this->orderOf([$this->sizeUnder($this->blankCategory())]);
         $headers = $this->foreman();
-        $this->walkPastIntake($order, OrderStatus::Ready);
+        $this->walkPastIntake($order, OrderStatus::Preparing);
 
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — «جاهزة» and «نواقص», and none of the statuses that name work. The shortage
-        // stays because the stock for a plain bag is exactly the thing that turns out not to be
-        // there.
-        $this->assertEqualsCanonicalizing(['ready', 'shortage', 'cancelled'], $offered);
+        // Assert — «تجهيز للطباعة» and «نواقص», and neither the designer nor the press (owner,
+        // 2026-11-18). The shortage stays because the stock for a plain bag is exactly the thing
+        // that turns out not to be there.
+        $this->assertEqualsCanonicalizing(['preparing', 'shortage', 'cancelled'], $offered);
     }
 
     public function test_a_plain_order_draws_a_shorter_progress_bar(): void
@@ -410,17 +410,16 @@ class OrderProductionFlowTest extends TestCase
         $plainSteps = array_column($this->show($headers, $plain)->json('data.progress.steps'), 'status');
         $printedSteps = array_column($this->show($headers, $printed)->json('data.progress.steps'), 'status');
 
-        // Assert — five steps rather than seven. Leaving the two drawn-but-never-reached would
-        // have the bar claim a plain order is two sevenths of the way through at the moment it is
-        // standing on the shelf ready to go.
-        $this->assertSame(['new', 'ready', 'out_for_delivery', 'delivered', 'settled'], $plainSteps);
+        // Assert — six steps rather than nine: the warehouse, and none of the design and press
+        // steps a plain order never reaches.
+        $this->assertSame(['new', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'settled'], $plainSteps);
         $this->assertSame([
             'new', 'designing', 'preparing', 'ready_to_print', 'printing',
             'ready', 'out_for_delivery', 'delivered', 'settled',
         ], $printedSteps);
     }
 
-    public function test_a_plain_order_parked_short_rejoins_at_the_shelf(): void
+    public function test_a_plain_order_parked_short_rejoins_at_the_warehouse(): void
     {
         // Arrange — the arm that is easy to forget: «نواقص» is reachable on the short road, so it
         // needs a way back onto it.
@@ -430,23 +429,24 @@ class OrderProductionFlowTest extends TestCase
         // Act
         $offered = array_column($this->show($headers, $order)->json('data.available_transitions'), 'status');
 
-        // Assert — «جاهزة» rather than the design queue this order was never going to visit, and
-        // never an empty list: a shortage with no way out is an order parked forever.
-        $this->assertEqualsCanonicalizing(['ready', 'cancelled'], $offered);
+        // Assert — «تجهيز للطباعة», where what arrived is counted, rather than the design queue
+        // this order was never going to visit; and never an empty list.
+        $this->assertEqualsCanonicalizing(['preparing', 'cancelled'], $offered);
     }
 
     // ───────────────────────────────── making the move ─────────────────────────────────
 
-    public function test_a_plain_order_goes_straight_to_the_shelf(): void
+    public function test_a_plain_order_goes_from_the_warehouse_to_the_shelf(): void
     {
         // Arrange
         $size = $this->sizeUnder($this->blankCategory());
         $order = $this->orderOf([$size]);
         $headers = $this->foreman();
         $this->stock([$size], $this->warehouse(), $headers);
+        $this->move($headers, $order, OrderStatus::Preparing)->assertOk();
 
         // Act
-        $response = $this->move($headers, $order, OrderStatus::Ready, [
+        $response = $this->move($headers, $order->refresh(), OrderStatus::Ready, [
             'warehouse_id' => $this->warehouse()->getKey(),
         ]);
 
@@ -541,7 +541,7 @@ class OrderProductionFlowTest extends TestCase
         // Assert — `ChangeOrderStatusRequest` builds its rules from the same `TransitionFields`
         // list the form was drawn from, so the requirement reaches the short road too.
         $response->assertStatus(422)->assertJsonValidationErrors('fields.warehouse_id');
-        $this->assertSame(OrderStatus::NoDeposit, $order->fresh()->status);
+        $this->assertSame(OrderStatus::Preparing, $order->fresh()->status);
     }
 
     public function test_reaching_the_shelf_without_the_press_still_takes_the_stock(): void

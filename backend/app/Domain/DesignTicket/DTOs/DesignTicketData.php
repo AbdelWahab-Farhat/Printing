@@ -37,6 +37,8 @@ final readonly class DesignTicketData
         public array $files = [],
         public ?array $printColors = null,
         public ?string $designerPay = null,
+        // Opened by the system for an order entering «قيد التصميم», never by a request.
+        public bool $openedAutomatically = false,
     ) {}
 
     /**

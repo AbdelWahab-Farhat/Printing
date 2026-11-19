@@ -152,23 +152,27 @@ class OrderStatusTest extends TestCase
 
         return [
             'the deposit question is the same whatever is in the bags' => $shared['a new order is taken on a deposit or without one — nothing else'],
-            'a paid deposit reaches the shelf directly — the deposit is about the deal, not the work' => [
+            'a paid deposit goes to the warehouse — the deposit is about the deal, not the work' => [
                 OrderStatus::DepositPaid,
                 [
-                    OrderStatus::AwaitingDeposit, OrderStatus::Ready,
+                    OrderStatus::AwaitingDeposit, OrderStatus::Preparing,
                     OrderStatus::Shortage, OrderStatus::Cancelled,
                 ],
             ],
-            'no deposit reaches the shelf directly too' => [
+            'no deposit goes to the warehouse too' => [
                 OrderStatus::NoDeposit,
                 [
-                    OrderStatus::AwaitingDeposit, OrderStatus::Ready,
+                    OrderStatus::AwaitingDeposit, OrderStatus::Preparing,
                     OrderStatus::Shortage, OrderStatus::Cancelled,
                 ],
             ],
-            'a plain order parked short rejoins at the shelf, not at a design queue' => [
+            'the warehouse hands a plain order to the shelf, never the press' => [
+                OrderStatus::Preparing,
+                [OrderStatus::Ready, OrderStatus::Shortage, OrderStatus::Cancelled],
+            ],
+            'a plain order parked short rejoins at the warehouse, not at a design queue' => [
                 OrderStatus::Shortage,
-                [OrderStatus::Ready, OrderStatus::Cancelled],
+                [OrderStatus::Preparing, OrderStatus::Cancelled],
             ],
             // The rest, asserted to be *identical* rather than restated: a copy would be a second
             // place to edit, and the point of the flow is that it changes as little as it can.
@@ -288,13 +292,13 @@ class OrderStatusTest extends TestCase
         ));
 
         // Assert — the whole cost of the feature, stated as a list. Every entry is a status the
-        // work is *dispatched from*: the two deposit answers send it, «نواقص» rejoins it.
-        // «جديدة» only asks the deposit question, which is the same on every road. Nothing else
-        // about an order's life depends on whether the press ran — and an entry appearing here
-        // that is not one of those three is a change worth arguing about rather than one worth
-        // discovering later.
+        // work is *dispatched from*: the two deposit answers send it, «نواقص» rejoins it, and
+        // «تجهيز للطباعة» hands it to the shelf rather than to the press (2026-11-18). «جديدة»
+        // only asks the deposit question, which is the same on every road — and an entry
+        // appearing here that is not one of these four is a change worth arguing about rather
+        // than one worth discovering later.
         $this->assertEqualsCanonicalizing(
-            [OrderStatus::Shortage, OrderStatus::DepositPaid, OrderStatus::NoDeposit],
+            [OrderStatus::Shortage, OrderStatus::DepositPaid, OrderStatus::NoDeposit, OrderStatus::Preparing],
             $differing,
         );
     }
@@ -414,11 +418,12 @@ class OrderStatusTest extends TestCase
         // Act
         $line = OrderStatus::mainLine(FulfilmentType::Delivery, OrderFlow::NoProduction);
 
-        // Assert — five steps, in the order they happen, and the two that name work are the two
-        // that are gone. A bar drawing «قيد الطباعة» for an order that will never enter it would
-        // claim the order is two sevenths of the way through while it sits ready on the shelf.
+        // Assert — six steps, in the order they happen: the warehouse is on this road (2026-11-18),
+        // the designer and the press are not. A bar drawing «قيد الطباعة» for an order that will
+        // never enter it would claim progress the order is not making.
         $this->assertSame([
             OrderStatus::New,
+            OrderStatus::Preparing,
             OrderStatus::Ready,
             OrderStatus::OutForDelivery,
             OrderStatus::Delivered,

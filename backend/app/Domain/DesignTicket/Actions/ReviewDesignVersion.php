@@ -19,6 +19,7 @@ use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AttachApprovedTicketDesigns;
 use App\Domain\Order\Actions\FillDesignFeeFromTickets;
+use App\Domain\Order\Actions\MoveApprovedOrderToPreparing;
 use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 
@@ -57,6 +58,7 @@ final class ReviewDesignVersion
         private readonly EmployeeWalletService $wallet,
         private readonly AttachApprovedTicketDesigns $attachToOrder,
         private readonly FillDesignFeeFromTickets $fillDesignFee,
+        private readonly MoveApprovedOrderToPreparing $moveToPreparing,
     ) {}
 
     /**
@@ -153,6 +155,10 @@ final class ReviewDesignVersion
                         $this->designersPayOn($order),
                         $actor === null ? null : (int) $actor->getKey(),
                     );
+
+                    // And on to «تجهيز للطباعة» when the order was waiting in «قيد التصميم» —
+                    // after the fee, so the order moves with its money already settled.
+                    ($this->moveToPreparing)($order, $actor);
                 }
             }
 

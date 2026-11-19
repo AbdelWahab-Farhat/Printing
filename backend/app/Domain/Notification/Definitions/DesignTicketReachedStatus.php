@@ -46,10 +46,14 @@ final readonly class DesignTicketReachedStatus implements NotificationDefinition
             default => $payload['designer_id'] ?? null,
         };
 
-        // Nobody to tell — an unattributed ticket, or a designer whose account has since gone.
-        // `user(0)` resolves to no recipients, which is the honest outcome: the notification is
-        // published and reaches nobody, rather than being broadcast to whoever happens to fit.
-        return NotificationAudience::user((int) ($recipientId ?? 0));
+        // Nobody to tell — an unattributed ticket, or one cancelled before any designer took it.
+        // An empty audience: published, reaching nobody, rather than broadcast to whoever happens
+        // to fit. `user(0)` used to stand for this and failed on the recipients' foreign key.
+        if ($recipientId === null || (int) $recipientId <= 0) {
+            return NotificationAudience::users([]);
+        }
+
+        return NotificationAudience::user((int) $recipientId);
     }
 
     /**

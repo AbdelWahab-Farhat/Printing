@@ -72,7 +72,11 @@ final class CreateDesignTicket
                 throw DesignTicketOrderTakesNoArtwork::make((string) $order->code, $order->status->label());
             }
 
-            if ($order->isPrintedHere() && ! PrintColors::isComplete($data->printColors)) {
+            // A ticket the system opens has nobody to ask, so it opens without colours; the
+            // designer still cannot submit a version without them (`SubmitDesignVersion`).
+            if (! $data->openedAutomatically
+                && $order->isPrintedHere()
+                && ! PrintColors::isComplete($data->printColors)) {
                 throw DesignTicketNeedsPrintColors::make();
             }
         }
@@ -100,6 +104,7 @@ final class CreateDesignTicket
                     'requested_by_user_id' => $actor?->getKey(),
                     'assigned_designer_id' => $data->assignedDesignerId,
                     'designer_pay' => $data->designerPay,
+                    'opened_automatically' => $data->openedAutomatically,
                 ])->save();
 
                 $ticketId = (int) $ticket->getKey();

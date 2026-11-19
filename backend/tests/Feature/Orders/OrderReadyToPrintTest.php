@@ -598,7 +598,7 @@ class OrderReadyToPrintTest extends TestCase
         [$order, , $warehouse] = $this->order($this->sellableSize(PricingUnit::Piece, $category));
         app(ResolveOrderFlow::class)($order->load('items'));
         $headers = $this->foreman();
-        // The deposit question answered — the work is dispatched from there.
+        // Gathered in «تجهيز للطباعة» — the plain road's own warehouse step (2026-11-18).
         $this->walkPastIntake($order, OrderStatus::Ready);
 
         // Act
@@ -608,9 +608,9 @@ class OrderReadyToPrintTest extends TestCase
         );
         $ready = $this->transition($this->show($headers, $order), OrderStatus::Ready);
 
-        // Assert — «تجهيز» and «جاهزة للطباعة» are a department this order never reaches, so
-        // putting them on that road would be statuses naming work nobody does. Its «جاهزة» is
-        // therefore still the first and only deduction, and asks for the warehouse in full.
+        // Assert — «جاهزة للطباعة» is the press's door, which this order never reaches. Its
+        // «جاهزة» is therefore still the first and only deduction, and asks for the warehouse.
+        $this->assertSame(OrderStatus::Preparing, $order->status);
         $this->assertEqualsCanonicalizing(['ready', 'shortage', 'cancelled'], $offered);
         $this->assertContains('warehouse_id', array_column($ready['fields'], 'key'));
 
@@ -633,8 +633,7 @@ class OrderReadyToPrintTest extends TestCase
             'status',
         );
 
-        // Assert — five steps, and the handover is not among them: it counts as production, so it
-        // leaves the line with the two statuses it stands in front of.
-        $this->assertSame(['new', 'ready', 'out_for_delivery', 'delivered', 'settled'], $steps);
+        // Assert — the warehouse step, and not the handover to the press.
+        $this->assertSame(['new', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'settled'], $steps);
     }
 }

@@ -8,8 +8,6 @@ use App\Domain\Catalog\Enums\ProductionMode;
 use App\Domain\Customer\Support\PrintColors;
 use App\Domain\Delivery\DeliveryService;
 use App\Domain\Delivery\Enums\FulfilmentType;
-use App\Domain\DesignTicket\Enums\DesignTicketStatus;
-use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\LineShortage;
 use App\Domain\Order\DTOs\OrderDestination;
@@ -118,6 +116,9 @@ final class ChangeOrderStatus
         // «اعتماد آخر نسخة» on the way into «تجهيز للطباعة» is the same verdict the design
         // screen records, through the same action.
         private readonly ReviewOrderDesign $reviewDesign,
+        // «قيد التصميم» opens a ticket by itself, and leaving it closes one nobody worked on.
+        private readonly OpenAutomaticDesignTicket $openAutomaticTicket,
+        private readonly CancelAutomaticDesignTickets $cancelAutomaticTickets,
     ) {}
 
     /**
@@ -257,10 +258,10 @@ final class ChangeOrderStatus
             || $target === OrderStatus::Preparing
             || ($target === OrderStatus::Manufacturing && $order->production_flow === OrderFlow::Outsourced);
 
+        // **Except a ticket the system opened that nobody has worked on** (owner, 2026-11-18):
+        // the move cancels it below, inside the transaction — see CancelAutomaticDesignTickets.
         if ($headsForThePress) {
-            $openTickets = DesignTicket::query()
-                ->where('order_id', $order->getKey())
-                ->whereNotIn('status', [DesignTicketStatus::Completed, DesignTicketStatus::Cancelled])
+            $openTickets = CancelAutomaticDesignTickets::blocking($order)
                 ->orderBy('id')
                 ->pluck('code')
                 ->map(fn ($code): string => (string) $code)
@@ -294,10 +295,20 @@ final class ChangeOrderStatus
         // written. Null on every other move.
         $deliverTo = $this->deliveryInsteadOfPickup($from, $target, $fields);
 
-        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest, $deliverTo): Order {
+        return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest, $deliverTo, $headsForThePress): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
             $this->guardTheOrderIsNotDeleted($order);
+
+            // The automatic tickets the guard above let past, closed with the move that made
+            // them unnecessary; and on a cancellation, every automatic ticket still open.
+            if ($headsForThePress) {
+                $this->cancelAutomaticTickets->untouchedOnes($order, $actor);
+            }
+
+            if ($target === OrderStatus::Cancelled) {
+                $this->cancelAutomaticTickets->all($order, $actor);
+            }
 
             // **The new address lands with the status, never without it.** Written first so
             // everything below reads a delivery order, and in this transaction so a refused move
@@ -625,7 +636,8 @@ final class ChangeOrderStatus
             // **The warehouse gathers goods for an approved file only.** Judged once every
             // version the move carried is on the order, and inside the transaction so a refusal
             // takes the status and the artwork back with it.
-            if ($target === OrderStatus::Preparing) {
+            // A plain order has no artwork, so its warehouse asks for none.
+            if ($target === OrderStatus::Preparing && $order->production_flow !== OrderFlow::NoProduction) {
                 $this->approveDesignForPreparing($order, $fields, $actor);
             }
 
@@ -685,6 +697,12 @@ final class ChangeOrderStatus
             }
 
             ($this->record)($order, $from, $target, $reason, $actor);
+
+            // **The designer's queue gets a ticket** when the order has no open one — after the
+            // status is written, because a ticket is only opened on an order that takes artwork.
+            if ($target === OrderStatus::Designing) {
+                ($this->openAutomaticTicket)($order, $actor);
+            }
 
             // **The moment this order's money stops moving.** From «تم الاستلام» the state
             // machine offers only «تم التسوية», and `UpdateOrder` refuses every edit on a closed
@@ -1308,11 +1326,18 @@ final class ChangeOrderStatus
      * Reads the lines fresh: `recordArrivedShortages()` has just written to them on this same
      * move, and the whole point is to judge the order as it stands *after* that.
      *
+     * **On a plain order «جاهزة» is asked too**: it is where that road's stock leaves the shelf,
+     * the place «جاهزة للطباعة» holds on the printed road, and a shortage can be declared while
+     * the order is in «تجهيز للطباعة».
+     *
      * @throws ShortageMustBeResolved
      */
     private function guardShortageIsResolved(Order $order, OrderStatus $target): void
     {
-        if ($target !== OrderStatus::Preparing && $target !== OrderStatus::ReadyToPrint) {
+        $plainToTheShelf = $target === OrderStatus::Ready
+            && $order->production_flow === OrderFlow::NoProduction;
+
+        if ($target !== OrderStatus::Preparing && $target !== OrderStatus::ReadyToPrint && ! $plainToTheShelf) {
             return;
         }
 

@@ -468,6 +468,24 @@ same `updated_at` reason.
 - A status change while somebody is between pages can show a row twice or skip one until they
   refresh. The internal tickets list, ordered by last message, already behaves this way.
 
+## 14. Tickets the system opens (2026-11-18)
+
+An order entering «قيد التصميم» with no open ticket gets one (`OpenAutomaticDesignTicket`, called
+by `ChangeOrderStatus`). Rules in PRINT-COLORS.md §13 and ORDERS-STATUS-FLOW.md §٢٢.
+
+- **Column** `opened_automatically` (boolean, default false), migration
+  `2026_11_18_100000_add_opened_automatically_to_design_tickets_table`. Set only by
+  `CreateDesignTicket` from `DesignTicketData::$openedAutomatically`, never from a request.
+- **The ticket:** title «تصميم طلبية ORD-…», in the shared pool, requested by whoever moved the
+  order, no colours.
+- **Closed by the system** (`CancelAutomaticDesignTickets`, through `CancelDesignTicket`): when the
+  order moves on by hand and no version was submitted, and when the order is cancelled.
+- **Approval** moves the order to «تجهيز للطباعة» (`MoveApprovedOrderToPreparing`, called by
+  `ReviewDesignVersion`) after the design fee is filled; a refused move leaves the approval
+  standing.
+
+Tests: `AutomaticDesignTicketTest`.
+
 ---
 
 *A living document. When a rule here proves wrong, change it and record why.*

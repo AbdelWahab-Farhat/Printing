@@ -110,6 +110,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
         return [
             'status' => DesignTicketStatus::class,
             'status_changed_at' => 'datetime',
+            'opened_automatically' => 'boolean',
             'designer_pay' => 'decimal:2',
             'accepted_at' => 'datetime',
             'completed_at' => 'datetime',

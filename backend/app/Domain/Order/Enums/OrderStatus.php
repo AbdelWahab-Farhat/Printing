@@ -328,41 +328,41 @@ enum OrderStatus: string
     }
 
     /**
-     * Goods that are already made: nothing is designed, nothing is printed, and once the deposit
-     * is decided the order goes straight to the shelf.
+     * Goods that are already made: nothing is designed, nothing is printed. Once the deposit is
+     * decided the order is gathered («تجهيز للطباعة»), then it is on the shelf.
      *
-     * **Every arm that differs is about the same absent thing: the work.** The two deposit
-     * answers are where an order is sent to the designer or the warehouse; «نواقص» is where it
-     * goes when it could not be started and is where it rejoins from. None of them has anything
-     * to offer an order whose goods are already made, and offering it anyway would put buttons on
-     * the screen that describe work nobody is going to do.
+     * **Every arm that differs is about the same absent thing: the press.** The designer's queue
+     * and the press's are not on this road; the warehouse is (owner, 2026-11-18). «تجهيز للطباعة»
+     * leads straight to «جاهزة», which is where a plain order's stock leaves the shelf.
      *
      * @return list<self>
      */
     private function noProductionNext(): array
     {
         return match ($this) {
-            // Straight to the shelf. «نواقص» stays, and it is not an oversight: the stock for a
-            // plain bag is exactly the thing that can turn out not to be there, which is what
-            // that status has always meant — see the arm below.
+            // To the warehouse. «نواقص» stays, and it is not an oversight: the stock for a plain
+            // bag is exactly the thing that can turn out not to be there.
             //
             // **The deposit is on every road**, unlike the production statuses: asking for money
             // up front is about the deal, not about whether anything gets printed. «جديدة» itself
             // falls through to the standard map, because the question it asks is the same here.
             self::DepositPaid => [
-                self::AwaitingDeposit, self::Ready, self::Shortage, self::Cancelled,
+                self::AwaitingDeposit, self::Preparing, self::Shortage, self::Cancelled,
             ],
 
             self::NoDeposit => [
-                self::AwaitingDeposit, self::Ready, self::Shortage, self::Cancelled,
+                self::AwaitingDeposit, self::Preparing, self::Shortage, self::Cancelled,
             ],
 
-            // The way back on is «جاهزة» rather than the two production statuses, because those
-            // are not on this order's road at all. Written as its own arm rather than as a filter
-            // over the standard one: a filter would silently produce an empty list the day a
-            // status is added, and an order with no way out of a shortage is the exact gap
-            // `test_a_shortage_is_never_a_dead_end` exists to catch.
-            self::Shortage => [self::Ready, self::Cancelled],
+            // Gathered, then on the shelf. «نواقص» because gathering the sizes is when a missing
+            // one is found — the same reason the printed road offers it here.
+            self::Preparing => [self::Ready, self::Shortage, self::Cancelled],
+
+            // Back through the warehouse, where what arrived is counted. Written as its own arm
+            // rather than as a filter over the standard one: a filter would silently produce an
+            // empty list the day a status is added, and an order with no way out of a shortage
+            // is the exact gap `test_a_shortage_is_never_a_dead_end` exists to catch.
+            self::Shortage => [self::Preparing, self::Cancelled],
 
             default => $this->standardNext(),
         };
@@ -824,8 +824,8 @@ enum OrderStatus: string
     {
         $work = match ($flow) {
             OrderFlow::Standard => [self::Designing, self::Preparing, self::ReadyToPrint, self::Printing],
-            // Nothing between being taken and being on the shelf: that is the road.
-            OrderFlow::NoProduction => [],
+            // Gathered, then on the shelf: nothing is designed or printed.
+            OrderFlow::NoProduction => [self::Preparing],
             // Design is on this road and «تجهيز» and «جاهزة للطباعة» are not — the job is sent
             // out, not prepared for a press of ours.
             OrderFlow::Outsourced => [self::Designing, self::Manufacturing],
