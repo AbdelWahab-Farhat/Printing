@@ -292,7 +292,9 @@ class OrderRepositoryImpl implements OrderRepository {
                 : recipientPhone.number),
             'address_details': ?order.addressDetails,
             'notes': ?order.notes,
-            'design_fee': order.designFee,
+            // Read by no server from ORDER-DESIGN-FEE.md on — the fee has its own route. Still
+            // sent, as the charged figure, because an older server writes whatever arrives here.
+            'design_fee': order.invoiceFee,
             'discount': discount ?? order.discount,
             // **The three move as one.** An edit that says nothing about the charge sends the
             // order's own three fields back untouched — the server compares the *amount* and
@@ -493,6 +495,17 @@ class OrderRepositoryImpl implements OrderRepository {
           if (isCompensation) 'compensation_note': ?note,
           if (isCompensation) 'compensates_order_id': ?originalId,
         },
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, Order>> setDesignFee(int orderId, {required String fee}) {
+    return safeRequest<Order>(
+      () => _dio.patch(
+        OrderEndpoints.designFee(orderId),
+        data: <String, dynamic>{'design_fee': fee},
       ),
       parse: (data) => Order.fromJson(data as Map<String, dynamic>),
     );

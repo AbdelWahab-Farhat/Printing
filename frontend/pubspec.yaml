@@ -3,7 +3,7 @@ description: "دعاية Dayaa — إدارة مطبعة أكياس: العمل�
 publish_to: "none"
 
 # major.minor.patch+build — the build number is what the stores order releases by.
-version: 1.17.0+16
+version: 1.18.0+17
 
 environment:
   sdk: ^3.12.0
@@ -187,7 +187,7 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
   build_runner: ^2.4.15
-  freezed: ^3.2.5
+  freezed: ^4.0.3
   json_serializable: ^6.9.5
   flutter_lints: ^6.0.0
   bloc_test: ^10.0.0

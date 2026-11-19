@@ -41,6 +41,7 @@ use App\Domain\Notification\Listeners\NotifyOnInternalTicketActivity;
 use App\Domain\Notification\Listeners\NotifyWhenCustomerWritesToSupport;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketIsAssigned;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketMessageIsPosted;
+use App\Domain\Notification\Listeners\NotifyWhenDesignFeeIsFilled;
 use App\Domain\Notification\Listeners\NotifyWhenDesignTicketProgresses;
 use App\Domain\Notification\Listeners\NotifyWhenInternalTicketClosesForSilence;
 use App\Domain\Notification\Listeners\NotifyWhenInternalTicketReplyIsOverdue;
@@ -59,6 +60,7 @@ use App\Domain\OnlinePayment\Gateway\Fake\FakeEzonePayGateway;
 use App\Domain\OnlinePayment\Gateway\OnlinePaymentGateway;
 use App\Domain\Order\Events\OrderDeliveryUndone;
 use App\Domain\Order\Events\OrderDepositChosen;
+use App\Domain\Order\Events\OrderDesignFeeFilled;
 use App\Domain\Order\Events\OrderEnteredShortage;
 use App\Domain\Order\Events\OrderPaymentsRecalculated;
 use App\Domain\Order\Events\OrderProfitFinalised;
@@ -269,6 +271,10 @@ class AppServiceProvider extends ServiceProvider
 
         // واختيارُ العميل عربونَ طلبيةٍ قُبلت بعد المراجعة — حركتُه هو، والانتقالان صامتان أعلاه.
         Event::listen(OrderDepositChosen::class, NotifyWhenOrderDepositIsChosen::class);
+
+        // «أجرة التصميم» filled from «أجرة المصمم» — told to whoever may see the fee, queued and
+        // after commit like its neighbours. ORDER-DESIGN-FEE.md.
+        Event::listen(OrderDesignFeeFilled::class, NotifyWhenDesignFeeIsFilled::class);
 
         // **والحدثُ نفسه يسمعه العميلُ أيضاً**، بمستمِعٍ ثانٍ لا بتعديلٍ في الطلبيات — وهذا ما
         // يعنيه «المستمِعُ صاحبُ الرأي»: يريد مجموعةً أخرى من الانتقالات، بلغة المراحل لا الحالات.

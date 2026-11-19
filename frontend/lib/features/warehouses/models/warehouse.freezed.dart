@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'warehouse.dart';
@@ -9,6 +9,7 @@ part of 'warehouse.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -30,16 +31,21 @@ $WarehouseCopyWith<Warehouse> get copyWith => _$WarehouseCopyWithImpl<Warehouse>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Warehouse&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.location, location) || other.location == location)&&(identical(other.stocksCount, stocksCount) || other.stocksCount == stocksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as Warehouse;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Warehouse&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.typeLabel, _this.typeLabel) || other.typeLabel == _this.typeLabel)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.stocksCount, _this.stocksCount) || other.stocksCount == _this.stocksCount)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,typeLabel,location,stocksCount,createdAt,updatedAt);
+int get hashCode {
+  final _this = this as Warehouse;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.type,_this.typeLabel,_this.location,_this.stocksCount,_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'Warehouse(id: $id, name: $name, type: $type, typeLabel: $typeLabel, location: $location, stocksCount: $stocksCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as Warehouse;
+  return 'Warehouse(id: ${_this.id}, name: ${_this.name}, type: ${_this.type}, typeLabel: ${_this.typeLabel}, location: ${_this.location}, stocksCount: ${_this.stocksCount}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -68,7 +74,7 @@ class _$WarehouseCopyWithImpl<$Res>
 /// Create a copy of Warehouse
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? typeLabel = null,Object? location = freezed,Object? stocksCount = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Warehouse(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
@@ -245,16 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Warehouse&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.location, location) || other.location == location)&&(identical(other.stocksCount, stocksCount) || other.stocksCount == stocksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Warehouse&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.location, location) || other.location == location)&&(identical(other.stocksCount, stocksCount) || other.stocksCount == stocksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,typeLabel,location,stocksCount,createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,type,typeLabel,location,stocksCount,createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'Warehouse(id: $id, name: $name, type: $type, typeLabel: $typeLabel, location: $location, stocksCount: $stocksCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Warehouse(id: $id, name: $name, type: $type, typeLabel: $typeLabel, location: $location, stocksCount: $stocksCount, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 

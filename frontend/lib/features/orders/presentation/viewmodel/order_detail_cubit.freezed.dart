@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'order_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$OrderDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderDetailState()';
+    return 'OrderDetailState()';
 }
 
 
@@ -191,7 +192,7 @@ class OrderDetailLoading extends OrderDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderDetailState.loading()';
+    return 'OrderDetailState.loading()';
 }
 
 
@@ -229,16 +230,18 @@ $OrderDetailLoadedCopyWith<OrderDetailLoaded> get copyWith => _$OrderDetailLoade
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoaded&&(identical(other.order, order) || other.order == order)&&(identical(other.isWorking, isWorking) || other.isWorking == isWorking));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailLoaded&&(identical(other.order, order) || other.order == order)&&(identical(other.isWorking, isWorking) || other.isWorking == isWorking));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,order,isWorking);
+int get hashCode {
+    return Object.hash(runtimeType,order,isWorking);
+}
 
 @override
 String toString() {
-  return 'OrderDetailState.loaded(order: $order, isWorking: $isWorking)';
+    return 'OrderDetailState.loaded(order: $order, isWorking: $isWorking)';
 }
 
 
@@ -306,16 +309,18 @@ $OrderDetailFailureCopyWith<OrderDetailFailure> get copyWith => _$OrderDetailFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.order, order) || other.order == order));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,order);
+int get hashCode {
+    return Object.hash(runtimeType,failure,order);
+}
 
 @override
 String toString() {
-  return 'OrderDetailState.failure(failure: $failure, order: $order)';
+    return 'OrderDetailState.failure(failure: $failure, order: $order)';
 }
 
 

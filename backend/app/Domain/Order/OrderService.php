@@ -25,6 +25,7 @@ use App\Domain\Order\Actions\ReinstateCancelledOrder;
 use App\Domain\Order\Actions\ReverseOrderPayment;
 use App\Domain\Order\Actions\ReviewOrderDesign;
 use App\Domain\Order\Actions\ReviewOrderPayment;
+use App\Domain\Order\Actions\SetOrderDesignFee;
 use App\Domain\Order\Actions\SetOrderShortages;
 use App\Domain\Order\Actions\SettleOrderPayments;
 use App\Domain\Order\Actions\UndoOrderDelivery;
@@ -49,6 +50,8 @@ use App\Domain\Order\Exceptions\CompensationCannotChange;
 use App\Domain\Order\Exceptions\CompensationRequiresPermission;
 use App\Domain\Order\Exceptions\CompensationTakesNoCharges;
 use App\Domain\Order\Exceptions\DeliveryPayerCannotChange;
+use App\Domain\Order\Exceptions\DesignFeeCannotChange;
+use App\Domain\Order\Exceptions\DesignFeeRequiresPermission;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
@@ -136,6 +139,7 @@ class OrderService
         private readonly OrderTotalsQuery $totals,
         private readonly ChangeDeliveryPayer $changeDeliveryPayer,
         private readonly ChangeOrderCompensation $changeCompensation,
+        private readonly SetOrderDesignFee $setDesignFee,
         private readonly ManufacturingCostRateListQuery $manufacturingCostRateListQuery,
     ) {}
 
@@ -406,6 +410,17 @@ class OrderService
         ?User $actor,
     ): Order {
         return ($this->changeCompensation)($order, $isCompensation, $reason, $note, $originalId, $actor);
+    }
+
+    /**
+     * «أجرة التصميم» — what the customer pays for the design. ORDER-DESIGN-FEE.md.
+     *
+     * @throws DesignFeeRequiresPermission
+     * @throws DesignFeeCannotChange
+     */
+    public function setDesignFee(Order $order, string $fee, ?User $actor): Order
+    {
+        return ($this->setDesignFee)($order, $fee, $actor);
     }
 
     public function markReadyMessageSent(Order $order, bool $sent, ?User $actor = null): Order

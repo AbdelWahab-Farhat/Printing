@@ -945,8 +945,12 @@ class OrderTest extends TestCase
 
     public function test_a_design_fee_is_only_charged_when_we_did_the_design(): void
     {
-        // Arrange
-        $headers = $this->clerk();
+        // Arrange — the holder, so the fee is read at all and the source alone decides.
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::SetOrderDesignFee,
+        );
 
         // Act — the fee is sent, but the customer supplied the artwork.
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([
@@ -962,8 +966,12 @@ class OrderTest extends TestCase
 
     public function test_our_own_design_is_added_to_the_total(): void
     {
-        // Arrange
-        $headers = $this->clerk();
+        // Arrange — only whoever holds the fee may charge it (ORDER-DESIGN-FEE.md).
+        $headers = $this->auth(
+            PermissionName::ViewOrders,
+            PermissionName::ManageOrders,
+            PermissionName::SetOrderDesignFee,
+        );
 
         // Act
         $response = $this->withHeaders($headers)->postJson('/api/v1/orders', $this->payload([

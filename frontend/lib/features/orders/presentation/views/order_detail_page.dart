@@ -10,6 +10,7 @@ import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/widgets/amount_sheet.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_speed_dial.dart';
@@ -292,6 +293,13 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                       !state.order!.isArchived &&
                       !state.isWorking
                   ? _changeCompensation
+                  : null,
+              // «أجرة التصميم» — the server folds the status and the grant into one answer.
+              onSetDesignFee:
+                  state.order!.canSetDesignFee &&
+                      !state.order!.isArchived &&
+                      !state.isWorking
+                  ? _setDesignFee
                   : null,
               onOpenOrder: (id) => context.push(Routes.order(id)).ignore(),
               // لا تقرّر شيئاً — تختار الجملة تحت مفتاحٍ مقفل وحدها. انظر [OrderDepositCard].
@@ -660,6 +668,37 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     }
 
     context.showSuccess(choice.isOn ? 'صارت الطلبية طلبية تعويض' : 'صارت الطلبية طلبية عادية');
+
+    final updated = cubit.state.order;
+    if (updated != null) context.handBack(updated);
+  }
+
+  /// «أجرة التصميم» through the amount sheet — nothing is sent until «حفظ». An emptied box
+  /// clears it. A refusal is the server's own Arabic (the order has closed, or a fraction).
+  Future<void> _setDesignFee() async {
+    final cubit = context.read<OrderDetailCubit>();
+    final order = cubit.state.order;
+    if (order == null) return;
+
+    final choice = await showAmountSheet(
+      context: context,
+      title: 'أجرة التصميم',
+      label: 'المبلغ',
+      confirmLabel: 'حفظ',
+      initial: order.hasDesignFee ? order.designFee : null,
+    );
+    if (choice == null || !mounted) return;
+
+    final failure = await cubit.setDesignFee(choice.amount);
+    if (!mounted) return;
+
+    if (failure != null) {
+      context.showFailure(failure);
+
+      return;
+    }
+
+    context.showSuccess('تم تحديث أجرة التصميم');
 
     final updated = cubit.state.order;
     if (updated != null) context.handBack(updated);
@@ -1126,6 +1165,7 @@ class _Body extends StatelessWidget {
     required this.onConfirmDeposit,
     this.onChangeDeliveryPayer,
     this.onChangeCompensation,
+    this.onSetDesignFee,
     this.onOpenOrder,
     required this.depositClaimedByMe,
   });
@@ -1198,6 +1238,10 @@ class _Body extends StatelessWidget {
   /// «طلبية تعويض» on or off — null when the lines have closed, the reader lacks the grant, or
   /// a write is on its way. See `Order.canChangeCompensation`.
   final VoidCallback? onChangeCompensation;
+
+  /// The pencil on «أجرة التصميم» — null when the order has closed, the reader lacks
+  /// `orders.design_fee`, or a write is on its way. See `Order.canSetDesignFee`.
+  final VoidCallback? onSetDesignFee;
 
   /// Opens another order — the original a compensation names, or the replacement made for it.
   final ValueChanged<int>? onOpenOrder;
@@ -1510,6 +1554,7 @@ class _Body extends StatelessWidget {
                   order: order,
                   showCosts: showCosts,
                   onChangeDeliveryPayer: onChangeDeliveryPayer,
+                  onSetDesignFee: onSetDesignFee,
                 ),
               ),
               if (showCosts) ...[

@@ -39,7 +39,7 @@ class ExpenseCategory extends Model implements HasAuditTrail
     /** «رواتب» — اختيارُها على «مستحق» يقترح راتب الموظف. EMPLOYEE-WALLET-DESIGN §٩ س٣. */
     public const SALARY = 'salary';
 
-    /** «أجر التصميم» — ما يدخل محفظة المصمم عند اعتماد تذكرته. SERVICE-PAY-DESIGN §٤. */
+    /** «أجرة المصمم» — ما يدخل محفظة المصمم عند اعتماد تذكرته. SERVICE-PAY-DESIGN §٤. */
     public const DESIGN_PAY = 'design_pay';
 
     /** التصنيفان النظاميان اللذان يُكتب بهما مستحقٌّ في محفظة موظف. */

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'investment_periods_cubit.dart';
@@ -9,6 +9,7 @@ part of 'investment_periods_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$InvestmentPeriodsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InvestmentPeriodsState()';
+    return 'InvestmentPeriodsState()';
 }
 
 
@@ -191,7 +192,7 @@ class InvestmentPeriodsLoading implements InvestmentPeriodsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InvestmentPeriodsState.loading()';
+    return 'InvestmentPeriodsState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class InvestmentPeriodsLoaded implements InvestmentPeriodsState {
-  const InvestmentPeriodsLoaded({required final  List<FundPeriod> periods}): _periods = periods;
+  const InvestmentPeriodsLoaded({required  List<FundPeriod> periods}): _periods = periods;
   
 
  final  List<FundPeriod> _periods;
@@ -234,16 +235,18 @@ $InvestmentPeriodsLoadedCopyWith<InvestmentPeriodsLoaded> get copyWith => _$Inve
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsLoaded&&const DeepCollectionEquality().equals(other._periods, _periods));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsLoaded&&const DeepCollectionEquality().equals(other.periods, _periods));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_periods));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_periods));
+}
 
 @override
 String toString() {
-  return 'InvestmentPeriodsState.loaded(periods: $periods)';
+    return 'InvestmentPeriodsState.loaded(periods: $periods)';
 }
 
 
@@ -300,16 +303,18 @@ $InvestmentPeriodsFailureCopyWith<InvestmentPeriodsFailure> get copyWith => _$In
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentPeriodsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'InvestmentPeriodsState.failure(failure: $failure)';
+    return 'InvestmentPeriodsState.failure(failure: $failure)';
 }
 
 

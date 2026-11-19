@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'production_cost_entry.dart';
@@ -9,6 +9,7 @@ part of 'production_cost_entry.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -45,16 +46,21 @@ $ProductionCostEntryCopyWith<ProductionCostEntry> get copyWith => _$ProductionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductionCostEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.rate, rate) || other.rate == rate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.incurredAt, incurredAt) || other.incurredAt == incurredAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as ProductionCostEntry;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductionCostEntry&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.orderItemId, _this.orderItemId) || other.orderItemId == _this.orderItemId)&&(identical(other.costType, _this.costType) || other.costType == _this.costType)&&(identical(other.costTypeLabel, _this.costTypeLabel) || other.costTypeLabel == _this.costTypeLabel)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.rate, _this.rate) || other.rate == _this.rate)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.recordedBy, _this.recordedBy) || other.recordedBy == _this.recordedBy)&&(identical(other.incurredAt, _this.incurredAt) || other.incurredAt == _this.incurredAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,orderId,orderItemId,costType,costTypeLabel,amount,quantity,rate,notes,recordedBy,incurredAt,createdAt);
+int get hashCode {
+  final _this = this as ProductionCostEntry;
+  return Object.hash(runtimeType,_this.id,_this.orderId,_this.orderItemId,_this.costType,_this.costTypeLabel,_this.amount,_this.quantity,_this.rate,_this.notes,_this.recordedBy,_this.incurredAt,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'ProductionCostEntry(id: $id, orderId: $orderId, orderItemId: $orderItemId, costType: $costType, costTypeLabel: $costTypeLabel, amount: $amount, quantity: $quantity, rate: $rate, notes: $notes, recordedBy: $recordedBy, incurredAt: $incurredAt, createdAt: $createdAt)';
+  final _this = this as ProductionCostEntry;
+  return 'ProductionCostEntry(id: ${_this.id}, orderId: ${_this.orderId}, orderItemId: ${_this.orderItemId}, costType: ${_this.costType}, costTypeLabel: ${_this.costTypeLabel}, amount: ${_this.amount}, quantity: ${_this.quantity}, rate: ${_this.rate}, notes: ${_this.notes}, recordedBy: ${_this.recordedBy}, incurredAt: ${_this.incurredAt}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -83,7 +89,7 @@ class _$ProductionCostEntryCopyWithImpl<$Res>
 /// Create a copy of ProductionCostEntry
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? orderId = null,Object? orderItemId = null,Object? costType = null,Object? costTypeLabel = null,Object? amount = null,Object? quantity = freezed,Object? rate = freezed,Object? notes = freezed,Object? recordedBy = freezed,Object? incurredAt = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProductionCostEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,orderId: null == orderId ? _self.orderId : orderId // ignore: cast_nullable_to_non_nullable
 as int,orderItemId: null == orderItemId ? _self.orderItemId : orderItemId // ignore: cast_nullable_to_non_nullable
@@ -295,16 +301,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductionCostEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.rate, rate) || other.rate == rate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.incurredAt, incurredAt) || other.incurredAt == incurredAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductionCostEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.rate, rate) || other.rate == rate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy)&&(identical(other.incurredAt, incurredAt) || other.incurredAt == incurredAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,orderId,orderItemId,costType,costTypeLabel,amount,quantity,rate,notes,recordedBy,incurredAt,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,orderId,orderItemId,costType,costTypeLabel,amount,quantity,rate,notes,recordedBy,incurredAt,createdAt);
+}
 
 @override
 String toString() {
-  return 'ProductionCostEntry(id: $id, orderId: $orderId, orderItemId: $orderItemId, costType: $costType, costTypeLabel: $costTypeLabel, amount: $amount, quantity: $quantity, rate: $rate, notes: $notes, recordedBy: $recordedBy, incurredAt: $incurredAt, createdAt: $createdAt)';
+    return 'ProductionCostEntry(id: $id, orderId: $orderId, orderItemId: $orderItemId, costType: $costType, costTypeLabel: $costTypeLabel, amount: $amount, quantity: $quantity, rate: $rate, notes: $notes, recordedBy: $recordedBy, incurredAt: $incurredAt, createdAt: $createdAt)';
 }
 
 
@@ -382,16 +390,21 @@ $ProductionCostRecorderCopyWith<ProductionCostRecorder> get copyWith => _$Produc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductionCostRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as ProductionCostRecorder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductionCostRecorder&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as ProductionCostRecorder;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'ProductionCostRecorder(id: $id, name: $name)';
+  final _this = this as ProductionCostRecorder;
+  return 'ProductionCostRecorder(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -420,7 +433,7 @@ class _$ProductionCostRecorderCopyWithImpl<$Res>
 /// Create a copy of ProductionCostRecorder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProductionCostRecorder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -583,16 +596,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductionCostRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProductionCostRecorder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'ProductionCostRecorder(id: $id, name: $name)';
+    return 'ProductionCostRecorder(id: $id, name: $name)';
 }
 
 

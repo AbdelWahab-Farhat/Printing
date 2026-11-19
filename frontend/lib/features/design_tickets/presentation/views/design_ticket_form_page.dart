@@ -243,7 +243,7 @@ class _DesignTicketFormPageState extends State<DesignTicketFormPage> {
               ),
             ],
             SizedBox(height: 14.h),
-            OptionalAmountField(controller: _pay, label: 'أجر التصميم'),
+            OptionalAmountField(controller: _pay, label: 'أجرة المصمم'),
             SizedBox(height: 18.h),
             PrintColorsField(
               colors: _colors,

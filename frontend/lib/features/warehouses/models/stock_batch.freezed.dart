@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_batch.dart';
@@ -9,6 +9,7 @@ part of 'stock_batch.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -36,16 +37,21 @@ $StockBatchCopyWith<StockBatch> get copyWith => _$StockBatchCopyWithImpl<StockBa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockBatch&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantityConsumed, quantityConsumed) || other.quantityConsumed == quantityConsumed)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.investorDealCode, investorDealCode) || other.investorDealCode == investorDealCode)&&const DeepCollectionEquality().equals(other.investorDealInvestors, investorDealInvestors)&&(identical(other.sourceType, sourceType) || other.sourceType == sourceType)&&(identical(other.sourceTypeLabel, sourceTypeLabel) || other.sourceTypeLabel == sourceTypeLabel)&&(identical(other.receivedAt, receivedAt) || other.receivedAt == receivedAt)&&(identical(other.revaluedAt, revaluedAt) || other.revaluedAt == revaluedAt)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.splitFromBatchId, splitFromBatchId) || other.splitFromBatchId == splitFromBatchId)&&(identical(other.canBeRevalued, canBeRevalued) || other.canBeRevalued == canBeRevalued)&&(identical(other.isPartlyConsumed, isPartlyConsumed) || other.isPartlyConsumed == isPartlyConsumed)&&(identical(other.isUncosted, isUncosted) || other.isUncosted == isUncosted)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as StockBatch;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockBatch&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.item, _this.item) || other.item == _this.item)&&(identical(other.unitCost, _this.unitCost) || other.unitCost == _this.unitCost)&&(identical(other.quantityReceived, _this.quantityReceived) || other.quantityReceived == _this.quantityReceived)&&(identical(other.quantityRemaining, _this.quantityRemaining) || other.quantityRemaining == _this.quantityRemaining)&&(identical(other.quantityConsumed, _this.quantityConsumed) || other.quantityConsumed == _this.quantityConsumed)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.investorDealId, _this.investorDealId) || other.investorDealId == _this.investorDealId)&&(identical(other.investorDealCode, _this.investorDealCode) || other.investorDealCode == _this.investorDealCode)&&const DeepCollectionEquality().equals(other.investorDealInvestors, _this.investorDealInvestors)&&(identical(other.sourceType, _this.sourceType) || other.sourceType == _this.sourceType)&&(identical(other.sourceTypeLabel, _this.sourceTypeLabel) || other.sourceTypeLabel == _this.sourceTypeLabel)&&(identical(other.receivedAt, _this.receivedAt) || other.receivedAt == _this.receivedAt)&&(identical(other.revaluedAt, _this.revaluedAt) || other.revaluedAt == _this.revaluedAt)&&(identical(other.stockMovementId, _this.stockMovementId) || other.stockMovementId == _this.stockMovementId)&&(identical(other.purchaseOrderId, _this.purchaseOrderId) || other.purchaseOrderId == _this.purchaseOrderId)&&(identical(other.splitFromBatchId, _this.splitFromBatchId) || other.splitFromBatchId == _this.splitFromBatchId)&&(identical(other.canBeRevalued, _this.canBeRevalued) || other.canBeRevalued == _this.canBeRevalued)&&(identical(other.isPartlyConsumed, _this.isPartlyConsumed) || other.isPartlyConsumed == _this.isPartlyConsumed)&&(identical(other.isUncosted, _this.isUncosted) || other.isUncosted == _this.isUncosted)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,warehouseId,stockItemId,item,unitCost,quantityReceived,quantityRemaining,quantityConsumed,unit,unitLabel,investorDealId,investorDealCode,const DeepCollectionEquality().hash(investorDealInvestors),sourceType,sourceTypeLabel,receivedAt,revaluedAt,stockMovementId,purchaseOrderId,splitFromBatchId,canBeRevalued,isPartlyConsumed,isUncosted,createdAt]);
+int get hashCode {
+  final _this = this as StockBatch;
+  return Object.hashAll([runtimeType,_this.id,_this.warehouseId,_this.stockItemId,_this.item,_this.unitCost,_this.quantityReceived,_this.quantityRemaining,_this.quantityConsumed,_this.unit,_this.unitLabel,_this.investorDealId,_this.investorDealCode,const DeepCollectionEquality().hash(_this.investorDealInvestors),_this.sourceType,_this.sourceTypeLabel,_this.receivedAt,_this.revaluedAt,_this.stockMovementId,_this.purchaseOrderId,_this.splitFromBatchId,_this.canBeRevalued,_this.isPartlyConsumed,_this.isUncosted,_this.createdAt]);
+}
 
 @override
 String toString() {
-  return 'StockBatch(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, item: $item, unitCost: $unitCost, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantityConsumed: $quantityConsumed, unit: $unit, unitLabel: $unitLabel, investorDealId: $investorDealId, investorDealCode: $investorDealCode, investorDealInvestors: $investorDealInvestors, sourceType: $sourceType, sourceTypeLabel: $sourceTypeLabel, receivedAt: $receivedAt, revaluedAt: $revaluedAt, stockMovementId: $stockMovementId, purchaseOrderId: $purchaseOrderId, splitFromBatchId: $splitFromBatchId, canBeRevalued: $canBeRevalued, isPartlyConsumed: $isPartlyConsumed, isUncosted: $isUncosted, createdAt: $createdAt)';
+  final _this = this as StockBatch;
+  return 'StockBatch(id: ${_this.id}, warehouseId: ${_this.warehouseId}, stockItemId: ${_this.stockItemId}, item: ${_this.item}, unitCost: ${_this.unitCost}, quantityReceived: ${_this.quantityReceived}, quantityRemaining: ${_this.quantityRemaining}, quantityConsumed: ${_this.quantityConsumed}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, investorDealId: ${_this.investorDealId}, investorDealCode: ${_this.investorDealCode}, investorDealInvestors: ${_this.investorDealInvestors}, sourceType: ${_this.sourceType}, sourceTypeLabel: ${_this.sourceTypeLabel}, receivedAt: ${_this.receivedAt}, revaluedAt: ${_this.revaluedAt}, stockMovementId: ${_this.stockMovementId}, purchaseOrderId: ${_this.purchaseOrderId}, splitFromBatchId: ${_this.splitFromBatchId}, canBeRevalued: ${_this.canBeRevalued}, isPartlyConsumed: ${_this.isPartlyConsumed}, isUncosted: ${_this.isUncosted}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -74,7 +80,7 @@ class _$StockBatchCopyWithImpl<$Res>
 /// Create a copy of StockBatch
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? item = freezed,Object? unitCost = null,Object? quantityReceived = null,Object? quantityRemaining = null,Object? quantityConsumed = null,Object? unit = null,Object? unitLabel = null,Object? investorDealId = freezed,Object? investorDealCode = freezed,Object? investorDealInvestors = null,Object? sourceType = null,Object? sourceTypeLabel = null,Object? receivedAt = freezed,Object? revaluedAt = freezed,Object? stockMovementId = freezed,Object? purchaseOrderId = freezed,Object? splitFromBatchId = freezed,Object? canBeRevalued = null,Object? isPartlyConsumed = null,Object? isUncosted = null,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockBatch(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
 as int,stockItemId: null == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
@@ -252,7 +258,7 @@ return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.item,_that.un
 @JsonSerializable()
 
 class _StockBatch extends StockBatch {
-  const _StockBatch({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'unit_cost') required this.unitCost, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'quantity_consumed') required this.quantityConsumed, required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, @JsonKey(name: 'investor_deal_id') this.investorDealId, @JsonKey(name: 'investor_deal_code') this.investorDealCode, @JsonKey(name: 'investor_deal_investors') final  List<BatchFunder> investorDealInvestors = const <BatchFunder>[], @JsonKey(name: 'source_type') required this.sourceType, @JsonKey(name: 'source_type_label') required this.sourceTypeLabel, @JsonKey(name: 'received_at') this.receivedAt, @JsonKey(name: 'revalued_at') this.revaluedAt, @JsonKey(name: 'stock_movement_id') this.stockMovementId, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'split_from_batch_id') this.splitFromBatchId, @JsonKey(name: 'can_be_revalued') this.canBeRevalued = false, @JsonKey(name: 'is_partly_consumed') this.isPartlyConsumed = false, @JsonKey(name: 'is_uncosted') this.isUncosted = false, @JsonKey(name: 'created_at') this.createdAt}): _investorDealInvestors = investorDealInvestors,super._();
+  const _StockBatch({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'stock_item_id') required this.stockItemId, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'unit_cost') required this.unitCost, @JsonKey(name: 'quantity_received') required this.quantityReceived, @JsonKey(name: 'quantity_remaining') required this.quantityRemaining, @JsonKey(name: 'quantity_consumed') required this.quantityConsumed, required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, @JsonKey(name: 'investor_deal_id') this.investorDealId, @JsonKey(name: 'investor_deal_code') this.investorDealCode, @JsonKey(name: 'investor_deal_investors')  List<BatchFunder> investorDealInvestors = const <BatchFunder>[], @JsonKey(name: 'source_type') required this.sourceType, @JsonKey(name: 'source_type_label') required this.sourceTypeLabel, @JsonKey(name: 'received_at') this.receivedAt, @JsonKey(name: 'revalued_at') this.revaluedAt, @JsonKey(name: 'stock_movement_id') this.stockMovementId, @JsonKey(name: 'purchase_order_id') this.purchaseOrderId, @JsonKey(name: 'split_from_batch_id') this.splitFromBatchId, @JsonKey(name: 'can_be_revalued') this.canBeRevalued = false, @JsonKey(name: 'is_partly_consumed') this.isPartlyConsumed = false, @JsonKey(name: 'is_uncosted') this.isUncosted = false, @JsonKey(name: 'created_at') this.createdAt}): _investorDealInvestors = investorDealInvestors,super._();
   factory _StockBatch.fromJson(Map<String, dynamic> json) => _$StockBatchFromJson(json);
 
 @override final  int id;
@@ -309,16 +315,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockBatch&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantityConsumed, quantityConsumed) || other.quantityConsumed == quantityConsumed)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.investorDealCode, investorDealCode) || other.investorDealCode == investorDealCode)&&const DeepCollectionEquality().equals(other._investorDealInvestors, _investorDealInvestors)&&(identical(other.sourceType, sourceType) || other.sourceType == sourceType)&&(identical(other.sourceTypeLabel, sourceTypeLabel) || other.sourceTypeLabel == sourceTypeLabel)&&(identical(other.receivedAt, receivedAt) || other.receivedAt == receivedAt)&&(identical(other.revaluedAt, revaluedAt) || other.revaluedAt == revaluedAt)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.splitFromBatchId, splitFromBatchId) || other.splitFromBatchId == splitFromBatchId)&&(identical(other.canBeRevalued, canBeRevalued) || other.canBeRevalued == canBeRevalued)&&(identical(other.isPartlyConsumed, isPartlyConsumed) || other.isPartlyConsumed == isPartlyConsumed)&&(identical(other.isUncosted, isUncosted) || other.isUncosted == isUncosted)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockBatch&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.item, item) || other.item == item)&&(identical(other.unitCost, unitCost) || other.unitCost == unitCost)&&(identical(other.quantityReceived, quantityReceived) || other.quantityReceived == quantityReceived)&&(identical(other.quantityRemaining, quantityRemaining) || other.quantityRemaining == quantityRemaining)&&(identical(other.quantityConsumed, quantityConsumed) || other.quantityConsumed == quantityConsumed)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.investorDealCode, investorDealCode) || other.investorDealCode == investorDealCode)&&const DeepCollectionEquality().equals(other.investorDealInvestors, _investorDealInvestors)&&(identical(other.sourceType, sourceType) || other.sourceType == sourceType)&&(identical(other.sourceTypeLabel, sourceTypeLabel) || other.sourceTypeLabel == sourceTypeLabel)&&(identical(other.receivedAt, receivedAt) || other.receivedAt == receivedAt)&&(identical(other.revaluedAt, revaluedAt) || other.revaluedAt == revaluedAt)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.purchaseOrderId, purchaseOrderId) || other.purchaseOrderId == purchaseOrderId)&&(identical(other.splitFromBatchId, splitFromBatchId) || other.splitFromBatchId == splitFromBatchId)&&(identical(other.canBeRevalued, canBeRevalued) || other.canBeRevalued == canBeRevalued)&&(identical(other.isPartlyConsumed, isPartlyConsumed) || other.isPartlyConsumed == isPartlyConsumed)&&(identical(other.isUncosted, isUncosted) || other.isUncosted == isUncosted)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,warehouseId,stockItemId,item,unitCost,quantityReceived,quantityRemaining,quantityConsumed,unit,unitLabel,investorDealId,investorDealCode,const DeepCollectionEquality().hash(_investorDealInvestors),sourceType,sourceTypeLabel,receivedAt,revaluedAt,stockMovementId,purchaseOrderId,splitFromBatchId,canBeRevalued,isPartlyConsumed,isUncosted,createdAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,warehouseId,stockItemId,item,unitCost,quantityReceived,quantityRemaining,quantityConsumed,unit,unitLabel,investorDealId,investorDealCode,const DeepCollectionEquality().hash(_investorDealInvestors),sourceType,sourceTypeLabel,receivedAt,revaluedAt,stockMovementId,purchaseOrderId,splitFromBatchId,canBeRevalued,isPartlyConsumed,isUncosted,createdAt]);
+}
 
 @override
 String toString() {
-  return 'StockBatch(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, item: $item, unitCost: $unitCost, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantityConsumed: $quantityConsumed, unit: $unit, unitLabel: $unitLabel, investorDealId: $investorDealId, investorDealCode: $investorDealCode, investorDealInvestors: $investorDealInvestors, sourceType: $sourceType, sourceTypeLabel: $sourceTypeLabel, receivedAt: $receivedAt, revaluedAt: $revaluedAt, stockMovementId: $stockMovementId, purchaseOrderId: $purchaseOrderId, splitFromBatchId: $splitFromBatchId, canBeRevalued: $canBeRevalued, isPartlyConsumed: $isPartlyConsumed, isUncosted: $isUncosted, createdAt: $createdAt)';
+    return 'StockBatch(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, item: $item, unitCost: $unitCost, quantityReceived: $quantityReceived, quantityRemaining: $quantityRemaining, quantityConsumed: $quantityConsumed, unit: $unit, unitLabel: $unitLabel, investorDealId: $investorDealId, investorDealCode: $investorDealCode, investorDealInvestors: $investorDealInvestors, sourceType: $sourceType, sourceTypeLabel: $sourceTypeLabel, receivedAt: $receivedAt, revaluedAt: $revaluedAt, stockMovementId: $stockMovementId, purchaseOrderId: $purchaseOrderId, splitFromBatchId: $splitFromBatchId, canBeRevalued: $canBeRevalued, isPartlyConsumed: $isPartlyConsumed, isUncosted: $isUncosted, createdAt: $createdAt)';
 }
 
 
@@ -408,16 +416,21 @@ $BatchFunderCopyWith<BatchFunder> get copyWith => _$BatchFunderCopyWithImpl<Batc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BatchFunder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+  final _this = this as BatchFunder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BatchFunder&&(identical(other.investorId, _this.investorId) || other.investorId == _this.investorId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.committedAmount, _this.committedAmount) || other.committedAmount == _this.committedAmount)&&(identical(other.sharePercent, _this.sharePercent) || other.sharePercent == _this.sharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,name,committedAmount,sharePercent);
+int get hashCode {
+  final _this = this as BatchFunder;
+  return Object.hash(runtimeType,_this.investorId,_this.name,_this.committedAmount,_this.sharePercent);
+}
 
 @override
 String toString() {
-  return 'BatchFunder(investorId: $investorId, name: $name, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+  final _this = this as BatchFunder;
+  return 'BatchFunder(investorId: ${_this.investorId}, name: ${_this.name}, committedAmount: ${_this.committedAmount}, sharePercent: ${_this.sharePercent})';
 }
 
 
@@ -446,7 +459,7 @@ class _$BatchFunderCopyWithImpl<$Res>
 /// Create a copy of BatchFunder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? investorId = null,Object? name = null,Object? committedAmount = null,Object? sharePercent = null,}) {
-  return _then(_self.copyWith(
+  return _then(BatchFunder(
 investorId: null == investorId ? _self.investorId : investorId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,committedAmount: null == committedAmount ? _self.committedAmount : committedAmount // ignore: cast_nullable_to_non_nullable
@@ -613,16 +626,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BatchFunder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BatchFunder&&(identical(other.investorId, investorId) || other.investorId == investorId)&&(identical(other.name, name) || other.name == name)&&(identical(other.committedAmount, committedAmount) || other.committedAmount == committedAmount)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorId,name,committedAmount,sharePercent);
+int get hashCode {
+    return Object.hash(runtimeType,investorId,name,committedAmount,sharePercent);
+}
 
 @override
 String toString() {
-  return 'BatchFunder(investorId: $investorId, name: $name, committedAmount: $committedAmount, sharePercent: $sharePercent)';
+    return 'BatchFunder(investorId: $investorId, name: $name, committedAmount: $committedAmount, sharePercent: $sharePercent)';
 }
 
 

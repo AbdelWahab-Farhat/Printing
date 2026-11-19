@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shortage.dart';
@@ -9,6 +9,7 @@ part of 'shortage.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $ShortageTransitionCopyWith<ShortageTransition> get copyWith => _$ShortageTransi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+  final _this = this as ShortageTransition;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageTransition&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+  final _this = this as ShortageTransition;
+  return Object.hash(runtimeType,_this.value,_this.label);
+}
 
 @override
 String toString() {
-  return 'ShortageTransition(value: $value, label: $label)';
+  final _this = this as ShortageTransition;
+  return 'ShortageTransition(value: ${_this.value}, label: ${_this.label})';
 }
 
 
@@ -66,7 +72,7 @@ class _$ShortageTransitionCopyWithImpl<$Res>
 /// Create a copy of ShortageTransition
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? value = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageTransition(
 value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageTransition&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+    return Object.hash(runtimeType,value,label);
+}
 
 @override
 String toString() {
-  return 'ShortageTransition(value: $value, label: $label)';
+    return 'ShortageTransition(value: $value, label: $label)';
 }
 
 
@@ -294,16 +302,21 @@ $ShortageOrderRefCopyWith<ShortageOrderRef> get copyWith => _$ShortageOrderRefCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
+  final _this = this as ShortageOrderRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageOrderRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,isArchived);
+int get hashCode {
+  final _this = this as ShortageOrderRef;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.status,_this.isArchived);
+}
 
 @override
 String toString() {
-  return 'ShortageOrderRef(id: $id, code: $code, status: $status, isArchived: $isArchived)';
+  final _this = this as ShortageOrderRef;
+  return 'ShortageOrderRef(id: ${_this.id}, code: ${_this.code}, status: ${_this.status}, isArchived: ${_this.isArchived})';
 }
 
 
@@ -332,7 +345,7 @@ class _$ShortageOrderRefCopyWithImpl<$Res>
 /// Create a copy of ShortageOrderRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? status = freezed,Object? isArchived = null,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageOrderRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -499,16 +512,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageOrderRef&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.status, status) || other.status == status)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,status,isArchived);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,status,isArchived);
+}
 
 @override
 String toString() {
-  return 'ShortageOrderRef(id: $id, code: $code, status: $status, isArchived: $isArchived)';
+    return 'ShortageOrderRef(id: $id, code: $code, status: $status, isArchived: $isArchived)';
 }
 
 
@@ -566,16 +581,21 @@ $ShortagePersonCopyWith<ShortagePerson> get copyWith => _$ShortagePersonCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortagePerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+  final _this = this as ShortagePerson;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortagePerson&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+  final _this = this as ShortagePerson;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.employeeCode);
+}
 
 @override
 String toString() {
-  return 'ShortagePerson(id: $id, name: $name, employeeCode: $employeeCode)';
+  final _this = this as ShortagePerson;
+  return 'ShortagePerson(id: ${_this.id}, name: ${_this.name}, employeeCode: ${_this.employeeCode})';
 }
 
 
@@ -604,7 +624,7 @@ class _$ShortagePersonCopyWithImpl<$Res>
 /// Create a copy of ShortagePerson
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? employeeCode = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ShortagePerson(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
@@ -769,16 +789,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortagePerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortagePerson&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,employeeCode);
+}
 
 @override
 String toString() {
-  return 'ShortagePerson(id: $id, name: $name, employeeCode: $employeeCode)';
+    return 'ShortagePerson(id: $id, name: $name, employeeCode: $employeeCode)';
 }
 
 
@@ -835,16 +857,21 @@ $ShortageCustomerRefCopyWith<ShortageCustomerRef> get copyWith => _$ShortageCust
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+  final _this = this as ShortageCustomerRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageCustomerRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone);
+int get hashCode {
+  final _this = this as ShortageCustomerRef;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.phone);
+}
 
 @override
 String toString() {
-  return 'ShortageCustomerRef(id: $id, name: $name, phone: $phone)';
+  final _this = this as ShortageCustomerRef;
+  return 'ShortageCustomerRef(id: ${_this.id}, name: ${_this.name}, phone: ${_this.phone})';
 }
 
 
@@ -873,7 +900,7 @@ class _$ShortageCustomerRefCopyWithImpl<$Res>
 /// Create a copy of ShortageCustomerRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageCustomerRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
@@ -1038,16 +1065,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageCustomerRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,phone);
+}
 
 @override
 String toString() {
-  return 'ShortageCustomerRef(id: $id, name: $name, phone: $phone)';
+    return 'ShortageCustomerRef(id: $id, name: $name, phone: $phone)';
 }
 
 
@@ -1104,16 +1133,21 @@ $ShortageProductRefCopyWith<ShortageProductRef> get copyWith => _$ShortageProduc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as ShortageProductRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageProductRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as ShortageProductRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'ShortageProductRef(id: $id, name: $name)';
+  final _this = this as ShortageProductRef;
+  return 'ShortageProductRef(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -1142,7 +1176,7 @@ class _$ShortageProductRefCopyWithImpl<$Res>
 /// Create a copy of ShortageProductRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageProductRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1305,16 +1339,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageProductRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'ShortageProductRef(id: $id, name: $name)';
+    return 'ShortageProductRef(id: $id, name: $name)';
 }
 
 
@@ -1370,16 +1406,21 @@ $ShortageVariantRefCopyWith<ShortageVariantRef> get copyWith => _$ShortageVarian
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+  final _this = this as ShortageVariantRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageVariantRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label);
+int get hashCode {
+  final _this = this as ShortageVariantRef;
+  return Object.hash(runtimeType,_this.id,_this.label);
+}
 
 @override
 String toString() {
-  return 'ShortageVariantRef(id: $id, label: $label)';
+  final _this = this as ShortageVariantRef;
+  return 'ShortageVariantRef(id: ${_this.id}, label: ${_this.label})';
 }
 
 
@@ -1408,7 +1449,7 @@ class _$ShortageVariantRefCopyWithImpl<$Res>
 /// Create a copy of ShortageVariantRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageVariantRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1571,16 +1612,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageVariantRef&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label);
+int get hashCode {
+    return Object.hash(runtimeType,id,label);
+}
 
 @override
 String toString() {
-  return 'ShortageVariantRef(id: $id, label: $label)';
+    return 'ShortageVariantRef(id: $id, label: $label)';
 }
 
 
@@ -1664,16 +1707,21 @@ $ShortageCopyWith<Shortage> get copyWith => _$ShortageCopyWithImpl<Shortage>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Shortage&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.requiredQuantity, requiredQuantity) || other.requiredQuantity == requiredQuantity)&&(identical(other.suppliedQuantity, suppliedQuantity) || other.suppliedQuantity == suppliedQuantity)&&(identical(other.remainingQuantity, remainingQuantity) || other.remainingQuantity == remainingQuantity)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.surplusValue, surplusValue) || other.surplusValue == surplusValue)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&const DeepCollectionEquality().equals(other.availableTransitions, availableTransitions)&&(identical(other.isEditable, isEditable) || other.isEditable == isEditable)&&(identical(other.isStockable, isStockable) || other.isStockable == isStockable)&&(identical(other.stockUnit, stockUnit) || other.stockUnit == stockUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.weightIsUnknown, weightIsUnknown) || other.weightIsUnknown == weightIsUnknown)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.order, order) || other.order == order)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.product, product) || other.product == product)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.assignedToUserId, assignedToUserId) || other.assignedToUserId == assignedToUserId)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.supplies, supplies)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as Shortage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Shortage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.sourceLabel, _this.sourceLabel) || other.sourceLabel == _this.sourceLabel)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.typeLabel, _this.typeLabel) || other.typeLabel == _this.typeLabel)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.requiredQuantity, _this.requiredQuantity) || other.requiredQuantity == _this.requiredQuantity)&&(identical(other.suppliedQuantity, _this.suppliedQuantity) || other.suppliedQuantity == _this.suppliedQuantity)&&(identical(other.remainingQuantity, _this.remainingQuantity) || other.remainingQuantity == _this.remainingQuantity)&&(identical(other.totalPaid, _this.totalPaid) || other.totalPaid == _this.totalPaid)&&(identical(other.surplusQuantity, _this.surplusQuantity) || other.surplusQuantity == _this.surplusQuantity)&&(identical(other.surplusValue, _this.surplusValue) || other.surplusValue == _this.surplusValue)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.isFinal, _this.isFinal) || other.isFinal == _this.isFinal)&&const DeepCollectionEquality().equals(other.availableTransitions, _this.availableTransitions)&&(identical(other.isEditable, _this.isEditable) || other.isEditable == _this.isEditable)&&(identical(other.isStockable, _this.isStockable) || other.isStockable == _this.isStockable)&&(identical(other.stockUnit, _this.stockUnit) || other.stockUnit == _this.stockUnit)&&(identical(other.stockUnitLabel, _this.stockUnitLabel) || other.stockUnitLabel == _this.stockUnitLabel)&&(identical(other.weightIsUnknown, _this.weightIsUnknown) || other.weightIsUnknown == _this.weightIsUnknown)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.orderItemId, _this.orderItemId) || other.orderItemId == _this.orderItemId)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.customerId, _this.customerId) || other.customerId == _this.customerId)&&(identical(other.customer, _this.customer) || other.customer == _this.customer)&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.productVariantId, _this.productVariantId) || other.productVariantId == _this.productVariantId)&&(identical(other.product, _this.product) || other.product == _this.product)&&(identical(other.variant, _this.variant) || other.variant == _this.variant)&&(identical(other.assignedToUserId, _this.assignedToUserId) || other.assignedToUserId == _this.assignedToUserId)&&(identical(other.assignee, _this.assignee) || other.assignee == _this.assignee)&&(identical(other.createdByUserId, _this.createdByUserId) || other.createdByUserId == _this.createdByUserId)&&(identical(other.creator, _this.creator) || other.creator == _this.creator)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.supplies, _this.supplies)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,source,sourceLabel,type,typeLabel,name,unit,unitLabel,requiredQuantity,suppliedQuantity,remainingQuantity,totalPaid,surplusQuantity,surplusValue,status,statusLabel,isFinal,const DeepCollectionEquality().hash(availableTransitions),isEditable,isStockable,stockUnit,stockUnitLabel,weightIsUnknown,orderId,orderItemId,order,customerId,customer,productId,productVariantId,product,variant,assignedToUserId,assignee,createdByUserId,creator,description,const DeepCollectionEquality().hash(supplies),createdAt,updatedAt]);
+int get hashCode {
+  final _this = this as Shortage;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.source,_this.sourceLabel,_this.type,_this.typeLabel,_this.name,_this.unit,_this.unitLabel,_this.requiredQuantity,_this.suppliedQuantity,_this.remainingQuantity,_this.totalPaid,_this.surplusQuantity,_this.surplusValue,_this.status,_this.statusLabel,_this.isFinal,const DeepCollectionEquality().hash(_this.availableTransitions),_this.isEditable,_this.isStockable,_this.stockUnit,_this.stockUnitLabel,_this.weightIsUnknown,_this.orderId,_this.orderItemId,_this.order,_this.customerId,_this.customer,_this.productId,_this.productVariantId,_this.product,_this.variant,_this.assignedToUserId,_this.assignee,_this.createdByUserId,_this.creator,_this.description,const DeepCollectionEquality().hash(_this.supplies),_this.createdAt,_this.updatedAt]);
+}
 
 @override
 String toString() {
-  return 'Shortage(id: $id, code: $code, source: $source, sourceLabel: $sourceLabel, type: $type, typeLabel: $typeLabel, name: $name, unit: $unit, unitLabel: $unitLabel, requiredQuantity: $requiredQuantity, suppliedQuantity: $suppliedQuantity, remainingQuantity: $remainingQuantity, totalPaid: $totalPaid, surplusQuantity: $surplusQuantity, surplusValue: $surplusValue, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, availableTransitions: $availableTransitions, isEditable: $isEditable, isStockable: $isStockable, stockUnit: $stockUnit, stockUnitLabel: $stockUnitLabel, weightIsUnknown: $weightIsUnknown, orderId: $orderId, orderItemId: $orderItemId, order: $order, customerId: $customerId, customer: $customer, productId: $productId, productVariantId: $productVariantId, product: $product, variant: $variant, assignedToUserId: $assignedToUserId, assignee: $assignee, createdByUserId: $createdByUserId, creator: $creator, description: $description, supplies: $supplies, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as Shortage;
+  return 'Shortage(id: ${_this.id}, code: ${_this.code}, source: ${_this.source}, sourceLabel: ${_this.sourceLabel}, type: ${_this.type}, typeLabel: ${_this.typeLabel}, name: ${_this.name}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, requiredQuantity: ${_this.requiredQuantity}, suppliedQuantity: ${_this.suppliedQuantity}, remainingQuantity: ${_this.remainingQuantity}, totalPaid: ${_this.totalPaid}, surplusQuantity: ${_this.surplusQuantity}, surplusValue: ${_this.surplusValue}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, isFinal: ${_this.isFinal}, availableTransitions: ${_this.availableTransitions}, isEditable: ${_this.isEditable}, isStockable: ${_this.isStockable}, stockUnit: ${_this.stockUnit}, stockUnitLabel: ${_this.stockUnitLabel}, weightIsUnknown: ${_this.weightIsUnknown}, orderId: ${_this.orderId}, orderItemId: ${_this.orderItemId}, order: ${_this.order}, customerId: ${_this.customerId}, customer: ${_this.customer}, productId: ${_this.productId}, productVariantId: ${_this.productVariantId}, product: ${_this.product}, variant: ${_this.variant}, assignedToUserId: ${_this.assignedToUserId}, assignee: ${_this.assignee}, createdByUserId: ${_this.createdByUserId}, creator: ${_this.creator}, description: ${_this.description}, supplies: ${_this.supplies}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -1702,7 +1750,7 @@ class _$ShortageCopyWithImpl<$Res>
 /// Create a copy of Shortage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? source = null,Object? sourceLabel = null,Object? type = null,Object? typeLabel = freezed,Object? name = null,Object? unit = freezed,Object? unitLabel = freezed,Object? requiredQuantity = null,Object? suppliedQuantity = null,Object? remainingQuantity = null,Object? totalPaid = null,Object? surplusQuantity = null,Object? surplusValue = null,Object? status = null,Object? statusLabel = null,Object? isFinal = null,Object? availableTransitions = null,Object? isEditable = null,Object? isStockable = null,Object? stockUnit = freezed,Object? stockUnitLabel = freezed,Object? weightIsUnknown = null,Object? orderId = freezed,Object? orderItemId = freezed,Object? order = freezed,Object? customerId = freezed,Object? customer = freezed,Object? productId = freezed,Object? productVariantId = freezed,Object? product = freezed,Object? variant = freezed,Object? assignedToUserId = freezed,Object? assignee = freezed,Object? createdByUserId = freezed,Object? creator = freezed,Object? description = freezed,Object? supplies = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Shortage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
@@ -1957,7 +2005,7 @@ return $default(_that.id,_that.code,_that.source,_that.sourceLabel,_that.type,_t
 @JsonSerializable()
 
 class _Shortage extends Shortage {
-  const _Shortage({required this.id, required this.code, @JsonKey(unknownEnumValue: ShortageSource.unknown) required this.source, @JsonKey(name: 'source_label') required this.sourceLabel, @JsonKey(unknownEnumValue: ShortageType.unknown) this.type = ShortageType.other, @JsonKey(name: 'type_label') this.typeLabel, required this.name, this.unit, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'required_quantity') required this.requiredQuantity, @JsonKey(name: 'supplied_quantity') required this.suppliedQuantity, @JsonKey(name: 'remaining_quantity') required this.remainingQuantity, @JsonKey(name: 'total_paid') required this.totalPaid, @JsonKey(name: 'surplus_quantity') this.surplusQuantity = '0.000', @JsonKey(name: 'surplus_value') this.surplusValue = '0.00', @JsonKey(unknownEnumValue: ShortageStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_final') this.isFinal = false, @JsonKey(name: 'available_transitions') final  List<ShortageTransition> availableTransitions = const <ShortageTransition>[], @JsonKey(name: 'is_editable') this.isEditable = false, @JsonKey(name: 'is_stockable') this.isStockable = false, @JsonKey(name: 'stock_unit') this.stockUnit, @JsonKey(name: 'stock_unit_label') this.stockUnitLabel, @JsonKey(name: 'weight_is_unknown') this.weightIsUnknown = false, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'order_item_id') this.orderItemId, this.order, @JsonKey(name: 'customer_id') this.customerId, this.customer, @JsonKey(name: 'product_id') this.productId, @JsonKey(name: 'product_variant_id') this.productVariantId, this.product, this.variant, @JsonKey(name: 'assigned_to_user_id') this.assignedToUserId, this.assignee, @JsonKey(name: 'created_by_user_id') this.createdByUserId, this.creator, this.description, final  List<ShortageSupply> supplies = const <ShortageSupply>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _availableTransitions = availableTransitions,_supplies = supplies,super._();
+  const _Shortage({required this.id, required this.code, @JsonKey(unknownEnumValue: ShortageSource.unknown) required this.source, @JsonKey(name: 'source_label') required this.sourceLabel, @JsonKey(unknownEnumValue: ShortageType.unknown) this.type = ShortageType.other, @JsonKey(name: 'type_label') this.typeLabel, required this.name, this.unit, @JsonKey(name: 'unit_label') this.unitLabel, @JsonKey(name: 'required_quantity') required this.requiredQuantity, @JsonKey(name: 'supplied_quantity') required this.suppliedQuantity, @JsonKey(name: 'remaining_quantity') required this.remainingQuantity, @JsonKey(name: 'total_paid') required this.totalPaid, @JsonKey(name: 'surplus_quantity') this.surplusQuantity = '0.000', @JsonKey(name: 'surplus_value') this.surplusValue = '0.00', @JsonKey(unknownEnumValue: ShortageStatus.unknown) required this.status, @JsonKey(name: 'status_label') required this.statusLabel, @JsonKey(name: 'is_final') this.isFinal = false, @JsonKey(name: 'available_transitions')  List<ShortageTransition> availableTransitions = const <ShortageTransition>[], @JsonKey(name: 'is_editable') this.isEditable = false, @JsonKey(name: 'is_stockable') this.isStockable = false, @JsonKey(name: 'stock_unit') this.stockUnit, @JsonKey(name: 'stock_unit_label') this.stockUnitLabel, @JsonKey(name: 'weight_is_unknown') this.weightIsUnknown = false, @JsonKey(name: 'order_id') this.orderId, @JsonKey(name: 'order_item_id') this.orderItemId, this.order, @JsonKey(name: 'customer_id') this.customerId, this.customer, @JsonKey(name: 'product_id') this.productId, @JsonKey(name: 'product_variant_id') this.productVariantId, this.product, this.variant, @JsonKey(name: 'assigned_to_user_id') this.assignedToUserId, this.assignee, @JsonKey(name: 'created_by_user_id') this.createdByUserId, this.creator, this.description,  List<ShortageSupply> supplies = const <ShortageSupply>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _availableTransitions = availableTransitions,_supplies = supplies,super._();
   factory _Shortage.fromJson(Map<String, dynamic> json) => _$ShortageFromJson(json);
 
 @override final  int id;
@@ -2058,16 +2106,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Shortage&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.requiredQuantity, requiredQuantity) || other.requiredQuantity == requiredQuantity)&&(identical(other.suppliedQuantity, suppliedQuantity) || other.suppliedQuantity == suppliedQuantity)&&(identical(other.remainingQuantity, remainingQuantity) || other.remainingQuantity == remainingQuantity)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.surplusValue, surplusValue) || other.surplusValue == surplusValue)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&const DeepCollectionEquality().equals(other._availableTransitions, _availableTransitions)&&(identical(other.isEditable, isEditable) || other.isEditable == isEditable)&&(identical(other.isStockable, isStockable) || other.isStockable == isStockable)&&(identical(other.stockUnit, stockUnit) || other.stockUnit == stockUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.weightIsUnknown, weightIsUnknown) || other.weightIsUnknown == weightIsUnknown)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.order, order) || other.order == order)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.product, product) || other.product == product)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.assignedToUserId, assignedToUserId) || other.assignedToUserId == assignedToUserId)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._supplies, _supplies)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Shortage&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourceLabel, sourceLabel) || other.sourceLabel == sourceLabel)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.name, name) || other.name == name)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.requiredQuantity, requiredQuantity) || other.requiredQuantity == requiredQuantity)&&(identical(other.suppliedQuantity, suppliedQuantity) || other.suppliedQuantity == suppliedQuantity)&&(identical(other.remainingQuantity, remainingQuantity) || other.remainingQuantity == remainingQuantity)&&(identical(other.totalPaid, totalPaid) || other.totalPaid == totalPaid)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.surplusValue, surplusValue) || other.surplusValue == surplusValue)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isFinal, isFinal) || other.isFinal == isFinal)&&const DeepCollectionEquality().equals(other.availableTransitions, _availableTransitions)&&(identical(other.isEditable, isEditable) || other.isEditable == isEditable)&&(identical(other.isStockable, isStockable) || other.isStockable == isStockable)&&(identical(other.stockUnit, stockUnit) || other.stockUnit == stockUnit)&&(identical(other.stockUnitLabel, stockUnitLabel) || other.stockUnitLabel == stockUnitLabel)&&(identical(other.weightIsUnknown, weightIsUnknown) || other.weightIsUnknown == weightIsUnknown)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.orderItemId, orderItemId) || other.orderItemId == orderItemId)&&(identical(other.order, order) || other.order == order)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.product, product) || other.product == product)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.assignedToUserId, assignedToUserId) || other.assignedToUserId == assignedToUserId)&&(identical(other.assignee, assignee) || other.assignee == assignee)&&(identical(other.createdByUserId, createdByUserId) || other.createdByUserId == createdByUserId)&&(identical(other.creator, creator) || other.creator == creator)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.supplies, _supplies)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,source,sourceLabel,type,typeLabel,name,unit,unitLabel,requiredQuantity,suppliedQuantity,remainingQuantity,totalPaid,surplusQuantity,surplusValue,status,statusLabel,isFinal,const DeepCollectionEquality().hash(_availableTransitions),isEditable,isStockable,stockUnit,stockUnitLabel,weightIsUnknown,orderId,orderItemId,order,customerId,customer,productId,productVariantId,product,variant,assignedToUserId,assignee,createdByUserId,creator,description,const DeepCollectionEquality().hash(_supplies),createdAt,updatedAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,source,sourceLabel,type,typeLabel,name,unit,unitLabel,requiredQuantity,suppliedQuantity,remainingQuantity,totalPaid,surplusQuantity,surplusValue,status,statusLabel,isFinal,const DeepCollectionEquality().hash(_availableTransitions),isEditable,isStockable,stockUnit,stockUnitLabel,weightIsUnknown,orderId,orderItemId,order,customerId,customer,productId,productVariantId,product,variant,assignedToUserId,assignee,createdByUserId,creator,description,const DeepCollectionEquality().hash(_supplies),createdAt,updatedAt]);
+}
 
 @override
 String toString() {
-  return 'Shortage(id: $id, code: $code, source: $source, sourceLabel: $sourceLabel, type: $type, typeLabel: $typeLabel, name: $name, unit: $unit, unitLabel: $unitLabel, requiredQuantity: $requiredQuantity, suppliedQuantity: $suppliedQuantity, remainingQuantity: $remainingQuantity, totalPaid: $totalPaid, surplusQuantity: $surplusQuantity, surplusValue: $surplusValue, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, availableTransitions: $availableTransitions, isEditable: $isEditable, isStockable: $isStockable, stockUnit: $stockUnit, stockUnitLabel: $stockUnitLabel, weightIsUnknown: $weightIsUnknown, orderId: $orderId, orderItemId: $orderItemId, order: $order, customerId: $customerId, customer: $customer, productId: $productId, productVariantId: $productVariantId, product: $product, variant: $variant, assignedToUserId: $assignedToUserId, assignee: $assignee, createdByUserId: $createdByUserId, creator: $creator, description: $description, supplies: $supplies, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Shortage(id: $id, code: $code, source: $source, sourceLabel: $sourceLabel, type: $type, typeLabel: $typeLabel, name: $name, unit: $unit, unitLabel: $unitLabel, requiredQuantity: $requiredQuantity, suppliedQuantity: $suppliedQuantity, remainingQuantity: $remainingQuantity, totalPaid: $totalPaid, surplusQuantity: $surplusQuantity, surplusValue: $surplusValue, status: $status, statusLabel: $statusLabel, isFinal: $isFinal, availableTransitions: $availableTransitions, isEditable: $isEditable, isStockable: $isStockable, stockUnit: $stockUnit, stockUnitLabel: $stockUnitLabel, weightIsUnknown: $weightIsUnknown, orderId: $orderId, orderItemId: $orderItemId, order: $order, customerId: $customerId, customer: $customer, productId: $productId, productVariantId: $productVariantId, product: $product, variant: $variant, assignedToUserId: $assignedToUserId, assignee: $assignee, createdByUserId: $createdByUserId, creator: $creator, description: $description, supplies: $supplies, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 

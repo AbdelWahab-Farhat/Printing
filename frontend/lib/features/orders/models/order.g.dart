@@ -95,6 +95,8 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   designSourceLabel: json['design_source_label'] as String,
   itemsTotal: json['items_total'] as String,
   designFee: json['design_fee'] as String,
+  invoiceDesignFee: json['invoice_design_fee'] as String?,
+  designFeeIsAuto: json['design_fee_is_auto'] as bool? ?? false,
   deliveryPrice: json['delivery_price'] as String,
   deliveryPaidBy: json['delivery_paid_by'] as String? ?? 'recipient',
   deliveryPaidByLabel: json['delivery_paid_by_label'] as String? ?? 'المستلم',
@@ -183,6 +185,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
           .toList() ??
       const <String>[],
   canChangeCompensation: json['can_change_compensation'] as bool? ?? false,
+  canSetDesignFee: json['can_set_design_fee'] as bool? ?? false,
   itemsCount: (json['items_count'] as num?)?.toInt(),
   items: (json['items'] as List<dynamic>?)
       ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -281,6 +284,8 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'design_source_label': instance.designSourceLabel,
   'items_total': instance.itemsTotal,
   'design_fee': instance.designFee,
+  'invoice_design_fee': instance.invoiceDesignFee,
+  'design_fee_is_auto': instance.designFeeIsAuto,
   'delivery_price': instance.deliveryPrice,
   'delivery_paid_by': instance.deliveryPaidBy,
   'delivery_paid_by_label': instance.deliveryPaidByLabel,
@@ -338,6 +343,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'can_change_delivery_payer': instance.canChangeDeliveryPayer,
   'delivery_payer_warnings': instance.deliveryPayerWarnings,
   'can_change_compensation': instance.canChangeCompensation,
+  'can_set_design_fee': instance.canSetDesignFee,
   'items_count': instance.itemsCount,
   'items': instance.items?.map((e) => e.toJson()).toList(),
   'designs': instance.designs?.map((e) => e.toJson()).toList(),

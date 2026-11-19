@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'my_wallet_cubit.dart';
@@ -9,6 +9,7 @@ part of 'my_wallet_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$MyWalletState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'MyWalletState()';
+    return 'MyWalletState()';
 }
 
 
@@ -191,7 +192,7 @@ class MyWalletLoading implements MyWalletState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'MyWalletState.loading()';
+    return 'MyWalletState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $MyWalletFailedCopyWith<MyWalletFailed> get copyWith => _$MyWalletFailedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'MyWalletState.failed(failure: $failure)';
+    return 'MyWalletState.failed(failure: $failure)';
 }
 
 
@@ -305,16 +308,18 @@ $MyWalletLoadedCopyWith<MyWalletLoaded> get copyWith => _$MyWalletLoadedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletLoaded&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.refreshFailure, refreshFailure) || other.refreshFailure == refreshFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MyWalletLoaded&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.refreshFailure, refreshFailure) || other.refreshFailure == refreshFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,balance,refreshFailure);
+int get hashCode {
+    return Object.hash(runtimeType,balance,refreshFailure);
+}
 
 @override
 String toString() {
-  return 'MyWalletState.loaded(balance: $balance, refreshFailure: $refreshFailure)';
+    return 'MyWalletState.loaded(balance: $balance, refreshFailure: $refreshFailure)';
 }
 
 

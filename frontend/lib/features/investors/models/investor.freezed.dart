@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'investor.dart';
@@ -9,6 +9,7 @@ part of 'investor.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -42,16 +43,21 @@ $InvestorCopyWith<Investor> get copyWith => _$InvestorCopyWithImpl<Investor>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.autoReinvestProfit, autoReinvestProfit) || other.autoReinvestProfit == autoReinvestProfit)&&(identical(other.autoReinvestSince, autoReinvestSince) || other.autoReinvestSince == autoReinvestSince)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.totals, totals) || other.totals == totals)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.profitFigures, profitFigures) || other.profitFigures == profitFigures)&&(identical(other.fund, fund) || other.fund == fund)&&const DeepCollectionEquality().equals(other.periods, periods));
+  final _this = this as Investor;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Investor&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.autoReinvestProfit, _this.autoReinvestProfit) || other.autoReinvestProfit == _this.autoReinvestProfit)&&(identical(other.autoReinvestSince, _this.autoReinvestSince) || other.autoReinvestSince == _this.autoReinvestSince)&&(identical(other.hasLogin, _this.hasLogin) || other.hasLogin == _this.hasLogin)&&(identical(other.totals, _this.totals) || other.totals == _this.totals)&&(identical(other.balances, _this.balances) || other.balances == _this.balances)&&(identical(other.profitFigures, _this.profitFigures) || other.profitFigures == _this.profitFigures)&&(identical(other.fund, _this.fund) || other.fund == _this.fund)&&const DeepCollectionEquality().equals(other.periods, _this.periods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,autoReinvestProfit,autoReinvestSince,hasLogin,totals,balances,profitFigures,fund,const DeepCollectionEquality().hash(periods));
+int get hashCode {
+  final _this = this as Investor;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.phone,_this.notes,_this.isActive,_this.autoReinvestProfit,_this.autoReinvestSince,_this.hasLogin,_this.totals,_this.balances,_this.profitFigures,_this.fund,const DeepCollectionEquality().hash(_this.periods));
+}
 
 @override
 String toString() {
-  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, autoReinvestProfit: $autoReinvestProfit, autoReinvestSince: $autoReinvestSince, hasLogin: $hasLogin, totals: $totals, balances: $balances, profitFigures: $profitFigures, fund: $fund, periods: $periods)';
+  final _this = this as Investor;
+  return 'Investor(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, phone: ${_this.phone}, notes: ${_this.notes}, isActive: ${_this.isActive}, autoReinvestProfit: ${_this.autoReinvestProfit}, autoReinvestSince: ${_this.autoReinvestSince}, hasLogin: ${_this.hasLogin}, totals: ${_this.totals}, balances: ${_this.balances}, profitFigures: ${_this.profitFigures}, fund: ${_this.fund}, periods: ${_this.periods})';
 }
 
 
@@ -80,7 +86,7 @@ class _$InvestorCopyWithImpl<$Res>
 /// Create a copy of Investor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? phone = freezed,Object? notes = freezed,Object? isActive = null,Object? autoReinvestProfit = null,Object? autoReinvestSince = freezed,Object? hasLogin = null,Object? totals = freezed,Object? balances = freezed,Object? profitFigures = freezed,Object? fund = freezed,Object? periods = null,}) {
-  return _then(_self.copyWith(
+  return _then(Investor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -284,7 +290,7 @@ return $default(_that.id,_that.code,_that.name,_that.phone,_that.notes,_that.isA
 @JsonSerializable()
 
 class _Investor implements Investor {
-  const _Investor({required this.id, required this.code, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'auto_reinvest_profit') this.autoReinvestProfit = false, @JsonKey(name: 'auto_reinvest_since') this.autoReinvestSince, @JsonKey(name: 'has_login') this.hasLogin = false, this.totals, this.balances, @JsonKey(name: 'profit_figures') this.profitFigures, this.fund, final  List<InvestorPeriod> periods = const <InvestorPeriod>[]}): _periods = periods;
+  const _Investor({required this.id, required this.code, required this.name, this.phone, this.notes, @JsonKey(name: 'is_active') this.isActive = true, @JsonKey(name: 'auto_reinvest_profit') this.autoReinvestProfit = false, @JsonKey(name: 'auto_reinvest_since') this.autoReinvestSince, @JsonKey(name: 'has_login') this.hasLogin = false, this.totals, this.balances, @JsonKey(name: 'profit_figures') this.profitFigures, this.fund,  List<InvestorPeriod> periods = const <InvestorPeriod>[]}): _periods = periods;
   factory _Investor.fromJson(Map<String, dynamic> json) => _$InvestorFromJson(json);
 
 @override final  int id;
@@ -337,16 +343,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.autoReinvestProfit, autoReinvestProfit) || other.autoReinvestProfit == autoReinvestProfit)&&(identical(other.autoReinvestSince, autoReinvestSince) || other.autoReinvestSince == autoReinvestSince)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.totals, totals) || other.totals == totals)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.profitFigures, profitFigures) || other.profitFigures == profitFigures)&&(identical(other.fund, fund) || other.fund == fund)&&const DeepCollectionEquality().equals(other._periods, _periods));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Investor&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.autoReinvestProfit, autoReinvestProfit) || other.autoReinvestProfit == autoReinvestProfit)&&(identical(other.autoReinvestSince, autoReinvestSince) || other.autoReinvestSince == autoReinvestSince)&&(identical(other.hasLogin, hasLogin) || other.hasLogin == hasLogin)&&(identical(other.totals, totals) || other.totals == totals)&&(identical(other.balances, balances) || other.balances == balances)&&(identical(other.profitFigures, profitFigures) || other.profitFigures == profitFigures)&&(identical(other.fund, fund) || other.fund == fund)&&const DeepCollectionEquality().equals(other.periods, _periods));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,phone,notes,isActive,autoReinvestProfit,autoReinvestSince,hasLogin,totals,balances,profitFigures,fund,const DeepCollectionEquality().hash(_periods));
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,phone,notes,isActive,autoReinvestProfit,autoReinvestSince,hasLogin,totals,balances,profitFigures,fund,const DeepCollectionEquality().hash(_periods));
+}
 
 @override
 String toString() {
-  return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, autoReinvestProfit: $autoReinvestProfit, autoReinvestSince: $autoReinvestSince, hasLogin: $hasLogin, totals: $totals, balances: $balances, profitFigures: $profitFigures, fund: $fund, periods: $periods)';
+    return 'Investor(id: $id, code: $code, name: $name, phone: $phone, notes: $notes, isActive: $isActive, autoReinvestProfit: $autoReinvestProfit, autoReinvestSince: $autoReinvestSince, hasLogin: $hasLogin, totals: $totals, balances: $balances, profitFigures: $profitFigures, fund: $fund, periods: $periods)';
 }
 
 
@@ -467,16 +475,21 @@ $InvestorPeriodCopyWith<InvestorPeriod> get copyWith => _$InvestorPeriodCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
+  final _this = this as InvestorPeriod;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorPeriod&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.profit, _this.profit) || other.profit == _this.profit)&&(identical(other.startsOn, _this.startsOn) || other.startsOn == _this.startsOn)&&(identical(other.endsOn, _this.endsOn) || other.endsOn == _this.endsOn)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,profit,startsOn,endsOn,status,statusLabel);
+int get hashCode {
+  final _this = this as InvestorPeriod;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.profit,_this.startsOn,_this.endsOn,_this.status,_this.statusLabel);
+}
 
 @override
 String toString() {
-  return 'InvestorPeriod(id: $id, code: $code, profit: $profit, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel)';
+  final _this = this as InvestorPeriod;
+  return 'InvestorPeriod(id: ${_this.id}, code: ${_this.code}, profit: ${_this.profit}, startsOn: ${_this.startsOn}, endsOn: ${_this.endsOn}, status: ${_this.status}, statusLabel: ${_this.statusLabel})';
 }
 
 
@@ -505,7 +518,7 @@ class _$InvestorPeriodCopyWithImpl<$Res>
 /// Create a copy of InvestorPeriod
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? profit = null,Object? startsOn = freezed,Object? endsOn = freezed,Object? status = null,Object? statusLabel = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(InvestorPeriod(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
@@ -683,16 +696,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,profit,startsOn,endsOn,status,statusLabel);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,profit,startsOn,endsOn,status,statusLabel);
+}
 
 @override
 String toString() {
-  return 'InvestorPeriod(id: $id, code: $code, profit: $profit, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel)';
+    return 'InvestorPeriod(id: $id, code: $code, profit: $profit, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel)';
 }
 
 
@@ -756,16 +771,21 @@ $InvestorBalancesCopyWith<InvestorBalances> get copyWith => _$InvestorBalancesCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorBalances&&(identical(other.wallet, wallet) || other.wallet == wallet)&&const DeepCollectionEquality().equals(other.deals, deals));
+  final _this = this as InvestorBalances;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorBalances&&(identical(other.wallet, _this.wallet) || other.wallet == _this.wallet)&&const DeepCollectionEquality().equals(other.deals, _this.deals));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,wallet,const DeepCollectionEquality().hash(deals));
+int get hashCode {
+  final _this = this as InvestorBalances;
+  return Object.hash(runtimeType,_this.wallet,const DeepCollectionEquality().hash(_this.deals));
+}
 
 @override
 String toString() {
-  return 'InvestorBalances(wallet: $wallet, deals: $deals)';
+  final _this = this as InvestorBalances;
+  return 'InvestorBalances(wallet: ${_this.wallet}, deals: ${_this.deals})';
 }
 
 
@@ -794,7 +814,7 @@ class _$InvestorBalancesCopyWithImpl<$Res>
 /// Create a copy of InvestorBalances
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? wallet = null,Object? deals = null,}) {
-  return _then(_self.copyWith(
+  return _then(InvestorBalances(
 wallet: null == wallet ? _self.wallet : wallet // ignore: cast_nullable_to_non_nullable
 as WalletPots,deals: null == deals ? _self.deals : deals // ignore: cast_nullable_to_non_nullable
 as List<DealPots>,
@@ -947,7 +967,7 @@ return $default(_that.wallet,_that.deals);case _:
 @JsonSerializable()
 
 class _InvestorBalances implements InvestorBalances {
-  const _InvestorBalances({required this.wallet, final  List<DealPots> deals = const <DealPots>[]}): _deals = deals;
+  const _InvestorBalances({required this.wallet,  List<DealPots> deals = const <DealPots>[]}): _deals = deals;
   factory _InvestorBalances.fromJson(Map<String, dynamic> json) => _$InvestorBalancesFromJson(json);
 
 @override final  WalletPots wallet;
@@ -978,16 +998,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorBalances&&(identical(other.wallet, wallet) || other.wallet == wallet)&&const DeepCollectionEquality().equals(other._deals, _deals));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorBalances&&(identical(other.wallet, wallet) || other.wallet == wallet)&&const DeepCollectionEquality().equals(other.deals, _deals));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,wallet,const DeepCollectionEquality().hash(_deals));
+int get hashCode {
+    return Object.hash(runtimeType,wallet,const DeepCollectionEquality().hash(_deals));
+}
 
 @override
 String toString() {
-  return 'InvestorBalances(wallet: $wallet, deals: $deals)';
+    return 'InvestorBalances(wallet: $wallet, deals: $deals)';
 }
 
 
@@ -1054,16 +1076,21 @@ $WalletPotsCopyWith<WalletPots> get copyWith => _$WalletPotsCopyWithImpl<WalletP
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletPots&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+  final _this = this as WalletPots;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletPots&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.profit, _this.profit) || other.profit == _this.profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit);
+int get hashCode {
+  final _this = this as WalletPots;
+  return Object.hash(runtimeType,_this.capital,_this.profit);
+}
 
 @override
 String toString() {
-  return 'WalletPots(capital: $capital, profit: $profit)';
+  final _this = this as WalletPots;
+  return 'WalletPots(capital: ${_this.capital}, profit: ${_this.profit})';
 }
 
 
@@ -1092,7 +1119,7 @@ class _$WalletPotsCopyWithImpl<$Res>
 /// Create a copy of WalletPots
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? capital = null,Object? profit = null,}) {
-  return _then(_self.copyWith(
+  return _then(WalletPots(
 capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1257,16 +1284,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletPots&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletPots&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit);
+int get hashCode {
+    return Object.hash(runtimeType,capital,profit);
+}
 
 @override
 String toString() {
-  return 'WalletPots(capital: $capital, profit: $profit)';
+    return 'WalletPots(capital: $capital, profit: $profit)';
 }
 
 
@@ -1324,16 +1353,21 @@ $DealPotsCopyWith<DealPots> get copyWith => _$DealPotsCopyWithImpl<DealPots>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealPots&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+  final _this = this as DealPots;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DealPots&&(identical(other.investorDealId, _this.investorDealId) || other.investorDealId == _this.investorDealId)&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.profit, _this.profit) || other.profit == _this.profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorDealId,capital,profit);
+int get hashCode {
+  final _this = this as DealPots;
+  return Object.hash(runtimeType,_this.investorDealId,_this.capital,_this.profit);
+}
 
 @override
 String toString() {
-  return 'DealPots(investorDealId: $investorDealId, capital: $capital, profit: $profit)';
+  final _this = this as DealPots;
+  return 'DealPots(investorDealId: ${_this.investorDealId}, capital: ${_this.capital}, profit: ${_this.profit})';
 }
 
 
@@ -1362,7 +1396,7 @@ class _$DealPotsCopyWithImpl<$Res>
 /// Create a copy of DealPots
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? investorDealId = null,Object? capital = null,Object? profit = null,}) {
-  return _then(_self.copyWith(
+  return _then(DealPots(
 investorDealId: null == investorDealId ? _self.investorDealId : investorDealId // ignore: cast_nullable_to_non_nullable
 as int,capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
@@ -1529,16 +1563,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealPots&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DealPots&&(identical(other.investorDealId, investorDealId) || other.investorDealId == investorDealId)&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorDealId,capital,profit);
+int get hashCode {
+    return Object.hash(runtimeType,investorDealId,capital,profit);
+}
 
 @override
 String toString() {
-  return 'DealPots(investorDealId: $investorDealId, capital: $capital, profit: $profit)';
+    return 'DealPots(investorDealId: $investorDealId, capital: $capital, profit: $profit)';
 }
 
 
@@ -1595,16 +1631,21 @@ $InvestorTotalsCopyWith<InvestorTotals> get copyWith => _$InvestorTotalsCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorTotals&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.walletCapital, walletCapital) || other.walletCapital == walletCapital)&&(identical(other.walletProfit, walletProfit) || other.walletProfit == walletProfit));
+  final _this = this as InvestorTotals;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestorTotals&&(identical(other.capital, _this.capital) || other.capital == _this.capital)&&(identical(other.profit, _this.profit) || other.profit == _this.profit)&&(identical(other.walletCapital, _this.walletCapital) || other.walletCapital == _this.walletCapital)&&(identical(other.walletProfit, _this.walletProfit) || other.walletProfit == _this.walletProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit,walletCapital,walletProfit);
+int get hashCode {
+  final _this = this as InvestorTotals;
+  return Object.hash(runtimeType,_this.capital,_this.profit,_this.walletCapital,_this.walletProfit);
+}
 
 @override
 String toString() {
-  return 'InvestorTotals(capital: $capital, profit: $profit, walletCapital: $walletCapital, walletProfit: $walletProfit)';
+  final _this = this as InvestorTotals;
+  return 'InvestorTotals(capital: ${_this.capital}, profit: ${_this.profit}, walletCapital: ${_this.walletCapital}, walletProfit: ${_this.walletProfit})';
 }
 
 
@@ -1633,7 +1674,7 @@ class _$InvestorTotalsCopyWithImpl<$Res>
 /// Create a copy of InvestorTotals
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? capital = null,Object? profit = null,Object? walletCapital = null,Object? walletProfit = null,}) {
-  return _then(_self.copyWith(
+  return _then(InvestorTotals(
 capital: null == capital ? _self.capital : capital // ignore: cast_nullable_to_non_nullable
 as String,profit: null == profit ? _self.profit : profit // ignore: cast_nullable_to_non_nullable
 as String,walletCapital: null == walletCapital ? _self.walletCapital : walletCapital // ignore: cast_nullable_to_non_nullable
@@ -1800,16 +1841,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorTotals&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.walletCapital, walletCapital) || other.walletCapital == walletCapital)&&(identical(other.walletProfit, walletProfit) || other.walletProfit == walletProfit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestorTotals&&(identical(other.capital, capital) || other.capital == capital)&&(identical(other.profit, profit) || other.profit == profit)&&(identical(other.walletCapital, walletCapital) || other.walletCapital == walletCapital)&&(identical(other.walletProfit, walletProfit) || other.walletProfit == walletProfit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capital,profit,walletCapital,walletProfit);
+int get hashCode {
+    return Object.hash(runtimeType,capital,profit,walletCapital,walletProfit);
+}
 
 @override
 String toString() {
-  return 'InvestorTotals(capital: $capital, profit: $profit, walletCapital: $walletCapital, walletProfit: $walletProfit)';
+    return 'InvestorTotals(capital: $capital, profit: $profit, walletCapital: $walletCapital, walletProfit: $walletProfit)';
 }
 
 
@@ -1868,16 +1911,21 @@ $ProfitFiguresCopyWith<ProfitFigures> get copyWith => _$ProfitFiguresCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitFigures&&(identical(other.awaitingDelivery, awaitingDelivery) || other.awaitingDelivery == awaitingDelivery)&&(identical(other.ordersAwaitingDelivery, ordersAwaitingDelivery) || other.ordersAwaitingDelivery == ordersAwaitingDelivery)&&(identical(other.pending, pending) || other.pending == pending)&&(identical(other.available, available) || other.available == available));
+  final _this = this as ProfitFigures;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitFigures&&(identical(other.awaitingDelivery, _this.awaitingDelivery) || other.awaitingDelivery == _this.awaitingDelivery)&&(identical(other.ordersAwaitingDelivery, _this.ordersAwaitingDelivery) || other.ordersAwaitingDelivery == _this.ordersAwaitingDelivery)&&(identical(other.pending, _this.pending) || other.pending == _this.pending)&&(identical(other.available, _this.available) || other.available == _this.available));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,awaitingDelivery,ordersAwaitingDelivery,pending,available);
+int get hashCode {
+  final _this = this as ProfitFigures;
+  return Object.hash(runtimeType,_this.awaitingDelivery,_this.ordersAwaitingDelivery,_this.pending,_this.available);
+}
 
 @override
 String toString() {
-  return 'ProfitFigures(awaitingDelivery: $awaitingDelivery, ordersAwaitingDelivery: $ordersAwaitingDelivery, pending: $pending, available: $available)';
+  final _this = this as ProfitFigures;
+  return 'ProfitFigures(awaitingDelivery: ${_this.awaitingDelivery}, ordersAwaitingDelivery: ${_this.ordersAwaitingDelivery}, pending: ${_this.pending}, available: ${_this.available})';
 }
 
 
@@ -1906,7 +1954,7 @@ class _$ProfitFiguresCopyWithImpl<$Res>
 /// Create a copy of ProfitFigures
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? awaitingDelivery = null,Object? ordersAwaitingDelivery = null,Object? pending = null,Object? available = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfitFigures(
 awaitingDelivery: null == awaitingDelivery ? _self.awaitingDelivery : awaitingDelivery // ignore: cast_nullable_to_non_nullable
 as String,ordersAwaitingDelivery: null == ordersAwaitingDelivery ? _self.ordersAwaitingDelivery : ordersAwaitingDelivery // ignore: cast_nullable_to_non_nullable
 as int,pending: null == pending ? _self.pending : pending // ignore: cast_nullable_to_non_nullable
@@ -2074,16 +2122,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitFigures&&(identical(other.awaitingDelivery, awaitingDelivery) || other.awaitingDelivery == awaitingDelivery)&&(identical(other.ordersAwaitingDelivery, ordersAwaitingDelivery) || other.ordersAwaitingDelivery == ordersAwaitingDelivery)&&(identical(other.pending, pending) || other.pending == pending)&&(identical(other.available, available) || other.available == available));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitFigures&&(identical(other.awaitingDelivery, awaitingDelivery) || other.awaitingDelivery == awaitingDelivery)&&(identical(other.ordersAwaitingDelivery, ordersAwaitingDelivery) || other.ordersAwaitingDelivery == ordersAwaitingDelivery)&&(identical(other.pending, pending) || other.pending == pending)&&(identical(other.available, available) || other.available == available));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,awaitingDelivery,ordersAwaitingDelivery,pending,available);
+int get hashCode {
+    return Object.hash(runtimeType,awaitingDelivery,ordersAwaitingDelivery,pending,available);
+}
 
 @override
 String toString() {
-  return 'ProfitFigures(awaitingDelivery: $awaitingDelivery, ordersAwaitingDelivery: $ordersAwaitingDelivery, pending: $pending, available: $available)';
+    return 'ProfitFigures(awaitingDelivery: $awaitingDelivery, ordersAwaitingDelivery: $ordersAwaitingDelivery, pending: $pending, available: $available)';
 }
 
 

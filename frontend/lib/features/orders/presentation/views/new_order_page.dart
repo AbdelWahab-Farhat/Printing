@@ -103,7 +103,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
   /// What the Cubit holds is the one fact this form must not be able to change — the customer.
   final List<OrderLineDraft> _lines = [];
 
-  final TextEditingController _designFee = TextEditingController();
   final TextEditingController _discount = TextEditingController();
   final TextEditingController _recipientPhone = TextEditingController();
   final TextEditingController _notes = TextEditingController();
@@ -217,7 +216,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
     for (final line in _lines) {
       line.dispose();
     }
-    _designFee.dispose();
     _discount.dispose();
     _recipientPhone.dispose();
     _notes.dispose();
@@ -388,7 +386,6 @@ class _NewOrderViewState extends State<_NewOrderView> {
       regionId: _region?.id,
       customerShopId: _shopId,
       designSource: _designSource.value,
-      designFee: _designFee.text,
       // Dropped by the use case when the source is «بدون تصميم», the same way the fee is —
       // the picker being hidden is the suggestion, and that is the rule. A print order keeps
       // them: there the picker stays open for the file being reprinted.
@@ -865,7 +862,7 @@ class _NewOrderViewState extends State<_NewOrderView> {
     );
   }
 
-  /// Whose work the artwork was, the fee that only our own work may carry — and the files.
+  /// Whose work the artwork was — and the files.
   ///
   /// **The picker is hidden under «بدون تصميم» and shown under the other two.** That source
   /// means a repeat print of something already agreed, or plain bags with nothing on them:
@@ -891,18 +888,8 @@ class _NewOrderViewState extends State<_NewOrderView> {
           showSelectedIcon: false,
           onSelectionChanged: (choice) => setState(() => _designSource = choice.first),
         ),
-        if (_designSource == _DesignSource.inHouse) ...[
-          SizedBox(height: 10.h),
-          AppTextField(
-            controller: _designFee,
-            label: 'أجرة التصميم',
-            hint: '0',
-            // Whole dinars, like the discount, and starting empty for the same reason.
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹]'))],
-            errorText: submission.designFeeError,
-          ),
-        ],
+        // **No «أجرة التصميم» box**, by the owner's decision (ORDER-DESIGN-FEE.md): employees
+        // never see the fee, and whoever holds `orders.design_fee` sets it from the order.
         // Nothing is said under «بدون تصميم» on plain goods: the segment is the whole answer.
         // On a print order it means a reprint, and the file being reprinted is still picked.
         if (_showsDesignPicker) ...[

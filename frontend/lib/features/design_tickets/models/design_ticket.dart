@@ -161,7 +161,7 @@ abstract class DesignTicket with _$DesignTicket {
 
     @JsonKey(name: 'cancellation_reason') String? cancellationReason,
 
-    /// «أجر التصميم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
+    /// «أجرة المصمم» — ما يدخل محفظة رافع النسخة عند الاعتماد، نصّاً عشرياً كأيّ مبلغ.
     ///
     /// **`null` أمران**: لم يُكتب أجر، أو لا يُقال لهذا القارئ. ويفرّق بينهما [canSetPay] عند الرسم.
     @JsonKey(name: 'designer_pay') String? designerPay,
@@ -201,7 +201,7 @@ abstract class DesignTicket with _$DesignTicket {
     @JsonKey(name: 'can_assign') @Default(false) bool canAssign,
     @JsonKey(name: 'can_manage') @Default(false) bool canManage,
 
-    /// كتابة «أجر التصميم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
+    /// كتابة «أجرة المصمم»: من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
     @JsonKey(name: 'can_set_pay') @Default(false) bool canSetPay,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,

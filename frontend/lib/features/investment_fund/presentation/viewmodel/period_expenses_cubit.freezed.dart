@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'period_expenses_cubit.dart';
@@ -9,6 +9,7 @@ part of 'period_expenses_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$PeriodExpensesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PeriodExpensesState()';
+    return 'PeriodExpensesState()';
 }
 
 
@@ -191,7 +192,7 @@ class PeriodExpensesLoading implements PeriodExpensesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PeriodExpensesState.loading()';
+    return 'PeriodExpensesState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $PeriodExpensesLoadedCopyWith<PeriodExpensesLoaded> get copyWith => _$PeriodExpe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesLoaded&&(identical(other.held, held) || other.held == held));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesLoaded&&(identical(other.held, held) || other.held == held));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,held);
+int get hashCode {
+    return Object.hash(runtimeType,held);
+}
 
 @override
 String toString() {
-  return 'PeriodExpensesState.loaded(held: $held)';
+    return 'PeriodExpensesState.loaded(held: $held)';
 }
 
 
@@ -303,16 +306,18 @@ $PeriodExpensesFailureCopyWith<PeriodExpensesFailure> get copyWith => _$PeriodEx
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodExpensesFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'PeriodExpensesState.failure(failure: $failure)';
+    return 'PeriodExpensesState.failure(failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_payments_cubit.dart';
@@ -9,6 +9,7 @@ part of 'order_payments_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$OrderPaymentsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderPaymentsState()';
+    return 'OrderPaymentsState()';
 }
 
 
@@ -191,7 +192,7 @@ class OrderPaymentsLoading extends OrderPaymentsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'OrderPaymentsState.loading()';
+    return 'OrderPaymentsState.loading()';
 }
 
 
@@ -229,16 +230,18 @@ $OrderPaymentsLoadedCopyWith<OrderPaymentsLoaded> get copyWith => _$OrderPayment
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsLoaded&&(identical(other.ledger, ledger) || other.ledger == ledger)&&(identical(other.isWorking, isWorking) || other.isWorking == isWorking));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsLoaded&&(identical(other.ledger, ledger) || other.ledger == ledger)&&(identical(other.isWorking, isWorking) || other.isWorking == isWorking));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ledger,isWorking);
+int get hashCode {
+    return Object.hash(runtimeType,ledger,isWorking);
+}
 
 @override
 String toString() {
-  return 'OrderPaymentsState.loaded(ledger: $ledger, isWorking: $isWorking)';
+    return 'OrderPaymentsState.loaded(ledger: $ledger, isWorking: $isWorking)';
 }
 
 
@@ -306,16 +309,18 @@ $OrderPaymentsFailureCopyWith<OrderPaymentsFailure> get copyWith => _$OrderPayme
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.ledger, ledger) || other.ledger == ledger));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderPaymentsFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.ledger, ledger) || other.ledger == ledger));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,ledger);
+int get hashCode {
+    return Object.hash(runtimeType,failure,ledger);
+}
 
 @override
 String toString() {
-  return 'OrderPaymentsState.failure(failure: $failure, ledger: $ledger)';
+    return 'OrderPaymentsState.failure(failure: $failure, ledger: $ledger)';
 }
 
 

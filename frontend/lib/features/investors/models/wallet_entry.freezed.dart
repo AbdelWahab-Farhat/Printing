@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'wallet_entry.dart';
@@ -9,6 +9,7 @@ part of 'wallet_entry.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -32,16 +33,21 @@ $WalletEntryCopyWith<WalletEntry> get copyWith => _$WalletEntryCopyWithImpl<Wall
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.method, method) || other.method == method)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.deal, deal) || other.deal == deal)&&(identical(other.period, period) || other.period == period)&&(identical(other.fundUnits, fundUnits) || other.fundUnits == fundUnits)&&(identical(other.reversesEntryId, reversesEntryId) || other.reversesEntryId == reversesEntryId)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canBeReversed, canBeReversed) || other.canBeReversed == canBeReversed)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy));
+  final _this = this as WalletEntry;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntry&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.typeLabel, _this.typeLabel) || other.typeLabel == _this.typeLabel)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.signedAmount, _this.signedAmount) || other.signedAmount == _this.signedAmount)&&(identical(other.method, _this.method) || other.method == _this.method)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.deal, _this.deal) || other.deal == _this.deal)&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.fundUnits, _this.fundUnits) || other.fundUnits == _this.fundUnits)&&(identical(other.reversesEntryId, _this.reversesEntryId) || other.reversesEntryId == _this.reversesEntryId)&&(identical(other.isReversed, _this.isReversed) || other.isReversed == _this.isReversed)&&(identical(other.canBeReversed, _this.canBeReversed) || other.canBeReversed == _this.canBeReversed)&&(identical(other.occurredAt, _this.occurredAt) || other.occurredAt == _this.occurredAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.recordedBy, _this.recordedBy) || other.recordedBy == _this.recordedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,category,amount,signedAmount,method,reference,deal,period,fundUnits,reversesEntryId,isReversed,canBeReversed,occurredAt,notes,recordedBy);
+int get hashCode {
+  final _this = this as WalletEntry;
+  return Object.hash(runtimeType,_this.id,_this.type,_this.typeLabel,_this.category,_this.amount,_this.signedAmount,_this.method,_this.reference,_this.deal,_this.period,_this.fundUnits,_this.reversesEntryId,_this.isReversed,_this.canBeReversed,_this.occurredAt,_this.notes,_this.recordedBy);
+}
 
 @override
 String toString() {
-  return 'WalletEntry(id: $id, type: $type, typeLabel: $typeLabel, category: $category, amount: $amount, signedAmount: $signedAmount, method: $method, reference: $reference, deal: $deal, period: $period, fundUnits: $fundUnits, reversesEntryId: $reversesEntryId, isReversed: $isReversed, canBeReversed: $canBeReversed, occurredAt: $occurredAt, notes: $notes, recordedBy: $recordedBy)';
+  final _this = this as WalletEntry;
+  return 'WalletEntry(id: ${_this.id}, type: ${_this.type}, typeLabel: ${_this.typeLabel}, category: ${_this.category}, amount: ${_this.amount}, signedAmount: ${_this.signedAmount}, method: ${_this.method}, reference: ${_this.reference}, deal: ${_this.deal}, period: ${_this.period}, fundUnits: ${_this.fundUnits}, reversesEntryId: ${_this.reversesEntryId}, isReversed: ${_this.isReversed}, canBeReversed: ${_this.canBeReversed}, occurredAt: ${_this.occurredAt}, notes: ${_this.notes}, recordedBy: ${_this.recordedBy})';
 }
 
 
@@ -70,7 +76,7 @@ class _$WalletEntryCopyWithImpl<$Res>
 /// Create a copy of WalletEntry
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? typeLabel = null,Object? category = freezed,Object? amount = null,Object? signedAmount = null,Object? method = freezed,Object? reference = freezed,Object? deal = freezed,Object? period = freezed,Object? fundUnits = freezed,Object? reversesEntryId = freezed,Object? isReversed = null,Object? canBeReversed = null,Object? occurredAt = freezed,Object? notes = freezed,Object? recordedBy = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(WalletEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,typeLabel: null == typeLabel ? _self.typeLabel : typeLabel // ignore: cast_nullable_to_non_nullable
@@ -315,16 +321,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.method, method) || other.method == method)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.deal, deal) || other.deal == deal)&&(identical(other.period, period) || other.period == period)&&(identical(other.fundUnits, fundUnits) || other.fundUnits == fundUnits)&&(identical(other.reversesEntryId, reversesEntryId) || other.reversesEntryId == reversesEntryId)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canBeReversed, canBeReversed) || other.canBeReversed == canBeReversed)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.typeLabel, typeLabel) || other.typeLabel == typeLabel)&&(identical(other.category, category) || other.category == category)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.signedAmount, signedAmount) || other.signedAmount == signedAmount)&&(identical(other.method, method) || other.method == method)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.deal, deal) || other.deal == deal)&&(identical(other.period, period) || other.period == period)&&(identical(other.fundUnits, fundUnits) || other.fundUnits == fundUnits)&&(identical(other.reversesEntryId, reversesEntryId) || other.reversesEntryId == reversesEntryId)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.canBeReversed, canBeReversed) || other.canBeReversed == canBeReversed)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.recordedBy, recordedBy) || other.recordedBy == recordedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,typeLabel,category,amount,signedAmount,method,reference,deal,period,fundUnits,reversesEntryId,isReversed,canBeReversed,occurredAt,notes,recordedBy);
+int get hashCode {
+    return Object.hash(runtimeType,id,type,typeLabel,category,amount,signedAmount,method,reference,deal,period,fundUnits,reversesEntryId,isReversed,canBeReversed,occurredAt,notes,recordedBy);
+}
 
 @override
 String toString() {
-  return 'WalletEntry(id: $id, type: $type, typeLabel: $typeLabel, category: $category, amount: $amount, signedAmount: $signedAmount, method: $method, reference: $reference, deal: $deal, period: $period, fundUnits: $fundUnits, reversesEntryId: $reversesEntryId, isReversed: $isReversed, canBeReversed: $canBeReversed, occurredAt: $occurredAt, notes: $notes, recordedBy: $recordedBy)';
+    return 'WalletEntry(id: $id, type: $type, typeLabel: $typeLabel, category: $category, amount: $amount, signedAmount: $signedAmount, method: $method, reference: $reference, deal: $deal, period: $period, fundUnits: $fundUnits, reversesEntryId: $reversesEntryId, isReversed: $isReversed, canBeReversed: $canBeReversed, occurredAt: $occurredAt, notes: $notes, recordedBy: $recordedBy)';
 }
 
 
@@ -443,16 +451,21 @@ $WalletEntryDealCopyWith<WalletEntryDeal> get copyWith => _$WalletEntryDealCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund));
+  final _this = this as WalletEntryDeal;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryDeal&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.isFund, _this.isFund) || other.isFund == _this.isFund));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isFund);
+int get hashCode {
+  final _this = this as WalletEntryDeal;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.isFund);
+}
 
 @override
 String toString() {
-  return 'WalletEntryDeal(id: $id, code: $code, isFund: $isFund)';
+  final _this = this as WalletEntryDeal;
+  return 'WalletEntryDeal(id: ${_this.id}, code: ${_this.code}, isFund: ${_this.isFund})';
 }
 
 
@@ -481,7 +494,7 @@ class _$WalletEntryDealCopyWithImpl<$Res>
 /// Create a copy of WalletEntryDeal
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? isFund = null,}) {
-  return _then(_self.copyWith(
+  return _then(WalletEntryDeal(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,isFund: null == isFund ? _self.isFund : isFund // ignore: cast_nullable_to_non_nullable
@@ -646,16 +659,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryDeal&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.isFund, isFund) || other.isFund == isFund));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,isFund);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,isFund);
+}
 
 @override
 String toString() {
-  return 'WalletEntryDeal(id: $id, code: $code, isFund: $isFund)';
+    return 'WalletEntryDeal(id: $id, code: $code, isFund: $isFund)';
 }
 
 
@@ -712,16 +727,21 @@ $WalletEntryPeriodCopyWith<WalletEntryPeriod> get copyWith => _$WalletEntryPerio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+  final _this = this as WalletEntryPeriod;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryPeriod&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+  final _this = this as WalletEntryPeriod;
+  return Object.hash(runtimeType,_this.id,_this.code);
+}
 
 @override
 String toString() {
-  return 'WalletEntryPeriod(id: $id, code: $code)';
+  final _this = this as WalletEntryPeriod;
+  return 'WalletEntryPeriod(id: ${_this.id}, code: ${_this.code})';
 }
 
 
@@ -750,7 +770,7 @@ class _$WalletEntryPeriodCopyWithImpl<$Res>
 /// Create a copy of WalletEntryPeriod
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,}) {
-  return _then(_self.copyWith(
+  return _then(WalletEntryPeriod(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,
@@ -913,16 +933,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryPeriod&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code);
+int get hashCode {
+    return Object.hash(runtimeType,id,code);
+}
 
 @override
 String toString() {
-  return 'WalletEntryPeriod(id: $id, code: $code)';
+    return 'WalletEntryPeriod(id: $id, code: $code)';
 }
 
 
@@ -978,16 +1000,21 @@ $WalletEntryUnitsCopyWith<WalletEntryUnits> get copyWith => _$WalletEntryUnitsCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryUnits&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil));
+  final _this = this as WalletEntryUnits;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryUnits&&(identical(other.units, _this.units) || other.units == _this.units)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.lockedUntil, _this.lockedUntil) || other.lockedUntil == _this.lockedUntil));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,unitPrice,lockedUntil);
+int get hashCode {
+  final _this = this as WalletEntryUnits;
+  return Object.hash(runtimeType,_this.units,_this.unitPrice,_this.lockedUntil);
+}
 
 @override
 String toString() {
-  return 'WalletEntryUnits(units: $units, unitPrice: $unitPrice, lockedUntil: $lockedUntil)';
+  final _this = this as WalletEntryUnits;
+  return 'WalletEntryUnits(units: ${_this.units}, unitPrice: ${_this.unitPrice}, lockedUntil: ${_this.lockedUntil})';
 }
 
 
@@ -1016,7 +1043,7 @@ class _$WalletEntryUnitsCopyWithImpl<$Res>
 /// Create a copy of WalletEntryUnits
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? units = null,Object? unitPrice = null,Object? lockedUntil = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(WalletEntryUnits(
 units: null == units ? _self.units : units // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,lockedUntil: freezed == lockedUntil ? _self.lockedUntil : lockedUntil // ignore: cast_nullable_to_non_nullable
@@ -1181,16 +1208,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryUnits&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryUnits&&(identical(other.units, units) || other.units == units)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lockedUntil, lockedUntil) || other.lockedUntil == lockedUntil));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,units,unitPrice,lockedUntil);
+int get hashCode {
+    return Object.hash(runtimeType,units,unitPrice,lockedUntil);
+}
 
 @override
 String toString() {
-  return 'WalletEntryUnits(units: $units, unitPrice: $unitPrice, lockedUntil: $lockedUntil)';
+    return 'WalletEntryUnits(units: $units, unitPrice: $unitPrice, lockedUntil: $lockedUntil)';
 }
 
 
@@ -1247,16 +1276,21 @@ $WalletEntryActorCopyWith<WalletEntryActor> get copyWith => _$WalletEntryActorCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as WalletEntryActor;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WalletEntryActor&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as WalletEntryActor;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'WalletEntryActor(id: $id, name: $name)';
+  final _this = this as WalletEntryActor;
+  return 'WalletEntryActor(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -1285,7 +1319,7 @@ class _$WalletEntryActorCopyWithImpl<$Res>
 /// Create a copy of WalletEntryActor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(WalletEntryActor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1448,16 +1482,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WalletEntryActor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'WalletEntryActor(id: $id, name: $name)';
+    return 'WalletEntryActor(id: $id, name: $name)';
 }
 
 

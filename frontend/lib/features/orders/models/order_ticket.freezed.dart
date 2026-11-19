@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_ticket.dart';
@@ -9,6 +9,7 @@ part of 'order_ticket.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -29,16 +30,21 @@ $OrderTicketCopyWith<OrderTicket> get copyWith => _$OrderTicketCopyWithImpl<Orde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTicket&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.activityAt, activityAt) || other.activityAt == activityAt));
+  final _this = this as OrderTicket;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTicket&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.activityAt, _this.activityAt) || other.activityAt == _this.activityAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,kindLabel,id,code,title,status,statusLabel,isOpen,activityAt);
+int get hashCode {
+  final _this = this as OrderTicket;
+  return Object.hash(runtimeType,_this.kind,_this.kindLabel,_this.id,_this.code,_this.title,_this.status,_this.statusLabel,_this.isOpen,_this.activityAt);
+}
 
 @override
 String toString() {
-  return 'OrderTicket(kind: $kind, kindLabel: $kindLabel, id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, activityAt: $activityAt)';
+  final _this = this as OrderTicket;
+  return 'OrderTicket(kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, id: ${_this.id}, code: ${_this.code}, title: ${_this.title}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, isOpen: ${_this.isOpen}, activityAt: ${_this.activityAt})';
 }
 
 
@@ -67,7 +73,7 @@ class _$OrderTicketCopyWithImpl<$Res>
 /// Create a copy of OrderTicket
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? kindLabel = null,Object? id = null,Object? code = freezed,Object? title = null,Object? status = null,Object? statusLabel = null,Object? isOpen = null,Object? activityAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderTicket(
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as OrderTicketKind,kindLabel: null == kindLabel ? _self.kindLabel : kindLabel // ignore: cast_nullable_to_non_nullable
 as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
@@ -245,16 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTicket&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.activityAt, activityAt) || other.activityAt == activityAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTicket&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.activityAt, activityAt) || other.activityAt == activityAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,kindLabel,id,code,title,status,statusLabel,isOpen,activityAt);
+int get hashCode {
+    return Object.hash(runtimeType,kind,kindLabel,id,code,title,status,statusLabel,isOpen,activityAt);
+}
 
 @override
 String toString() {
-  return 'OrderTicket(kind: $kind, kindLabel: $kindLabel, id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, activityAt: $activityAt)';
+    return 'OrderTicket(kind: $kind, kindLabel: $kindLabel, id: $id, code: $code, title: $title, status: $status, statusLabel: $statusLabel, isOpen: $isOpen, activityAt: $activityAt)';
 }
 
 

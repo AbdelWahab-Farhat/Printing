@@ -105,7 +105,7 @@ class _DesignTicketDetailView extends StatelessWidget {
 
     final choice = await showAmountSheet(
       context: context,
-      title: 'أجر التصميم',
+      title: 'أجرة المصمم',
       label: 'المبلغ',
       confirmLabel: 'حفظ',
       initial: ticket.designerPay ?? ticket.suggestedPay,
@@ -113,7 +113,7 @@ class _DesignTicketDetailView extends StatelessWidget {
 
     if (choice == null || !context.mounted) return;
 
-    await _run(context, () => cubit.setPay(choice.amount), 'تم تحديث أجر التصميم');
+    await _run(context, () => cubit.setPay(choice.amount), 'تم تحديث أجرة المصمم');
   }
 
   /// ما تقوله نافذة الاعتماد: المبلغ، ومحفظة رافع النسخة — وهو من يستلمه في الخادم.
@@ -437,7 +437,7 @@ class _DesignTicketDetailView extends StatelessWidget {
                 )
               else if (ticket.canSetPay)
                 IconButton(
-                  tooltip: 'تعديل أجر التصميم',
+                  tooltip: 'تعديل أجرة المصمم',
                   onPressed: state.isWorking ? null : () => _editPay(context, ticket),
                   icon: Icon(AppIcons.edit),
                 ),
@@ -969,7 +969,7 @@ class _PersonRow extends StatelessWidget {
   }
 }
 
-/// «أجر التصميم»: a figure that only reads. The pencil in the app bar is the way to change it.
+/// «أجرة المصمم»: a figure that only reads. The pencil in the app bar is the way to change it.
 class _PayRow extends StatelessWidget {
   const _PayRow({required this.value});
 
@@ -985,7 +985,7 @@ class _PayRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'أجر التصميم',
+              'أجرة المصمم',
               style: text.bodyMedium?.copyWith(color: context.colorScheme.onSurfaceVariant),
             ),
           ),

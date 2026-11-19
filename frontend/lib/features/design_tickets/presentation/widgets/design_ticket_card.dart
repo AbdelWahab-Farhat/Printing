@@ -110,7 +110,7 @@ class DesignTicketCard extends StatelessWidget {
   }
 }
 
-/// «أجر التصميم» بعرض البطاقة: الاسم في أوّل السطر والمبلغ في آخره، وهو أكبر ما في البطاقة.
+/// «أجرة المصمم» بعرض البطاقة: الاسم في أوّل السطر والمبلغ في آخره، وهو أكبر ما في البطاقة.
 ///
 /// **بعرض البطاقة لا في سطر المصمم**، فذاك السطر يضيق بالصورة ويقصّ الاسم إن زاحمه رقم.
 class _PayLine extends StatelessWidget {
@@ -145,7 +145,7 @@ class _PayLine extends StatelessWidget {
             SizedBox(width: 6.w),
             Expanded(
               child: Text(
-                'أجر التصميم',
+                'أجرة المصمم',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),

@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 class TicketAcceptance {
   const TicketAcceptance({this.pay});
 
-  /// «أجر التصميم» الذي كتبه من يأخذها. `null` يترك ما على التذكرة.
+  /// «أجرة المصمم» الذي كتبه من يأخذها. `null` يترك ما على التذكرة.
   final String? pay;
 }
 
@@ -41,7 +41,7 @@ Future<TicketAcceptance?> confirmTicketAcceptance(
     context: context,
     title: title,
     description: description,
-    label: 'أجر التصميم',
+    label: 'أجرة المصمم',
     confirmLabel: confirmLabel,
     initial: ticket.suggestedPay ?? sl<Session>().user?.designService?.suggestedPrice,
   );

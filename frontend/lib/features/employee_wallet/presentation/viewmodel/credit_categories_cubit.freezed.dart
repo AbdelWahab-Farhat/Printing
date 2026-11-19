@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'credit_categories_cubit.dart';
@@ -9,6 +9,7 @@ part of 'credit_categories_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$CreditCategoriesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CreditCategoriesState()';
+    return 'CreditCategoriesState()';
 }
 
 
@@ -191,7 +192,7 @@ class CreditCategoriesLoading implements CreditCategoriesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CreditCategoriesState.loading()';
+    return 'CreditCategoriesState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $CreditCategoriesFailedCopyWith<CreditCategoriesFailed> get copyWith => _$Credit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'CreditCategoriesState.failed(failure: $failure)';
+    return 'CreditCategoriesState.failed(failure: $failure)';
 }
 
 
@@ -288,7 +291,7 @@ $FailureCopyWith<$Res> get failure {
 
 
 class CreditCategoriesLoaded implements CreditCategoriesState {
-  const CreditCategoriesLoaded(final  List<ExpenseCategory> categories): _categories = categories;
+  const CreditCategoriesLoaded( List<ExpenseCategory> categories): _categories = categories;
   
 
  final  List<ExpenseCategory> _categories;
@@ -309,16 +312,18 @@ $CreditCategoriesLoadedCopyWith<CreditCategoriesLoaded> get copyWith => _$Credit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesLoaded&&const DeepCollectionEquality().equals(other._categories, _categories));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CreditCategoriesLoaded&&const DeepCollectionEquality().equals(other.categories, _categories));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_categories));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_categories));
+}
 
 @override
 String toString() {
-  return 'CreditCategoriesState.loaded(categories: $categories)';
+    return 'CreditCategoriesState.loaded(categories: $categories)';
 }
 
 

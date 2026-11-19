@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'customer_designs_cubit.dart';
@@ -9,6 +9,7 @@ part of 'customer_designs_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$CustomerDesignsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CustomerDesignsState()';
+    return 'CustomerDesignsState()';
 }
 
 
@@ -191,7 +192,7 @@ class CustomerDesignsLoading implements CustomerDesignsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CustomerDesignsState.loading()';
+    return 'CustomerDesignsState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class CustomerDesignsLoaded implements CustomerDesignsState {
-  const CustomerDesignsLoaded({required final  List<CustomerDesign> designs, final  List<DesignUpload> uploads = const <DesignUpload>[], final  Set<int> busy = const <int>{}, this.alreadySaved}): _designs = designs,_uploads = uploads,_busy = busy;
+  const CustomerDesignsLoaded({required  List<CustomerDesign> designs,  List<DesignUpload> uploads = const <DesignUpload>[],  Set<int> busy = const <int>{}, this.alreadySaved}): _designs = designs,_uploads = uploads,_busy = busy;
   
 
  final  List<CustomerDesign> _designs;
@@ -260,16 +261,18 @@ $CustomerDesignsLoadedCopyWith<CustomerDesignsLoaded> get copyWith => _$Customer
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoaded&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._uploads, _uploads)&&const DeepCollectionEquality().equals(other._busy, _busy)&&(identical(other.alreadySaved, alreadySaved) || other.alreadySaved == alreadySaved));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsLoaded&&const DeepCollectionEquality().equals(other.designs, _designs)&&const DeepCollectionEquality().equals(other.uploads, _uploads)&&const DeepCollectionEquality().equals(other.busy, _busy)&&(identical(other.alreadySaved, alreadySaved) || other.alreadySaved == alreadySaved));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_uploads),const DeepCollectionEquality().hash(_busy),alreadySaved);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_uploads),const DeepCollectionEquality().hash(_busy),alreadySaved);
+}
 
 @override
 String toString() {
-  return 'CustomerDesignsState.loaded(designs: $designs, uploads: $uploads, busy: $busy, alreadySaved: $alreadySaved)';
+    return 'CustomerDesignsState.loaded(designs: $designs, uploads: $uploads, busy: $busy, alreadySaved: $alreadySaved)';
 }
 
 
@@ -341,16 +344,18 @@ $CustomerDesignsFailureCopyWith<CustomerDesignsFailure> get copyWith => _$Custom
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesignsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'CustomerDesignsState.failure(failure: $failure)';
+    return 'CustomerDesignsState.failure(failure: $failure)';
 }
 
 
@@ -416,16 +421,21 @@ $DesignUploadCopyWith<DesignUpload> get copyWith => _$DesignUploadCopyWithImpl<D
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignUpload&&(identical(other.file, file) || other.file == file)&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.isUploading, isUploading) || other.isUploading == isUploading)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as DesignUpload;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignUpload&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.sent, _this.sent) || other.sent == _this.sent)&&(identical(other.isUploading, _this.isUploading) || other.isUploading == _this.isUploading)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file,sent,isUploading,failure);
+int get hashCode {
+  final _this = this as DesignUpload;
+  return Object.hash(runtimeType,_this.file,_this.sent,_this.isUploading,_this.failure);
+}
 
 @override
 String toString() {
-  return 'DesignUpload(file: $file, sent: $sent, isUploading: $isUploading, failure: $failure)';
+  final _this = this as DesignUpload;
+  return 'DesignUpload(file: ${_this.file}, sent: ${_this.sent}, isUploading: ${_this.isUploading}, failure: ${_this.failure})';
 }
 
 
@@ -454,7 +464,7 @@ class _$DesignUploadCopyWithImpl<$Res>
 /// Create a copy of DesignUpload
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? file = null,Object? sent = null,Object? isUploading = null,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DesignUpload(
 file: null == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
 as PickedFile,sent: null == sent ? _self.sent : sent // ignore: cast_nullable_to_non_nullable
 as int,isUploading: null == isUploading ? _self.isUploading : isUploading // ignore: cast_nullable_to_non_nullable
@@ -635,16 +645,18 @@ _$DesignUploadCopyWith<_DesignUpload> get copyWith => __$DesignUploadCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignUpload&&(identical(other.file, file) || other.file == file)&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.isUploading, isUploading) || other.isUploading == isUploading)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DesignUpload&&(identical(other.file, file) || other.file == file)&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.isUploading, isUploading) || other.isUploading == isUploading)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file,sent,isUploading,failure);
+int get hashCode {
+    return Object.hash(runtimeType,file,sent,isUploading,failure);
+}
 
 @override
 String toString() {
-  return 'DesignUpload(file: $file, sent: $sent, isUploading: $isUploading, failure: $failure)';
+    return 'DesignUpload(file: $file, sent: $sent, isUploading: $isUploading, failure: $failure)';
 }
 
 

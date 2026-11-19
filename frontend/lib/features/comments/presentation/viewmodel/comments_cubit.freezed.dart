@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'comments_cubit.dart';
@@ -9,6 +9,7 @@ part of 'comments_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$CommentsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CommentsState()';
+    return 'CommentsState()';
 }
 
 
@@ -191,7 +192,7 @@ class CommentsLoading implements CommentsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'CommentsState.loading()';
+    return 'CommentsState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class CommentsLoaded implements CommentsState {
-  const CommentsLoaded({required final  List<Comment> comments, this.canComment = true, this.closedNote, final  Set<int> busy = const <int>{}, this.isAdding = false}): _comments = comments,_busy = busy;
+  const CommentsLoaded({required  List<Comment> comments, this.canComment = true, this.closedNote,  Set<int> busy = const <int>{}, this.isAdding = false}): _comments = comments,_busy = busy;
   
 
  final  List<Comment> _comments;
@@ -256,16 +257,18 @@ $CommentsLoadedCopyWith<CommentsLoaded> get copyWith => _$CommentsLoadedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoaded&&const DeepCollectionEquality().equals(other._comments, _comments)&&(identical(other.canComment, canComment) || other.canComment == canComment)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&const DeepCollectionEquality().equals(other._busy, _busy)&&(identical(other.isAdding, isAdding) || other.isAdding == isAdding));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsLoaded&&const DeepCollectionEquality().equals(other.comments, _comments)&&(identical(other.canComment, canComment) || other.canComment == canComment)&&(identical(other.closedNote, closedNote) || other.closedNote == closedNote)&&const DeepCollectionEquality().equals(other.busy, _busy)&&(identical(other.isAdding, isAdding) || other.isAdding == isAdding));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),canComment,closedNote,const DeepCollectionEquality().hash(_busy),isAdding);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_comments),canComment,closedNote,const DeepCollectionEquality().hash(_busy),isAdding);
+}
 
 @override
 String toString() {
-  return 'CommentsState.loaded(comments: $comments, canComment: $canComment, closedNote: $closedNote, busy: $busy, isAdding: $isAdding)';
+    return 'CommentsState.loaded(comments: $comments, canComment: $canComment, closedNote: $closedNote, busy: $busy, isAdding: $isAdding)';
 }
 
 
@@ -326,16 +329,18 @@ $CommentsFailureCopyWith<CommentsFailure> get copyWith => _$CommentsFailureCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'CommentsState.failure(failure: $failure)';
+    return 'CommentsState.failure(failure: $failure)';
 }
 
 

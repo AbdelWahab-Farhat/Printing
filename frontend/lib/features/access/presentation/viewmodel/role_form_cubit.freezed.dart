@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'role_form_cubit.dart';
@@ -9,6 +9,7 @@ part of 'role_form_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -29,16 +30,21 @@ $RoleFormStateCopyWith<RoleFormState> get copyWith => _$RoleFormStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleFormState&&const DeepCollectionEquality().equals(other.catalogue, catalogue)&&const DeepCollectionEquality().equals(other.selected, selected)&&(identical(other.isLoadingCatalogue, isLoadingCatalogue) || other.isLoadingCatalogue == isLoadingCatalogue)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as RoleFormState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RoleFormState&&const DeepCollectionEquality().equals(other.catalogue, _this.catalogue)&&const DeepCollectionEquality().equals(other.selected, _this.selected)&&(identical(other.isLoadingCatalogue, _this.isLoadingCatalogue) || other.isLoadingCatalogue == _this.isLoadingCatalogue)&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&(identical(other.saved, _this.saved) || other.saved == _this.saved)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(catalogue),const DeepCollectionEquality().hash(selected),isLoadingCatalogue,isSubmitting,saved,failure);
+int get hashCode {
+  final _this = this as RoleFormState;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.catalogue),const DeepCollectionEquality().hash(_this.selected),_this.isLoadingCatalogue,_this.isSubmitting,_this.saved,_this.failure);
+}
 
 @override
 String toString() {
-  return 'RoleFormState(catalogue: $catalogue, selected: $selected, isLoadingCatalogue: $isLoadingCatalogue, isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
+  final _this = this as RoleFormState;
+  return 'RoleFormState(catalogue: ${_this.catalogue}, selected: ${_this.selected}, isLoadingCatalogue: ${_this.isLoadingCatalogue}, isSubmitting: ${_this.isSubmitting}, saved: ${_this.saved}, failure: ${_this.failure})';
 }
 
 
@@ -67,7 +73,7 @@ class _$RoleFormStateCopyWithImpl<$Res>
 /// Create a copy of RoleFormState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? catalogue = null,Object? selected = null,Object? isLoadingCatalogue = null,Object? isSubmitting = null,Object? saved = freezed,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(RoleFormState(
 catalogue: null == catalogue ? _self.catalogue : catalogue // ignore: cast_nullable_to_non_nullable
 as List<PermissionGroup>,selected: null == selected ? _self.selected : selected // ignore: cast_nullable_to_non_nullable
 as Set<String>,isLoadingCatalogue: null == isLoadingCatalogue ? _self.isLoadingCatalogue : isLoadingCatalogue // ignore: cast_nullable_to_non_nullable
@@ -239,7 +245,7 @@ return $default(_that.catalogue,_that.selected,_that.isLoadingCatalogue,_that.is
 
 
 class _RoleFormState extends RoleFormState {
-  const _RoleFormState({final  List<PermissionGroup> catalogue = const <PermissionGroup>[], final  Set<String> selected = const <String>{}, this.isLoadingCatalogue = false, this.isSubmitting = false, this.saved, this.failure}): _catalogue = catalogue,_selected = selected,super._();
+  const _RoleFormState({ List<PermissionGroup> catalogue = const <PermissionGroup>[],  Set<String> selected = const <String>{}, this.isLoadingCatalogue = false, this.isSubmitting = false, this.saved, this.failure}): _catalogue = catalogue,_selected = selected,super._();
   
 
 /// The catalogue, in the server's own sections.
@@ -277,16 +283,18 @@ _$RoleFormStateCopyWith<_RoleFormState> get copyWith => __$RoleFormStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoleFormState&&const DeepCollectionEquality().equals(other._catalogue, _catalogue)&&const DeepCollectionEquality().equals(other._selected, _selected)&&(identical(other.isLoadingCatalogue, isLoadingCatalogue) || other.isLoadingCatalogue == isLoadingCatalogue)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RoleFormState&&const DeepCollectionEquality().equals(other.catalogue, _catalogue)&&const DeepCollectionEquality().equals(other.selected, _selected)&&(identical(other.isLoadingCatalogue, isLoadingCatalogue) || other.isLoadingCatalogue == isLoadingCatalogue)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_catalogue),const DeepCollectionEquality().hash(_selected),isLoadingCatalogue,isSubmitting,saved,failure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_catalogue),const DeepCollectionEquality().hash(_selected),isLoadingCatalogue,isSubmitting,saved,failure);
+}
 
 @override
 String toString() {
-  return 'RoleFormState(catalogue: $catalogue, selected: $selected, isLoadingCatalogue: $isLoadingCatalogue, isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
+    return 'RoleFormState(catalogue: $catalogue, selected: $selected, isLoadingCatalogue: $isLoadingCatalogue, isSubmitting: $isSubmitting, saved: $saved, failure: $failure)';
 }
 
 

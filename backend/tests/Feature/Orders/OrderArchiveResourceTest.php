@@ -53,6 +53,7 @@ class OrderArchiveResourceTest extends TestCase
         'bench_is_fixed',
         'can_change_compensation',
         'can_change_delivery_payer',
+        'can_set_design_fee',
         'can_unsettle',
         'delivery_payer_warnings',
         'designs_are_editable',

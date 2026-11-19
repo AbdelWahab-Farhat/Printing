@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'new_product.dart';
@@ -9,6 +9,7 @@ part of 'new_product.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -47,16 +48,21 @@ $NewProductCopyWith<NewProduct> get copyWith => _$NewProductCopyWithImpl<NewProd
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProduct&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, features)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&const DeepCollectionEquality().equals(other.variants, variants));
+  final _this = this as NewProduct;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProduct&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.features, _this.features)&&(identical(other.productCategoryId, _this.productCategoryId) || other.productCategoryId == _this.productCategoryId)&&(identical(other.stockItemGroupId, _this.stockItemGroupId) || other.stockItemGroupId == _this.stockItemGroupId)&&(identical(other.pricingUnit, _this.pricingUnit) || other.pricingUnit == _this.pricingUnit)&&(identical(other.pricingMode, _this.pricingMode) || other.pricingMode == _this.pricingMode)&&(identical(other.minOrderQuantity, _this.minOrderQuantity) || other.minOrderQuantity == _this.minOrderQuantity)&&const DeepCollectionEquality().equals(other.variants, _this.variants));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,slug,name,description,const DeepCollectionEquality().hash(features),productCategoryId,stockItemGroupId,pricingUnit,pricingMode,minOrderQuantity,const DeepCollectionEquality().hash(variants));
+int get hashCode {
+  final _this = this as NewProduct;
+  return Object.hash(runtimeType,_this.slug,_this.name,_this.description,const DeepCollectionEquality().hash(_this.features),_this.productCategoryId,_this.stockItemGroupId,_this.pricingUnit,_this.pricingMode,_this.minOrderQuantity,const DeepCollectionEquality().hash(_this.variants));
+}
 
 @override
 String toString() {
-  return 'NewProduct(slug: $slug, name: $name, description: $description, features: $features, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, pricingUnit: $pricingUnit, pricingMode: $pricingMode, minOrderQuantity: $minOrderQuantity, variants: $variants)';
+  final _this = this as NewProduct;
+  return 'NewProduct(slug: ${_this.slug}, name: ${_this.name}, description: ${_this.description}, features: ${_this.features}, productCategoryId: ${_this.productCategoryId}, stockItemGroupId: ${_this.stockItemGroupId}, pricingUnit: ${_this.pricingUnit}, pricingMode: ${_this.pricingMode}, minOrderQuantity: ${_this.minOrderQuantity}, variants: ${_this.variants})';
 }
 
 
@@ -85,7 +91,7 @@ class _$NewProductCopyWithImpl<$Res>
 /// Create a copy of NewProduct
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? slug = freezed,Object? name = null,Object? description = freezed,Object? features = freezed,Object? productCategoryId = null,Object? stockItemGroupId = freezed,Object? pricingUnit = null,Object? pricingMode = null,Object? minOrderQuantity = null,Object? variants = null,}) {
-  return _then(_self.copyWith(
+  return _then(NewProduct(
 slug: freezed == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -237,7 +243,7 @@ return $default(_that.slug,_that.name,_that.description,_that.features,_that.pro
 @JsonSerializable()
 
 class _NewProduct implements NewProduct {
-  const _NewProduct({@JsonKey(includeIfNull: false) this.slug, required this.name, @JsonKey(includeIfNull: false) this.description, @JsonKey(includeIfNull: false) final  List<String>? features, @JsonKey(name: 'product_category_id') required this.productCategoryId, @JsonKey(name: 'stock_item_group_id', includeIfNull: false) this.stockItemGroupId, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity, final  List<NewProductVariant> variants = const <NewProductVariant>[]}): _features = features,_variants = variants;
+  const _NewProduct({@JsonKey(includeIfNull: false) this.slug, required this.name, @JsonKey(includeIfNull: false) this.description, @JsonKey(includeIfNull: false)  List<String>? features, @JsonKey(name: 'product_category_id') required this.productCategoryId, @JsonKey(name: 'stock_item_group_id', includeIfNull: false) this.stockItemGroupId, @JsonKey(name: 'pricing_unit') required this.pricingUnit, @JsonKey(name: 'pricing_mode') required this.pricingMode, @JsonKey(name: 'min_order_quantity') required this.minOrderQuantity,  List<NewProductVariant> variants = const <NewProductVariant>[]}): _features = features,_variants = variants;
   factory _NewProduct.fromJson(Map<String, dynamic> json) => _$NewProductFromJson(json);
 
 /// Omitted by this app: the server generates it from the name and the product's code, so
@@ -298,16 +304,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProduct&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._features, _features)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&const DeepCollectionEquality().equals(other._variants, _variants));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProduct&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.features, _features)&&(identical(other.productCategoryId, productCategoryId) || other.productCategoryId == productCategoryId)&&(identical(other.stockItemGroupId, stockItemGroupId) || other.stockItemGroupId == stockItemGroupId)&&(identical(other.pricingUnit, pricingUnit) || other.pricingUnit == pricingUnit)&&(identical(other.pricingMode, pricingMode) || other.pricingMode == pricingMode)&&(identical(other.minOrderQuantity, minOrderQuantity) || other.minOrderQuantity == minOrderQuantity)&&const DeepCollectionEquality().equals(other.variants, _variants));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,slug,name,description,const DeepCollectionEquality().hash(_features),productCategoryId,stockItemGroupId,pricingUnit,pricingMode,minOrderQuantity,const DeepCollectionEquality().hash(_variants));
+int get hashCode {
+    return Object.hash(runtimeType,slug,name,description,const DeepCollectionEquality().hash(_features),productCategoryId,stockItemGroupId,pricingUnit,pricingMode,minOrderQuantity,const DeepCollectionEquality().hash(_variants));
+}
 
 @override
 String toString() {
-  return 'NewProduct(slug: $slug, name: $name, description: $description, features: $features, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, pricingUnit: $pricingUnit, pricingMode: $pricingMode, minOrderQuantity: $minOrderQuantity, variants: $variants)';
+    return 'NewProduct(slug: $slug, name: $name, description: $description, features: $features, productCategoryId: $productCategoryId, stockItemGroupId: $stockItemGroupId, pricingUnit: $pricingUnit, pricingMode: $pricingMode, minOrderQuantity: $minOrderQuantity, variants: $variants)';
 }
 
 
@@ -410,16 +418,21 @@ $NewProductVariantCopyWith<NewProductVariant> get copyWith => _$NewProductVarian
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, priceTiers));
+  final _this = this as NewProductVariant;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewProductVariant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.costPrice, _this.costPrice) || other.costPrice == _this.costPrice)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, _this.priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,costPrice,label,widthCm,heightCm,const DeepCollectionEquality().hash(priceTiers));
+int get hashCode {
+  final _this = this as NewProductVariant;
+  return Object.hash(runtimeType,_this.id,_this.stockItemId,_this.costPrice,_this.label,_this.widthCm,_this.heightCm,const DeepCollectionEquality().hash(_this.priceTiers));
+}
 
 @override
 String toString() {
-  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, costPrice: $costPrice, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+  final _this = this as NewProductVariant;
+  return 'NewProductVariant(id: ${_this.id}, stockItemId: ${_this.stockItemId}, costPrice: ${_this.costPrice}, label: ${_this.label}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, priceTiers: ${_this.priceTiers})';
 }
 
 
@@ -448,7 +461,7 @@ class _$NewProductVariantCopyWithImpl<$Res>
 /// Create a copy of NewProductVariant
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? stockItemId = freezed,Object? costPrice = freezed,Object? label = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? priceTiers = null,}) {
-  return _then(_self.copyWith(
+  return _then(NewProductVariant(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,stockItemId: freezed == stockItemId ? _self.stockItemId : stockItemId // ignore: cast_nullable_to_non_nullable
 as int?,costPrice: freezed == costPrice ? _self.costPrice : costPrice // ignore: cast_nullable_to_non_nullable
@@ -597,7 +610,7 @@ return $default(_that.id,_that.stockItemId,_that.costPrice,_that.label,_that.wid
 @JsonSerializable()
 
 class _NewProductVariant implements NewProductVariant {
-  const _NewProductVariant({@JsonKey(includeIfNull: false) this.id, @JsonKey(name: 'stock_item_id', includeIfNull: false) this.stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false) this.costPrice, required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers') final  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
+  const _NewProductVariant({@JsonKey(includeIfNull: false) this.id, @JsonKey(name: 'stock_item_id', includeIfNull: false) this.stockItemId, @JsonKey(name: 'cost_price', includeIfNull: false) this.costPrice, required this.label, @JsonKey(name: 'width_cm', includeIfNull: false) this.widthCm, @JsonKey(name: 'height_cm', includeIfNull: false) this.heightCm, @JsonKey(name: 'price_tiers')  List<NewPriceTier> priceTiers = const <NewPriceTier>[]}): _priceTiers = priceTiers;
   factory _NewProductVariant.fromJson(Map<String, dynamic> json) => _$NewProductVariantFromJson(json);
 
 /// **The id of a size that already exists, and the reason editing works at all.**
@@ -666,16 +679,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other._priceTiers, _priceTiers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewProductVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.label, label) || other.label == label)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&const DeepCollectionEquality().equals(other.priceTiers, _priceTiers));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stockItemId,costPrice,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
+int get hashCode {
+    return Object.hash(runtimeType,id,stockItemId,costPrice,label,widthCm,heightCm,const DeepCollectionEquality().hash(_priceTiers));
+}
 
 @override
 String toString() {
-  return 'NewProductVariant(id: $id, stockItemId: $stockItemId, costPrice: $costPrice, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
+    return 'NewProductVariant(id: $id, stockItemId: $stockItemId, costPrice: $costPrice, label: $label, widthCm: $widthCm, heightCm: $heightCm, priceTiers: $priceTiers)';
 }
 
 
@@ -736,16 +751,21 @@ $NewPriceTierCopyWith<NewPriceTier> get copyWith => _$NewPriceTierCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+  final _this = this as NewPriceTier;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewPriceTier&&(identical(other.minQuantity, _this.minQuantity) || other.minQuantity == _this.minQuantity)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,minQuantity,unitPrice);
+int get hashCode {
+  final _this = this as NewPriceTier;
+  return Object.hash(runtimeType,_this.minQuantity,_this.unitPrice);
+}
 
 @override
 String toString() {
-  return 'NewPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice)';
+  final _this = this as NewPriceTier;
+  return 'NewPriceTier(minQuantity: ${_this.minQuantity}, unitPrice: ${_this.unitPrice})';
 }
 
 
@@ -774,7 +794,7 @@ class _$NewPriceTierCopyWithImpl<$Res>
 /// Create a copy of NewPriceTier
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? minQuantity = null,Object? unitPrice = null,}) {
-  return _then(_self.copyWith(
+  return _then(NewPriceTier(
 minQuantity: null == minQuantity ? _self.minQuantity : minQuantity // ignore: cast_nullable_to_non_nullable
 as String,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as String,
@@ -937,16 +957,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewPriceTier&&(identical(other.minQuantity, minQuantity) || other.minQuantity == minQuantity)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,minQuantity,unitPrice);
+int get hashCode {
+    return Object.hash(runtimeType,minQuantity,unitPrice);
+}
 
 @override
 String toString() {
-  return 'NewPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice)';
+    return 'NewPriceTier(minQuantity: $minQuantity, unitPrice: $unitPrice)';
 }
 
 

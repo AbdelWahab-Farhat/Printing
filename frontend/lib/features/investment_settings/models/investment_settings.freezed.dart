@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'investment_settings.dart';
@@ -9,6 +9,7 @@ part of 'investment_settings.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -39,16 +40,21 @@ $InvestmentSettingsCopyWith<InvestmentSettings> get copyWith => _$InvestmentSett
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
+  final _this = this as InvestmentSettings;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvestmentSettings&&(identical(other.investorProfitSharePercent, _this.investorProfitSharePercent) || other.investorProfitSharePercent == _this.investorProfitSharePercent)&&(identical(other.periodMonths, _this.periodMonths) || other.periodMonths == _this.periodMonths)&&(identical(other.subscriptionWindowDays, _this.subscriptionWindowDays) || other.subscriptionWindowDays == _this.subscriptionWindowDays)&&(identical(other.settlementMonths, _this.settlementMonths) || other.settlementMonths == _this.settlementMonths)&&(identical(other.defaultPlainSalePrice, _this.defaultPlainSalePrice) || other.defaultPlainSalePrice == _this.defaultPlainSalePrice)&&(identical(other.capitalLockMonths, _this.capitalLockMonths) || other.capitalLockMonths == _this.capitalLockMonths));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,defaultPlainSalePrice,capitalLockMonths);
+int get hashCode {
+  final _this = this as InvestmentSettings;
+  return Object.hash(runtimeType,_this.investorProfitSharePercent,_this.periodMonths,_this.subscriptionWindowDays,_this.settlementMonths,_this.defaultPlainSalePrice,_this.capitalLockMonths);
+}
 
 @override
 String toString() {
-  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, defaultPlainSalePrice: $defaultPlainSalePrice, capitalLockMonths: $capitalLockMonths)';
+  final _this = this as InvestmentSettings;
+  return 'InvestmentSettings(investorProfitSharePercent: ${_this.investorProfitSharePercent}, periodMonths: ${_this.periodMonths}, subscriptionWindowDays: ${_this.subscriptionWindowDays}, settlementMonths: ${_this.settlementMonths}, defaultPlainSalePrice: ${_this.defaultPlainSalePrice}, capitalLockMonths: ${_this.capitalLockMonths})';
 }
 
 
@@ -77,7 +83,7 @@ class _$InvestmentSettingsCopyWithImpl<$Res>
 /// Create a copy of InvestmentSettings
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? investorProfitSharePercent = null,Object? periodMonths = null,Object? subscriptionWindowDays = null,Object? settlementMonths = null,Object? defaultPlainSalePrice = freezed,Object? capitalLockMonths = null,}) {
-  return _then(_self.copyWith(
+  return _then(InvestmentSettings(
 investorProfitSharePercent: null == investorProfitSharePercent ? _self.investorProfitSharePercent : investorProfitSharePercent // ignore: cast_nullable_to_non_nullable
 as String,periodMonths: null == periodMonths ? _self.periodMonths : periodMonths // ignore: cast_nullable_to_non_nullable
 as int,subscriptionWindowDays: null == subscriptionWindowDays ? _self.subscriptionWindowDays : subscriptionWindowDays // ignore: cast_nullable_to_non_nullable
@@ -259,16 +265,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvestmentSettings&&(identical(other.investorProfitSharePercent, investorProfitSharePercent) || other.investorProfitSharePercent == investorProfitSharePercent)&&(identical(other.periodMonths, periodMonths) || other.periodMonths == periodMonths)&&(identical(other.subscriptionWindowDays, subscriptionWindowDays) || other.subscriptionWindowDays == subscriptionWindowDays)&&(identical(other.settlementMonths, settlementMonths) || other.settlementMonths == settlementMonths)&&(identical(other.defaultPlainSalePrice, defaultPlainSalePrice) || other.defaultPlainSalePrice == defaultPlainSalePrice)&&(identical(other.capitalLockMonths, capitalLockMonths) || other.capitalLockMonths == capitalLockMonths));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,defaultPlainSalePrice,capitalLockMonths);
+int get hashCode {
+    return Object.hash(runtimeType,investorProfitSharePercent,periodMonths,subscriptionWindowDays,settlementMonths,defaultPlainSalePrice,capitalLockMonths);
+}
 
 @override
 String toString() {
-  return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, defaultPlainSalePrice: $defaultPlainSalePrice, capitalLockMonths: $capitalLockMonths)';
+    return 'InvestmentSettings(investorProfitSharePercent: $investorProfitSharePercent, periodMonths: $periodMonths, subscriptionWindowDays: $subscriptionWindowDays, settlementMonths: $settlementMonths, defaultPlainSalePrice: $defaultPlainSalePrice, capitalLockMonths: $capitalLockMonths)';
 }
 
 

@@ -18,6 +18,7 @@ use App\Domain\Notification\Definitions\InternalTicketMessagePosted;
 use App\Domain\Notification\Definitions\InternalTicketOpenedForYou;
 use App\Domain\Notification\Definitions\ManualAnnouncement;
 use App\Domain\Notification\Definitions\OrderAwaitsReview;
+use App\Domain\Notification\Definitions\OrderDesignFeeFilledFromPay;
 use App\Domain\Notification\Definitions\OrderReachedShortage;
 use App\Domain\Notification\Definitions\OrderReachedStatus;
 use App\Domain\Notification\Definitions\SalariesPostedSummary;
@@ -69,6 +70,8 @@ enum NotificationType: string
      * or paid from the wallet. {@see CustomerChoseDeposit}.
      */
     case OrderDepositChosen = 'order.deposit_chosen';
+
+    case OrderDesignFeeFilled = 'order.design_fee_filled';
 
     case ShortageAssigned = 'shortage.assigned';
 
@@ -151,6 +154,7 @@ enum NotificationType: string
             self::OrderStatusChanged => OrderReachedStatus::class,
             self::OrderRequested => OrderAwaitsReview::class,
             self::OrderDepositChosen => CustomerChoseDeposit::class,
+            self::OrderDesignFeeFilled => OrderDesignFeeFilledFromPay::class,
             self::ShortageAssigned => ShortageAssignedToYou::class,
             self::DesignTicketAssigned => DesignTicketAssignedToYou::class,
             self::DesignTicketStatus => DesignTicketReachedStatus::class,
@@ -181,6 +185,7 @@ enum NotificationType: string
             // المفتاحُ نفسه: طلبيةٌ هي الخبر، والتطبيقُ يعرف رسمها منذ أول نسخة.
             self::OrderRequested => 'order',
             self::OrderDepositChosen => 'order',
+            self::OrderDesignFeeFilled => 'order',
             // Not 'warning': a shortage landing in somebody's queue is work arriving, not an
             // alarm — and the app falls back to a plain bell on a key it does not know, so a
             // build compiled last month degrades gracefully rather than drawing the wrong thing.
@@ -218,6 +223,7 @@ enum NotificationType: string
             self::OrderStatusChanged => 'حالة طلبية',
             self::OrderRequested => 'طلبية من التطبيق',
             self::OrderDepositChosen => 'عربون اختاره العميل',
+            self::OrderDesignFeeFilled => 'أجرة تصميم تلقائية',
             self::ShortageAssigned => 'نقص مُسنَد',
             self::DesignTicketAssigned => 'طلب تصميم',
             self::DesignTicketStatus => 'حالة طلب تصميم',

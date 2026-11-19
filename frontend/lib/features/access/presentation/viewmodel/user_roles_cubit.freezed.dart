@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'user_roles_cubit.dart';
@@ -9,6 +9,7 @@ part of 'user_roles_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -30,16 +31,21 @@ $UserRolesStateCopyWith<UserRolesState> get copyWith => _$UserRolesStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRolesState&&const DeepCollectionEquality().equals(other.selected, selected)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as UserRolesState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserRolesState&&const DeepCollectionEquality().equals(other.selected, _this.selected)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&(identical(other.isLoadingRoles, _this.isLoadingRoles) || other.isLoadingRoles == _this.isLoadingRoles)&&(identical(other.isSaving, _this.isSaving) || other.isSaving == _this.isSaving)&&(identical(other.saved, _this.saved) || other.saved == _this.saved)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(selected),const DeepCollectionEquality().hash(roles),isLoadingRoles,isSaving,saved,failure);
+int get hashCode {
+  final _this = this as UserRolesState;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.selected),const DeepCollectionEquality().hash(_this.roles),_this.isLoadingRoles,_this.isSaving,_this.saved,_this.failure);
+}
 
 @override
 String toString() {
-  return 'UserRolesState(selected: $selected, roles: $roles, isLoadingRoles: $isLoadingRoles, isSaving: $isSaving, saved: $saved, failure: $failure)';
+  final _this = this as UserRolesState;
+  return 'UserRolesState(selected: ${_this.selected}, roles: ${_this.roles}, isLoadingRoles: ${_this.isLoadingRoles}, isSaving: ${_this.isSaving}, saved: ${_this.saved}, failure: ${_this.failure})';
 }
 
 
@@ -68,7 +74,7 @@ class _$UserRolesStateCopyWithImpl<$Res>
 /// Create a copy of UserRolesState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? selected = null,Object? roles = null,Object? isLoadingRoles = null,Object? isSaving = null,Object? saved = freezed,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(UserRolesState(
 selected: null == selected ? _self.selected : selected // ignore: cast_nullable_to_non_nullable
 as Set<String>,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
 as List<Role>,isLoadingRoles: null == isLoadingRoles ? _self.isLoadingRoles : isLoadingRoles // ignore: cast_nullable_to_non_nullable
@@ -240,7 +246,7 @@ return $default(_that.selected,_that.roles,_that.isLoadingRoles,_that.isSaving,_
 
 
 class _UserRolesState extends UserRolesState {
-  const _UserRolesState({final  Set<String> selected = const <String>{}, final  List<Role> roles = const <Role>[], this.isLoadingRoles = false, this.isSaving = false, this.saved, this.failure}): _selected = selected,_roles = roles,super._();
+  const _UserRolesState({ Set<String> selected = const <String>{},  List<Role> roles = const <Role>[], this.isLoadingRoles = false, this.isSaving = false, this.saved, this.failure}): _selected = selected,_roles = roles,super._();
   
 
 /// What is ticked right now — not what the server has. Nothing here is sent until [save].
@@ -279,16 +285,18 @@ _$UserRolesStateCopyWith<_UserRolesState> get copyWith => __$UserRolesStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRolesState&&const DeepCollectionEquality().equals(other._selected, _selected)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserRolesState&&const DeepCollectionEquality().equals(other.selected, _selected)&&const DeepCollectionEquality().equals(other.roles, _roles)&&(identical(other.isLoadingRoles, isLoadingRoles) || other.isLoadingRoles == isLoadingRoles)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_selected),const DeepCollectionEquality().hash(_roles),isLoadingRoles,isSaving,saved,failure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_selected),const DeepCollectionEquality().hash(_roles),isLoadingRoles,isSaving,saved,failure);
+}
 
 @override
 String toString() {
-  return 'UserRolesState(selected: $selected, roles: $roles, isLoadingRoles: $isLoadingRoles, isSaving: $isSaving, saved: $saved, failure: $failure)';
+    return 'UserRolesState(selected: $selected, roles: $roles, isLoadingRoles: $isLoadingRoles, isSaving: $isSaving, saved: $saved, failure: $failure)';
 }
 
 

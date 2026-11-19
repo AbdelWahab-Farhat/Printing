@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'comment.dart';
@@ -9,6 +9,7 @@ part of 'comment.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -32,16 +33,21 @@ $CommentCopyWith<Comment> get copyWith => _$CommentCopyWithImpl<Comment>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Comment&&(identical(other.id, id) || other.id == id)&&(identical(other.commentableType, commentableType) || other.commentableType == commentableType)&&(identical(other.commentableId, commentableId) || other.commentableId == commentableId)&&(identical(other.body, body) || other.body == body)&&(identical(other.author, author) || other.author == author)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.editedAt, editedAt) || other.editedAt == editedAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete));
+  final _this = this as Comment;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Comment&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.commentableType, _this.commentableType) || other.commentableType == _this.commentableType)&&(identical(other.commentableId, _this.commentableId) || other.commentableId == _this.commentableId)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.author, _this.author) || other.author == _this.author)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.editedAt, _this.editedAt) || other.editedAt == _this.editedAt)&&(identical(other.canEdit, _this.canEdit) || other.canEdit == _this.canEdit)&&(identical(other.canDelete, _this.canDelete) || other.canDelete == _this.canDelete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,commentableType,commentableId,body,author,createdAt,editedAt,canEdit,canDelete);
+int get hashCode {
+  final _this = this as Comment;
+  return Object.hash(runtimeType,_this.id,_this.commentableType,_this.commentableId,_this.body,_this.author,_this.createdAt,_this.editedAt,_this.canEdit,_this.canDelete);
+}
 
 @override
 String toString() {
-  return 'Comment(id: $id, commentableType: $commentableType, commentableId: $commentableId, body: $body, author: $author, createdAt: $createdAt, editedAt: $editedAt, canEdit: $canEdit, canDelete: $canDelete)';
+  final _this = this as Comment;
+  return 'Comment(id: ${_this.id}, commentableType: ${_this.commentableType}, commentableId: ${_this.commentableId}, body: ${_this.body}, author: ${_this.author}, createdAt: ${_this.createdAt}, editedAt: ${_this.editedAt}, canEdit: ${_this.canEdit}, canDelete: ${_this.canDelete})';
 }
 
 
@@ -70,7 +76,7 @@ class _$CommentCopyWithImpl<$Res>
 /// Create a copy of Comment
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? commentableType = null,Object? commentableId = null,Object? body = null,Object? author = null,Object? createdAt = freezed,Object? editedAt = freezed,Object? canEdit = null,Object? canDelete = null,}) {
-  return _then(_self.copyWith(
+  return _then(Comment(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,commentableType: null == commentableType ? _self.commentableType : commentableType // ignore: cast_nullable_to_non_nullable
 as String,commentableId: null == commentableId ? _self.commentableId : commentableId // ignore: cast_nullable_to_non_nullable
@@ -260,16 +266,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Comment&&(identical(other.id, id) || other.id == id)&&(identical(other.commentableType, commentableType) || other.commentableType == commentableType)&&(identical(other.commentableId, commentableId) || other.commentableId == commentableId)&&(identical(other.body, body) || other.body == body)&&(identical(other.author, author) || other.author == author)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.editedAt, editedAt) || other.editedAt == editedAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Comment&&(identical(other.id, id) || other.id == id)&&(identical(other.commentableType, commentableType) || other.commentableType == commentableType)&&(identical(other.commentableId, commentableId) || other.commentableId == commentableId)&&(identical(other.body, body) || other.body == body)&&(identical(other.author, author) || other.author == author)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.editedAt, editedAt) || other.editedAt == editedAt)&&(identical(other.canEdit, canEdit) || other.canEdit == canEdit)&&(identical(other.canDelete, canDelete) || other.canDelete == canDelete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,commentableType,commentableId,body,author,createdAt,editedAt,canEdit,canDelete);
+int get hashCode {
+    return Object.hash(runtimeType,id,commentableType,commentableId,body,author,createdAt,editedAt,canEdit,canDelete);
+}
 
 @override
 String toString() {
-  return 'Comment(id: $id, commentableType: $commentableType, commentableId: $commentableId, body: $body, author: $author, createdAt: $createdAt, editedAt: $editedAt, canEdit: $canEdit, canDelete: $canDelete)';
+    return 'Comment(id: $id, commentableType: $commentableType, commentableId: $commentableId, body: $body, author: $author, createdAt: $createdAt, editedAt: $editedAt, canEdit: $canEdit, canDelete: $canDelete)';
 }
 
 
@@ -341,16 +349,21 @@ $CommentAuthorCopyWith<CommentAuthor> get copyWith => _$CommentAuthorCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentAuthor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as CommentAuthor;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentAuthor&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as CommentAuthor;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'CommentAuthor(id: $id, name: $name)';
+  final _this = this as CommentAuthor;
+  return 'CommentAuthor(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -379,7 +392,7 @@ class _$CommentAuthorCopyWithImpl<$Res>
 /// Create a copy of CommentAuthor
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CommentAuthor(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -542,16 +555,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentAuthor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentAuthor&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'CommentAuthor(id: $id, name: $name)';
+    return 'CommentAuthor(id: $id, name: $name)';
 }
 
 

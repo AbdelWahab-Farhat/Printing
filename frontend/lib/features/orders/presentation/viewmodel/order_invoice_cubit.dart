@@ -48,7 +48,8 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
               ),
           ],
           discount: order.discount,
-          designFee: order.designFee,
+          // The charged line, so the estimate matches the server for a reader who cannot see it.
+          designFee: order.invoiceFee,
           deliveryPrice: order.deliveryPrice,
           cityId: order.cityId,
           cityName: order.cityName,

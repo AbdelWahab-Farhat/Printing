@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'design_ticket_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'design_ticket_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $DesignTicketDetailStateCopyWith<DesignTicketDetailState> get copyWith => _$Desi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailState&&(identical(other.ticket, ticket) || other.ticket == ticket));
+  final _this = this as DesignTicketDetailState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailState&&(identical(other.ticket, _this.ticket) || other.ticket == _this.ticket));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket);
+int get hashCode {
+  final _this = this as DesignTicketDetailState;
+  return Object.hash(runtimeType,_this.ticket);
+}
 
 @override
 String toString() {
-  return 'DesignTicketDetailState(ticket: $ticket)';
+  final _this = this as DesignTicketDetailState;
+  return 'DesignTicketDetailState(ticket: ${_this.ticket})';
 }
 
 
@@ -245,16 +251,18 @@ $DesignTicketDetailLoadingCopyWith<DesignTicketDetailLoading> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailLoading&&(identical(other.ticket, ticket) || other.ticket == ticket));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailLoading&&(identical(other.ticket, ticket) || other.ticket == ticket));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket);
+int get hashCode {
+    return Object.hash(runtimeType,ticket);
+}
 
 @override
 String toString() {
-  return 'DesignTicketDetailState.loading(ticket: $ticket)';
+    return 'DesignTicketDetailState.loading(ticket: $ticket)';
 }
 
 
@@ -323,16 +331,18 @@ $DesignTicketDetailReadyCopyWith<DesignTicketDetailReady> get copyWith => _$Desi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailReady&&(identical(other.ticket, ticket) || other.ticket == ticket));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailReady&&(identical(other.ticket, ticket) || other.ticket == ticket));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket);
+int get hashCode {
+    return Object.hash(runtimeType,ticket);
+}
 
 @override
 String toString() {
-  return 'DesignTicketDetailState.ready(ticket: $ticket)';
+    return 'DesignTicketDetailState.ready(ticket: $ticket)';
 }
 
 
@@ -398,16 +408,18 @@ $DesignTicketDetailWorkingCopyWith<DesignTicketDetailWorking> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailWorking&&(identical(other.ticket, ticket) || other.ticket == ticket));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailWorking&&(identical(other.ticket, ticket) || other.ticket == ticket));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket);
+int get hashCode {
+    return Object.hash(runtimeType,ticket);
+}
 
 @override
 String toString() {
-  return 'DesignTicketDetailState.working(ticket: $ticket)';
+    return 'DesignTicketDetailState.working(ticket: $ticket)';
 }
 
 
@@ -474,16 +486,18 @@ $DesignTicketDetailFailureCopyWith<DesignTicketDetailFailure> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.ticket, ticket) || other.ticket == ticket));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignTicketDetailFailure&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.ticket, ticket) || other.ticket == ticket));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure,ticket);
+int get hashCode {
+    return Object.hash(runtimeType,failure,ticket);
+}
 
 @override
 String toString() {
-  return 'DesignTicketDetailState.failure(failure: $failure, ticket: $ticket)';
+    return 'DesignTicketDetailState.failure(failure: $failure, ticket: $ticket)';
 }
 
 

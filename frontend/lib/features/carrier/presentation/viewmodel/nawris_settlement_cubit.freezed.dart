@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'nawris_settlement_cubit.dart';
@@ -9,6 +9,7 @@ part of 'nawris_settlement_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$NawrisSettlementState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'NawrisSettlementState()';
+    return 'NawrisSettlementState()';
 }
 
 
@@ -215,7 +216,7 @@ class NawrisSettlementIdle implements NawrisSettlementState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementIdle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementIdle);
 }
 
 
@@ -224,7 +225,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'NawrisSettlementState.idle()';
+    return 'NawrisSettlementState.idle()';
 }
 
 
@@ -252,16 +253,18 @@ $NawrisSettlementReadingCopyWith<NawrisSettlementReading> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementReading&&(identical(other.file, file) || other.file == file));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementReading&&(identical(other.file, file) || other.file == file));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file);
+int get hashCode {
+    return Object.hash(runtimeType,file);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.reading(file: $file)';
+    return 'NawrisSettlementState.reading(file: $file)';
 }
 
 
@@ -318,16 +321,18 @@ $NawrisSettlementUnreadableCopyWith<NawrisSettlementUnreadable> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementUnreadable&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementUnreadable&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.unreadable(failure: $failure)';
+    return 'NawrisSettlementState.unreadable(failure: $failure)';
 }
 
 
@@ -394,16 +399,18 @@ $NawrisSettlementReadyCopyWith<NawrisSettlementReady> get copyWith => _$NawrisSe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementReady&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementReady&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file,preview);
+int get hashCode {
+    return Object.hash(runtimeType,file,preview);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.ready(file: $file, preview: $preview)';
+    return 'NawrisSettlementState.ready(file: $file, preview: $preview)';
 }
 
 
@@ -471,16 +478,18 @@ $NawrisSettlementSubmittingCopyWith<NawrisSettlementSubmitting> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSubmitting&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSubmitting&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file,preview);
+int get hashCode {
+    return Object.hash(runtimeType,file,preview);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.submitting(file: $file, preview: $preview)';
+    return 'NawrisSettlementState.submitting(file: $file, preview: $preview)';
 }
 
 
@@ -549,16 +558,18 @@ $NawrisSettlementRefusedCopyWith<NawrisSettlementRefused> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementRefused&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementRefused&&(identical(other.file, file) || other.file == file)&&(identical(other.preview, preview) || other.preview == preview)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,file,preview,failure);
+int get hashCode {
+    return Object.hash(runtimeType,file,preview,failure);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.refused(file: $file, preview: $preview, failure: $failure)';
+    return 'NawrisSettlementState.refused(file: $file, preview: $preview, failure: $failure)';
 }
 
 
@@ -635,16 +646,18 @@ $NawrisSettlementSettledCopyWith<NawrisSettlementSettled> get copyWith => _$Nawr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSettled&&(identical(other.batch, batch) || other.batch == batch));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NawrisSettlementSettled&&(identical(other.batch, batch) || other.batch == batch));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,batch);
+int get hashCode {
+    return Object.hash(runtimeType,batch);
+}
 
 @override
 String toString() {
-  return 'NawrisSettlementState.settled(batch: $batch)';
+    return 'NawrisSettlementState.settled(batch: $batch)';
 }
 
 

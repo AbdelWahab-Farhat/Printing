@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'transition_field.dart';
@@ -9,6 +9,7 @@ part of 'transition_field.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -68,16 +69,21 @@ $TransitionFieldCopyWith<TransitionField> get copyWith => _$TransitionFieldCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.whole, whole) || other.whole == whole)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other.extensions, extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value)&&(identical(other.valueLabel, valueLabel) || other.valueLabel == valueLabel)&&(identical(other.confirmWhen, confirmWhen) || other.confirmWhen == confirmWhen)&&const DeepCollectionEquality().equals(other.colors, colors));
+  final _this = this as TransitionField;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionField&&(identical(other.key, _this.key) || other.key == _this.key)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.isRequired, _this.isRequired) || other.isRequired == _this.isRequired)&&(identical(other.multiple, _this.multiple) || other.multiple == _this.multiple)&&(identical(other.multiline, _this.multiline) || other.multiline == _this.multiline)&&(identical(other.hint, _this.hint) || other.hint == _this.hint)&&(identical(other.min, _this.min) || other.min == _this.min)&&(identical(other.max, _this.max) || other.max == _this.max)&&(identical(other.whole, _this.whole) || other.whole == _this.whole)&&const DeepCollectionEquality().equals(other.options, _this.options)&&(identical(other.requiredIf, _this.requiredIf) || other.requiredIf == _this.requiredIf)&&const DeepCollectionEquality().equals(other.extensions, _this.extensions)&&(identical(other.maxKilobytes, _this.maxKilobytes) || other.maxKilobytes == _this.maxKilobytes)&&(identical(other.requiredWith, _this.requiredWith) || other.requiredWith == _this.requiredWith)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.valueLabel, _this.valueLabel) || other.valueLabel == _this.valueLabel)&&(identical(other.confirmWhen, _this.confirmWhen) || other.confirmWhen == _this.confirmWhen)&&const DeepCollectionEquality().equals(other.colors, _this.colors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,whole,const DeepCollectionEquality().hash(options),requiredIf,const DeepCollectionEquality().hash(extensions),maxKilobytes,requiredWith,value,valueLabel,confirmWhen,const DeepCollectionEquality().hash(colors)]);
+int get hashCode {
+  final _this = this as TransitionField;
+  return Object.hashAll([runtimeType,_this.key,_this.type,_this.label,_this.isRequired,_this.multiple,_this.multiline,_this.hint,_this.min,_this.max,_this.whole,const DeepCollectionEquality().hash(_this.options),_this.requiredIf,const DeepCollectionEquality().hash(_this.extensions),_this.maxKilobytes,_this.requiredWith,_this.value,_this.valueLabel,_this.confirmWhen,const DeepCollectionEquality().hash(_this.colors)]);
+}
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, whole: $whole, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value, valueLabel: $valueLabel, confirmWhen: $confirmWhen, colors: $colors)';
+  final _this = this as TransitionField;
+  return 'TransitionField(key: ${_this.key}, type: ${_this.type}, label: ${_this.label}, isRequired: ${_this.isRequired}, multiple: ${_this.multiple}, multiline: ${_this.multiline}, hint: ${_this.hint}, min: ${_this.min}, max: ${_this.max}, whole: ${_this.whole}, options: ${_this.options}, requiredIf: ${_this.requiredIf}, extensions: ${_this.extensions}, maxKilobytes: ${_this.maxKilobytes}, requiredWith: ${_this.requiredWith}, value: ${_this.value}, valueLabel: ${_this.valueLabel}, confirmWhen: ${_this.confirmWhen}, colors: ${_this.colors})';
 }
 
 
@@ -106,7 +112,7 @@ class _$TransitionFieldCopyWithImpl<$Res>
 /// Create a copy of TransitionField
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? type = null,Object? label = null,Object? isRequired = null,Object? multiple = null,Object? multiline = null,Object? hint = freezed,Object? min = freezed,Object? max = freezed,Object? whole = null,Object? options = null,Object? requiredIf = freezed,Object? extensions = null,Object? maxKilobytes = freezed,Object? requiredWith = freezed,Object? value = freezed,Object? valueLabel = freezed,Object? confirmWhen = freezed,Object? colors = null,}) {
-  return _then(_self.copyWith(
+  return _then(TransitionField(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransitionFieldType,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
@@ -291,7 +297,7 @@ return $default(_that.key,_that.type,_that.label,_that.isRequired,_that.multiple
 @JsonSerializable()
 
 class _TransitionField extends TransitionField {
-  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max, this.whole = false, final  List<TransitionFieldOption> options = const <TransitionFieldOption>[], @JsonKey(name: 'required_if') this.requiredIf, final  List<String> extensions = const <String>[], @JsonKey(name: 'max_kilobytes') this.maxKilobytes, @JsonKey(name: 'required_with') this.requiredWith, this.value, @JsonKey(name: 'value_label') this.valueLabel, @JsonKey(name: 'confirm_when') this.confirmWhen, @JsonKey(fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> colors = const <PrintColor>[]}): _options = options,_extensions = extensions,_colors = colors,super._();
+  const _TransitionField({required this.key, @JsonKey(unknownEnumValue: TransitionFieldType.unknown) required this.type, required this.label, @JsonKey(name: 'required') this.isRequired = false, this.multiple = false, this.multiline = false, this.hint, this.min, this.max, this.whole = false,  List<TransitionFieldOption> options = const <TransitionFieldOption>[], @JsonKey(name: 'required_if') this.requiredIf,  List<String> extensions = const <String>[], @JsonKey(name: 'max_kilobytes') this.maxKilobytes, @JsonKey(name: 'required_with') this.requiredWith, this.value, @JsonKey(name: 'value_label') this.valueLabel, @JsonKey(name: 'confirm_when') this.confirmWhen, @JsonKey(fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> colors = const <PrintColor>[]}): _options = options,_extensions = extensions,_colors = colors,super._();
   factory _TransitionField.fromJson(Map<String, dynamic> json) => _$TransitionFieldFromJson(json);
 
 /// What the value is sent back as, inside `fields`.
@@ -391,16 +397,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.whole, whole) || other.whole == whole)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other._extensions, _extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value)&&(identical(other.valueLabel, valueLabel) || other.valueLabel == valueLabel)&&(identical(other.confirmWhen, confirmWhen) || other.confirmWhen == confirmWhen)&&const DeepCollectionEquality().equals(other._colors, _colors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionField&&(identical(other.key, key) || other.key == key)&&(identical(other.type, type) || other.type == type)&&(identical(other.label, label) || other.label == label)&&(identical(other.isRequired, isRequired) || other.isRequired == isRequired)&&(identical(other.multiple, multiple) || other.multiple == multiple)&&(identical(other.multiline, multiline) || other.multiline == multiline)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.whole, whole) || other.whole == whole)&&const DeepCollectionEquality().equals(other.options, _options)&&(identical(other.requiredIf, requiredIf) || other.requiredIf == requiredIf)&&const DeepCollectionEquality().equals(other.extensions, _extensions)&&(identical(other.maxKilobytes, maxKilobytes) || other.maxKilobytes == maxKilobytes)&&(identical(other.requiredWith, requiredWith) || other.requiredWith == requiredWith)&&(identical(other.value, value) || other.value == value)&&(identical(other.valueLabel, valueLabel) || other.valueLabel == valueLabel)&&(identical(other.confirmWhen, confirmWhen) || other.confirmWhen == confirmWhen)&&const DeepCollectionEquality().equals(other.colors, _colors));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,whole,const DeepCollectionEquality().hash(_options),requiredIf,const DeepCollectionEquality().hash(_extensions),maxKilobytes,requiredWith,value,valueLabel,confirmWhen,const DeepCollectionEquality().hash(_colors)]);
+int get hashCode {
+    return Object.hashAll([runtimeType,key,type,label,isRequired,multiple,multiline,hint,min,max,whole,const DeepCollectionEquality().hash(_options),requiredIf,const DeepCollectionEquality().hash(_extensions),maxKilobytes,requiredWith,value,valueLabel,confirmWhen,const DeepCollectionEquality().hash(_colors)]);
+}
 
 @override
 String toString() {
-  return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, whole: $whole, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value, valueLabel: $valueLabel, confirmWhen: $confirmWhen, colors: $colors)';
+    return 'TransitionField(key: $key, type: $type, label: $label, isRequired: $isRequired, multiple: $multiple, multiline: $multiline, hint: $hint, min: $min, max: $max, whole: $whole, options: $options, requiredIf: $requiredIf, extensions: $extensions, maxKilobytes: $maxKilobytes, requiredWith: $requiredWith, value: $value, valueLabel: $valueLabel, confirmWhen: $confirmWhen, colors: $colors)';
 }
 
 
@@ -497,16 +505,21 @@ $TransitionFieldConditionCopyWith<TransitionFieldCondition> get copyWith => _$Tr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldCondition&&(identical(other.key, key) || other.key == key)&&(identical(other.value, value) || other.value == value));
+  final _this = this as TransitionFieldCondition;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldCondition&&(identical(other.key, _this.key) || other.key == _this.key)&&(identical(other.value, _this.value) || other.value == _this.value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,value);
+int get hashCode {
+  final _this = this as TransitionFieldCondition;
+  return Object.hash(runtimeType,_this.key,_this.value);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldCondition(key: $key, value: $value)';
+  final _this = this as TransitionFieldCondition;
+  return 'TransitionFieldCondition(key: ${_this.key}, value: ${_this.value})';
 }
 
 
@@ -535,7 +548,7 @@ class _$TransitionFieldConditionCopyWithImpl<$Res>
 /// Create a copy of TransitionFieldCondition
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? value = null,}) {
-  return _then(_self.copyWith(
+  return _then(TransitionFieldCondition(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,
@@ -698,16 +711,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldCondition&&(identical(other.key, key) || other.key == key)&&(identical(other.value, value) || other.value == value));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldCondition&&(identical(other.key, key) || other.key == key)&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,value);
+int get hashCode {
+    return Object.hash(runtimeType,key,value);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldCondition(key: $key, value: $value)';
+    return 'TransitionFieldCondition(key: $key, value: $value)';
 }
 
 
@@ -763,16 +778,21 @@ $TransitionFieldThresholdCopyWith<TransitionFieldThreshold> get copyWith => _$Tr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldThreshold&&(identical(other.key, key) || other.key == key)&&(identical(other.above, above) || other.above == above));
+  final _this = this as TransitionFieldThreshold;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldThreshold&&(identical(other.key, _this.key) || other.key == _this.key)&&(identical(other.above, _this.above) || other.above == _this.above));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,above);
+int get hashCode {
+  final _this = this as TransitionFieldThreshold;
+  return Object.hash(runtimeType,_this.key,_this.above);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldThreshold(key: $key, above: $above)';
+  final _this = this as TransitionFieldThreshold;
+  return 'TransitionFieldThreshold(key: ${_this.key}, above: ${_this.above})';
 }
 
 
@@ -801,7 +821,7 @@ class _$TransitionFieldThresholdCopyWithImpl<$Res>
 /// Create a copy of TransitionFieldThreshold
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? above = null,}) {
-  return _then(_self.copyWith(
+  return _then(TransitionFieldThreshold(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,above: null == above ? _self.above : above // ignore: cast_nullable_to_non_nullable
 as String,
@@ -964,16 +984,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldThreshold&&(identical(other.key, key) || other.key == key)&&(identical(other.above, above) || other.above == above));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldThreshold&&(identical(other.key, key) || other.key == key)&&(identical(other.above, above) || other.above == above));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,above);
+int get hashCode {
+    return Object.hash(runtimeType,key,above);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldThreshold(key: $key, above: $above)';
+    return 'TransitionFieldThreshold(key: $key, above: $above)';
 }
 
 
@@ -1029,16 +1051,21 @@ $TransitionFieldOptionCopyWith<TransitionFieldOption> get copyWith => _$Transiti
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldOption&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+  final _this = this as TransitionFieldOption;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransitionFieldOption&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+  final _this = this as TransitionFieldOption;
+  return Object.hash(runtimeType,_this.value,_this.label);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldOption(value: $value, label: $label)';
+  final _this = this as TransitionFieldOption;
+  return 'TransitionFieldOption(value: ${_this.value}, label: ${_this.label})';
 }
 
 
@@ -1067,7 +1094,7 @@ class _$TransitionFieldOptionCopyWithImpl<$Res>
 /// Create a copy of TransitionFieldOption
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? value = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(TransitionFieldOption(
 value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -1230,16 +1257,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldOption&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransitionFieldOption&&(identical(other.value, value) || other.value == value)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value,label);
+int get hashCode {
+    return Object.hash(runtimeType,value,label);
+}
 
 @override
 String toString() {
-  return 'TransitionFieldOption(value: $value, label: $label)';
+    return 'TransitionFieldOption(value: $value, label: $label)';
 }
 
 

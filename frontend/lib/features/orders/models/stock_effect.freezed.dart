@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_effect.dart';
@@ -9,6 +9,7 @@ part of 'stock_effect.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $StockEffectLineCopyWith<StockEffectLine> get copyWith => _$StockEffectLineCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit));
+  final _this = this as StockEffectLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockEffectLine&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unit, _this.unit) || other.unit == _this.unit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,quantity,unit);
+int get hashCode {
+  final _this = this as StockEffectLine;
+  return Object.hash(runtimeType,_this.label,_this.quantity,_this.unit);
+}
 
 @override
 String toString() {
-  return 'StockEffectLine(label: $label, quantity: $quantity, unit: $unit)';
+  final _this = this as StockEffectLine;
+  return 'StockEffectLine(label: ${_this.label}, quantity: ${_this.quantity}, unit: ${_this.unit})';
 }
 
 
@@ -66,7 +72,7 @@ class _$StockEffectLineCopyWithImpl<$Res>
 /// Create a copy of StockEffectLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? quantity = null,Object? unit = null,}) {
-  return _then(_self.copyWith(
+  return _then(StockEffectLine(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
@@ -231,16 +237,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,quantity,unit);
+int get hashCode {
+    return Object.hash(runtimeType,label,quantity,unit);
+}
 
 @override
 String toString() {
-  return 'StockEffectLine(label: $label, quantity: $quantity, unit: $unit)';
+    return 'StockEffectLine(label: $label, quantity: $quantity, unit: $unit)';
 }
 
 
@@ -297,16 +305,21 @@ $MoneyEffectLineCopyWith<MoneyEffectLine> get copyWith => _$MoneyEffectLineCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MoneyEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currency, currency) || other.currency == currency));
+  final _this = this as MoneyEffectLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MoneyEffectLine&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.currency, _this.currency) || other.currency == _this.currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,amount,currency);
+int get hashCode {
+  final _this = this as MoneyEffectLine;
+  return Object.hash(runtimeType,_this.label,_this.amount,_this.currency);
+}
 
 @override
 String toString() {
-  return 'MoneyEffectLine(label: $label, amount: $amount, currency: $currency)';
+  final _this = this as MoneyEffectLine;
+  return 'MoneyEffectLine(label: ${_this.label}, amount: ${_this.amount}, currency: ${_this.currency})';
 }
 
 
@@ -335,7 +348,7 @@ class _$MoneyEffectLineCopyWithImpl<$Res>
 /// Create a copy of MoneyEffectLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? amount = null,Object? currency = null,}) {
-  return _then(_self.copyWith(
+  return _then(MoneyEffectLine(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as String,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
@@ -500,16 +513,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MoneyEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currency, currency) || other.currency == currency));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MoneyEffectLine&&(identical(other.label, label) || other.label == label)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currency, currency) || other.currency == currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,amount,currency);
+int get hashCode {
+    return Object.hash(runtimeType,label,amount,currency);
+}
 
 @override
 String toString() {
-  return 'MoneyEffectLine(label: $label, amount: $amount, currency: $currency)';
+    return 'MoneyEffectLine(label: $label, amount: $amount, currency: $currency)';
 }
 
 
@@ -576,16 +591,21 @@ $MoneyEffectCopyWith<MoneyEffect> get copyWith => _$MoneyEffectCopyWithImpl<Mone
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MoneyEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.note, note) || other.note == note));
+  final _this = this as MoneyEffect;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MoneyEffect&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.warning, _this.warning) || other.warning == _this.warning)&&const DeepCollectionEquality().equals(other.lines, _this.lines)&&(identical(other.note, _this.note) || other.note == _this.note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(lines),note);
+int get hashCode {
+  final _this = this as MoneyEffect;
+  return Object.hash(runtimeType,_this.kind,_this.warning,const DeepCollectionEquality().hash(_this.lines),_this.note);
+}
 
 @override
 String toString() {
-  return 'MoneyEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
+  final _this = this as MoneyEffect;
+  return 'MoneyEffect(kind: ${_this.kind}, warning: ${_this.warning}, lines: ${_this.lines}, note: ${_this.note})';
 }
 
 
@@ -614,7 +634,7 @@ class _$MoneyEffectCopyWithImpl<$Res>
 /// Create a copy of MoneyEffect
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? warning = null,Object? lines = null,Object? note = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(MoneyEffect(
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as MoneyEffectKind,warning: null == warning ? _self.warning : warning // ignore: cast_nullable_to_non_nullable
 as String,lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
@@ -760,7 +780,7 @@ return $default(_that.kind,_that.warning,_that.lines,_that.note);case _:
 @JsonSerializable()
 
 class _MoneyEffect implements MoneyEffect {
-  const _MoneyEffect({@JsonKey(unknownEnumValue: MoneyEffectKind.unknown) required this.kind, required this.warning, final  List<MoneyEffectLine> lines = const <MoneyEffectLine>[], this.note}): _lines = lines;
+  const _MoneyEffect({@JsonKey(unknownEnumValue: MoneyEffectKind.unknown) required this.kind, required this.warning,  List<MoneyEffectLine> lines = const <MoneyEffectLine>[], this.note}): _lines = lines;
   factory _MoneyEffect.fromJson(Map<String, dynamic> json) => _$MoneyEffectFromJson(json);
 
 @override@JsonKey(unknownEnumValue: MoneyEffectKind.unknown) final  MoneyEffectKind kind;
@@ -801,16 +821,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MoneyEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.note, note) || other.note == note));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MoneyEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other.lines, _lines)&&(identical(other.note, note) || other.note == note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(_lines),note);
+int get hashCode {
+    return Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(_lines),note);
+}
 
 @override
 String toString() {
-  return 'MoneyEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
+    return 'MoneyEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
 }
 
 
@@ -873,16 +895,21 @@ $WarehouseEffectCopyWith<WarehouseEffect> get copyWith => _$WarehouseEffectCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.note, note) || other.note == note));
+  final _this = this as WarehouseEffect;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseEffect&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.warning, _this.warning) || other.warning == _this.warning)&&const DeepCollectionEquality().equals(other.lines, _this.lines)&&(identical(other.note, _this.note) || other.note == _this.note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(lines),note);
+int get hashCode {
+  final _this = this as WarehouseEffect;
+  return Object.hash(runtimeType,_this.kind,_this.warning,const DeepCollectionEquality().hash(_this.lines),_this.note);
+}
 
 @override
 String toString() {
-  return 'WarehouseEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
+  final _this = this as WarehouseEffect;
+  return 'WarehouseEffect(kind: ${_this.kind}, warning: ${_this.warning}, lines: ${_this.lines}, note: ${_this.note})';
 }
 
 
@@ -911,7 +938,7 @@ class _$WarehouseEffectCopyWithImpl<$Res>
 /// Create a copy of WarehouseEffect
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? warning = null,Object? lines = null,Object? note = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(WarehouseEffect(
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as StockEffectKind,warning: null == warning ? _self.warning : warning // ignore: cast_nullable_to_non_nullable
 as String,lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
@@ -1057,7 +1084,7 @@ return $default(_that.kind,_that.warning,_that.lines,_that.note);case _:
 @JsonSerializable()
 
 class _WarehouseEffect extends WarehouseEffect {
-  const _WarehouseEffect({@JsonKey(unknownEnumValue: StockEffectKind.unknown) required this.kind, required this.warning, final  List<StockEffectLine> lines = const <StockEffectLine>[], this.note}): _lines = lines,super._();
+  const _WarehouseEffect({@JsonKey(unknownEnumValue: StockEffectKind.unknown) required this.kind, required this.warning,  List<StockEffectLine> lines = const <StockEffectLine>[], this.note}): _lines = lines,super._();
   factory _WarehouseEffect.fromJson(Map<String, dynamic> json) => _$WarehouseEffectFromJson(json);
 
 @override@JsonKey(unknownEnumValue: StockEffectKind.unknown) final  StockEffectKind kind;
@@ -1091,16 +1118,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.note, note) || other.note == note));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseEffect&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.warning, warning) || other.warning == warning)&&const DeepCollectionEquality().equals(other.lines, _lines)&&(identical(other.note, note) || other.note == note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(_lines),note);
+int get hashCode {
+    return Object.hash(runtimeType,kind,warning,const DeepCollectionEquality().hash(_lines),note);
+}
 
 @override
 String toString() {
-  return 'WarehouseEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
+    return 'WarehouseEffect(kind: $kind, warning: $warning, lines: $lines, note: $note)';
 }
 
 
@@ -1160,16 +1189,21 @@ $StockEffectCopyWith<StockEffect> get copyWith => _$StockEffectCopyWithImpl<Stoc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockEffect&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.money, money) || other.money == money));
+  final _this = this as StockEffect;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockEffect&&(identical(other.stock, _this.stock) || other.stock == _this.stock)&&(identical(other.money, _this.money) || other.money == _this.money));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stock,money);
+int get hashCode {
+  final _this = this as StockEffect;
+  return Object.hash(runtimeType,_this.stock,_this.money);
+}
 
 @override
 String toString() {
-  return 'StockEffect(stock: $stock, money: $money)';
+  final _this = this as StockEffect;
+  return 'StockEffect(stock: ${_this.stock}, money: ${_this.money})';
 }
 
 
@@ -1198,7 +1232,7 @@ class _$StockEffectCopyWithImpl<$Res>
 /// Create a copy of StockEffect
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? stock = null,Object? money = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockEffect(
 stock: null == stock ? _self.stock : stock // ignore: cast_nullable_to_non_nullable
 as WarehouseEffect,money: freezed == money ? _self.money : money // ignore: cast_nullable_to_non_nullable
 as MoneyEffect?,
@@ -1384,16 +1418,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockEffect&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.money, money) || other.money == money));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockEffect&&(identical(other.stock, stock) || other.stock == stock)&&(identical(other.money, money) || other.money == money));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stock,money);
+int get hashCode {
+    return Object.hash(runtimeType,stock,money);
+}
 
 @override
 String toString() {
-  return 'StockEffect(stock: $stock, money: $money)';
+    return 'StockEffect(stock: $stock, money: $money)';
 }
 
 

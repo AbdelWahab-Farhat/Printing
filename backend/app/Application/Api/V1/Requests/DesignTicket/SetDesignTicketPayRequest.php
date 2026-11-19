@@ -7,7 +7,7 @@ namespace App\Application\Api\V1\Requests\DesignTicket;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * «أجر التصميم» على تذكرةٍ قائمة. مَن يكتبه سؤالٌ عن هذه التذكرة بعينها، فجوابه في الفعل.
+ * «أجرة المصمم» على تذكرةٍ قائمة. مَن يكتبه سؤالٌ عن هذه التذكرة بعينها، فجوابه في الفعل.
  */
 class SetDesignTicketPayRequest extends FormRequest
 {
@@ -32,9 +32,9 @@ class SetDesignTicketPayRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'designer_pay.present' => 'أجر التصميم مطلوب — أرسل قيمة أو فارغاً',
-            'designer_pay.numeric' => 'أجر التصميم يجب أن يكون رقماً',
-            'designer_pay.min' => 'أجر التصميم لا يمكن أن يكون سالباً',
+            'designer_pay.present' => 'أجرة المصمم مطلوبة — أرسل قيمة أو فارغاً',
+            'designer_pay.numeric' => 'أجرة المصمم يجب أن تكون رقماً',
+            'designer_pay.min' => 'أجرة المصمم لا يمكن أن تكون سالبة',
         ];
     }
 
@@ -43,7 +43,7 @@ class SetDesignTicketPayRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['designer_pay' => 'أجر التصميم'];
+        return ['designer_pay' => 'أجرة المصمم'];
     }
 
     /** نصٌّ عشري لا float، كأيّ مبلغ. */

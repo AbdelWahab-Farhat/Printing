@@ -65,7 +65,7 @@ class StoreDesignTicketRequest extends FormRequest
                 'nullable', 'integer',
                 Rule::exists('users', 'id')->withoutTrashed(),
             ],
-            // «أجر التصميم» — ما يدخل محفظة المصمم عند الاعتماد. اختياريّ، والفارغُ لا يدفع شيئاً.
+            // «أجرة المصمم» — ما يدخل محفظة المصمم عند الاعتماد. اختياريّ، والفارغُ لا يدفع شيئاً.
             'designer_pay' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             // مرفقاتُ الطلب مع إنشائه — الشعار، صورةُ كيسٍ مشابه — فتصل التذكرة إلى المصمّم كاملة.
             // يُرسل حينها `multipart/form-data`. وقواعدُ كلِّ ملفٍّ قواعدُ
@@ -89,8 +89,8 @@ class StoreDesignTicketRequest extends FormRequest
             'customer_id.required' => 'العميل مطلوب',
             'customer_id.exists' => 'العميل غير موجود',
             'order_id.exists' => 'الطلبية غير موجودة',
-            'designer_pay.numeric' => 'أجر التصميم يجب أن يكون رقماً',
-            'designer_pay.min' => 'أجر التصميم لا يمكن أن يكون سالباً',
+            'designer_pay.numeric' => 'أجرة المصمم يجب أن تكون رقماً',
+            'designer_pay.min' => 'أجرة المصمم لا يمكن أن تكون سالبة',
             'title.required' => 'عنوان الطلب مطلوب',
             'description.required' => 'وصف طلب التصميم مطلوب',
             'assigned_designer_id.exists' => 'المصمم غير موجود',

@@ -463,9 +463,9 @@ class DesignTicketPayTest extends DesignTicketTestCase
         // Assert
         $own->assertOk()
             ->assertJsonPath('data.0.type', 'credit')
-            ->assertJsonPath('data.0.type_label', 'أجر التصميم')
+            ->assertJsonPath('data.0.type_label', 'أجرة المصمم')
             ->assertJsonPath('data.0.direction', 'in');
-        $all->assertOk()->assertJsonPath('data.0.type_label', 'أجر التصميم');
+        $all->assertOk()->assertJsonPath('data.0.type_label', 'أجرة المصمم');
     }
 
     public function test_a_ticket_without_a_pay_completes_with_no_money(): void

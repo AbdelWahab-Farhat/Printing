@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'internal_tickets_home_cubit.dart';
@@ -9,6 +9,7 @@ part of 'internal_tickets_home_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$InternalTicketsHomeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InternalTicketsHomeState()';
+    return 'InternalTicketsHomeState()';
 }
 
 
@@ -191,7 +192,7 @@ class InternalTicketsHomeLoading implements InternalTicketsHomeState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'InternalTicketsHomeState.loading()';
+    return 'InternalTicketsHomeState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $InternalTicketsHomeFailureCopyWith<InternalTicketsHomeFailure> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'InternalTicketsHomeState.failure(failure: $failure)';
+    return 'InternalTicketsHomeState.failure(failure: $failure)';
 }
 
 
@@ -306,16 +309,18 @@ $InternalTicketsHomeLoadedCopyWith<InternalTicketsHomeLoaded> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeLoaded&&(identical(other.home, home) || other.home == home)&&(identical(other.replyingTo, replyingTo) || other.replyingTo == replyingTo)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is InternalTicketsHomeLoaded&&(identical(other.home, home) || other.home == home)&&(identical(other.replyingTo, replyingTo) || other.replyingTo == replyingTo)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,home,replyingTo,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,home,replyingTo,lastFailure);
+}
 
 @override
 String toString() {
-  return 'InternalTicketsHomeState.loaded(home: $home, replyingTo: $replyingTo, lastFailure: $lastFailure)';
+    return 'InternalTicketsHomeState.loaded(home: $home, replyingTo: $replyingTo, lastFailure: $lastFailure)';
 }
 
 

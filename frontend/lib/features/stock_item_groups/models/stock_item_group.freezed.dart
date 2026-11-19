@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'stock_item_group.dart';
@@ -9,6 +9,7 @@ part of 'stock_item_group.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -41,16 +42,21 @@ $StockItemGroupCopyWith<StockItemGroup> get copyWith => _$StockItemGroupCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroup&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as StockItemGroup;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockItemGroup&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.defaultUnit, _this.defaultUnit) || other.defaultUnit == _this.defaultUnit)&&(identical(other.defaultUnitLabel, _this.defaultUnitLabel) || other.defaultUnitLabel == _this.defaultUnitLabel)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.itemsCount, _this.itemsCount) || other.itemsCount == _this.itemsCount)&&(identical(other.productsCount, _this.productsCount) || other.productsCount == _this.productsCount)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel,description,isActive,sortOrder,itemsCount,productsCount,const DeepCollectionEquality().hash(items),createdAt,updatedAt);
+int get hashCode {
+  final _this = this as StockItemGroup;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.defaultUnit,_this.defaultUnitLabel,_this.description,_this.isActive,_this.sortOrder,_this.itemsCount,_this.productsCount,const DeepCollectionEquality().hash(_this.items),_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'StockItemGroup(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, itemsCount: $itemsCount, productsCount: $productsCount, items: $items, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as StockItemGroup;
+  return 'StockItemGroup(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, defaultUnit: ${_this.defaultUnit}, defaultUnitLabel: ${_this.defaultUnitLabel}, description: ${_this.description}, isActive: ${_this.isActive}, sortOrder: ${_this.sortOrder}, itemsCount: ${_this.itemsCount}, productsCount: ${_this.productsCount}, items: ${_this.items}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -79,7 +85,7 @@ class _$StockItemGroupCopyWithImpl<$Res>
 /// Create a copy of StockItemGroup
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = null,Object? defaultUnit = null,Object? defaultUnitLabel = null,Object? description = freezed,Object? isActive = null,Object? sortOrder = null,Object? itemsCount = freezed,Object? productsCount = freezed,Object? items = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(StockItemGroup(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -234,7 +240,7 @@ return $default(_that.id,_that.code,_that.name,_that.defaultUnit,_that.defaultUn
 @JsonSerializable()
 
 class _StockItemGroup extends StockItemGroup {
-  const _StockItemGroup({required this.id, required this.code, required this.name, @JsonKey(name: 'default_unit', unknownEnumValue: StockUnit.unknown) required this.defaultUnit, @JsonKey(name: 'default_unit_label') required this.defaultUnitLabel, this.description, @JsonKey(name: 'is_active') required this.isActive, @JsonKey(name: 'sort_order') required this.sortOrder, @JsonKey(name: 'items_count') this.itemsCount, @JsonKey(name: 'products_count') this.productsCount, final  List<StockItem> items = const <StockItem>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _items = items,super._();
+  const _StockItemGroup({required this.id, required this.code, required this.name, @JsonKey(name: 'default_unit', unknownEnumValue: StockUnit.unknown) required this.defaultUnit, @JsonKey(name: 'default_unit_label') required this.defaultUnitLabel, this.description, @JsonKey(name: 'is_active') required this.isActive, @JsonKey(name: 'sort_order') required this.sortOrder, @JsonKey(name: 'items_count') this.itemsCount, @JsonKey(name: 'products_count') this.productsCount,  List<StockItem> items = const <StockItem>[], @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): _items = items,super._();
   factory _StockItemGroup.fromJson(Map<String, dynamic> json) => _$StockItemGroupFromJson(json);
 
 @override final  int id;
@@ -286,16 +292,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemGroup&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockItemGroup&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.defaultUnit, defaultUnit) || other.defaultUnit == defaultUnit)&&(identical(other.defaultUnitLabel, defaultUnitLabel) || other.defaultUnitLabel == defaultUnitLabel)&&(identical(other.description, description) || other.description == description)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.productsCount, productsCount) || other.productsCount == productsCount)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel,description,isActive,sortOrder,itemsCount,productsCount,const DeepCollectionEquality().hash(_items),createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,defaultUnit,defaultUnitLabel,description,isActive,sortOrder,itemsCount,productsCount,const DeepCollectionEquality().hash(_items),createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'StockItemGroup(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, itemsCount: $itemsCount, productsCount: $productsCount, items: $items, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'StockItemGroup(id: $id, code: $code, name: $name, defaultUnit: $defaultUnit, defaultUnitLabel: $defaultUnitLabel, description: $description, isActive: $isActive, sortOrder: $sortOrder, itemsCount: $itemsCount, productsCount: $productsCount, items: $items, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 

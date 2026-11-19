@@ -455,7 +455,7 @@ abstract final class DesignTicketEndpoints {
   /// caller gets a 422 naming whoever holds it.
   static String acceptance(int ticketId) => '/design-tickets/$ticketId/acceptance';
 
-  /// «أجر التصميم» — يكتبه من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
+  /// «أجرة المصمم» — يكتبه من ينشئ التذاكر والمصمم المسؤول، والتذكرة مفتوحة.
   static String pay(int ticketId) => '/design-tickets/$ticketId/pay';
 
   /// Calling the request off, with the reason the server requires.
@@ -679,6 +679,10 @@ abstract final class OrderEndpoints {
   /// "compensates_order_id"}`, grants `orders.manage` + `orders.compensation`. Open while the
   /// lines are. Docs/orders/ORDER-COMPENSATION.md.
   static String compensation(int orderId) => '/orders/$orderId/compensation';
+
+  /// «أجرة التصميم» — what the customer pays for the design; `orders.design_fee` only.
+  /// Docs/orders/ORDER-DESIGN-FEE.md.
+  static String designFee(int orderId) => '/orders/$orderId/design-fee';
 
   /// «هل وصل العربون فعلاً؟» — an employee confirming the deposit landed, and taking that back.
   ///

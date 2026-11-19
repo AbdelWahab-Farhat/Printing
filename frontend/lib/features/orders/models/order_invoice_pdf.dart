@@ -415,7 +415,8 @@ class OrderInvoicePdf {
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
               _totalLine('المنتجات', order.itemsTotal),
-              if (order.hasDesignFee) _totalLine('التصميم', order.designFee),
+              // Whoever prints it: the customer pays this line (ORDER-DESIGN-FEE.md).
+              if (order.hasInvoiceDesignFee) _totalLine('التصميم', order.invoiceFee),
               // **Without the danger colour, unlike the discount under it.** This is a charge
               // the customer owes; red beside it would warn about the wrong thing. What it was
               // for is named in the message that carries this file — the label column here is a

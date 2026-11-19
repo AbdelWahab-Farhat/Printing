@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'city.dart';
@@ -9,6 +9,7 @@ part of 'city.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -41,16 +42,21 @@ $CityCopyWith<City> get copyWith => _$CityCopyWithImpl<City>(this as City, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other.regions, regions));
+  final _this = this as City;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.isRegionRequired, _this.isRegionRequired) || other.isRegionRequired == _this.isRegionRequired)&&(identical(other.fulfilmentType, _this.fulfilmentType) || other.fulfilmentType == _this.fulfilmentType)&&(identical(other.fulfilmentTypeLabel, _this.fulfilmentTypeLabel) || other.fulfilmentTypeLabel == _this.fulfilmentTypeLabel)&&(identical(other.deliveryPrice, _this.deliveryPrice) || other.deliveryPrice == _this.deliveryPrice)&&(identical(other.darbBranch, _this.darbBranch) || other.darbBranch == _this.darbBranch)&&(identical(other.latitude, _this.latitude) || other.latitude == _this.latitude)&&(identical(other.longitude, _this.longitude) || other.longitude == _this.longitude)&&(identical(other.regionsCount, _this.regionsCount) || other.regionsCount == _this.regionsCount)&&const DeepCollectionEquality().equals(other.regions, _this.regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,fulfilmentType,fulfilmentTypeLabel,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(regions));
+int get hashCode {
+  final _this = this as City;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.isRegionRequired,_this.fulfilmentType,_this.fulfilmentTypeLabel,_this.deliveryPrice,_this.darbBranch,_this.latitude,_this.longitude,_this.regionsCount,const DeepCollectionEquality().hash(_this.regions));
+}
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
+  final _this = this as City;
+  return 'City(id: ${_this.id}, name: ${_this.name}, isRegionRequired: ${_this.isRegionRequired}, fulfilmentType: ${_this.fulfilmentType}, fulfilmentTypeLabel: ${_this.fulfilmentTypeLabel}, deliveryPrice: ${_this.deliveryPrice}, darbBranch: ${_this.darbBranch}, latitude: ${_this.latitude}, longitude: ${_this.longitude}, regionsCount: ${_this.regionsCount}, regions: ${_this.regions})';
 }
 
 
@@ -79,7 +85,7 @@ class _$CityCopyWithImpl<$Res>
 /// Create a copy of City
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? isRegionRequired = null,Object? fulfilmentType = null,Object? fulfilmentTypeLabel = freezed,Object? deliveryPrice = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? regionsCount = freezed,Object? regions = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(City(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,isRegionRequired: null == isRegionRequired ? _self.isRegionRequired : isRegionRequired // ignore: cast_nullable_to_non_nullable
@@ -232,7 +238,7 @@ return $default(_that.id,_that.name,_that.isRegionRequired,_that.fulfilmentType,
 @JsonSerializable()
 
 class _City extends City {
-  const _City({required this.id, required this.name, @JsonKey(name: 'is_region_required') required this.isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) this.fulfilmentType = FulfilmentType.delivery, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'darb_branch') this.darbBranch, this.latitude, this.longitude, @JsonKey(name: 'regions_count') this.regionsCount, final  List<Region>? regions}): _regions = regions,super._();
+  const _City({required this.id, required this.name, @JsonKey(name: 'is_region_required') required this.isRegionRequired, @JsonKey(name: 'fulfilment_type', unknownEnumValue: FulfilmentType.delivery) this.fulfilmentType = FulfilmentType.delivery, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'darb_branch') this.darbBranch, this.latitude, this.longitude, @JsonKey(name: 'regions_count') this.regionsCount,  List<Region>? regions}): _regions = regions,super._();
   factory _City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
 
 @override final  int id;
@@ -282,16 +288,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other._regions, _regions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.regionsCount, regionsCount) || other.regionsCount == regionsCount)&&const DeepCollectionEquality().equals(other.regions, _regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,isRegionRequired,fulfilmentType,fulfilmentTypeLabel,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(_regions));
+int get hashCode {
+    return Object.hash(runtimeType,id,name,isRegionRequired,fulfilmentType,fulfilmentTypeLabel,deliveryPrice,darbBranch,latitude,longitude,regionsCount,const DeepCollectionEquality().hash(_regions));
+}
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
+    return 'City(id: $id, name: $name, isRegionRequired: $isRegionRequired, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, deliveryPrice: $deliveryPrice, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude, regionsCount: $regionsCount, regions: $regions)';
 }
 
 
@@ -357,16 +365,21 @@ $RegionCopyWith<Region> get copyWith => _$RegionCopyWithImpl<Region>(this as Reg
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.code, code) || other.code == code)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude));
+  final _this = this as Region;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Region&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.darbBranch, _this.darbBranch) || other.darbBranch == _this.darbBranch)&&(identical(other.latitude, _this.latitude) || other.latitude == _this.latitude)&&(identical(other.longitude, _this.longitude) || other.longitude == _this.longitude));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name,code,darbBranch,latitude,longitude);
+int get hashCode {
+  final _this = this as Region;
+  return Object.hash(runtimeType,_this.id,_this.cityId,_this.name,_this.code,_this.darbBranch,_this.latitude,_this.longitude);
+}
 
 @override
 String toString() {
-  return 'Region(id: $id, cityId: $cityId, name: $name, code: $code, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude)';
+  final _this = this as Region;
+  return 'Region(id: ${_this.id}, cityId: ${_this.cityId}, name: ${_this.name}, code: ${_this.code}, darbBranch: ${_this.darbBranch}, latitude: ${_this.latitude}, longitude: ${_this.longitude})';
 }
 
 
@@ -395,7 +408,7 @@ class _$RegionCopyWithImpl<$Res>
 /// Create a copy of Region
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? cityId = null,Object? name = null,Object? code = freezed,Object? darbBranch = freezed,Object? latitude = freezed,Object? longitude = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Region(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -569,16 +582,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.code, code) || other.code == code)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name)&&(identical(other.code, code) || other.code == code)&&(identical(other.darbBranch, darbBranch) || other.darbBranch == darbBranch)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name,code,darbBranch,latitude,longitude);
+int get hashCode {
+    return Object.hash(runtimeType,id,cityId,name,code,darbBranch,latitude,longitude);
+}
 
 @override
 String toString() {
-  return 'Region(id: $id, cityId: $cityId, name: $name, code: $code, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude)';
+    return 'Region(id: $id, cityId: $cityId, name: $name, code: $code, darbBranch: $darbBranch, latitude: $latitude, longitude: $longitude)';
 }
 
 

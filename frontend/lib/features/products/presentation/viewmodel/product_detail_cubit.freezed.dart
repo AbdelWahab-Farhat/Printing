@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'product_detail_cubit.dart';
@@ -9,6 +9,7 @@ part of 'product_detail_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ProductDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProductDetailState()';
+    return 'ProductDetailState()';
 }
 
 
@@ -191,7 +192,7 @@ class ProductDetailLoading implements ProductDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProductDetailState.loading()';
+    return 'ProductDetailState.loading()';
 }
 
 
@@ -228,16 +229,18 @@ $ProductDetailLoadedCopyWith<ProductDetailLoaded> get copyWith => _$ProductDetai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailLoaded&&(identical(other.product, product) || other.product == product));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailLoaded&&(identical(other.product, product) || other.product == product));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,product);
+int get hashCode {
+    return Object.hash(runtimeType,product);
+}
 
 @override
 String toString() {
-  return 'ProductDetailState.loaded(product: $product)';
+    return 'ProductDetailState.loaded(product: $product)';
 }
 
 
@@ -303,16 +306,18 @@ $ProductDetailFailureCopyWith<ProductDetailFailure> get copyWith => _$ProductDet
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductDetailFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'ProductDetailState.failure(failure: $failure)';
+    return 'ProductDetailState.failure(failure: $failure)';
 }
 
 

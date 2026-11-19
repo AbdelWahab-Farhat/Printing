@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'manufacturing_cost_rate.dart';
@@ -9,6 +9,7 @@ part of 'manufacturing_cost_rate.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -44,16 +45,21 @@ $ManufacturingCostRateCopyWith<ManufacturingCostRate> get copyWith => _$Manufact
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ManufacturingCostRate&&(identical(other.id, id) || other.id == id)&&(identical(other.product, product) || other.product == product)&&(identical(other.productVariant, productVariant) || other.productVariant == productVariant)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.ratePerUnit, ratePerUnit) || other.ratePerUnit == ratePerUnit)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  final _this = this as ManufacturingCostRate;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ManufacturingCostRate&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.product, _this.product) || other.product == _this.product)&&(identical(other.productVariant, _this.productVariant) || other.productVariant == _this.productVariant)&&(identical(other.costType, _this.costType) || other.costType == _this.costType)&&(identical(other.costTypeLabel, _this.costTypeLabel) || other.costTypeLabel == _this.costTypeLabel)&&(identical(other.ratePerUnit, _this.ratePerUnit) || other.ratePerUnit == _this.ratePerUnit)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,product,productVariant,costType,costTypeLabel,ratePerUnit,isActive,notes,createdAt,updatedAt);
+int get hashCode {
+  final _this = this as ManufacturingCostRate;
+  return Object.hash(runtimeType,_this.id,_this.product,_this.productVariant,_this.costType,_this.costTypeLabel,_this.ratePerUnit,_this.isActive,_this.notes,_this.createdAt,_this.updatedAt);
+}
 
 @override
 String toString() {
-  return 'ManufacturingCostRate(id: $id, product: $product, productVariant: $productVariant, costType: $costType, costTypeLabel: $costTypeLabel, ratePerUnit: $ratePerUnit, isActive: $isActive, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
+  final _this = this as ManufacturingCostRate;
+  return 'ManufacturingCostRate(id: ${_this.id}, product: ${_this.product}, productVariant: ${_this.productVariant}, costType: ${_this.costType}, costTypeLabel: ${_this.costTypeLabel}, ratePerUnit: ${_this.ratePerUnit}, isActive: ${_this.isActive}, notes: ${_this.notes}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -82,7 +88,7 @@ class _$ManufacturingCostRateCopyWithImpl<$Res>
 /// Create a copy of ManufacturingCostRate
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? product = freezed,Object? productVariant = freezed,Object? costType = null,Object? costTypeLabel = null,Object? ratePerUnit = null,Object? isActive = null,Object? notes = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ManufacturingCostRate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,product: freezed == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
 as ArrivalRef?,productVariant: freezed == productVariant ? _self.productVariant : productVariant // ignore: cast_nullable_to_non_nullable
@@ -301,16 +307,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ManufacturingCostRate&&(identical(other.id, id) || other.id == id)&&(identical(other.product, product) || other.product == product)&&(identical(other.productVariant, productVariant) || other.productVariant == productVariant)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.ratePerUnit, ratePerUnit) || other.ratePerUnit == ratePerUnit)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ManufacturingCostRate&&(identical(other.id, id) || other.id == id)&&(identical(other.product, product) || other.product == product)&&(identical(other.productVariant, productVariant) || other.productVariant == productVariant)&&(identical(other.costType, costType) || other.costType == costType)&&(identical(other.costTypeLabel, costTypeLabel) || other.costTypeLabel == costTypeLabel)&&(identical(other.ratePerUnit, ratePerUnit) || other.ratePerUnit == ratePerUnit)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,product,productVariant,costType,costTypeLabel,ratePerUnit,isActive,notes,createdAt,updatedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,product,productVariant,costType,costTypeLabel,ratePerUnit,isActive,notes,createdAt,updatedAt);
+}
 
 @override
 String toString() {
-  return 'ManufacturingCostRate(id: $id, product: $product, productVariant: $productVariant, costType: $costType, costTypeLabel: $costTypeLabel, ratePerUnit: $ratePerUnit, isActive: $isActive, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ManufacturingCostRate(id: $id, product: $product, productVariant: $productVariant, costType: $costType, costTypeLabel: $costTypeLabel, ratePerUnit: $ratePerUnit, isActive: $isActive, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -398,16 +406,21 @@ $RateVariantCopyWith<RateVariant> get copyWith => _$RateVariantCopyWithImpl<Rate
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RateVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+  final _this = this as RateVariant;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RateVariant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label);
+int get hashCode {
+  final _this = this as RateVariant;
+  return Object.hash(runtimeType,_this.id,_this.label);
+}
 
 @override
 String toString() {
-  return 'RateVariant(id: $id, label: $label)';
+  final _this = this as RateVariant;
+  return 'RateVariant(id: ${_this.id}, label: ${_this.label})';
 }
 
 
@@ -436,7 +449,7 @@ class _$RateVariantCopyWithImpl<$Res>
 /// Create a copy of RateVariant
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,}) {
-  return _then(_self.copyWith(
+  return _then(RateVariant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,
@@ -599,16 +612,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RateVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RateVariant&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label);
+int get hashCode {
+    return Object.hash(runtimeType,id,label);
+}
 
 @override
 String toString() {
-  return 'RateVariant(id: $id, label: $label)';
+    return 'RateVariant(id: $id, label: $label)';
 }
 
 

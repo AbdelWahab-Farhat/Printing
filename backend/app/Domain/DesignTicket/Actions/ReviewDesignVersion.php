@@ -18,6 +18,8 @@ use App\Domain\EmployeeWallet\EmployeeWalletService;
 use App\Domain\Identity\Enums\EmployeeServiceType;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\Actions\AttachApprovedTicketDesigns;
+use App\Domain\Order\Actions\FillDesignFeeFromTickets;
+use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -54,6 +56,7 @@ final class ReviewDesignVersion
         private readonly PromoteApprovedDesign $promote,
         private readonly EmployeeWalletService $wallet,
         private readonly AttachApprovedTicketDesigns $attachToOrder,
+        private readonly FillDesignFeeFromTickets $fillDesignFee,
     ) {}
 
     /**
@@ -142,6 +145,14 @@ final class ReviewDesignVersion
 
                 if ($order !== null && ! $order->trashed()) {
                     ($this->attachToOrder)($order, $actor);
+
+                    // «أجرة التصميم» nobody set becomes «أجرة المصمم» of the order's approved
+                    // tickets (ORDER-DESIGN-FEE.md). Silent when a person already decided it.
+                    ($this->fillDesignFee)(
+                        $order,
+                        $this->designersPayOn($order),
+                        $actor === null ? null : (int) $actor->getKey(),
+                    );
                 }
             }
 
@@ -153,6 +164,15 @@ final class ReviewDesignVersion
 
             return $version->refresh();
         });
+    }
+
+    /** What the designers of the order's approved tickets are paid together. */
+    private function designersPayOn(Order $order): string
+    {
+        return (string) (DesignTicket::query()
+            ->where('order_id', $order->getKey())
+            ->where('status', DesignTicketStatus::Completed)
+            ->sum('designer_pay') ?? '0');
     }
 
     private function payOn(DesignTicket $ticket): string

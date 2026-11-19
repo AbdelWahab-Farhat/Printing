@@ -23,7 +23,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// A sheet rather than the form screen: the ticket is already open behind it, and pushing a page
 /// to change one line loses the thing being corrected from view.
 ///
-/// **«أجر التصميم» هنا لمن يكتبه**، والسعر المقترح مكتوبٌ في الحقل ما لم يُكتب أجر. وما في الحقل
+/// **«أجرة المصمم» هنا لمن يكتبه**، والسعر المقترح مكتوبٌ في الحقل ما لم يُكتب أجر. وما في الحقل
 /// عند «حفظ» هو ما يُحفظ. يخرج بطلبٍ غير طلب الكلمات، فحارساهما في الخادم مختلفان.
 Future<TicketEdit?> showEditTicketSheet({
   required BuildContext context,
@@ -151,7 +151,7 @@ class _EditSheetState extends State<_EditSheet> {
               // بترتيب نموذج الطلب نفسه: قبل الألوان.
               if (widget.ticket.canSetPay) ...[
                 SizedBox(height: 12.h),
-                OptionalAmountField(controller: _pay, label: 'أجر التصميم'),
+                OptionalAmountField(controller: _pay, label: 'أجرة المصمم'),
               ],
               SizedBox(height: 16.h),
               PrintColorsField(

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profit_and_loss_summary.dart';
@@ -9,6 +9,7 @@ part of 'profit_and_loss_summary.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -61,16 +62,21 @@ $ProfitAndLossSummaryCopyWith<ProfitAndLossSummary> get copyWith => _$ProfitAndL
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.deliveryCosts, deliveryCosts) || other.deliveryCosts == deliveryCosts)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
+  final _this = this as ProfitAndLossSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitAndLossSummary&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.revenue, _this.revenue) || other.revenue == _this.revenue)&&(identical(other.costOfGoodsSold, _this.costOfGoodsSold) || other.costOfGoodsSold == _this.costOfGoodsSold)&&(identical(other.grossProfit, _this.grossProfit) || other.grossProfit == _this.grossProfit)&&(identical(other.deliveryCosts, _this.deliveryCosts) || other.deliveryCosts == _this.deliveryCosts)&&(identical(other.cashCollected, _this.cashCollected) || other.cashCollected == _this.cashCollected)&&(identical(other.writeOffs, _this.writeOffs) || other.writeOffs == _this.writeOffs)&&(identical(other.losses, _this.losses) || other.losses == _this.losses)&&(identical(other.ordersRecognized, _this.ordersRecognized) || other.ordersRecognized == _this.ordersRecognized));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,deliveryCosts,cashCollected,writeOffs,losses,ordersRecognized);
+int get hashCode {
+  final _this = this as ProfitAndLossSummary;
+  return Object.hash(runtimeType,_this.period,_this.revenue,_this.costOfGoodsSold,_this.grossProfit,_this.deliveryCosts,_this.cashCollected,_this.writeOffs,_this.losses,_this.ordersRecognized);
+}
 
 @override
 String toString() {
-  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, deliveryCosts: $deliveryCosts, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
+  final _this = this as ProfitAndLossSummary;
+  return 'ProfitAndLossSummary(period: ${_this.period}, revenue: ${_this.revenue}, costOfGoodsSold: ${_this.costOfGoodsSold}, grossProfit: ${_this.grossProfit}, deliveryCosts: ${_this.deliveryCosts}, cashCollected: ${_this.cashCollected}, writeOffs: ${_this.writeOffs}, losses: ${_this.losses}, ordersRecognized: ${_this.ordersRecognized})';
 }
 
 
@@ -99,7 +105,7 @@ class _$ProfitAndLossSummaryCopyWithImpl<$Res>
 /// Create a copy of ProfitAndLossSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? revenue = null,Object? costOfGoodsSold = null,Object? grossProfit = null,Object? deliveryCosts = freezed,Object? cashCollected = null,Object? writeOffs = freezed,Object? losses = freezed,Object? ordersRecognized = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfitAndLossSummary(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as PnlPeriod,revenue: null == revenue ? _self.revenue : revenue // ignore: cast_nullable_to_non_nullable
 as PnlRevenue,costOfGoodsSold: null == costOfGoodsSold ? _self.costOfGoodsSold : costOfGoodsSold // ignore: cast_nullable_to_non_nullable
@@ -348,16 +354,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.deliveryCosts, deliveryCosts) || other.deliveryCosts == deliveryCosts)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitAndLossSummary&&(identical(other.period, period) || other.period == period)&&(identical(other.revenue, revenue) || other.revenue == revenue)&&(identical(other.costOfGoodsSold, costOfGoodsSold) || other.costOfGoodsSold == costOfGoodsSold)&&(identical(other.grossProfit, grossProfit) || other.grossProfit == grossProfit)&&(identical(other.deliveryCosts, deliveryCosts) || other.deliveryCosts == deliveryCosts)&&(identical(other.cashCollected, cashCollected) || other.cashCollected == cashCollected)&&(identical(other.writeOffs, writeOffs) || other.writeOffs == writeOffs)&&(identical(other.losses, losses) || other.losses == losses)&&(identical(other.ordersRecognized, ordersRecognized) || other.ordersRecognized == ordersRecognized));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,deliveryCosts,cashCollected,writeOffs,losses,ordersRecognized);
+int get hashCode {
+    return Object.hash(runtimeType,period,revenue,costOfGoodsSold,grossProfit,deliveryCosts,cashCollected,writeOffs,losses,ordersRecognized);
+}
 
 @override
 String toString() {
-  return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, deliveryCosts: $deliveryCosts, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
+    return 'ProfitAndLossSummary(period: $period, revenue: $revenue, costOfGoodsSold: $costOfGoodsSold, grossProfit: $grossProfit, deliveryCosts: $deliveryCosts, cashCollected: $cashCollected, writeOffs: $writeOffs, losses: $losses, ordersRecognized: $ordersRecognized)';
 }
 
 
@@ -459,16 +467,21 @@ $PnlPeriodCopyWith<PnlPeriod> get copyWith => _$PnlPeriodCopyWithImpl<PnlPeriod>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
+  final _this = this as PnlPeriod;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlPeriod&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.to, _this.to) || other.to == _this.to));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,from,to);
+int get hashCode {
+  final _this = this as PnlPeriod;
+  return Object.hash(runtimeType,_this.from,_this.to);
+}
 
 @override
 String toString() {
-  return 'PnlPeriod(from: $from, to: $to)';
+  final _this = this as PnlPeriod;
+  return 'PnlPeriod(from: ${_this.from}, to: ${_this.to})';
 }
 
 
@@ -497,7 +510,7 @@ class _$PnlPeriodCopyWithImpl<$Res>
 /// Create a copy of PnlPeriod
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? from = null,Object? to = null,}) {
-  return _then(_self.copyWith(
+  return _then(PnlPeriod(
 from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as String,to: null == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
 as String,
@@ -660,16 +673,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlPeriod&&(identical(other.from, from) || other.from == from)&&(identical(other.to, to) || other.to == to));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,from,to);
+int get hashCode {
+    return Object.hash(runtimeType,from,to);
+}
 
 @override
 String toString() {
-  return 'PnlPeriod(from: $from, to: $to)';
+    return 'PnlPeriod(from: $from, to: $to)';
 }
 
 
@@ -732,16 +747,21 @@ $PnlRevenueCopyWith<PnlRevenue> get copyWith => _$PnlRevenueCopyWithImpl<PnlReve
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlRevenue&&(identical(other.product, product) || other.product == product)&&(identical(other.service, service) || other.service == service)&&(identical(other.total, total) || other.total == total));
+  final _this = this as PnlRevenue;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlRevenue&&(identical(other.product, _this.product) || other.product == _this.product)&&(identical(other.service, _this.service) || other.service == _this.service)&&(identical(other.total, _this.total) || other.total == _this.total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,product,service,total);
+int get hashCode {
+  final _this = this as PnlRevenue;
+  return Object.hash(runtimeType,_this.product,_this.service,_this.total);
+}
 
 @override
 String toString() {
-  return 'PnlRevenue(product: $product, service: $service, total: $total)';
+  final _this = this as PnlRevenue;
+  return 'PnlRevenue(product: ${_this.product}, service: ${_this.service}, total: ${_this.total})';
 }
 
 
@@ -770,7 +790,7 @@ class _$PnlRevenueCopyWithImpl<$Res>
 /// Create a copy of PnlRevenue
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? product = null,Object? service = null,Object? total = null,}) {
-  return _then(_self.copyWith(
+  return _then(PnlRevenue(
 product: null == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
 as String,service: null == service ? _self.service : service // ignore: cast_nullable_to_non_nullable
 as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
@@ -942,16 +962,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlRevenue&&(identical(other.product, product) || other.product == product)&&(identical(other.service, service) || other.service == service)&&(identical(other.total, total) || other.total == total));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlRevenue&&(identical(other.product, product) || other.product == product)&&(identical(other.service, service) || other.service == service)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,product,service,total);
+int get hashCode {
+    return Object.hash(runtimeType,product,service,total);
+}
 
 @override
 String toString() {
-  return 'PnlRevenue(product: $product, service: $service, total: $total)';
+    return 'PnlRevenue(product: $product, service: $service, total: $total)';
 }
 
 
@@ -1012,16 +1034,21 @@ $PnlLossesCopyWith<PnlLosses> get copyWith => _$PnlLossesCopyWithImpl<PnlLosses>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
+  final _this = this as PnlLosses;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlLosses&&(identical(other.scrap, _this.scrap) || other.scrap == _this.scrap)&&(identical(other.partialDelivery, _this.partialDelivery) || other.partialDelivery == _this.partialDelivery)&&(identical(other.compensation, _this.compensation) || other.compensation == _this.compensation)&&(identical(other.total, _this.total) || other.total == _this.total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
+int get hashCode {
+  final _this = this as PnlLosses;
+  return Object.hash(runtimeType,_this.scrap,_this.partialDelivery,_this.compensation,_this.total);
+}
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
+  final _this = this as PnlLosses;
+  return 'PnlLosses(scrap: ${_this.scrap}, partialDelivery: ${_this.partialDelivery}, compensation: ${_this.compensation}, total: ${_this.total})';
 }
 
 
@@ -1050,7 +1077,7 @@ class _$PnlLossesCopyWithImpl<$Res>
 /// Create a copy of PnlLosses
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? scrap = null,Object? partialDelivery = null,Object? compensation = freezed,Object? total = null,}) {
-  return _then(_self.copyWith(
+  return _then(PnlLosses(
 scrap: null == scrap ? _self.scrap : scrap // ignore: cast_nullable_to_non_nullable
 as String,partialDelivery: null == partialDelivery ? _self.partialDelivery : partialDelivery // ignore: cast_nullable_to_non_nullable
 as String,compensation: freezed == compensation ? _self.compensation : compensation // ignore: cast_nullable_to_non_nullable
@@ -1221,16 +1248,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlLosses&&(identical(other.scrap, scrap) || other.scrap == scrap)&&(identical(other.partialDelivery, partialDelivery) || other.partialDelivery == partialDelivery)&&(identical(other.compensation, compensation) || other.compensation == compensation)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
+int get hashCode {
+    return Object.hash(runtimeType,scrap,partialDelivery,compensation,total);
+}
 
 @override
 String toString() {
-  return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
+    return 'PnlLosses(scrap: $scrap, partialDelivery: $partialDelivery, compensation: $compensation, total: $total)';
 }
 
 
@@ -1291,16 +1320,21 @@ $PnlCostOfGoodsSoldCopyWith<PnlCostOfGoodsSold> get copyWith => _$PnlCostOfGoods
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlCostOfGoodsSold&&(identical(other.material, material) || other.material == material)&&(identical(other.labor, labor) || other.labor == labor)&&(identical(other.overhead, overhead) || other.overhead == overhead)&&(identical(other.total, total) || other.total == total));
+  final _this = this as PnlCostOfGoodsSold;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PnlCostOfGoodsSold&&(identical(other.material, _this.material) || other.material == _this.material)&&(identical(other.labor, _this.labor) || other.labor == _this.labor)&&(identical(other.overhead, _this.overhead) || other.overhead == _this.overhead)&&(identical(other.total, _this.total) || other.total == _this.total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,material,labor,overhead,total);
+int get hashCode {
+  final _this = this as PnlCostOfGoodsSold;
+  return Object.hash(runtimeType,_this.material,_this.labor,_this.overhead,_this.total);
+}
 
 @override
 String toString() {
-  return 'PnlCostOfGoodsSold(material: $material, labor: $labor, overhead: $overhead, total: $total)';
+  final _this = this as PnlCostOfGoodsSold;
+  return 'PnlCostOfGoodsSold(material: ${_this.material}, labor: ${_this.labor}, overhead: ${_this.overhead}, total: ${_this.total})';
 }
 
 
@@ -1329,7 +1363,7 @@ class _$PnlCostOfGoodsSoldCopyWithImpl<$Res>
 /// Create a copy of PnlCostOfGoodsSold
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? material = null,Object? labor = null,Object? overhead = null,Object? total = null,}) {
-  return _then(_self.copyWith(
+  return _then(PnlCostOfGoodsSold(
 material: null == material ? _self.material : material // ignore: cast_nullable_to_non_nullable
 as String,labor: null == labor ? _self.labor : labor // ignore: cast_nullable_to_non_nullable
 as String,overhead: null == overhead ? _self.overhead : overhead // ignore: cast_nullable_to_non_nullable
@@ -1499,16 +1533,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlCostOfGoodsSold&&(identical(other.material, material) || other.material == material)&&(identical(other.labor, labor) || other.labor == labor)&&(identical(other.overhead, overhead) || other.overhead == overhead)&&(identical(other.total, total) || other.total == total));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PnlCostOfGoodsSold&&(identical(other.material, material) || other.material == material)&&(identical(other.labor, labor) || other.labor == labor)&&(identical(other.overhead, overhead) || other.overhead == overhead)&&(identical(other.total, total) || other.total == total));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,material,labor,overhead,total);
+int get hashCode {
+    return Object.hash(runtimeType,material,labor,overhead,total);
+}
 
 @override
 String toString() {
-  return 'PnlCostOfGoodsSold(material: $material, labor: $labor, overhead: $overhead, total: $total)';
+    return 'PnlCostOfGoodsSold(material: $material, labor: $labor, overhead: $overhead, total: $total)';
 }
 
 

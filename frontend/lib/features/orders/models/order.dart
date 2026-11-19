@@ -215,7 +215,18 @@ abstract class Order with _$Order {
     @JsonKey(name: 'design_source_label') required String designSourceLabel,
 
     @JsonKey(name: 'items_total') required String itemsTotal,
+    /// «أجرة التصميم» — what the customer pays for the design. `'0.00'` for a reader without
+    /// `orders.design_fee`: employees never see it on a screen. Docs/orders/ORDER-DESIGN-FEE.md.
     @JsonKey(name: 'design_fee') required String designFee,
+
+    /// The design line the customer is charged, for the invoice and the copied message only —
+    /// sent to every reader, because the customer pays it whoever prints the invoice. Null
+    /// from a server older than the split, where [designFee] was that line.
+    @JsonKey(name: 'invoice_design_fee') String? invoiceDesignFee,
+
+    /// «تلقائية» — filled from «أجرة المصمم» when a ticket was approved, and nobody has set it
+    /// since. Only sent to whoever reads [designFee].
+    @JsonKey(name: 'design_fee_is_auto') @Default(false) bool designFeeIsAuto,
     @JsonKey(name: 'delivery_price') required String deliveryPrice,
 
     /// Who pays the courier: `recipient` (at the door, the default) or `us`.
@@ -449,6 +460,10 @@ abstract class Order with _$Order {
     /// Whether «طلبية تعويض» may still be switched on or off, for this reader — while the lines
     /// are open, and only with `orders.compensation`.
     @JsonKey(name: 'can_change_compensation') @Default(false) bool canChangeCompensation,
+
+    /// Whether «أجرة التصميم» may be set, for this reader — while the order is open, and only
+    /// with `orders.design_fee`.
+    @JsonKey(name: 'can_set_design_fee') @Default(false) bool canSetDesignFee,
 
     /// Present on the list endpoint.
     @JsonKey(name: 'items_count') int? itemsCount,
@@ -703,8 +718,14 @@ abstract class Order with _$Order {
   String? get weightLabel =>
       totalWeight == null ? null : '${groupedDecimal(totalWeight!)} كجم';
 
-  /// Only charged when we did the design, so the server sends `'0.00'` otherwise.
+  /// Only charged when we did the design, so the server sends `'0.00'` otherwise — and to a
+  /// reader without `orders.design_fee`, who never sees the line.
   bool get hasDesignFee => designFee != '0.00';
+
+  /// The design line on the invoice and in the copied message.
+  String get invoiceFee => invoiceDesignFee ?? designFee;
+
+  bool get hasInvoiceDesignFee => invoiceFee != '0.00';
 
   /// A delivery that was actually charged for. An office pickup is `'0.00'`, and so is a
   /// delivery we did not bill — neither is a line on the customer's copy.

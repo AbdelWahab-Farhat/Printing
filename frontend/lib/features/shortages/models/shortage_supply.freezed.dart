@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shortage_supply.dart';
@@ -9,6 +9,7 @@ part of 'shortage_supply.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -45,16 +46,21 @@ $ShortageSupplyCopyWith<ShortageSupply> get copyWith => _$ShortageSupplyCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupply&&(identical(other.id, id) || other.id == id)&&(identical(other.shortageId, shortageId) || other.shortageId == shortageId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.occurredOn, occurredOn) || other.occurredOn == occurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.movedStock, movedStock) || other.movedStock == movedStock)&&(identical(other.isReversal, isReversal) || other.isReversal == isReversal)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.reversesSupplyId, reversesSupplyId) || other.reversesSupplyId == reversesSupplyId)&&(identical(other.recordedByUserId, recordedByUserId) || other.recordedByUserId == recordedByUserId)&&(identical(other.recorder, recorder) || other.recorder == recorder)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as ShortageSupply;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupply&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.shortageId, _this.shortageId) || other.shortageId == _this.shortageId)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.surplusQuantity, _this.surplusQuantity) || other.surplusQuantity == _this.surplusQuantity)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.method, _this.method) || other.method == _this.method)&&(identical(other.methodLabel, _this.methodLabel) || other.methodLabel == _this.methodLabel)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.occurredOn, _this.occurredOn) || other.occurredOn == _this.occurredOn)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.warehouse, _this.warehouse) || other.warehouse == _this.warehouse)&&(identical(other.stockMovementId, _this.stockMovementId) || other.stockMovementId == _this.stockMovementId)&&(identical(other.movedStock, _this.movedStock) || other.movedStock == _this.movedStock)&&(identical(other.isReversal, _this.isReversal) || other.isReversal == _this.isReversal)&&(identical(other.isReversed, _this.isReversed) || other.isReversed == _this.isReversed)&&(identical(other.isReversible, _this.isReversible) || other.isReversible == _this.isReversible)&&(identical(other.hasReceipt, _this.hasReceipt) || other.hasReceipt == _this.hasReceipt)&&(identical(other.receiptIsImage, _this.receiptIsImage) || other.receiptIsImage == _this.receiptIsImage)&&(identical(other.receiptUrl, _this.receiptUrl) || other.receiptUrl == _this.receiptUrl)&&(identical(other.receiptFilename, _this.receiptFilename) || other.receiptFilename == _this.receiptFilename)&&(identical(other.reversesSupplyId, _this.reversesSupplyId) || other.reversesSupplyId == _this.reversesSupplyId)&&(identical(other.recordedByUserId, _this.recordedByUserId) || other.recordedByUserId == _this.recordedByUserId)&&(identical(other.recorder, _this.recorder) || other.recorder == _this.recorder)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,shortageId,kind,kindLabel,quantity,surplusQuantity,amount,method,methodLabel,reference,occurredOn,notes,warehouseId,warehouse,stockMovementId,movedStock,isReversal,isReversed,isReversible,hasReceipt,receiptIsImage,receiptUrl,receiptFilename,reversesSupplyId,recordedByUserId,recorder,createdAt]);
+int get hashCode {
+  final _this = this as ShortageSupply;
+  return Object.hashAll([runtimeType,_this.id,_this.shortageId,_this.kind,_this.kindLabel,_this.quantity,_this.surplusQuantity,_this.amount,_this.method,_this.methodLabel,_this.reference,_this.occurredOn,_this.notes,_this.warehouseId,_this.warehouse,_this.stockMovementId,_this.movedStock,_this.isReversal,_this.isReversed,_this.isReversible,_this.hasReceipt,_this.receiptIsImage,_this.receiptUrl,_this.receiptFilename,_this.reversesSupplyId,_this.recordedByUserId,_this.recorder,_this.createdAt]);
+}
 
 @override
 String toString() {
-  return 'ShortageSupply(id: $id, shortageId: $shortageId, kind: $kind, kindLabel: $kindLabel, quantity: $quantity, surplusQuantity: $surplusQuantity, amount: $amount, method: $method, methodLabel: $methodLabel, reference: $reference, occurredOn: $occurredOn, notes: $notes, warehouseId: $warehouseId, warehouse: $warehouse, stockMovementId: $stockMovementId, movedStock: $movedStock, isReversal: $isReversal, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, reversesSupplyId: $reversesSupplyId, recordedByUserId: $recordedByUserId, recorder: $recorder, createdAt: $createdAt)';
+  final _this = this as ShortageSupply;
+  return 'ShortageSupply(id: ${_this.id}, shortageId: ${_this.shortageId}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, quantity: ${_this.quantity}, surplusQuantity: ${_this.surplusQuantity}, amount: ${_this.amount}, method: ${_this.method}, methodLabel: ${_this.methodLabel}, reference: ${_this.reference}, occurredOn: ${_this.occurredOn}, notes: ${_this.notes}, warehouseId: ${_this.warehouseId}, warehouse: ${_this.warehouse}, stockMovementId: ${_this.stockMovementId}, movedStock: ${_this.movedStock}, isReversal: ${_this.isReversal}, isReversed: ${_this.isReversed}, isReversible: ${_this.isReversible}, hasReceipt: ${_this.hasReceipt}, receiptIsImage: ${_this.receiptIsImage}, receiptUrl: ${_this.receiptUrl}, receiptFilename: ${_this.receiptFilename}, reversesSupplyId: ${_this.reversesSupplyId}, recordedByUserId: ${_this.recordedByUserId}, recorder: ${_this.recorder}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -83,7 +89,7 @@ class _$ShortageSupplyCopyWithImpl<$Res>
 /// Create a copy of ShortageSupply
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? shortageId = null,Object? kind = null,Object? kindLabel = null,Object? quantity = null,Object? surplusQuantity = null,Object? amount = freezed,Object? method = freezed,Object? methodLabel = freezed,Object? reference = freezed,Object? occurredOn = freezed,Object? notes = freezed,Object? warehouseId = freezed,Object? warehouse = freezed,Object? stockMovementId = freezed,Object? movedStock = null,Object? isReversal = null,Object? isReversed = null,Object? isReversible = null,Object? hasReceipt = null,Object? receiptIsImage = null,Object? receiptUrl = freezed,Object? receiptFilename = freezed,Object? reversesSupplyId = freezed,Object? recordedByUserId = freezed,Object? recorder = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageSupply(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,shortageId: null == shortageId ? _self.shortageId : shortageId // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -337,16 +343,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupply&&(identical(other.id, id) || other.id == id)&&(identical(other.shortageId, shortageId) || other.shortageId == shortageId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.occurredOn, occurredOn) || other.occurredOn == occurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.movedStock, movedStock) || other.movedStock == movedStock)&&(identical(other.isReversal, isReversal) || other.isReversal == isReversal)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.reversesSupplyId, reversesSupplyId) || other.reversesSupplyId == reversesSupplyId)&&(identical(other.recordedByUserId, recordedByUserId) || other.recordedByUserId == recordedByUserId)&&(identical(other.recorder, recorder) || other.recorder == recorder)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupply&&(identical(other.id, id) || other.id == id)&&(identical(other.shortageId, shortageId) || other.shortageId == shortageId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.surplusQuantity, surplusQuantity) || other.surplusQuantity == surplusQuantity)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.method, method) || other.method == method)&&(identical(other.methodLabel, methodLabel) || other.methodLabel == methodLabel)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.occurredOn, occurredOn) || other.occurredOn == occurredOn)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.warehouse, warehouse) || other.warehouse == warehouse)&&(identical(other.stockMovementId, stockMovementId) || other.stockMovementId == stockMovementId)&&(identical(other.movedStock, movedStock) || other.movedStock == movedStock)&&(identical(other.isReversal, isReversal) || other.isReversal == isReversal)&&(identical(other.isReversed, isReversed) || other.isReversed == isReversed)&&(identical(other.isReversible, isReversible) || other.isReversible == isReversible)&&(identical(other.hasReceipt, hasReceipt) || other.hasReceipt == hasReceipt)&&(identical(other.receiptIsImage, receiptIsImage) || other.receiptIsImage == receiptIsImage)&&(identical(other.receiptUrl, receiptUrl) || other.receiptUrl == receiptUrl)&&(identical(other.receiptFilename, receiptFilename) || other.receiptFilename == receiptFilename)&&(identical(other.reversesSupplyId, reversesSupplyId) || other.reversesSupplyId == reversesSupplyId)&&(identical(other.recordedByUserId, recordedByUserId) || other.recordedByUserId == recordedByUserId)&&(identical(other.recorder, recorder) || other.recorder == recorder)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,shortageId,kind,kindLabel,quantity,surplusQuantity,amount,method,methodLabel,reference,occurredOn,notes,warehouseId,warehouse,stockMovementId,movedStock,isReversal,isReversed,isReversible,hasReceipt,receiptIsImage,receiptUrl,receiptFilename,reversesSupplyId,recordedByUserId,recorder,createdAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,shortageId,kind,kindLabel,quantity,surplusQuantity,amount,method,methodLabel,reference,occurredOn,notes,warehouseId,warehouse,stockMovementId,movedStock,isReversal,isReversed,isReversible,hasReceipt,receiptIsImage,receiptUrl,receiptFilename,reversesSupplyId,recordedByUserId,recorder,createdAt]);
+}
 
 @override
 String toString() {
-  return 'ShortageSupply(id: $id, shortageId: $shortageId, kind: $kind, kindLabel: $kindLabel, quantity: $quantity, surplusQuantity: $surplusQuantity, amount: $amount, method: $method, methodLabel: $methodLabel, reference: $reference, occurredOn: $occurredOn, notes: $notes, warehouseId: $warehouseId, warehouse: $warehouse, stockMovementId: $stockMovementId, movedStock: $movedStock, isReversal: $isReversal, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, reversesSupplyId: $reversesSupplyId, recordedByUserId: $recordedByUserId, recorder: $recorder, createdAt: $createdAt)';
+    return 'ShortageSupply(id: $id, shortageId: $shortageId, kind: $kind, kindLabel: $kindLabel, quantity: $quantity, surplusQuantity: $surplusQuantity, amount: $amount, method: $method, methodLabel: $methodLabel, reference: $reference, occurredOn: $occurredOn, notes: $notes, warehouseId: $warehouseId, warehouse: $warehouse, stockMovementId: $stockMovementId, movedStock: $movedStock, isReversal: $isReversal, isReversed: $isReversed, isReversible: $isReversible, hasReceipt: $hasReceipt, receiptIsImage: $receiptIsImage, receiptUrl: $receiptUrl, receiptFilename: $receiptFilename, reversesSupplyId: $reversesSupplyId, recordedByUserId: $recordedByUserId, recorder: $recorder, createdAt: $createdAt)';
 }
 
 
@@ -451,16 +459,21 @@ $ShortageSupplyWarehouseRefCopyWith<ShortageSupplyWarehouseRef> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupplyWarehouseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as ShortageSupplyWarehouseRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupplyWarehouseRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as ShortageSupplyWarehouseRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'ShortageSupplyWarehouseRef(id: $id, name: $name)';
+  final _this = this as ShortageSupplyWarehouseRef;
+  return 'ShortageSupplyWarehouseRef(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -489,7 +502,7 @@ class _$ShortageSupplyWarehouseRefCopyWithImpl<$Res>
 /// Create a copy of ShortageSupplyWarehouseRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageSupplyWarehouseRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -652,16 +665,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupplyWarehouseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupplyWarehouseRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'ShortageSupplyWarehouseRef(id: $id, name: $name)';
+    return 'ShortageSupplyWarehouseRef(id: $id, name: $name)';
 }
 
 
@@ -717,16 +732,21 @@ $ShortageSupplyPersonRefCopyWith<ShortageSupplyPersonRef> get copyWith => _$Shor
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupplyPersonRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+  final _this = this as ShortageSupplyPersonRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShortageSupplyPersonRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.employeeCode, _this.employeeCode) || other.employeeCode == _this.employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+  final _this = this as ShortageSupplyPersonRef;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.employeeCode);
+}
 
 @override
 String toString() {
-  return 'ShortageSupplyPersonRef(id: $id, name: $name, employeeCode: $employeeCode)';
+  final _this = this as ShortageSupplyPersonRef;
+  return 'ShortageSupplyPersonRef(id: ${_this.id}, name: ${_this.name}, employeeCode: ${_this.employeeCode})';
 }
 
 
@@ -755,7 +775,7 @@ class _$ShortageSupplyPersonRefCopyWithImpl<$Res>
 /// Create a copy of ShortageSupplyPersonRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? employeeCode = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ShortageSupplyPersonRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,employeeCode: freezed == employeeCode ? _self.employeeCode : employeeCode // ignore: cast_nullable_to_non_nullable
@@ -920,16 +940,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupplyPersonRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShortageSupplyPersonRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.employeeCode, employeeCode) || other.employeeCode == employeeCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,employeeCode);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,employeeCode);
+}
 
 @override
 String toString() {
-  return 'ShortageSupplyPersonRef(id: $id, name: $name, employeeCode: $employeeCode)';
+    return 'ShortageSupplyPersonRef(id: $id, name: $name, employeeCode: $employeeCode)';
 }
 
 

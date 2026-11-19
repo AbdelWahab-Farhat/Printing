@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profit_sources.dart';
@@ -9,6 +9,7 @@ part of 'profit_sources.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $ProfitSourcesCopyWith<ProfitSources> get copyWith => _$ProfitSourcesCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSources&&(identical(other.gate, gate) || other.gate == gate)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.groups, groups));
+  final _this = this as ProfitSources;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSources&&(identical(other.gate, _this.gate) || other.gate == _this.gate)&&(identical(other.total, _this.total) || other.total == _this.total)&&const DeepCollectionEquality().equals(other.groups, _this.groups));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,gate,total,const DeepCollectionEquality().hash(groups));
+int get hashCode {
+  final _this = this as ProfitSources;
+  return Object.hash(runtimeType,_this.gate,_this.total,const DeepCollectionEquality().hash(_this.groups));
+}
 
 @override
 String toString() {
-  return 'ProfitSources(gate: $gate, total: $total, groups: $groups)';
+  final _this = this as ProfitSources;
+  return 'ProfitSources(gate: ${_this.gate}, total: ${_this.total}, groups: ${_this.groups})';
 }
 
 
@@ -66,7 +72,7 @@ class _$ProfitSourcesCopyWithImpl<$Res>
 /// Create a copy of ProfitSources
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? gate = null,Object? total = null,Object? groups = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfitSources(
 gate: null == gate ? _self.gate : gate // ignore: cast_nullable_to_non_nullable
 as String,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as String,groups: null == groups ? _self.groups : groups // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.gate,_that.total,_that.groups);case _:
 @JsonSerializable()
 
 class _ProfitSources implements ProfitSources {
-  const _ProfitSources({required this.gate, required this.total, final  List<ProfitSourceGroup> groups = const <ProfitSourceGroup>[]}): _groups = groups;
+  const _ProfitSources({required this.gate, required this.total,  List<ProfitSourceGroup> groups = const <ProfitSourceGroup>[]}): _groups = groups;
   factory _ProfitSources.fromJson(Map<String, dynamic> json) => _$ProfitSourcesFromJson(json);
 
 @override final  String gate;
@@ -237,16 +243,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSources&&(identical(other.gate, gate) || other.gate == gate)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other._groups, _groups));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSources&&(identical(other.gate, gate) || other.gate == gate)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.groups, _groups));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,gate,total,const DeepCollectionEquality().hash(_groups));
+int get hashCode {
+    return Object.hash(runtimeType,gate,total,const DeepCollectionEquality().hash(_groups));
+}
 
 @override
 String toString() {
-  return 'ProfitSources(gate: $gate, total: $total, groups: $groups)';
+    return 'ProfitSources(gate: $gate, total: $total, groups: $groups)';
 }
 
 
@@ -305,16 +313,21 @@ $ProfitSourceGroupCopyWith<ProfitSourceGroup> get copyWith => _$ProfitSourceGrou
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSourceGroup&&(identical(other.key, key) || other.key == key)&&(identical(other.title, title) || other.title == title)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.lines, lines));
+  final _this = this as ProfitSourceGroup;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSourceGroup&&(identical(other.key, _this.key) || other.key == _this.key)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.startsOn, _this.startsOn) || other.startsOn == _this.startsOn)&&(identical(other.endsOn, _this.endsOn) || other.endsOn == _this.endsOn)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.statusLabel, _this.statusLabel) || other.statusLabel == _this.statusLabel)&&(identical(other.total, _this.total) || other.total == _this.total)&&const DeepCollectionEquality().equals(other.lines, _this.lines));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,title,startsOn,endsOn,status,statusLabel,total,const DeepCollectionEquality().hash(lines));
+int get hashCode {
+  final _this = this as ProfitSourceGroup;
+  return Object.hash(runtimeType,_this.key,_this.title,_this.startsOn,_this.endsOn,_this.status,_this.statusLabel,_this.total,const DeepCollectionEquality().hash(_this.lines));
+}
 
 @override
 String toString() {
-  return 'ProfitSourceGroup(key: $key, title: $title, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel, total: $total, lines: $lines)';
+  final _this = this as ProfitSourceGroup;
+  return 'ProfitSourceGroup(key: ${_this.key}, title: ${_this.title}, startsOn: ${_this.startsOn}, endsOn: ${_this.endsOn}, status: ${_this.status}, statusLabel: ${_this.statusLabel}, total: ${_this.total}, lines: ${_this.lines})';
 }
 
 
@@ -343,7 +356,7 @@ class _$ProfitSourceGroupCopyWithImpl<$Res>
 /// Create a copy of ProfitSourceGroup
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? key = null,Object? title = freezed,Object? startsOn = freezed,Object? endsOn = freezed,Object? status = freezed,Object? statusLabel = freezed,Object? total = null,Object? lines = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfitSourceGroup(
 key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,startsOn: freezed == startsOn ? _self.startsOn : startsOn // ignore: cast_nullable_to_non_nullable
@@ -493,7 +506,7 @@ return $default(_that.key,_that.title,_that.startsOn,_that.endsOn,_that.status,_
 @JsonSerializable()
 
 class _ProfitSourceGroup implements ProfitSourceGroup {
-  const _ProfitSourceGroup({required this.key, this.title, @JsonKey(name: 'starts_on') this.startsOn, @JsonKey(name: 'ends_on') this.endsOn, this.status, @JsonKey(name: 'status_label') this.statusLabel, required this.total, final  List<ProfitSourceLine> lines = const <ProfitSourceLine>[]}): _lines = lines;
+  const _ProfitSourceGroup({required this.key, this.title, @JsonKey(name: 'starts_on') this.startsOn, @JsonKey(name: 'ends_on') this.endsOn, this.status, @JsonKey(name: 'status_label') this.statusLabel, required this.total,  List<ProfitSourceLine> lines = const <ProfitSourceLine>[]}): _lines = lines;
   factory _ProfitSourceGroup.fromJson(Map<String, dynamic> json) => _$ProfitSourceGroupFromJson(json);
 
 @override final  String key;
@@ -526,16 +539,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSourceGroup&&(identical(other.key, key) || other.key == key)&&(identical(other.title, title) || other.title == title)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other._lines, _lines));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSourceGroup&&(identical(other.key, key) || other.key == key)&&(identical(other.title, title) || other.title == title)&&(identical(other.startsOn, startsOn) || other.startsOn == startsOn)&&(identical(other.endsOn, endsOn) || other.endsOn == endsOn)&&(identical(other.status, status) || other.status == status)&&(identical(other.statusLabel, statusLabel) || other.statusLabel == statusLabel)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.lines, _lines));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,key,title,startsOn,endsOn,status,statusLabel,total,const DeepCollectionEquality().hash(_lines));
+int get hashCode {
+    return Object.hash(runtimeType,key,title,startsOn,endsOn,status,statusLabel,total,const DeepCollectionEquality().hash(_lines));
+}
 
 @override
 String toString() {
-  return 'ProfitSourceGroup(key: $key, title: $title, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel, total: $total, lines: $lines)';
+    return 'ProfitSourceGroup(key: $key, title: $title, startsOn: $startsOn, endsOn: $endsOn, status: $status, statusLabel: $statusLabel, total: $total, lines: $lines)';
 }
 
 
@@ -603,16 +618,21 @@ $ProfitSourceLineCopyWith<ProfitSourceLine> get copyWith => _$ProfitSourceLineCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSourceLine&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.key, key) || other.key == key)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.label, label) || other.label == label)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.orderStatusLabel, orderStatusLabel) || other.orderStatusLabel == orderStatusLabel)&&(identical(other.state, state) || other.state == state)&&(identical(other.stateLabel, stateLabel) || other.stateLabel == stateLabel)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&const DeepCollectionEquality().equals(other.children, children));
+  final _this = this as ProfitSourceLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfitSourceLine&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.key, _this.key) || other.key == _this.key)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.orderId, _this.orderId) || other.orderId == _this.orderId)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.orderStatusLabel, _this.orderStatusLabel) || other.orderStatusLabel == _this.orderStatusLabel)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.stateLabel, _this.stateLabel) || other.stateLabel == _this.stateLabel)&&(identical(other.occurredAt, _this.occurredAt) || other.occurredAt == _this.occurredAt)&&const DeepCollectionEquality().equals(other.children, _this.children));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,key,amount,label,orderId,code,customerName,orderStatusLabel,state,stateLabel,occurredAt,const DeepCollectionEquality().hash(children));
+int get hashCode {
+  final _this = this as ProfitSourceLine;
+  return Object.hash(runtimeType,_this.kind,_this.key,_this.amount,_this.label,_this.orderId,_this.code,_this.customerName,_this.orderStatusLabel,_this.state,_this.stateLabel,_this.occurredAt,const DeepCollectionEquality().hash(_this.children));
+}
 
 @override
 String toString() {
-  return 'ProfitSourceLine(kind: $kind, key: $key, amount: $amount, label: $label, orderId: $orderId, code: $code, customerName: $customerName, orderStatusLabel: $orderStatusLabel, state: $state, stateLabel: $stateLabel, occurredAt: $occurredAt, children: $children)';
+  final _this = this as ProfitSourceLine;
+  return 'ProfitSourceLine(kind: ${_this.kind}, key: ${_this.key}, amount: ${_this.amount}, label: ${_this.label}, orderId: ${_this.orderId}, code: ${_this.code}, customerName: ${_this.customerName}, orderStatusLabel: ${_this.orderStatusLabel}, state: ${_this.state}, stateLabel: ${_this.stateLabel}, occurredAt: ${_this.occurredAt}, children: ${_this.children})';
 }
 
 
@@ -641,7 +661,7 @@ class _$ProfitSourceLineCopyWithImpl<$Res>
 /// Create a copy of ProfitSourceLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? key = null,Object? amount = null,Object? label = freezed,Object? orderId = freezed,Object? code = freezed,Object? customerName = freezed,Object? orderStatusLabel = freezed,Object? state = freezed,Object? stateLabel = freezed,Object? occurredAt = freezed,Object? children = null,}) {
-  return _then(_self.copyWith(
+  return _then(ProfitSourceLine(
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as String,key: null == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
@@ -795,7 +815,7 @@ return $default(_that.kind,_that.key,_that.amount,_that.label,_that.orderId,_tha
 @JsonSerializable()
 
 class _ProfitSourceLine implements ProfitSourceLine {
-  const _ProfitSourceLine({required this.kind, required this.key, required this.amount, this.label, @JsonKey(name: 'order_id') this.orderId, this.code, @JsonKey(name: 'customer_name') this.customerName, @JsonKey(name: 'order_status_label') this.orderStatusLabel, this.state, @JsonKey(name: 'state_label') this.stateLabel, @JsonKey(name: 'occurred_at') this.occurredAt, final  List<ProfitSourceLine> children = const <ProfitSourceLine>[]}): _children = children;
+  const _ProfitSourceLine({required this.kind, required this.key, required this.amount, this.label, @JsonKey(name: 'order_id') this.orderId, this.code, @JsonKey(name: 'customer_name') this.customerName, @JsonKey(name: 'order_status_label') this.orderStatusLabel, this.state, @JsonKey(name: 'state_label') this.stateLabel, @JsonKey(name: 'occurred_at') this.occurredAt,  List<ProfitSourceLine> children = const <ProfitSourceLine>[]}): _children = children;
   factory _ProfitSourceLine.fromJson(Map<String, dynamic> json) => _$ProfitSourceLineFromJson(json);
 
 /// `order` · `release` · `entry`.
@@ -837,16 +857,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSourceLine&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.key, key) || other.key == key)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.label, label) || other.label == label)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.orderStatusLabel, orderStatusLabel) || other.orderStatusLabel == orderStatusLabel)&&(identical(other.state, state) || other.state == state)&&(identical(other.stateLabel, stateLabel) || other.stateLabel == stateLabel)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&const DeepCollectionEquality().equals(other._children, _children));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfitSourceLine&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.key, key) || other.key == key)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.label, label) || other.label == label)&&(identical(other.orderId, orderId) || other.orderId == orderId)&&(identical(other.code, code) || other.code == code)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.orderStatusLabel, orderStatusLabel) || other.orderStatusLabel == orderStatusLabel)&&(identical(other.state, state) || other.state == state)&&(identical(other.stateLabel, stateLabel) || other.stateLabel == stateLabel)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&const DeepCollectionEquality().equals(other.children, _children));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,kind,key,amount,label,orderId,code,customerName,orderStatusLabel,state,stateLabel,occurredAt,const DeepCollectionEquality().hash(_children));
+int get hashCode {
+    return Object.hash(runtimeType,kind,key,amount,label,orderId,code,customerName,orderStatusLabel,state,stateLabel,occurredAt,const DeepCollectionEquality().hash(_children));
+}
 
 @override
 String toString() {
-  return 'ProfitSourceLine(kind: $kind, key: $key, amount: $amount, label: $label, orderId: $orderId, code: $code, customerName: $customerName, orderStatusLabel: $orderStatusLabel, state: $state, stateLabel: $stateLabel, occurredAt: $occurredAt, children: $children)';
+    return 'ProfitSourceLine(kind: $kind, key: $key, amount: $amount, label: $label, orderId: $orderId, code: $code, customerName: $customerName, orderStatusLabel: $orderStatusLabel, state: $state, stateLabel: $stateLabel, occurredAt: $occurredAt, children: $children)';
 }
 
 

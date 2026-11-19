@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'product_images_cubit.dart';
@@ -9,6 +9,7 @@ part of 'product_images_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ProductImagesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProductImagesState()';
+    return 'ProductImagesState()';
 }
 
 
@@ -191,7 +192,7 @@ class ProductImagesLoading implements ProductImagesState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProductImagesState.loading()';
+    return 'ProductImagesState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class ProductImagesLoaded implements ProductImagesState {
-  const ProductImagesLoaded({required final  List<ProductImage> images, this.isUploading = false, this.sent = 0, this.total = 0, final  Set<int> busy = const <int>{}}): _images = images,_busy = busy;
+  const ProductImagesLoaded({required  List<ProductImage> images, this.isUploading = false, this.sent = 0, this.total = 0,  Set<int> busy = const <int>{}}): _images = images,_busy = busy;
   
 
  final  List<ProductImage> _images;
@@ -251,16 +252,18 @@ $ProductImagesLoadedCopyWith<ProductImagesLoaded> get copyWith => _$ProductImage
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesLoaded&&const DeepCollectionEquality().equals(other._images, _images)&&(identical(other.isUploading, isUploading) || other.isUploading == isUploading)&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other._busy, _busy));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesLoaded&&const DeepCollectionEquality().equals(other.images, _images)&&(identical(other.isUploading, isUploading) || other.isUploading == isUploading)&&(identical(other.sent, sent) || other.sent == sent)&&(identical(other.total, total) || other.total == total)&&const DeepCollectionEquality().equals(other.busy, _busy));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_images),isUploading,sent,total,const DeepCollectionEquality().hash(_busy));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_images),isUploading,sent,total,const DeepCollectionEquality().hash(_busy));
+}
 
 @override
 String toString() {
-  return 'ProductImagesState.loaded(images: $images, isUploading: $isUploading, sent: $sent, total: $total, busy: $busy)';
+    return 'ProductImagesState.loaded(images: $images, isUploading: $isUploading, sent: $sent, total: $total, busy: $busy)';
 }
 
 
@@ -321,16 +324,18 @@ $ProductImagesFailureCopyWith<ProductImagesFailure> get copyWith => _$ProductIma
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ProductImagesFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'ProductImagesState.failure(failure: $failure)';
+    return 'ProductImagesState.failure(failure: $failure)';
 }
 
 

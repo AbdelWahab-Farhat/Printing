@@ -36,10 +36,15 @@ class OrderTotals extends StatelessWidget {
     required this.order,
     this.showCosts = false,
     this.onChangeDeliveryPayer,
+    this.onSetDesignFee,
     super.key,
   });
 
   final Order order;
+
+  /// The pencil on «أجرة التصميم» — null unless the order still takes a fee and the reader holds
+  /// `orders.design_fee`. See `Order.canSetDesignFee` and ORDER-DESIGN-FEE.md.
+  final VoidCallback? onSetDesignFee;
 
   /// «تغيير» under the delivery line — null when the order may no longer change who pays, or
   /// the reader may not. See `Order.canChangeDeliveryPayer`.
@@ -58,7 +63,16 @@ class OrderTotals extends StatelessWidget {
     return Column(
       children: [
         _Line(label: 'المنتجات', value: order.itemsTotal.grouped),
-        if (order.hasDesignFee) _Line(label: 'التصميم', value: order.designFee.grouped),
+        // **Only for whoever holds `orders.design_fee`** — everybody else gets `'0.00'` and no
+        // line, so the column above «الإجمالي» does not add up for them, by the owner's choice.
+        // Drawn at zero too when it can be set: the line is where the pencil lives.
+        if (order.hasDesignFee || onSetDesignFee != null)
+          _Line(
+            label: 'أجرة التصميم',
+            note: order.designFeeIsAuto ? 'تلقائية' : null,
+            value: order.designFee.grouped,
+            onEdit: onSetDesignFee,
+          ),
         // **Before the discount — the server's own order of operations.**
         // A reader checking the total works down the column, and a charge printed under the
         // subtraction it comes before turns a correct total into an arithmetic mistake.
@@ -192,9 +206,13 @@ class _Line extends StatelessWidget {
     this.note,
     this.tone,
     this.isTotal = false,
+    this.onEdit,
   });
 
   final String label;
+
+  /// Makes the whole line a tap target with a pencil beside the label — «أجرة التصميم» only.
+  final VoidCallback? onEdit;
 
   /// The figure, or **null for one nobody has worked out yet** — drawn in words, never as zero.
   final String? value;
@@ -221,7 +239,7 @@ class _Line extends StatelessWidget {
         ? context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)
         : context.textTheme.bodyMedium;
 
-    return Padding(
+    final line = Padding(
       padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         children: [
@@ -244,11 +262,21 @@ class _Line extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: style?.copyWith(
-                    color: isTotal ? null : scheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: style?.copyWith(
+                          color: isTotal ? null : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    if (onEdit != null) ...[
+                      SizedBox(width: 6.w),
+                      Icon(AppIcons.edit, size: 16.sp, color: scheme.primary),
+                    ],
+                  ],
                 ),
                 if (note case final note?)
                   Padding(
@@ -281,5 +309,10 @@ class _Line extends StatelessWidget {
         ],
       ),
     );
+
+    return switch (onEdit) {
+      final edit? => InkWell(onTap: edit, borderRadius: BorderRadius.circular(8.r), child: line),
+      null => line,
+    };
   }
 }

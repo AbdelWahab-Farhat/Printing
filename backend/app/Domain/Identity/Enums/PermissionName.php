@@ -118,6 +118,11 @@ enum PermissionName: string
     // nobody, like the one above. See ORDER-COMPENSATION.md §4.
     case CompensationOrders = 'orders.compensation';
 
+    // «أجرة التصميم» — what the customer pays for the design. Whoever holds it reads the fee and
+    // sets it from the order while the order is open; nobody else sees it on a screen. Seeded on
+    // nobody: the owner decides who knows the margin over «أجرة المصمم». ORDER-DESIGN-FEE.md.
+    case SetOrderDesignFee = 'orders.design_fee';
+
     // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — the mark an employee puts on an order to say they told
     // the customer, and the queue of orders nobody has told yet.
     //
@@ -485,6 +490,7 @@ enum PermissionName: string
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::EditDrawnOrderLines => 'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
             self::CompensationOrders => 'إنشاء طلبية تعويض (بضاعة بلا مقابل)',
+            self::SetOrderDesignFee => 'رؤية وتحديد أجرة التصميم على الطلبية',
             self::ConfirmReadyMessage => 'رسائل الزبائن (الجاهزية والراجع)',
             self::MoveOrderToAwaitingDeposit => 'تحويل الطلبية إلى انتظار العربون',
             self::MoveOrderToDepositPaid => 'تحويل الطلبية إلى عربون مدفوع',
@@ -604,6 +610,7 @@ enum PermissionName: string
             // machine can move into, which is the whole of what that group collects.
             self::DeleteOrders, self::RestoreOrders, self::ViewOrderArchive,
             self::ManageOrderDesigns, self::EditDrawnOrderLines, self::CompensationOrders,
+            self::SetOrderDesignFee,
             // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
             self::ConfirmReadyMessage => 'الطلبيات',
             self::MoveOrderToAwaitingDeposit, self::MoveOrderToDepositPaid,

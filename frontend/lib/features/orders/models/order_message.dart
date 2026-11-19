@@ -151,7 +151,8 @@ class OrderMessage {
   /// «المدفوع» and «المتبقي» are read off it, so it is a line the reader can do without.
   static String _money(Order order) => _section(moneyHeading, [
     'المنتجات: ${_amount(order.itemsTotal)}',
-    if (order.hasDesignFee) 'التصميم: ${_amount(order.designFee)}',
+    // The line the customer is charged, whoever copies the message (ORDER-DESIGN-FEE.md).
+    if (order.hasInvoiceDesignFee) 'التصميم: ${_amount(order.invoiceFee)}',
     if (order.hasAdditionalCost) _additionalCost(order),
     if (order.hasDiscount) 'الخصم: - ${_amount(order.discount)}',
     'المدفوع: ${_amount(order.paidAmount)}',
