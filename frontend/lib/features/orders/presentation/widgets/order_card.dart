@@ -10,6 +10,7 @@ import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/compensation_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deleted_badge.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_product_kind_badge.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:dayaa/features/orders/presentation/widgets/partial_delivery_badge.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,14 @@ class OrderCard extends StatelessWidget {
 
   final Order order;
   final VoidCallback? onTap;
+
+  /// How many badges other than the product kind share the status band's row. «محذوفة» and
+  /// «مستعجل» share one slot, so they count once.
+  static int _otherBadgeCount(Order order) => [
+    order.isArchived || order.isUrgent,
+    order.isPartiallyDelivered ?? false,
+    order.isCompensation,
+  ].where((shown) => shown).length;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +122,14 @@ class OrderCard extends StatelessWidget {
                       // «تعويض» — why this card's total reads 0.
                       if (order.isCompensation) ...[
                         const CompensationBadge(),
+                        SizedBox(width: 8.w),
+                      ],
+                      // «مطبوع» / «سادة» / «تصنيع» — see [OrderProductKindBadge]. The first to
+                      // yield when the row is crowded: beside two other badges it no longer fits
+                      // the narrowest phone, and the order screen's header still shows it.
+                      if (OrderProductKindBadge.labelFor(order.productionFlow) != null &&
+                          _otherBadgeCount(order) < 2) ...[
+                        OrderProductKindBadge(flow: order.productionFlow, besideBanner: true),
                         SizedBox(width: 8.w),
                       ],
                       Expanded(
