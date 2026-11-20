@@ -74,7 +74,7 @@ class OrderDesignFeeFromTicketTest extends DesignTicketTestCase
 
         $versionId = (int) $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png'), 'print_colors' => [self::BLACK]],
+            ['files' => $this->versionImages('v1.png'), 'print_colors' => [self::BLACK]],
             $designer + ['Accept' => 'application/json'],
         )->assertCreated()->json('data.id');
 

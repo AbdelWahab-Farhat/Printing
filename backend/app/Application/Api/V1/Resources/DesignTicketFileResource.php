@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Api\V1\Resources;
 
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\DesignTicket\Models\DesignTicketFileFace;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -60,6 +61,26 @@ class DesignTicketFileResource extends JsonResource
             // Reserved, exactly as on a customer design: a server-rendered first page for a PDF
             // is a follow-up, and having the key now means it can land without an app release.
             'preview_url' => null,
+
+            // **Every image of a version, face 1 first** (DESIGN-VERSION-IMAGES.md §5). Face 1 is
+            // this row, so the fields above stay what an older app draws. One entry on a brief and
+            // on a version uploaded before faces existed. Sent only where the faces were loaded,
+            // so a response is never a lazy load per row.
+            'faces' => $this->when(
+                $this->relationLoaded('extraFaces'),
+                fn (): array => array_map(
+                    fn (DesignTicketFile|DesignTicketFileFace $face): array => [
+                        'position' => $face instanceof DesignTicketFileFace ? $face->position : 1,
+                        'file_url' => $face->url(),
+                        'mime_type' => $face->mime_type,
+                        'original_filename' => $face->original_filename,
+                        'size_bytes' => $face->size_bytes,
+                        'width_px' => $face->width_px,
+                        'height_px' => $face->height_px,
+                    ],
+                    $this->resource->faces(),
+                ),
+            ),
 
             // ── the version story; all null on a brief ──
             'version' => $this->version,

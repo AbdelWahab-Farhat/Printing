@@ -37,6 +37,7 @@ use App\Support\ResponseTrait;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -384,16 +385,19 @@ class DesignTicketController extends Controller
         /** @var User $designer */
         $designer = $request->user();
 
+        /** @var list<UploadedFile> $images */
+        $images = array_values((array) $request->file('files', []));
+
         $version = $this->tickets->submit(
             $ticket,
-            $request->file('file'),
+            $images,
             $designer,
             $request->string('note')->toString() ?: null,
             $request->validated('print_colors'),
         );
 
         return $this->created(
-            new DesignTicketFileResource($version->load('uploader')),
+            new DesignTicketFileResource($version->load('uploader', 'extraFaces')),
             'تم إرسال التصميم للمراجعة',
         );
     }
@@ -463,7 +467,7 @@ class DesignTicketController extends Controller
         $withdrawn = $this->tickets->withdraw($ticket, $version, $designer);
 
         return $this->success(
-            new DesignTicketFileResource($withdrawn->load('uploader')),
+            new DesignTicketFileResource($withdrawn->load('uploader', 'extraFaces')),
             'سُحبت النسخة — ارفع الملف الصحيح',
         );
     }
@@ -534,9 +538,9 @@ class DesignTicketController extends Controller
         $ticket->load([
             'customer:id,code',
             'requester', 'designer', 'acceptedBy', 'approvedBy', 'approvedDesign', 'order',
-            'latestVersion',
+            'latestVersion.extraFaces',
             'attachments.uploader',
-            'versions.uploader', 'versions.reviewer',
+            'versions.uploader', 'versions.reviewer', 'versions.extraFaces',
         ])->loadCount('versions');
 
         $this->stampSuggestedPay($request, $ticket);

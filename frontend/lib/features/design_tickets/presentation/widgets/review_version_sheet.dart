@@ -4,6 +4,7 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -159,6 +160,8 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             'مراجعة ${widget.version.label}',
             style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
+          // Every image of the version — what the approval puts on the order card, all of it.
+          DesignVersionFacesStrip(version: widget.version, includeFirst: true),
           SizedBox(height: 14.h),
           AppTextField(
             controller: _note,

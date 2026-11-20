@@ -24,6 +24,7 @@ use App\Domain\Delivery\Models\Region;
 use App\Domain\Delivery\Models\ShippingCompany;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\DesignTicket\Models\DesignTicketFileFace;
 use App\Domain\DesignTicket\Models\DesignTicketMessage;
 use App\Domain\DesignTicket\Models\DesignTicketMessageAttachment;
 use App\Domain\EmployeeWallet\Models\EmployeeWalletEntry;
@@ -193,6 +194,8 @@ enum AuditSubject: string
     // and neither of them lives on the ticket row.
     case DesignTicket = 'design_ticket';
     case DesignTicketFile = 'design_ticket_file';
+    // The second and later images of a version — DESIGN-VERSION-IMAGES.md.
+    case DesignTicketFileFace = 'design_ticket_file_face';
     // محادثة التذكرة، على شكل التذاكر الداخلية — DESIGN-TICKET-CHAT.
     case DesignTicketMessage = 'design_ticket_message';
     case DesignTicketMessageAttachment = 'design_ticket_message_attachment';
@@ -310,6 +313,7 @@ enum AuditSubject: string
             self::Shortage => Shortage::class,
             self::DesignTicket => DesignTicket::class,
             self::DesignTicketFile => DesignTicketFile::class,
+            self::DesignTicketFileFace => DesignTicketFileFace::class,
             self::DesignTicketMessage => DesignTicketMessage::class,
             self::DesignTicketMessageAttachment => DesignTicketMessageAttachment::class,
             self::ShortageSupply => ShortageSupply::class,
@@ -400,6 +404,7 @@ enum AuditSubject: string
             self::Shortage => 'نقص',
             self::DesignTicket => 'تذكرة تصميم',
             self::DesignTicketFile => 'ملف تذكرة تصميم',
+            self::DesignTicketFileFace => 'صورة من نسخة تصميم',
             self::DesignTicketMessage => 'رسالة تذكرة تصميم',
             self::DesignTicketMessageAttachment => 'مرفق رسالة تذكرة تصميم',
             self::ShortageSupply => 'عملية توفير',

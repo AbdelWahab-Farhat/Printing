@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\Support\PrintColors;
+use App\Domain\DesignTicket\Actions\PromoteApprovedDesign;
 use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Enums\DesignTicketFileKind;
 use App\Domain\DesignTicket\Enums\DesignTicketStatus;
@@ -57,23 +58,30 @@ final class AttachApprovedTicketDesigns
         $attached = $order->designs()->pluck('customer_design_id')->map(intval(...))->all();
 
         foreach ($tickets as $ticket) {
-            $designId = (int) $ticket->approved_customer_design_id;
+            // Face 1 first — `approved_customer_design_id` — then the version's other images
+            // (DESIGN-VERSION-IMAGES.md §4). A ticket approved before faces existed has one.
+            $designIds = PromoteApprovedDesign::designIdsOf($ticket);
 
-            if (in_array($designId, $attached, true)) {
+            if ($designIds === [] || in_array($designIds[0], $attached, true)) {
                 continue;
             }
 
-            $version = ($this->addDesign)($order, $designId);
+            // One version on the order, every image a face of it — not N versions, which would
+            // each supersede the one before and leave a single image approved.
+            $faces = $this->addDesign->asOneVersion($order, $designIds);
 
             $colors = $this->approvedColors($ticket);
 
-            if ($colors !== null && $version->print_colors !== $colors) {
-                $version->forceFill(['print_colors' => $colors])->save();
+            foreach ($faces as $face) {
+                if ($colors !== null && $face->print_colors !== $colors) {
+                    $face->forceFill(['print_colors' => $colors])->save();
+                }
             }
 
-            ($this->reviewDesign)($order, $version, OrderDesignStatus::Approved, null, $actor);
+            // Approves every face at once — see ReviewOrderDesign.
+            ($this->reviewDesign)($order, $faces[0], OrderDesignStatus::Approved, null, $actor);
 
-            $attached[] = $designId;
+            array_push($attached, ...$designIds);
         }
 
         $order->unsetRelation('designs');

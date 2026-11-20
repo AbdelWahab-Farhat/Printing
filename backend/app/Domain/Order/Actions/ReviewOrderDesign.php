@@ -18,10 +18,10 @@ use Illuminate\Support\Facades\DB;
  * **A version is judged once.** Changing a verdict afterwards would erase the reason the next
  * version exists, and that trail is the entire value of keeping versions at all.
  *
- * Approving supersedes whatever was approved before. The database allows exactly one approved
- * version per order — that partial index is what makes "which one do we print?" answerable on
- * the shop floor — so the previous winner is stepped back to rejected, with a reason saying what
- * replaced it rather than a blank.
+ * Approving supersedes whatever was approved before. One version per order is approved at a time
+ * — that is what makes "which one do we print?" answerable on the shop floor — so the previous
+ * winner, every face of it, is stepped back to rejected, with a reason saying what replaced it
+ * rather than a blank. A version may have several faces (images); they are judged together.
  */
 final class ReviewOrderDesign
 {
@@ -51,12 +51,17 @@ final class ReviewOrderDesign
                 $this->supersedePreviouslyApproved($order, (int) $design->version);
             }
 
-            $design->forceFill([
-                'status' => $verdict,
-                'rejection_reason' => $reason,
-                'reviewed_at' => now(),
-                'reviewed_by' => $actor?->getKey(),
-            ])->save();
+            // **The whole version, every face of it** (DESIGN-VERSION-IMAGES.md §4): the front of
+            // the bag is not approved without its back. A face already judged — none can be, as
+            // faces are only ever judged together — is left as it is.
+            $design->versionFaces()
+                ->reject(fn (OrderDesign $face) => $face->status->isReviewed())
+                ->each(fn (OrderDesign $face) => $face->forceFill([
+                    'status' => $verdict,
+                    'rejection_reason' => $reason,
+                    'reviewed_at' => now(),
+                    'reviewed_by' => $actor?->getKey(),
+                ])->save());
 
             return $design->refresh();
         });
@@ -66,6 +71,7 @@ final class ReviewOrderDesign
     {
         $order->designs()
             ->where('status', OrderDesignStatus::Approved)
+            ->where('version', '!=', $newVersion)
             ->get()
             // One at a time: a mass update fires no model events, and the history would lose
             // the moment a design stopped being the approved one.

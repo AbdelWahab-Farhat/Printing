@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
+import 'package:dayaa/core/files/picked_file.dart';
 import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
@@ -137,16 +138,13 @@ class DesignTicketDetailCubit extends Cubit<DesignTicketDetailState> {
   Future<Failure?> removeAttachment(int attachmentId) =>
       _write(() => _removeAttachment(_id, attachmentId));
 
-  /// Sends the designer's work up for review — the first version or the next one — with the
-  /// inks it was drawn in.
+  /// Sends the designer's work up for review — the first version or the next one — as two images
+  /// or more, with the inks it was drawn in.
   Future<Failure?> submit({
-    required String path,
-    required String filename,
+    required List<PickedFile> images,
     String? note,
     List<PrintColor> printColors = const [],
-  }) => _write(
-    () => _submit(_id, path: path, filename: filename, note: note, printColors: printColors),
-  );
+  }) => _write(() => _submit(_id, images: images, note: note, printColors: printColors));
 
   /// The verdict on the version currently under review.
   ///

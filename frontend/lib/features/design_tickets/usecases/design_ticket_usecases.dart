@@ -211,16 +211,14 @@ class SubmitDesignVersion {
 
   Future<Either<Failure, DesignTicketFile>> call(
     int ticketId, {
-    required String path,
-    required String filename,
+    required List<PickedFile> images,
     String? note,
     List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   }) {
     return _repository.submitVersion(
       ticketId,
-      path: path,
-      filename: filename,
+      images: images,
       note: note,
       printColors: printColors,
       onProgress: onProgress,

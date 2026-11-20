@@ -55,7 +55,10 @@ class DesignTicketPrintColorsTest extends DesignTicketTestCase
     {
         return (int) $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $file ?? $this->image('v1.png')] + $extra,
+            // [$file] is the front; the back keeps it a version of two images.
+            ['files' => $file === null
+                ? $this->versionImages('v1.png')
+                : [$file, UploadedFile::fake()->image('back.png', 800, 600)]] + $extra,
             $designer + ['Accept' => 'application/json'],
         )->assertCreated()->json('data.id');
     }
@@ -175,8 +178,9 @@ class DesignTicketPrintColorsTest extends DesignTicketTestCase
         // Act
         $this->approve($ticket, $versionId, $employee);
 
-        // Assert — what the designer said they drew, not what was first asked for.
-        $this->assertSame([self::BLUE], CustomerDesign::query()->sole()->print_colors);
+        // Assert — what the designer said they drew, not what was first asked for, on every
+        // image of the version.
+        $this->assertSame([[self::BLUE], [self::BLUE]], CustomerDesign::query()->orderBy('id')->pluck('print_colors')->all());
     }
 
     public function test_a_version_sent_without_colors_falls_back_to_the_brief(): void
@@ -191,7 +195,7 @@ class DesignTicketPrintColorsTest extends DesignTicketTestCase
         $this->approve($ticket, $versionId, $employee);
 
         // Assert
-        $this->assertSame([self::RED], CustomerDesign::query()->sole()->print_colors);
+        $this->assertSame([[self::RED], [self::RED]], CustomerDesign::query()->orderBy('id')->pluck('print_colors')->all());
     }
 
     public function test_approving_a_file_already_in_the_library_fills_empty_colors_and_reaches_open_orders(): void

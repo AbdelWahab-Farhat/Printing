@@ -12,6 +12,7 @@ use App\Domain\Order\Enums\OrderDesignStatus;
 use Database\Factories\OrderDesignFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +44,8 @@ class OrderDesign extends Model
         return [
             'status' => OrderDesignStatus::class,
             'version' => 'integer',
+            // Which image of the version this is, 1…N — DESIGN-VERSION-IMAGES.md §4.
+            'face' => 'integer',
             'reviewed_at' => 'datetime',
             // A copy of the design's colors, taken when it was attached, and what the press reads.
             // It stops moving with the artwork itself — see Order::designsAreEditable().
@@ -72,5 +75,22 @@ class OrderDesign extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * Every face of this row's version on its order, this one included, face 1 first.
+     *
+     * A version is judged as a whole (DESIGN-VERSION-IMAGES.md §4), so approving or rejecting
+     * one face is a verdict on all of them.
+     *
+     * @return Collection<int, self>
+     */
+    public function versionFaces(): Collection
+    {
+        return self::query()
+            ->where('order_id', $this->order_id)
+            ->where('version', $this->version)
+            ->orderBy('face')
+            ->get();
     }
 }

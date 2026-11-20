@@ -643,7 +643,13 @@ abstract class Order with _$Order {
             .where((version) => version.design?.kind == DesignKind.image)
             .where((version) => (version.design?.fileUrl ?? '').isNotEmpty)
             .toList()
-          ..sort((a, b) => a.version.compareTo(b.version));
+          // Faces of one version share its number; they are written in order, so the id keeps
+          // the front before the back (DESIGN-VERSION-IMAGES.md).
+          ..sort((a, b) {
+            final byVersion = a.version.compareTo(b.version);
+
+            return byVersion != 0 ? byVersion : a.id.compareTo(b.id);
+          });
 
     return [for (final version in drawable) version.design!];
   }
@@ -1198,9 +1204,15 @@ extension OrderDesignVersions on List<OrderDesign> {
 
     final newest = live.reduce((a, b) => a.version >= b.version ? a : b);
 
+    // **Rows sharing the newest number are its faces** (DESIGN-VERSION-IMAGES.md): a version
+    // approved on a design ticket with three images arrives as three rows of one number, and all
+    // three are what is printed — whatever their timestamps say.
     return [
       for (final version in live)
-        if (identical(version, newest) || _addedWith(version, newest)) version,
+        if (identical(version, newest) ||
+            version.version == newest.version ||
+            _addedWith(version, newest))
+          version,
     ];
   }
 

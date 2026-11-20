@@ -1061,13 +1061,11 @@ final class ChangeOrderStatus
             return;
         }
 
-        $version = $order->unsetRelation('designs')->designForPress();
-
-        if ($version === null) {
-            return;
+        // Every image of the version: one set of inks per version (DESIGN-VERSION-IMAGES.md §3).
+        foreach ($order->unsetRelation('designs')->designsForPress() as $face) {
+            $face->forceFill(['print_colors' => $colors])->save();
         }
 
-        $version->forceFill(['print_colors' => $colors])->save();
         $order->unsetRelation('designs');
     }
 

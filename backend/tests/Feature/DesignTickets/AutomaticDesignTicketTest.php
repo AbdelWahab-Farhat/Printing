@@ -72,7 +72,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
 
         return (int) $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png'), 'print_colors' => [self::BLACK]],
+            ['files' => $this->versionImages('v1.png'), 'print_colors' => [self::BLACK]],
             $designer + ['Accept' => 'application/json'],
         )->assertCreated()->json('data.id');
     }
@@ -166,7 +166,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
         // Act — a version with no colours.
         $response = $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png')],
+            ['files' => $this->versionImages('v1.png')],
             $designer + ['Accept' => 'application/json'],
         );
 
@@ -266,7 +266,11 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
         $order->refresh();
         $this->assertSame(OrderStatus::Preparing, $order->status);
         $this->assertNotNull($order->preparing_started_at);
-        $this->assertSame(OrderDesignStatus::Approved, OrderDesign::query()->where('order_id', $order->id)->sole()->status);
+        // Both images of the version, approved together as one design number.
+        $faces = OrderDesign::query()->where('order_id', $order->id)->orderBy('face')->get();
+        $this->assertSame([1, 2], $faces->pluck('face')->all());
+        $this->assertSame([1, 1], $faces->pluck('version')->all());
+        $this->assertTrue($faces->every(fn (OrderDesign $face) => $face->status === OrderDesignStatus::Approved));
         $transition = OrderStatusTransition::query()
             ->where('order_id', $order->id)
             ->where('to_status', OrderStatus::Preparing->value)

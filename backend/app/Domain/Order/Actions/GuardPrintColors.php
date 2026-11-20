@@ -66,13 +66,16 @@ final class GuardPrintColors
         }
 
         $order->unsetRelation('designs');
-        $version = $order->designForPress();
+        $faces = $order->designsForPress();
 
-        if ($version === null) {
+        if ($faces === []) {
             throw PrintOrderNeedsADesign::make();
         }
 
-        $this->assertComplete($version, atThePress: true);
+        // Every image the press prints, not only the first (DESIGN-VERSION-IMAGES.md §4).
+        foreach ($faces as $face) {
+            $this->assertComplete($face, atThePress: true);
+        }
     }
 
     private function assertComplete(OrderDesign $version, bool $atThePress): void

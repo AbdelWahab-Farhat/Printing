@@ -4,9 +4,9 @@ plugins {
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
     // Applied here, not left to the plugins that need it. `file_picker` and
-    // `flutter_plugin_android_lifecycle` are written in Kotlin, and on AGP 8 the Kotlin Gradle
-    // Plugin is what compiles them — as is our own MainActivity.kt. The version is declared
-    // once, in settings.gradle.kts.
+    // `flutter_plugin_android_lifecycle` are written in Kotlin, and with built-in Kotlin off
+    // (gradle.properties) the Kotlin Gradle Plugin is what compiles them — as is our own
+    // MainActivity.kt. The version is declared once, in settings.gradle.kts.
     id("org.jetbrains.kotlin.android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")

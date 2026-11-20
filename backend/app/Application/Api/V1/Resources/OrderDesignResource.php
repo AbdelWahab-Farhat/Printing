@@ -26,6 +26,9 @@ class OrderDesignResource extends JsonResource
         return [
             'id' => $this->id,
             'version' => $this->version,
+            // Which image of the version this row is, 1…N — rows sharing a `version` are one
+            // design shown together (DESIGN-VERSION-IMAGES.md §5).
+            'face' => $this->face,
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),

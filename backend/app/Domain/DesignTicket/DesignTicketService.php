@@ -124,14 +124,17 @@ final class DesignTicketService
         ($this->deleteAttachment)($file);
     }
 
+    /**
+     * @param  list<UploadedFile>  $images  two or more, face 1 first
+     */
     public function submit(
         DesignTicket $ticket,
-        UploadedFile $file,
+        array $images,
         User $designer,
         ?string $note = null,
         ?array $printColors = null,
     ): DesignTicketFile {
-        return ($this->submitVersion)($ticket, $file, $designer, $note, $printColors);
+        return ($this->submitVersion)($ticket, $images, $designer, $note, $printColors);
     }
 
     public function review(

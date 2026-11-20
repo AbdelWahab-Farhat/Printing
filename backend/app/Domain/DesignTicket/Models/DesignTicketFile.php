@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -95,6 +96,30 @@ class DesignTicketFile extends Model
         }
 
         return $this->original_filename ?? "مرفق #{$this->getKey()}";
+    }
+
+    /**
+     * The version's images after the first, in order (DESIGN-VERSION-IMAGES.md §4).
+     *
+     * @return HasMany<DesignTicketFileFace, $this>
+     */
+    public function extraFaces(): HasMany
+    {
+        return $this->hasMany(DesignTicketFileFace::class)->orderBy('position');
+    }
+
+    /**
+     * Every image of this version, face 1 first: this row, then {@see extraFaces()}.
+     *
+     * Both carry the same file columns, so a caller reads `disk`, `path`, `checksum` and `url()`
+     * off either without asking which it holds. A brief, or a version uploaded before faces
+     * existed, answers with itself alone.
+     *
+     * @return list<DesignTicketFile|DesignTicketFileFace>
+     */
+    public function faces(): array
+    {
+        return [$this, ...$this->extraFaces->all()];
     }
 
     /**

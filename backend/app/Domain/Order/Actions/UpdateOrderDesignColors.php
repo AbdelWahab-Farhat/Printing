@@ -39,8 +39,12 @@ final class UpdateOrderDesignColors
             throw OrderDesignColorsAreLocked::make($order->status);
         }
 
-        $design->print_colors = $colors;
-        $design->save();
+        // Every face of the version: one set of inks per version (DESIGN-VERSION-IMAGES.md §3).
+        // A version of one image is the row alone, exactly as before.
+        foreach ($design->versionFaces() as $face) {
+            $face->print_colors = $colors;
+            $face->save();
+        }
 
         return $design->refresh();
     }

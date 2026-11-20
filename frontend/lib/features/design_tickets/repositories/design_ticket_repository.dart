@@ -146,12 +146,12 @@ abstract interface class DesignTicketRepository {
   /// new ticket — and the version number is allocated by the server, never sent. Refused before
   /// the ticket has been accepted, and refused while another version is already under review.
   ///
-  /// [printColors] are the inks the version was drawn in; the approved one's go into the
-  /// customer's library with the file.
+  /// [images] are the version's faces, two or more, the first being the one that names it
+  /// (DESIGN-VERSION-IMAGES.md). [printColors] are the inks the whole version was drawn in; the
+  /// approved one's go into the customer's library with every image.
   Future<Either<Failure, DesignTicketFile>> submitVersion(
     int ticketId, {
-    required String path,
-    required String filename,
+    required List<PickedFile> images,
     String? note,
     List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,

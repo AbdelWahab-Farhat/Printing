@@ -107,6 +107,17 @@ abstract class DesignTicketTestCase extends TestCase
     }
 
     /**
+     * The two images a version needs at least (DESIGN-VERSION-IMAGES.md): the front, as
+     * {@see image()} draws it, and a back of different size so the two never share a checksum.
+     *
+     * @return list<File>
+     */
+    protected function versionImages(string $name = 'v1.png'): array
+    {
+        return [$this->image($name), UploadedFile::fake()->image('back-'.$name, 800, 600)];
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
@@ -192,7 +203,7 @@ abstract class DesignTicketTestCase extends TestCase
 
         $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png')],
+            ['files' => $this->versionImages('v1.png')],
             $designerHeaders,
         )->assertCreated();
 

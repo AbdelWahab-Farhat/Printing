@@ -139,7 +139,7 @@ class DesignTicketAcceptanceTest extends DesignTicketTestCase
         // Act
         $response = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image()],
+            ['files' => $this->versionImages()],
             $designer,
         );
 

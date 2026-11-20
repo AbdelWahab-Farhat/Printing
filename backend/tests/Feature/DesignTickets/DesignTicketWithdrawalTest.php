@@ -63,7 +63,7 @@ class DesignTicketWithdrawalTest extends DesignTicketTestCase
         $withdrawn = $this->withdraw($ticket, $wrong->id, $designer);
         $right = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v2.png')],
+            ['files' => $this->versionImages('v2.png')],
             $designer,
         );
 
@@ -114,7 +114,7 @@ class DesignTicketWithdrawalTest extends DesignTicketTestCase
         )->assertOk();
         $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v2.png')],
+            ['files' => $this->versionImages('v2.png')],
             $designer,
         )->assertCreated();
         $second = $ticket->versions()->where('version', 2)->sole();

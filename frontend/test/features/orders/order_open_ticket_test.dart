@@ -142,6 +142,18 @@ void main() {
             return const Scaffold(body: Text('تذكرة تصميم جديدة'));
           },
         ),
+        // Stands in for OrderStatusPage: it hands back the order as moved, as that page does.
+        GoRoute(
+          path: Routes.orderStatus(1320),
+          builder: (context, state) => Scaffold(
+            body: TextButton(
+              onPressed: () => context.pop(
+                order.copyWith(status: OrderStatus.designing, statusLabel: 'قيد التصميم'),
+              ),
+              child: const Text('نقل'),
+            ),
+          ),
+        ),
       ],
     );
 
@@ -306,5 +318,53 @@ void main() {
 
     // Assert — once for the page, once more on the way back.
     verify(() => repository.orderTickets(1320)).called(2);
+  });
+
+  group('after «تغيير الحالة»', () {
+    /// One move on offer, so the dial draws «تغيير الحالة».
+    final movable = order.copyWith(
+      availableTransitions: const [
+        OrderTransition(status: OrderStatus.designing, label: 'قيد التصميم'),
+      ],
+    );
+
+    Future<void> openTheStatusScreen(WidgetTester tester) async {
+      when(() => repository.order(1320)).thenAnswer((_) async => Right(movable));
+      when(() => repository.orderTickets(1320)).thenAnswer((_) async => const Right([]));
+      sl.registerFactory<OrderTicketsCubit>(
+        () => OrderTicketsCubit(getTickets: GetOrderTickets(repository)),
+      );
+      await tester.pumpWidget(host());
+      await tester.pumpAndSettle();
+      await openTheDial(tester);
+      await tester.tap(find.text('تغيير الحالة'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the tickets are read again: the server may have opened a design ticket', (
+      tester,
+    ) async {
+      // Arrange
+      await openTheStatusScreen(tester);
+
+      // Act
+      await tester.tap(find.text('نقل'));
+      await tester.pumpAndSettle();
+
+      // Assert — once for the page, once more after the move.
+      verify(() => repository.orderTickets(1320)).called(2);
+    });
+
+    testWidgets('backing out without a move reads nothing again', (tester) async {
+      // Arrange
+      await openTheStatusScreen(tester);
+
+      // Act
+      router.pop();
+      await tester.pumpAndSettle();
+
+      // Assert — the page's own read only.
+      verify(() => repository.orderTickets(1320)).called(1);
+    });
   });
 }

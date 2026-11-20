@@ -250,22 +250,30 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     return result.map((_) => unit);
   }
 
+  /// **Two images or more, as `files[]`** (DESIGN-VERSION-IMAGES.md). The server refuses the old
+  /// single `file` field, so this never sends one.
   @override
   Future<Either<Failure, DesignTicketFile>> submitVersion(
     int ticketId, {
-    required String path,
-    required String filename,
+    required List<PickedFile> images,
     String? note,
     List<PrintColor> printColors = const [],
     ProgressCallback? onProgress,
   }) {
-    return _upload(
-      DesignTicketEndpoints.versions(ticketId),
-      path: path,
-      filename: filename,
-      note: note,
-      printColors: printColors,
-      onProgress: onProgress,
+    return safeRequest<DesignTicketFile>(
+      () async => _dio.post(
+        DesignTicketEndpoints.versions(ticketId),
+        data: FormData.fromMap(<String, dynamic>{
+          'files': [
+            for (final image in images)
+              await LocalFiles.multipart(image.path, filename: image.name),
+          ],
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+          if (printColors.isNotEmpty) 'print_colors': PrintColor.listToJson(printColors),
+        }, ListFormat.multiCompatible),
+        onSendProgress: onProgress,
+      ),
+      parse: (data) => DesignTicketFile.fromJson(data! as Map<String, dynamic>),
     );
   }
 
@@ -298,7 +306,7 @@ class DesignTicketRepositoryImpl implements DesignTicketRepository {
     );
   }
 
-  /// The two uploads, which differ only in where they post.
+  /// One file to the ticket — a brief. A version goes up as several, in [submitVersion].
   ///
   /// `fromFile` streams from disk. `fromBytes` would hold a 25 MB design in memory for the length
   /// of the upload, and a mid-range phone kills the app for less — the reason

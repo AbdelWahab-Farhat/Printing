@@ -68,7 +68,7 @@ class OrderDesignTicketTest extends DesignTicketTestCase
 
         $versionId = (int) $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png'), 'print_colors' => $colors],
+            ['files' => $this->versionImages('v1.png'), 'print_colors' => $colors],
             $designer + ['Accept' => 'application/json'],
         )->assertCreated()->json('data.id');
 
@@ -169,7 +169,7 @@ class OrderDesignTicketTest extends DesignTicketTestCase
         // Act
         $response = $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png'), 'print_colors' => [['name' => 'أزرق']]],
+            ['files' => $this->versionImages('v1.png'), 'print_colors' => [['name' => 'أزرق']]],
             $designer + ['Accept' => 'application/json'],
         );
 
@@ -236,12 +236,18 @@ class OrderDesignTicketTest extends DesignTicketTestCase
         // Act
         $this->approve($ticket, $versionId, $employee)->assertOk();
 
-        // Assert
+        // Assert — every image of the version, as faces of one design number, approved together
+        // and in the version's colours.
         $ticket->refresh();
-        $version = OrderDesign::query()->where('order_id', $order->id)->sole();
-        $this->assertSame((int) $ticket->approved_customer_design_id, (int) $version->customer_design_id);
-        $this->assertSame(OrderDesignStatus::Approved, $version->status);
-        $this->assertSame([self::BLACK, self::GOLD], $version->print_colors);
+        $faces = OrderDesign::query()->where('order_id', $order->id)->orderBy('face')->get();
+        $this->assertCount(2, $faces);
+        $this->assertSame((int) $ticket->approved_customer_design_id, (int) $faces[0]->customer_design_id);
+        $this->assertSame([1, 1], $faces->pluck('version')->all());
+
+        foreach ($faces as $face) {
+            $this->assertSame(OrderDesignStatus::Approved, $face->status);
+            $this->assertSame([self::BLACK, self::GOLD], $face->print_colors);
+        }
     }
 
     public function test_once_approved_the_order_goes_to_the_press(): void
@@ -301,9 +307,13 @@ class OrderDesignTicketTest extends DesignTicketTestCase
         app(AttachApprovedTicketDesigns::class)($order->fresh());
 
         // Assert
-        $version = OrderDesign::query()->where('order_id', $order->id)->sole();
-        $this->assertSame(OrderDesignStatus::Approved, $version->status);
-        $this->assertSame([self::BLACK], $version->print_colors);
+        $faces = OrderDesign::query()->where('order_id', $order->id)->get();
+        $this->assertCount(2, $faces);
+
+        foreach ($faces as $face) {
+            $this->assertSame(OrderDesignStatus::Approved, $face->status);
+            $this->assertSame([self::BLACK], $face->print_colors);
+        }
     }
 
     public function test_attaching_twice_adds_the_design_once(): void
@@ -318,8 +328,8 @@ class OrderDesignTicketTest extends DesignTicketTestCase
         // Act
         app(AttachApprovedTicketDesigns::class)($order->fresh());
 
-        // Assert
-        $this->assertSame(1, OrderDesign::query()->where('order_id', $order->id)->count());
+        // Assert — the version's two images, once.
+        $this->assertSame(2, OrderDesign::query()->where('order_id', $order->id)->count());
     }
 
     public function test_a_ticket_with_no_order_attaches_nothing(): void
@@ -333,7 +343,7 @@ class OrderDesignTicketTest extends DesignTicketTestCase
         $this->postJson("/api/v1/design-tickets/{$ticket->id}/acceptance", [], $designer)->assertOk();
         $versionId = (int) $this->post(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png')],
+            ['files' => $this->versionImages('v1.png')],
             $designer + ['Accept' => 'application/json'],
         )->json('data.id');
 

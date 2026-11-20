@@ -1014,10 +1014,33 @@ class Order extends Model implements HasAuditTrail
     {
         $this->loadMissing('designs');
 
-        $versions = $this->designs->sortByDesc('version');
+        // Newest version first, and face 1 first within it: a version may have several images
+        // (DESIGN-VERSION-IMAGES.md §4), and this answers with the one that names it.
+        $versions = $this->designs->sortBy([['version', 'desc'], ['face', 'asc']]);
 
         return $versions->first(fn (OrderDesign $design) => $design->status === OrderDesignStatus::Approved)
             ?? $versions->first(fn (OrderDesign $design) => $design->status !== OrderDesignStatus::Rejected);
+    }
+
+    /**
+     * Every image of {@see designForPress()}'s version, face 1 first — what the press prints and
+     * what its colour check reads. Empty when there is no such version.
+     *
+     * @return list<OrderDesign>
+     */
+    public function designsForPress(): array
+    {
+        $lead = $this->designForPress();
+
+        if ($lead === null) {
+            return [];
+        }
+
+        return $this->designs
+            ->filter(fn (OrderDesign $design) => $design->version === $lead->version)
+            ->sortBy('face')
+            ->values()
+            ->all();
     }
 
     /**

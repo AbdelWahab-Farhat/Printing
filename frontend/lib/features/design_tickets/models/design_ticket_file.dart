@@ -96,6 +96,12 @@ abstract class DesignTicketFile with _$DesignTicketFile implements DesignFile {
     /// start doing so without an app release.
     @JsonKey(name: 'preview_url') String? previewUrl,
 
+    /// **Every image of a version, face 1 first** (DESIGN-VERSION-IMAGES.md). Face 1 is this
+    /// file itself. Empty where the server did not send them — read [images], which falls back.
+    @JsonKey(fromJson: DesignVersionFace.listFromJson, toJson: DesignVersionFace.listToJson)
+    @Default(<DesignVersionFace>[])
+    List<DesignVersionFace> faces,
+
     /// 1, 2, 3 … within the ticket. Null on a brief.
     int? version,
 
@@ -140,6 +146,75 @@ abstract class DesignTicketFile with _$DesignTicketFile implements DesignFile {
   /// Null for a PDF until the server renders a first page — the caller falls back to a glyph
   /// rather than a broken image. The same rule `CustomerDesign.thumbnailUrl` follows.
   String? get thumbnailUrl => fileKind == DesignKind.image ? fileUrl : previewUrl;
+
+  /// Every image of this version, face 1 first: [faces] when the server sent them, else this
+  /// file alone — a brief, or a version uploaded before a version had several images.
+  List<DesignVersionFace> get images => faces.isNotEmpty
+      ? faces
+      : [
+          DesignVersionFace(
+            position: 1,
+            fileUrl: thumbnailUrl,
+            originalFilename: originalFilename,
+            widthPx: widthPx,
+            heightPx: heightPx,
+          ),
+        ];
+}
+
+/// One image of a design version — the front of the bag, the back, the logo close-up.
+///
+/// A plain class rather than a freezed one: five read-only fields that nothing copies or
+/// compares, parsed by hand.
+@immutable
+class DesignVersionFace {
+  const DesignVersionFace({
+    required this.position,
+    this.fileUrl,
+    this.mimeType,
+    this.originalFilename,
+    this.sizeBytes,
+    this.widthPx,
+    this.heightPx,
+  });
+
+  factory DesignVersionFace.fromJson(Map<String, dynamic> json) => DesignVersionFace(
+    position: (json['position'] as num?)?.toInt() ?? 1,
+    fileUrl: json['file_url'] as String?,
+    mimeType: json['mime_type'] as String?,
+    originalFilename: json['original_filename'] as String?,
+    sizeBytes: (json['size_bytes'] as num?)?.toInt(),
+    widthPx: (json['width_px'] as num?)?.toInt(),
+    heightPx: (json['height_px'] as num?)?.toInt(),
+  );
+
+  /// 1 for the version's own file, then 2, 3 …
+  final int position;
+
+  /// Signed per request — never stored. See the note on [DesignTicketFile].
+  final String? fileUrl;
+  final String? mimeType;
+  final String? originalFilename;
+  final int? sizeBytes;
+  final int? widthPx;
+  final int? heightPx;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'position': position,
+    'file_url': fileUrl,
+    'mime_type': mimeType,
+    'original_filename': originalFilename,
+    'size_bytes': sizeBytes,
+    'width_px': widthPx,
+    'height_px': heightPx,
+  };
+
+  static List<DesignVersionFace> listFromJson(Object? json) => json is List
+      ? [for (final face in json) DesignVersionFace.fromJson(face as Map<String, dynamic>)]
+      : const <DesignVersionFace>[];
+
+  static List<Map<String, dynamic>> listToJson(List<DesignVersionFace> faces) =>
+      [for (final face in faces) face.toJson()];
 }
 
 /// A person, as much of one as a ticket screen ever needs.

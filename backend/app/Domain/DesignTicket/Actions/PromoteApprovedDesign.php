@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\DesignTicket\Actions;
 
+use App\Domain\Customer\Enums\DesignKind;
 use App\Domain\Customer\Models\CustomerDesign;
+use App\Domain\DesignTicket\Enums\DesignSubmissionStatus;
 use App\Domain\DesignTicket\Models\DesignTicket;
 use App\Domain\DesignTicket\Models\DesignTicketFile;
+use App\Domain\DesignTicket\Models\DesignTicketFileFace;
 use App\Domain\Order\Actions\AddOrderDesign;
 use App\Domain\Order\Actions\RefreshOrderDesignColors;
 
@@ -45,13 +48,75 @@ final class PromoteApprovedDesign
 {
     public function __construct(private readonly RefreshOrderDesignColors $refreshOrders) {}
 
+    /**
+     * **Every face becomes a library design** (DESIGN-VERSION-IMAGES.md §4), in position order.
+     * Face 1's is returned — it is what `design_tickets.approved_customer_design_id` names — and
+     * each later face records its own on its row, so the order can be given all of them.
+     */
     public function __invoke(DesignTicket $ticket, DesignTicketFile $version): CustomerDesign
     {
         $colors = $version->print_colors ?? $ticket->print_colors;
 
+        $first = $this->promoteFace($ticket, $version, $version, $colors, (string) $ticket->title);
+
+        foreach ($version->extraFaces()->get() as $face) {
+            $design = $this->promoteFace(
+                $ticket,
+                $version,
+                $face,
+                $colors,
+                $ticket->title.' — '.self::arabicDigits($face->position),
+            );
+
+            $face->forceFill(['customer_design_id' => $design->getKey()])->save();
+        }
+
+        return $first;
+    }
+
+    /**
+     * The library design ids of every face of an approved version, face 1 first.
+     *
+     * @return list<int>
+     */
+    public static function designIdsOf(DesignTicket $ticket): array
+    {
+        if ($ticket->approved_customer_design_id === null) {
+            return [];
+        }
+
+        /** @var DesignTicketFile|null $approved */
+        $approved = $ticket->files()
+            ->where('status', DesignSubmissionStatus::Approved)
+            ->first();
+
+        $rest = $approved === null
+            ? []
+            : $approved->extraFaces()->whereNotNull('customer_design_id')
+                ->pluck('customer_design_id')->map(intval(...))->all();
+
+        return array_values(array_unique([(int) $ticket->approved_customer_design_id, ...$rest]));
+    }
+
+    private static function arabicDigits(int $number): string
+    {
+        return strtr((string) $number, ['0' => '٠', '1' => '١', '2' => '٢', '3' => '٣', '4' => '٤',
+            '5' => '٥', '6' => '٦', '7' => '٧', '8' => '٨', '9' => '٩']);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>|null  $colors
+     */
+    private function promoteFace(
+        DesignTicket $ticket,
+        DesignTicketFile $version,
+        DesignTicketFile|DesignTicketFileFace $face,
+        ?array $colors,
+        string $label,
+    ): CustomerDesign {
         $existing = CustomerDesign::query()
             ->where('customer_id', $ticket->customer_id)
-            ->where('checksum', $version->checksum)
+            ->where('checksum', $face->checksum)
             ->first();
 
         if ($existing !== null) {
@@ -78,16 +143,18 @@ final class PromoteApprovedDesign
         }
 
         $design = new CustomerDesign([
-            'disk' => $version->disk,
-            'path' => $version->path,
-            'original_filename' => $version->original_filename,
-            'mime_type' => $version->mime_type,
-            'kind' => $version->file_kind,
-            'size_bytes' => $version->size_bytes,
-            'checksum' => $version->checksum,
-            'width_px' => $version->width_px,
-            'height_px' => $version->height_px,
-            'label' => $ticket->title,
+            'disk' => $face->disk,
+            'path' => $face->path,
+            'original_filename' => $face->original_filename,
+            'mime_type' => $face->mime_type,
+            // Faces 2…N are images by rule; face 1 keeps the kind it was filed with, which on a
+            // version uploaded before faces existed can be a PDF.
+            'kind' => $face instanceof DesignTicketFile ? $face->file_kind : DesignKind::fromMimeType($face->mime_type),
+            'size_bytes' => $face->size_bytes,
+            'checksum' => $face->checksum,
+            'width_px' => $face->width_px,
+            'height_px' => $face->height_px,
+            'label' => $label,
             'notes' => $version->note,
             'print_colors' => $colors,
         ]);

@@ -175,6 +175,20 @@ return [
         // مرفقاتُ الطلب مع إنشائه (`files[]` على `POST design-tickets`): عشرةٌ على الأكثر، كألبوم
         // المحادثة. وما زاد يُرفق من شاشة التذكرة بعدها.
         'max_files_on_create' => 10,
+
+        /*
+        | A version is two images or more (DESIGN-VERSION-IMAGES.md, owner 2026-11-20).
+        |
+        | **Images only, and narrower than the list above.** Every image of an approved version
+        | is drawn on the order card, so a PDF cannot be one of them; GIF and BMP add nothing to a
+        | print design. A print PDF still goes in the ticket chat.
+        |
+        | The maximum keeps the card's cover strip to two rows.
+        */
+        'version_mimes' => ['jpg', 'jpeg', 'png', 'webp'],
+        'version_mimetypes' => ['image/jpeg', 'image/png', 'image/webp'],
+        'min_version_images' => 2,
+        'max_version_images' => 6,
     ],
 
     /*

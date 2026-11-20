@@ -222,6 +222,37 @@ void main() {
       ]);
     });
 
+    test('وصورُ نسخةٍ واحدة من تذكرة التصميم تظهر كلُّها، مهما تباعد وقتها', () {
+      // Arrange — DESIGN-VERSION-IMAGES.md: three images of version 2 share its number. The
+      // third is stamped well after the first, which the two-minute rule alone would split.
+      OrderDesign face(int id, DateTime at) => OrderDesign(
+        id: id,
+        version: 2,
+        status: 'approved',
+        statusLabel: 'معتمد',
+        design: design(id: id, url: 'https://files.test/face-$id.png'),
+        createdAt: at,
+      );
+      final order = orderWith(
+        designs: [
+          face(13, DateTime(2026, 11, 20, 10, 9)),
+          face(12, DateTime(2026, 11, 20, 10)),
+          face(11, DateTime(2026, 11, 20, 10)),
+          version(1, status: 'rejected'),
+        ],
+      );
+
+      // Act
+      final artworks = order.artworks;
+
+      // Assert — all three, front first.
+      expect(artworks.map((design) => design.fileUrl), [
+        'https://files.test/face-11.png',
+        'https://files.test/face-12.png',
+        'https://files.test/face-13.png',
+      ]);
+    });
+
     test('وكيسٌ سادة قائمةٌ فارغة، لا null', () {
       // Arrange — شاشةٌ تدور على القائمة لا تحتاج حالةً خاصة لغيابها.
       final order = orderWith();

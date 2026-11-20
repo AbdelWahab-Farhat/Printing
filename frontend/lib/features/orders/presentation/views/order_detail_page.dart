@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // `show Either` rather than `hide Order`: dartz also exports a `State`, and in a widget file
 // that one collides with Flutter's. Only the one type this file names is taken.
 import 'package:dartz/dartz.dart' show Either;
@@ -1128,15 +1130,23 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   /// **Nothing about the move is decided here.** The destinations, the fields each of them asks
   /// for and the request itself all belong to [OrderStatusPage]; this screen only learns the
   /// result — which it keeps, so backing out of it hands the updated order to the list behind.
+  ///
+  /// «التذاكر المرتبطة» is read again too: the server opens a design ticket by itself when the
+  /// order enters «قيد التصميم», and cancels untouched automatic ones when it leaves, so a move
+  /// can change that list without the page knowing which.
   Future<void> _changeStatus(BuildContext context) async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
     if (order == null) return;
 
+    // Null where the page shows no «التذاكر المرتبطة».
+    final tickets = context.read<OrderTicketsCubit?>();
+
     final moved = await context.push<Order>(Routes.orderStatus(order.id));
     if (moved == null || !context.mounted) return;
 
     cubit.replace(moved);
+    unawaited(tickets?.reload());
     context.handBack(moved);
   }
 }

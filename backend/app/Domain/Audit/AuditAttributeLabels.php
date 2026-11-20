@@ -480,6 +480,8 @@ final class AuditAttributeLabels
             'order_id' => 'الطلبية',
             'customer_design_id' => 'التصميم',
             'version' => 'الإصدار',
+            // Which image of the version — DESIGN-VERSION-IMAGES.md.
+            'face' => 'رقم الصورة',
             'rejection_reason' => 'سبب الرفض',
             'reviewed_at' => 'تاريخ المراجعة',
             'reviewed_by' => 'راجعها',
@@ -907,6 +909,11 @@ final class AuditAttributeLabels
             'uploaded_by_user_id' => 'رفعها',
             'note' => 'ملاحظة المصمم',
             'print_colors' => 'ألوان الطباعة',
+        ],
+        'design_ticket_file_face' => [
+            'design_ticket_file_id' => 'النسخة',
+            'position' => 'رقم الصورة',
+            'customer_design_id' => 'التصميم في المكتبة',
         ],
         'shortage_supply' => [
             'shortage_id' => 'النقص',

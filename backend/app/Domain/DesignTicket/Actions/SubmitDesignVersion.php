@@ -48,8 +48,16 @@ final class SubmitDesignVersion
     public function __construct(private readonly StoreUploadedFile $storeFile) {}
 
     /**
+     * **A version is two images or more** (DESIGN-VERSION-IMAGES.md, owner 2026-11-20). The first
+     * is written on the version row, as every version always was; the rest become its faces 2…N,
+     * in the same transaction. The count, the types and the duplicates are the request's to refuse
+     * — this action stores whatever list it is given, so an internal caller is not held to a rule
+     * about what a designer uploads.
+     *
+     * @param  non-empty-list<UploadedFile>  $images  face 1 first
      * @param  array<int, mixed>|null  $printColors  the inks this version was drawn in, already
-     *                                               validated — see PrintColors
+     *                                               validated — see PrintColors. One set for the
+     *                                               whole version.
      *
      * @throws DesignTicketIsClosed
      * @throws DesignTicketNotAcceptedYet
@@ -58,7 +66,7 @@ final class SubmitDesignVersion
      */
     public function __invoke(
         DesignTicket $ticket,
-        UploadedFile $file,
+        array $images,
         User $designer,
         ?string $note = null,
         ?array $printColors = null,
@@ -93,13 +101,18 @@ final class SubmitDesignVersion
         // Outside the transaction on purpose: a failed insert afterwards leaves an orphaned
         // object, which costs storage, where the reverse leaves a row pointing at nothing — a
         // version the designer can see listed and nobody can open.
-        $stored = ($this->storeFile)(
-            $file,
-            (string) config('media.design_tickets.disk'),
-            "design-tickets/{$ticket->getKey()}",
+        $storedFaces = array_map(
+            fn (UploadedFile $image) => ($this->storeFile)(
+                $image,
+                (string) config('media.design_tickets.disk'),
+                "design-tickets/{$ticket->getKey()}",
+            ),
+            array_values($images),
         );
 
-        return DB::transaction(function () use ($ticket, $stored, $designer, $note, $printColors): DesignTicketFile {
+        $stored = array_shift($storedFaces);
+
+        return DB::transaction(function () use ($ticket, $stored, $storedFaces, $designer, $note, $printColors): DesignTicketFile {
             // withTrashed: a removed version still used its number, and reusing it would collide
             // with the partial unique index the moment that row were restored.
             $nextVersion = (int) $ticket->files()->withTrashed()
@@ -123,6 +136,20 @@ final class SubmitDesignVersion
                 'height_px' => $stored->heightPx,
                 'uploaded_by_user_id' => $designer->getKey(),
             ])->save();
+
+            foreach ($storedFaces as $index => $face) {
+                $version->extraFaces()->make()->forceFill([
+                    'position' => $index + 2,
+                    'disk' => $face->disk,
+                    'path' => $face->path,
+                    'original_filename' => $face->originalFilename,
+                    'mime_type' => $face->mimeType,
+                    'size_bytes' => $face->sizeBytes,
+                    'checksum' => $face->checksum,
+                    'width_px' => $face->widthPx,
+                    'height_px' => $face->heightPx,
+                ])->save();
+            }
 
             $ticket->forceFill(['status' => DesignTicketStatus::UnderReview])->save();
 

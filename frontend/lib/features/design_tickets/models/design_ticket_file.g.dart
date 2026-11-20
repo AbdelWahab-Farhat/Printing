@@ -35,6 +35,9 @@ _DesignTicketFile _$DesignTicketFileFromJson(
   heightPx: (json['height_px'] as num?)?.toInt(),
   fileUrl: json['file_url'] as String?,
   previewUrl: json['preview_url'] as String?,
+  faces: json['faces'] == null
+      ? const <DesignVersionFace>[]
+      : DesignVersionFace.listFromJson(json['faces']),
   version: (json['version'] as num?)?.toInt(),
   status: $enumDecodeNullable(
     _$DesignSubmissionStatusEnumMap,
@@ -76,6 +79,7 @@ Map<String, dynamic> _$DesignTicketFileToJson(_DesignTicketFile instance) =>
       'height_px': instance.heightPx,
       'file_url': instance.fileUrl,
       'preview_url': instance.previewUrl,
+      'faces': DesignVersionFace.listToJson(instance.faces),
       'version': instance.version,
       'status': _$DesignSubmissionStatusEnumMap[instance.status],
       'status_label': instance.statusLabel,

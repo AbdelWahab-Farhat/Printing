@@ -19,26 +19,22 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // **Pinned to the 8 line on purpose — do not "upgrade" this to 9 without reading on.**
+    // AGP, KGP and the Gradle wrapper follow what `flutter create` writes for the pinned Flutter
+    // SDK. Flutter 3.50 refuses to build below AGP 9.1.1 and KGP 2.4.10, and its Gradle plugin
+    // calls AGP 9 APIs, so `--android-skip-build-dependency-validation` is no way around it.
     //
-    // AGP 9 compiles Kotlin itself and refuses any module that applies the Kotlin Gradle Plugin,
-    // and our plugins are split down the middle on that: `file_picker` reads the AGP version and
-    // *skips* KGP at 9+ (assuming built-in Kotlin is on), while `flutter_plugin_android_lifecycle`
-    // applies KGP unconditionally. Neither value of `android.builtInKotlin` satisfies both — one
-    // half fails to compile, or the other half is never compiled at all and the build dies at
-    // `compileDebugJavaWithJavac` with «cannot find symbol: class FilePickerPlugin» in the
-    // generated registrant.
+    // **Built-in Kotlin stays off** (`android.builtInKotlin=false` in gradle.properties, as the
+    // template has it). With it off, every plugin applies the Kotlin Gradle Plugin itself, and
+    // so does `app`. `file_picker` 11 is the exception and gets KGP from the root
+    // build.gradle.kts. Turning built-in Kotlin on is a separate job: every plugin in
+    // pubspec.lock has to support it first.
     //
-    // Flutter itself agrees: its DependencyVersionChecker warns above 8.11.1.
-    // The way back to 9 is a release of both plugins that supports built-in Kotlin, and then
-    // `android.builtInKotlin=true` in gradle.properties — not this line alone.
-    //
-    // `frontend` is pinned here for the same reason; the two apps must not drift on this.
-    id("com.android.application") version "8.13.0" apply false
+    // `frontend` carries the same versions; the two apps must not drift on this.
+    id("com.android.application") version "9.3.1" apply false
     // START: FlutterFire Configuration
     id("com.google.gms.google-services") version("4.4.4") apply false
     // END: FlutterFire Configuration
-    id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+    id("org.jetbrains.kotlin.android") version "2.4.20" apply false
 }
 
 include(":app")

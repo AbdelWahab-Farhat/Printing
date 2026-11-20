@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dayaa/core/print_colors/print_colors_view.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/customers/models/customer_design.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +66,86 @@ class DesignTicketFileThumbnail extends StatelessWidget {
     final clipped = ClipRRect(borderRadius: corner, child: child);
 
     return size == null ? clipped : SizedBox(width: size!.w, height: size!.w, child: clipped);
+  }
+}
+
+/// The cache key of one image of a version. Face 1 keeps the key the version always had, so a
+/// thumbnail cached before versions had several images is still a hit.
+String designVersionFaceCacheKey(DesignTicketFile version, int position) => position == 1
+    ? 'design-ticket-file-${version.id}'
+    : 'design-ticket-file-${version.id}-face-$position';
+
+/// A version's images as a row of small squares (DESIGN-VERSION-IMAGES.md).
+///
+/// Under the tile's header it shows the images after the first, which the header already draws;
+/// in the review sheet it shows all of them, each opening the viewer on itself. Nothing at all
+/// when there is nothing to add.
+class DesignVersionFacesStrip extends StatelessWidget {
+  const DesignVersionFacesStrip({required this.version, this.includeFirst = false, super.key});
+
+  final DesignTicketFile version;
+
+  /// Whether face 1 is in the row too — false where something above already draws it.
+  final bool includeFirst;
+
+  void _open(BuildContext context, int position) {
+    final faces = [for (final face in version.images) if (face.fileUrl != null) face];
+
+    unawaited(
+      openImageViewer(
+        context,
+        urls: [for (final face in faces) face.fileUrl!],
+        initialIndex: faces.indexWhere((face) => face.position == position),
+        cacheKeys: [for (final face in faces) designVersionFaceCacheKey(version, face.position)],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final shown = version.images.skip(includeFirst ? 0 : 1).toList();
+
+    if (shown.isEmpty || (includeFirst && shown.length < 2)) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 10.h),
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: [
+          for (final face in shown)
+            InkWell(
+              onTap: face.fileUrl == null ? null : () => _open(context, face.position),
+              borderRadius: BorderRadius.circular(8.r),
+              child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: SizedBox(
+                width: 44.w,
+                height: 44.w,
+                child: face.fileUrl == null
+                    ? ColoredBox(color: scheme.surfaceContainerHigh)
+                    : CachedNetworkImage(
+                        imageUrl: face.fileUrl!,
+                        fit: BoxFit.cover,
+                        cacheKey: designVersionFaceCacheKey(version, face.position),
+                        placeholder: (context, _) =>
+                            ColoredBox(color: scheme.surfaceContainerHigh),
+                        errorWidget: (context, _, _) => ColoredBox(
+                          color: scheme.surfaceContainerHigh,
+                          child: Icon(
+                            AppIcons.offline,
+                            size: 18.sp,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -137,6 +220,8 @@ class DesignVersionTile extends StatelessWidget {
                     ),
                 ],
               ),
+              // The version's other images — the back of the bag, the close-up.
+              DesignVersionFacesStrip(version: version),
               // The inks the designer says this version was drawn in — what the reviewer checks
               // before approving, and what goes into the customer's library with the file.
               if (version.printColors.isNotEmpty) ...[

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\CustomerService;
+use App\Domain\Customer\Models\CustomerDesign;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Exceptions\DesignDoesNotBelongToCustomer;
 use App\Domain\Order\Exceptions\OrderDesignsAreLocked;
@@ -37,6 +38,26 @@ final class AddOrderDesign
      */
     public function __invoke(Order $order, int $customerDesignId, ?string $notes = null): OrderDesign
     {
+        return $this->asOneVersion($order, [$customerDesignId], $notes)[0];
+    }
+
+    /**
+     * **Several library designs as the faces of one version** (DESIGN-VERSION-IMAGES.md §4):
+     * one version number, faces 1…N in the order given. How an approved ticket version of three
+     * images lands on its order as «التصميم رقم N» with three images rather than three versions.
+     *
+     * Every design is checked before anything is written, so a foreign design in the middle of
+     * the list leaves no half-added version behind.
+     *
+     * @param  non-empty-list<int>  $customerDesignIds
+     * @return non-empty-list<OrderDesign>
+     *
+     * @throws OrderIsClosed
+     * @throws OrderDesignsAreLocked
+     * @throws DesignDoesNotBelongToCustomer
+     */
+    public function asOneVersion(Order $order, array $customerDesignIds, ?string $notes = null): array
+    {
         if ($order->status->isClosed()) {
             throw OrderIsClosed::make($order->status);
         }
@@ -49,19 +70,36 @@ final class AddOrderDesign
             throw OrderDesignsAreLocked::make($order->status);
         }
 
-        $design = $this->customers->findDesign($customerDesignId);
+        $designs = [];
 
-        if ((int) $design->customer_id !== (int) $order->customer_id) {
-            throw DesignDoesNotBelongToCustomer::make(
-                (int) $design->getKey(),
-                (int) $order->customer_id,
-            );
+        foreach ($customerDesignIds as $customerDesignId) {
+            $design = $this->customers->findDesign($customerDesignId);
+
+            if ((int) $design->customer_id !== (int) $order->customer_id) {
+                throw DesignDoesNotBelongToCustomer::make(
+                    (int) $design->getKey(),
+                    (int) $order->customer_id,
+                );
+            }
+
+            $designs[] = $design;
         }
 
         // withTrashed: a removed version still used its number, and reusing it would collide
         // with the partial unique index the moment the removed row were restored.
         $nextVersion = (int) $order->designs()->withTrashed()->max('version') + 1;
 
+        $added = [];
+
+        foreach ($designs as $index => $design) {
+            $added[] = $this->addFace($order, $design, $nextVersion, $index + 1, $notes);
+        }
+
+        return $added;
+    }
+
+    private function addFace(Order $order, CustomerDesign $design, int $version, int $face, ?string $notes): OrderDesign
+    {
         /** @var OrderDesign $orderDesign */
         $orderDesign = $order->designs()->make([
             'customer_design_id' => $design->getKey(),
@@ -78,7 +116,8 @@ final class AddOrderDesign
         // may come from a request — the version is allocated here and the status is where every
         // version starts.
         $orderDesign->forceFill([
-            'version' => $nextVersion,
+            'version' => $version,
+            'face' => $face,
             'status' => OrderDesignStatus::Proposed,
         ])->save();
 

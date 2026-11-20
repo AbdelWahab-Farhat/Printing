@@ -70,7 +70,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         // Act — submit
         $submitted = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v1.png'), 'note' => 'النسخة الأولى'],
+            ['files' => $this->versionImages('v1.png'), 'note' => 'النسخة الأولى'],
             $designer,
         );
 
@@ -102,14 +102,20 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         $this->assertNotNull($ticket->completed_at);
         $this->assertNotNull($ticket->approved_customer_design_id);
 
-        $design = CustomerDesign::query()->sole();
+        // One library design per image of the version, face 1 the one the ticket names.
+        $designs = CustomerDesign::query()->orderBy('id')->get();
+        $this->assertCount(2, $designs);
+        $design = $designs[0];
+        $this->assertSame($design->id, $ticket->approved_customer_design_id);
         $this->assertSame($customer->id, $design->customer_id);
         $this->assertSame($ticket->id, $design->design_ticket_id);
         $this->assertSame($designerUser->id, $design->designer_user_id);
         $this->assertNotNull($design->approved_at);
         // The label comes from the ticket's title, not the filename: the label is the whole way
-        // staff tell two designs apart months later.
+        // staff tell two designs apart months later. Later faces carry their position.
         $this->assertSame('تصميم كيس شحن — أسود', $design->label);
+        $this->assertSame('تصميم كيس شحن — أسود — ٢', $designs[1]->label);
+        $this->assertSame($ticket->id, $designs[1]->design_ticket_id);
     }
 
     public function test_two_revision_rounds_happen_on_the_same_ticket_and_keep_every_version(): void
@@ -144,7 +150,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
             // No second acceptance: a revision must not cost an extra tap.
             $this->postJson(
                 "/api/v1/design-tickets/{$ticket->id}/versions",
-                ['file' => $this->image("v{$round}b.png")],
+                ['files' => $this->versionImages("v{$round}b.png")],
                 $designer,
             )->assertCreated();
 
@@ -191,7 +197,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         // produces identical bytes.
         $version = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('logo.png')],
+            ['files' => $this->versionImages('logo.png')],
             $designer,
         )->json('data.id');
 
@@ -202,8 +208,10 @@ class DesignTicketFlowTest extends DesignTicketTestCase
             $employee,
         )->assertOk();
 
-        // Assert — one row, not two, and it now knows which ticket produced it.
-        $design = CustomerDesign::query()->sole();
+        // Assert — the front is the row already there, not a second copy, and it now knows which
+        // ticket produced it. Only the back is new.
+        $this->assertSame(2, CustomerDesign::query()->count());
+        $design = CustomerDesign::query()->orderBy('id')->first();
         $this->assertSame($ticket->id, $design->design_ticket_id);
         $this->assertSame($design->id, $ticket->refresh()->approved_customer_design_id);
     }
@@ -279,7 +287,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         // Act
         $upload = $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('late.png')],
+            ['files' => $this->versionImages('late.png')],
             $designer,
         );
         $history = $this->getJson("/api/v1/design-tickets/{$ticket->id}", $employee);
@@ -337,12 +345,24 @@ class DesignTicketFlowTest extends DesignTicketTestCase
             )->assertCreated();
         }
 
-        // Act - Assert — and one through the designer's, which is the door that promotes a file
-        // into the customer's library and therefore the one that used to throw. A second
-        // version here would be refused for a different reason — one verdict at a time.
+        // Act - Assert — the designer's door is narrower since a version became two images or
+        // more (DESIGN-VERSION-IMAGES.md): every image is drawn on the order card, so a GIF or
+        // a PDF is refused there and JPG, PNG and WEBP go through. Different sizes, so the two
+        // do not share a checksum.
         $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $file('gif', 'image/gif')],
+            ['files' => [$file('gif', 'image/gif'), $file('png', 'image/png')]],
+            $designer,
+        )->assertStatus(422)->assertJsonValidationErrors(['files.0' => 'صور التصميم يجب أن تكون JPG أو PNG أو WEBP']);
+
+        $this->postJson(
+            "/api/v1/design-tickets/{$ticket->id}/versions",
+            // Distinct contents: `create()` writes no bytes, so two of them share a checksum.
+            ['files' => [
+                UploadedFile::fake()->createWithContent('proof.png', 'png')->mimeType('image/png'),
+                UploadedFile::fake()->createWithContent('proof.webp', 'webp')->mimeType('image/webp'),
+                UploadedFile::fake()->createWithContent('proof.jpg', 'jpg')->mimeType('image/jpeg'),
+            ]],
             $designer,
         )->assertCreated();
     }
@@ -372,7 +392,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
         )->assertOk();
         $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v2.png')],
+            ['files' => $this->versionImages('v2.png')],
             $designer,
         )->assertCreated();
 
@@ -427,7 +447,7 @@ class DesignTicketFlowTest extends DesignTicketTestCase
 
         $this->postJson(
             "/api/v1/design-tickets/{$ticket->id}/versions",
-            ['file' => $this->image('v2.png')],
+            ['files' => $this->versionImages('v2.png')],
             $designer,
         )->assertCreated();
 

@@ -21,11 +21,13 @@ import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket_file.dart';
+import 'package:dayaa/features/design_tickets/models/design_version_rules.dart';
 import 'package:dayaa/features/design_tickets/presentation/viewmodel/design_ticket_detail_cubit.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/accept_ticket_prompt.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/assign_designer_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_attachments.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_ticket_status_pill.dart';
+import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_images_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/design_version_tile.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/edit_ticket_sheet.dart';
 import 'package:dayaa/features/design_tickets/presentation/widgets/review_version_sheet.dart';
@@ -125,7 +127,7 @@ class _DesignTicketDetailView extends StatelessWidget {
     return ReviewPay(amount: pay, payee: version.uploader?.name ?? ticket.acceptedBy?.name);
   }
 
-  /// Uploading, whichever of the two things is being uploaded.
+  /// «إضافة مرفق»: briefs and reference files.
   ///
   /// **The source is asked for first**, through the same sheet the customer's design library
   /// uses. This used to go straight to the document browser, and that made the commonest case
@@ -144,24 +146,20 @@ class _DesignTicketDetailView extends StatelessWidget {
   /// is reported at the end, because the alternative — stopping on the first — leaves the
   /// person guessing which of the four arrived.
   ///
-  /// **A version is one file, always**, and that is the model rather than a shortcut: a version
-  /// is one piece of artwork put up for one verdict, and `pendingVersion` is the single row the
-  /// review button reads. Four at once would queue three that nobody can reach. Picking several
-  /// for a version says so instead of silently taking one.
+  /// A version goes through [_uploadVersion] instead: it is gathered on a sheet of its own.
   Future<void> _upload(BuildContext context, {required bool asVersion}) async {
+    if (asVersion) return _uploadVersion(context);
+
     final cubit = context.read<DesignTicketDetailCubit>();
 
-    final source = await showAttachmentSheet(
-      context: context,
-      title: asVersion ? 'رفع التصميم' : 'إضافة مرفق',
-    );
+    final source = await showAttachmentSheet(context: context, title: 'إضافة مرفق');
 
     // Dismissing the sheet is a decision to do nothing, not a failure.
     if (source == null || !context.mounted) return;
 
     final picked = await sl<AttachmentPicker>().pick(
       source,
-      // Mirrors `config('media.design_tickets.mimes')`, which is wider than the customer
+      // Anything `config('media.design_tickets.mimes')` takes, which is wider than the customer
       // library's — see the note in that file.
       extensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'],
     );
@@ -169,44 +167,6 @@ class _DesignTicketDetailView extends StatelessWidget {
     // Backing out of the picker is the expected ending of that call, not a failure — nothing is
     // reported about it.
     if (picked.isEmpty || !context.mounted) return;
-
-    if (asVersion) {
-      if (picked.length > 1) {
-        // This screen's own rule rather than the server's, so it is said here rather than
-        // dressed up as a `Failure` the API never sent.
-        context.showError('اختر ملفاً واحداً — كل تصميم يُراجَع على حدة');
-
-        return;
-      }
-
-      // «ألوان الطباعة» this version was drawn in — started from the last version's, or from
-      // what the brief asked for, so a round with no change in ink is one tap. Dismissing the
-      // sheet calls the upload off, the way backing out of the picker does.
-      final ticket = cubit.state.ticket;
-      final previous = ticket?.latestVersion?.printColors ?? const <PrintColor>[];
-      final colors = await showPrintColorsSheet(
-        context: context,
-        initial: previous.isNotEmpty ? previous : ticket?.printColors ?? const [],
-        confirmLabel: 'إرسال للمراجعة',
-        // A ticket for a print order: the version cannot go up without its colours, because
-        // its approval puts them on the order (PRINT-COLORS.md §10).
-        required: ticket?.printColorsRequired ?? false,
-      );
-
-      if (colors == null || !context.mounted) return;
-
-      await _run(
-        context,
-        () => cubit.submit(
-          path: picked.first.path,
-          filename: picked.first.name,
-          printColors: colors,
-        ),
-        'تم إرسال التصميم للمراجعة',
-      );
-
-      return;
-    }
 
     Failure? lastFailure;
     var uploaded = 0;
@@ -234,6 +194,52 @@ class _DesignTicketDetailView extends StatelessWidget {
       case (final done, final total):
         context.showSuccess('تم رفع $done من $total — أعد المحاولة للباقي');
     }
+  }
+
+  /// «رفع التصميم».
+  ///
+  /// **A version is two images or more, judged together** (DESIGN-VERSION-IMAGES.md): the front
+  /// of the bag, the back, the logo close-up. They are gathered on «صور التصميم» one pick at a
+  /// time, from any source, then sent in one request and shown as one row the review button
+  /// reads. The sheet will not hand back fewer than two or more than six; the check below only
+  /// guards against a sheet that ever does.
+  Future<void> _uploadVersion(BuildContext context) async {
+    final cubit = context.read<DesignTicketDetailCubit>();
+
+    final images = await showDesignVersionImagesSheet(context: context);
+
+    // Dismissing the sheet is a decision to do nothing, not a failure.
+    if (images == null || !context.mounted) return;
+
+    final refusal = DesignVersionRules.refusal([for (final image in images) image.name]);
+
+    if (refusal != null) {
+      context.showError(refusal);
+
+      return;
+    }
+
+    // «ألوان الطباعة» this version was drawn in — started from the last version's, or from
+    // what the brief asked for, so a round with no change in ink is one tap. Dismissing the
+    // sheet calls the upload off, the way dismissing the images does.
+    final ticket = cubit.state.ticket;
+    final previous = ticket?.latestVersion?.printColors ?? const <PrintColor>[];
+    final colors = await showPrintColorsSheet(
+      context: context,
+      initial: previous.isNotEmpty ? previous : ticket?.printColors ?? const [],
+      confirmLabel: 'إرسال للمراجعة',
+      // A ticket for a print order: the version cannot go up without its colours, because its
+      // approval puts them on the order (PRINT-COLORS.md §10).
+      required: ticket?.printColorsRequired ?? false,
+    );
+
+    if (colors == null || !context.mounted) return;
+
+    await _run(
+      context,
+      () => cubit.submit(images: images, printColors: colors),
+      'تم إرسال التصميم للمراجعة',
+    );
   }
 
   Future<void> _review(
@@ -1158,17 +1164,23 @@ class _Versions extends StatelessWidget {
     // The whole conversation is handed over rather than the one tile, so the reviewer swipes
     // between rounds instead of closing and reopening: comparing «before» with «after» is the
     // reason to open one at all.
+    //
+    // **Every image of every version** (DESIGN-VERSION-IMAGES.md), face by face, opening on the
+    // first image of the version tapped.
     final pictures = [
       for (final file in ticket.versions.reversed)
-        if (file.thumbnailUrl ?? file.fileUrl case final url?) (file, url),
+        for (final face in file.images)
+          if (face.fileUrl case final url?) (file, face.position, url),
     ];
 
     unawaited(
       openImageViewer(
         context,
-        urls: [for (final (_, url) in pictures) url],
-        initialIndex: pictures.indexWhere((pair) => pair.$1.id == version.id),
-        cacheKeys: [for (final (file, _) in pictures) 'design-ticket-file-${file.id}'],
+        urls: [for (final (_, _, url) in pictures) url],
+        initialIndex: pictures.indexWhere((picture) => picture.$1.id == version.id),
+        cacheKeys: [
+          for (final (file, position, _) in pictures) designVersionFaceCacheKey(file, position),
+        ],
       ),
     );
   }

@@ -6,6 +6,8 @@ namespace App\Application\Api\V1\Requests\DesignTicket;
 
 use App\Domain\Customer\Support\PrintColors;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Validator;
 
 class SubmitDesignVersionRequest extends FormRequest
 {
@@ -15,12 +17,12 @@ class SubmitDesignVersionRequest extends FormRequest
     }
 
     /**
-     * Identical to the attachment rules, and separate anyway.
+     * Separate from the attachment rules, and no longer the same as them: a brief is one file of
+     * any kind, a version is two images or more.
      *
      * Written out in full rather than merged or inherited: Scramble reads `rules()` without
      * running it, and an `array_merge(parent::rules(), …)` publishes the endpoint with no request
-     * body at all (RULES §7). Two endpoints that happen to agree today are also two endpoints
-     * that may not tomorrow — a version may one day carry a source file where a brief never will.
+     * body at all (RULES §7).
      *
      * **No `version` field, and there never will be one.** The number is allocated by the action
      * from `max(version) + 1`; a client that could choose it could overwrite the conversation.
@@ -30,16 +32,25 @@ class SubmitDesignVersionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => [
+            // **Two images or more** (DESIGN-VERSION-IMAGES.md, owner 2026-11-20). Every image of
+            // the approved version is drawn on the order card, so they are images only.
+            'files' => [
+                'required',
+                'array',
+                'min:'.config('media.design_tickets.min_version_images'),
+                'max:'.config('media.design_tickets.max_version_images'),
+            ],
+            'files.*' => [
                 'required',
                 'file',
-                // Read from config rather than spelled out, like every other upload in the
-                // application. These two were the only endpoints carrying their own copy of
-                // the list, so widening it for HEIC would have missed them.
-                'mimetypes:'.implode(',', (array) config('media.design_tickets.mimetypes')),
-                'mimes:'.implode(',', (array) config('media.design_tickets.mimes')),
+                'mimetypes:'.implode(',', (array) config('media.design_tickets.version_mimetypes')),
+                'mimes:'.implode(',', (array) config('media.design_tickets.version_mimes')),
                 'max:'.config('media.design_tickets.max_kilobytes'),
             ],
+            // **The single-file field of the app before 2026-11-20, refused with a sentence.** A
+            // version of one file is exactly what the owner ruled out, and an old app reading
+            // «files مطلوب» would not know it has to be updated.
+            'file' => ['prohibited'],
             // What the designer wants to say with the version — «غيّرت الخط، قوليلي رأيك».
             'note' => ['nullable', 'string', 'max:2000'],
             // The inks this version was drawn in — `print_colors[0][name]` in the multipart body.
@@ -57,15 +68,56 @@ class SubmitDesignVersionRequest extends FormRequest
      */
     public function messages(): array
     {
+        $atLeastTwo = 'أدخل صورتين على الأقل للتصميم';
+
         return [
-            'file.required' => 'ملف التصميم مطلوب',
-            'file.mimetypes' => 'الملف يجب أن يكون صورة أو PDF',
-            'file.mimes' => 'الملف يجب أن يكون صورة أو PDF',
-            'file.max' => 'حجم الملف يجب ألا يتجاوز '.
+            'file.prohibited' => 'حدّث التطبيق — التصميم يحتاج صورتين على الأقل',
+            'files.required' => $atLeastTwo,
+            'files.array' => $atLeastTwo,
+            'files.min' => $atLeastTwo,
+            'files.max' => 'لا تزيد صور التصميم على :max',
+            'files.*.mimetypes' => 'صور التصميم يجب أن تكون JPG أو PNG أو WEBP',
+            'files.*.mimes' => 'صور التصميم يجب أن تكون JPG أو PNG أو WEBP',
+            'files.*.max' => 'حجم الصورة يجب ألا يتجاوز '.
                 (int) (config('media.design_tickets.max_kilobytes') / 1024).' ميجابايت',
             'print_colors.max' => 'لا تزيد ألوان الطباعة على :max',
             'print_colors.*.name.required' => 'اسم اللون مطلوب',
             'print_colors.*.hex.regex' => 'لون العيّنة يجب أن يكون بصيغة #RRGGBB',
+        ];
+    }
+
+    /**
+     * **The same image twice is refused** (owner, 2026-11-20): it would show twice on the order
+     * card. Compared by contents, the way the library dedupes, not by filename.
+     *
+     * @return list<callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $seen = [];
+
+                foreach ((array) $this->file('files', []) as $file) {
+                    if (! $file instanceof UploadedFile) {
+                        continue;
+                    }
+
+                    $checksum = (string) hash_file('sha256', $file->getRealPath());
+
+                    if (isset($seen[$checksum])) {
+                        $validator->errors()->add('files', 'الصورة نفسها مكرّرة في التصميم');
+
+                        return;
+                    }
+
+                    $seen[$checksum] = true;
+                }
+            },
         ];
     }
 
@@ -76,6 +128,8 @@ class SubmitDesignVersionRequest extends FormRequest
     {
         return [
             'file' => 'ملف التصميم',
+            'files' => 'صور التصميم',
+            'files.*' => 'صورة التصميم',
             'note' => 'ملاحظة المصمم',
             'print_colors' => 'ألوان الطباعة',
             'print_colors.*.name' => 'اسم اللون',

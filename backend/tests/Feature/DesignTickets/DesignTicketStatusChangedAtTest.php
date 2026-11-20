@@ -73,7 +73,7 @@ class DesignTicketStatusChangedAtTest extends DesignTicketTestCase
         $this->assertSame($at, $this->stampOf($ticket));
 
         $at = $this->aMinuteLater();
-        $this->postJson("/api/v1/design-tickets/{$ticket->id}/versions", ['file' => $this->image('v1.png')], $designer)
+        $this->postJson("/api/v1/design-tickets/{$ticket->id}/versions", ['files' => $this->versionImages('v1.png')], $designer)
             ->assertCreated();
         $this->assertSame($at, $this->stampOf($ticket));
 
@@ -87,7 +87,7 @@ class DesignTicketStatusChangedAtTest extends DesignTicketTestCase
         $this->assertSame($at, $this->stampOf($ticket));
 
         $at = $this->aMinuteLater();
-        $this->postJson("/api/v1/design-tickets/{$ticket->id}/versions", ['file' => $this->image('v2.png')], $designer)
+        $this->postJson("/api/v1/design-tickets/{$ticket->id}/versions", ['files' => $this->versionImages('v2.png')], $designer)
             ->assertCreated();
         $this->assertSame($at, $this->stampOf($ticket));
 
