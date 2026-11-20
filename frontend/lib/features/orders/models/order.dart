@@ -147,6 +147,11 @@ abstract class Order with _$Order {
     /// order's lines and colours. Null on a list row and outside the window.
     @JsonKey(name: 'vendor_message_text') String? vendorMessageText,
 
+    /// What «نسخ رسالة المندوب» copies, written by the server: the invoice number, the courier's
+    /// phone and the parcel code, in the admin's wording. Null until a courier is known and once
+    /// the order is closed — the button hides on a null. Copy only; nothing records a send.
+    @JsonKey(name: 'courier_message_text') String? courierMessageText,
+
     // ── العربون ──────────────────────────────────────────────────────────────────────────
     //
     // **The arrangement, the claim, and the confirmation — three different facts.** What was

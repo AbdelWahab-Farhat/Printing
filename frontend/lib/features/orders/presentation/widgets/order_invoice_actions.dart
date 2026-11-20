@@ -114,6 +114,52 @@ class CopyVendorMessageButton extends StatelessWidget {
   }
 }
 
+/// «نسخ رسالة المندوب» — the invoice number, the courier's phone and the parcel code, so the
+/// customer can ring the courier themselves. The server sends no text until a courier is known,
+/// so callers show this only when [Order.courierMessageText] is set.
+///
+/// Copy only: there is no switch behind it, because nobody asked to track who was told.
+class CopyCourierMessageButton extends StatelessWidget {
+  const CopyCourierMessageButton({required this.order, super.key});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CopyServerTextButton(
+      label: 'نسخ رسالة المندوب',
+      icon: AppIcons.courierMessage,
+      text: order.courierMessageText,
+      copied: courierMessageCopied,
+    );
+  }
+
+  /// The confirmation, shared with the order card's icon button.
+  static const courierMessageCopied = 'تم نسخ رسالة المندوب';
+}
+
+/// Puts a server-written message on the clipboard and says so — or says there is none.
+///
+/// Shared by every copy button here and by the order card's icon, so a copy looks the same
+/// wherever it was made.
+void copyServerMessage(
+  BuildContext context, {
+  required String? text,
+  required String copied,
+  String pasteHint = 'ألصقها في محادثة الزبون',
+}) {
+  if (text == null || text.isEmpty) {
+    context.showError('لا يوجد نص لهذه الرسالة — حدّث الصفحة وحاول مجدداً');
+
+    return;
+  }
+
+  // Not awaited: the platform call is local, and the confirmation need not wait on it.
+  unawaited(Clipboard.setData(ClipboardData(text: text)));
+
+  context.showSuccess(copied, details: pasteHint);
+}
+
 /// Copies a message the server wrote. The admin words these in «نصوص الرسائل», so the app
 /// holds no text of its own; a null means a server too old to send one, and the button says so
 /// rather than copying nothing.
@@ -139,19 +185,7 @@ class _CopyServerTextButton extends StatelessWidget {
     return AppButton.tonal(
       label: label,
       icon: icon,
-      onPressed: () {
-        final message = text;
-
-        if (message == null || message.isEmpty) {
-          context.showError('لا يوجد نص لهذه الرسالة — حدّث الصفحة وحاول مجدداً');
-
-          return;
-        }
-
-        unawaited(Clipboard.setData(ClipboardData(text: message)));
-
-        context.showSuccess(copied, details: pasteHint);
-      },
+      onPressed: () => copyServerMessage(context, text: text, copied: copied, pasteHint: pasteHint),
     );
   }
 }

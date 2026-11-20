@@ -20,7 +20,8 @@ class CustomerMessages {
   /// The token the server replaces with the order's number — `{رقم_الفاتورة}`.
   final String placeholder;
 
-  /// In the server's order: ready (pickup, delivery), return (courier, carrier), then vendor.
+  /// In the server's order: ready (pickup, delivery), return (courier, carrier), vendor, then
+  /// the courier's number.
   final List<CustomerMessageTemplate> messages;
 }
 
@@ -47,7 +48,8 @@ class CustomerMessageTemplate {
     ],
   );
 
-  /// `ready_pickup`, `ready_delivery`, `return_courier`, `return_carrier`, `vendor_request`.
+  /// `ready_pickup`, `ready_delivery`, `return_courier`, `return_carrier`, `vendor_request`,
+  /// `courier_contact`.
   final String key;
 
   /// What the screen calls it — the server's Arabic.
@@ -67,4 +69,8 @@ class CustomerMessageTemplate {
 
   /// The token for the order's lines, the vendor text's own.
   static const itemsPlaceholder = '{الأصناف}';
+
+  /// The courier text's own tokens: the courier's phone and the carrier's parcel code.
+  static const courierPhonePlaceholder = '{رقم_المندوب}';
+  static const shipmentCodePlaceholder = '{كود_الشحنة}';
 }

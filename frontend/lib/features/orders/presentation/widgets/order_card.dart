@@ -10,6 +10,7 @@ import 'package:dayaa/features/customers/presentation/widgets/design_viewer.dart
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/presentation/widgets/compensation_widgets.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_deleted_badge.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_invoice_actions.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_product_kind_badge.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_status_chip.dart';
 import 'package:dayaa/features/orders/presentation/widgets/partial_delivery_badge.dart';
@@ -233,14 +234,13 @@ class OrderCard extends StatelessWidget {
                   // الطلبية. صفٌّ مستقلٌّ لا خانةٌ رابعة: ثلاث خانات تتقاسم عرض الهاتف بالكاد،
                   // ورابعةٌ تجعل الأربعة كلها غير مقروءة. ويغيب كاملاً عن الطلبية التي لم تذهب
                   // إلى ناقل — وهي الأغلب — فلا يطول أحدٌ بطاقتَه بسطرٍ فارغ.
-                  if (order.nawrisParcel case final parcel?) ...[
+                  // The courier row: the carrier's code, the courier's phone, and the message
+                  // that hands both to the customer. Three columns, like the rows above, so the
+                  // cells line up. The phone arrives from Nawris once a courier takes the parcel
+                  // (or is typed at dispatch); until then its cell and the button stay empty.
+                  if (_CourierRow.shows(order)) ...[
                     SizedBox(height: 26.h),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _Cell(label: 'كود النورس', value: parcel.code)),
-                      ],
-                    ),
+                    _CourierRow(order: order),
                   ],
                   // **آخر ما على البطاقة، لا وسطها.** «طلبية إيه؟» سؤالٌ يأتي بعد «لمن» و«بكام»
                   // و«فين»، وهو أول ما كان يفتح الموظفُ الطلبية لأجله. صفٌّ واحد لا قائمة:
@@ -466,6 +466,104 @@ class _Line extends StatelessWidget {
 ///
 /// **والقيمة داكنة كالعنوان**، يفرّق بينهما الوزن والحجم لا اللون: الرمادي الخافت في عمودٍ
 /// عرضه ثلث شاشة كان أضعف ما في بطاقةٍ كلّ عملها أن تُقرأ من نظرة.
+/// «كود النورس» · «رقم المندوب» · «رسالة المندوب».
+///
+/// The code is the carrier's own parcel code, or the typed tracking number for an order another
+/// company carries. The copy button sends the server's text: the invoice number, the phone and
+/// the code, so the customer can reach the courier without ringing us first.
+class _CourierRow extends StatelessWidget {
+  const _CourierRow({required this.order});
+
+  final Order order;
+
+  /// Shown once the order has a code or a courier — absent on the many orders that never left
+  /// with a carrier, so no card grows an empty row.
+  static bool shows(Order order) => _code(order) != null || _phone(order) != null;
+
+  static ({String label, String value})? _code(Order order) {
+    if (order.nawrisParcel case final parcel?) return (label: 'كود النورس', value: parcel.code);
+
+    final tracking = order.trackingNumber?.trim();
+
+    return tracking == null || tracking.isEmpty ? null : (label: 'رقم التتبع', value: tracking);
+  }
+
+  static String? _phone(Order order) {
+    final phone = order.courierPhone?.trim();
+
+    return phone == null || phone.isEmpty ? null : phone;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final code = _code(order);
+    final phone = _phone(order);
+    final message = order.courierMessageText;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: code == null
+              ? const SizedBox.shrink()
+              : _Cell(label: code.label, value: code.value, isLtr: true),
+        ),
+        Expanded(
+          child: phone == null
+              ? const SizedBox.shrink()
+              : _Cell(label: 'رقم المندوب', value: phone, isLtr: true),
+        ),
+        Expanded(
+          child: message == null || message.isEmpty
+              ? const SizedBox.shrink()
+              : _CopyCourierMessage(text: message),
+        ),
+      ],
+    );
+  }
+}
+
+/// The third cell of [_CourierRow]: a label like its neighbours, and a button under it.
+///
+/// An icon button, not the full «نسخ رسالة المندوب»: a third of a phone's width cannot hold that
+/// label without wrapping it to three lines. The label above says what it copies.
+class _CopyCourierMessage extends StatelessWidget {
+  const _CopyCourierMessage({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Column(
+        children: [
+          Text(
+            'رسالة المندوب',
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: context.colorScheme.onSurface,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          IconButton.filledTonal(
+            tooltip: 'نسخ رسالة المندوب',
+            icon: Icon(AppIcons.copy),
+            onPressed: () => copyServerMessage(
+              context,
+              text: text,
+              copied: CopyCourierMessageButton.courierMessageCopied,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Cell extends StatelessWidget {
   const _Cell({required this.label, required this.value, this.isLtr = false, this.tone});
 

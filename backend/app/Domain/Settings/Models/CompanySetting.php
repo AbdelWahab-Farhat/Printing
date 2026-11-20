@@ -43,6 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'return_courier_message',
     'return_carrier_message',
     'vendor_request_message',
+    'courier_contact_message',
 ])]
 class CompanySetting extends Model implements HasAuditTrail
 {

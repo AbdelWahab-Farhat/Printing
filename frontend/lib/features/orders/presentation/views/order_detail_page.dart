@@ -1327,6 +1327,7 @@ class _Body extends StatelessWidget {
       order.recipientPhone != null ||
       order.trackingNumber != null ||
       order.nawrisParcel != null ||
+      order.courierPhone != null ||
       order.shippingCompany != null;
 
   @override
@@ -1405,6 +1406,18 @@ class _Body extends StatelessWidget {
                       SizedBox(height: 4.h),
                       OrderReturnMessageSwitch(order: order, onChanged: onConfirmReturnMessage),
                     ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
+              // «رسالة المندوب» — the courier's phone and the parcel code for the customer. The
+              // server sends the text only while a courier is known and the order is open, so
+              // its presence is the whole rule. Copy only: no switch under it.
+              if (order.courierMessageText?.isNotEmpty ?? false) ...[
+                _Section(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: CopyCourierMessageButton(order: order),
                   ),
                 ),
                 SizedBox(height: 12.h),
@@ -1973,6 +1986,9 @@ class _Destination extends StatelessWidget {
             if (parcel.moneyOutOfSync)
               _CarrierOutOfSync(parcel: parcel, onRetry: onSyncCarrierMoney),
           ],
+          // From Nawris once a courier takes the parcel, or typed at dispatch.
+          if (order.courierPhone case final phone? when phone.trim().isNotEmpty)
+            _Row(icon: AppIcons.phone, label: 'رقم المندوب', value: phone),
           if (order.shippingCompany case final company?)
             _Row(icon: AppIcons.warehouse, label: 'شركة الشحن', value: company),
         ],

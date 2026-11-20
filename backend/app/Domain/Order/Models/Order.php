@@ -337,6 +337,20 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * Whether «رسالة المندوب» — the courier's number, for the customer — has anything to say.
+     *
+     * **Only while a courier is known and the parcel may still be on its way.** The number comes
+     * from the carrier's webhook or from whoever dispatched the order by hand; once the customer
+     * has the bags, or the order is cancelled, ringing the courier is no longer the next step.
+     */
+    public function courierMessageApplies(): bool
+    {
+        return is_string($this->courier_phone)
+            && trim($this->courier_phone) !== ''
+            && ! $this->status->isClosed();
+    }
+
+    /**
      * Who said the customer had been contacted about the current return.
      *
      * @return BelongsTo<User, $this>

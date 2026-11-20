@@ -340,11 +340,18 @@ class OrderReturnMessageTest extends TestCase
         $response = $this->withHeaders($this->auth(PermissionName::ViewCompanySettings))
             ->getJson('/api/v1/settings/customer-messages');
 
-        // Assert — four customer texts and the vendor text (OUTSOURCED-PRODUCTS.md §10).
+        // Assert — four customer texts, the vendor text (OUTSOURCED-PRODUCTS.md §10) and the
+        // courier text (NAWRIS-INTEGRATION.md §5.5).
         $response->assertOk()
             ->assertJsonPath('data.placeholder', CustomerMessage::INVOICE_PLACEHOLDER)
-            ->assertJsonCount(5, 'data.messages')
+            ->assertJsonCount(6, 'data.messages')
             ->assertJsonPath('data.messages.4.key', 'vendor_request')
+            ->assertJsonPath('data.messages.5.key', 'courier_contact')
+            ->assertJsonPath('data.messages.5.placeholders', [
+                CustomerMessage::INVOICE_PLACEHOLDER,
+                CustomerMessage::COURIER_PHONE_PLACEHOLDER,
+                CustomerMessage::SHIPMENT_CODE_PLACEHOLDER,
+            ])
             ->assertJsonPath('data.messages.4.placeholders', [CustomerMessage::INVOICE_PLACEHOLDER, CustomerMessage::ITEMS_PLACEHOLDER])
             ->assertJsonPath('data.messages.0.placeholders', [CustomerMessage::INVOICE_PLACEHOLDER])
             ->assertJsonPath('data.messages.0.key', 'ready_pickup')

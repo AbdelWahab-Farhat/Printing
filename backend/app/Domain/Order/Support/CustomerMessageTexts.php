@@ -64,6 +64,25 @@ final class CustomerMessageTexts
         );
     }
 
+    /**
+     * The courier text for this order, or null while no courier is known or the order is closed.
+     *
+     * The shipment code is the carrier's code for the parcel when the controller attached one,
+     * and the hand-typed tracking number otherwise — the code the courier answers to.
+     */
+    public function courierFor(Order $order): ?string
+    {
+        if (! $order->courierMessageApplies()) {
+            return null;
+        }
+
+        return str_replace(
+            [CustomerMessage::COURIER_PHONE_PLACEHOLDER, CustomerMessage::SHIPMENT_CODE_PLACEHOLDER],
+            [trim((string) $order->courier_phone), $this->shipmentCode($order)],
+            $this->render(CustomerMessage::CourierContact, $order),
+        );
+    }
+
     /** The wording in force — the admin's when set, the built-in one otherwise. */
     public function template(CustomerMessage $message): string
     {
@@ -130,6 +149,24 @@ final class CustomerMessageTexts
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * The carrier's parcel code, else the typed tracking number, else a dash.
+     *
+     * `nawris_parcel` is attached by the controller, not a column, so it is read with `isset`
+     * the way `OrderResource` reads it: a list or a write that did not attach it falls back.
+     */
+    private function shipmentCode(Order $order): string
+    {
+        $parcel = isset($order->nawris_parcel) && is_array($order->nawris_parcel) ? $order->nawris_parcel : null;
+        $code = is_string($parcel['code'] ?? null) ? trim($parcel['code']) : '';
+
+        if ($code === '' && is_string($order->tracking_number)) {
+            $code = trim($order->tracking_number);
+        }
+
+        return $code !== '' ? $code : '—';
     }
 
     /** `500.000` → `500`, `12.500` → `12.5`: a quantity as somebody would write it. */

@@ -64,6 +64,10 @@ final class ApplyNawrisStatus
         // support reads, and it is never interpreted.
         $this->recordCarrierState($parcel, $payload, $code, $terms);
 
+        // Before every return below: the courier's number is news on its own, whatever the
+        // status does with this event.
+        $this->recordCourierPhone($parcel, $payload);
+
         // Before the unmapped-code return as well: a flip of who pays arrives as an edit under
         // whatever status the parcel is in.
         $this->followTheirPayer($event, $parcel, $payload);
@@ -176,8 +180,29 @@ final class ApplyNawrisStatus
     }
 
     /**
-     * The status move itself, with the courier's number and the carrier's own reason carried on
-     * to the timeline.
+     * The courier's number onto every order of the parcel, from any event that carries one.
+     *
+     * **Not tied to a status move.** Nawris names the courier on «مع المندوب» (code 4), which
+     * almost always lands on an order code 3 already put in «جاري التوصيل» — a no-op for the
+     * status. Saved only alongside a move, the number was dropped exactly when it first arrived,
+     * and on every parked move too. Last courier wins: the number you ring is the one holding it
+     * now. An unchanged number writes nothing, so a repeated event adds no audit line.
+     */
+    private function recordCourierPhone(NawrisParcel $parcel, NawrisWebhookPayload $payload): void
+    {
+        if ($payload->captainPhone === null) {
+            return;
+        }
+
+        foreach ($parcel->orders as $order) {
+            if ($order->courier_phone !== $payload->captainPhone) {
+                $order->forceFill(['courier_phone' => $payload->captainPhone])->save();
+            }
+        }
+    }
+
+    /**
+     * The status move itself, with the carrier's own reason carried on to the timeline.
      */
     private function changeStatusFor(
         Order $order,
@@ -194,11 +219,6 @@ final class ApplyNawrisStatus
             : $payload->returnReason ?? $payload->delayReason;
 
         ($this->changeStatus)($order, $target, $reason, $actor);
-
-        if ($payload->captainPhone !== null) {
-            // Last courier wins — the number you ring is the one holding it now.
-            $order->forceFill(['courier_phone' => $payload->captainPhone])->save();
-        }
     }
 
     /**

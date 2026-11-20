@@ -528,6 +528,41 @@ What happens now, through `CarrierService::tellAboutMoney()`:
 what was asked for. And the reason Nawris refuses is a question for them; the log will now show
 their answer.
 
+### 5.5 The courier's number, and «رسالة المندوب»
+
+Not money, but it sits next to the guards it used to depend on. Owner's request, 2026-11-20.
+
+**The bug.** Nawris names the courier (`captain_phone`) on «مع المندوب», code `4`. Code `3` has
+almost always moved the order to «جاري التوصيل» already, so code `4` is a no-op for the status, and
+`courier_phone` was written only beside a status move. The number was dropped the first time it
+arrived, and on every parked move too, contrary to §10. In the local data, 7 of 9 code-`4` events
+carried a phone; order 1236 had one and still showed none.
+
+**Now.** `ApplyNawrisStatus::recordCourierPhone()` runs with `recordCarrierState`, before every
+early return: any event carrying `captain_phone` writes it onto every live order of the parcel,
+whether the code is mapped, a no-op, parked or unknown. Last courier wins; an unchanged number
+writes nothing, so a repeated event adds no audit line. An event without one leaves the known
+number alone.
+
+**Backfill.** Migration `2026_11_20_110000_add_courier_contact_message` takes the latest
+`captain_phone` of each parcel from the stored events and writes it onto its live orders that
+have none. A number already there, whether from a later event or typed at dispatch, is kept.
+It writes straight to the table, so it leaves no audit line.
+
+**On screen.**
+
+| Where | What |
+|---|---|
+| Order card | One row: «كود النورس» (or «رقم التتبع» for another carrier) · «رقم المندوب» · «رسالة المندوب» with a copy button. Shown once the order has a code or a courier |
+| Order page | «رقم المندوب» under «كود النورس», and «نسخ رسالة المندوب» above the invoice card |
+
+**The message.** `CustomerMessage::CourierContact`, worded by the admin in «نصوص الرسائل»
+(`company_settings.courier_contact_message`, null = the built-in text). Three placeholders:
+`{رقم_الفاتورة}`, `{رقم_المندوب}` and `{كود_الشحنة}`. The code is the Nawris parcel code, else
+the typed tracking number, else «—». `OrderResource.courier_message_text` is null until a phone
+is known and again once the order is closed («تم الاستلام», «تم التسوية», «إلغاء تام»); the
+app hides the button on a null. **Copy only**: no switch, no queue, no filter.
+
 ---
 
 ## 6. Schema
@@ -842,7 +877,7 @@ has no signed-in user for `Auditable` to pick up.
 | `status` | any mapped code that is legal from where the order stands | **Seven reachable values** — «جاري التوصيل» · «راجع لدى المندوب» · «راجع لدى شركة التوصيل» · «راجع مكتب» · «إعادة إرسال» · «تم الاستلام» · «إلغاء تام». Always through `ChangeOrderStatus`, never by assignment. See [§3.2](#32-what-actually-lands-and-from-where) |
 | `dispatched_at` `delivered_at` `returned_at` `cancelled_at` | whichever the new status stamps | `OrderStatus::timestampColumn()` decides. «إعادة إرسال» stamps nothing — an order can visit it twice, and one column would lose the first visit |
 | `cancellation_reason` | code `12` | **Required, not optional** — see the trap below |
-| `courier_phone` | any webhook carrying `captain_phone` | Overwrites. Last courier wins |
+| `courier_phone` | any webhook carrying `captain_phone` — mapped, no-op, parked or unknown code | Overwrites. Last courier wins. See [§5.5](#55-the-couriers-number-and-رسالة-المندوب) |
 | `carrier_collection_recorded_at` | code `7` | The idempotence flag. Guards **both** money entries |
 | `paid_amount` · `carrier_settled_amount` | code `7` | **Not written directly.** `RecalculateOrderPayments` re-derives both from the entries below — neither column is fillable |
 

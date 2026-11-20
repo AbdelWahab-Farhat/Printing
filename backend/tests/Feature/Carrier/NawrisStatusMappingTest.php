@@ -196,6 +196,69 @@ class NawrisStatusMappingTest extends TestCase
         $this->assertSame('0912345678', $order->fresh()->courier_phone);
     }
 
+    public function test_the_courier_phone_lands_on_with_the_courier_without_a_status_move(): void
+    {
+        // Arrange — code 4 names the courier, and the order is already «جاري التوصيل» from code 3,
+        // so the status does not move. The number used to be dropped right here.
+        [$order] = $this->outForDelivery();
+
+        // Act
+        $this->send($this->body([
+            'to_status_code' => 4,
+            'to_status_text' => 'مع المندوب',
+            'captain_phone' => '0944112145',
+        ]));
+
+        // Assert
+        $order->refresh();
+        $this->assertSame(OrderStatus::OutForDelivery, $order->status);
+        $this->assertSame('0944112145', $order->courier_phone);
+    }
+
+    public function test_the_courier_phone_lands_on_a_parked_move(): void
+    {
+        // Arrange — «مرتجع مع الشركة» straight from «جاري التوصيل» skips a link of our chain and
+        // is parked; the number still arrives.
+        [$order] = $this->outForDelivery();
+
+        // Act
+        $this->send($this->body([
+            'to_status_code' => 5,
+            'to_status_text' => 'مرتجع مع الشركة',
+            'captain_phone' => '0914435809',
+        ]));
+
+        // Assert
+        $order->refresh();
+        $this->assertSame(OrderStatus::OutForDelivery, $order->status);
+        $this->assertSame('0914435809', $order->courier_phone);
+    }
+
+    public function test_the_courier_phone_lands_on_an_unmapped_code(): void
+    {
+        // Arrange
+        [$order] = $this->outForDelivery();
+
+        // Act
+        $this->send($this->body(['to_status_code' => 17, 'captain_phone' => '0921112222']));
+
+        // Assert
+        $this->assertSame('0921112222', $order->fresh()->courier_phone);
+    }
+
+    public function test_an_event_without_a_courier_keeps_the_known_one(): void
+    {
+        // Arrange
+        [$order] = $this->outForDelivery();
+        $order->forceFill(['courier_phone' => '0944112145'])->save();
+
+        // Act — «في الطريق للفرع» carries no courier.
+        $this->send($this->body(['to_status_code' => 16, 'to_status_text' => 'في الطريق للفرع']));
+
+        // Assert
+        $this->assertSame('0944112145', $order->fresh()->courier_phone);
+    }
+
     // ── guard 1: idempotency ─────────────────────────────────────────────────────────────
 
     public function test_a_repeated_delivery_does_not_pay_twice(): void

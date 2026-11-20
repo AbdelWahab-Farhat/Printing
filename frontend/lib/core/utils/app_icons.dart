@@ -755,6 +755,11 @@ abstract final class AppIcons {
   static IconData get vendorMessage =>
       _pick(Icons.forward_to_inbox_rounded, CupertinoIcons.paperplane_fill);
 
+  /// «رسالة المندوب» — the courier's number, handed to the customer so they can ring him. A
+  /// phone in a bubble: the message exists to start a call.
+  static IconData get courierMessage =>
+      _pick(Icons.perm_phone_msg_rounded, CupertinoIcons.phone_fill_arrow_up_right);
+
   static IconData get empty =>
       _pick(Icons.inbox_rounded, CupertinoIcons.tray);
 

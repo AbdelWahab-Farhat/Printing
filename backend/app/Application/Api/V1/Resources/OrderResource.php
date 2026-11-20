@@ -139,6 +139,11 @@ class OrderResource extends JsonResource
             ),
             'vendor_message_text' => $texts->vendorFor($this->resource),
 
+            // ── «رسالة المندوب» ────────────────────────────────────────────────────────────────
+            // Copy only: no switch and no queue. Null until a courier's phone is known, and again
+            // once the order is closed — the app hides the button on a null.
+            'courier_message_text' => $texts->courierFor($this->resource),
+
             // Who is making it, for an order a vendor executes. The name travels with the id
             // because it is what this order said at the time — a vendor renamed since keeps its
             // new name everywhere except here. Null on every order that is made in-house.

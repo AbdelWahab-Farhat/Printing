@@ -15,12 +15,13 @@ use Illuminate\Http\Request;
 /**
  * Customer messages
  *
- * The five texts staff copy and send — the two ready messages and the two return messages to
- * customers, and the vendor message on an outsourced order — as the admin wants them worded.
- * Each has a built-in default; saving an empty text puts the default back. `{رقم_الفاتورة}` in a
- * text is replaced with the order's number; `{الأصناف}`, in the vendor text only, with the
- * order's lines and colours. See Docs/orders/ORDER-RETURN-MESSAGE.md §٥ and
- * Docs/outsourced-products/OUTSOURCED-PRODUCTS.md §10.
+ * The six texts staff copy and send — the two ready messages, the two return messages and the
+ * courier's number to customers, and the vendor message on an outsourced order — as the admin
+ * wants them worded. Each has a built-in default; saving an empty text puts the default back.
+ * `{رقم_الفاتورة}` in a text is replaced with the order's number; `{الأصناف}`, in the vendor text
+ * only, with the order's lines and colours; `{رقم_المندوب}` and `{كود_الشحنة}`, in the courier
+ * text only, with the courier's phone and the carrier's code for the parcel. See
+ * Docs/orders/ORDER-RETURN-MESSAGE.md §٥ and Docs/outsourced-products/OUTSOURCED-PRODUCTS.md §10.
  */
 class CustomerMessageController extends Controller
 {
@@ -90,7 +91,8 @@ class CustomerMessageController extends Controller
                     'default_body' => $message->defaultBody(),
                     'is_customised' => $this->texts->isCustomised($message),
                     // What this text may contain besides plain words: the order's number on all
-                    // of them, and the line list on the vendor text.
+                    // of them, the line list on the vendor text, the courier's phone and the
+                    // parcel code on the courier text.
                     'placeholders' => $message->placeholders(),
                 ],
                 CustomerMessage::cases(),

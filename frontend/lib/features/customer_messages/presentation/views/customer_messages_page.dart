@@ -208,6 +208,15 @@ class _MessageField extends StatelessWidget {
               color: context.colorScheme.onSurfaceVariant,
             ),
           ),
+        // The courier text has two tokens of its own.
+        if (message.placeholders.contains(CustomerMessageTemplate.courierPhonePlaceholder))
+          Text(
+            'اكتب ${CustomerMessageTemplate.courierPhonePlaceholder} حيث يظهر رقم المندوب، '
+            'و${CustomerMessageTemplate.shipmentCodePlaceholder} حيث يظهر كود شركة التوصيل.',
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
       ],
     );
   }

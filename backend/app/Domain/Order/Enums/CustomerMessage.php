@@ -7,7 +7,7 @@ namespace App\Domain\Order\Enums;
 use App\Domain\Delivery\Enums\FulfilmentType;
 
 /**
- * The texts staff copy and send on WhatsApp — four to the customer and one to the vendor of an
+ * The texts staff copy and send on WhatsApp — five to the customer and one to the vendor of an
  * outsourced order — and which one an order gets is decided here.
  *
  * Each has a built-in wording ({@see defaultBody()}) and an optional override the admin types on
@@ -19,6 +19,8 @@ use App\Domain\Delivery\Enums\FulfilmentType;
  * it is allowed: the admin may prefer a message that does not quote the number.
  * **{@see ITEMS_PLACEHOLDER}** belongs to the vendor text only: the server writes the order's
  * lines and colours there, so the admin words the frame and never the list.
+ * **{@see COURIER_PHONE_PLACEHOLDER}** and **{@see SHIPMENT_CODE_PLACEHOLDER}** belong to the
+ * courier text only: the courier's phone, and the carrier's code for the parcel.
  */
 enum CustomerMessage: string
 {
@@ -37,9 +39,16 @@ enum CustomerMessage: string
     /** To the vendor of an outsourced order — what to make. */
     case VendorRequest = 'vendor_request';
 
+    /** The courier's number, so the customer can ring the man holding the parcel. */
+    case CourierContact = 'courier_contact';
+
     public const INVOICE_PLACEHOLDER = '{رقم_الفاتورة}';
 
     public const ITEMS_PLACEHOLDER = '{الأصناف}';
+
+    public const COURIER_PHONE_PLACEHOLDER = '{رقم_المندوب}';
+
+    public const SHIPMENT_CODE_PLACEHOLDER = '{كود_الشحنة}';
 
     /**
      * The placeholders the admin may use in this text.
@@ -48,9 +57,15 @@ enum CustomerMessage: string
      */
     public function placeholders(): array
     {
-        return $this === self::VendorRequest
-            ? [self::INVOICE_PLACEHOLDER, self::ITEMS_PLACEHOLDER]
-            : [self::INVOICE_PLACEHOLDER];
+        return match ($this) {
+            self::VendorRequest => [self::INVOICE_PLACEHOLDER, self::ITEMS_PLACEHOLDER],
+            self::CourierContact => [
+                self::INVOICE_PLACEHOLDER,
+                self::COURIER_PHONE_PLACEHOLDER,
+                self::SHIPMENT_CODE_PLACEHOLDER,
+            ],
+            default => [self::INVOICE_PLACEHOLDER],
+        };
     }
 
     /** The ready text for the way the order left: one for pickup, one for delivery. */
@@ -105,6 +120,7 @@ enum CustomerMessage: string
             self::ReturnCourier => 'رسالة الراجع — راجع لدى المندوب',
             self::ReturnCarrier => 'رسالة الراجع — راجع لدى شركة التوصيل',
             self::VendorRequest => 'رسالة المورد — طلبيات التصنيع',
+            self::CourierContact => 'رسالة المندوب — رقم المندوب للزبون',
         };
     }
 
@@ -112,12 +128,15 @@ enum CustomerMessage: string
      * The built-in wording, used whenever the admin has not typed one.
      *
      * The two ready texts are the owner's own (2026-10-28, 2026-11-10), moved here from the app
-     * unchanged; the two return texts and the vendor text were approved on 2026-11-14.
+     * unchanged; the two return texts and the vendor text were approved on 2026-11-14, the
+     * courier text on 2026-11-20.
      */
     public function defaultBody(): string
     {
         $invoice = self::INVOICE_PLACEHOLDER;
         $items = self::ITEMS_PLACEHOLDER;
+        $courierPhone = self::COURIER_PHONE_PLACEHOLDER;
+        $shipmentCode = self::SHIPMENT_CODE_PLACEHOLDER;
 
         return implode("\n\n", match ($this) {
             self::ReadyPickup => [
@@ -143,6 +162,11 @@ enum CustomerMessage: string
                 "السلام عليكم ، يومك طيب إن شاء الله\nطلبية جديدة من دعاية رقم : [ {$invoice} ]",
                 $items,
                 "التصميم المعتمد نرسلوه ليكم في رسالة منفصلة .\nنرجو تأكيد الاستلام وموعد التسليم .",
+            ],
+            self::CourierContact => [
+                'أهلا وسهلا بيك ، يومك طيب إن شاء الله',
+                "طلبيتك رقم الفاتورة : [ {$invoice} ] مع مندوب التوصيل الآن .\nرقم المندوب : {$courierPhone}\nكود الشحنة : {$shipmentCode}",
+                'تقدر تتواصل مع المندوب مباشرة لترتيب الاستلام .',
             ],
         });
     }

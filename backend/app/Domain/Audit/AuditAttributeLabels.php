@@ -1145,6 +1145,7 @@ final class AuditAttributeLabels
             'return_courier_message' => 'رسالة الراجع — راجع لدى المندوب',
             'return_carrier_message' => 'رسالة الراجع — راجع لدى شركة التوصيل',
             'vendor_request_message' => 'رسالة المورد — طلبيات التصنيع',
+            'courier_contact_message' => 'رسالة المندوب — رقم المندوب للزبون',
             'updated_by' => 'عدّلها',
         ],
         // Only ever an announcement. Notifications as a class are outside the audit trail — see
