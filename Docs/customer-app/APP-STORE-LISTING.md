@@ -1,4 +1,4 @@
-# FlyerX (iOS): بيانات App Store Connect
+# دعاية (iOS): بيانات App Store Connect
 
 > **لمن هذا الملف:** لوكيل ذكاء اصطناعي يعبّئ صفحات App Store Connect لتطبيق العميل
 > (`frontend-client/`). كل حقيقة هنا أُخذت من الشيفرة أو من الخادم، وفُحصت في **٢٠٢٦-٠٩-٢٦**.
@@ -18,11 +18,11 @@
 
 | الحقل | القيمة | المصدر |
 |---|---|---|
-| الاسم تحت الأيقونة | ✅ `FlyerX` | `APP_DISPLAY_NAME` في `ios/Runner.xcodeproj/project.pbxproj` |
-| العلامة التجارية | ✅ FlyerX «فلايركس · أكياس الشحن الفلاير» | ورقة الهوية `flyerX.pdf` (2026-08-06) |
+| الاسم تحت الأيقونة | ✅ `دعاية` | `APP_DISPLAY_NAME` في `ios/Runner.xcodeproj/project.pbxproj` |
+| العلامة التجارية | ✅ «دعاية Dayaa» لخدمات الطباعة، بشعارها `assets/images/logo.png` (الشعار نفسه في تطبيق الموظفين). حلّت محلّ هوية FlyerX «فلايركس» في ٢٠٢٦-١١-٢١ | `lib/core/theme/theme.dart` |
 | الشركة خلف التطبيق | ✅ «دعاية Dayaa»، مطبعة في ليبيا، ونطاقها `daaya.ly` | `pubspec.yaml`، `.env` |
 | Bundle ID للإنتاج | ✅ `ly.dayaa.client` | `PRODUCT_BUNDLE_IDENTIFIER` |
-| Bundle ID لنسخة الاختبار | ✅ `ly.dayaa.client.dev`، واسمها «FlyerX تجريبي». **لا تُرفع إلى المتجر** | نفسه |
+| Bundle ID لنسخة الاختبار | ✅ `ly.dayaa.client.dev`، واسمها «دعاية تجريبي»، وأيقونتها على خلفيةٍ كحلية داكنة كي لا تشبه نسخة الموظفين التجريبية. **لا تُرفع إلى المتجر** | نفسه |
 | Apple Team ID | ✅ `XJF65LWZ2J` | `DEVELOPMENT_TEAM` |
 | الإصدار | ✅ `1.3.0`، ورقم البناء `1` | `version: 1.3.0+1` في `pubspec.yaml` |
 | أدنى إصدار iOS | ✅ iOS 15.0 | `IPHONEOS_DEPLOYMENT_TARGET` |
@@ -32,7 +32,7 @@
 | خادم الإنتاج | ✅ `https://api.daaya.ly/api/v1` | `frontend-client/.env` |
 | Firebase | ✅ المشروع `daya-bdf70`، والتطبيق `1:627605931055:ios:9186f1a5eb6e47cbedf2da` | `ios/Runner/GoogleService-Info.plist` |
 | أيقونة 1024×1024 | ✅ جاهزة ومعتمة بلا شفافية: `ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png` | فُحصت بـ`sips` |
-| ألوان العلامة | ✅ برتقالي `#FF5A1F`، وكحلي `#0B1B2B`، ورمادي `#6B7785`، وفاتح `#EDEFF2` | ورقة الهوية |
+| ألوان العلامة | ✅ أصفر `#D5D74D`، وبنفسجي `#4C29D0`، وأخضر `#57937F`، كلها من الشعار | `lib/core/theme/theme.dart` |
 
 **أمر بناء نسخة المتجر:** `flutter build ipa --release --flavor prod` (نكهة `prod` هي الافتراضية
 أصلاً). نكهة `dev` لـTestFlight الداخلي وحده.
@@ -55,9 +55,9 @@
 
    | المفتاح | لماذا هو لازم | ما يحدث من دونه | ✍️ النص المقترح |
    |---|---|---|---|
-   | `NSCameraUsageDescription` | زر الكاميرا في ورقة المرفقات (`attachment_picker_impl.dart:83`) | يُغلق التطبيق فجأة عند الضغط على الزر | «يستخدم FlyerX الكاميرا لتصوّر شعارك أو تصميمك وترفقه بطلبيتك أو بمحادثة الدعم.» |
-   | `NSPhotoLibraryUsageDescription` | اختيار صورة من المعرض (`attachment_picker_impl.dart:76`) | يصل تحذير ITMS-90683 عند الرفع | «يفتح FlyerX صورك لتختار منها شعارك أو تصميمك وترفعه إلى حسابك أو ترسله إلى الدعم.» |
-   | `NSPhotoLibraryAddUsageDescription` ✅ أُضيف ٢٠٢٦-١٠-١٢ | «تحميل» التصميم يحفظه في «الصور» مباشرةً، و«حفظ الصورة» في ورقة المشاركة (رمز QR، معاينة الكيس) | يُغلق التطبيق فجأة عند الحفظ | «يحفظ FlyerX تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.» |
+   | `NSCameraUsageDescription` | زر الكاميرا في ورقة المرفقات (`attachment_picker_impl.dart:83`) | يُغلق التطبيق فجأة عند الضغط على الزر | «يستخدم تطبيق دعاية الكاميرا لتصوّر شعارك أو تصميمك وترفقه بطلبيتك أو بمحادثة الدعم.» |
+   | `NSPhotoLibraryUsageDescription` | اختيار صورة من المعرض (`attachment_picker_impl.dart:76`) | يصل تحذير ITMS-90683 عند الرفع | «يفتح تطبيق دعاية صورك لتختار منها شعارك أو تصميمك وترفعه إلى حسابك أو ترسله إلى الدعم.» |
+   | `NSPhotoLibraryAddUsageDescription` ✅ أُضيف ٢٠٢٦-١٠-١٢ | «تحميل» التصميم يحفظه في «الصور» مباشرةً، و«حفظ الصورة» في ورقة المشاركة (رمز QR، معاينة الكيس) | يُغلق التطبيق فجأة عند الحفظ | «يحفظ تطبيق دعاية تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.» |
 
 4. ⚠️ **لغة التطبيق في المتجر ستظهر English.** `developmentRegion = en`، و`knownRegions` فيها
    `en` وحدها، ولا يوجد `CFBundleLocalizations` في `Info.plist`. **الحل:** أضف `ar` إلى
@@ -121,11 +121,11 @@
 
 | حقل App Store Connect | القيمة |
 |---|---|
-| Name (٣٠ حرفاً كحد أقصى) | ✍️ `FlyerX - أكياس الشحن` (٢٠ حرفاً). وإن كان الاسم محجوزاً: `FlyerX فلايركس` |
+| Name (٣٠ حرفاً كحد أقصى) | ✍️ `دعاية - خدمات الطباعة` (٢١ حرفاً). وإن كان الاسم محجوزاً: `دعاية Dayaa للطباعة` |
 | Subtitle (٣٠ حرفاً كحد أقصى) | ✍️ `اطبع أكياس متجرك بشعارك` (٢٣ حرفاً) |
 | Primary Language | ✍️ Arabic |
 | Bundle ID | ✅ `ly.dayaa.client` |
-| SKU | ✍️ `flyerx-client-ios` (معرّف داخلي لا يراه أحد) |
+| SKU | ✍️ `dayaa-client-ios` (معرّف داخلي لا يراه أحد). **إن كان سجلّ التطبيق قد أُنشئ في App Store Connect فالـSKU والـBundle ID يبقيان كما هما**: لا يتغيّران بعد الإنشاء |
 | Primary Category | ✍️ Shopping |
 | Secondary Category | ✍️ Business |
 | Content Rights: هل يعرض محتوى طرف ثالث؟ | ✍️ No. صور المنتجات والنماذج والإعلانات كلها للمحل، والخط Cairo مرخّص بـOFL |
@@ -146,7 +146,7 @@
 
 ✍️
 ```
-FlyerX: أكياس الشحن والتغليف مطبوعةً بشعار متجرك، من الطلب حتى التسليم.
+دعاية: أكياس الشحن والتغليف مطبوعةً بشعار متجرك، من الطلب حتى التسليم.
 
 اختر المنتج والمقاس والكمية، وارفع شعارك، وأرسل طلبيتك في دقيقة. بعدها تتابعها مرحلةً مرحلة، وتحدّث مع فريقنا متى احتجت.
 
@@ -208,7 +208,7 @@ FlyerX: أكياس الشحن والتغليف مطبوعةً بشعار متج�
 ### الترجمة الإنجليزية (English U.S.، اختيارية وتُنصح بها)
 
 ✍️
-- **Name:** `FlyerX - Printed Bags`
+- **Name:** `Daaya - Printing Services`
 - **Subtitle:** `Custom printed bags for shops` (٢٩ حرفاً)
 - **Promotional Text:** `Order shipping and paper bags printed with your shop's logo, follow every stage until delivery, and chat with our team right in the app.`
 - **Keywords:** `flyer,bags,printing,packaging,paper,logo,shop,mailer,libya,qr,custom`
@@ -247,7 +247,7 @@ FlyerX: أكياس الشحن والتغليف مطبوعةً بشعار متج�
 
 ✍️ **Review Notes:**
 ```
-FlyerX is the customer app of a printing house in Libya that prints custom shipping (mailer) bags, paper bags and packaging with the customer's logo. Customers browse products and prices, upload their logo, place an order and follow it until delivery.
+Daaya is the customer app of a printing house in Libya that prints custom shipping (mailer) bags, paper bags and packaging with the customer's logo. Customers browse products and prices, upload their logo, place an order and follow it until delivery.
 
 SIGN-IN: Every screen requires an account. Registration accepts Libyan mobile numbers only (10 digits starting 091–095), so please use the demo account provided above.
 
