@@ -44,6 +44,30 @@
 	     يحتاجه أيضاً، وبدونه يُغلق التطبيق عند الحفظ. -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>يحفظ تطبيق دعاية تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
+	<!--
+	The purpose strings App Store validation demands for what the binary links, whether or not
+	the code path is ever reached. Without them Apple drops the upload after it arrives
+	(ITMS-90683): it never shows in App Store Connect or TestFlight, and the reason only reaches
+	the account holder's email. Client 1.5.0 (3) was lost that way on 2026-11-21. The staff app
+	carries the same set for the same libraries; see its Info.plist.
+
+	* Camera and photo library: the attachment sheet (core/widgets/attachment_sheet.dart), through
+	  `image_picker`. Asked the first time the customer taps «الكاميرا» or «الصور».
+	* Location and microphone: nothing here reads a position or records sound. `file_picker`
+	  links DKImagePickerController, whose assets expose the location stored in a photo, and the
+	  camera picker can record video with sound. Each string says that true thing rather than
+	  inventing a feature, and its alert never appears, because the app never asks.
+
+	In Arabic, like every word the customer reads in this app.
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>يستخدم تطبيق دعاية الكاميرا لتصوّر شعارك أو تصميمك وترفقه بطلبيتك أو بمحادثة الدعم.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يفتح تطبيق دعاية صورك لتختار منها شعارك أو تصميمك وترفعه إلى حسابك أو ترسله إلى الدعم.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>لا يتتبّع التطبيق موقعك ولا يطلبه. تظهر هذه الرسالة لأن منتقي الصور قادر على قراءة مكان التقاط الصورة المحفوظ داخلها، ولا نقرأه.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>لا يسجّل التطبيق صوتاً. تظهر هذه الرسالة لأن أداة التصوير قادرة على تسجيل فيديو بصوت، ولا نستعملها لذلك.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
