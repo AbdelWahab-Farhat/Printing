@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_deposit_cubit.dart';
@@ -9,6 +9,7 @@ part of 'order_deposit_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -30,16 +31,21 @@ $OrderDepositStateCopyWith<OrderDepositState> get copyWith => _$OrderDepositStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDepositState&&(identical(other.offer, offer) || other.offer == offer)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&const DeepCollectionEquality().equals(other.onlineMethods, onlineMethods)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+  final _this = this as OrderDepositState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderDepositState&&(identical(other.offer, _this.offer) || other.offer == _this.offer)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.onlineMethodId, _this.onlineMethodId) || other.onlineMethodId == _this.onlineMethodId)&&const DeepCollectionEquality().equals(other.onlineMethods, _this.onlineMethods)&&(identical(other.walletBalance, _this.walletBalance) || other.walletBalance == _this.walletBalance)&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&(identical(other.lastFailure, _this.lastFailure) || other.lastFailure == _this.lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,offer,amount,payment,onlineMethodId,const DeepCollectionEquality().hash(onlineMethods),walletBalance,isSubmitting,lastFailure);
+int get hashCode {
+  final _this = this as OrderDepositState;
+  return Object.hash(runtimeType,_this.offer,_this.amount,_this.payment,_this.onlineMethodId,const DeepCollectionEquality().hash(_this.onlineMethods),_this.walletBalance,_this.isSubmitting,_this.lastFailure);
+}
 
 @override
 String toString() {
-  return 'OrderDepositState(offer: $offer, amount: $amount, payment: $payment, onlineMethodId: $onlineMethodId, onlineMethods: $onlineMethods, walletBalance: $walletBalance, isSubmitting: $isSubmitting, lastFailure: $lastFailure)';
+  final _this = this as OrderDepositState;
+  return 'OrderDepositState(offer: ${_this.offer}, amount: ${_this.amount}, payment: ${_this.payment}, onlineMethodId: ${_this.onlineMethodId}, onlineMethods: ${_this.onlineMethods}, walletBalance: ${_this.walletBalance}, isSubmitting: ${_this.isSubmitting}, lastFailure: ${_this.lastFailure})';
 }
 
 
@@ -68,7 +74,7 @@ class _$OrderDepositStateCopyWithImpl<$Res>
 /// Create a copy of OrderDepositState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? offer = null,Object? amount = freezed,Object? payment = freezed,Object? onlineMethodId = freezed,Object? onlineMethods = null,Object? walletBalance = freezed,Object? isSubmitting = null,Object? lastFailure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderDepositState(
 offer: null == offer ? _self.offer : offer // ignore: cast_nullable_to_non_nullable
 as DepositOffer,amount: freezed == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as String?,payment: freezed == payment ? _self.payment : payment // ignore: cast_nullable_to_non_nullable
@@ -239,7 +245,7 @@ return $default(_that.offer,_that.amount,_that.payment,_that.onlineMethodId,_tha
 
 
 class _OrderDepositState implements OrderDepositState {
-  const _OrderDepositState({required this.offer, this.amount, this.payment, this.onlineMethodId, final  List<TopUpMethod> onlineMethods = const <TopUpMethod>[], this.walletBalance, this.isSubmitting = false, this.lastFailure}): _onlineMethods = onlineMethods;
+  const _OrderDepositState({required this.offer, this.amount, this.payment, this.onlineMethodId,  List<TopUpMethod> onlineMethods = const <TopUpMethod>[], this.walletBalance, this.isSubmitting = false, this.lastFailure}): _onlineMethods = onlineMethods;
   
 
 /// الحدّان كما أرسلهما الخادم مع الطلبية.
@@ -272,16 +278,18 @@ _$OrderDepositStateCopyWith<_OrderDepositState> get copyWith => __$OrderDepositS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderDepositState&&(identical(other.offer, offer) || other.offer == offer)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&const DeepCollectionEquality().equals(other._onlineMethods, _onlineMethods)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderDepositState&&(identical(other.offer, offer) || other.offer == offer)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&const DeepCollectionEquality().equals(other.onlineMethods, _onlineMethods)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,offer,amount,payment,onlineMethodId,const DeepCollectionEquality().hash(_onlineMethods),walletBalance,isSubmitting,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,offer,amount,payment,onlineMethodId,const DeepCollectionEquality().hash(_onlineMethods),walletBalance,isSubmitting,lastFailure);
+}
 
 @override
 String toString() {
-  return 'OrderDepositState(offer: $offer, amount: $amount, payment: $payment, onlineMethodId: $onlineMethodId, onlineMethods: $onlineMethods, walletBalance: $walletBalance, isSubmitting: $isSubmitting, lastFailure: $lastFailure)';
+    return 'OrderDepositState(offer: $offer, amount: $amount, payment: $payment, onlineMethodId: $onlineMethodId, onlineMethods: $onlineMethods, walletBalance: $walletBalance, isSubmitting: $isSubmitting, lastFailure: $lastFailure)';
 }
 
 

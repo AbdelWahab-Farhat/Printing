@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'place_order_cubit.dart';
@@ -9,6 +9,7 @@ part of 'place_order_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -19,14 +20,14 @@ mixin _$BasketPricing implements DiagnosticableTreeMixin {
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'BasketPricing'))
     ;
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricing);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricing);
 }
 
 
@@ -35,7 +36,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'BasketPricing()';
+    return 'BasketPricing()';
 }
 
 
@@ -196,14 +197,14 @@ class BasketPricingPending with DiagnosticableTreeMixin implements BasketPricing
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'BasketPricing.pending'))
     ;
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingPending);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingPending);
 }
 
 
@@ -212,7 +213,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'BasketPricing.pending()';
+    return 'BasketPricing.pending()';
 }
 
 
@@ -239,23 +240,25 @@ $BasketPricedCopyWith<BasketPriced> get copyWith => _$BasketPricedCopyWithImpl<B
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'BasketPricing.priced'))
     ..add(DiagnosticsProperty('quote', quote));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPriced&&(identical(other.quote, quote) || other.quote == quote));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPriced&&(identical(other.quote, quote) || other.quote == quote));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,quote);
+int get hashCode {
+    return Object.hash(runtimeType,quote);
+}
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'BasketPricing.priced(quote: $quote)';
+    return 'BasketPricing.priced(quote: $quote)';
 }
 
 
@@ -320,23 +323,25 @@ $BasketPricingFailedCopyWith<BasketPricingFailed> get copyWith => _$BasketPricin
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'BasketPricing.failed'))
     ..add(DiagnosticsProperty('failure', failure));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketPricingFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'BasketPricing.failed(failure: $failure)';
+    return 'BasketPricing.failed(failure: $failure)';
 }
 
 
@@ -391,14 +396,14 @@ mixin _$PlaceOrderState implements DiagnosticableTreeMixin {
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'PlaceOrderState'))
     ;
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderState);
 }
 
 
@@ -407,7 +412,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'PlaceOrderState()';
+    return 'PlaceOrderState()';
 }
 
 
@@ -568,14 +573,14 @@ class PlaceOrderLoading with DiagnosticableTreeMixin implements PlaceOrderState 
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'PlaceOrderState.loading'))
     ;
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderLoading);
 }
 
 
@@ -584,7 +589,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'PlaceOrderState.loading()';
+    return 'PlaceOrderState.loading()';
 }
 
 
@@ -597,7 +602,7 @@ String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
 
 
 class PlaceOrderReady with DiagnosticableTreeMixin implements PlaceOrderState {
-  const PlaceOrderReady({required final  List<City> cities, final  List<CustomerDesign> designs = const <CustomerDesign>[], final  List<Shop> shops = const <Shop>[], final  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.step = CheckoutStep.products, this.shopId, this.cityId, this.regionId, final  List<int> designIds = const <int>[], this.customerPhone, this.pricing = const BasketPricing.pending(), this.payment, this.depositAmount, this.walletBalance, final  List<TopUpMethod> onlineMethods = const <TopUpMethod>[], this.onlineMethodId, this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_shops = shops,_lines = lines,_designIds = designIds,_onlineMethods = onlineMethods;
+  const PlaceOrderReady({required  List<City> cities,  List<CustomerDesign> designs = const <CustomerDesign>[],  List<Shop> shops = const <Shop>[],  List<OrderDraftLine> lines = const <OrderDraftLine>[], this.step = CheckoutStep.products, this.shopId, this.cityId, this.regionId,  List<int> designIds = const <int>[], this.customerPhone, this.pricing = const BasketPricing.pending(), this.payment, this.depositAmount, this.walletBalance,  List<TopUpMethod> onlineMethods = const <TopUpMethod>[], this.onlineMethodId, this.isSubmitting = false, this.placed, this.lastFailure}): _cities = cities,_designs = designs,_shops = shops,_lines = lines,_designIds = designIds,_onlineMethods = onlineMethods;
   
 
 /// كل الوجهات بمناطقها، مرةً واحدة — المنتقي لا يُقلَّب صفحات.
@@ -687,23 +692,25 @@ $PlaceOrderReadyCopyWith<PlaceOrderReady> get copyWith => _$PlaceOrderReadyCopyW
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'PlaceOrderState.ready'))
     ..add(DiagnosticsProperty('cities', cities))..add(DiagnosticsProperty('designs', designs))..add(DiagnosticsProperty('shops', shops))..add(DiagnosticsProperty('lines', lines))..add(DiagnosticsProperty('step', step))..add(DiagnosticsProperty('shopId', shopId))..add(DiagnosticsProperty('cityId', cityId))..add(DiagnosticsProperty('regionId', regionId))..add(DiagnosticsProperty('designIds', designIds))..add(DiagnosticsProperty('customerPhone', customerPhone))..add(DiagnosticsProperty('pricing', pricing))..add(DiagnosticsProperty('payment', payment))..add(DiagnosticsProperty('depositAmount', depositAmount))..add(DiagnosticsProperty('walletBalance', walletBalance))..add(DiagnosticsProperty('onlineMethods', onlineMethods))..add(DiagnosticsProperty('onlineMethodId', onlineMethodId))..add(DiagnosticsProperty('isSubmitting', isSubmitting))..add(DiagnosticsProperty('placed', placed))..add(DiagnosticsProperty('lastFailure', lastFailure));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._designs, _designs)&&const DeepCollectionEquality().equals(other._shops, _shops)&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.step, step) || other.step == step)&&(identical(other.shopId, shopId) || other.shopId == shopId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&const DeepCollectionEquality().equals(other._onlineMethods, _onlineMethods)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderReady&&const DeepCollectionEquality().equals(other.cities, _cities)&&const DeepCollectionEquality().equals(other.designs, _designs)&&const DeepCollectionEquality().equals(other.shops, _shops)&&const DeepCollectionEquality().equals(other.lines, _lines)&&(identical(other.step, step) || other.step == step)&&(identical(other.shopId, shopId) || other.shopId == shopId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&const DeepCollectionEquality().equals(other.designIds, _designIds)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.walletBalance, walletBalance) || other.walletBalance == walletBalance)&&const DeepCollectionEquality().equals(other.onlineMethods, _onlineMethods)&&(identical(other.onlineMethodId, onlineMethodId) || other.onlineMethodId == onlineMethodId)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.placed, placed) || other.placed == placed)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_lines),step,shopId,cityId,regionId,const DeepCollectionEquality().hash(_designIds),customerPhone,pricing,payment,depositAmount,walletBalance,const DeepCollectionEquality().hash(_onlineMethods),onlineMethodId,isSubmitting,placed,lastFailure]);
+int get hashCode {
+    return Object.hashAll([runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_designs),const DeepCollectionEquality().hash(_shops),const DeepCollectionEquality().hash(_lines),step,shopId,cityId,regionId,const DeepCollectionEquality().hash(_designIds),customerPhone,pricing,payment,depositAmount,walletBalance,const DeepCollectionEquality().hash(_onlineMethods),onlineMethodId,isSubmitting,placed,lastFailure]);
+}
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'PlaceOrderState.ready(cities: $cities, designs: $designs, shops: $shops, lines: $lines, step: $step, shopId: $shopId, cityId: $cityId, regionId: $regionId, designIds: $designIds, customerPhone: $customerPhone, pricing: $pricing, payment: $payment, depositAmount: $depositAmount, walletBalance: $walletBalance, onlineMethods: $onlineMethods, onlineMethodId: $onlineMethodId, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
+    return 'PlaceOrderState.ready(cities: $cities, designs: $designs, shops: $shops, lines: $lines, step: $step, shopId: $shopId, cityId: $cityId, regionId: $regionId, designIds: $designIds, customerPhone: $customerPhone, pricing: $pricing, payment: $payment, depositAmount: $depositAmount, walletBalance: $walletBalance, onlineMethods: $onlineMethods, onlineMethodId: $onlineMethodId, isSubmitting: $isSubmitting, placed: $placed, lastFailure: $lastFailure)';
 }
 
 
@@ -810,23 +817,25 @@ $PlaceOrderFailureCopyWith<PlaceOrderFailure> get copyWith => _$PlaceOrderFailur
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-  properties
+    properties
     ..add(DiagnosticsProperty('type', 'PlaceOrderState.failure'))
     ..add(DiagnosticsProperty('failure', failure));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaceOrderFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'PlaceOrderState.failure(failure: $failure)';
+    return 'PlaceOrderState.failure(failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shop.dart';
@@ -9,6 +9,7 @@ part of 'shop.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -30,16 +31,21 @@ $ShopCopyWith<Shop> get copyWith => _$ShopCopyWithImpl<Shop>(this as Shop, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Shop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessFieldName, businessFieldName) || other.businessFieldName == businessFieldName)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl));
+  final _this = this as Shop;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Shop&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&(identical(other.cityName, _this.cityName) || other.cityName == _this.cityName)&&(identical(other.regionId, _this.regionId) || other.regionId == _this.regionId)&&(identical(other.regionName, _this.regionName) || other.regionName == _this.regionName)&&(identical(other.businessFieldId, _this.businessFieldId) || other.businessFieldId == _this.businessFieldId)&&(identical(other.businessFieldName, _this.businessFieldName) || other.businessFieldName == _this.businessFieldName)&&(identical(other.pageUrl, _this.pageUrl) || other.pageUrl == _this.pageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,cityId,cityName,regionId,regionName,businessFieldId,businessFieldName,pageUrl);
+int get hashCode {
+  final _this = this as Shop;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.cityId,_this.cityName,_this.regionId,_this.regionName,_this.businessFieldId,_this.businessFieldName,_this.pageUrl);
+}
 
 @override
 String toString() {
-  return 'Shop(id: $id, name: $name, cityId: $cityId, cityName: $cityName, regionId: $regionId, regionName: $regionName, businessFieldId: $businessFieldId, businessFieldName: $businessFieldName, pageUrl: $pageUrl)';
+  final _this = this as Shop;
+  return 'Shop(id: ${_this.id}, name: ${_this.name}, cityId: ${_this.cityId}, cityName: ${_this.cityName}, regionId: ${_this.regionId}, regionName: ${_this.regionName}, businessFieldId: ${_this.businessFieldId}, businessFieldName: ${_this.businessFieldName}, pageUrl: ${_this.pageUrl})';
 }
 
 
@@ -68,7 +74,7 @@ class _$ShopCopyWithImpl<$Res>
 /// Create a copy of Shop
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? cityId = null,Object? cityName = freezed,Object? regionId = freezed,Object? regionName = freezed,Object? businessFieldId = freezed,Object? businessFieldName = freezed,Object? pageUrl = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Shop(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
@@ -247,16 +253,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Shop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessFieldName, businessFieldName) || other.businessFieldName == businessFieldName)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Shop&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.businessFieldName, businessFieldName) || other.businessFieldName == businessFieldName)&&(identical(other.pageUrl, pageUrl) || other.pageUrl == pageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,cityId,cityName,regionId,regionName,businessFieldId,businessFieldName,pageUrl);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,cityId,cityName,regionId,regionName,businessFieldId,businessFieldName,pageUrl);
+}
 
 @override
 String toString() {
-  return 'Shop(id: $id, name: $name, cityId: $cityId, cityName: $cityName, regionId: $regionId, regionName: $regionName, businessFieldId: $businessFieldId, businessFieldName: $businessFieldName, pageUrl: $pageUrl)';
+    return 'Shop(id: $id, name: $name, cityId: $cityId, cityName: $cityName, regionId: $regionId, regionName: $regionName, businessFieldId: $businessFieldId, businessFieldName: $businessFieldName, pageUrl: $pageUrl)';
 }
 
 
@@ -319,16 +327,21 @@ $BusinessFieldCopyWith<BusinessField> get copyWith => _$BusinessFieldCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BusinessField&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  final _this = this as BusinessField;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BusinessField&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+  final _this = this as BusinessField;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
 
 @override
 String toString() {
-  return 'BusinessField(id: $id, name: $name)';
+  final _this = this as BusinessField;
+  return 'BusinessField(id: ${_this.id}, name: ${_this.name})';
 }
 
 
@@ -357,7 +370,7 @@ class _$BusinessFieldCopyWithImpl<$Res>
 /// Create a copy of BusinessField
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(BusinessField(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
@@ -520,16 +533,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BusinessField&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BusinessField&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
 
 @override
 String toString() {
-  return 'BusinessField(id: $id, name: $name)';
+    return 'BusinessField(id: $id, name: $name)';
 }
 
 

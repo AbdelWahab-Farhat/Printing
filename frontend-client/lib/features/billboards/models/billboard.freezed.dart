@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'billboard.dart';
@@ -9,6 +9,7 @@ part of 'billboard.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 BillboardTarget _$BillboardTargetFromJson(
@@ -43,7 +44,7 @@ mixin _$BillboardTarget {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardTarget);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardTarget);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,7 +53,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'BillboardTarget()';
+    return 'BillboardTarget()';
 }
 
 
@@ -204,7 +205,7 @@ return none();case _:
 @JsonSerializable()
 
 class BillboardProductTarget implements BillboardTarget {
-  const BillboardProductTarget({@JsonKey(name: 'product_id') required this.productId, final  String? $type}): $type = $type ?? 'product';
+  const BillboardProductTarget({@JsonKey(name: 'product_id') required this.productId,  String? $type}): $type = $type ?? 'product';
   factory BillboardProductTarget.fromJson(Map<String, dynamic> json) => _$BillboardProductTargetFromJson(json);
 
 @JsonKey(name: 'product_id') final  int productId;
@@ -226,16 +227,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardProductTarget&&(identical(other.productId, productId) || other.productId == productId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardProductTarget&&(identical(other.productId, productId) || other.productId == productId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId);
+int get hashCode {
+    return Object.hash(runtimeType,productId);
+}
 
 @override
 String toString() {
-  return 'BillboardTarget.product(productId: $productId)';
+    return 'BillboardTarget.product(productId: $productId)';
 }
 
 
@@ -277,7 +280,7 @@ as int,
 @JsonSerializable()
 
 class BillboardUrlTarget implements BillboardTarget {
-  const BillboardUrlTarget({required this.url, final  String? $type}): $type = $type ?? 'url';
+  const BillboardUrlTarget({required this.url,  String? $type}): $type = $type ?? 'url';
   factory BillboardUrlTarget.fromJson(Map<String, dynamic> json) => _$BillboardUrlTargetFromJson(json);
 
  final  String url;
@@ -299,16 +302,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardUrlTarget&&(identical(other.url, url) || other.url == url));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardUrlTarget&&(identical(other.url, url) || other.url == url));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,url);
+int get hashCode {
+    return Object.hash(runtimeType,url);
+}
 
 @override
 String toString() {
-  return 'BillboardTarget.url(url: $url)';
+    return 'BillboardTarget.url(url: $url)';
 }
 
 
@@ -350,7 +355,7 @@ as String,
 @JsonSerializable()
 
 class BillboardNoTarget implements BillboardTarget {
-  const BillboardNoTarget({final  String? $type}): $type = $type ?? 'none';
+  const BillboardNoTarget({ String? $type}): $type = $type ?? 'none';
   factory BillboardNoTarget.fromJson(Map<String, dynamic> json) => _$BillboardNoTargetFromJson(json);
 
 
@@ -367,7 +372,7 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardNoTarget);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BillboardNoTarget);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -376,7 +381,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'BillboardTarget.none()';
+    return 'BillboardTarget.none()';
 }
 
 
@@ -407,16 +412,21 @@ $BillboardCopyWith<Billboard> get copyWith => _$BillboardCopyWithImpl<Billboard>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Billboard&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.target, target) || other.target == target));
+  final _this = this as Billboard;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Billboard&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.imageUrl, _this.imageUrl) || other.imageUrl == _this.imageUrl)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx)&&(identical(other.target, _this.target) || other.target == _this.target));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,imageUrl,widthPx,heightPx,target);
+int get hashCode {
+  final _this = this as Billboard;
+  return Object.hash(runtimeType,_this.id,_this.title,_this.imageUrl,_this.widthPx,_this.heightPx,_this.target);
+}
 
 @override
 String toString() {
-  return 'Billboard(id: $id, title: $title, imageUrl: $imageUrl, widthPx: $widthPx, heightPx: $heightPx, target: $target)';
+  final _this = this as Billboard;
+  return 'Billboard(id: ${_this.id}, title: ${_this.title}, imageUrl: ${_this.imageUrl}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx}, target: ${_this.target})';
 }
 
 
@@ -445,7 +455,7 @@ class _$BillboardCopyWithImpl<$Res>
 /// Create a copy of Billboard
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? imageUrl = null,Object? widthPx = freezed,Object? heightPx = freezed,Object? target = null,}) {
-  return _then(_self.copyWith(
+  return _then(Billboard(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,imageUrl: null == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
@@ -630,16 +640,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Billboard&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.target, target) || other.target == target));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Billboard&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.target, target) || other.target == target));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,imageUrl,widthPx,heightPx,target);
+int get hashCode {
+    return Object.hash(runtimeType,id,title,imageUrl,widthPx,heightPx,target);
+}
 
 @override
 String toString() {
-  return 'Billboard(id: $id, title: $title, imageUrl: $imageUrl, widthPx: $widthPx, heightPx: $heightPx, target: $target)';
+    return 'Billboard(id: $id, title: $title, imageUrl: $imageUrl, widthPx: $widthPx, heightPx: $heightPx, target: $target)';
 }
 
 

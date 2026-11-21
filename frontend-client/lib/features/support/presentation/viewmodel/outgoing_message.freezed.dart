@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'outgoing_message.dart';
@@ -9,6 +9,7 @@ part of 'outgoing_message.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -27,16 +28,21 @@ $OutgoingMessageCopyWith<OutgoingMessage> get copyWith => _$OutgoingMessageCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OutgoingMessage&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.body, body) || other.body == body)&&(identical(other.file, file) || other.file == file)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as OutgoingMessage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OutgoingMessage&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.progress, _this.progress) || other.progress == _this.progress)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,clientToken,body,file,createdAt,status,progress,failure);
+int get hashCode {
+  final _this = this as OutgoingMessage;
+  return Object.hash(runtimeType,_this.clientToken,_this.body,_this.file,_this.createdAt,_this.status,_this.progress,_this.failure);
+}
 
 @override
 String toString() {
-  return 'OutgoingMessage(clientToken: $clientToken, body: $body, file: $file, createdAt: $createdAt, status: $status, progress: $progress, failure: $failure)';
+  final _this = this as OutgoingMessage;
+  return 'OutgoingMessage(clientToken: ${_this.clientToken}, body: ${_this.body}, file: ${_this.file}, createdAt: ${_this.createdAt}, status: ${_this.status}, progress: ${_this.progress}, failure: ${_this.failure})';
 }
 
 
@@ -65,7 +71,7 @@ class _$OutgoingMessageCopyWithImpl<$Res>
 /// Create a copy of OutgoingMessage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? clientToken = null,Object? body = null,Object? file = freezed,Object? createdAt = null,Object? status = null,Object? progress = null,Object? failure = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OutgoingMessage(
 clientToken: null == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
@@ -249,16 +255,18 @@ _$OutgoingMessageCopyWith<_OutgoingMessage> get copyWith => __$OutgoingMessageCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OutgoingMessage&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.body, body) || other.body == body)&&(identical(other.file, file) || other.file == file)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OutgoingMessage&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken)&&(identical(other.body, body) || other.body == body)&&(identical(other.file, file) || other.file == file)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,clientToken,body,file,createdAt,status,progress,failure);
+int get hashCode {
+    return Object.hash(runtimeType,clientToken,body,file,createdAt,status,progress,failure);
+}
 
 @override
 String toString() {
-  return 'OutgoingMessage(clientToken: $clientToken, body: $body, file: $file, createdAt: $createdAt, status: $status, progress: $progress, failure: $failure)';
+    return 'OutgoingMessage(clientToken: $clientToken, body: $body, file: $file, createdAt: $createdAt, status: $status, progress: $progress, failure: $failure)';
 }
 
 

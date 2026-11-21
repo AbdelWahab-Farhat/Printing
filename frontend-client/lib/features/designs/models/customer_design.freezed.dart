@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'customer_design.dart';
@@ -9,6 +9,7 @@ part of 'customer_design.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -39,16 +40,21 @@ $CustomerDesignCopyWith<CustomerDesign> get copyWith => _$CustomerDesignCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&const DeepCollectionEquality().equals(other.printColors, printColors)&&(identical(other.printColorsLocked, printColorsLocked) || other.printColorsLocked == printColorsLocked)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as CustomerDesign;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerDesign&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&const DeepCollectionEquality().equals(other.printColors, _this.printColors)&&(identical(other.printColorsLocked, _this.printColorsLocked) || other.printColorsLocked == _this.printColorsLocked)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.kindLabel, _this.kindLabel) || other.kindLabel == _this.kindLabel)&&(identical(other.mimeType, _this.mimeType) || other.mimeType == _this.mimeType)&&(identical(other.originalFilename, _this.originalFilename) || other.originalFilename == _this.originalFilename)&&(identical(other.sizeBytes, _this.sizeBytes) || other.sizeBytes == _this.sizeBytes)&&(identical(other.widthPx, _this.widthPx) || other.widthPx == _this.widthPx)&&(identical(other.heightPx, _this.heightPx) || other.heightPx == _this.heightPx)&&(identical(other.fileUrl, _this.fileUrl) || other.fileUrl == _this.fileUrl)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,const DeepCollectionEquality().hash(printColors),printColorsLocked,kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,createdAt);
+int get hashCode {
+  final _this = this as CustomerDesign;
+  return Object.hash(runtimeType,_this.id,_this.label,const DeepCollectionEquality().hash(_this.printColors),_this.printColorsLocked,_this.kind,_this.kindLabel,_this.mimeType,_this.originalFilename,_this.sizeBytes,_this.widthPx,_this.heightPx,_this.fileUrl,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'CustomerDesign(id: $id, label: $label, printColors: $printColors, printColorsLocked: $printColorsLocked, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, createdAt: $createdAt)';
+  final _this = this as CustomerDesign;
+  return 'CustomerDesign(id: ${_this.id}, label: ${_this.label}, printColors: ${_this.printColors}, printColorsLocked: ${_this.printColorsLocked}, kind: ${_this.kind}, kindLabel: ${_this.kindLabel}, mimeType: ${_this.mimeType}, originalFilename: ${_this.originalFilename}, sizeBytes: ${_this.sizeBytes}, widthPx: ${_this.widthPx}, heightPx: ${_this.heightPx}, fileUrl: ${_this.fileUrl}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -77,7 +83,7 @@ class _$CustomerDesignCopyWithImpl<$Res>
 /// Create a copy of CustomerDesign
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? printColors = null,Object? printColorsLocked = null,Object? kind = null,Object? kindLabel = freezed,Object? mimeType = freezed,Object? originalFilename = freezed,Object? sizeBytes = freezed,Object? widthPx = freezed,Object? heightPx = freezed,Object? fileUrl = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CustomerDesign(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,printColors: null == printColors ? _self.printColors : printColors // ignore: cast_nullable_to_non_nullable
@@ -232,7 +238,7 @@ return $default(_that.id,_that.label,_that.printColors,_that.printColorsLocked,_
 @JsonSerializable()
 
 class _CustomerDesign implements CustomerDesign {
-  const _CustomerDesign({required this.id, required this.label, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson) final  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'print_colors_locked') this.printColorsLocked = false, @JsonKey(name: 'kind', unknownEnumValue: DesignKind.unknown) this.kind = DesignKind.unknown, @JsonKey(name: 'kind_label') this.kindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors;
+  const _CustomerDesign({required this.id, required this.label, @JsonKey(name: 'print_colors', fromJson: PrintColor.listFromJson, toJson: PrintColor.listToJson)  List<PrintColor> printColors = const <PrintColor>[], @JsonKey(name: 'print_colors_locked') this.printColorsLocked = false, @JsonKey(name: 'kind', unknownEnumValue: DesignKind.unknown) this.kind = DesignKind.unknown, @JsonKey(name: 'kind_label') this.kindLabel, @JsonKey(name: 'mime_type') this.mimeType, @JsonKey(name: 'original_filename') this.originalFilename, @JsonKey(name: 'size_bytes') this.sizeBytes, @JsonKey(name: 'width_px') this.widthPx, @JsonKey(name: 'height_px') this.heightPx, @JsonKey(name: 'file_url') this.fileUrl, @JsonKey(name: 'created_at') this.createdAt}): _printColors = printColors;
   factory _CustomerDesign.fromJson(Map<String, dynamic> json) => _$CustomerDesignFromJson(json);
 
 @override final  int id;
@@ -281,16 +287,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&const DeepCollectionEquality().equals(other._printColors, _printColors)&&(identical(other.printColorsLocked, printColorsLocked) || other.printColorsLocked == printColorsLocked)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerDesign&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&const DeepCollectionEquality().equals(other.printColors, _printColors)&&(identical(other.printColorsLocked, printColorsLocked) || other.printColorsLocked == printColorsLocked)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.kindLabel, kindLabel) || other.kindLabel == kindLabel)&&(identical(other.mimeType, mimeType) || other.mimeType == mimeType)&&(identical(other.originalFilename, originalFilename) || other.originalFilename == originalFilename)&&(identical(other.sizeBytes, sizeBytes) || other.sizeBytes == sizeBytes)&&(identical(other.widthPx, widthPx) || other.widthPx == widthPx)&&(identical(other.heightPx, heightPx) || other.heightPx == heightPx)&&(identical(other.fileUrl, fileUrl) || other.fileUrl == fileUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,const DeepCollectionEquality().hash(_printColors),printColorsLocked,kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,label,const DeepCollectionEquality().hash(_printColors),printColorsLocked,kind,kindLabel,mimeType,originalFilename,sizeBytes,widthPx,heightPx,fileUrl,createdAt);
+}
 
 @override
 String toString() {
-  return 'CustomerDesign(id: $id, label: $label, printColors: $printColors, printColorsLocked: $printColorsLocked, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, createdAt: $createdAt)';
+    return 'CustomerDesign(id: $id, label: $label, printColors: $printColors, printColorsLocked: $printColorsLocked, kind: $kind, kindLabel: $kindLabel, mimeType: $mimeType, originalFilename: $originalFilename, sizeBytes: $sizeBytes, widthPx: $widthPx, heightPx: $heightPx, fileUrl: $fileUrl, createdAt: $createdAt)';
 }
 
 

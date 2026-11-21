@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'city.dart';
@@ -9,6 +9,7 @@ part of 'city.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $RegionCopyWith<Region> get copyWith => _$RegionCopyWithImpl<Region>(this as Reg
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name));
+  final _this = this as Region;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Region&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name);
+int get hashCode {
+  final _this = this as Region;
+  return Object.hash(runtimeType,_this.id,_this.cityId,_this.name);
+}
 
 @override
 String toString() {
-  return 'Region(id: $id, cityId: $cityId, name: $name)';
+  final _this = this as Region;
+  return 'Region(id: ${_this.id}, cityId: ${_this.cityId}, name: ${_this.name})';
 }
 
 
@@ -66,7 +72,7 @@ class _$RegionCopyWithImpl<$Res>
 /// Create a copy of Region
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? cityId = null,Object? name = null,}) {
-  return _then(_self.copyWith(
+  return _then(Region(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -231,16 +237,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Region&&(identical(other.id, id) || other.id == id)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.name, name) || other.name == name));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,cityId,name);
+int get hashCode {
+    return Object.hash(runtimeType,id,cityId,name);
+}
 
 @override
 String toString() {
-  return 'Region(id: $id, cityId: $cityId, name: $name)';
+    return 'Region(id: $id, cityId: $cityId, name: $name)';
 }
 
 
@@ -303,16 +311,21 @@ $CityCopyWith<City> get copyWith => _$CityCopyWithImpl<City>(this as City, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&const DeepCollectionEquality().equals(other.regions, regions));
+  final _this = this as City;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is City&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.fulfilmentType, _this.fulfilmentType) || other.fulfilmentType == _this.fulfilmentType)&&(identical(other.fulfilmentTypeLabel, _this.fulfilmentTypeLabel) || other.fulfilmentTypeLabel == _this.fulfilmentTypeLabel)&&(identical(other.isOfficePickup, _this.isOfficePickup) || other.isOfficePickup == _this.isOfficePickup)&&(identical(other.isRegionRequired, _this.isRegionRequired) || other.isRegionRequired == _this.isRegionRequired)&&(identical(other.deliveryPrice, _this.deliveryPrice) || other.deliveryPrice == _this.deliveryPrice)&&const DeepCollectionEquality().equals(other.regions, _this.regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,fulfilmentType,fulfilmentTypeLabel,isOfficePickup,isRegionRequired,deliveryPrice,const DeepCollectionEquality().hash(regions));
+int get hashCode {
+  final _this = this as City;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.fulfilmentType,_this.fulfilmentTypeLabel,_this.isOfficePickup,_this.isRegionRequired,_this.deliveryPrice,const DeepCollectionEquality().hash(_this.regions));
+}
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, isRegionRequired: $isRegionRequired, deliveryPrice: $deliveryPrice, regions: $regions)';
+  final _this = this as City;
+  return 'City(id: ${_this.id}, name: ${_this.name}, fulfilmentType: ${_this.fulfilmentType}, fulfilmentTypeLabel: ${_this.fulfilmentTypeLabel}, isOfficePickup: ${_this.isOfficePickup}, isRegionRequired: ${_this.isRegionRequired}, deliveryPrice: ${_this.deliveryPrice}, regions: ${_this.regions})';
 }
 
 
@@ -341,7 +354,7 @@ class _$CityCopyWithImpl<$Res>
 /// Create a copy of City
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? fulfilmentType = freezed,Object? fulfilmentTypeLabel = freezed,Object? isOfficePickup = null,Object? isRegionRequired = null,Object? deliveryPrice = freezed,Object? regions = null,}) {
-  return _then(_self.copyWith(
+  return _then(City(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,fulfilmentType: freezed == fulfilmentType ? _self.fulfilmentType : fulfilmentType // ignore: cast_nullable_to_non_nullable
@@ -491,7 +504,7 @@ return $default(_that.id,_that.name,_that.fulfilmentType,_that.fulfilmentTypeLab
 @JsonSerializable()
 
 class _City implements City {
-  const _City({required this.id, required this.name, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup') this.isOfficePickup = false, @JsonKey(name: 'is_region_required') this.isRegionRequired = false, @JsonKey(name: 'delivery_price') this.deliveryPrice, final  List<Region> regions = const <Region>[]}): _regions = regions;
+  const _City({required this.id, required this.name, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, @JsonKey(name: 'is_office_pickup') this.isOfficePickup = false, @JsonKey(name: 'is_region_required') this.isRegionRequired = false, @JsonKey(name: 'delivery_price') this.deliveryPrice,  List<Region> regions = const <Region>[]}): _regions = regions;
   factory _City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
 
 @override final  int id;
@@ -528,16 +541,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&const DeepCollectionEquality().equals(other._regions, _regions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _City&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&(identical(other.isOfficePickup, isOfficePickup) || other.isOfficePickup == isOfficePickup)&&(identical(other.isRegionRequired, isRegionRequired) || other.isRegionRequired == isRegionRequired)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&const DeepCollectionEquality().equals(other.regions, _regions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,fulfilmentType,fulfilmentTypeLabel,isOfficePickup,isRegionRequired,deliveryPrice,const DeepCollectionEquality().hash(_regions));
+int get hashCode {
+    return Object.hash(runtimeType,id,name,fulfilmentType,fulfilmentTypeLabel,isOfficePickup,isRegionRequired,deliveryPrice,const DeepCollectionEquality().hash(_regions));
+}
 
 @override
 String toString() {
-  return 'City(id: $id, name: $name, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, isRegionRequired: $isRegionRequired, deliveryPrice: $deliveryPrice, regions: $regions)';
+    return 'City(id: $id, name: $name, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, isOfficePickup: $isOfficePickup, isRegionRequired: $isRegionRequired, deliveryPrice: $deliveryPrice, regions: $regions)';
 }
 
 

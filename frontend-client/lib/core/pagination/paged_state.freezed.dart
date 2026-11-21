@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'paged_state.dart';
@@ -9,6 +9,7 @@ part of 'paged_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$PagedState<T> {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedState<T>);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedState<T>);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PagedState<$T>()';
+    return 'PagedState<$T>()';
 }
 
 
@@ -197,7 +198,7 @@ class PagedInitial<T> implements PagedState<T> {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedInitial<T>);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedInitial<T>);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PagedState<$T>.initial()';
+    return 'PagedState<$T>.initial()';
 }
 
 
@@ -229,7 +230,7 @@ class PagedLoading<T> implements PagedState<T> {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedLoading<T>);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedLoading<T>);
 }
 
 
@@ -238,7 +239,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PagedState<$T>.loading()';
+    return 'PagedState<$T>.loading()';
 }
 
 
@@ -272,16 +273,18 @@ $PagedLoadedCopyWith<T, PagedLoaded<T>> get copyWith => _$PagedLoadedCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedLoaded<T>&&(identical(other.page, page) || other.page == page)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.search, search) || other.search == search));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedLoaded<T>&&(identical(other.page, page) || other.page == page)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.search, search) || other.search == search));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,page,isLoadingMore,search);
+int get hashCode {
+    return Object.hash(runtimeType,page,isLoadingMore,search);
+}
 
 @override
 String toString() {
-  return 'PagedState<$T>.loaded(page: $page, isLoadingMore: $isLoadingMore, search: $search)';
+    return 'PagedState<$T>.loaded(page: $page, isLoadingMore: $isLoadingMore, search: $search)';
 }
 
 
@@ -340,16 +343,18 @@ $PagedFailureCopyWith<T, PagedFailure<T>> get copyWith => _$PagedFailureCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedFailure<T>&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PagedFailure<T>&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'PagedState<$T>.failure(failure: $failure)';
+    return 'PagedState<$T>.failure(failure: $failure)';
 }
 
 

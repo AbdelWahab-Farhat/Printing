@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'ticket_thread_cubit.dart';
@@ -9,6 +9,7 @@ part of 'ticket_thread_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$TicketThreadState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TicketThreadState()';
+    return 'TicketThreadState()';
 }
 
 
@@ -191,7 +192,7 @@ class TicketThreadLoading implements TicketThreadState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TicketThreadState.loading()';
+    return 'TicketThreadState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class TicketThreadLoaded implements TicketThreadState {
-  const TicketThreadLoaded(this.ticket, {final  List<OutgoingMessage> outbox = const <OutgoingMessage>[], this.lastFailure}): _outbox = outbox;
+  const TicketThreadLoaded(this.ticket, { List<OutgoingMessage> outbox = const <OutgoingMessage>[], this.lastFailure}): _outbox = outbox;
   
 
  final  SupportTicket ticket;
@@ -242,16 +243,18 @@ $TicketThreadLoadedCopyWith<TicketThreadLoaded> get copyWith => _$TicketThreadLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoaded&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other._outbox, _outbox)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadLoaded&&(identical(other.ticket, ticket) || other.ticket == ticket)&&const DeepCollectionEquality().equals(other.outbox, _outbox)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(_outbox),lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,ticket,const DeepCollectionEquality().hash(_outbox),lastFailure);
+}
 
 @override
 String toString() {
-  return 'TicketThreadState.loaded(ticket: $ticket, outbox: $outbox, lastFailure: $lastFailure)';
+    return 'TicketThreadState.loaded(ticket: $ticket, outbox: $outbox, lastFailure: $lastFailure)';
 }
 
 
@@ -331,16 +334,18 @@ $TicketThreadFailureCopyWith<TicketThreadFailure> get copyWith => _$TicketThread
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TicketThreadFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'TicketThreadState.failure(failure: $failure)';
+    return 'TicketThreadState.failure(failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'order_note.dart';
@@ -9,6 +9,7 @@ part of 'order_note.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -30,16 +31,21 @@ $OrderNoteCopyWith<OrderNote> get copyWith => _$OrderNoteCopyWithImpl<OrderNote>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderNote&&(identical(other.id, id) || other.id == id)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.text, text) || other.text == text)&&(identical(other.writtenAt, writtenAt) || other.writtenAt == writtenAt));
+  final _this = this as OrderNote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderNote&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.stageLabel, _this.stageLabel) || other.stageLabel == _this.stageLabel)&&(identical(other.text, _this.text) || other.text == _this.text)&&(identical(other.writtenAt, _this.writtenAt) || other.writtenAt == _this.writtenAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stage,stageLabel,text,writtenAt);
+int get hashCode {
+  final _this = this as OrderNote;
+  return Object.hash(runtimeType,_this.id,_this.stage,_this.stageLabel,_this.text,_this.writtenAt);
+}
 
 @override
 String toString() {
-  return 'OrderNote(id: $id, stage: $stage, stageLabel: $stageLabel, text: $text, writtenAt: $writtenAt)';
+  final _this = this as OrderNote;
+  return 'OrderNote(id: ${_this.id}, stage: ${_this.stage}, stageLabel: ${_this.stageLabel}, text: ${_this.text}, writtenAt: ${_this.writtenAt})';
 }
 
 
@@ -68,7 +74,7 @@ class _$OrderNoteCopyWithImpl<$Res>
 /// Create a copy of OrderNote
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? stage = null,Object? stageLabel = null,Object? text = null,Object? writtenAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderNote(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as OrderStage,stageLabel: null == stageLabel ? _self.stageLabel : stageLabel // ignore: cast_nullable_to_non_nullable
@@ -239,16 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderNote&&(identical(other.id, id) || other.id == id)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.text, text) || other.text == text)&&(identical(other.writtenAt, writtenAt) || other.writtenAt == writtenAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderNote&&(identical(other.id, id) || other.id == id)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.text, text) || other.text == text)&&(identical(other.writtenAt, writtenAt) || other.writtenAt == writtenAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,stage,stageLabel,text,writtenAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,stage,stageLabel,text,writtenAt);
+}
 
 @override
 String toString() {
-  return 'OrderNote(id: $id, stage: $stage, stageLabel: $stageLabel, text: $text, writtenAt: $writtenAt)';
+    return 'OrderNote(id: $id, stage: $stage, stageLabel: $stageLabel, text: $text, writtenAt: $writtenAt)';
 }
 
 

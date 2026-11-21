@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shops_cubit.dart';
@@ -9,6 +9,7 @@ part of 'shops_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ShopsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShopsState()';
+    return 'ShopsState()';
 }
 
 
@@ -191,7 +192,7 @@ class ShopsLoading implements ShopsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShopsState.loading()';
+    return 'ShopsState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class ShopsLoaded implements ShopsState {
-  const ShopsLoaded(final  List<Shop> shops, {this.isBusy = false, this.lastFailure}): _shops = shops;
+  const ShopsLoaded( List<Shop> shops, {this.isBusy = false, this.lastFailure}): _shops = shops;
   
 
  final  List<Shop> _shops;
@@ -238,16 +239,18 @@ $ShopsLoadedCopyWith<ShopsLoaded> get copyWith => _$ShopsLoadedCopyWithImpl<Shop
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsLoaded&&const DeepCollectionEquality().equals(other._shops, _shops)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsLoaded&&const DeepCollectionEquality().equals(other.shops, _shops)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_shops),isBusy,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_shops),isBusy,lastFailure);
+}
 
 @override
 String toString() {
-  return 'ShopsState.loaded(shops: $shops, isBusy: $isBusy, lastFailure: $lastFailure)';
+    return 'ShopsState.loaded(shops: $shops, isBusy: $isBusy, lastFailure: $lastFailure)';
 }
 
 
@@ -318,16 +321,18 @@ $ShopsFailureCopyWith<ShopsFailure> get copyWith => _$ShopsFailureCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'ShopsState.failure(failure: $failure)';
+    return 'ShopsState.failure(failure: $failure)';
 }
 
 

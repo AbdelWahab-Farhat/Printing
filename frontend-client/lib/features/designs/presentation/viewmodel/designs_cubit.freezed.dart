@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'designs_cubit.dart';
@@ -9,6 +9,7 @@ part of 'designs_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$DesignsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DesignsState()';
+    return 'DesignsState()';
 }
 
 
@@ -191,7 +192,7 @@ class DesignsLoading implements DesignsState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DesignsState.loading()';
+    return 'DesignsState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class DesignsLoaded implements DesignsState {
-  const DesignsLoaded(final  List<CustomerDesign> designs, {this.isBusy = false, this.lastFailure}): _designs = designs;
+  const DesignsLoaded( List<CustomerDesign> designs, {this.isBusy = false, this.lastFailure}): _designs = designs;
   
 
  final  List<CustomerDesign> _designs;
@@ -239,16 +240,18 @@ $DesignsLoadedCopyWith<DesignsLoaded> get copyWith => _$DesignsLoadedCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsLoaded&&const DeepCollectionEquality().equals(other._designs, _designs)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsLoaded&&const DeepCollectionEquality().equals(other.designs, _designs)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),isBusy,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_designs),isBusy,lastFailure);
+}
 
 @override
 String toString() {
-  return 'DesignsState.loaded(designs: $designs, isBusy: $isBusy, lastFailure: $lastFailure)';
+    return 'DesignsState.loaded(designs: $designs, isBusy: $isBusy, lastFailure: $lastFailure)';
 }
 
 
@@ -319,16 +322,18 @@ $DesignsFailureCopyWith<DesignsFailure> get copyWith => _$DesignsFailureCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesignsFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'DesignsState.failure(failure: $failure)';
+    return 'DesignsState.failure(failure: $failure)';
 }
 
 

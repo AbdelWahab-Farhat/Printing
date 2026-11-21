@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'customer_order.dart';
@@ -9,6 +9,7 @@ part of 'customer_order.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -31,16 +32,10 @@ mixin _$CustomerOrder {
 /// «يُحدَّد بعد المراجعة» rather than a figure smaller than the real one.
  String? get total;@JsonKey(name: 'is_awaiting_quote') bool get isAwaitingQuote;/// «تعويض» — the shop is sending these goods free; nothing is owed. False from a server
 /// that predates it.
-@JsonKey(name: 'is_compensation') bool get isCompensation;// ── ما ترسمه البطاقة ─────────────────────────────────────────────────────
-// ما ترسمه بطاقة «طلباتي» (`OrderCard`) تحت رأسها: المال والمدينة والهاتف والبنود.
-// **كلها اختيارية**: التطبيق قد يصل الهاتف قبل أن يُنشر الخادم الذي يرسلها، والبطاقة ترسم
-// «—» حيث لا جواب بدل أن تُسقط القائمة كلها.
-/// ما دُفع. **فارغٌ ما دام بندٌ بلا سعر**، كـ[total] وللسبب نفسه.
+@JsonKey(name: 'is_compensation') bool get isCompensation;/// ما دُفع. **فارغٌ ما دام بندٌ بلا سعر**، كـ[total] وللسبب نفسه.
 @JsonKey(name: 'paid_amount') String? get paidAmount;/// ما بقي على العميل. فارغٌ كذلك ما دام بندٌ بلا سعر.
  String? get balance;/// المدينة كما سجّلتها الطلبية، لا كما هي اليوم.
-@JsonKey(name: 'city_name') String? get cityName;@JsonKey(name: 'recipient_phone') String? get recipientPhone;@JsonKey(name: 'fulfilment_type') String? get fulfilmentType;// طريقة التسليم تصل ولا ترسمها البطاقة: قال المستخدم إن «التسليم» عليها غير ضروري
-// (2026-09-25)، والطلبية المفتوحة تقولها.
-/// «توصيل» أو «استلام من المكتب»، بكلمة الخادم.
+@JsonKey(name: 'city_name') String? get cityName;@JsonKey(name: 'recipient_phone') String? get recipientPhone;@JsonKey(name: 'fulfilment_type') String? get fulfilmentType;/// «توصيل» أو «استلام من المكتب»، بكلمة الخادم.
 @JsonKey(name: 'fulfilment_type_label') String? get fulfilmentTypeLabel;/// البنود، لذيل البطاقة.
  List<OrderLine> get items;@JsonKey(name: 'placed_at') DateTime? get placedAt;
 /// Create a copy of CustomerOrder
@@ -55,16 +50,21 @@ $CustomerOrderCopyWith<CustomerOrder> get copyWith => _$CustomerOrderCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.total, total) || other.total == total)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt));
+  final _this = this as CustomerOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrder&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.stageLabel, _this.stageLabel) || other.stageLabel == _this.stageLabel)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.stageHint, _this.stageHint) || other.stageHint == _this.stageHint)&&(identical(other.summary, _this.summary) || other.summary == _this.summary)&&(identical(other.itemsCount, _this.itemsCount) || other.itemsCount == _this.itemsCount)&&(identical(other.total, _this.total) || other.total == _this.total)&&(identical(other.isAwaitingQuote, _this.isAwaitingQuote) || other.isAwaitingQuote == _this.isAwaitingQuote)&&(identical(other.isCompensation, _this.isCompensation) || other.isCompensation == _this.isCompensation)&&(identical(other.paidAmount, _this.paidAmount) || other.paidAmount == _this.paidAmount)&&(identical(other.balance, _this.balance) || other.balance == _this.balance)&&(identical(other.cityName, _this.cityName) || other.cityName == _this.cityName)&&(identical(other.recipientPhone, _this.recipientPhone) || other.recipientPhone == _this.recipientPhone)&&(identical(other.fulfilmentType, _this.fulfilmentType) || other.fulfilmentType == _this.fulfilmentType)&&(identical(other.fulfilmentTypeLabel, _this.fulfilmentTypeLabel) || other.fulfilmentTypeLabel == _this.fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.placedAt, _this.placedAt) || other.placedAt == _this.placedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,summary,itemsCount,total,isAwaitingQuote,isCompensation,paidAmount,balance,cityName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(items),placedAt]);
+int get hashCode {
+  final _this = this as CustomerOrder;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.stage,_this.stageLabel,_this.isOpen,_this.stageHint,_this.summary,_this.itemsCount,_this.total,_this.isAwaitingQuote,_this.isCompensation,_this.paidAmount,_this.balance,_this.cityName,_this.recipientPhone,_this.fulfilmentType,_this.fulfilmentTypeLabel,const DeepCollectionEquality().hash(_this.items),_this.placedAt]);
+}
 
 @override
 String toString() {
-  return 'CustomerOrder(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, summary: $summary, itemsCount: $itemsCount, total: $total, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, paidAmount: $paidAmount, balance: $balance, cityName: $cityName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, placedAt: $placedAt)';
+  final _this = this as CustomerOrder;
+  return 'CustomerOrder(id: ${_this.id}, code: ${_this.code}, stage: ${_this.stage}, stageLabel: ${_this.stageLabel}, isOpen: ${_this.isOpen}, stageHint: ${_this.stageHint}, summary: ${_this.summary}, itemsCount: ${_this.itemsCount}, total: ${_this.total}, isAwaitingQuote: ${_this.isAwaitingQuote}, isCompensation: ${_this.isCompensation}, paidAmount: ${_this.paidAmount}, balance: ${_this.balance}, cityName: ${_this.cityName}, recipientPhone: ${_this.recipientPhone}, fulfilmentType: ${_this.fulfilmentType}, fulfilmentTypeLabel: ${_this.fulfilmentTypeLabel}, items: ${_this.items}, placedAt: ${_this.placedAt})';
 }
 
 
@@ -93,7 +93,7 @@ class _$CustomerOrderCopyWithImpl<$Res>
 /// Create a copy of CustomerOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? summary = freezed,Object? itemsCount = freezed,Object? total = freezed,Object? isAwaitingQuote = null,Object? isCompensation = null,Object? paidAmount = freezed,Object? balance = freezed,Object? cityName = freezed,Object? recipientPhone = freezed,Object? fulfilmentType = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? placedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CustomerOrder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
@@ -254,7 +254,7 @@ return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_t
 @JsonSerializable()
 
 class _CustomerOrder implements CustomerOrder {
-  const _CustomerOrder({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, this.summary, @JsonKey(name: 'items_count') this.itemsCount, this.total, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, @JsonKey(name: 'is_compensation') this.isCompensation = false, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, final  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'placed_at') this.placedAt}): _items = items;
+  const _CustomerOrder({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, this.summary, @JsonKey(name: 'items_count') this.itemsCount, this.total, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, @JsonKey(name: 'is_compensation') this.isCompensation = false, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel,  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'placed_at') this.placedAt}): _items = items;
   factory _CustomerOrder.fromJson(Map<String, dynamic> json) => _$CustomerOrderFromJson(json);
 
 @override final  int id;
@@ -284,10 +284,6 @@ class _CustomerOrder implements CustomerOrder {
 /// «تعويض» — the shop is sending these goods free; nothing is owed. False from a server
 /// that predates it.
 @override@JsonKey(name: 'is_compensation') final  bool isCompensation;
-// ── ما ترسمه البطاقة ─────────────────────────────────────────────────────
-// ما ترسمه بطاقة «طلباتي» (`OrderCard`) تحت رأسها: المال والمدينة والهاتف والبنود.
-// **كلها اختيارية**: التطبيق قد يصل الهاتف قبل أن يُنشر الخادم الذي يرسلها، والبطاقة ترسم
-// «—» حيث لا جواب بدل أن تُسقط القائمة كلها.
 /// ما دُفع. **فارغٌ ما دام بندٌ بلا سعر**، كـ[total] وللسبب نفسه.
 @override@JsonKey(name: 'paid_amount') final  String? paidAmount;
 /// ما بقي على العميل. فارغٌ كذلك ما دام بندٌ بلا سعر.
@@ -296,8 +292,6 @@ class _CustomerOrder implements CustomerOrder {
 @override@JsonKey(name: 'city_name') final  String? cityName;
 @override@JsonKey(name: 'recipient_phone') final  String? recipientPhone;
 @override@JsonKey(name: 'fulfilment_type') final  String? fulfilmentType;
-// طريقة التسليم تصل ولا ترسمها البطاقة: قال المستخدم إن «التسليم» عليها غير ضروري
-// (2026-09-25)، والطلبية المفتوحة تقولها.
 /// «توصيل» أو «استلام من المكتب»، بكلمة الخادم.
 @override@JsonKey(name: 'fulfilment_type_label') final  String? fulfilmentTypeLabel;
 /// البنود، لذيل البطاقة.
@@ -324,16 +318,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.total, total) || other.total == total)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrder&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.itemsCount, itemsCount) || other.itemsCount == itemsCount)&&(identical(other.total, total) || other.total == total)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,summary,itemsCount,total,isAwaitingQuote,isCompensation,paidAmount,balance,cityName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),placedAt]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,summary,itemsCount,total,isAwaitingQuote,isCompensation,paidAmount,balance,cityName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),placedAt]);
+}
 
 @override
 String toString() {
-  return 'CustomerOrder(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, summary: $summary, itemsCount: $itemsCount, total: $total, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, paidAmount: $paidAmount, balance: $balance, cityName: $cityName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, placedAt: $placedAt)';
+    return 'CustomerOrder(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, summary: $summary, itemsCount: $itemsCount, total: $total, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, paidAmount: $paidAmount, balance: $balance, cityName: $cityName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, placedAt: $placedAt)';
 }
 
 
@@ -412,16 +408,21 @@ $OrderLineCopyWith<OrderLine> get copyWith => _$OrderLineCopyWithImpl<OrderLine>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.productImageUrl, productImageUrl) || other.productImageUrl == productImageUrl));
+  final _this = this as OrderLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderLine&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.productName, _this.productName) || other.productName == _this.productName)&&(identical(other.variantLabel, _this.variantLabel) || other.variantLabel == _this.variantLabel)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.pricingUnitLabel, _this.pricingUnitLabel) || other.pricingUnitLabel == _this.pricingUnitLabel)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.lineTotal, _this.lineTotal) || other.lineTotal == _this.lineTotal)&&(identical(other.productImageUrl, _this.productImageUrl) || other.productImageUrl == _this.productImageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productName,variantLabel,quantity,pricingUnitLabel,unitPrice,lineTotal,productImageUrl);
+int get hashCode {
+  final _this = this as OrderLine;
+  return Object.hash(runtimeType,_this.id,_this.productName,_this.variantLabel,_this.quantity,_this.pricingUnitLabel,_this.unitPrice,_this.lineTotal,_this.productImageUrl);
+}
 
 @override
 String toString() {
-  return 'OrderLine(id: $id, productName: $productName, variantLabel: $variantLabel, quantity: $quantity, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal, productImageUrl: $productImageUrl)';
+  final _this = this as OrderLine;
+  return 'OrderLine(id: ${_this.id}, productName: ${_this.productName}, variantLabel: ${_this.variantLabel}, quantity: ${_this.quantity}, pricingUnitLabel: ${_this.pricingUnitLabel}, unitPrice: ${_this.unitPrice}, lineTotal: ${_this.lineTotal}, productImageUrl: ${_this.productImageUrl})';
 }
 
 
@@ -450,7 +451,7 @@ class _$OrderLineCopyWithImpl<$Res>
 /// Create a copy of OrderLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? productName = null,Object? variantLabel = freezed,Object? quantity = null,Object? pricingUnitLabel = freezed,Object? unitPrice = freezed,Object? lineTotal = freezed,Object? productImageUrl = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderLine(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,productName: null == productName ? _self.productName : productName // ignore: cast_nullable_to_non_nullable
 as String,variantLabel: freezed == variantLabel ? _self.variantLabel : variantLabel // ignore: cast_nullable_to_non_nullable
@@ -631,16 +632,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.productImageUrl, productImageUrl) || other.productImageUrl == productImageUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderLine&&(identical(other.id, id) || other.id == id)&&(identical(other.productName, productName) || other.productName == productName)&&(identical(other.variantLabel, variantLabel) || other.variantLabel == variantLabel)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.pricingUnitLabel, pricingUnitLabel) || other.pricingUnitLabel == pricingUnitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.productImageUrl, productImageUrl) || other.productImageUrl == productImageUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,productName,variantLabel,quantity,pricingUnitLabel,unitPrice,lineTotal,productImageUrl);
+int get hashCode {
+    return Object.hash(runtimeType,id,productName,variantLabel,quantity,pricingUnitLabel,unitPrice,lineTotal,productImageUrl);
+}
 
 @override
 String toString() {
-  return 'OrderLine(id: $id, productName: $productName, variantLabel: $variantLabel, quantity: $quantity, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal, productImageUrl: $productImageUrl)';
+    return 'OrderLine(id: $id, productName: $productName, variantLabel: $variantLabel, quantity: $quantity, pricingUnitLabel: $pricingUnitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal, productImageUrl: $productImageUrl)';
 }
 
 
@@ -702,16 +705,21 @@ $OrderTimelineEntryCopyWith<OrderTimelineEntry> get copyWith => _$OrderTimelineE
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTimelineEntry&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.reachedAt, reachedAt) || other.reachedAt == reachedAt));
+  final _this = this as OrderTimelineEntry;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderTimelineEntry&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.stageLabel, _this.stageLabel) || other.stageLabel == _this.stageLabel)&&(identical(other.reachedAt, _this.reachedAt) || other.reachedAt == _this.reachedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stage,stageLabel,reachedAt);
+int get hashCode {
+  final _this = this as OrderTimelineEntry;
+  return Object.hash(runtimeType,_this.stage,_this.stageLabel,_this.reachedAt);
+}
 
 @override
 String toString() {
-  return 'OrderTimelineEntry(stage: $stage, stageLabel: $stageLabel, reachedAt: $reachedAt)';
+  final _this = this as OrderTimelineEntry;
+  return 'OrderTimelineEntry(stage: ${_this.stage}, stageLabel: ${_this.stageLabel}, reachedAt: ${_this.reachedAt})';
 }
 
 
@@ -740,7 +748,7 @@ class _$OrderTimelineEntryCopyWithImpl<$Res>
 /// Create a copy of OrderTimelineEntry
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? stage = null,Object? stageLabel = null,Object? reachedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(OrderTimelineEntry(
 stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String,stageLabel: null == stageLabel ? _self.stageLabel : stageLabel // ignore: cast_nullable_to_non_nullable
 as String,reachedAt: freezed == reachedAt ? _self.reachedAt : reachedAt // ignore: cast_nullable_to_non_nullable
@@ -905,16 +913,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTimelineEntry&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.reachedAt, reachedAt) || other.reachedAt == reachedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderTimelineEntry&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.reachedAt, reachedAt) || other.reachedAt == reachedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stage,stageLabel,reachedAt);
+int get hashCode {
+    return Object.hash(runtimeType,stage,stageLabel,reachedAt);
+}
 
 @override
 String toString() {
-  return 'OrderTimelineEntry(stage: $stage, stageLabel: $stageLabel, reachedAt: $reachedAt)';
+    return 'OrderTimelineEntry(stage: $stage, stageLabel: $stageLabel, reachedAt: $reachedAt)';
 }
 
 
@@ -1008,16 +1018,21 @@ $CustomerOrderDetailCopyWith<CustomerOrderDetail> get copyWith => _$CustomerOrde
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&const DeepCollectionEquality().equals(other.timeline, timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
+  final _this = this as CustomerOrderDetail;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerOrderDetail&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.stageLabel, _this.stageLabel) || other.stageLabel == _this.stageLabel)&&(identical(other.isOpen, _this.isOpen) || other.isOpen == _this.isOpen)&&(identical(other.stageHint, _this.stageHint) || other.stageHint == _this.stageHint)&&(identical(other.isReviewed, _this.isReviewed) || other.isReviewed == _this.isReviewed)&&(identical(other.rejectionReason, _this.rejectionReason) || other.rejectionReason == _this.rejectionReason)&&(identical(other.cityName, _this.cityName) || other.cityName == _this.cityName)&&(identical(other.regionName, _this.regionName) || other.regionName == _this.regionName)&&(identical(other.addressDetails, _this.addressDetails) || other.addressDetails == _this.addressDetails)&&(identical(other.recipientName, _this.recipientName) || other.recipientName == _this.recipientName)&&(identical(other.recipientPhone, _this.recipientPhone) || other.recipientPhone == _this.recipientPhone)&&(identical(other.fulfilmentType, _this.fulfilmentType) || other.fulfilmentType == _this.fulfilmentType)&&(identical(other.fulfilmentTypeLabel, _this.fulfilmentTypeLabel) || other.fulfilmentTypeLabel == _this.fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.itemsTotal, _this.itemsTotal) || other.itemsTotal == _this.itemsTotal)&&(identical(other.deliveryPrice, _this.deliveryPrice) || other.deliveryPrice == _this.deliveryPrice)&&(identical(other.deliveryPaidBy, _this.deliveryPaidBy) || other.deliveryPaidBy == _this.deliveryPaidBy)&&(identical(other.designFee, _this.designFee) || other.designFee == _this.designFee)&&(identical(other.discount, _this.discount) || other.discount == _this.discount)&&(identical(other.total, _this.total) || other.total == _this.total)&&(identical(other.paidAmount, _this.paidAmount) || other.paidAmount == _this.paidAmount)&&(identical(other.balance, _this.balance) || other.balance == _this.balance)&&(identical(other.depositDue, _this.depositDue) || other.depositDue == _this.depositDue)&&(identical(other.depositExpected, _this.depositExpected) || other.depositExpected == _this.depositExpected)&&(identical(other.depositAtOffice, _this.depositAtOffice) || other.depositAtOffice == _this.depositAtOffice)&&(identical(other.depositOffer, _this.depositOffer) || other.depositOffer == _this.depositOffer)&&(identical(other.isAwaitingQuote, _this.isAwaitingQuote) || other.isAwaitingQuote == _this.isAwaitingQuote)&&(identical(other.isCompensation, _this.isCompensation) || other.isCompensation == _this.isCompensation)&&const DeepCollectionEquality().equals(other.timeline, _this.timeline)&&(identical(other.placedAt, _this.placedAt) || other.placedAt == _this.placedAt)&&(identical(other.unreadNotesCount, _this.unreadNotesCount) || other.unreadNotesCount == _this.unreadNotesCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,isReviewed,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(items),itemsTotal,deliveryPrice,deliveryPaidBy,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,isCompensation,const DeepCollectionEquality().hash(timeline),placedAt,unreadNotesCount]);
+int get hashCode {
+  final _this = this as CustomerOrderDetail;
+  return Object.hashAll([runtimeType,_this.id,_this.code,_this.stage,_this.stageLabel,_this.isOpen,_this.stageHint,_this.isReviewed,_this.rejectionReason,_this.cityName,_this.regionName,_this.addressDetails,_this.recipientName,_this.recipientPhone,_this.fulfilmentType,_this.fulfilmentTypeLabel,const DeepCollectionEquality().hash(_this.items),_this.itemsTotal,_this.deliveryPrice,_this.deliveryPaidBy,_this.designFee,_this.discount,_this.total,_this.paidAmount,_this.balance,_this.depositDue,_this.depositExpected,_this.depositAtOffice,_this.depositOffer,_this.isAwaitingQuote,_this.isCompensation,const DeepCollectionEquality().hash(_this.timeline),_this.placedAt,_this.unreadNotesCount]);
+}
 
 @override
 String toString() {
-  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, isReviewed: $isReviewed, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, deliveryPaidBy: $deliveryPaidBy, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
+  final _this = this as CustomerOrderDetail;
+  return 'CustomerOrderDetail(id: ${_this.id}, code: ${_this.code}, stage: ${_this.stage}, stageLabel: ${_this.stageLabel}, isOpen: ${_this.isOpen}, stageHint: ${_this.stageHint}, isReviewed: ${_this.isReviewed}, rejectionReason: ${_this.rejectionReason}, cityName: ${_this.cityName}, regionName: ${_this.regionName}, addressDetails: ${_this.addressDetails}, recipientName: ${_this.recipientName}, recipientPhone: ${_this.recipientPhone}, fulfilmentType: ${_this.fulfilmentType}, fulfilmentTypeLabel: ${_this.fulfilmentTypeLabel}, items: ${_this.items}, itemsTotal: ${_this.itemsTotal}, deliveryPrice: ${_this.deliveryPrice}, deliveryPaidBy: ${_this.deliveryPaidBy}, designFee: ${_this.designFee}, discount: ${_this.discount}, total: ${_this.total}, paidAmount: ${_this.paidAmount}, balance: ${_this.balance}, depositDue: ${_this.depositDue}, depositExpected: ${_this.depositExpected}, depositAtOffice: ${_this.depositAtOffice}, depositOffer: ${_this.depositOffer}, isAwaitingQuote: ${_this.isAwaitingQuote}, isCompensation: ${_this.isCompensation}, timeline: ${_this.timeline}, placedAt: ${_this.placedAt}, unreadNotesCount: ${_this.unreadNotesCount})';
 }
 
 
@@ -1046,7 +1061,7 @@ class _$CustomerOrderDetailCopyWithImpl<$Res>
 /// Create a copy of CustomerOrderDetail
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? stage = null,Object? stageLabel = null,Object? isOpen = null,Object? stageHint = freezed,Object? isReviewed = freezed,Object? rejectionReason = freezed,Object? cityName = freezed,Object? regionName = freezed,Object? addressDetails = freezed,Object? recipientName = freezed,Object? recipientPhone = freezed,Object? fulfilmentType = freezed,Object? fulfilmentTypeLabel = freezed,Object? items = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? deliveryPaidBy = null,Object? designFee = freezed,Object? discount = freezed,Object? total = freezed,Object? paidAmount = freezed,Object? balance = freezed,Object? depositDue = freezed,Object? depositExpected = freezed,Object? depositAtOffice = null,Object? depositOffer = freezed,Object? isAwaitingQuote = null,Object? isCompensation = null,Object? timeline = null,Object? placedAt = freezed,Object? unreadNotesCount = null,}) {
-  return _then(_self.copyWith(
+  return _then(CustomerOrderDetail(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
@@ -1233,7 +1248,7 @@ return $default(_that.id,_that.code,_that.stage,_that.stageLabel,_that.isOpen,_t
 @JsonSerializable()
 
 class _CustomerOrderDetail implements CustomerOrderDetail {
-  const _CustomerOrderDetail({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, @JsonKey(name: 'is_reviewed') this.isReviewed, @JsonKey(name: 'rejection_reason') this.rejectionReason, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'address_details') this.addressDetails, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel, final  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'delivery_paid_by') this.deliveryPaidBy = 'recipient', @JsonKey(name: 'design_fee') this.designFee, this.discount, this.total, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'deposit_due') this.depositDue, @JsonKey(name: 'deposit_expected') this.depositExpected, @JsonKey(name: 'deposit_at_office') this.depositAtOffice = false, @JsonKey(name: 'deposit_offer') this.depositOffer, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, @JsonKey(name: 'is_compensation') this.isCompensation = false, final  List<OrderTimelineEntry> timeline = const <OrderTimelineEntry>[], @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'unread_notes_count') this.unreadNotesCount = 0}): _items = items,_timeline = timeline;
+  const _CustomerOrderDetail({required this.id, required this.code, @JsonKey(unknownEnumValue: OrderStage.unknown) this.stage = OrderStage.unknown, @JsonKey(name: 'stage_label') required this.stageLabel, @JsonKey(name: 'is_open') this.isOpen = true, @JsonKey(name: 'stage_hint') this.stageHint, @JsonKey(name: 'is_reviewed') this.isReviewed, @JsonKey(name: 'rejection_reason') this.rejectionReason, @JsonKey(name: 'city_name') this.cityName, @JsonKey(name: 'region_name') this.regionName, @JsonKey(name: 'address_details') this.addressDetails, @JsonKey(name: 'recipient_name') this.recipientName, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'fulfilment_type') this.fulfilmentType, @JsonKey(name: 'fulfilment_type_label') this.fulfilmentTypeLabel,  List<OrderLine> items = const <OrderLine>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'delivery_paid_by') this.deliveryPaidBy = 'recipient', @JsonKey(name: 'design_fee') this.designFee, this.discount, this.total, @JsonKey(name: 'paid_amount') this.paidAmount, this.balance, @JsonKey(name: 'deposit_due') this.depositDue, @JsonKey(name: 'deposit_expected') this.depositExpected, @JsonKey(name: 'deposit_at_office') this.depositAtOffice = false, @JsonKey(name: 'deposit_offer') this.depositOffer, @JsonKey(name: 'is_awaiting_quote') this.isAwaitingQuote = false, @JsonKey(name: 'is_compensation') this.isCompensation = false,  List<OrderTimelineEntry> timeline = const <OrderTimelineEntry>[], @JsonKey(name: 'placed_at') this.placedAt, @JsonKey(name: 'unread_notes_count') this.unreadNotesCount = 0}): _items = items,_timeline = timeline;
   factory _CustomerOrderDetail.fromJson(Map<String, dynamic> json) => _$CustomerOrderDetailFromJson(json);
 
 @override final  int id;
@@ -1332,16 +1347,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&const DeepCollectionEquality().equals(other._timeline, _timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerOrderDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.stageLabel, stageLabel) || other.stageLabel == stageLabel)&&(identical(other.isOpen, isOpen) || other.isOpen == isOpen)&&(identical(other.stageHint, stageHint) || other.stageHint == stageHint)&&(identical(other.isReviewed, isReviewed) || other.isReviewed == isReviewed)&&(identical(other.rejectionReason, rejectionReason) || other.rejectionReason == rejectionReason)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.regionName, regionName) || other.regionName == regionName)&&(identical(other.addressDetails, addressDetails) || other.addressDetails == addressDetails)&&(identical(other.recipientName, recipientName) || other.recipientName == recipientName)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&(identical(other.fulfilmentType, fulfilmentType) || other.fulfilmentType == fulfilmentType)&&(identical(other.fulfilmentTypeLabel, fulfilmentTypeLabel) || other.fulfilmentTypeLabel == fulfilmentTypeLabel)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.deliveryPaidBy, deliveryPaidBy) || other.deliveryPaidBy == deliveryPaidBy)&&(identical(other.designFee, designFee) || other.designFee == designFee)&&(identical(other.discount, discount) || other.discount == discount)&&(identical(other.total, total) || other.total == total)&&(identical(other.paidAmount, paidAmount) || other.paidAmount == paidAmount)&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.depositDue, depositDue) || other.depositDue == depositDue)&&(identical(other.depositExpected, depositExpected) || other.depositExpected == depositExpected)&&(identical(other.depositAtOffice, depositAtOffice) || other.depositAtOffice == depositAtOffice)&&(identical(other.depositOffer, depositOffer) || other.depositOffer == depositOffer)&&(identical(other.isAwaitingQuote, isAwaitingQuote) || other.isAwaitingQuote == isAwaitingQuote)&&(identical(other.isCompensation, isCompensation) || other.isCompensation == isCompensation)&&const DeepCollectionEquality().equals(other.timeline, _timeline)&&(identical(other.placedAt, placedAt) || other.placedAt == placedAt)&&(identical(other.unreadNotesCount, unreadNotesCount) || other.unreadNotesCount == unreadNotesCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,isReviewed,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),itemsTotal,deliveryPrice,deliveryPaidBy,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,isCompensation,const DeepCollectionEquality().hash(_timeline),placedAt,unreadNotesCount]);
+int get hashCode {
+    return Object.hashAll([runtimeType,id,code,stage,stageLabel,isOpen,stageHint,isReviewed,rejectionReason,cityName,regionName,addressDetails,recipientName,recipientPhone,fulfilmentType,fulfilmentTypeLabel,const DeepCollectionEquality().hash(_items),itemsTotal,deliveryPrice,deliveryPaidBy,designFee,discount,total,paidAmount,balance,depositDue,depositExpected,depositAtOffice,depositOffer,isAwaitingQuote,isCompensation,const DeepCollectionEquality().hash(_timeline),placedAt,unreadNotesCount]);
+}
 
 @override
 String toString() {
-  return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, isReviewed: $isReviewed, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, deliveryPaidBy: $deliveryPaidBy, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
+    return 'CustomerOrderDetail(id: $id, code: $code, stage: $stage, stageLabel: $stageLabel, isOpen: $isOpen, stageHint: $stageHint, isReviewed: $isReviewed, rejectionReason: $rejectionReason, cityName: $cityName, regionName: $regionName, addressDetails: $addressDetails, recipientName: $recipientName, recipientPhone: $recipientPhone, fulfilmentType: $fulfilmentType, fulfilmentTypeLabel: $fulfilmentTypeLabel, items: $items, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, deliveryPaidBy: $deliveryPaidBy, designFee: $designFee, discount: $discount, total: $total, paidAmount: $paidAmount, balance: $balance, depositDue: $depositDue, depositExpected: $depositExpected, depositAtOffice: $depositAtOffice, depositOffer: $depositOffer, isAwaitingQuote: $isAwaitingQuote, isCompensation: $isCompensation, timeline: $timeline, placedAt: $placedAt, unreadNotesCount: $unreadNotesCount)';
 }
 
 
@@ -1440,16 +1457,21 @@ $NewOrderLineCopyWith<NewOrderLine> get copyWith => _$NewOrderLineCopyWithImpl<N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderLine&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity));
+  final _this = this as NewOrderLine;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrderLine&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.productVariantId, _this.productVariantId) || other.productVariantId == _this.productVariantId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity);
+int get hashCode {
+  final _this = this as NewOrderLine;
+  return Object.hash(runtimeType,_this.productId,_this.productVariantId,_this.quantity);
+}
 
 @override
 String toString() {
-  return 'NewOrderLine(productId: $productId, productVariantId: $productVariantId, quantity: $quantity)';
+  final _this = this as NewOrderLine;
+  return 'NewOrderLine(productId: ${_this.productId}, productVariantId: ${_this.productVariantId}, quantity: ${_this.quantity})';
 }
 
 
@@ -1478,7 +1500,7 @@ class _$NewOrderLineCopyWithImpl<$Res>
 /// Create a copy of NewOrderLine
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? productVariantId = null,Object? quantity = null,}) {
-  return _then(_self.copyWith(
+  return _then(NewOrderLine(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
@@ -1643,16 +1665,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderLine&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrderLine&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.quantity, quantity) || other.quantity == quantity));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,quantity);
+int get hashCode {
+    return Object.hash(runtimeType,productId,productVariantId,quantity);
+}
 
 @override
 String toString() {
-  return 'NewOrderLine(productId: $productId, productVariantId: $productVariantId, quantity: $quantity)';
+    return 'NewOrderLine(productId: $productId, productVariantId: $productVariantId, quantity: $quantity)';
 }
 
 
@@ -1714,16 +1738,21 @@ $NewOrderCopyWith<NewOrder> get copyWith => _$NewOrderCopyWithImpl<NewOrder>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other.designIds, designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
+  final _this = this as NewOrder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NewOrder&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.regionId, _this.regionId) || other.regionId == _this.regionId)&&(identical(other.customerShopId, _this.customerShopId) || other.customerShopId == _this.customerShopId)&&(identical(other.recipientPhone, _this.recipientPhone) || other.recipientPhone == _this.recipientPhone)&&const DeepCollectionEquality().equals(other.designIds, _this.designIds)&&(identical(other.customerNote, _this.customerNote) || other.customerNote == _this.customerNote)&&(identical(other.deposit, _this.deposit) || other.deposit == _this.deposit)&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(designIds),customerNote,deposit,clientToken);
+int get hashCode {
+  final _this = this as NewOrder;
+  return Object.hash(runtimeType,_this.cityId,const DeepCollectionEquality().hash(_this.items),_this.regionId,_this.customerShopId,_this.recipientPhone,const DeepCollectionEquality().hash(_this.designIds),_this.customerNote,_this.deposit,_this.clientToken);
+}
 
 @override
 String toString() {
-  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit, clientToken: $clientToken)';
+  final _this = this as NewOrder;
+  return 'NewOrder(cityId: ${_this.cityId}, items: ${_this.items}, regionId: ${_this.regionId}, customerShopId: ${_this.customerShopId}, recipientPhone: ${_this.recipientPhone}, designIds: ${_this.designIds}, customerNote: ${_this.customerNote}, deposit: ${_this.deposit}, clientToken: ${_this.clientToken})';
 }
 
 
@@ -1752,7 +1781,7 @@ class _$NewOrderCopyWithImpl<$Res>
 /// Create a copy of NewOrder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? cityId = null,Object? items = null,Object? regionId = freezed,Object? customerShopId = freezed,Object? recipientPhone = freezed,Object? designIds = null,Object? customerNote = freezed,Object? deposit = freezed,Object? clientToken = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NewOrder(
 cityId: null == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as int,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<NewOrderLine>,regionId: freezed == regionId ? _self.regionId : regionId // ignore: cast_nullable_to_non_nullable
@@ -1915,7 +1944,7 @@ return $default(_that.cityId,_that.items,_that.regionId,_that.customerShopId,_th
 @JsonSerializable()
 
 class _NewOrder implements NewOrder {
-  const _NewOrder({@JsonKey(name: 'city_id') required this.cityId, required final  List<NewOrderLine> items, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'design_ids') final  List<int> designIds = const <int>[], @JsonKey(name: 'customer_note') this.customerNote, @JsonKey(includeIfNull: false) this.deposit, @JsonKey(name: 'client_token', includeIfNull: false) this.clientToken}): _items = items,_designIds = designIds;
+  const _NewOrder({@JsonKey(name: 'city_id') required this.cityId, required  List<NewOrderLine> items, @JsonKey(name: 'region_id') this.regionId, @JsonKey(name: 'customer_shop_id') this.customerShopId, @JsonKey(name: 'recipient_phone') this.recipientPhone, @JsonKey(name: 'design_ids')  List<int> designIds = const <int>[], @JsonKey(name: 'customer_note') this.customerNote, @JsonKey(includeIfNull: false) this.deposit, @JsonKey(name: 'client_token', includeIfNull: false) this.clientToken}): _items = items,_designIds = designIds;
   factory _NewOrder.fromJson(Map<String, dynamic> json) => _$NewOrderFromJson(json);
 
 @override@JsonKey(name: 'city_id') final  int cityId;
@@ -1958,16 +1987,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other._designIds, _designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NewOrder&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.customerShopId, customerShopId) || other.customerShopId == customerShopId)&&(identical(other.recipientPhone, recipientPhone) || other.recipientPhone == recipientPhone)&&const DeepCollectionEquality().equals(other.designIds, _designIds)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(_items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(_designIds),customerNote,deposit,clientToken);
+int get hashCode {
+    return Object.hash(runtimeType,cityId,const DeepCollectionEquality().hash(_items),regionId,customerShopId,recipientPhone,const DeepCollectionEquality().hash(_designIds),customerNote,deposit,clientToken);
+}
 
 @override
 String toString() {
-  return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit, clientToken: $clientToken)';
+    return 'NewOrder(cityId: $cityId, items: $items, regionId: $regionId, customerShopId: $customerShopId, recipientPhone: $recipientPhone, designIds: $designIds, customerNote: $customerNote, deposit: $deposit, clientToken: $clientToken)';
 }
 
 
@@ -2043,16 +2074,21 @@ $CheckoutDepositCopyWith<CheckoutDeposit> get copyWith => _$CheckoutDepositCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutDeposit&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
+  final _this = this as CheckoutDeposit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CheckoutDeposit&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.clientToken, _this.clientToken) || other.clientToken == _this.clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,payment,amount,clientToken);
+int get hashCode {
+  final _this = this as CheckoutDeposit;
+  return Object.hash(runtimeType,_this.payment,_this.amount,_this.clientToken);
+}
 
 @override
 String toString() {
-  return 'CheckoutDeposit(payment: $payment, amount: $amount, clientToken: $clientToken)';
+  final _this = this as CheckoutDeposit;
+  return 'CheckoutDeposit(payment: ${_this.payment}, amount: ${_this.amount}, clientToken: ${_this.clientToken})';
 }
 
 
@@ -2081,7 +2117,7 @@ class _$CheckoutDepositCopyWithImpl<$Res>
 /// Create a copy of CheckoutDeposit
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? payment = null,Object? amount = null,Object? clientToken = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CheckoutDeposit(
 payment: null == payment ? _self.payment : payment // ignore: cast_nullable_to_non_nullable
 as CheckoutPayment,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as String,clientToken: freezed == clientToken ? _self.clientToken : clientToken // ignore: cast_nullable_to_non_nullable
@@ -2247,16 +2283,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CheckoutDeposit&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CheckoutDeposit&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.clientToken, clientToken) || other.clientToken == clientToken));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,payment,amount,clientToken);
+int get hashCode {
+    return Object.hash(runtimeType,payment,amount,clientToken);
+}
 
 @override
 String toString() {
-  return 'CheckoutDeposit(payment: $payment, amount: $amount, clientToken: $clientToken)';
+    return 'CheckoutDeposit(payment: $payment, amount: $amount, clientToken: $clientToken)';
 }
 
 

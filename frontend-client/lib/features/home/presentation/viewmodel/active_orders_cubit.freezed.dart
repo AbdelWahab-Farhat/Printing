@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'active_orders_cubit.dart';
@@ -9,6 +9,7 @@ part of 'active_orders_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ActiveOrdersState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ActiveOrdersState()';
+    return 'ActiveOrdersState()';
 }
 
 
@@ -191,7 +192,7 @@ class ActiveOrdersLoading implements ActiveOrdersState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ActiveOrdersState.loading()';
+    return 'ActiveOrdersState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class ActiveOrdersLoaded implements ActiveOrdersState {
-  const ActiveOrdersLoaded(final  List<CustomerOrder> orders): _orders = orders;
+  const ActiveOrdersLoaded( List<CustomerOrder> orders): _orders = orders;
   
 
  final  List<CustomerOrder> _orders;
@@ -234,16 +235,18 @@ $ActiveOrdersLoadedCopyWith<ActiveOrdersLoaded> get copyWith => _$ActiveOrdersLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersLoaded&&const DeepCollectionEquality().equals(other._orders, _orders));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersLoaded&&const DeepCollectionEquality().equals(other.orders, _orders));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_orders));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_orders));
+}
 
 @override
 String toString() {
-  return 'ActiveOrdersState.loaded(orders: $orders)';
+    return 'ActiveOrdersState.loaded(orders: $orders)';
 }
 
 
@@ -300,16 +303,18 @@ $ActiveOrdersFailureCopyWith<ActiveOrdersFailure> get copyWith => _$ActiveOrders
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ActiveOrdersFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'ActiveOrdersState.failure(failure: $failure)';
+    return 'ActiveOrdersState.failure(failure: $failure)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'customer_account.dart';
@@ -9,6 +9,7 @@ part of 'customer_account.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -48,16 +49,21 @@ $CustomerAccountCopyWith<CustomerAccount> get copyWith => _$CustomerAccountCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.socialLinksCount, socialLinksCount) || other.socialLinksCount == socialLinksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  final _this = this as CustomerAccount;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerAccount&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.shop, _this.shop) || other.shop == _this.shop)&&(identical(other.cityId, _this.cityId) || other.cityId == _this.cityId)&&(identical(other.regionId, _this.regionId) || other.regionId == _this.regionId)&&(identical(other.socialLinksCount, _this.socialLinksCount) || other.socialLinksCount == _this.socialLinksCount)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,cityId,regionId,socialLinksCount,createdAt);
+int get hashCode {
+  final _this = this as CustomerAccount;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.phone,_this.code,_this.isActive,_this.shop,_this.cityId,_this.regionId,_this.socialLinksCount,_this.createdAt);
+}
 
 @override
 String toString() {
-  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, cityId: $cityId, regionId: $regionId, socialLinksCount: $socialLinksCount, createdAt: $createdAt)';
+  final _this = this as CustomerAccount;
+  return 'CustomerAccount(id: ${_this.id}, name: ${_this.name}, phone: ${_this.phone}, code: ${_this.code}, isActive: ${_this.isActive}, shop: ${_this.shop}, cityId: ${_this.cityId}, regionId: ${_this.regionId}, socialLinksCount: ${_this.socialLinksCount}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -86,7 +92,7 @@ class _$CustomerAccountCopyWithImpl<$Res>
 /// Create a copy of CustomerAccount
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? phone = null,Object? code = freezed,Object? isActive = null,Object? shop = freezed,Object? cityId = freezed,Object? regionId = freezed,Object? socialLinksCount = freezed,Object? createdAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CustomerAccount(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
@@ -297,16 +303,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.socialLinksCount, socialLinksCount) || other.socialLinksCount == socialLinksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.code, code) || other.code == code)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.shop, shop) || other.shop == shop)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.socialLinksCount, socialLinksCount) || other.socialLinksCount == socialLinksCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,phone,code,isActive,shop,cityId,regionId,socialLinksCount,createdAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,phone,code,isActive,shop,cityId,regionId,socialLinksCount,createdAt);
+}
 
 @override
 String toString() {
-  return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, cityId: $cityId, regionId: $regionId, socialLinksCount: $socialLinksCount, createdAt: $createdAt)';
+    return 'CustomerAccount(id: $id, name: $name, phone: $phone, code: $code, isActive: $isActive, shop: $shop, cityId: $cityId, regionId: $regionId, socialLinksCount: $socialLinksCount, createdAt: $createdAt)';
 }
 
 
@@ -384,16 +392,21 @@ $CustomerShopCopyWith<CustomerShop> get copyWith => _$CustomerShopCopyWithImpl<C
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerShop&&(identical(other.name, name) || other.name == name)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.businessField, businessField) || other.businessField == businessField));
+  final _this = this as CustomerShop;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomerShop&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.cityName, _this.cityName) || other.cityName == _this.cityName)&&(identical(other.businessField, _this.businessField) || other.businessField == _this.businessField));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,cityName,businessField);
+int get hashCode {
+  final _this = this as CustomerShop;
+  return Object.hash(runtimeType,_this.name,_this.cityName,_this.businessField);
+}
 
 @override
 String toString() {
-  return 'CustomerShop(name: $name, cityName: $cityName, businessField: $businessField)';
+  final _this = this as CustomerShop;
+  return 'CustomerShop(name: ${_this.name}, cityName: ${_this.cityName}, businessField: ${_this.businessField})';
 }
 
 
@@ -422,7 +435,7 @@ class _$CustomerShopCopyWithImpl<$Res>
 /// Create a copy of CustomerShop
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = freezed,Object? cityName = freezed,Object? businessField = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(CustomerShop(
 name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,businessField: freezed == businessField ? _self.businessField : businessField // ignore: cast_nullable_to_non_nullable
@@ -589,16 +602,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerShop&&(identical(other.name, name) || other.name == name)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.businessField, businessField) || other.businessField == businessField));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomerShop&&(identical(other.name, name) || other.name == name)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.businessField, businessField) || other.businessField == businessField));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,cityName,businessField);
+int get hashCode {
+    return Object.hash(runtimeType,name,cityName,businessField);
+}
 
 @override
 String toString() {
-  return 'CustomerShop(name: $name, cityName: $cityName, businessField: $businessField)';
+    return 'CustomerShop(name: $name, cityName: $cityName, businessField: $businessField)';
 }
 
 
@@ -655,16 +670,21 @@ $AuthSessionCopyWith<AuthSession> get copyWith => _$AuthSessionCopyWithImpl<Auth
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSession&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.token, token) || other.token == token));
+  final _this = this as AuthSession;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthSession&&(identical(other.customer, _this.customer) || other.customer == _this.customer)&&(identical(other.token, _this.token) || other.token == _this.token));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,customer,token);
+int get hashCode {
+  final _this = this as AuthSession;
+  return Object.hash(runtimeType,_this.customer,_this.token);
+}
 
 @override
 String toString() {
-  return 'AuthSession(customer: $customer, token: $token)';
+  final _this = this as AuthSession;
+  return 'AuthSession(customer: ${_this.customer}, token: ${_this.token})';
 }
 
 
@@ -693,7 +713,7 @@ class _$AuthSessionCopyWithImpl<$Res>
 /// Create a copy of AuthSession
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? customer = null,Object? token = null,}) {
-  return _then(_self.copyWith(
+  return _then(AuthSession(
 customer: null == customer ? _self.customer : customer // ignore: cast_nullable_to_non_nullable
 as CustomerAccount,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
 as String,
@@ -865,16 +885,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSession&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.token, token) || other.token == token));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthSession&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.token, token) || other.token == token));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,customer,token);
+int get hashCode {
+    return Object.hash(runtimeType,customer,token);
+}
 
 @override
 String toString() {
-  return 'AuthSession(customer: $customer, token: $token)';
+    return 'AuthSession(customer: $customer, token: $token)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'shop_form_cubit.dart';
@@ -9,6 +9,7 @@ part of 'shop_form_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$ShopFormState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShopFormState()';
+    return 'ShopFormState()';
 }
 
 
@@ -191,7 +192,7 @@ class ShopFormLoading implements ShopFormState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ShopFormState.loading()';
+    return 'ShopFormState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class ShopFormReady implements ShopFormState {
-  const ShopFormReady({required final  List<City> cities, final  List<BusinessField> businessFields = const <BusinessField>[], this.businessFieldId, this.cityId, this.regionId, this.isSaving = false, this.lastFailure}): _cities = cities,_businessFields = businessFields;
+  const ShopFormReady({required  List<City> cities,  List<BusinessField> businessFields = const <BusinessField>[], this.businessFieldId, this.cityId, this.regionId, this.isSaving = false, this.lastFailure}): _cities = cities,_businessFields = businessFields;
   
 
 /// كل المدن بمناطقها، مرةً واحدة — المنتقي لا يُقلَّب صفحات.
@@ -251,16 +252,18 @@ $ShopFormReadyCopyWith<ShopFormReady> get copyWith => _$ShopFormReadyCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormReady&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other._businessFields, _businessFields)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormReady&&const DeepCollectionEquality().equals(other.cities, _cities)&&const DeepCollectionEquality().equals(other.businessFields, _businessFields)&&(identical(other.businessFieldId, businessFieldId) || other.businessFieldId == businessFieldId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.regionId, regionId) || other.regionId == regionId)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_businessFields),businessFieldId,cityId,regionId,isSaving,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(_businessFields),businessFieldId,cityId,regionId,isSaving,lastFailure);
+}
 
 @override
 String toString() {
-  return 'ShopFormState.ready(cities: $cities, businessFields: $businessFields, businessFieldId: $businessFieldId, cityId: $cityId, regionId: $regionId, isSaving: $isSaving, lastFailure: $lastFailure)';
+    return 'ShopFormState.ready(cities: $cities, businessFields: $businessFields, businessFieldId: $businessFieldId, cityId: $cityId, regionId: $regionId, isSaving: $isSaving, lastFailure: $lastFailure)';
 }
 
 
@@ -335,16 +338,18 @@ $ShopFormFailureCopyWith<ShopFormFailure> get copyWith => _$ShopFormFailureCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShopFormFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'ShopFormState.failure(failure: $failure)';
+    return 'ShopFormState.failure(failure: $failure)';
 }
 
 

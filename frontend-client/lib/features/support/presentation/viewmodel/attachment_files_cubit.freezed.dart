@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'attachment_files_cubit.dart';
@@ -9,6 +9,7 @@ part of 'attachment_files_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$AttachmentFile {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentFile);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentFile);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AttachmentFile()';
+    return 'AttachmentFile()';
 }
 
 
@@ -197,7 +198,7 @@ class AttachmentRemote implements AttachmentFile {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentRemote);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentRemote);
 }
 
 
@@ -206,7 +207,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AttachmentFile.remote()';
+    return 'AttachmentFile.remote()';
 }
 
 
@@ -234,16 +235,18 @@ $AttachmentDownloadingCopyWith<AttachmentDownloading> get copyWith => _$Attachme
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentDownloading&&(identical(other.progress, progress) || other.progress == progress));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentDownloading&&(identical(other.progress, progress) || other.progress == progress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,progress);
+int get hashCode {
+    return Object.hash(runtimeType,progress);
+}
 
 @override
 String toString() {
-  return 'AttachmentFile.downloading(progress: $progress)';
+    return 'AttachmentFile.downloading(progress: $progress)';
 }
 
 
@@ -300,16 +303,18 @@ $AttachmentLocalCopyWith<AttachmentLocal> get copyWith => _$AttachmentLocalCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentLocal&&(identical(other.path, path) || other.path == path));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentLocal&&(identical(other.path, path) || other.path == path));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path);
+int get hashCode {
+    return Object.hash(runtimeType,path);
+}
 
 @override
 String toString() {
-  return 'AttachmentFile.local(path: $path)';
+    return 'AttachmentFile.local(path: $path)';
 }
 
 
@@ -366,16 +371,18 @@ $AttachmentDownloadFailedCopyWith<AttachmentDownloadFailed> get copyWith => _$At
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentDownloadFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentDownloadFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'AttachmentFile.failed(failure: $failure)';
+    return 'AttachmentFile.failed(failure: $failure)';
 }
 
 
@@ -436,16 +443,21 @@ $AttachmentFilesStateCopyWith<AttachmentFilesState> get copyWith => _$Attachment
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentFilesState&&const DeepCollectionEquality().equals(other.files, files));
+  final _this = this as AttachmentFilesState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AttachmentFilesState&&const DeepCollectionEquality().equals(other.files, _this.files));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(files));
+int get hashCode {
+  final _this = this as AttachmentFilesState;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.files));
+}
 
 @override
 String toString() {
-  return 'AttachmentFilesState(files: $files)';
+  final _this = this as AttachmentFilesState;
+  return 'AttachmentFilesState(files: ${_this.files})';
 }
 
 
@@ -474,7 +486,7 @@ class _$AttachmentFilesStateCopyWithImpl<$Res>
 /// Create a copy of AttachmentFilesState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? files = null,}) {
-  return _then(_self.copyWith(
+  return _then(AttachmentFilesState(
 files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
 as Map<int, AttachmentFile>,
   ));
@@ -617,7 +629,7 @@ return $default(_that.files);case _:
 
 
 class _AttachmentFilesState implements AttachmentFilesState {
-  const _AttachmentFilesState({final  Map<int, AttachmentFile> files = const <int, AttachmentFile>{}}): _files = files;
+  const _AttachmentFilesState({ Map<int, AttachmentFile> files = const <int, AttachmentFile>{}}): _files = files;
   
 
  final  Map<int, AttachmentFile> _files;
@@ -638,16 +650,18 @@ _$AttachmentFilesStateCopyWith<_AttachmentFilesState> get copyWith => __$Attachm
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AttachmentFilesState&&const DeepCollectionEquality().equals(other._files, _files));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AttachmentFilesState&&const DeepCollectionEquality().equals(other.files, _files));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_files));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_files));
+}
 
 @override
 String toString() {
-  return 'AttachmentFilesState(files: $files)';
+    return 'AttachmentFilesState(files: $files)';
 }
 
 

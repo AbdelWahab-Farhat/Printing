@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'basket_quote.dart';
@@ -9,6 +9,7 @@ part of 'basket_quote.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -33,16 +34,21 @@ $BasketQuoteCopyWith<BasketQuote> get copyWith => _$BasketQuoteCopyWithImpl<Bask
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketQuote&&const DeepCollectionEquality().equals(other.lines, lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery)&&(identical(other.deposit, deposit) || other.deposit == deposit));
+  final _this = this as BasketQuote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketQuote&&const DeepCollectionEquality().equals(other.lines, _this.lines)&&(identical(other.itemsTotal, _this.itemsTotal) || other.itemsTotal == _this.itemsTotal)&&(identical(other.deliveryPrice, _this.deliveryPrice) || other.deliveryPrice == _this.deliveryPrice)&&(identical(other.totalWithDelivery, _this.totalWithDelivery) || other.totalWithDelivery == _this.totalWithDelivery)&&(identical(other.deposit, _this.deposit) || other.deposit == _this.deposit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(lines),itemsTotal,deliveryPrice,totalWithDelivery,deposit);
+int get hashCode {
+  final _this = this as BasketQuote;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.lines),_this.itemsTotal,_this.deliveryPrice,_this.totalWithDelivery,_this.deposit);
+}
 
 @override
 String toString() {
-  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery, deposit: $deposit)';
+  final _this = this as BasketQuote;
+  return 'BasketQuote(lines: ${_this.lines}, itemsTotal: ${_this.itemsTotal}, deliveryPrice: ${_this.deliveryPrice}, totalWithDelivery: ${_this.totalWithDelivery}, deposit: ${_this.deposit})';
 }
 
 
@@ -71,7 +77,7 @@ class _$BasketQuoteCopyWithImpl<$Res>
 /// Create a copy of BasketQuote
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? lines = null,Object? itemsTotal = freezed,Object? deliveryPrice = freezed,Object? totalWithDelivery = freezed,Object? deposit = null,}) {
-  return _then(_self.copyWith(
+  return _then(BasketQuote(
 lines: null == lines ? _self.lines : lines // ignore: cast_nullable_to_non_nullable
 as List<BasketLineQuote>,itemsTotal: freezed == itemsTotal ? _self.itemsTotal : itemsTotal // ignore: cast_nullable_to_non_nullable
 as String?,deliveryPrice: freezed == deliveryPrice ? _self.deliveryPrice : deliveryPrice // ignore: cast_nullable_to_non_nullable
@@ -227,7 +233,7 @@ return $default(_that.lines,_that.itemsTotal,_that.deliveryPrice,_that.totalWith
 @JsonSerializable()
 
 class _BasketQuote implements BasketQuote {
-  const _BasketQuote({final  List<BasketLineQuote> lines = const <BasketLineQuote>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'total_with_delivery') this.totalWithDelivery, this.deposit = const DepositOffer()}): _lines = lines;
+  const _BasketQuote({ List<BasketLineQuote> lines = const <BasketLineQuote>[], @JsonKey(name: 'items_total') this.itemsTotal, @JsonKey(name: 'delivery_price') this.deliveryPrice, @JsonKey(name: 'total_with_delivery') this.totalWithDelivery, this.deposit = const DepositOffer()}): _lines = lines;
   factory _BasketQuote.fromJson(Map<String, dynamic> json) => _$BasketQuoteFromJson(json);
 
 /// بترتيب السلة نفسه.
@@ -261,16 +267,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketQuote&&const DeepCollectionEquality().equals(other._lines, _lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery)&&(identical(other.deposit, deposit) || other.deposit == deposit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketQuote&&const DeepCollectionEquality().equals(other.lines, _lines)&&(identical(other.itemsTotal, itemsTotal) || other.itemsTotal == itemsTotal)&&(identical(other.deliveryPrice, deliveryPrice) || other.deliveryPrice == deliveryPrice)&&(identical(other.totalWithDelivery, totalWithDelivery) || other.totalWithDelivery == totalWithDelivery)&&(identical(other.deposit, deposit) || other.deposit == deposit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_lines),itemsTotal,deliveryPrice,totalWithDelivery,deposit);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_lines),itemsTotal,deliveryPrice,totalWithDelivery,deposit);
+}
 
 @override
 String toString() {
-  return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery, deposit: $deposit)';
+    return 'BasketQuote(lines: $lines, itemsTotal: $itemsTotal, deliveryPrice: $deliveryPrice, totalWithDelivery: $totalWithDelivery, deposit: $deposit)';
 }
 
 
@@ -338,16 +346,21 @@ $DepositOfferCopyWith<DepositOffer> get copyWith => _$DepositOfferCopyWithImpl<D
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DepositOffer&&(identical(other.offered, offered) || other.offered == offered)&&(identical(other.minPercent, minPercent) || other.minPercent == minPercent)&&(identical(other.minAmount, minAmount) || other.minAmount == minAmount)&&(identical(other.maxAmount, maxAmount) || other.maxAmount == maxAmount));
+  final _this = this as DepositOffer;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DepositOffer&&(identical(other.offered, _this.offered) || other.offered == _this.offered)&&(identical(other.minPercent, _this.minPercent) || other.minPercent == _this.minPercent)&&(identical(other.minAmount, _this.minAmount) || other.minAmount == _this.minAmount)&&(identical(other.maxAmount, _this.maxAmount) || other.maxAmount == _this.maxAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,offered,minPercent,minAmount,maxAmount);
+int get hashCode {
+  final _this = this as DepositOffer;
+  return Object.hash(runtimeType,_this.offered,_this.minPercent,_this.minAmount,_this.maxAmount);
+}
 
 @override
 String toString() {
-  return 'DepositOffer(offered: $offered, minPercent: $minPercent, minAmount: $minAmount, maxAmount: $maxAmount)';
+  final _this = this as DepositOffer;
+  return 'DepositOffer(offered: ${_this.offered}, minPercent: ${_this.minPercent}, minAmount: ${_this.minAmount}, maxAmount: ${_this.maxAmount})';
 }
 
 
@@ -376,7 +389,7 @@ class _$DepositOfferCopyWithImpl<$Res>
 /// Create a copy of DepositOffer
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? offered = null,Object? minPercent = null,Object? minAmount = freezed,Object? maxAmount = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DepositOffer(
 offered: null == offered ? _self.offered : offered // ignore: cast_nullable_to_non_nullable
 as bool,minPercent: null == minPercent ? _self.minPercent : minPercent // ignore: cast_nullable_to_non_nullable
 as int,minAmount: freezed == minAmount ? _self.minAmount : minAmount // ignore: cast_nullable_to_non_nullable
@@ -543,16 +556,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DepositOffer&&(identical(other.offered, offered) || other.offered == offered)&&(identical(other.minPercent, minPercent) || other.minPercent == minPercent)&&(identical(other.minAmount, minAmount) || other.minAmount == minAmount)&&(identical(other.maxAmount, maxAmount) || other.maxAmount == maxAmount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DepositOffer&&(identical(other.offered, offered) || other.offered == offered)&&(identical(other.minPercent, minPercent) || other.minPercent == minPercent)&&(identical(other.minAmount, minAmount) || other.minAmount == minAmount)&&(identical(other.maxAmount, maxAmount) || other.maxAmount == maxAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,offered,minPercent,minAmount,maxAmount);
+int get hashCode {
+    return Object.hash(runtimeType,offered,minPercent,minAmount,maxAmount);
+}
 
 @override
 String toString() {
-  return 'DepositOffer(offered: $offered, minPercent: $minPercent, minAmount: $minAmount, maxAmount: $maxAmount)';
+    return 'DepositOffer(offered: $offered, minPercent: $minPercent, minAmount: $minAmount, maxAmount: $maxAmount)';
 }
 
 
@@ -612,16 +627,21 @@ $BasketLineQuoteCopyWith<BasketLineQuote> get copyWith => _$BasketLineQuoteCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketLineQuote&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal));
+  final _this = this as BasketLineQuote;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BasketLineQuote&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.productVariantId, _this.productVariantId) || other.productVariantId == _this.productVariantId)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.unitPrice, _this.unitPrice) || other.unitPrice == _this.unitPrice)&&(identical(other.lineTotal, _this.lineTotal) || other.lineTotal == _this.lineTotal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,unitLabel,unitPrice,lineTotal);
+int get hashCode {
+  final _this = this as BasketLineQuote;
+  return Object.hash(runtimeType,_this.productId,_this.productVariantId,_this.unitLabel,_this.unitPrice,_this.lineTotal);
+}
 
 @override
 String toString() {
-  return 'BasketLineQuote(productId: $productId, productVariantId: $productVariantId, unitLabel: $unitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal)';
+  final _this = this as BasketLineQuote;
+  return 'BasketLineQuote(productId: ${_this.productId}, productVariantId: ${_this.productVariantId}, unitLabel: ${_this.unitLabel}, unitPrice: ${_this.unitPrice}, lineTotal: ${_this.lineTotal})';
 }
 
 
@@ -650,7 +670,7 @@ class _$BasketLineQuoteCopyWithImpl<$Res>
 /// Create a copy of BasketLineQuote
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? productVariantId = null,Object? unitLabel = freezed,Object? unitPrice = freezed,Object? lineTotal = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(BasketLineQuote(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as int,productVariantId: null == productVariantId ? _self.productVariantId : productVariantId // ignore: cast_nullable_to_non_nullable
 as int,unitLabel: freezed == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
@@ -821,16 +841,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketLineQuote&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BasketLineQuote&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.productVariantId, productVariantId) || other.productVariantId == productVariantId)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,productId,productVariantId,unitLabel,unitPrice,lineTotal);
+int get hashCode {
+    return Object.hash(runtimeType,productId,productVariantId,unitLabel,unitPrice,lineTotal);
+}
 
 @override
 String toString() {
-  return 'BasketLineQuote(productId: $productId, productVariantId: $productVariantId, unitLabel: $unitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal)';
+    return 'BasketLineQuote(productId: $productId, productVariantId: $productVariantId, unitLabel: $unitLabel, unitPrice: $unitPrice, lineTotal: $lineTotal)';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'social_links_cubit.dart';
@@ -9,6 +9,7 @@ part of 'social_links_cubit.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$SocialLinksState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksState);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksState);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SocialLinksState()';
+    return 'SocialLinksState()';
 }
 
 
@@ -191,7 +192,7 @@ class SocialLinksLoading implements SocialLinksState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksLoading);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksLoading);
 }
 
 
@@ -200,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'SocialLinksState.loading()';
+    return 'SocialLinksState.loading()';
 }
 
 
@@ -213,7 +214,7 @@ String toString() {
 
 
 class SocialLinksLoaded implements SocialLinksState {
-  const SocialLinksLoaded(final  List<SocialLink> links, {this.isSaving = false, this.lastFailure}): _links = links;
+  const SocialLinksLoaded( List<SocialLink> links, {this.isSaving = false, this.lastFailure}): _links = links;
   
 
 /// ما على الخادم، كما قرأه آخر تحميلٍ أو آخر حفظ. السطور التي تُكتب يملكها متحكّمو الشاشة.
@@ -240,16 +241,18 @@ $SocialLinksLoadedCopyWith<SocialLinksLoaded> get copyWith => _$SocialLinksLoade
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksLoaded&&const DeepCollectionEquality().equals(other._links, _links)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksLoaded&&const DeepCollectionEquality().equals(other.links, _links)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.lastFailure, lastFailure) || other.lastFailure == lastFailure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_links),isSaving,lastFailure);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_links),isSaving,lastFailure);
+}
 
 @override
 String toString() {
-  return 'SocialLinksState.loaded(links: $links, isSaving: $isSaving, lastFailure: $lastFailure)';
+    return 'SocialLinksState.loaded(links: $links, isSaving: $isSaving, lastFailure: $lastFailure)';
 }
 
 
@@ -320,16 +323,18 @@ $SocialLinksFailureCopyWith<SocialLinksFailure> get copyWith => _$SocialLinksFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksFailure&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SocialLinksFailure&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,failure);
+int get hashCode {
+    return Object.hash(runtimeType,failure);
+}
 
 @override
 String toString() {
-  return 'SocialLinksState.failure(failure: $failure)';
+    return 'SocialLinksState.failure(failure: $failure)';
 }
 
 
