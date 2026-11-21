@@ -177,29 +177,26 @@ dependency_overrides:
 # لا يقرأ المولّدُ هذا الإعداد — الملفُّ نفسُه يشرح الترتيب. بعد تغيير الشعار يُعاد رسمُ الشريط:
 #   python3 tool/make_test_flavour_icons.py
 flutter_launcher_icons:
-  # The composed artwork, edge to edge. 1024 because that is the size iOS requires — see the
-  # note in the script about the master being 512.
+  # The Daaya mark padded for the iOS square. 1024 because that is the size iOS requires; see
+  # the note in the script about the master being 512.
   image_path: assets/branding/icon_1024.png
 
   android: true
-  # The mark alone. The navy it was drawn on becomes the layer below, so a launcher masking this
-  # to a circle cuts navy rather than the artwork's corners. The script explains the cut.
+  # The mark alone, padded into the adaptive icon's safe zone. The script explains the numbers.
   adaptive_icon_foreground: assets/branding/adaptive_foreground.png
-  # The artwork's own background, not `theme.dart`'s `surface` (`#0F2138`). Half a shade apart,
-  # and the seam shows on a large icon.
-  adaptive_icon_background: "#16243c"
+  # White, because the logo was drawn on white. The same white the iOS icon is flattened onto.
+  adaptive_icon_background: "#ffffff"
   # The app's real floor: `flutter.minSdkVersion` in Flutter 3.44 is 24, not 21. This is what
-  # decides whether the generator writes the old mipmap icons beside the adaptive ones — without
+  # decides whether the generator writes the old mipmap icons beside the adaptive ones. Without
   # it, Android 7 (API 24‑25, below 26) shows an empty icon, because `mipmap-anydpi-v26` is
   # invisible to anything under 26.
   min_sdk_android: 24
 
   ios: true
-  # iOS refuses an icon with transparency — it renders as black. This artwork is opaque, so the
-  # flag changes nothing today; it is here so the day a logo arrives with an alpha channel does
-  # not cost a release.
+  # iOS refuses an icon with transparency: it renders as black. The logo's transparent
+  # background is flattened onto white instead.
   remove_alpha_ios: true
-  background_color_ios: "#16243c"
+  background_color_ios: "#ffffff"
 
 flutter:
   uses-material-design: true
@@ -208,6 +205,9 @@ flutter:
   default-flavor: prod
 
   assets:
+    # The Daaya mark. `BrandMark` draws it beside the name, and the launcher icons are derived
+    # from the same file (tool/make_branding_assets.py).
+    - assets/images/logo.png
     # One per Flavor, and both have to be listed: a flavour whose env file is not bundled
     # throws at launch rather than failing the build.
     - .env

@@ -55,7 +55,8 @@ class CartButton extends StatelessWidget {
                   right: -8.w,
                   child: _CountBadge(
                     count: state.count,
-                    // أحمر كشارة الدعم وكالمثال الذي أرسله المستخدم، لا برتقالي العلامة.
+                    // Red, like the support badge and the example the user sent, not the
+                    // brand's accent.
                     background: scheme.error,
                     foreground: scheme.onError,
                     // حلقةٌ بلون الشريط، لتُقرأ الشارةُ شارةً لا لطخةً حيث تغطّي الرسم.

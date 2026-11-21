@@ -3,8 +3,8 @@ import 'package:dayaa_client/features/orders/models/order_progress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// الخطوات الخمس تحت بطاقة الطلبية على الرئيسية: ما مضى وما هي فيه برتقالي، وما بقي باهت، واسم
-/// كل خطوةٍ تحتها، والتي هي فيها أثقل.
+/// The five steps under the order card on home: those passed and the current one in the accent,
+/// those ahead faded, each step's name under it, and the current one heavier.
 ///
 /// **لا يتحرك.** يُرسم حيث تقف الطلبية الآن، ولا يملأ نفسه أمام العين كلما فُتحت الرئيسية.
 ///

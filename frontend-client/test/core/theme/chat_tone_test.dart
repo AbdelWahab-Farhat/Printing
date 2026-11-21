@@ -5,10 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// ألوان محادثة الدعم — وأوّلُ ما يُحرس فيها أن يُقرأ ما عليها.
 ///
-/// **الشكوى التي وُلدت منها: «الألوان غير واضحة».** فقاعة العميل كانت البرتقالي الصريح بنصٍّ
-/// أبيض (٣٫٢ إلى ١)، ووقتها رماديٌّ على البرتقالي (١٫٦ إلى ١) — لا يُقرأ. هذه الاختبارات تثبّت
-/// القصد لا القيم: النصّ على كل فقاعة ٧ إلى ١ فأكثر، والوقت وعلامة القراءة ٤٫٥ إلى ١ فأكثر،
-/// في الوضعين.
+/// **Born of a complaint: «الألوان غير واضحة».** The customer's bubble was once the solid brand
+/// colour with white text (3.2 to 1) and grey time on it (1.6 to 1), unreadable. These tests pin
+/// the intent rather than the values: text on each bubble at 7 to 1 or better, time and read mark
+/// at 4.5 to 1 or better, in both appearances.
 ///
 /// Arrange - Act - Assert في كل حالة.
 void main() {
@@ -58,13 +58,13 @@ void main() {
     }
   });
 
-  test('فقاعتي بلون العلامة: برتقاليةُ الدرجة في الوضعين', () {
+  test('my bubble is in the brand: the logo\'s purple, in both appearances', () {
     // Arrange
     final hues = [for (final s in schemes) HSLColor.fromColor(s.outgoingBubble).hue];
 
-    // Act - Assert — ما بين ١٠° و٣٠°، حيث `#F4622A` نفسه (١٦°).
+    // Act - Assert: within 15° of `#4C29D0` itself (253°).
     for (final hue in hues) {
-      expect(hue, inInclusiveRange(10, 30));
+      expect(hue, inInclusiveRange(238, 268));
     }
   });
 }

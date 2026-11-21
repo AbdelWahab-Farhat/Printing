@@ -3,22 +3,21 @@
   The one place Android needs to know the app's colour.
 
   The window is painted by the OS before Flutter has drawn a frame, so `ColorScheme` cannot
-  reach it — this has to be stated again here. It is the design's `#0F2138`, and it matters:
-  the default is white, which means a white flash on every cold start of an app that is navy.
+  reach it, and it has to be stated again here. This is the daylight page,
+  `MaterialTheme.lightScheme.surface`; `values-night/colors.xml` holds the night one. Without
+  the pair, a phone in dark mode would flash the light page on every cold start, or the other
+  way round.
 
-  Kept in step with `MaterialTheme.darkScheme.surface` by hand. There is no generator between
-  the two, and this is the only duplicate of that value in the project.
+  Kept in step with `theme.dart` by hand. There is no generator between the two.
 -->
 <resources>
-    <color name="brand_surface">#0F2138</color>
+    <color name="brand_surface">#F7F6FB</color>
 
     <!--
       Written by `dart run flutter_launcher_icons` from `adaptive_icon_background` in
       pubspec.yaml, and rewritten every time it runs. Change it there, not here.
 
-      It is the logo artwork's own navy, half a shade off `brand_surface` above — the icon is
-      cut against one and the window painted with the other, and neither is ever drawn touching
-      the other.
+      White, because the Daaya logo was drawn on white.
     -->
-    <color name="ic_launcher_background">#16243c</color>
+    <color name="ic_launcher_background">#ffffff</color>
 </resources>

@@ -183,11 +183,13 @@ class _Steps extends StatelessWidget {
     );
   }
 
-  /// حبرٌ أخفت لما لم يُبلغ بعد ولتواريخ الخطوات، يبقى مقروءاً على لون المرحلة.
+  /// A fainter ink for steps not reached yet and for step dates, still readable on the stage's
+  /// colour.
   ///
-  /// **نهاراً حبر المرحلة نفسه ممزوجاً بخلفيتها** (٨٥٪) — قيس على الأربعة: البرتقالي والأزرق
-  /// والرملي والأخضر، وكلها فوق ٤٫٥ إلى ١. **وليلاً نصّ الصفحة** ممزوجاً بها (٧٠٪): حبر المرحلة
-  /// ليلاً مضيءٌ على خلفيةٍ داكنة، وتخفيفه نحوها ينزل به تحت ٤٫٥ إلى ١ على البرتقالي والأزرق.
+  /// **By day, the stage's own ink blended into its fill** (85%), measured on all four pills
+  /// (yellow, blue, purple and green): 5.0, 6.2, 6.5 and 5.4 to 1. **By night, the page's text**
+  /// blended into it (70%): 6.1, 6.4, 6.5 and 5.0 to 1. A stage's night ink is bright on a dark
+  /// fill, and fading it toward the fill would take it under 4.5 to 1.
   static Color _quietInk(ColorScheme scheme, ({Color background, Color foreground}) tone) =>
       scheme.brightness == Brightness.dark
       ? Color.alphaBlend(scheme.onSurface.withValues(alpha: 0.7), tone.background)

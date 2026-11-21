@@ -299,7 +299,8 @@ class _RoundProgress extends StatelessWidget {
     final scheme = context.colorScheme;
     final size = _size ?? 52.w;
 
-    // على فقاعتي ليلاً: البرتقالي على البرتقالي المحروق لا يُرى، فيُقلب الزرّ أبيض.
+    // On my bubble at night the button takes the bubble's own pair the other way round, white
+    // with purple ink, so it reads as part of the bubble rather than as a second accent on it.
     final nightMine = isMine && scheme.brightness == Brightness.dark;
     final fill = _size == null ? Colors.black45 : (nightMine ? scheme.onOutgoingBubble : scheme.primary);
     final ink = _size == null ? Colors.white : (nightMine ? scheme.outgoingBubble : scheme.onPrimary);

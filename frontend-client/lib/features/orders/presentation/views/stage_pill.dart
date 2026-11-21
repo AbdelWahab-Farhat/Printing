@@ -17,7 +17,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// **Total over [OrderStage], with no `default`.** A stage added to the API after this build
 /// shipped decodes to [OrderStage.unknown] and lands on the neutral fill — it still draws, with
 /// the server's own Arabic in it. The alternative, a `default` that guesses, is how «ملغاة»
-/// ends up wearing the same orange as «بانتظار المراجعة».
+/// ends up wearing the same yellow as «بانتظار المراجعة».
 ({Color background, Color foreground}) stageTone(ColorScheme scheme, OrderStage stage) {
   return switch (stage) {
     // Something is waiting on us, or on you — or is news you may want to ask us about.

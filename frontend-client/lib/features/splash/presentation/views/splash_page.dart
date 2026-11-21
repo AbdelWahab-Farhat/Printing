@@ -8,6 +8,7 @@ import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:dayaa_client/features/splash/presentation/viewmodel/splash_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,7 +74,7 @@ class _SplashView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _Wordmark(),
+                  const BrandMark(size: 40),
                   SizedBox(height: 36.h),
                   // The two navigating states are already on their way out; keeping the spinner
                   // under them stops the screen flashing empty as it leaves.
@@ -94,35 +95,6 @@ class _SplashView extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// «FlyerX» مكتوباً، بحجم شاشةٍ لا شريط.
-///
-/// **ليس `BrandMark`**: ذاك بلون ترويسة شاشة الدخول الكحلية — «Flyer» أبيض — وهذه الشاشة على
-/// السطح الفاتح، فيختفي عليها. والاسم لاتينيٌّ في تطبيقٍ من اليمين، فاتجاهه مثبّت.
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: 'Flyer', style: TextStyle(color: scheme.onSurface)),
-          TextSpan(text: 'X', style: TextStyle(color: scheme.primary)),
-        ],
-      ),
-      style: context.textTheme.displaySmall?.copyWith(
-        fontSize: 44.sp,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -0.5,
-        height: 1.1,
-      ),
-      textDirection: TextDirection.ltr,
     );
   }
 }

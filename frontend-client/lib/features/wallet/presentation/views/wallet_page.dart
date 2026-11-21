@@ -10,6 +10,7 @@ import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/utils/dates.dart';
 import 'package:dayaa_client/core/utils/fixed_point.dart';
 import 'package:dayaa_client/core/widgets/app_card.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:dayaa_client/core/widgets/filter_option_chip.dart';
 import 'package:dayaa_client/core/widgets/paged_list_view.dart';
 import 'package:dayaa_client/features/auth/models/customer_account.dart';
@@ -28,9 +29,11 @@ import 'package:go_router/go_router.dart';
 
 /// «محفظتي»: الرصيد، وكل ما دخلها وخرج منها. Docs/payments/CUSTOMER-WALLET.md.
 ///
-/// **تصميم «بطاقة FlyerX»** (ب، اختاره صاحب العمل ٢٠٢٦-١٠-١٦ من لوحة التصميم): بطاقةٌ كحلية عليها
-/// «X» العلامة البرتقالية، بالرصيد والاسم والرمز وحدها — بلا جملةٍ تشرح المحفظة. تحتها «شحن المحفظة»
-/// بشعارات طرق الدفع، ثم المعاملات سطراً سطراً تحت أيامها.
+/// **The brand card design** (option B, chosen by the owner on 2026-10-16 from the design board,
+/// first drawn as «بطاقة FlyerX»): a card on the indigo band with the Daaya mark on it, carrying
+/// only the balance, the name and the code, with no sentence explaining the wallet. Under it,
+/// «شحن المحفظة» with the payment methods' logos, then the entries line by line under their
+/// days.
 ///
 /// زرّ الشحن يغيب ما دام الشحن الإلكتروني مطفأً — فلا زرّ لا يعمل.
 class WalletPage extends StatelessWidget {
@@ -211,17 +214,15 @@ class _HeaderState extends State<_Header> {
   }
 }
 
-/// البطاقة: كحليّ الترويسة (`HeaderTone`) لا لون الصفحة، فتبقى بطاقةً في الوضعين، وعليها «X»
-/// العلامة — شريطان متقاطعان، البرتقالي الصريح فوق طرفه الأعمق، كأيقونة التطبيق. ثم «الرصيد» والرقم،
-/// والاسم والرمز في أسفلها. لا ظلّ: البطاقة تنفصل عن الصفحة بلونها.
+/// The card: the header band's indigo (`HeaderTone`), not the page's colour, so it stays a card
+/// in both appearances, with the Daaya mark in the logo's own three colours across its far
+/// corner, cut by the card's edge. Then «الرصيد» and the number, and the name and code at the
+/// bottom. No shadow: the card separates from the page by its colour.
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({required this.balance, required this.customer});
 
   final String? balance;
   final CustomerAccount? customer;
-
-  /// ميل شريطي «X» — ٣٤°.
-  static const _tilt = 34 * math.pi / 180;
 
   @override
   Widget build(BuildContext context) {
@@ -240,19 +241,19 @@ class _BalanceCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          for (final (angle, color) in [(-_tilt, scheme.primaryDeep), (_tilt, scheme.primary)])
-            PositionedDirectional(
-              end: 46.w,
-              top: -77.h,
-              child: Transform.rotate(
-                angle: angle,
-                child: Container(
-                  width: 62.w,
-                  height: 374.h,
-                  decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(31.r)),
-                ),
+          PositionedDirectional(
+            end: -64.w,
+            top: -40.h,
+            width: 260.w,
+            height: 260.w,
+            child: CustomPaint(
+              painter: DaayaMarkPainter(
+                fill: scheme.brandYellow,
+                firstLine: scheme.brand,
+                secondLine: scheme.brandGreen,
               ),
             ),
+          ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 22.h),
             child: Column(
@@ -342,7 +343,7 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-/// «شحن المحفظة»: بطاقةٌ بعرض الشاشة، دائرةٌ برتقالية بعلامة الزيادة، والاسم، وتحته **شعارات الطرق
+/// «شحن المحفظة»: بطاقةٌ بعرض الشاشة، دائرةٌ صفراء بعلامة الزيادة، والاسم، وتحته **شعارات الطرق
 /// كلها** — فيعرف الزبون قبل أن يلمس بأيّ شيءٍ يشحن (صاحب العمل ٢٠٢٦-١٠-١٦: «كل صور طرق الدفع…
 /// كلهم»). اللمسة تفتح ورقة الشحن.
 class _TopUpButton extends StatelessWidget {
@@ -366,8 +367,8 @@ class _TopUpButton extends StatelessWidget {
               Container(
                 width: 44.w,
                 height: 44.w,
-                decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
-                child: Icon(AppIcons.add, color: scheme.onPrimary, size: 24.sp),
+                decoration: BoxDecoration(color: scheme.primaryContainer, shape: BoxShape.circle),
+                child: Icon(AppIcons.add, color: scheme.onPrimaryContainer, size: 24.sp),
               ),
               SizedBox(width: 12.w),
               Expanded(
@@ -603,9 +604,10 @@ class _EntryRow extends StatelessWidget {
   }
 }
 
-/// ما يقف على طرف السطر: **شعار الطريقة** لشحنٍ إلكتروني أو برصيد ليبيانا، وإلا أيقونة النوع على
-/// لونه — الشحن أخضر، ودفع الطلبية برتقالي العلامة، والردّ أزرق «قيد المعالجة»، والتعديل والعكس
-/// محايدان. حركةٌ أُلغيت رماديةٌ كلها.
+/// What stands at the row's edge: **the method's logo** for an online or Libyana top-up, and
+/// otherwise the type's icon on its colour: top-ups green, order payments in the accent, refunds
+/// the blue of «قيد المعالجة», adjustments and reversals neutral. A cancelled entry is grey
+/// throughout.
 class _EntryIcon extends StatelessWidget {
   const _EntryIcon({required this.entry});
 
@@ -642,7 +644,7 @@ class _EntryIcon extends StatelessWidget {
         scheme.paid.withValues(alpha: .12),
         scheme.paid,
       ),
-      'order_payment' => (AppIcons.orders, scheme.primary.withValues(alpha: .12), scheme.primaryDeep),
+      'order_payment' => (AppIcons.orders, scheme.primary.withValues(alpha: .12), scheme.primary),
       'order_refund' => (AppIcons.refund, scheme.infoContainer, scheme.onInfoContainer),
       'reversal' => (AppIcons.undo, scheme.surfaceContainerHigh, scheme.onSurfaceVariant),
       _ => (AppIcons.edit, scheme.surfaceContainerHigh, scheme.onSurfaceVariant),

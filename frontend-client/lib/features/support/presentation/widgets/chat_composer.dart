@@ -134,14 +134,14 @@ class _SendKey extends StatelessWidget {
                 opacity: active ? 1 : 0,
                 duration: instant ? Duration.zero : const Duration(milliseconds: 160),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: scheme.primaryContainer, shape: BoxShape.circle),
                   child: const SizedBox.expand(),
                 ),
               ),
               Icon(
                 AppIcons.send,
                 size: 22.sp,
-                color: active ? scheme.onPrimary : scheme.onSurfaceVariant,
+                color: active ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
               ),
             ],
           ),

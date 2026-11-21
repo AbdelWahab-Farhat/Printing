@@ -173,8 +173,8 @@ class _Dial extends StatelessWidget {
       child: SpeedDial(
         icon: AppIcons.more,
         activeIcon: AppIcons.close,
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        backgroundColor: scheme.primaryContainer,
+        foregroundColor: scheme.onPrimaryContainer,
         overlayColor: scheme.scrim,
         overlayOpacity: 0.4,
         spacing: 12,

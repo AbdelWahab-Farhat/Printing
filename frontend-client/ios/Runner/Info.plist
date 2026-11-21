@@ -8,10 +8,11 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<!--
-	متغيّرٌ لا نصّ: نكهةُ الاختبار تحمل اسماً آخر تحت الأيقونة، وهذا الملفُّ واحدٌ للنكهتين.
-	القيمةُ الفعلية في `APP_DISPLAY_NAME` على كل تهيئة في project.pbxproj — «FlyerX تجريبي»
-	لـ`*-dev`. و`INFOPLIST_KEY_CFBundleDisplayName` لا ينفع هنا: لا يقرؤه Xcode إلا حين يولّد
-	الـplist بنفسه، ومشروع Flutter يشير إلى ملفٍّ صريح.
+	A variable, not text: the test flavour carries another name under its icon, and this one
+	file serves both flavours. The real value is `APP_DISPLAY_NAME` on each configuration in
+	project.pbxproj: «دعاية» for production and «دعاية تجريبي» for `*-dev`.
+	`INFOPLIST_KEY_CFBundleDisplayName` does not work here: Xcode only reads it when it
+	generates the plist itself, and a Flutter project points at an explicit file.
 	-->
 	<string>$(APP_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
@@ -42,7 +43,7 @@
 	     ذهبت صورته إلى «الملفات» بدلها. و«حفظ الصورة» في ورقة المشاركة (رمز QR، معاينة الكيس)
 	     يحتاجه أيضاً، وبدونه يُغلق التطبيق عند الحفظ. -->
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>يحفظ FlyerX تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
+	<string>يحفظ تطبيق دعاية تصاميمك ورمز QR ومعاينة الكيس في صورك حين تطلب ذلك.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

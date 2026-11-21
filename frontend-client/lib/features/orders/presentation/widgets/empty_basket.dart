@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:dayaa_client/core/router/app_router.dart';
-import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_button.dart';
@@ -99,14 +98,16 @@ class _ThemeColors extends ColorMapper {
   });
 
   factory _ThemeColors.of(ColorScheme scheme) => _ThemeColors(
-    bag: scheme.primary,
-    side: scheme.primaryDeep,
-    // الجوف: الطرف الأعمق نحو الظلّ، ليُقرأ فتحةً لا غطاءً.
-    inside: Color.lerp(scheme.primaryDeep, scheme.shadow, 0.4)!,
+    // The brand's yellow at both times of day, like every other filled thing in the app; the
+    // side and handles a shade deeper, and the inside deeper again, so it reads as an opening
+    // rather than a lid.
+    bag: scheme.primaryContainer,
+    side: Color.lerp(scheme.primaryContainer, scheme.shadow, 0.22)!,
+    inside: Color.lerp(scheme.primaryContainer, scheme.shadow, 0.5)!,
     disc: scheme.surfaceContainerHigh,
     ground: scheme.surfaceContainerHighest,
     spark: scheme.onSurfaceVariant,
-    print: scheme.onPrimary,
+    print: scheme.onPrimaryContainer,
   );
 
   final Color bag;

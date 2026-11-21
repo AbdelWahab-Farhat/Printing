@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The daylight palette, checked rather than eyeballed.
 ///
-/// **Every hex in [MaterialTheme.lightScheme] is reasoned, not drawn.** The mockup specifies one
-/// appearance — the dark one — so the light scheme was derived from it, and a derived palette is
-/// exactly the kind that looks fine to the person who wrote it and is unreadable on somebody
-/// else's screen in the sun. So the pairs that carry text are measured here against WCAG, and the
-/// invariants that make it *the same app* rather than a second brand are asserted.
+/// **Every hex in [MaterialTheme.lightScheme] is reasoned from the logo, not drawn by a
+/// designer**, and a reasoned palette is exactly the kind that looks fine to the person who wrote
+/// it and is unreadable on somebody else's screen in the sun. So the pairs that carry text are
+/// measured here against WCAG, and the invariants that make it *the same app* by day and by night
+/// are asserted.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
@@ -55,24 +55,26 @@ void main() {
   });
 
   group('it is the same app', () {
-    test('the brand does not change with the time of day', () {
-      // An orange that moved between light and dark would be two brands.
-      expect(MaterialTheme.lightScheme.primary, MaterialTheme.darkScheme.primary);
-      expect(MaterialTheme.lightScheme.onPrimary, MaterialTheme.darkScheme.onPrimary);
-    });
-
-    test('a selected chip stays solid, as it is in the dark', () {
-      // The design fills a selected chip with the brand and puts white on it; Material's muted
-      // container convention is the thing this palette deliberately does not follow.
+    test('the brand\'s fill does not change with the time of day', () {
+      // The yellow is the brand, and every button and selected chip is filled with it. A yellow
+      // that moved between light and dark would be two brands.
       expect(
         MaterialTheme.lightScheme.primaryContainer,
-        MaterialTheme.lightScheme.primary,
+        MaterialTheme.darkScheme.primaryContainer,
+      );
+      expect(
+        MaterialTheme.lightScheme.onPrimaryContainer,
+        MaterialTheme.darkScheme.onPrimaryContainer,
       );
     });
 
+    test('at night the fill and the accent are one colour, so nothing looks split', () {
+      expect(MaterialTheme.darkScheme.primary, MaterialTheme.darkScheme.primaryContainer);
+    });
+
     test('the surface ladder climbs, step by step', () {
-      // Dark stacks navy upward from the page; light stacks blue-grey downward from white. Either
-      // way a card has to be distinguishable from the page and a border from the card.
+      // Dark stacks indigo upward from the page; light stacks lavender-grey downward from white.
+      // Either way a card has to be distinguishable from the page and a border from the card.
       const scheme = MaterialTheme.lightScheme;
       final ladder = [
         scheme.surfaceContainerLowest,
@@ -130,9 +132,22 @@ void main() {
       }
     });
 
+    test('the accent reads as text on the page', () {
+      // **Why `primary` is purple by day.** It is the colour of links, prices and the active tab,
+      // all text, and the brand yellow on white is 1.4 to 1.
+      const scheme = MaterialTheme.lightScheme;
+
+      expect(contrast(scheme.primary, scheme.surface), greaterThanOrEqualTo(aa));
+      expect(contrast(scheme.primary, scheme.surfaceContainer), greaterThanOrEqualTo(aa));
+    });
+
     test('a filled button, an error, and the saving notice', () {
       const scheme = MaterialTheme.lightScheme;
 
+      expect(
+        contrast(scheme.onPrimaryContainer, scheme.primaryContainer),
+        greaterThanOrEqualTo(aa),
+      );
       expect(contrast(scheme.onPrimary, scheme.primary), greaterThanOrEqualTo(aaLarge));
       expect(contrast(scheme.onError, scheme.error), greaterThanOrEqualTo(aaLarge));
       expect(

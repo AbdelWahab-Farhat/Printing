@@ -12,8 +12,10 @@ import 'package:go_router/go_router.dart';
 /// رصيد «محفظتي» في حبّةٍ خفيفة بطرف الشريط العلوي: أيقونة المحفظة و«200 د.ل»، وتفتح «محفظتي»
 /// بلمسة (طلب المستخدم، 2026-10-16).
 ///
-/// **خفيفةٌ بلون التبويب النشط في الشريط السفلي**: البرتقالي نفسه بشفافيته، فتُقرأ من العلامة
-/// لا زرّاً يُلحّ. والرقم بلون النص لا بالبرتقالي: رقمٌ برتقالي على برتقاليٍّ فاتح لا يُقرأ.
+/// **Light, in the colour of the active tab in the bottom bar**: the accent itself at low
+/// opacity, so it reads as part of the brand rather than a button pressing for attention. The
+/// number is in the text colour, not the accent: an accent number on a pale tint of itself does
+/// not read.
 ///
 /// **تُرسم دائماً، و«…» مكان الرقم حتى يصل**: هي في الطرف، ولو ظهرت متأخرةً لدفعت الدعم والسلة
 /// إلى الداخل.

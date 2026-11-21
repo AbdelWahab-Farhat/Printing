@@ -35,12 +35,12 @@ class DayaaClientApp extends StatelessWidget {
         return BlocBuilder<ThemeModeCubit, ThemeMode>(
           bloc: sl<ThemeModeCubit>(),
           builder: (context, themeMode) => MaterialApp.router(
-            title: 'FlyerX',
+            title: 'دعاية',
             debugShowCheckedModeBanner: false,
-            // **Both palettes ship, and the phone chooses by default.** The mockup was drawn in
-            // the dark one and that is still the app's own appearance — see `MaterialTheme.light`
-            // for how the daylight scheme is reasoned out of it rather than drawn. Somebody who
-            // wants one or the other regardless says so on «حسابي»; see [ThemeModeCubit].
+            // **Both palettes ship, and the phone chooses by default.** Both are derived from the
+            // Daaya logo; see `MaterialTheme` for which of its three colours does what in each.
+            // Somebody who wants one or the other regardless says so on «حسابي»; see
+            // [ThemeModeCubit].
             theme: theme.light(),
             darkTheme: theme.dark(),
             themeMode: themeMode,

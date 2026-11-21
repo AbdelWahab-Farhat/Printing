@@ -12,8 +12,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// دائرةٌ بلون حال التذكرة، ثم الموضوع ووقتُ آخر رسالة، وتحتهما آخرُ ما قيل وعددُ ما لم يُقرأ.
 /// **الموضوع بحجم العنوان والباقي بحجم النص** — سطور القوائم لا تنزل إلى حجم التعليق.
 ///
-/// **العدد في دائرةٍ برتقالية لا حمراء.** ردُّ المحل ما جاء العميل ينتظره، لا خطأٌ ينبَّه إليه؛
-/// والأحمر في هذا التطبيق لما انكسر.
+/// **The count sits in a circle of the accent, not red.** The shop's reply is what the customer
+/// came back for, not an error to be warned about; red in this app is for what broke.
 class TicketRow extends StatelessWidget {
   const TicketRow({required this.ticket, required this.onOpen, super.key});
 

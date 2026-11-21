@@ -1,159 +1,171 @@
 import 'package:flutter/material.dart';
 
-/// The one colour the generated scheme does not contain: **settled green.**
+/// The one colour the scheme does not contain: **settled green**, the logo's third colour.
 ///
-/// Everywhere else in this app the rule holds and is worth restating — colours come out of
-/// `ColorScheme`, never out of a `Color(0xff…)` at the call site. `theme.dart` owns every hex in
-/// the product; one written into a widget stops matching the moment the palette moves.
-///
-/// **`StockTone` used to live beside this and has been removed.** It was «تحت الحد» for the
-/// staff app's balances screen — a screen this app does not have — and its amber sat a few
-/// degrees from the new orange `primary`, so a warning would have read as the app's own accent.
+/// Everywhere else in this app the rule holds and is worth restating: colours come out of
+/// `ColorScheme`, never out of a `Color(0xff…)` at the call site. `theme.dart` owns the scheme's
+/// hexes; one written into a widget stops matching the moment the palette moves.
 ///
 /// This file is the deliberate exception, and it is written as an exception rather than as a
 /// habit: Material 3 ships three accents and an error, and has **no success role**. «مدفوعة
-/// بالكامل» was taking `primary`, which is the same teal as «سعر الطلبية» directly beneath it and
-/// as half the app besides — so the one state a person scans a list of orders *for* was drawn in
-/// the colour of everything. Green says «انتهى» without being read.
+/// بالكامل» and «تم الاستلام» are the states a person scans a list of orders *for*, and drawn in
+/// the accent they would look like everything else. Green says «انتهى» without being read.
 ///
-/// Kept out of `theme.dart` on purpose: that file is regenerated, and anything added to it is
-/// lost the next time somebody re-exports the palette. Kept as an extension on `ColorScheme`
-/// rather than a `ThemeExtension` for the same reason — a `ThemeExtension` has to be registered
-/// inside the generated `ThemeData`.
+/// **It is the logo's green** (`#57937F`, 160°), so all three of the logo's colours have a job:
+/// yellow fills, purple draws lines, green says done. The values below are that hue at the
+/// lightness each appearance needs.
 ///
-/// Three values, following the same tonal shape the rest of the scheme uses, so the pair reads
-/// correctly in either brightness:
+/// Kept as an extension on `ColorScheme` rather than a `ThemeExtension`: a `ThemeExtension` has
+/// to be registered inside `ThemeData`, and these are read in places that only hold a scheme.
 ///
-/// * [paid] — for text and outlines on a plain surface.
-/// * [paidContainer] — the pale fill, «الأخضر الباهت».
-/// * [onPaidContainer] — what stays readable on top of that fill.
+/// * [paid]: for text and outlines on a plain surface.
+/// * [paidContainer]: the pale fill, «الأخضر الباهت».
+/// * [onPaidContainer]: what stays readable on top of that fill.
 ///
-/// **All three sit at 140°.** The band was chosen when `primary` was the staff app's teal, which
-/// the green had to be pulled away from; against this app's orange it has an easier job and the
-/// values are kept as they are rather than re-tuned for the sake of it.
 /// `app_tones_test.dart` pins the band and the distance from `primary` rather than these six
-/// values, so the intent survives a change of palette — as it just did.
+/// values, so the intent survives a change of palette.
 extension PaymentTone on ColorScheme {
   bool get _isDark => brightness == Brightness.dark;
 
-  Color get paid => _isDark ? const Color(0xff8fd4a6) : const Color(0xff38714b);
+  Color get paid => _isDark ? const Color(0xff86cdb3) : const Color(0xff2f6b57);
 
-  Color get paidContainer => _isDark ? const Color(0xff235032) : const Color(0xffc4ecd1);
+  Color get paidContainer => _isDark ? const Color(0xff1f4a3c) : const Color(0xffc9ebdd);
 
-  Color get onPaidContainer => _isDark ? const Color(0xffc4ecd1) : const Color(0xff235032);
+  Color get onPaidContainer => _isDark ? const Color(0xffbdebd9) : const Color(0xff1f4a3c);
 }
 
 /// The three pill fills the design draws that `ColorScheme` has no role for.
 ///
 /// **Only containers, and that is the whole of the claim.** The design colours one thing with
-/// these — the little rounded pill that says where an order or a ticket has got to — and never
+/// these, the little rounded pill that says where an order or a ticket has got to, and never
 /// text on a plain surface. So the extension carries a fill and the ink that survives on it, and
-/// nothing else: a `stageAttention` usable as a border or a label would be an invitation to
-/// spread a fourth accent through an app that has one.
+/// nothing else.
 ///
-/// * [attentionContainer] — «بانتظار المراجعة», «مفتوحة». The dark orange wash, not
-///   `primaryContainer`: that one is the *solid* `#F4622A` this app fills a selected chip with,
-///   and a row of solid-orange pills down a list would read as a row of buttons.
-/// * [infoContainer] — «قيد التصميم», «قيد المعالجة». Under way, nothing wanted from you.
-/// * [pendingContainer] — «جاري التوصيل». Moving, and close.
+/// * [attentionContainer]: «بانتظار المراجعة», «مفتوحة». A wash of the brand yellow, not
+///   `primaryContainer`: that one is the *solid* yellow this app fills buttons and selected
+///   chips with, and a row of solid-yellow pills down a list would read as a row of buttons.
+/// * [infoContainer]: «قيد التصميم», «قيد المعالجة». Under way, nothing wanted from you.
+/// * [pendingContainer]: «جاري التوصيل». Moving, and close. A wash of the logo's purple; it
+///   used to be amber, and amber beside the yellow attention pill read as the same state.
 ///
 /// «تم الاستلام» and «مغلقة» take [PaymentTone.paidContainer] and the scheme's own
-/// `surfaceContainerHigh` respectively. Neither needed a new value, and a stage this app has not
-/// heard of takes the neutral one — see `stageTone` in `orders_page.dart`, which is total over
-/// `OrderStage` so a colourless pill is impossible.
+/// `surfaceContainerHigh` respectively. A stage this app has not heard of takes the neutral one;
+/// see `stageTone` in `stage_pill.dart`, which is total over `OrderStage`.
 extension StageTone on ColorScheme {
   bool get _dark => brightness == Brightness.dark;
 
-  Color get attentionContainer => _dark ? const Color(0xff3a2013) : const Color(0xffffdccd);
+  Color get attentionContainer => _dark ? const Color(0xff34350f) : const Color(0xfff0f1b5);
 
-  Color get onAttentionContainer => _dark ? const Color(0xfff4622a) : const Color(0xff6a2508);
+  Color get onAttentionContainer => _dark ? const Color(0xffd5d74d) : const Color(0xff4f5100);
 
   Color get infoContainer => _dark ? const Color(0xff12304a) : const Color(0xffcfe4f8);
 
   Color get onInfoContainer => _dark ? const Color(0xff5aa9e6) : const Color(0xff0d3a5c);
 
-  Color get pendingContainer => _dark ? const Color(0xff3a2c10) : const Color(0xfff7e3ba);
+  Color get pendingContainer => _dark ? const Color(0xff2a2363) : const Color(0xffe4dfff);
 
-  Color get onPendingContainer => _dark ? const Color(0xffe0a83c) : const Color(0xff5a3f05);
+  Color get onPendingContainer => _dark ? const Color(0xffb9acff) : const Color(0xff33208f);
 }
 
-/// الطرف الأعمق من برتقالي العلامة، لتدرّج بطاقة الحساب في «حسابي».
+/// The brand's own surfaces: the account card on «حسابي», and the plate under logos.
 ///
-/// **لماذا لا يكفي `primary` وحده:** الأبيض على `#F4622A` تباينه ٣٫٢ إلى ١، وهذا يكفي لاسمٍ
-/// بخطٍّ كبير ولا يكفي لرقم هاتفٍ بحجم النص. التدرّج يضع النص على هذا الطرف (٤٫٧ إلى ١) ويُبقي
-/// البرتقالي الصريح في الزاوية المقابلة، فتبقى البطاقة بلون العلامة ويُقرأ ما عليها. الدرجة نفسها
-/// (١٦°)، والإضاءة وحدها أخفض.
+/// **One value for both appearances.** These are drawn in the brand's colours, not the page's,
+/// so they do not change with the time of day, the same way a printed card does not.
 ///
-/// **قيمةٌ واحدة للوضعين:** البطاقة بلون العلامة لا بلون الصفحة، فلا تتبدّل مع المظهر، كما لا
-/// يتبدّل `primary` نفسه. `app_tones_test.dart` يثبّت التباين والدرجة، لا القيمة.
+/// * [brand]: the logo's purple, `#4C29D0`. The account card's far corner.
+/// * [brandDeep]: the same hue, darker. The card's gradient ends here, under the text.
+/// * [onBrand]: white. 8.3 to 1 on [brand] and 13.6 to 1 on [brandDeep], so the phone number
+///   reads at body size anywhere on the card.
+///
+/// **Purple, not the yellow, and on purpose.** White text cannot sit on yellow, and dark text on
+/// a yellow card would make the brand's loudest colour the largest thing on the screen. The
+/// logo puts its yellow inside a purple line; the card does the same, with the customer code as
+/// the one yellow thing on it.
+///
+/// `app_tones_test.dart` pins the contrast and the hue, not the values.
 extension BrandTone on ColorScheme {
-  Color get primaryDeep => const Color(0xffcf410b);
+  Color get brand => const Color(0xff4c29d0);
 
-  /// الورقة تحت شعار طريقة دفع (ون باي، ليبيانا…) — **بيضاء في الوضعين**: الشعارات مرسومةٌ
-  /// للأبيض، وعلى كحليّ الليل يختفي نصُّ «موبي كاش» و«يسر باي» الداكن.
+  Color get brandDeep => const Color(0xff2a1880);
+
+  Color get onBrand => const Color(0xffffffff);
+
+  /// The logo's yellow and green, for painting the mark itself (`DaayaMarkPainter`). The yellow
+  /// equals `primaryContainer` in both schemes today; it is named here so the mark does not
+  /// change colour if the scheme ever does.
+  Color get brandYellow => const Color(0xffd5d74d);
+
+  Color get brandGreen => const Color(0xff57937f);
+
+  /// The sheet under a logo: the Daaya mark itself, or a payment method's (ون باي، ليبيانا…).
+  /// **White in both appearances**: the logos are drawn for white, and on the night surface the
+  /// mark's purple outline and the dark text in «موبي كاش» and «يسر باي» disappear.
   Color get logoPlate => const Color(0xffffffff);
 }
 
-/// الترويسة الكحلية فوق شاشتي الدخول وإنشاء الحساب، والنصّ الذي يُكتب عليها.
+/// The band above the sign-in and sign-up screens, and the wallet card; and the text on them.
 ///
-/// **كحليّةٌ في الوضعين، ولذلك هي هنا لا في `ColorScheme`.** لا دور في المخطط يكون كحلياً في
-/// النهار والليل معاً: كحليّ الوضع الداكن هو `surface`، وكحليّ الوضع الفاتح هو `onSurface` — لونُ
-/// نصٍّ لا خلفية.
+/// **A deep indigo in both appearances, which is why it lives here and not in `ColorScheme`.**
+/// No role in the scheme is dark both by day and by night: the dark page is `surface`, and the
+/// light scheme's indigo is `onSurface`, a text colour, not a fill.
 ///
-/// * [header] — `#0F2138` في النهار كما في التصميم؛ وفي الليل أعمق درجةً من الصفحة التي هي
-///   `#0F2138` نفسها، كي تبقى الترويسة شريطاً فوق الصفحة لا امتداداً لها.
-/// * [onHeader] — العنوان والشعار: أبيض.
-/// * [onHeaderVariant] — السطر تحت العنوان، `#9FB0C8` من التصميم.
+/// * [header]: the logo's purple hue taken almost to black in daylight; at night one step below
+///   the page, so the band still reads as a band above it instead of a continuation of it.
+/// * [onHeader]: the title and the brand mark's name. White.
+/// * [onHeaderVariant]: the line under the title. A lavender, 8 to 1 or better on the band.
 ///
-/// `app_tones_test.dart` يثبّت الكحلي والتباين، لا القيم.
+/// `app_tones_test.dart` pins the hue and the contrast, not the values.
 extension HeaderTone on ColorScheme {
   bool get _night => brightness == Brightness.dark;
 
-  Color get header => _night ? const Color(0xff0a1826) : const Color(0xff0f2138);
+  Color get header => _night ? const Color(0xff0b0919) : const Color(0xff1b1449);
 
   Color get onHeader => const Color(0xffffffff);
 
-  Color get onHeaderVariant => const Color(0xff9fb0c8);
+  Color get onHeaderVariant => const Color(0xffb8b0e8);
 }
 
-/// ألوان محادثة الدعم: فقاعتي، وفقاعة الدعم، وما خلفهما.
+/// The support chat's colours: my bubble, the support bubble, and what is behind them.
 ///
-/// **وُلدت من شكوى: «الألوان غير واضحة».** كانت فقاعة العميل `primaryContainer` — البرتقالي الصريح
-/// — بنصٍّ أبيض تباينه ٣٫٢ إلى ١، ووقتُها بلون `onSurfaceVariant` الرمادي على البرتقالي: ١٫٦ إلى
-/// ١، لا يُقرأ. فالقاعدة هنا ما يفعله تطبيق المحادثة المرجع (تيليغرام): **فقاعتي بلون العلامة
-/// باهتاً والنصُّ عليها بالحبر**، لا العلامة صريحةً والنصّ أبيض عليها.
+/// **Born of a complaint: «الألوان غير واضحة».** The customer's bubble was once the solid brand
+/// colour with white text and grey time on it, and the time did not read. So the rule here is
+/// what the reference chat app (Telegram) does: **my bubble is a tint of the brand, and the text
+/// on it is ink**, not the brand at full strength with white on it.
 ///
-/// * نهاراً: فقاعتي خوخيّةٌ `#FFE3D4` بالحبر الكحلي، وفقاعة الدعم بيضاء، وكلتاهما على خلفيةٍ
-///   أزرق رمادية أغمق قليلاً من الصفحة كي تُرى حوافّ البيضاء. والشعرة حولهما كما في `AppCard`:
-///   الفقاعات تنفصل بالتعبئة والشعرة، بلا ظلّ.
-/// * ليلاً: فقاعتي برتقاليٌّ محروق `#8F3510` بنصٍّ أبيض (٧٫٨ إلى ١)، وفقاعة الدعم كحليّة.
+/// * By day: my bubble is a pale lavender with indigo ink, the support bubble is white, and both
+///   sit on a backdrop a little darker than the page so the white one's edges show. The hairline
+///   around them is the same as on `AppCard`: bubbles separate by fill and hairline, no shadow.
+/// * By night: my bubble is a deep purple with white text, the support bubble is indigo.
 ///
-/// **الوقت وعلامة القراءة بلونٍ واحد على كل فقاعة**، كما في المرجع: ✓ و✓✓ تُفرَّقان بعددهما لا
-/// بلونهما. `chat_tone_test.dart` يثبّت التباين (النصّ ٧ إلى ١، الوقت ٤٫٥ إلى ١) لا القيم.
+/// **Purple, not the yellow.** A yellow tint by day and an olive by night are two different
+/// colours; the logo's purple keeps its hue in both, and the yellow stays the colour of the send
+/// button beside it.
+///
+/// **The time and the read mark are one colour on each bubble**, as in the reference: ✓ and ✓✓
+/// differ by count, not by colour. `chat_tone_test.dart` pins the contrast (text 7 to 1, time
+/// 4.5 to 1) and the hue, not the values.
 extension ChatTone on ColorScheme {
   bool get _chatNight => brightness == Brightness.dark;
 
-  /// ما خلف الفقاعات، بين شريط العنوان وصندوق الكتابة.
-  Color get chatBackdrop => _chatNight ? const Color(0xff0a1826) : const Color(0xffecf1f7);
+  /// What is behind the bubbles, between the title bar and the composer.
+  Color get chatBackdrop => _chatNight ? const Color(0xff0b0919) : const Color(0xffecebf5);
 
-  Color get outgoingBubble => _chatNight ? const Color(0xff8f3510) : const Color(0xffffe3d4);
+  Color get outgoingBubble => _chatNight ? const Color(0xff3a2a8c) : const Color(0xffe6e1ff);
 
-  Color get onOutgoingBubble => _chatNight ? const Color(0xffffffff) : const Color(0xff0f2138);
+  Color get onOutgoingBubble => _chatNight ? const Color(0xffffffff) : const Color(0xff15122b);
 
-  /// الوقت وعلامة القراءة على فقاعتي.
-  Color get outgoingMeta => _chatNight ? const Color(0xffffc9b3) : const Color(0xffa8410f);
+  /// The time and the read mark on my bubble.
+  Color get outgoingMeta => _chatNight ? const Color(0xffcfc6ff) : const Color(0xff4c29d0);
 
-  /// شعرة فقاعتي. ليلاً لا شعرة: البرتقالي المحروق يبين وحده على الكحلي.
-  Color get outgoingBubbleEdge =>
-      _chatNight ? const Color(0x00000000) : const Color(0xfff6cdb9);
+  /// My bubble's hairline. None at night: the purple stands out from the indigo on its own.
+  Color get outgoingBubbleEdge => _chatNight ? const Color(0x00000000) : const Color(0xffd3cbfa);
 
-  Color get incomingBubble => _chatNight ? const Color(0xff1a3652) : const Color(0xffffffff);
+  Color get incomingBubble => _chatNight ? const Color(0xff1f1b3e) : const Color(0xffffffff);
 
-  Color get onIncomingBubble => _chatNight ? const Color(0xffe8eef5) : const Color(0xff0f2138);
+  Color get onIncomingBubble => _chatNight ? const Color(0xffeceaf6) : const Color(0xff15122b);
 
-  /// الوقت على فقاعة الدعم.
-  Color get incomingMeta => _chatNight ? const Color(0xff8fa3ba) : const Color(0xff56708c);
+  /// The time on the support bubble.
+  Color get incomingMeta => _chatNight ? const Color(0xffa8a3c6) : const Color(0xff5c5880);
 
-  Color get incomingBubbleEdge =>
-      _chatNight ? const Color(0x00000000) : const Color(0xffdce5ef);
+  Color get incomingBubbleEdge => _chatNight ? const Color(0x00000000) : const Color(0xffdddaec);
 }

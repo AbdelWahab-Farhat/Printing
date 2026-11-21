@@ -4,7 +4,7 @@ import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
 import 'package:dayaa_client/core/widgets/app_text_link.dart';
-import 'package:dayaa_client/features/auth/presentation/views/brand_mark.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -133,13 +133,16 @@ class _Header extends StatelessWidget {
               color: scheme.header,
               child: Stack(
                 children: [
+                  // The Daaya mark, large and faint behind the band's far corner, cut by its
+                  // lower edge. In the logo's yellow: the band is indigo at both times of day,
+                  // and `primary` is purple by day, which would not show on it.
                   PositionedDirectional(
-                    end: -51.w,
-                    bottom: -116.w,
-                    width: 221.w,
-                    height: 308.w,
+                    end: -86.w,
+                    bottom: -120.w,
+                    width: 300.w,
+                    height: 300.w,
                     child: CustomPaint(
-                      painter: _WatermarkPainter(scheme.primary.withValues(alpha: 0.13)),
+                      painter: DaayaMarkPainter.single(scheme.brandYellow, opacity: 0.14),
                     ),
                   ),
                 ],
@@ -153,7 +156,7 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BrandMark(),
+              BrandMark(size: 34, color: scheme.onHeader),
               SizedBox(height: 23.5.h),
               Text(
                 title,
@@ -189,45 +192,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// حرف X كبير بلون العلامة الخافت خلف طرف الترويسة، يقطعه حدّها السفلي.
-///
-/// **ذراعان بطرفين مستويين، مرسومان مرةً واحدة.** كل ذراعٍ متوازي أضلاع؛ واتحادهما مسارٌ واحد
-/// يُرسم مرة، وإلا تضاعفت الشفافية حيث يتقاطعان فاسودّ وسط الحرف.
-class _WatermarkPainter extends CustomPainter {
-  const _WatermarkPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    // عرض الذراع أفقياً: ٥٧ من ٢٠٠٫٥ في التصميم.
-    final arm = w * 0.284;
-
-    final falling = Path()
-      ..moveTo(0, 0)
-      ..lineTo(arm, 0)
-      ..lineTo(w, h)
-      ..lineTo(w - arm, h)
-      ..close();
-    final rising = Path()
-      ..moveTo(w - arm, 0)
-      ..lineTo(w, 0)
-      ..lineTo(arm, h)
-      ..lineTo(0, h)
-      ..close();
-
-    canvas.drawPath(
-      Path.combine(PathOperation.union, falling, rising),
-      Paint()..color = color,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_WatermarkPainter oldDelegate) => oldDelegate.color != color;
-}
-
 /// البطاقة البيضاء العائمة. في الوضع الداكن يحدّها خيطٌ رفيع، لأن الظل لا يُرى على الكحلي.
 class _Card extends StatelessWidget {
   const _Card({required this.child});
@@ -258,16 +222,14 @@ class _Card extends StatelessWidget {
           borderRadius: corners,
           side: context.isDarkMode ? BorderSide(color: scheme.outlineVariant) : BorderSide.none,
         ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(22.w, 30.h, 22.w, 26.h),
-          child: child,
-        ),
+        child: Padding(padding: EdgeInsets.fromLTRB(22.w, 30.h, 22.w, 26.h), child: child),
       ),
     );
   }
 }
 
-/// «ليس لديك حساب؟ إنشاء حساب جديد» — السؤال بلونٍ هادئ، وجوابه رابطٌ برتقالي.
+/// «ليس لديك حساب؟ إنشاء حساب جديد»: the question in a quiet colour, its answer a link in the
+/// accent.
 class _Prompt extends StatelessWidget {
   const _Prompt({required this.prompt, required this.action, required this.onAction});
 

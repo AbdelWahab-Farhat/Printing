@@ -38,8 +38,8 @@ flutter run --flavor dev                                  # نسخة الاخت�
 
 | النكهة | الحزمة · الاسم | الملف | الأمر |
 |---|---|---|---|
-| `prod` | `ly.dayaa.client` · «فلايركس» | `.env` | الافتراضي — بلا `--flavor` (`default-flavor: prod` في pubspec) |
-| `dev` | `ly.dayaa.client.dev` · «فلايركس تجريبي»، وأيقونةٌ عليها شريط TEST | `.env.dev` → صندوق التجربة | `--flavor dev` |
+| `prod` | `ly.dayaa.client` · «دعاية» | `.env` | الافتراضي — بلا `--flavor` (`default-flavor: prod` في pubspec) |
+| `dev` | `ly.dayaa.client.dev` · «دعاية تجريبي»، وأيقونةٌ كحلية عليها شريط TEST | `.env.dev` → صندوق التجربة | `--flavor dev` |
 
 **حزمتان لا حزمة**: المُختبِرُ يحمل النسختين على الهاتف نفسه، ولا تحلّ إحداهما محلّ الأخرى.
 و`--flavor dev` وحده يختار `.env.dev` أيضاً ([AppConfig](lib/core/config/app_config.dart) يقرؤه عبر

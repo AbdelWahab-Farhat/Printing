@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launch window at night: `MaterialTheme.darkScheme.surface`. See `values/colors.xml`.
+-->
+<resources>
+    <color name="brand_surface">#110E24</color>
+</resources>

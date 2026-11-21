@@ -283,7 +283,7 @@ result.fold(
 | `dev` | `.env.dev` | `flutter run --flavor dev` |
 | `prod` | `.env` | `flutter run` (`default-flavor: prod`) |
 
-`--flavor dev` حزمةٌ أخرى (`ly.dayaa.client.dev`) باسم «فلايركس تجريبي» وأيقونةٍ عليها TEST، فتُنصَّب بجانب الإنتاج. انظر README «البيئات».
+`--flavor dev` حزمةٌ أخرى (`ly.dayaa.client.dev`) باسم «دعاية تجريبي» وأيقونةٍ كحلية عليها TEST، فتُنصَّب بجانب الإنتاج. انظر README «البيئات».
 
 محاكي أندرويد يصل للمضيف عبر `10.0.2.2` لا `127.0.0.1` — [AppConfig](lib/core/config/app_config.dart) يختار تلقائياً، وفي التصحيح وحده.
 

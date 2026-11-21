@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit.dart';
 import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
@@ -211,7 +212,7 @@ void main() {
 
       // Assert
       expect(find.byType(HomeAppBar), findsOneWidget);
-      expect(find.text('FlyerX', findRichText: true), findsOneWidget);
+      expect(find.byType(BrandMark), findsOneWidget);
       expect(find.byTooltip('الدعم'), findsOneWidget);
       // «حسابي» مكانٌ في الشريط السفلي الآن، لا أيقونةٌ في العلوي.
       expect(find.byTooltip('حسابي'), findsNothing);

@@ -90,8 +90,9 @@ class ActiveOrderCard extends StatelessWidget {
 
     void open() => context.push(Routes.order(order.id));
 
-    // الشعرة البرتقالية على الطلبية التي تريدك: «بانتظار المراجعة» خطوتها للعميل — بأن ينتظر —
-    // و«قيد التصميم» قد يُطلب منه فيها شيء، و«نواقص» و«مرفوضة» خبرٌ قد يسأل عنه.
+    // The accent hairline on the order that wants you: «بانتظار المراجعة» is the customer's step
+    // (to wait), «قيد التصميم» may ask something of them, and «نواقص» and «مرفوضة» are news they
+    // may want to ask about.
     return order.stage == OrderStage.underReview ||
             order.stage == OrderStage.designing ||
             order.stage.needsAttention

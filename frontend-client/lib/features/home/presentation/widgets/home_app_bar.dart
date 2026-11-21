@@ -1,6 +1,7 @@
 import 'package:dayaa_client/core/router/app_router.dart';
 import 'package:dayaa_client/core/utils/app_icons.dart';
 import 'package:dayaa_client/core/utils/context_extensions.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/views/badge_count.dart';
 import 'package:dayaa_client/features/orders/presentation/views/cart_button.dart';
@@ -27,10 +28,10 @@ import 'package:go_router/go_router.dart';
 /// الشريط فدفعت الاسم عن الوسط كلما امتلأت السلة. اختار المستخدم نقل الدعم إلى الطرف الفارغ على
 /// أن يُزاح الاسم.
 ///
-/// **السلة انتقلت إلى جانب الدعم، وكلٌّ منهما في دائرة** (طلب المستخدم، 2026-10-20: «اقلب يمين
-/// وخليها واضحة بإنها ايقونة هي وتذاكر بداخل سيركل افتار»). الدائرة بالبرتقالي الخفيف نفسه الذي
-/// تلبسه حبّة الرصيد ودوائر الأدوات في الرئيسية، فتُقرأ الثلاثة أزراراً من عائلةٍ واحدة. والرصيد
-/// بقي وحده في الطرف الأيسر.
+/// **The cart moved beside support, each in a circle** (user request, 2026-10-20: «اقلب يمين
+/// وخليها واضحة بإنها ايقونة هي وتذاكر بداخل سيركل افتار»). The circle is the same light tint of
+/// the accent that the balance chip and the tool circles on home wear, so the three read as
+/// buttons of one family. The balance stayed alone at the left edge.
 ///
 /// والثلاثة تُدفع (`push`) ولا يُنتقل إليها (`go`): كلٌّ منها مكانٌ يُذهب إليه ويُرجع منه إلى القسم
 /// الذي كان فيه العميل، ولا تبويب لأيٍّ منها.
@@ -81,7 +82,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ],
         ),
       ),
-      title: const _Wordmark(),
+      title: const BrandMark(size: 24),
       actions: [
         // حافة الحبّة على حافة بطاقات الصفحة تحتها.
         Padding(
@@ -89,36 +90,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: const Center(child: WalletBalanceChip()),
         ),
       ],
-    );
-  }
-}
-
-/// «FlyerX» مكتوباً كما يكتب شريط بريمولا اسمه: «Flyer» بلون العنوان، و«X» ببرتقالي العلامة كما
-/// في الشعار المطبوع.
-///
-/// **ليس `BrandMark`**: ذاك بمقاس ترويسة شاشة الدخول وبلون ترويستها الكحلية، وهذا بمقاس شريطٍ
-/// ولون سطحه. والاسم لاتينيٌّ في تطبيقٍ من اليمين، فاتجاهه مثبّت.
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colorScheme;
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: 'Flyer', style: TextStyle(color: scheme.onSurface)),
-          TextSpan(text: 'X', style: TextStyle(color: scheme.primary)),
-        ],
-      ),
-      style: context.textTheme.titleLarge?.copyWith(
-        fontSize: 26.sp,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -0.5,
-        height: 1.1,
-      ),
-      textDirection: TextDirection.ltr,
     );
   }
 }

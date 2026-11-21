@@ -43,8 +43,9 @@ Finder _logo(String asset) => find.byWidgetPredicate(
   (widget) => widget is Image && widget.image is AssetImage && (widget.image as AssetImage).assetName == asset,
 );
 
-/// «محفظتي» بتصميم «بطاقة FlyerX»: بطاقةٌ كحلية بالرصيد والاسم والرمز، تحتها «شحن المحفظة» بشعارات
-/// طرق الدفع، ثم المعاملات سطراً سطراً تحت أيامها.
+/// «محفظتي» in the brand card design: an indigo card with the balance, the name and the code,
+/// «شحن المحفظة» under it with the payment methods' logos, then the entries line by line under
+/// their days.
 ///
 /// Arrange - Act - Assert throughout.
 void main() {

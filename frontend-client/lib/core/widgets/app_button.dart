@@ -434,8 +434,8 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
 
   /// Lifts the primary button off the page. One value, never animated.
   ///
-  /// توهّجٌ برتقالي ليّن تحت الزر كما في تصميم شاشة الدخول، مقيسٌ على لقطته: قويٌّ ملاصقاً للزر،
-  /// ويخبو على مدى نحو عشرين نقطة تحته.
+  /// A soft glow in the button's own fill beneath it, as in the sign-in design and measured on
+  /// its screenshot: strong against the button, fading out over about twenty points below it.
   List<BoxShadow>? _shadow(_Palette palette) {
     final color = palette.shadow;
     if (color == null || !widget.lifted) return null;
@@ -466,12 +466,14 @@ class _AppButtonState extends State<AppButton> with TickerProviderStateMixin {
     }
 
     return switch (widget.variant) {
+      // The brand's yellow at both times of day: `primaryContainer`, not `primary`, which is
+      // the purple line colour by day. See `MaterialTheme`.
       AppButtonVariant.primary => (
-        fill: scheme.primary,
-        onFill: scheme.onPrimary,
+        fill: scheme.primaryContainer,
+        onFill: scheme.onPrimaryContainer,
         side: BorderSide.none,
         // Only the primary is lifted. Give every button a shadow and none of them stands out.
-        shadow: scheme.primary,
+        shadow: scheme.primaryContainer,
       ),
       AppButtonVariant.tonal => (
         fill: scheme.secondaryContainer,

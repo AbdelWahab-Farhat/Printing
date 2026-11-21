@@ -1,164 +1,156 @@
 import 'package:flutter/material.dart';
 
-/// The app's palette.
+/// The app's palette: the Daaya logo's three colours, given jobs.
 ///
 /// **Not a Material Theme Builder export, and that is the one deliberate departure from
 /// RULES §7.** The staff app's `theme.dart` is generated from a seed colour and replaced
-/// wholesale; this one is written from the design's own hexes, because the design *has* them and
-/// a seed would only approximate them. Feeding `#F4622A` to the generator produces a warm grey
-/// dark scheme, not the navy the mockup is built on — the surfaces are a second decision the
-/// designer made, and a seed cannot carry it.
+/// wholesale; this one is written from the logo's own hexes, because the logo *has* them and a
+/// seed would only approximate them. Feeding `#D5D74D` to the generator produces an olive
+/// scheme, not the yellow the logo is built on.
 ///
-/// The rule the generated file exists to protect still holds and still matters: **no screen in
-/// this app writes a `Color(0xff…)`.** Every hex in the product lives here, once. Changing the
-/// palette is changing this file and nothing else.
+/// The rule the generated file exists to protect still holds: **no screen in this app writes a
+/// `Color(0xff…)`.** Every hex in the product lives here or in `app_tones.dart`, once. Changing
+/// the palette is changing these two files and nothing else.
 ///
-/// The mapping, so the next person can check it against the design rather than guess:
+/// The logo, sampled from `assets/images/logo.png`:
 ///
-/// | Design | Role |
-/// |---|---|
-/// | `#0F2138` page background | `surface` |
-/// | `#132A43` nav bar, raised strip | `surfaceContainerLow` |
-/// | `#16304A` cards, chips | `surfaceContainer` |
-/// | `#1D3C5A` | `surfaceContainerHigh` |
-/// | `#24425F` card borders | `surfaceContainerHighest`, `outlineVariant` |
-/// | `#E8EEF5` body text | `onSurface` |
-/// | `#8FA3BA` secondary text | `onSurfaceVariant` |
-/// | `#F4622A` buttons, selected chips, active tab | `primary` |
+/// | Logo | Hex | Job |
+/// |---|---|---|
+/// | the filled square | `#D5D74D` yellow | **fills**: buttons, selected chips, the main action |
+/// | the left outline | `#4C29D0` purple | **lines and ink** in daylight; the account card; the header band's hue |
+/// | the right outline | `#57937F` green | «done»: paid, delivered (`PaymentTone`) |
 ///
-/// **`primaryContainer` is the solid orange, not a muted tone.** Material's convention is a
-/// desaturated container behind `onPrimaryContainer` text, but the design fills a selected chip
-/// with `#F4622A` and puts white on it — and selected chips are the most common use of the pair
-/// in this app. Following the convention here would mean every chip in the app disagreeing with
-/// every chip in the design.
+/// **Yellow is the brand, and yellow cannot be ink on white.** `#D5D74D` on white is 1.4 to 1;
+/// no amount of care makes a yellow link or a yellow price readable in daylight. The logo already
+/// answers this, by drawing yellow as a *fill* and purple as the *line* around it, and the
+/// scheme does the same:
+///
+///   * `primaryContainer` is the yellow in **both** appearances, with dark ink on it. Every
+///     filled thing in the app takes it: `AppButton`, the speed dial, selected chips, the
+///     component themes below.
+///   * `primary` is what an accent *line or text* is drawn in: the yellow at night, where it
+///     reads at 12 to 1 on the page, and the logo's purple by day, where it reads at 7.7 to 1.
+///
+/// In the dark the two roles are the same colour, so nothing there looks split.
 class MaterialTheme {
   const MaterialTheme(this.textTheme);
 
   final TextTheme textTheme;
 
-  /// The design's palette — the appearance the mockup was drawn in.
+  /// The night palette: the logo's yellow on surfaces of a very dark indigo, taken from the
+  /// purple outline's own hue (253°) so the page reads as Daaya rather than as neutral grey.
   static const ColorScheme darkScheme = ColorScheme(
     brightness: Brightness.dark,
 
-    primary: Color(0xfff4622a),
-    onPrimary: Color(0xffffffff),
-    // Solid, for the reason in the class doc — a selected chip is `#F4622A` with white on it.
-    primaryContainer: Color(0xfff4622a),
-    onPrimaryContainer: Color(0xffffffff),
+    // The yellow does both jobs at night: it is legible on the page, and dark ink is legible on
+    // it.
+    primary: Color(0xffd5d74d),
+    onPrimary: Color(0xff15122b),
+    primaryContainer: Color(0xffd5d74d),
+    onPrimaryContainer: Color(0xff15122b),
 
-    // The muted blue-grey the design uses for everything that is present but not shouting.
-    secondary: Color(0xffa9bcd1),
-    onSecondary: Color(0xff0f2138),
-    secondaryContainer: Color(0xff1d3c5a),
-    onSecondaryContainer: Color(0xffc6d6e6),
+    // A lavender tint of the logo's purple, for what is present but not shouting.
+    secondary: Color(0xffb4aaf2),
+    onSecondary: Color(0xff1e1650),
+    secondaryContainer: Color(0xff2c2565),
+    onSecondaryContainer: Color(0xffdcd6ff),
 
-    // Warm amber, and the one colour not taken from the design: it carries «اطلب أكثر وينزل
-    // السعر», which has to read as a saving rather than as another orange call to action.
-    tertiary: Color(0xffe8a33d),
-    onTertiary: Color(0xff0f2138),
-    tertiaryContainer: Color(0xff5a4210),
-    onTertiaryContainer: Color(0xffffdfa8),
+    // Warning orange, and the one colour not taken from the logo: it carries the warning snack
+    // and dialog, and «اطلب أكثر وينزل السعر». It sits 33° from the yellow so a warning never
+    // reads as the app's own call to action.
+    tertiary: Color(0xfff2994a),
+    onTertiary: Color(0xff2b1600),
+    tertiaryContainer: Color(0xff5a3311),
+    onTertiaryContainer: Color(0xffffdcc2),
 
     error: Color(0xffffb4ab),
     onError: Color(0xff690005),
     errorContainer: Color(0xff93000a),
     onErrorContainer: Color(0xffffdad6),
 
-    surface: Color(0xff0f2138),
-    onSurface: Color(0xffe8eef5),
-    onSurfaceVariant: Color(0xff8fa3ba),
-    surfaceTint: Color(0xfff4622a),
+    surface: Color(0xff110e24),
+    onSurface: Color(0xffeceaf6),
+    onSurfaceVariant: Color(0xffa8a3c6),
+    surfaceTint: Color(0xffd5d74d),
 
-    surfaceDim: Color(0xff0a1826),
-    surfaceBright: Color(0xff2e5175),
-    surfaceContainerLowest: Color(0xff0a1826),
-    surfaceContainerLow: Color(0xff132a43),
-    surfaceContainer: Color(0xff16304a),
-    surfaceContainerHigh: Color(0xff1d3c5a),
-    surfaceContainerHighest: Color(0xff24425f),
+    surfaceDim: Color(0xff0b0919),
+    surfaceBright: Color(0xff353060),
+    surfaceContainerLowest: Color(0xff0b0919),
+    surfaceContainerLow: Color(0xff16132e),
+    surfaceContainer: Color(0xff1b1837),
+    surfaceContainerHigh: Color(0xff231f45),
+    surfaceContainerHighest: Color(0xff2c2852),
 
-    // `outline` is what a border has to be *seen*; `outlineVariant` is the card hairline the
-    // design draws at `#24425F`.
-    outline: Color(0xff5b7a99),
-    outlineVariant: Color(0xff24425f),
+    // `outline` is what a border has to be *seen*; `outlineVariant` is the card hairline.
+    outline: Color(0xff6e6894),
+    outlineVariant: Color(0xff2c2852),
 
     shadow: Color(0xff000000),
     scrim: Color(0xff000000),
 
-    inverseSurface: Color(0xffe8eef5),
-    onInverseSurface: Color(0xff0f2138),
-    inversePrimary: Color(0xff9c3a15),
+    inverseSurface: Color(0xffeceaf6),
+    onInverseSurface: Color(0xff15122b),
+    inversePrimary: Color(0xff5e6000),
   );
 
-  /// The same app in daylight.
+  /// The day palette: the logo as it is printed, on white.
   ///
-  /// **Derived from the design rather than drawn by it**, and that is worth saying plainly: the
-  /// mockup specifies one appearance, so every hex below is reasoned from [darkScheme] instead of
-  /// chosen by the designer. It is the honest way to ship a light mode without inventing a second
-  /// brand — but it is also why a screen that looks wrong in daylight is a bug in this table and
-  /// not in the screen.
-  ///
-  /// The reasoning, so the next person can check it rather than guess:
-  ///
-  ///   * **`primary` does not move.** `#F4622A` is the brand; an orange that changed with the
-  ///     time of day would be two brands. White still sits on it at both brightnesses, so
-  ///     `primaryContainer` stays solid for the same reason it is solid in the dark — see the
-  ///     class doc on selected chips.
-  ///   * **The navy becomes the ink.** `#0F2138` is the page in the dark and the text in the
-  ///     light; `#E8EEF5` is the text in the dark and the raised surface in the light. The pair
-  ///     the design already balanced against each other simply swaps ends.
-  ///   * **The surface ladder climbs the other way.** Dark stacks navy upward from `#0F2138`;
-  ///     light stacks blue-grey downward from white, so a card is still one step from the page
-  ///     and a border is still one step from the card.
-  ///   * **Amber and red darken.** `#E8A33D` and `#FFB4AB` are legible on navy and vanish on
-  ///     white, so each takes the tone that carries the same meaning against paper.
+  ///   * **`primaryContainer` does not move.** The yellow is the brand; it is the fill of every
+  ///     button and selected chip at both times of day, with the same dark ink on it.
+  ///   * **`primary` becomes the logo's purple.** See the class doc: this is the role text and
+  ///     lines are drawn in, and yellow cannot do it on white.
+  ///   * **The indigo becomes the ink.** `#15122B` is the ink on yellow at night and the body
+  ///     text by day, so the yellow carries the same ink in both appearances.
+  ///   * **The surface ladder climbs the other way.** Dark stacks indigo upward from the page;
+  ///     light stacks lavender-grey downward from white, so a card is still one step from the
+  ///     page and a border is still one step from the card.
   static const ColorScheme lightScheme = ColorScheme(
     brightness: Brightness.light,
 
-    primary: Color(0xfff4622a),
+    primary: Color(0xff4c29d0),
     onPrimary: Color(0xffffffff),
-    primaryContainer: Color(0xfff4622a),
-    onPrimaryContainer: Color(0xffffffff),
+    primaryContainer: Color(0xffd5d74d),
+    onPrimaryContainer: Color(0xff15122b),
 
-    secondary: Color(0xff3d5a77),
+    secondary: Color(0xff5c5784),
     onSecondary: Color(0xffffffff),
-    secondaryContainer: Color(0xffdce5ef),
-    onSecondaryContainer: Color(0xff1d3c5a),
+    secondaryContainer: Color(0xffe6e2f8),
+    onSecondaryContainer: Color(0xff2b2560),
 
-    tertiary: Color(0xff8a6100),
+    tertiary: Color(0xff9a4a00),
     onTertiary: Color(0xffffffff),
-    tertiaryContainer: Color(0xffffdfa8),
-    onTertiaryContainer: Color(0xff2b1f00),
+    tertiaryContainer: Color(0xffffdcc2),
+    onTertiaryContainer: Color(0xff321300),
 
     error: Color(0xffba1a1a),
     onError: Color(0xffffffff),
     errorContainer: Color(0xffffdad6),
     onErrorContainer: Color(0xff410002),
 
-    surface: Color(0xfff7f9fc),
-    onSurface: Color(0xff0f2138),
-    onSurfaceVariant: Color(0xff56708c),
-    surfaceTint: Color(0xfff4622a),
+    surface: Color(0xfff7f6fb),
+    onSurface: Color(0xff15122b),
+    onSurfaceVariant: Color(0xff5c5880),
+    surfaceTint: Color(0xff4c29d0),
 
-    surfaceDim: Color(0xffdfe6ef),
+    surfaceDim: Color(0xffdddbe8),
     surfaceBright: Color(0xffffffff),
     surfaceContainerLowest: Color(0xffffffff),
     surfaceContainerLow: Color(0xffffffff),
-    surfaceContainer: Color(0xfff1f5fa),
-    surfaceContainerHigh: Color(0xffe9eff7),
-    surfaceContainerHighest: Color(0xffdce5ef),
+    surfaceContainer: Color(0xfff0eff7),
+    surfaceContainerHigh: Color(0xffe8e6f2),
+    surfaceContainerHighest: Color(0xffdddaec),
 
     // Same division of labour as the dark scheme: `outline` is a border meant to be seen,
     // `outlineVariant` is the card hairline.
-    outline: Color(0xff8fa3ba),
-    outlineVariant: Color(0xffdce5ef),
+    outline: Color(0xff8c88aa),
+    outlineVariant: Color(0xffdddaec),
 
     shadow: Color(0xff000000),
     scrim: Color(0xff000000),
 
-    inverseSurface: Color(0xff0f2138),
-    onInverseSurface: Color(0xffe8eef5),
-    inversePrimary: Color(0xffffb59a),
+    inverseSurface: Color(0xff15122b),
+    onInverseSurface: Color(0xffeceaf6),
+    inversePrimary: Color(0xffd5d74d),
   );
 
   ThemeData dark() => theme(darkScheme);
@@ -189,7 +181,7 @@ class MaterialTheme {
       centerTitle: false,
     ),
 
-    // `#132A43` with a `#24425F` hairline above it, and the active item in orange.
+    // The raised strip with a hairline above it, and the active item in the accent.
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: colorScheme.surfaceContainerLow,
       indicatorColor: Colors.transparent,
@@ -215,7 +207,7 @@ class MaterialTheme {
       ),
     ),
 
-    // Cards: `#16304A` inside a `#24425F` hairline, 20px corners.
+    // Cards: the container step inside a hairline, 20px corners.
     cardTheme: CardThemeData(
       color: colorScheme.surfaceContainer,
       elevation: 0,
@@ -225,9 +217,12 @@ class MaterialTheme {
       ),
     ),
 
-    // 52px tall, 16px corners — the design's one button.
+    // 52px tall, 16px corners: the design's one button. Filled with the yellow at both times of
+    // day, which is why it names `primaryContainer` and not Material's default `primary`.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
@@ -243,11 +238,11 @@ class MaterialTheme {
       ),
     ),
 
-    // Filter chips: 38px, 12px corners, `#16304A` with a `#24425F` edge — and solid orange
+    // Filter chips: 38px, 12px corners, the container step with a hairline, and solid yellow
     // once chosen.
     chipTheme: ChipThemeData(
       backgroundColor: colorScheme.surfaceContainer,
-      selectedColor: colorScheme.primary,
+      selectedColor: colorScheme.primaryContainer,
       side: BorderSide(color: colorScheme.outlineVariant),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       labelStyle: TextStyle(
@@ -258,7 +253,7 @@ class MaterialTheme {
       secondaryLabelStyle: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: colorScheme.onPrimary,
+        color: colorScheme.onPrimaryContainer,
       ),
       showCheckmark: false,
     ),
@@ -297,8 +292,8 @@ class MaterialTheme {
     ),
 
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: colorScheme.primary,
-      foregroundColor: colorScheme.onPrimary,
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundColor: colorScheme.onPrimaryContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
 

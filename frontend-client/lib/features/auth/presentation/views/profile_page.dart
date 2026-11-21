@@ -199,11 +199,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
-/// البطاقة التي تقول من أنت، بلون العلامة كما في المرجع.
+/// The card that says who you are, in the brand's colours as in the reference.
 ///
-/// **حبرها أبيض في الوضعين.** البطاقة بلون العلامة لا بلون الصفحة، فلا يتبدّل ما عليها مع المظهر.
-/// والتدرّج يمضي من البرتقالي الصريح في الزاوية البعيدة إلى [BrandTone.primaryDeep] تحت النص،
-/// ليُقرأ رقم الهاتف بحجمه العادي. انظر تعليق ذلك اللون.
+/// **White ink in both appearances.** The card is in the brand's colour, not the page's, so
+/// nothing on it changes with the time of day. The gradient runs from the logo's purple
+/// ([BrandTone.brand]) in the far corner to [BrandTone.brandDeep] under the text, and white reads
+/// at body size on both ends. See `BrandTone` for why the card is purple and not yellow.
 class _AccountCard extends StatelessWidget {
   const _AccountCard({required this.customer});
 
@@ -214,7 +215,7 @@ class _AccountCard extends StatelessWidget {
     final scheme = context.colorScheme;
     final customer = this.customer;
     final shop = customer?.shop;
-    final ink = scheme.onPrimary;
+    final ink = scheme.onBrand;
     final radius = BorderRadius.circular(24.r);
 
     // «متجر النور · طرابلس»، أو ما عند الحساب من نصفيها. حسابٌ بلا متجرٍ لا سطر له.
@@ -226,7 +227,7 @@ class _AccountCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: AlignmentDirectional.topEnd,
           end: AlignmentDirectional.bottomStart,
-          colors: [scheme.primary, scheme.primaryDeep],
+          colors: [scheme.brand, scheme.brandDeep],
         ),
       ),
       child: ClipRRect(
@@ -250,12 +251,10 @@ class _AccountCard extends StatelessWidget {
               top: 4.h,
               end: 20.w,
               child: Text(
-                'FlyerX',
-                textDirection: TextDirection.ltr,
+                'دعاية',
                 style: context.textTheme.displaySmall?.copyWith(
                   fontSize: 34.sp,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
                   color: ink.withValues(alpha: 0.16),
                 ),
               ),
@@ -382,15 +381,17 @@ class _Phone extends StatelessWidget {
   }
 }
 
-/// «B849» وحده، في شارةٍ بيضاء على البطاقة البرتقالية.
+/// «B849» alone, in a yellow chip on the purple card.
 ///
-/// **بلا مسمّى «كود العميل»:** حذفه صاحب العمل (2026-10-16)، فالرقم وحده يكفي. وما يجعله واضحاً
-/// أنه الشيء الأبيض الوحيد على البطاقة، فتقع العين عليه أولاً، ورقمه أثقل ما فيها بعد الاسم.
+/// **No «كود العميل» label:** the owner removed it (2026-10-16); the number alone is enough.
+/// What makes it stand out is that it is the one yellow thing on the card, the way the logo puts
+/// its yellow inside a purple line, so the eye lands on it first.
 ///
-/// **وتُنسخ بلمسة:** الكود هو ما يرسله العميل إلى المتجر في محادثة، ونسخه أسلم من إعادة كتابته.
+/// **It copies on a tap:** the code is what the customer sends the shop in a chat, and copying
+/// it is safer than retyping it.
 ///
-/// ليست `CopyText` من `core/widgets/`: تلك قيمةٌ على سطح الصفحة بألوانها، وهنا رقمٌ على أبيضٍ
-/// فوق البرتقالي.
+/// Not `CopyText` from `core/widgets/`: that is a value on the page's surface in its colours,
+/// and this is a number on yellow on top of purple.
 class _CodeChip extends StatelessWidget {
   const _CodeChip({required this.code});
 
@@ -399,12 +400,12 @@ class _CodeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
-    final ink = scheme.primaryDeep;
+    final ink = scheme.brandDeep;
     final radius = BorderRadius.circular(12.r);
 
     return Material(
       key: ProfilePage.codeChipKey,
-      color: scheme.onPrimary,
+      color: scheme.brandYellow,
       borderRadius: radius,
       child: InkWell(
         borderRadius: radius,

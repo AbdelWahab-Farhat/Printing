@@ -2,9 +2,10 @@
 <!--
   What the window shows between the tap on the icon and Flutter's first frame.
 
-  A flat brand colour rather than the default white: the app is dark, and a white flash before
-  it is the first thing a customer sees. The logo goes in the commented-out bitmap below the
-  day `assets/images/logo.png` arrives.
+  The page's own colour rather than the default white, by day and by night
+  (`values/colors.xml` and `values-night/colors.xml`), so a phone in dark mode does not flash
+  white before the first frame. The logo can go in the commented-out bitmap below once a native
+  splash exists to hand over to (see BACKLOG.md).
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/brand_surface" />

@@ -1,5 +1,4 @@
 import 'package:dayaa_client/core/router/app_router.dart';
-import 'package:dayaa_client/core/theme/app_tones.dart';
 import 'package:dayaa_client/features/orders/presentation/widgets/empty_basket.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,9 +13,9 @@ import 'package:go_router/go_router.dart';
 ///
 /// Arrange - Act - Assert throughout.
 void main() {
-  final light = ColorScheme.fromSeed(seedColor: const Color(0xfff4622a));
+  final light = ColorScheme.fromSeed(seedColor: const Color(0xffd5d74d));
   final dark = ColorScheme.fromSeed(
-    seedColor: const Color(0xfff4622a),
+    seedColor: const Color(0xffd5d74d),
     brightness: Brightness.dark,
   );
 
@@ -92,9 +91,10 @@ void main() {
     final disc = paint(tester, 0xFFFF00FF);
     final untouched = paint(tester, 0xFF123456);
 
-    // Assert — الكيس بلون العلامة، والدائرة خلفه بلون حاويات الوضع الداكن.
-    expect(bag, dark.primary);
-    expect(side, dark.primaryDeep);
+    // Assert: the bag in the brand's fill, its side a shade deeper, and the disc behind it in
+    // the dark scheme's container colour.
+    expect(bag, dark.primaryContainer);
+    expect(side, Color.lerp(dark.primaryContainer, dark.shadow, 0.22));
     expect(disc, dark.surfaceContainerHigh);
     expect(untouched, const Color(0xFF123456));
   });

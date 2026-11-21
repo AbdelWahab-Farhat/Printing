@@ -18,11 +18,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// Three tones, and each is a thing the design does rather than a palette entry:
 ///
 /// * [AppCard] — the ordinary card.
-/// * [AppCard.accent] — the orange hairline the design puts on the one row that wants you:
+/// * [AppCard.accent] — the accent hairline the design puts on the one row that wants you:
 ///   the order awaiting your design, the ticket with an unread reply, the print you picked.
-/// * [AppCard.sunken] — `#132A43` on a `#2A4A6B` border, which the design uses for the things
-///   that are *told* rather than *done*: the brand card, the support hours, «ارفع شعارك مرة
-///   واحدة». One step back from the surface, not one step forward.
+/// * [AppCard.sunken] — the raised-strip step on a firmer border, which the design uses for the
+///   things that are *told* rather than *done*: the brand card, the support hours, «ارفع شعارك
+///   مرة واحدة». One step back from the surface, not one step forward.
 class AppCard extends StatelessWidget {
   const AppCard({
     required this.child,

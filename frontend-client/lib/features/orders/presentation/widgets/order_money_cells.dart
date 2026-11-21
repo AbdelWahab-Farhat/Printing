@@ -33,8 +33,8 @@ class OrderMoneyCells extends StatelessWidget {
     final scheme = context.colorScheme;
     final balance = this.balance;
 
-    // مستحقٌّ ما بقي شيء: برتقالي العلامة لا أحمر الإنذار — مالٌ على طلبيةٍ تسير جيداً ليس
-    // خطأً. وصفرٌ أخضر: الطلبية مسدّدة.
+    // Still owed: the accent, not alarm red; money on an order that is going well is not an
+    // error. A zero is green: the order is paid.
     final owesSomething = balance != null && thousandths(balance) > BigInt.zero;
     final paidSomething = paidAmount != null && thousandths(paidAmount!) != BigInt.zero;
 

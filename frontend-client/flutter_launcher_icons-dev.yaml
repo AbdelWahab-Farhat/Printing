@@ -12,15 +12,19 @@
 # ثم تشغيل الأمر مرةً ثانية لنسخة الاختبار. والتهيئات `*-dev` في Xcode تشير إلى `AppIcon-dev`
 # بيدٍ في project.pbxproj، لا بهذا المولّد.
 #
-# والباقي هو إعدادُ `pubspec.yaml` نفسُه بصورتَي الشريط.
+# The rest is `pubspec.yaml`'s own config with the two banded images, **and a different
+# background**. The staff app's test icon is the same Daaya mark with the same orange TEST band on
+# white, and both are named «دعاية تجريبي», so a tester carrying both could not tell them apart.
+# This one sits on the indigo of the sign-in band (`HeaderTone.header`, light), so the customer
+# test build is the dark one on the launcher. Production keeps white.
 flutter_launcher_icons:
   image_path: assets/branding/icon_1024_test.png
 
   android: true
   adaptive_icon_foreground: assets/branding/adaptive_foreground_test.png
-  adaptive_icon_background: "#16243c"
+  adaptive_icon_background: "#1b1449"
   min_sdk_android: 24
 
   ios: true
   remove_alpha_ios: true
-  background_color_ios: "#16243c"
+  background_color_ios: "#1b1449"

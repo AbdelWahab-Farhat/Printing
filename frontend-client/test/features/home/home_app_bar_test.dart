@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dayaa_client/core/di/injector.dart';
 import 'package:dayaa_client/core/error/failure.dart';
 import 'package:dayaa_client/core/router/app_router.dart';
+import 'package:dayaa_client/core/widgets/brand_mark.dart';
 import 'package:dayaa_client/features/badges/models/customer_badge.dart';
 import 'package:dayaa_client/features/badges/presentation/viewmodel/badges_cubit.dart';
 import 'package:dayaa_client/features/badges/repositories/badge_repository.dart';
@@ -145,7 +146,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    expect(find.text('FlyerX', findRichText: true), findsOneWidget);
+    expect(find.byType(BrandMark), findsOneWidget);
     expect(find.textContaining('مرحباً'), findsNothing);
     expect(find.byTooltip('الإشعارات'), findsNothing);
   });
@@ -167,7 +168,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert — الدعم في الطرف، والسلة في داخله، وكلاهما يمين الاسم.
-    final name = tester.getRect(find.text('FlyerX', findRichText: true));
+    final name = tester.getRect(find.byType(BrandMark));
     expect(cart.left, greaterThan(name.right));
     expect(cart.right, lessThan(support.left));
     expect(tester.getRect(find.byTooltip('سلتك')), cart);
@@ -228,7 +229,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Assert
-    final name = tester.getRect(find.text('FlyerX', findRichText: true));
+    final name = tester.getRect(find.byType(BrandMark));
     final cart = tester.getRect(find.byTooltip('سلتك'));
     final balance = tester.getRect(find.byTooltip('محفظتي'));
     expect(name.center.dx, closeTo(180, 0.5));
@@ -249,7 +250,7 @@ void main() {
 
     // Assert
     final chip = tester.getRect(find.byTooltip('محفظتي'));
-    final name = tester.getRect(find.text('FlyerX', findRichText: true));
+    final name = tester.getRect(find.byType(BrandMark));
     final support = tester.getRect(find.byTooltip('الدعم'));
     expect(find.text('200 د.ل'), findsOneWidget);
     expect(chip.right, lessThan(name.left));
