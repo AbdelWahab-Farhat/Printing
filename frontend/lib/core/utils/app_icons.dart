@@ -794,6 +794,13 @@ abstract final class AppIcons {
   static IconData get tools =>
       _pick(Icons.handyman_rounded, CupertinoIcons.wrench_fill);
 
+  /// حاسبة الأسعار — the price of a customer's list, without an order behind it.
+  static IconData get priceCalculator =>
+      _pick(Icons.calculate_rounded, CupertinoIcons.plus_slash_minus);
+
+  /// Take one step off a count — the partner of [add] beside a quantity box.
+  static IconData get remove => _pick(Icons.remove_rounded, CupertinoIcons.minus);
+
   /// أداة إنشاء رمز QR. الرمز نفسه، لأنه ما يبحث عنه الموظف بعينه.
   static IconData get qrCode =>
       _pick(Icons.qr_code_2_rounded, CupertinoIcons.qrcode);

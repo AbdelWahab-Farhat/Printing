@@ -20,7 +20,7 @@ void main() {
 
   setUp(() => pushed = null);
 
-  Widget host() {
+  Widget host({bool canQuotePrices = false}) {
     Widget page(BuildContext context, GoRouterState state) {
       pushed = state.uri.path;
       return const Scaffold(body: SizedBox.shrink());
@@ -31,11 +31,13 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) =>
-              const Scaffold(appBar: null, body: SafeArea(child: ToolsMenuButton())),
+          builder: (context, state) => Scaffold(
+            body: SafeArea(child: ToolsMenuButton(canQuotePrices: canQuotePrices)),
+          ),
         ),
         GoRoute(path: Routes.qrTool, builder: page),
         GoRoute(path: Routes.bagPreview, builder: page),
+        GoRoute(path: Routes.priceCalculator, builder: page),
       ],
     );
 
@@ -109,5 +111,37 @@ void main() {
 
     // Assert
     expect(pushed, Routes.bagPreview);
+  });
+
+  testWidgets('without products.view there is no price calculator to open', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    // Act
+    await tester.tap(find.byType(ToolsMenuButton));
+    await tester.pumpAndSettle();
+
+    // Assert — the prices are records, and this reader is not cleared to read them.
+    expect(find.text('حاسبة الأسعار'), findsNothing);
+  });
+
+  testWidgets('with products.view the price calculator is the first row and opens', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(canQuotePrices: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ToolsMenuButton));
+    await tester.pumpAndSettle();
+
+    // Assert — above the other two.
+    final calculator = tester.getTopLeft(find.text('حاسبة الأسعار')).dy;
+    expect(calculator, lessThan(tester.getTopLeft(find.text('إنشاء QR')).dy));
+
+    // Act
+    await tester.tap(find.text('حاسبة الأسعار'));
+    await tester.pumpAndSettle();
+
+    // Assert
+    expect(pushed, Routes.priceCalculator);
   });
 }

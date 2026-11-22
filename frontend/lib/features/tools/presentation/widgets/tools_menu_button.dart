@@ -21,7 +21,21 @@ import 'package:go_router/go_router.dart';
 /// ملفُّه الخاص كـ[NotificationBell] الذي يقف بجانبه: الشريط يبنيه [RootPage] من شِقٍّ يحتاج
 /// [StatefulNavigationShell] ليُبنى أصلاً، وهذا لا يحتاجه — فهو هنا يُختبر تحت موجِّهٍ عارٍ.
 class ToolsMenuButton extends StatelessWidget {
-  const ToolsMenuButton({super.key});
+  const ToolsMenuButton({this.canQuotePrices = false, super.key});
+
+  /// Whether the reader holds `products.view`, decided by the shell from the session.
+  ///
+  /// The price calculator is the one tool with records behind it — the catalogue's prices — so
+  /// it is the one row that is not for everybody. Passed in rather than read here, so the menu
+  /// is still built under a bare router in its test.
+  final bool canQuotePrices;
+
+  /// The price calculator first: of the three it is the one opened with a customer waiting.
+  static const _priceCalculator = (
+    icon: _calculatorIcon,
+    label: 'حاسبة الأسعار',
+    route: Routes.priceCalculator,
+  );
 
   /// الأداتان، بنفس ترتيبهما حين كانتا صفّين تحت العنوان.
   static const List<({IconData Function() icon, String label, String route})> _tools = [
@@ -30,6 +44,8 @@ class ToolsMenuButton extends StatelessWidget {
   ];
 
   /// دوالٌ لا قيم، لأن [AppIcons] يختار الغلاف حسب المنصّة وقت التشغيل والقائمة أعلاه `const`.
+  static IconData _calculatorIcon() => AppIcons.priceCalculator;
+
   static IconData _qrIcon() => AppIcons.qrCode;
 
   static IconData _bagIcon() => AppIcons.bagPreview;
@@ -46,7 +62,7 @@ class ToolsMenuButton extends StatelessWidget {
       color: scheme.surfaceContainerLowest,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
       itemBuilder: (context) => [
-        for (final tool in _tools)
+        for (final tool in [if (canQuotePrices) _priceCalculator, ..._tools])
           PopupMenuItem<void>(
             // `onTap` يُنفَّذ بعد انغلاق القائمة، وهو المطلوب: لا تبقى الورقة مفتوحةً خلف
             // الشاشة التي فتحتها.

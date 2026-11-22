@@ -81,7 +81,7 @@ class RootPage extends StatelessWidget {
           // this app that reads nothing and writes nothing, opened mid-order and left again, so
           // they belong where the hand already is instead of three taps away. See
           // [ToolsMenuButton].
-          const ToolsMenuButton(),
+          ToolsMenuButton(canQuotePrices: sl<Session>().can(AppPermission.viewProducts)),
           // Third beside them, and out of the drawer for the same reason الأدوات left it: the
           // designer opens the queue every morning and the employee opens it to see where the
           // thing they asked for got to, both of them on their way back to the screen they were

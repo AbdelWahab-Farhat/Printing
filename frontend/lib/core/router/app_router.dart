@@ -124,6 +124,7 @@ import 'package:dayaa/features/support/presentation/views/support_tickets_page.d
 import 'package:dayaa/features/support/presentation/views/ticket_thread_page.dart';
 import 'package:dayaa/features/tickets/presentation/views/tickets_page.dart';
 import 'package:dayaa/features/tools/presentation/views/bag_preview_page.dart';
+import 'package:dayaa/features/tools/presentation/views/price_calculator_page.dart';
 import 'package:dayaa/features/tools/presentation/views/qr_tool_page.dart';
 import 'package:dayaa/features/treasury/presentation/views/expense_categories_page.dart';
 import 'package:dayaa/features/treasury/presentation/views/treasury_account_page.dart';
@@ -542,6 +543,12 @@ abstract final class Routes {
   /// تقبل `extra` من نوع [PickedFile] — تصميمٌ تفتح عليه الشاشة حين تُفتح من ملفٍ موجود بدل أن
   /// يُرفع واحدٌ من الصفر. وبلا `extra` تفتح فارغة، وهي حالة الرابط العميق.
   static const String bagPreview = '/tools/bag-preview';
+
+  /// حاسبة الأسعار — a customer's list priced by the catalogue, and a message to send back.
+  ///
+  /// Unlike the two tools beside it there are records behind it — the prices — so it carries
+  /// the grant that reads them, `products.view`.
+  static const String priceCalculator = '/tools/price-calculator';
 
   /// Preferences, what this build is, and the way out. Outside the shell: it is a place the
   /// user goes *to*, not a tab they browse between.
@@ -1659,6 +1666,12 @@ abstract final class AppRouter {
             builder: (context, state) => const QrToolPage.picking(),
           ),
         ],
+      ),
+      GoRoute(
+        path: Routes.priceCalculator,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.viewProducts) ? null : Routes.home,
+        builder: (context, state) => const PriceCalculatorPage(),
       ),
       GoRoute(
         path: Routes.bagPreview,

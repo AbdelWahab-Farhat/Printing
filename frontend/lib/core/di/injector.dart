@@ -312,6 +312,7 @@ import 'package:dayaa/features/support/repositories/support_repository.dart';
 import 'package:dayaa/features/support/repositories/support_repository_impl.dart';
 import 'package:dayaa/features/support/usecases/support_usecases.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/bag_preview_cubit.dart';
+import 'package:dayaa/features/tools/presentation/viewmodel/price_calculator_cubit.dart';
 import 'package:dayaa/features/tools/presentation/viewmodel/qr_tool_cubit.dart';
 import 'package:dayaa/features/tools/usecases/generate_qr_code.dart';
 import 'package:dayaa/features/tools/usecases/load_bag_mockup.dart';
@@ -1528,6 +1529,11 @@ abstract final class Injector {
           loadImage: sl<LoadDesignImage>(),
           loadMockup: sl<LoadBagMockup>(),
         ),
+      )
+      // Factory: one calculator per visit. It holds a customer's list and nothing else, and
+      // the next customer starts from an empty one.
+      ..registerFactory<PriceCalculatorCubit>(
+        () => PriceCalculatorCubit(getPriceQuote: sl<GetPriceQuote>()),
       );
   }
 
