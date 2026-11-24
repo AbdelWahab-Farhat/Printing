@@ -72,9 +72,12 @@ final class SyncOrderItems
      * @throws EditedLineNeedsAStockQuantity
      * @throws OrderStockShortfall
      */
-    public function __invoke(Order $order, array $items, ?User $actor = null): Order
+    public function __invoke(Order $order, array $items, ?User $actor = null, bool $ignoreStatusLock = false): Order
     {
-        if (! $order->itemsAreEditable()) {
+        // `ignoreStatusLock` is `orders.edit_fully`, asked by UpdateOrder. It lifts only this
+        // lock: the stock guards below still stand, so lines whose draw cannot be re-posted
+        // stay refused.
+        if (! $ignoreStatusLock && ! $order->itemsAreEditable()) {
             throw OrderItemsAreLocked::make($order->status);
         }
 

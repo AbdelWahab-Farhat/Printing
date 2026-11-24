@@ -6,10 +6,12 @@ namespace App\Domain\Order\Actions;
 
 use App\Domain\Customer\CustomerService;
 use App\Domain\Customer\Exceptions\ShopDoesNotBelongToCustomer;
+use App\Domain\Delivery\DeliveryService;
 use App\Domain\Delivery\Enums\FulfilmentType;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
+use App\Domain\Order\DTOs\OrderFullEditFields;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Enums\ShortageRevision;
@@ -30,7 +32,8 @@ use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Edits an order that is still open — and the discount on one that is not.
+ * Edits an order that is still open — and the discount on one that is not. A reader holding
+ * `orders.edit_fully` edits every field in any status; see __invoke().
  *
  * A delivered or settled order accepts a new discount and nothing else; a cancelled or rejected
  * one accepts nothing. See {@see Order::discountIsEditable()} and guardClosedOrder().
@@ -64,6 +67,7 @@ final class UpdateOrder
         private readonly RecalculateOrderPayments $recalculatePayments,
         private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
         private readonly GuardCompensation $guardCompensation,
+        private readonly DeliveryService $delivery,
     ) {}
 
     /**
@@ -76,9 +80,17 @@ final class UpdateOrder
      */
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
     {
+        // **`orders.edit_fully` lifts the status locks** (owner's decision, 2026-11-24): the
+        // closed order, the frozen destination and phone, the closed lines and the road. What it
+        // does not lift are the rules about money and about the state machine itself: the
+        // discount and additional-cost grants, the compensation order's no-charges rule, a
+        // pickup becoming a delivery outside «إعادة إرسال», and an outsourced order needing a
+        // vendor. See ORDER-EDIT-ANY-STATUS.md.
+        $fullEdit = $actor?->can(PermissionName::EditOrdersFully->value) === true;
+
         // Closed, not final: an order the customer already has is not editable even though it
         // still owes a settlement — except for its discount. See guardClosedOrder().
-        if ($order->status->isClosed()) {
+        if ($order->status->isClosed() && ! $fullEdit) {
             $this->guardClosedOrder($order, $data);
         }
 
@@ -96,7 +108,7 @@ final class UpdateOrder
         $destinationMoved = (int) $order->city_id !== $data->cityId
             || (int) $order->region_id !== (int) $data->regionId;
 
-        if ($destinationMoved && ! $order->destinationIsEditable()) {
+        if ($destinationMoved && ! $order->destinationIsEditable() && ! $fullEdit) {
             throw DestinationCannotChange::make($order->status);
         }
 
@@ -104,7 +116,7 @@ final class UpdateOrder
         // RecipientPhoneCannotChange. Compared rather than blanket-refused, because every edit
         // re-sends the whole order: a phone that comes back unchanged is not somebody changing
         // it, and refusing that would make the notes on a parcel in delivery uncorrectable.
-        if ($data->recipientPhone !== $order->recipient_phone && ! $order->destinationIsEditable()) {
+        if ($data->recipientPhone !== $order->recipient_phone && ! $order->destinationIsEditable() && ! $fullEdit) {
             throw RecipientPhoneCannotChange::make($order->status);
         }
 
@@ -128,7 +140,7 @@ final class UpdateOrder
             ? null
             : (string) $this->vendors->find($data->vendorId)->name;
 
-        $updated = DB::transaction(function () use ($order, $data, $destination, $shopName, $vendorName, $actor): Order {
+        $updated = DB::transaction(function () use ($order, $data, $destination, $destinationMoved, $shopName, $vendorName, $actor, $fullEdit): Order {
             // **The lock `ChangeOrderStatus` takes first, taken first here too.** An edit to the
             // lines can move stock, and so can a status move — so the two must not interleave: a
             // cancellation crediting back a draw this edit is replacing would reverse it twice.
@@ -165,23 +177,42 @@ final class UpdateOrder
             // **`design_fee` is not here, deliberately** (ORDER-DESIGN-FEE.md): employees never
             // read it, so the order every edit sends back carries a fee they never had. It moves
             // only through SetOrderDesignFee and FillDesignFeeFromTickets.
+            // **The city's rate is copied again only when the city or region moved** (owner's
+            // decision, 2026-11-24). It used to be copied on every save, which would wipe a
+            // delivery price an administrator typed by hand the next time anybody corrected the
+            // notes. An unmoved destination keeps whatever price the order already carries.
+            $destinationColumns = $destination->columns();
+
+            if (! $destinationMoved) {
+                unset($destinationColumns['delivery_price']);
+            }
+
             $order->forceFill([
-                // The city, region, their names, the fulfilment type and the city's rate.
-                ...$destination->columns(),
+                // The city, region, their names, the fulfilment type and, when it moved, the
+                // city's rate.
+                ...$destinationColumns,
                 'discount' => $data->discount,
                 'additional_cost' => $data->additionalCost,
                 'additional_cost_reason' => $data->additionalCostReason,
                 'additional_cost_note' => $data->additionalCostNote,
             ])->save();
 
+            if ($data->fullEditFields !== null) {
+                $this->writeFullEditFields($order, $data->fullEditFields);
+            }
+
             if ($data->items !== null) {
-                ($this->syncItems)($order, $data->items, $actor);
+                ($this->syncItems)($order, $data->items, $actor, ignoreStatusLock: $fullEdit);
 
                 // The rule `CreateOrder` asks on the way in, asked again now that lines can be
                 // added: a وسيط line beside an in-house one is refused whichever door it used.
                 ($this->guardOneBench)($order);
 
-                $this->guardTheRoadCanMove($order, $roadBefore);
+                // Lifted with the other status locks. Once work has started ResolveOrderFlow
+                // writes nothing, so the road stays the one the order actually walked.
+                if (! $fullEdit) {
+                    $this->guardTheRoadCanMove($order, $roadBefore);
+                }
             }
 
             // Called unconditionally and idempotent: a set of lines that comes back unchanged
@@ -211,7 +242,14 @@ final class UpdateOrder
             // been kept at settlement yet, that rate is our delivery cost and moves with it.
             $deliveryCostMoved = ($this->recalculateDeliveryCost)($recalculated);
 
-            if (($discountMoved && $recalculated->status->isClosed()) || $deliveryCostMoved) {
+            // A full edit of a closed order may have moved any figure the closing worked out —
+            // the lines, the charges, the date that picks the investors' period — so it reworks
+            // the money whatever moved. Both reworks compare with what stands and write only the
+            // difference, so an edit that moved nothing posts nothing. Never on a cancelled or
+            // rejected order: no profit was shared out of one, and none should be now.
+            $closedMoneyMayHaveMoved = ($discountMoved || $fullEdit) && $recalculated->status->isClosed();
+
+            if (($closedMoneyMayHaveMoved || $deliveryCostMoved) && $recalculated->discountIsEditable()) {
                 $this->reworkTheMoney($recalculated);
             }
 
@@ -230,6 +268,52 @@ final class UpdateOrder
         }
 
         return $updated;
+    }
+
+    /**
+     * Writes the fields only `orders.edit_fully` sends, each only when it was sent.
+     *
+     * The shipping company is snapshotted with its name, the way ChangeOrderStatus writes it on
+     * the way out. The delivery cost goes to the override, never to `delivery_cost` itself:
+     * RecalculateDeliveryCost runs a few lines later and reads it from there.
+     */
+    private function writeFullEditFields(Order $order, OrderFullEditFields $fields): void
+    {
+        $columns = [];
+
+        if ($fields->has('delivery_price')) {
+            $columns['delivery_price'] = $fields->deliveryPrice();
+        }
+
+        if ($fields->has('delivery_cost')) {
+            $columns['delivery_cost_override'] = $fields->deliveryCost();
+        }
+
+        if ($fields->has('shipping_company_id')) {
+            $companyId = $fields->shippingCompanyId();
+            $columns['shipping_company_id'] = $companyId;
+            $columns['shipping_company'] = $companyId === null
+                ? null
+                : (string) $this->delivery->findShippingCompany($companyId)->name;
+        }
+
+        if ($fields->has('courier_name')) {
+            $columns['courier_name'] = $fields->courierName();
+        }
+
+        if ($fields->has('courier_phone')) {
+            $columns['courier_phone'] = $fields->courierPhone();
+        }
+
+        if ($fields->has('deposit_expected_amount')) {
+            $columns['deposit_expected_amount'] = $fields->depositExpectedAmount();
+        }
+
+        if ($fields->has('placed_at')) {
+            $columns['placed_at'] = $fields->placedAt();
+        }
+
+        $order->forceFill($columns)->save();
     }
 
     /**

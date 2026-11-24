@@ -49,6 +49,7 @@ final class AuditAttributeLabels
         'delivery_price' => 'سعر التوصيل',
         'delivery_paid_by' => 'من يدفع التوصيل',
         'delivery_cost' => 'تكلفة التوصيل علينا',
+        'delivery_cost_override' => 'تكلفة التوصيل المكتوبة يدوياً',
 
         // The warehouse and money vocabulary, which reads the same on a purchase order, an
         // arrival, a batch and a movement — the whole point of this list. Naming them per

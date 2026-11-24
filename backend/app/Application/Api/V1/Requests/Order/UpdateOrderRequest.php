@@ -8,6 +8,7 @@ use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Order\Enums\AdditionalCostReason;
 use App\Domain\Order\Enums\DesignSource;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\ProhibitedIf;
 
 /**
  * The same shape as creating, minus the two things an order may not change.
@@ -99,6 +100,27 @@ class UpdateOrderRequest extends StoreOrderRequest
             // «جاهزة للطباعة» asked for the first time. Whether it is needed is the action's
             // question — it depends on the line and the order, not on the request.
             'items.*.warehouse_quantity' => ['nullable', 'numeric', 'gt:0', 'decimal:0,3', 'max:999999999'],
+
+            // **Only `orders.edit_fully` sends these**, and they are refused rather than dropped
+            // from anyone else, as `items.*.unit_cost` is: a figure silently not saved reads as
+            // saved. Each one is `sometimes`, so a key left out leaves its column standing.
+            // See OrderFullEditFields.
+            'delivery_price' => [$this->onlyWithFullEdit(), 'sometimes', 'numeric', 'min:0', 'max:9999999999.99'],
+            // Null hands the cost back to RecalculateDeliveryCost.
+            'delivery_cost' => [$this->onlyWithFullEdit(), 'sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'shipping_company_id' => [
+                $this->onlyWithFullEdit(), 'sometimes', 'nullable', 'integer',
+                Rule::exists('shipping_companies', 'id')->withoutTrashed(),
+            ],
+            'courier_name' => [$this->onlyWithFullEdit(), 'sometimes', 'nullable', 'string', 'max:255'],
+            'courier_phone' => [$this->onlyWithFullEdit(), 'sometimes', 'nullable', 'string', 'max:20'],
+            'deposit_expected_amount' => [$this->onlyWithFullEdit(), 'sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+            'placed_at' => [$this->onlyWithFullEdit(), 'sometimes', 'date'],
         ];
+    }
+
+    private function onlyWithFullEdit(): ProhibitedIf
+    {
+        return Rule::prohibitedIf(fn (): bool => $this->user()?->can(PermissionName::EditOrdersFully->value) !== true);
     }
 }

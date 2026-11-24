@@ -49,6 +49,12 @@ final class RecalculateDeliveryCost
             return '0.00';
         }
 
+        // A figure an administrator typed wins over both derivations: it is the reason the
+        // override exists. See the migration that added `delivery_cost_override`.
+        if ($order->delivery_cost_override !== null) {
+            return Money::round((string) $order->delivery_cost_override);
+        }
+
         $kept = $this->treasury->carrierFeeKeptFor((int) $order->getKey());
 
         return bccomp($kept, '0', Money::SCALE) > 0

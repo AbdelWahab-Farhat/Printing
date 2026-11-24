@@ -212,6 +212,11 @@ class OrderResource extends JsonResource
             'delivery_paid_by' => $this->payer()->value,
             'delivery_paid_by_label' => $this->payer()->label(),
             'delivery_cost' => (string) ($this->delivery_cost ?? '0.00'),
+            // A cost an administrator typed by hand, or null when it is derived. Sent so the full
+            // edit screen can tell «automatic» from a figure somebody chose.
+            'delivery_cost_override' => $this->delivery_cost_override === null
+                ? null
+                : (string) $this->delivery_cost_override,
             'discount' => (string) $this->discount,
             // Beside the discount and never folded into it: an order's total is read as «هذا ما
             // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
@@ -355,6 +360,7 @@ class OrderResource extends JsonResource
             // which survives the company being renamed or removed from the list.
             'shipping_company_id' => $this->shipping_company_id,
             'shipping_company' => $this->shipping_company,
+            'courier_name' => $this->courier_name,
             'courier_phone' => $this->courier_phone,
             'tracking_number' => $this->tracking_number,
 

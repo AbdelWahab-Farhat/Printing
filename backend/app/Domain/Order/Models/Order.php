@@ -126,6 +126,8 @@ class Order extends Model implements HasAuditTrail
             // the carrier, and the cost only through RecalculateDeliveryCost.
             'delivery_paid_by' => DeliveryPayer::class,
             'delivery_cost' => 'decimal:2',
+            // A cost an administrator typed, preferred by RecalculateDeliveryCost. Null: derive it.
+            'delivery_cost_override' => 'decimal:2',
             'discount' => 'decimal:2',
             // The charge that goes the other way — packaging, transport, a change to what was
             // agreed. Beside the discount rather than inside it, so «لماذا تغيّر الإجمالي؟» has
