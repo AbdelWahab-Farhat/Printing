@@ -182,6 +182,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   designsAreEditable: json['designs_are_editable'] as bool? ?? false,
   destinationIsEditable: json['destination_is_editable'] as bool? ?? false,
   discountIsEditable: json['discount_is_editable'] as bool? ?? false,
+  linesAreManageable: json['lines_are_manageable'] as bool? ?? false,
   canChangeDeliveryPayer: json['can_change_delivery_payer'] as bool? ?? false,
   deliveryPayerWarnings:
       (json['delivery_payer_warnings'] as List<dynamic>?)
@@ -348,6 +349,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'designs_are_editable': instance.designsAreEditable,
   'destination_is_editable': instance.destinationIsEditable,
   'discount_is_editable': instance.discountIsEditable,
+  'lines_are_manageable': instance.linesAreManageable,
   'can_change_delivery_payer': instance.canChangeDeliveryPayer,
   'delivery_payer_warnings': instance.deliveryPayerWarnings,
   'can_change_compensation': instance.canChangeCompensation,

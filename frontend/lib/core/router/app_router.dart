@@ -84,6 +84,7 @@ import 'package:dayaa/features/orders/presentation/views/filtered_orders_page.da
 import 'package:dayaa/features/orders/presentation/views/new_order_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_edit_page.dart';
+import 'package:dayaa/features/orders/presentation/views/order_manage_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_notes_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_payments_page.dart';
 import 'package:dayaa/features/orders/presentation/views/order_status_page.dart';
@@ -671,6 +672,11 @@ abstract final class Routes {
 
   static String editOrder(int id) => '/orders/$id/edit';
 
+  static const String orderManagePath = 'manage';
+
+  /// «إدارة الطلبية»: a line's quantity and price. `orders.edit_fully`.
+  static String manageOrder(int id) => '/orders/$id/manage';
+
   /// An order's money: the three numbers, the ledger, and the two ways of writing to it.
   ///
   /// A screen of its own rather than a block on the order, because a ledger gets long — six rows
@@ -1169,6 +1175,13 @@ abstract final class AppRouter {
             path: Routes.orderEditPath,
             builder: (context, state) =>
                 OrderEditPage(orderId: int.parse(state.pathParameters['id']!)),
+          ),
+          // Apart from «تعديل الطلبية», which keeps its locks whoever opens it. No guard of its
+          // own: the button is drawn only for the grant, and the server asks it again.
+          GoRoute(
+            path: Routes.orderManagePath,
+            builder: (context, state) =>
+                OrderManagePage(orderId: int.parse(state.pathParameters['id']!)),
           ),
           // No guard: the notes are part of the order, and anybody who reached the order has
           // already been allowed to read them.

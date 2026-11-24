@@ -131,6 +131,10 @@ abstract final class AppIcons {
   static IconData get edit =>
       _pick(Icons.edit_outlined, CupertinoIcons.pencil);
 
+  /// «إدارة الطلبية». A pencil in a box, kin to [edit] and plainly not the same button.
+  static IconData get manageOrder =>
+      _pick(Icons.edit_note_rounded, CupertinoIcons.square_pencil);
+
   /// Stops selling to a customer. Never a bin — nothing here is deleted.
   static IconData get deactivate =>
       _pick(Icons.pause_circle_outline_rounded, CupertinoIcons.pause_circle);

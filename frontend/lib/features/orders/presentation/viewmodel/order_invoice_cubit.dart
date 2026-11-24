@@ -23,7 +23,6 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   OrderInvoiceCubit({required Order order, required UpdateOrderInvoice updateInvoice})
     : _updateInvoice = updateInvoice,
       _openingDiscount = order.discount,
-      _openingLineIds = {for (final item in order.items ?? const <OrderItem>[]) item.id},
       super(
         OrderInvoiceState(
           orderId: order.id,
@@ -74,17 +73,6 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
 
   /// The discount the screen opened on, so a save knows whether this edit moved it.
   final String _openingDiscount;
-
-  /// The lines the screen opened on, so a save knows whether one was removed.
-  final Set<int> _openingLineIds;
-
-  /// Whether this edit added, removed or re-counted a line — what moves stock once it has left.
-  bool get linesChanged {
-    final kept = {for (final line in state.lines) if (!line.isNew) line.id};
-
-    return state.lines.any((line) => line.isNew || _ascii(line.quantity) != _ascii(line.originalQuantity ?? '')) ||
-        !kept.containsAll(_openingLineIds);
-  }
 
   /// Whether this edit has changed the discount from the one the screen opened on.
   bool get discountMoved => _ascii(state.discount) != _ascii(_openingDiscount);
@@ -273,9 +261,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     emit(state.copyWith(isUrgent: value, isDirty: true, failure: null));
   }
 
-  /// [fullEdit] carries the «حقول الأدمن» section, sent only by a reader holding
-  /// `orders.edit_fully`.
-  Future<void> save({OrderFullEdit? fullEdit}) async {
+  Future<void> save() async {
     if (!state.isValid || state.isSaving) return;
 
     emit(state.copyWith(isSaving: true, failure: null));
@@ -320,7 +306,6 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       // Only when this edit changed it — picked on the «المورد» row, or let go with the last
       // وسيط line. Otherwise absent, and the order's own vendor goes back untouched.
       vendor: state.vendorToSend == state.originalVendorId ? null : (id: state.vendorToSend),
-      fullEdit: fullEdit,
     );
 
     if (isClosed) return;

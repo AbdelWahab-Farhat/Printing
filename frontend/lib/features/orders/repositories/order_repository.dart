@@ -7,6 +7,7 @@ import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
+import 'package:dayaa/features/orders/models/managed_line.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -169,7 +170,6 @@ abstract interface class OrderRepository {
     String? additionalCostNote,
     bool? isUrgent,
     ({int? id})? vendor,
-    OrderFullEdit? fullEdit,
   });
 
   /// Undoes a cancellation made by mistake, and answers with the order as the server left it.
@@ -208,6 +208,12 @@ abstract interface class OrderRepository {
     int orderId, {
     required Map<int, LineShortageEntry> shortages,
   });
+
+  /// «إدارة الطلبية»: each sent line's quantity and price, in «جاهزة للطباعة» only.
+  ///
+  /// A line left out is left as it is; no line is added or removed. The price sent is the one the
+  /// line is billed at, whatever the catalogue says.
+  Future<Either<Failure, Order>> manageLines(int orderId, {required List<ManagedLine> lines});
 
   /// Records that the customer was told their order is ready — or takes that back.
   ///

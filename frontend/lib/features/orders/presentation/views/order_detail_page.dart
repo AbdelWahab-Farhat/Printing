@@ -210,6 +210,9 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
               // shows what everyone has done, including prices the reader may have no other
               // way to see.
               onOpenLog: sl<Session>().can(AppPermission.viewActivityLogs) ? _openLog : null,
+              // «إدارة الطلبية», apart from «تعديل الطلبية» on the dial (owner's decision,
+              // 2026-11-24). The status is the order's own condition and is read in [_Body].
+              onManage: sl<Session>().can(AppPermission.editOrdersFully) ? _manage : null,
               // `inventory.view`, the ledger's own grant. Whether this order has drawn anything
               // to show is the order's own condition and is read in [_Body].
               onOpenStock: sl<Session>().can(AppPermission.viewInventory) ? _openStock : null,
@@ -497,12 +500,18 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   /// Re-read rather than trusting what came back: the totals are the server's arithmetic, an
   /// approved version changes what the order may do next, and this screen is the one that has
   /// to be right about both.
-  Future<void> _edit(BuildContext context) async {
+  Future<void> _edit(BuildContext context) => _openEditor(context, Routes.editOrder);
+
+  /// «إدارة الطلبية»: a line's quantity and price, on a screen of its own. From the header, and
+  /// only for `orders.edit_fully`.
+  Future<void> _manage() => _openEditor(context, Routes.manageOrder);
+
+  Future<void> _openEditor(BuildContext context, String Function(int id) route) async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
     if (order == null) return;
 
-    final changed = await context.pushForResult<bool>(Routes.editOrder(order.id));
+    final changed = await context.pushForResult<bool>(route(order.id));
     if (changed != true || !context.mounted) return;
 
     await cubit.load();
@@ -1162,6 +1171,7 @@ class _Body extends StatelessWidget {
     required this.onVendorCost,
     required this.onOpenNotes,
     required this.onOpenLog,
+    required this.onManage,
     required this.onOpenStock,
     required this.onSendToCarrier,
     required this.onResendShipment,
@@ -1220,6 +1230,11 @@ class _Body extends StatelessWidget {
 
   /// Null without `logs.view`.
   final VoidCallback? onOpenLog;
+
+  /// «إدارة الطلبية». Null without `orders.edit_fully`; drawn only where the server says the lines
+  /// may be managed (`lines_are_manageable`), and never on an archived order, where every write
+  /// answers 404.
+  final Future<void> Function()? onManage;
 
   /// Null without `inventory.view`. Offered only once the order has drawn — see [_hasDrawn].
   final VoidCallback? onOpenStock;
@@ -1340,6 +1355,7 @@ class _Body extends StatelessWidget {
           order: order,
           onOpenNotes: onOpenNotes,
           onOpenLog: onOpenLog,
+          onManage: !order.isArchived && order.linesAreManageable ? onManage : null,
           onOpenStock: _hasDrawn ? onOpenStock : null,
           onSendToCarrier: _maySendToCarrier ? onSendToCarrier : null,
           onResendShipment: _mayResendToCarrier ? onResendShipment : null,

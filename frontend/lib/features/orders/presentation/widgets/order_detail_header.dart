@@ -36,6 +36,7 @@ class OrderDetailHeader extends StatelessWidget {
     required this.order,
     this.onOpenNotes,
     this.onOpenLog,
+    this.onManage,
     this.onOpenStock,
     this.onSendToCarrier,
     this.onResendShipment,
@@ -47,6 +48,7 @@ class OrderDetailHeader extends StatelessWidget {
   /// Let tests reach the buttons without matching on Arabic that may be reworded.
   static const Key notesKey = Key('order-header-notes');
   static const Key logKey = Key('order-header-log');
+  static const Key manageKey = Key('order-header-manage');
   static const Key stockKey = Key('order-header-stock');
   static const Key overflowKey = Key('order-header-overflow');
   static const Key sendToCarrierKey = Key('order-header-send-to-carrier');
@@ -63,6 +65,13 @@ class OrderDetailHeader extends StatelessWidget {
   /// Null without `logs.view`, for the reason the customer card's chevron is: an affordance
   /// promising a screen that would answer 403 is worse than no affordance.
   final VoidCallback? onOpenLog;
+
+  /// «إدارة الطلبية» — a line's quantity and price. Null without `orders.edit_fully`, where the
+  /// server says the lines may no longer be managed, and on an archived order.
+  ///
+  /// **In the bar rather than on the dial** (owner's request, 2026-11-24): it is a different
+  /// act from «تعديل الطلبية», and keeping the two apart keeps that one exactly as it was.
+  final VoidCallback? onManage;
 
   /// What this order moved in the warehouse. Null without `inventory.view`, and on an order that
   /// never drew — the notes' rule: an empty screen behind a button is a wasted tap.
@@ -146,6 +155,13 @@ class OrderDetailHeader extends StatelessWidget {
         ),
       ),
       actions: [
+        if (onManage case final manage?)
+          IconButton(
+            key: manageKey,
+            tooltip: 'إدارة الطلبية',
+            icon: Icon(AppIcons.manageOrder),
+            onPressed: manage,
+          ),
         _CarrierMenu(
           onSend: onSendToCarrier,
           onResend: onResendShipment,

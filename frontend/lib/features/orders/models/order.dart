@@ -462,6 +462,11 @@ abstract class Order with _$Order {
     /// server accepts. Absent on an archived order, so it reads `false` there.
     @JsonKey(name: 'discount_is_editable') @Default(false) bool discountIsEditable,
 
+    /// Whether «إدارة الطلبية» may still change a line's quantity and price: every status once
+    /// the quantities were set, until «تم الاستلام». The server's line, read by the button and
+    /// asked again on save.
+    @JsonKey(name: 'lines_are_manageable') @Default(false) bool linesAreManageable,
+
     /// Whether «التوصيل على» may still be switched, for this reader — open until the courier
     /// has collected, «جاري التوصيل» included.
     @JsonKey(name: 'can_change_delivery_payer') @Default(false) bool canChangeDeliveryPayer,

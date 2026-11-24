@@ -655,6 +655,9 @@ abstract final class OrderEndpoints {
   /// timeline, a number on the order is corrected.
   static String shortages(int orderId) => '/orders/$orderId/shortages';
 
+  /// «إدارة الطلبية» — a line's quantity and price. See [OrderRepository.manageLines].
+  static String manage(int orderId) => '/orders/$orderId/manage';
+
   /// «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — recording that an employee sent the customer the message
   /// saying their order is ready, and taking that record back.
   ///

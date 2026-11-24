@@ -11,6 +11,7 @@ import 'package:dayaa/core/print_colors/print_color.dart';
 import 'package:dayaa/features/orders/models/additional_cost_reason.dart';
 import 'package:dayaa/features/orders/models/delivery_payer_change.dart';
 import 'package:dayaa/features/orders/models/line_shortage_entry.dart';
+import 'package:dayaa/features/orders/models/managed_line.dart';
 import 'package:dayaa/features/orders/models/new_order.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_counts.dart';
@@ -263,7 +264,6 @@ class OrderRepositoryImpl implements OrderRepository {
     String? additionalCostNote,
     bool? isUrgent,
     ({int? id})? vendor,
-    OrderFullEdit? fullEdit,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -327,8 +327,6 @@ class OrderRepositoryImpl implements OrderRepository {
             // whose absence means "leave them alone" rather than "clear them", which is what
             // lets an address be corrected on an order whose lines are already closed.
             if (lines != null) 'items': lines.map((line) => line.toJson()).toList(growable: false),
-            // Only from a reader holding `orders.edit_fully`; see [OrderFullEdit].
-            ...?fullEdit?.toJson(),
           },
         ),
         parse: (data) => Order.fromJson(data as Map<String, dynamic>),
@@ -424,6 +422,19 @@ class OrderRepositoryImpl implements OrderRepository {
           },
       },
     });
+  }
+
+  @override
+  Future<Either<Failure, Order>> manageLines(int orderId, {required List<ManagedLine> lines}) {
+    return safeRequest<Order>(
+      () => _dio.put(
+        OrderEndpoints.manage(orderId),
+        data: <String, dynamic>{
+          'items': [for (final line in lines) line.toJson()],
+        },
+      ),
+      parse: (data) => Order.fromJson(data as Map<String, dynamic>),
+    );
   }
 
   @override

@@ -10,6 +10,7 @@ import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/views/order_detail_page.dart';
+import 'package:dayaa/features/orders/presentation/widgets/order_detail_header.dart';
 import 'package:dayaa/features/orders/repositories/order_repository.dart';
 import 'package:dayaa/features/orders/usecases/archive_order.dart';
 import 'package:dayaa/features/orders/usecases/confirm_deposit_receipt.dart';
@@ -42,6 +43,7 @@ void main() {
   Order orderIn(
     OrderStatus status, {
     bool discountIsEditable = true,
+    bool linesAreManageable = false,
     DateTime? deletedAt,
   }) => Order(
     id: 55,
@@ -64,6 +66,7 @@ void main() {
     grandTotal: '60.00',
     paymentStatusLabel: 'مدفوعة',
     discountIsEditable: discountIsEditable,
+    linesAreManageable: linesAreManageable,
     deletedAt: deletedAt,
   );
 
@@ -212,5 +215,43 @@ void main() {
 
     // Assert
     expect(find.text('تعديل الطلبية'), findsNothing);
+  });
+
+  group('«إدارة الطلبية» in the bar', () {
+    testWidgets('it is offered to the grant where the server says the lines may be managed', (
+      tester,
+    ) async {
+      // Arrange
+      final order = orderIn(OrderStatus.printing, linesAreManageable: true);
+
+      // Act
+      await openTheDial(tester, order, ['orders.manage', 'orders.edit_fully']);
+
+      // Assert — and «تعديل الطلبية» stays on the dial beside it.
+      expect(find.byKey(OrderDetailHeader.manageKey), findsOneWidget);
+      expect(find.text('تعديل الطلبية'), findsOneWidget);
+    });
+
+    testWidgets('it is not offered without the grant', (tester) async {
+      // Arrange
+      final order = orderIn(OrderStatus.printing, linesAreManageable: true);
+
+      // Act
+      await openTheDial(tester, order, ['orders.manage']);
+
+      // Assert
+      expect(find.byKey(OrderDetailHeader.manageKey), findsNothing);
+    });
+
+    testWidgets('it is not offered once the order is delivered', (tester) async {
+      // Arrange — the server sends false from «تم الاستلام» on.
+      final order = orderIn(OrderStatus.delivered);
+
+      // Act
+      await openTheDial(tester, order, ['orders.manage', 'orders.edit_fully']);
+
+      // Assert
+      expect(find.byKey(OrderDetailHeader.manageKey), findsNothing);
+    });
   });
 }

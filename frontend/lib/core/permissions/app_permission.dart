@@ -142,11 +142,10 @@ enum AppPermission {
     'orders.items.edit_after_draw',
     'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
   ),
-  // Every field of an order in any status, plus the fields nothing else edits once set: the
-  // delivery price and cost, the courier, the expected deposit and the order date. Asked on top
-  // of `manageOrders`; it lifts the status locks only, the money grants still apply. Held by
-  // nobody until a role is given it.
-  editOrdersFully('orders.edit_fully', 'تعديل الطلبية بالكامل في أي حالة'),
+  // «إدارة الطلبية»: a line's quantity and price from the quantities being set until delivery, the
+  // price overriding the catalogue's. Asked on top of `manageOrders`. Held by nobody until a role
+  // is given it.
+  editOrdersFully('orders.edit_fully', 'إدارة الطلبية (تعديل كمية وسعر البنود)'),
   // «طلبية تعويض» — goods sent out for free. Its own grant, not the discount's: this gives the
   // goods away and books them as a loss. Held by nobody until a role is given it.
   compensationOrders('orders.compensation', 'إنشاء طلبية تعويض (بضاعة بلا مقابل)'),

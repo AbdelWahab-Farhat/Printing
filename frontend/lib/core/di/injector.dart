@@ -197,6 +197,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/archived_orders_cub
 import 'package:dayaa/features/orders/presentation/viewmodel/filtered_orders_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
+import 'package:dayaa/features/orders/presentation/viewmodel/manage_order_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_payments_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_status_cubit.dart';
@@ -1425,6 +1426,10 @@ abstract final class Injector {
           order: order,
           updateInvoice: sl<UpdateOrderInvoice>(),
         ),
+      )
+      // «إدارة الطلبية», seeded from the order its screen just read.
+      ..registerFactoryParam<ManageOrderCubit, Order, void>(
+        (order, _) => ManageOrderCubit(order: order, repository: sl<OrderRepository>()),
       )
       // Parameterised on the order's id, like the detail Cubit beside it and for the same
       // reason: this one is *about* one order's ledger, and a singleton would close on the
