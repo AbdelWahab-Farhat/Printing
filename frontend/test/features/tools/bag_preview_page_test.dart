@@ -51,16 +51,14 @@ void main() {
     picker = _FakePicker();
 
     final recorder = ui.PictureRecorder();
-    Canvas(recorder).drawRect(
-      const Rect.fromLTWH(0, 0, 40, 40),
-      Paint()..color = const Color(0xFF112233),
-    );
+    Canvas(
+      recorder,
+    ).drawRect(const Rect.fromLTWH(0, 0, 40, 40), Paint()..color = const Color(0xFF112233));
     final image = await recorder.endRecording().toImage(40, 40);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
 
-    final file = File('${temp.path}/logo.png')
-      ..writeAsBytesSync(bytes!.buffer.asUint8List());
+    final file = File('${temp.path}/logo.png')..writeAsBytesSync(bytes!.buffer.asUint8List());
     logo = PickedFile(path: file.path, name: 'logo.png', sizeBytes: file.lengthSync());
 
     sl
@@ -69,10 +67,7 @@ void main() {
       ..registerLazySingleton<LoadBagMockup>(LoadBagMockup.new)
       ..registerLazySingleton<SaveBagPreviewImage>(SaveBagPreviewImage.new)
       ..registerFactory<BagPreviewCubit>(
-        () => BagPreviewCubit(
-          loadImage: sl<LoadDesignImage>(),
-          loadMockup: sl<LoadBagMockup>(),
-        ),
+        () => BagPreviewCubit(loadImage: sl<LoadDesignImage>(), loadMockup: sl<LoadBagMockup>()),
       );
   });
 

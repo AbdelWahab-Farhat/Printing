@@ -33,9 +33,7 @@ void main() {
       'يعرض رمزاً يحمل ما أُدخل حرفياً',
       build: () => cubit,
       act: (cubit) => cubit.generate('https://daaya.ly'),
-      expect: () => [
-        isA<QrReady>().having((s) => s.art.data, 'data', 'https://daaya.ly'),
-      ],
+      expect: () => [isA<QrReady>().having((s) => s.art.data, 'data', 'https://daaya.ly')],
     );
 
     blocTest<QrToolCubit, QrToolState>(
@@ -43,9 +41,7 @@ void main() {
       build: () => cubit,
       act: (cubit) => cubit.generate('  0910000000  '),
       // مسافةٌ لاصقة في آخر رابط تُرمَّز معه ويحملها الماسح — وهي أثر لصقٍ لا محتوى قصده أحد.
-      expect: () => [
-        isA<QrReady>().having((s) => s.art.data, 'data', '0910000000'),
-      ],
+      expect: () => [isA<QrReady>().having((s) => s.art.data, 'data', '0910000000')],
     );
 
     blocTest<QrToolCubit, QrToolState>(

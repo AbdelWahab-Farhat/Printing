@@ -79,10 +79,7 @@ class DesignPlacement {
 
     return DesignPlacement(
       scale: scale,
-      offset: Offset(
-        offset.dx.clamp(-limitX, limitX),
-        offset.dy.clamp(-limitY, limitY),
-      ),
+      offset: Offset(offset.dx.clamp(-limitX, limitX), offset.dy.clamp(-limitY, limitY)),
     );
   }
 
@@ -101,10 +98,7 @@ class DesignPlacement {
   /// «يدخل بنسبته» لا «يملأ»: تصميمٌ مربّع على منطقةٍ مستطيلة يُمطّ ليملأها، والمطّ يشوّه شعار
   /// الزبون — وهو خطأ يراه الزبون قبل أن يراه أحد.
   Size _sizeIn(Rect printArea, Size designSize) {
-    final fit = math.min(
-      printArea.width / designSize.width,
-      printArea.height / designSize.height,
-    );
+    final fit = math.min(printArea.width / designSize.width, printArea.height / designSize.height);
 
     return Size(designSize.width * fit * scale, designSize.height * fit * scale);
   }

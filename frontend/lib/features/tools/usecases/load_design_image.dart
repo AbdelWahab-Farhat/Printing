@@ -18,9 +18,7 @@ class LoadDesignImage {
   Future<Either<Failure, ui.Image>> call(PickedFile file) async {
     if (file.name.toLowerCase().endsWith('.pdf')) {
       return const Left(
-        Failure.unexpected(
-          message: 'المعاينة تحتاج صورة — حوّل ملف PDF إلى PNG أو JPG ثم ارفعه',
-        ),
+        Failure.unexpected(message: 'المعاينة تحتاج صورة — حوّل ملف PDF إلى PNG أو JPG ثم ارفعه'),
       );
     }
 

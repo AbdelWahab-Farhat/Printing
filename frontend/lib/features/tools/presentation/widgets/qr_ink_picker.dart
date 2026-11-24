@@ -55,11 +55,7 @@ class QrInkPicker extends StatelessWidget {
           child: Row(
             children: [
               for (final ink in QrInk.palette) ...[
-                _Swatch(
-                  ink: ink,
-                  isSelected: ink == selected,
-                  onTap: () => onSelected(ink),
-                ),
+                _Swatch(ink: ink, isSelected: ink == selected, onTap: () => onSelected(ink)),
                 SizedBox(width: 12.w),
               ],
               _CustomSwatch(
@@ -239,9 +235,7 @@ class _InkSheet extends StatefulWidget {
 class _InkSheetState extends State<_InkSheet> {
   late Color _color = widget.initial;
   late HSVColor _hsv = HSVColor.fromColor(widget.initial);
-  late final TextEditingController _code = TextEditingController(
-    text: HexColor.of(widget.initial),
-  );
+  late final TextEditingController _code = TextEditingController(text: HexColor.of(widget.initial));
 
   /// Whether the field holds a full code. When it does not, there is nothing to choose.
   bool get _codeIsValid => HexColor.normalize(_code.text) != null;

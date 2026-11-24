@@ -132,11 +132,11 @@ class _BagPreviewViewState extends State<_BagPreviewView> {
               AspectRatio(
                 aspectRatio: 1,
                 child: BagCanvas(
-                bag: state.bag,
-                mockup: state.mockup,
-                design: state.design,
-                placement: _placement,
-                showGuides: _showGuides,
+                  bag: state.bag,
+                  mockup: state.mockup,
+                  design: state.design,
+                  placement: _placement,
+                  showGuides: _showGuides,
                   onPlacementChanged: (placement) => setState(() => _placement = placement),
                 ),
               ),
@@ -148,9 +148,7 @@ class _BagPreviewViewState extends State<_BagPreviewView> {
               AppButton(
                 label: state.design == null ? 'رفع التصميم' : 'تبديل التصميم',
                 icon: AppIcons.designs,
-                variant: state.design == null
-                    ? AppButtonVariant.primary
-                    : AppButtonVariant.tonal,
+                variant: state.design == null ? AppButtonVariant.primary : AppButtonVariant.tonal,
                 onPressed: _upload,
               ),
               if (state.design case final design?) ...[

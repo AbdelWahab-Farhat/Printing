@@ -206,8 +206,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-
-
     // **ما يحدث بعد الضغط على «إضافة إلى التصاميم» لا يُختبر هنا، وذلك قرارٌ لا نقص.**
     // تحويل الرسم إلى بايتات PNG يجري على خيط التصيير، ولا تُنهيه ساعةُ `pumpAndSettle`
     // المزيّفة؛ والزرّ أثناء انشغاله يُدير خيطاً حول حافته بلا توقّف، فالشجرة لا تستقرّ أبداً
@@ -326,10 +324,8 @@ void main() {
 
   group('كود اللون', () {
     /// The code field inside the open sheet.
-    Finder codeField() => find.descendant(
-      of: find.byType(BottomSheet),
-      matching: find.byType(TextFormField),
-    );
+    Finder codeField() =>
+        find.descendant(of: find.byType(BottomSheet), matching: find.byType(TextFormField));
 
     String codeText(WidgetTester tester) =>
         tester.widget<TextFormField>(codeField()).controller!.text;

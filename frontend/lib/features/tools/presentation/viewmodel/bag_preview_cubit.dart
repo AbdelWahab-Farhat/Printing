@@ -48,12 +48,7 @@ class BagPreviewCubit extends Cubit<BagPreviewState> {
     // بطيء عن «أكياس ورقية» يجب ألّا يرسم الورقي فوق ما اختاره بعده.
     if (state.bag != bag) return;
 
-    emit(
-      result.fold(
-        (failure) => state.withMockup(null),
-        (image) => state.withMockup(image),
-      ),
-    );
+    emit(result.fold((failure) => state.withMockup(null), (image) => state.withMockup(image)));
   }
 
   /// يقرأ الملف المرفوع ويستبدل به التصميم المعروض.

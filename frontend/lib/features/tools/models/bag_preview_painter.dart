@@ -94,10 +94,7 @@ class BagPreviewPainter extends CustomPainter {
         ..drawImageRect(
           artwork,
           Rect.fromLTWH(0, 0, artwork.width.toDouble(), artwork.height.toDouble()),
-          placement.rectIn(
-            printArea,
-            Size(artwork.width.toDouble(), artwork.height.toDouble()),
-          ),
+          placement.rectIn(printArea, Size(artwork.width.toDouble(), artwork.height.toDouble())),
           Paint()..filterQuality = FilterQuality.high,
         )
         ..restore()

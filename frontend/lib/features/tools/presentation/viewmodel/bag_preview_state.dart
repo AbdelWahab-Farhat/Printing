@@ -8,16 +8,11 @@ part of 'bag_preview_cubit.dart';
 @freezed
 sealed class BagPreviewState with _$BagPreviewState {
   /// كيسٌ مختار ولا تصميم بعد.
-  const factory BagPreviewState.empty({
-    required BagType bag,
-    ui.Image? mockup,
-  }) = BagPreviewEmpty;
+  const factory BagPreviewState.empty({required BagType bag, ui.Image? mockup}) = BagPreviewEmpty;
 
   /// ملفٌ يُفكّ ترميزه.
-  const factory BagPreviewState.loading({
-    required BagType bag,
-    ui.Image? mockup,
-  }) = BagPreviewLoading;
+  const factory BagPreviewState.loading({required BagType bag, ui.Image? mockup}) =
+      BagPreviewLoading;
 
   const factory BagPreviewState.ready({
     required BagType bag,
