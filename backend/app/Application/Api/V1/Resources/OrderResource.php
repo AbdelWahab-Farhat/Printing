@@ -616,6 +616,10 @@ class OrderResource extends JsonResource
             // only thing `UpdateOrder` accepts. See `Order::discountIsEditable()`.
             'discount_is_editable' => $this->discountIsEditable(),
 
+            // «إدارة الطلبية» — whether a line's quantity and price may still change there. The
+            // button reads this, and ManageOrderLines asks the same. See linesAreManageable().
+            'lines_are_manageable' => $this->linesAreManageable(),
+
             // «التوصيل على: المستلم / علينا» — open until the courier has collected, for whoever
             // may change an order. See `Order::deliveryPayerIsEditable()`.
             'can_change_delivery_payer' => $this->deliveryPayerIsEditable()

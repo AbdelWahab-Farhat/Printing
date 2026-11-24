@@ -113,12 +113,11 @@ enum PermissionName: string
     // See ORDER-LINES-ADD-REMOVE.md §4, decision 9.
     case EditDrawnOrderLines = 'orders.items.edit_after_draw';
 
-    // Editing every field of an order in any status, delivered, settled and cancelled included,
-    // plus the fields nothing else edits once they are set: the delivery price and cost, the
-    // shipping company and courier, the weight, the expected deposit and the order date.
-    // Asked **on top of** `orders.manage`. It lifts the status locks only; the discount, the
-    // additional cost and drawn stock still ask for their own grants. Seeded on nobody: an
-    // administrator has it through `Gate::before`, and a role is given it on the roles screen.
+    // «إدارة الطلبية»: a line's quantity and price in every status from the quantities being set
+    // until delivery, the price overriding the catalogue's. Asked **on top of** `orders.manage`,
+    // and it stands in for the drawn-line grants on that screen alone. The owner opens more to it
+    // one field at a time; see ManageOrderLines. Seeded on nobody: an administrator has it
+    // through `Gate::before`, and a role is given it on the roles screen.
     case EditOrdersFully = 'orders.edit_fully';
 
     // «طلبية تعويض» — sending goods out for free. Its own grant rather than the discount's: the
@@ -497,7 +496,7 @@ enum PermissionName: string
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::EditDrawnOrderLines => 'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
-            self::EditOrdersFully => 'تعديل الطلبية بالكامل في أي حالة',
+            self::EditOrdersFully => 'إدارة الطلبية (تعديل كمية وسعر البنود)',
             self::CompensationOrders => 'إنشاء طلبية تعويض (بضاعة بلا مقابل)',
             self::SetOrderDesignFee => 'رؤية وتحديد أجرة التصميم على الطلبية',
             self::ConfirmReadyMessage => 'رسائل الزبائن (الجاهزية والراجع)',

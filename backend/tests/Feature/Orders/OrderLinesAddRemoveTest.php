@@ -712,6 +712,28 @@ class OrderLinesAddRemoveTest extends TestCase
         $this->assertSame('500.000', (string) $order->items()->sole()->quantity);
     }
 
+    public function test_managing_a_drawn_order_draws_again_with_its_own_grant_alone(): void
+    {
+        // Arrange — «إدارة الطلبية» answers the drawn-line question with `orders.edit_fully`.
+        $size = $this->bagSize();
+        $warehouse = Warehouse::factory()->create();
+        $this->shelve($warehouse, $size, '1000');
+        $order = $this->drawn($this->order([[$size, '300']]), $warehouse);
+        $line = $order->items()->sole();
+
+        // Act
+        $this->withHeaders($this->staff([PermissionName::EditOrdersFully]))
+            ->putJson("/api/v1/orders/{$order->id}/manage", [
+                'items' => [['id' => $line->id, 'quantity' => '500', 'unit_price' => '0.750']],
+            ])
+            ->assertOk();
+
+        // Assert — the shelf moved exactly as the ordinary edit would move it.
+        $this->assertSame('500.000', $this->balanceOf($warehouse, $size));
+        $this->assertSame('500.000', (string) $line->refresh()->quantity);
+        $this->assertSame('0.750', (string) $line->unit_price);
+    }
+
     public function test_cancelling_after_an_edit_returns_exactly_what_the_edit_left_drawn(): void
     {
         // Arrange — drawn at 300, edited to 500.

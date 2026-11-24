@@ -12,6 +12,7 @@ use App\Domain\Order\Actions\ChangeOrderStatus;
 use App\Domain\Order\Actions\ConfirmDepositReceipt;
 use App\Domain\Order\Actions\CreateManufacturingCostRate;
 use App\Domain\Order\Actions\CreateOrder;
+use App\Domain\Order\Actions\ManageOrderLines;
 use App\Domain\Order\Actions\MarkOrderNotesRead;
 use App\Domain\Order\Actions\MarkReadyMessageSent;
 use App\Domain\Order\Actions\MarkReturnMessageSent;
@@ -36,6 +37,7 @@ use App\Domain\Order\Actions\UpdateOrder;
 use App\Domain\Order\Actions\UpdateOrderDesignColors;
 use App\Domain\Order\Actions\WriteOffOrderBalance;
 use App\Domain\Order\DTOs\LineShortage;
+use App\Domain\Order\DTOs\ManagedOrderLine;
 use App\Domain\Order\DTOs\ManufacturingCostRateData;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\DTOs\OrderLineShortage;
@@ -50,10 +52,10 @@ use App\Domain\Order\Exceptions\CompensationCannotChange;
 use App\Domain\Order\Exceptions\CompensationRequiresPermission;
 use App\Domain\Order\Exceptions\CompensationTakesNoCharges;
 use App\Domain\Order\Exceptions\DeliveryPayerCannotChange;
-use App\Domain\Order\Exceptions\DesignFeeCannotChange;
-use App\Domain\Order\Exceptions\DesignFeeRequiresPermission;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsADeposit;
 use App\Domain\Order\Exceptions\DepositConfirmationNeedsASecondPerson;
+use App\Domain\Order\Exceptions\DesignFeeCannotChange;
+use App\Domain\Order\Exceptions\DesignFeeRequiresPermission;
 use App\Domain\Order\Exceptions\ReadyMessageNeedsAReadyOrder;
 use App\Domain\Order\Exceptions\ReturnMessageNeedsAReturnedOrder;
 use App\Domain\Order\Exceptions\ScrapRequiresAnActor;
@@ -97,6 +99,7 @@ class OrderService
     public function __construct(
         private readonly CreateOrder $createOrder,
         private readonly UpdateOrder $updateOrder,
+        private readonly ManageOrderLines $manageLines,
         private readonly ChangeOrderStatus $changeStatus,
         // The only writer of a status that does not go through the one above — see its docblock
         // for why undoing a cancellation is not a move on the map.
@@ -305,6 +308,16 @@ class OrderService
     public function update(Order $order, OrderData $data, ?User $actor = null): Order
     {
         return ($this->updateOrder)($order, $data, $actor);
+    }
+
+    /**
+     * «إدارة الطلبية» — see {@see ManageOrderLines}.
+     *
+     * @param  list<ManagedOrderLine>  $lines
+     */
+    public function manageLines(Order $order, array $lines, User $actor): Order
+    {
+        return ($this->manageLines)($order, $lines, $actor);
     }
 
     /**

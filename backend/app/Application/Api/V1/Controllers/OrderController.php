@@ -8,16 +8,17 @@ use App\Application\Api\V1\Controllers\Concerns\ReadsAuditTrail;
 use App\Application\Api\V1\Requests\Audit\ActivityLogFilterRequest;
 use App\Application\Api\V1\Requests\Order\ChangeDeliveryPayerRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderCompensationRequest;
-use App\Application\Api\V1\Requests\Order\SetOrderDesignFeeRequest;
 use App\Application\Api\V1\Requests\Order\ChangeOrderStatusRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmDepositReceiptRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReadyMessageRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmReturnMessageRequest;
 use App\Application\Api\V1\Requests\Order\ConfirmVendorMessageRequest;
+use App\Application\Api\V1\Requests\Order\ManageOrderLinesRequest;
 use App\Application\Api\V1\Requests\Order\RecordScrapLossRequest;
 use App\Application\Api\V1\Requests\Order\RecordVendorCostRequest;
 use App\Application\Api\V1\Requests\Order\ReinstateOrderRequest;
 use App\Application\Api\V1\Requests\Order\ReviewOrderDesignRequest;
+use App\Application\Api\V1\Requests\Order\SetOrderDesignFeeRequest;
 use App\Application\Api\V1\Requests\Order\SetOrderShortagesRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderDesignRequest;
 use App\Application\Api\V1\Requests\Order\StoreOrderRequest;
@@ -570,6 +571,25 @@ class OrderController extends Controller
         return $this->success(
             new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
             'تم تحديث أجرة التصميم',
+        );
+    }
+
+    /**
+     * Manage an order's lines
+     *
+     * «إدارة الطلبية»: each line's quantity and price. The price sent is the one the line is
+     * billed at, whatever the catalogue says; a moved quantity re-draws the stock as the ordinary
+     * edit would. Nothing else on the order changes, and no line is added or removed. 422 under
+     * review and once the order is delivered, settled, cancelled or rejected — see
+     * `lines_are_manageable`.
+     */
+    public function manageLines(ManageOrderLinesRequest $request, Order $order): JsonResponse
+    {
+        $updated = $this->orders->manageLines($order, $request->lines(), $request->user());
+
+        return $this->success(
+            new OrderResource($this->withParcelCode($this->orders->loadForDisplay($updated))),
+            'تم تحديث الطلبية بنجاح',
         );
     }
 

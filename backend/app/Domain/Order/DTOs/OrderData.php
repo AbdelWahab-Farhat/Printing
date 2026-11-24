@@ -88,9 +88,6 @@ final readonly class OrderData
         public ?CompensationReason $compensationReason = null,
         public ?string $compensationNote = null,
         public ?int $compensatesOrderId = null,
-        // The fields only `orders.edit_fully` writes. Null when none was sent — see
-        // OrderFullEditFields.
-        public ?OrderFullEditFields $fullEditFields = null,
     ) {}
 
     /**
@@ -146,7 +143,6 @@ final readonly class OrderData
             compensatesOrderId: isset($validated['compensates_order_id'])
                 ? (int) $validated['compensates_order_id']
                 : null,
-            fullEditFields: OrderFullEditFields::fromArray($validated),
             items: array_key_exists('items', $validated) && is_array($validated['items'])
                 ? array_values(array_map(
                     fn (array $item, int $index) => OrderItemData::fromArray($item, $index),

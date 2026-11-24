@@ -61,6 +61,7 @@ class OrderArchiveResourceTest extends TestCase
         'discount_is_editable',
         'item_edits_move_stock',
         'items_are_editable',
+        'lines_are_manageable',
         'progress',
         'reinstate_to',
         'reinstate_to_label',

@@ -589,6 +589,13 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('orders/{order}/shortages', [OrderController::class, 'setShortages'])
             ->middleware('can:orders.status.shortage')->name('orders.shortages');
 
+        // «إدارة الطلبية» — a line's quantity and price, apart from the ordinary edit (owner's
+        // decision, 2026-11-24). Its own route rather than a flag on `PUT /orders/{order}`, so
+        // the ordinary edit keeps every lock whoever sends it. Whether the order is in a status
+        // it opens in is the action's question.
+        Route::put('orders/{order}/manage', [OrderController::class, 'manageLines'])
+            ->middleware(['can:orders.manage', 'can:orders.edit_fully'])->name('orders.manage');
+
         // «هل أُبلِغ الزبون أنّ طلبه جاهز؟» — a note about a message somebody sent on their own
         // phone, so the only thing this API can do is record that they say they sent it. `can:`
         // sits here rather than in the request for the reason the shortage route's does: this

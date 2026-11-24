@@ -1173,6 +1173,20 @@ class Order extends Model implements HasAuditTrail
     }
 
     /**
+     * Whether «إدارة الطلبية» may change a line's quantity and price.
+     *
+     * **Every status once the quantities were set, until the money is final** (owner's decision,
+     * 2026-11-24). Shut in «بانتظار المراجعة», where staff have not yet confirmed what the
+     * customer asked for, and in the closed statuses — «تم الاستلام», «تم التسوية», «إلغاء تام»
+     * and «مرفوض» — where the investors' share and the cash were already worked out from the
+     * total, or nothing is owed at all.
+     */
+    public function linesAreManageable(): bool
+    {
+        return $this->status !== OrderStatus::Requested && ! $this->status->isClosed();
+    }
+
+    /**
      * Whether who pays the courier may still be changed.
      *
      * **Open until the courier has collected** (owner's decision, 2026-11-13): «جاري التوصيل»

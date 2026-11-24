@@ -72,12 +72,11 @@ final class SyncOrderItems
      * @throws EditedLineNeedsAStockQuantity
      * @throws OrderStockShortfall
      */
-    public function __invoke(Order $order, array $items, ?User $actor = null, bool $ignoreStatusLock = false): Order
+    public function __invoke(Order $order, array $items, ?User $actor = null, bool $managing = false): Order
     {
-        // `ignoreStatusLock` is `orders.edit_fully`, asked by UpdateOrder. It lifts only this
-        // lock: the stock guards below still stand, so lines whose draw cannot be re-posted
-        // stay refused.
-        if (! $ignoreStatusLock && ! $order->itemsAreEditable()) {
+        // «إدارة الطلبية» asks its own status question — Order::linesAreManageable() — before it
+        // gets here, and it opens past the press. Every stock guard below still stands.
+        if (! $managing && ! $order->itemsAreEditable()) {
             throw OrderItemsAreLocked::make($order->status);
         }
 
@@ -110,7 +109,7 @@ final class SyncOrderItems
             && ($added !== [] || $removed->isNotEmpty() || $changed !== [] || $this->weightsMoved($existing, $kept));
 
         if ($movesStock) {
-            $this->guardStockMayMove($order, $existing, $actor);
+            $this->guardStockMayMove($order, $existing, $actor, $managing);
         }
 
         $this->guardRemovals($removed);
@@ -134,6 +133,12 @@ final class SyncOrderItems
         }
 
         foreach ($kept as $data) {
+            if ($managing) {
+                $this->setLine($existing[$data->id], $data);
+
+                continue;
+            }
+
             $this->editLine($existing[$data->id], $data);
         }
 
@@ -207,6 +212,25 @@ final class SyncOrderItems
     }
 
     /**
+     * «إدارة الطلبية»'s own edit of a kept line: the quantity and the price, both as sent.
+     *
+     * **Never priced from the catalogue.** The price is the one typed on the screen, for a product
+     * with listed prices too, and a quantity outside every tier is no reason to refuse it: the
+     * catalogue has no say here. A price left out keeps the line's own.
+     */
+    private function setLine(OrderItem $item, OrderItemData $data): void
+    {
+        $item->forceFill([
+            'quantity' => $data->quantity,
+            'unit_price' => $data->unitPrice ?? $item->unit_price,
+        ]);
+
+        if ($item->isDirty()) {
+            $item->forceFill(['line_total' => $item->deriveLineTotal()])->save();
+        }
+    }
+
+    /**
      * Refuses a stock-moving edit the order cannot safely take.
      *
      * @param  Collection<int, OrderItem>  $existing
@@ -214,7 +238,7 @@ final class SyncOrderItems
      * @throws EditingDrawnLinesRequiresPermission
      * @throws RedrawnOrderLinesAreLocked
      */
-    private function guardStockMayMove(Order $order, Collection $existing, ?User $actor): void
+    private function guardStockMayMove(Order $order, Collection $existing, ?User $actor, bool $managing): void
     {
         if ($actor === null) {
             throw FulfillmentRequiresAnActor::make();
@@ -222,8 +246,17 @@ final class SyncOrderItems
 
         // Both grants, on top of the `orders.manage` the route already asked: the one that takes
         // goods off the shelf, and the owner's own say on who edits drawn lines at all.
-        if (! $actor->can(PermissionName::MoveOrderToReadyToPrint->value)
-            || ! $actor->can(PermissionName::EditDrawnOrderLines->value)) {
+        //
+        // **«إدارة الطلبية» answers with its own grant instead** (owner's decision, 2026-11-24):
+        // its whole purpose is changing the quantities of an order whose stock has left, so the
+        // owner's say is `orders.edit_fully` there. Only the grant question changes; every
+        // guard below still stands.
+        $mayMoveDrawnStock = $managing
+            ? $actor->can(PermissionName::EditOrdersFully->value)
+            : $actor->can(PermissionName::MoveOrderToReadyToPrint->value)
+                && $actor->can(PermissionName::EditDrawnOrderLines->value);
+
+        if (! $mayMoveDrawnStock) {
             throw EditingDrawnLinesRequiresPermission::make();
         }
 
