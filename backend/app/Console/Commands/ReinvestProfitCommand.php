@@ -55,20 +55,25 @@ class ReinvestProfitCommand extends Command
         $failed = 0;
 
         foreach ($investors as $investor) {
-            try {
-                $result = $reinvest((int) $investor->getKey(), null);
-            } catch (Throwable $e) {
-                $failed++;
-                Log::warning('investment:reinvest-profit skipped an investor', [
-                    'investor_id' => $investor->getKey(),
-                    'error' => $e->getMessage(),
-                ]);
-                $this->warn("{$investor->code}: {$e->getMessage()}");
+            // A sweep is its own boundary: one investor a guard refuses must not stop the rest.
+            // `rescue()` hands the failure to the closure below; the next sweep tries that investor again.
+            $result = rescue(
+                fn () => $reinvest((int) $investor->getKey(), null),
+                function (Throwable $e) use ($investor, &$failed): false {
+                    $failed++;
+                    Log::warning('investment:reinvest-profit skipped an investor', [
+                        'investor_id' => $investor->getKey(),
+                        'error' => $e->getMessage(),
+                    ]);
+                    $this->warn("{$investor->code}: {$e->getMessage()}");
 
-                continue;
-            }
+                    return false;
+                },
+                report: false,
+            );
 
-            if ($result !== null) {
+            // An array is a reinvestment; null had no profit to return, false was skipped above.
+            if (is_array($result)) {
                 $this->info("{$investor->code} {$investor->name} — أُعيد {$result['capitalisation']->amount} د.ل إلى الصندوق.");
             }
         }
