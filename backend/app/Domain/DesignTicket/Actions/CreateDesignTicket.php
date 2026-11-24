@@ -17,7 +17,6 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Throwable;
 
 /**
  * Opens a design request and puts it in front of a designer.
@@ -81,51 +80,45 @@ final class CreateDesignTicket
             }
         }
 
-        $ticketId = null;
+        $ticket = DB::transaction(function () use ($data, $actor, $customer): DesignTicket {
+            $ticket = new DesignTicket([
+                'order_id' => $data->orderId,
+                'title' => $data->title,
+                'description' => $data->description,
+                'instructions' => $data->instructions,
+                'print_colors' => $data->printColors,
+            ]);
 
-        try {
-            $ticket = DB::transaction(function () use ($data, $actor, $customer, &$ticketId): DesignTicket {
-                $ticket = new DesignTicket([
-                    'order_id' => $data->orderId,
-                    'title' => $data->title,
-                    'description' => $data->description,
-                    'instructions' => $data->instructions,
-                    'print_colors' => $data->printColors,
-                ]);
+            // Force-filled rather than mass-assigned, all of it: the customer and its snapshot
+            // must agree and neither may come from a body, the status follows from whether a
+            // designer is named, and the requester is the signed-in user — attribution nobody can set is
+            // attribution nobody can forge.
+            $ticket->forceFill([
+                'customer_id' => $customer->getKey(),
+                'customer_name' => $customer->name,
+                // Addressed to a designer from the start is already «مُسنَد».
+                'status' => $data->assignedDesignerId === null
+                    ? DesignTicketStatus::New
+                    : DesignTicketStatus::Assigned,
+                'requested_by_user_id' => $actor?->getKey(),
+                'assigned_designer_id' => $data->assignedDesignerId,
+                'designer_pay' => $data->designerPay,
+                'opened_automatically' => $data->openedAutomatically,
+            ])->save();
 
-                // Force-filled rather than mass-assigned, all of it: the customer and its snapshot
-                // must agree and neither may come from a body, the status follows from whether a
-                // designer is named, and the requester is the signed-in user — attribution nobody can set is
-                // attribution nobody can forge.
-                $ticket->forceFill([
-                    'customer_id' => $customer->getKey(),
-                    'customer_name' => $customer->name,
-                    // Addressed to a designer from the start is already «مُسنَد».
-                    'status' => $data->assignedDesignerId === null
-                        ? DesignTicketStatus::New
-                        : DesignTicketStatus::Assigned,
-                    'requested_by_user_id' => $actor?->getKey(),
-                    'assigned_designer_id' => $data->assignedDesignerId,
-                    'designer_pay' => $data->designerPay,
-                    'opened_automatically' => $data->openedAutomatically,
-                ])->save();
+            // Bytes written to disk do not roll back with the rows: if anything below fails, the
+            // ticket's folder goes too. Its id is new and Postgres never hands it out again, so
+            // the folder holds only this request's files.
+            $ticketId = (int) $ticket->getKey();
+            DB::afterRollBack(fn () => Storage::disk((string) config('media.design_tickets.disk'))
+                ->deleteDirectory("design-tickets/{$ticketId}"));
 
-                $ticketId = (int) $ticket->getKey();
-
-                foreach ($data->files as $file) {
-                    ($this->attachFile)($ticket, $file, $actor);
-                }
-
-                return $ticket;
-            });
-        } catch (Throwable $failure) {
-            if ($ticketId !== null) {
-                Storage::disk((string) config('media.design_tickets.disk'))
-                    ->deleteDirectory("design-tickets/{$ticketId}");
+            foreach ($data->files as $file) {
+                ($this->attachFile)($ticket, $file, $actor);
             }
 
-            throw $failure;
-        }
+            return $ticket;
+        });
 
         // After the write, and fired whether or not a designer was named: a ticket left in the
         // shared pool is news for every designer, which is exactly what a null id means to the
