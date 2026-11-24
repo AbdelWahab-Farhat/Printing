@@ -144,4 +144,29 @@ void main() {
     // Assert
     expect(typed, ['0912345678']);
   });
+
+  testWidgets('a box of several lines takes a new line on Return, not the next field', (
+    tester,
+  ) async {
+    // Arrange
+    await tester.pumpWidget(host(const AppTextField(maxLines: 6)));
+
+    // Act
+    final editable = tester.widget<EditableText>(find.byType(EditableText));
+
+    // Assert
+    expect(editable.textInputAction, TextInputAction.newline);
+    expect(editable.keyboardType, TextInputType.multiline);
+  });
+
+  testWidgets('a one-line field still moves on to the next one', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(const AppTextField()));
+
+    // Act
+    final editable = tester.widget<EditableText>(find.byType(EditableText));
+
+    // Assert
+    expect(editable.textInputAction, TextInputAction.next);
+  });
 }
