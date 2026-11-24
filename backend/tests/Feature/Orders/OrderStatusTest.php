@@ -800,7 +800,7 @@ class OrderStatusTest extends TestCase
         // «مرفوض» earns it more plainly than «إلغاء تام» does: the sentence is the shop's
         // answer to the person who placed the order, and it travels to their phone. A refusal
         // with nothing attached reaches them as a door shut without a word.
-        $this->assertSame([OrderStatus::Cancelled, OrderStatus::RequestRejected], $demanding);
+        $this->assertSame([OrderStatus::RequestRejected, OrderStatus::Cancelled], $demanding);
     }
 
     public function test_each_milestone_stamps_its_own_column(): void
