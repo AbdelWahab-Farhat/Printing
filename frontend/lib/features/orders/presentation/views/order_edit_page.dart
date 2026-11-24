@@ -20,6 +20,7 @@ import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit
 import 'package:dayaa/features/orders/presentation/widgets/additional_cost_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/design_picker_sheet.dart';
 import 'package:dayaa/features/orders/presentation/widgets/destination_picker_sheet.dart';
+import 'package:dayaa/features/orders/presentation/widgets/full_edit_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
@@ -83,6 +84,15 @@ class _OrderEditView extends StatefulWidget {
 }
 
 class _OrderEditViewState extends State<_OrderEditView> {
+  /// «حقول الأدمن», made once the order has loaded, and only for `orders.edit_fully`.
+  FullEditDraft? _fullEditDraft;
+
+  @override
+  void dispose() {
+    _fullEditDraft?.dispose();
+    super.dispose();
+  }
+
   Future<void> _addDesigns() async {
     final cubit = context.read<OrderDetailCubit>();
     final order = cubit.state.order;
@@ -217,20 +227,37 @@ class _OrderEditViewState extends State<_OrderEditView> {
             };
           }
 
+          // **`orders.edit_fully` opens every lock the server would otherwise apply**, so the
+          // form is handed an order whose flags say so. The server asks the same grant again
+          // on save; the order behind the screen keeps its real flags for the warnings.
+          final fullEdit = session.can(AppPermission.editOrdersFully);
+          final editable = fullEdit
+              ? order.copyWith(
+                  itemsAreEditable: true,
+                  destinationIsEditable: true,
+                  discountIsEditable: true,
+                  isClosed: false,
+                )
+              : order;
+
+          if (fullEdit) _fullEditDraft ??= FullEditDraft(order);
+
           // Built once and kept: this provider is not re-created when the order is read
           // again after a version is added, so quantities typed and not yet saved survive
           // that reload.
           return BlocProvider<OrderInvoiceCubit>(
-            create: (_) => sl<OrderInvoiceCubit>(param1: order),
+            create: (_) => sl<OrderInvoiceCubit>(param1: editable),
             child: _Form(
-              order: order,
+              order: editable,
+              sourceOrder: order,
+              fullEditDraft: fullEdit ? _fullEditDraft : null,
               isWorking: state.isWorking,
               mayDiscount: session.can(AppPermission.discountOrders),
               // **And, once the stock has left, the grant that took it out plus the drawn-line
               // grant** — saving the lines there moves the shelf. The server asks the same; this
               // keeps the screen from offering what it would refuse.
               mayEditItems:
-                  order.itemsAreEditable &&
+                  editable.itemsAreEditable &&
                   session.can(AppPermission.manageOrders) &&
                   (!order.itemEditsMoveStock ||
                       (session.can(AppPermission.moveOrderToReadyToPrint) &&
@@ -242,13 +269,13 @@ class _OrderEditViewState extends State<_OrderEditView> {
               // `UpdateOrder` refuses a closed order and accepts every other, so a switch
               // drawn on this condition never leads to a refusal — and «استعجل ما وصل» means
               // nothing anyway. The grant is `orders.manage`, the one every other edit costs.
-              mayFlagUrgent: session.can(AppPermission.manageOrders) && !order.isClosed,
+              mayFlagUrgent: session.can(AppPermission.manageOrders) && !editable.isClosed,
               // **`is_closed`, which is the server's own line rather than one chosen here.**
               // `UpdateOrder` refuses a closed order and accepts every other, so a button
               // drawn on that condition never leads to a refusal — and the grant is the
               // charge's own, not the discount's, because the two are different acts.
               onEditAdditionalCost:
-                  session.can(AppPermission.addOrderAdditionalCost) && !order.isClosed
+                  session.can(AppPermission.addOrderAdditionalCost) && !editable.isClosed
                   ? _editAdditionalCost
                   : null,
               onSaved: () => context.handBack(true),
@@ -280,6 +307,8 @@ class _OrderEditViewState extends State<_OrderEditView> {
 class _Form extends StatelessWidget {
   const _Form({
     required this.order,
+    required this.sourceOrder,
+    required this.fullEditDraft,
     required this.isWorking,
     required this.mayDiscount,
     required this.mayEditItems,
@@ -293,6 +322,14 @@ class _Form extends StatelessWidget {
   });
 
   final Order order;
+
+  /// The order as the server sent it. Equal to [order] unless `orders.edit_fully` opened its
+  /// locks; the save warnings read the real status from here.
+  final Order sourceOrder;
+
+  /// «حقول الأدمن». Null without `orders.edit_fully`.
+  final FullEditDraft? fullEditDraft;
+
   final bool isWorking;
   final bool mayDiscount;
 
@@ -344,6 +381,30 @@ class _Form extends StatelessWidget {
     cubit.add(product: picked.product, variant: picked.variant);
   }
 
+  /// Saves, asking first when a full edit would have consequences beyond this screen.
+  Future<void> _save(BuildContext context) async {
+    final cubit = context.read<OrderInvoiceCubit>();
+    final draft = fullEditDraft;
+
+    if (draft == null) {
+      await cubit.save();
+      return;
+    }
+
+    final confirmed = await confirmFullEdit(
+      context: context,
+      order: sourceOrder,
+      draft: draft,
+      linesChanged: cubit.linesChanged,
+      linesMoveStock: cubit.state.linesMoveStock,
+      anythingChanged: cubit.state.isDirty || draft.isDirty,
+    );
+
+    if (!confirmed || !context.mounted) return;
+
+    await cubit.save(fullEdit: draft.toOrderFullEdit());
+  }
+
   /// The same picker «طلبية جديدة» and the purchase orders use — the vendors still dealt with.
   Future<void> _pickVendor(BuildContext context) async {
     final cubit = context.read<OrderInvoiceCubit>();
@@ -384,6 +445,13 @@ class _Form extends StatelessWidget {
                           cubit.setRegion(id: region.id, name: region.name),
                       onPhone: cubit.setRecipientPhone,
                     ),
+                  ),
+                  SizedBox(height: 16.h),
+                ],
+                if (fullEditDraft case final draft?) ...[
+                  _Section(
+                    title: 'حقول الأدمن',
+                    child: FullEditSection(draft: draft),
                   ),
                   SizedBox(height: 16.h),
                 ],
@@ -614,17 +682,25 @@ class _Form extends StatelessWidget {
           ),
           if (mayEditItems ||
               mayFlagUrgent ||
+              fullEditDraft != null ||
               (state.destinationIsEditable && mayEditDestination))
             SafeArea(
               top: false,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
-                child: AppButton(
-                  label: 'حفظ التعديلات',
-                  // Busy, not unavailable: AppButton refuses the tap itself while loading, and
-                  // a greyed button reads as "you may not" rather than "in progress".
-                  isLoading: state.isSaving,
-                  onPressed: state.isDirty && state.isValid ? cubit.save : null,
+                // Lit by a change in «حقول الأدمن» too, which the Cubit never hears about.
+                child: ListenableBuilder(
+                  listenable: fullEditDraft ?? const _Never(),
+                  builder: (context, _) => AppButton(
+                    label: 'حفظ التعديلات',
+                    // Busy, not unavailable: AppButton refuses the tap itself while loading, and
+                    // a greyed button reads as "you may not" rather than "in progress".
+                    isLoading: state.isSaving,
+                    onPressed:
+                        (state.isDirty || (fullEditDraft?.isDirty ?? false)) && state.isValid
+                        ? () => _save(context)
+                        : null,
+                  ),
                 ),
               ),
             ),
@@ -1185,4 +1261,13 @@ class _FailureView extends StatelessWidget {
   }
 }
 
+/// A [Listenable] that never fires, for the save button of a reader without «حقول الأدمن».
+class _Never implements Listenable {
+  const _Never();
 
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}

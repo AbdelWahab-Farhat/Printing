@@ -263,6 +263,7 @@ class OrderRepositoryImpl implements OrderRepository {
     String? additionalCostNote,
     bool? isUrgent,
     ({int? id})? vendor,
+    OrderFullEdit? fullEdit,
   }) async {
     // `PUT` replaces the whole order, so the fields this screen does not touch have to be sent
     // back as they are — omitting `city_id` would be an instruction to clear the destination.
@@ -326,6 +327,8 @@ class OrderRepositoryImpl implements OrderRepository {
             // whose absence means "leave them alone" rather than "clear them", which is what
             // lets an address be corrected on an order whose lines are already closed.
             if (lines != null) 'items': lines.map((line) => line.toJson()).toList(growable: false),
+            // Only from a reader holding `orders.edit_fully`; see [OrderFullEdit].
+            ...?fullEdit?.toJson(),
           },
         ),
         parse: (data) => Order.fromJson(data as Map<String, dynamic>),

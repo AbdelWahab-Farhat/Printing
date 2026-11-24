@@ -244,6 +244,9 @@ abstract class Order with _$Order {
     /// What delivery costs us: `'0.00'` while the recipient pays; the city's rate, then what
     /// the carrier really kept, when we do. Already inside [grossProfit].
     @JsonKey(name: 'delivery_cost') @Default('0.00') String deliveryCost,
+
+    /// A delivery cost an administrator typed by hand, or null while [deliveryCost] is derived.
+    @JsonKey(name: 'delivery_cost_override') String? deliveryCostOverride,
     required String discount,
 
     /// A charge added to the order that no line on it describes — «تغليف خاص»، «نقل».
@@ -364,6 +367,8 @@ abstract class Order with _$Order {
     @JsonKey(name: 'address_details') String? addressDetails,
     String? notes,
 
+    /// The carrier's id beside its name snapshot; null when none was named.
+    @JsonKey(name: 'shipping_company_id') int? shippingCompanyId,
     @JsonKey(name: 'shipping_company') String? shippingCompany,
     @JsonKey(name: 'tracking_number') String? trackingNumber,
 
@@ -379,6 +384,9 @@ abstract class Order with _$Order {
     /// and what `OrderResource` publishes. It was read from `courier_name`, a key the server has
     /// never sent, so it parsed as null on every order ever fetched.
     @JsonKey(name: 'courier_phone') String? courierPhone,
+
+    /// The courier's name, typed on the full edit screen. Null until somebody does.
+    @JsonKey(name: 'courier_name') String? courierName,
 
     @JsonKey(name: 'cancellation_reason') String? cancellationReason,
 

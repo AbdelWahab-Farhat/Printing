@@ -169,6 +169,7 @@ abstract interface class OrderRepository {
     String? additionalCostNote,
     bool? isUrgent,
     ({int? id})? vendor,
+    OrderFullEdit? fullEdit,
   });
 
   /// Undoes a cancellation made by mistake, and answers with the order as the server left it.
