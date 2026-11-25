@@ -2,6 +2,7 @@ import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
+import 'package:dayaa/core/utils/text_direction.dart';
 import 'package:dayaa/features/reports/models/sales_statistics.dart';
 import 'package:dayaa/features/reports/presentation/viewmodel/sales_statistics_cubit.dart';
 import 'package:flutter/material.dart';
@@ -26,9 +27,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// division the server already did, and doing it again on two rounded weights is how a screen
 /// ends up disagreeing with itself by a tenth.
 ///
-/// **The type labels are rendered exactly as they arrive**, trailing dashes and all — several
-/// shelves were auto-created from product names and read «أكياس شفافه -». Tidying them here would
-/// hide a naming problem that also shows on the inventory screens; the fix belongs in the data.
+/// **The type labels are rendered exactly as they arrive.** The server already drops the trailing
+/// dash several shelves were saved with («أكياس شفافه -»); nothing more is tidied here.
+///
+/// **«الأكثر مبيعاً» sits right under the totals**, and each type row opens its sizes in a sheet
+/// ([_TypeSizesSheet]): a size needs six figures, which a table row on a phone cannot carry.
 class SalesStatisticsPage extends StatelessWidget {
   const SalesStatisticsPage({super.key});
 
@@ -229,6 +232,11 @@ class _Board extends StatelessWidget {
         else ...[
           _SalesValueBlock(statistics: statistics),
           SizedBox(height: 20.h),
+
+          if (statistics.topItems.isNotEmpty) ...[
+            _TopItemsBlock(items: statistics.topItems),
+            SizedBox(height: 20.h),
+          ],
 
           _WeightBlock(statistics: statistics),
 
@@ -510,10 +518,12 @@ class _PressFigure extends StatelessWidget {
 /// «كجم» beside each would take the width the names need.
 ///
 /// **A row with real value and no weight is correct, not a bug.** أكياس ورقية عادية is stocked by
-/// the piece, so it earns money and weighs nothing; its `0.000` is drawn as the figure it is
-/// rather than as «—», because its value is part of the total above and hiding the row would make
-/// the table stop adding up. The same holds at the other end: a material that earned nothing
-/// keeps its row for the weight it took off the shelf.
+/// the piece, so it earns money and weighs nothing. Its row stays, because its value is part of
+/// the total above, but its weights are drawn as «—» rather than as a `0` that reads like a
+/// mistake. The same holds at the other end: a material that earned nothing keeps its row for
+/// the weight it took off the shelf.
+///
+/// **Tapping a row opens that material's sizes** ([_TypeSizesSheet]).
 class _ByTypeBlock extends StatelessWidget {
   const _ByTypeBlock({required this.rows});
 
@@ -534,6 +544,11 @@ class _ByTypeBlock extends StatelessWidget {
             fontWeight: FontWeight.w800,
             color: scheme.primary,
           ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          'اضغط على النوع لعرض مبيعات كل مقاس',
+          style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         SizedBox(height: 8.h),
         Container(
@@ -568,18 +583,302 @@ class _ByTypeBlock extends StatelessWidget {
               ),
               for (final row in rows)
                 TableRow(
+                  // Every cell is its own `TableRowInkWell`: the splash spans the whole row
+                  // whichever cell is touched.
                   children: [
-                    _TypeCell(label: row.type),
-                    _NumberCell(value: row.weightKg, emphasised: true),
-                    _NumberCell(value: row.plainKg),
-                    _NumberCell(value: row.printedKg),
+                    _TypeCell(label: row.type, expandable: row.sizes.isNotEmpty),
+                    _NumberCell(value: row.hasWeight ? row.weightKg : null, emphasised: true),
+                    _NumberCell(value: row.hasWeight ? row.plainKg : null),
+                    _NumberCell(value: row.hasWeight ? row.printedKg : null),
                     _NumberCell(value: row.value),
-                  ],
+                  ].map((cell) => _openSizesOnTap(context, row, cell)).toList(),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// [cell], opening [row]'s sizes when touched. A server that predates the sizes sends none,
+  /// and the row then stays a plain row rather than opening an empty sheet.
+  Widget _openSizesOnTap(BuildContext context, BagTypeRow row, Widget cell) {
+    if (row.sizes.isEmpty) return cell;
+
+    return TableRowInkWell(onTap: () => _showTypeSizes(context, row), child: cell);
+  }
+}
+
+Future<void> _showTypeSizes(BuildContext context, BagTypeRow row) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (_) => _TypeSizesSheet(row: row),
+  );
+}
+
+/// «الأكثر مبيعاً» — the period's best sellers, a product in one size each, by value.
+///
+/// **Ranked in dinars**, the one measure every bag has: plain bags carry no piece count and paper
+/// bags no weight. Each entry then says what else it has: pieces for a printed bag, kilograms
+/// for a plain one. The bar is the item's share of the whole period's sales.
+class _TopItemsBlock extends StatelessWidget {
+  const _TopItemsBlock({required this.items});
+
+  final List<TopSellingItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Section(
+      title: 'الأكثر مبيعاً',
+      unit: 'د.ل',
+      child: Column(
+        children: [
+          for (final (index, item) in items.indexed) ...[
+            if (index > 0) SizedBox(height: 14.h),
+            _TopItemRow(rank: index + 1, item: item),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TopItemRow extends StatelessWidget {
+  const _TopItemRow({required this.rank, required this.item});
+
+  final int rank;
+  final TopSellingItem item;
+
+  /// «متوسط 35×40», or just «30×30» where the catalogue's label already is the size.
+  String get _sizeLabel {
+    final dimensions = item.dimensions?.isolated;
+    if (dimensions == null) return item.variant;
+
+    return item.variantIsDimensions ? dimensions : '${item.variant} $dimensions';
+  }
+
+  /// What this item has besides dinars: pieces for a printed bag, kilograms for a plain one.
+  String? get _quantityLabel {
+    final pieces = item.pieces == null ? null : '${item.pieces!.grouped.isolated} قطعة';
+    final weight = item.weightKg == null ? null : '${groupedDecimal(item.weightKg!).isolated} كجم';
+
+    return item.kind == SaleKind.printed ? pieces ?? weight : weight ?? pieces;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final tone = item.kind == SaleKind.printed
+        ? scheme.tertiary
+        : scheme.tertiary.withValues(alpha: 0.40);
+    // A bar length only, never a figure on the screen: the percentage itself is the server's.
+    final share = ((double.tryParse(item.sharePercent) ?? 0) / 100).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 22.w,
+              child: Text(
+                '$rank',
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.outline,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.product,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    [_sizeLabel, ?_quantityLabel].join(' · '),
+                    style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  groupedDecimal(item.value),
+                  textDirection: TextDirection.ltr,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '${item.sharePercent.isolated}٪',
+                  style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ],
+        ),
+        SizedBox(height: 6.h),
+        Padding(
+          padding: EdgeInsetsDirectional.only(start: 22.w),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4.r),
+            child: LinearProgressIndicator(
+              value: share,
+              minHeight: 5.h,
+              color: tone,
+              backgroundColor: scheme.surfaceContainerHighest,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One material's sales, size by size.
+///
+/// The type's dinars split plain/printed on top, then one entry per size, best-selling first, the
+/// plain and printed twins of a size together. **A figure the size does not have is «—»**: a
+/// paper size has no weight, and plain bags are sold by the kilo and never counted.
+class _TypeSizesSheet extends StatelessWidget {
+  const _TypeSizesSheet({required this.row});
+
+  final BagTypeRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+      child: ListView(
+        shrinkWrap: true,
+        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+        children: [
+          Text(
+            row.type,
+            style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          SizedBox(height: 12.h),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _TotalTile(label: 'الإجمالي', value: row.value, unit: 'د.ل')),
+                SizedBox(width: 8.w),
+                Expanded(child: _TotalTile(label: 'سادة', value: row.plainValue, unit: 'د.ل')),
+                SizedBox(width: 8.w),
+                Expanded(child: _TotalTile(label: 'مطبوع', value: row.printedValue, unit: 'د.ل')),
+              ],
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            [
+              if (row.hasWeight) ...[
+                'سادة ${groupedDecimal(row.plainKg).isolated} كجم',
+                'مطبوع ${groupedDecimal(row.printedKg).isolated} كجم',
+              ] else
+                'بدون وزن',
+              if (row.pieces > 0) '${row.pieces.grouped.isolated} قطعة مطبوعة',
+            ].join(' · '),
+            style: context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          SizedBox(height: 20.h),
+          Text(
+            'حسب المقاس',
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: scheme.primary,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          for (final (index, size) in row.sizes.indexed) ...[
+            if (index > 0) SizedBox(height: 8.h),
+            _SizeTile(size: size),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One size: what it sold in total, then plain against printed, then weight and pieces.
+class _SizeTile extends StatelessWidget {
+  const _SizeTile({required this.size});
+
+  final BagSizeRow size;
+
+  static const _none = '—';
+
+  String _money(String value) => '${groupedDecimal(value).isolated} د.ل';
+
+  String _kg(String? value) => value == null ? _none : '${groupedDecimal(value).isolated} كجم';
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final detail = context.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  // Isolated, or `25×35` renders as `35×25` inside Arabic text.
+                  size.dimensions?.isolated ?? 'بدون مقاس',
+                  style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Text(
+                groupedDecimal(size.value),
+                textDirection: TextDirection.ltr,
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface,
+                ),
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                'د.ل',
+                style: context.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text('سادة ${_money(size.plainValue)} · ${_kg(size.plainKg)}', style: detail),
+          SizedBox(height: 2.h),
+          Text(
+            'مطبوع ${_money(size.printedValue)} · ${_kg(size.printedKg)} · '
+            '${size.pieces == null ? _none : '${size.pieces!.grouped.isolated} قطعة'}',
+            style: detail,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -620,32 +919,43 @@ class _HeadCell extends StatelessWidget {
 double get _figureGap => 6.w;
 
 class _TypeCell extends StatelessWidget {
-  const _TypeCell({required this.label});
+  const _TypeCell({required this.label, this.expandable = false});
 
   final String label;
 
+  /// Whether the row opens a sheet of sizes, which a small chevron says before it is touched.
+  final bool expandable;
+
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-      child: Text(
-        // Rendered exactly as it arrived — trailing dash included. See the class note.
-        label,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
-        ),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              // Rendered exactly as it arrived. See the class note.
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ),
+          if (expandable) Icon(AppIcons.forward, size: 18.r, color: scheme.outline),
+        ],
       ),
     );
   }
 }
 
-/// One figure in the table, at body size rather than caption size.
+/// One figure in the table, at body size rather than caption size. Null draws «—»: a figure the
+/// row does not have, never a zero.
 class _NumberCell extends StatelessWidget {
   const _NumberCell({required this.value, this.emphasised = false});
 
-  final String value;
+  final String? value;
 
   /// The column the table is sorted by, drawn in the ink the eye lands on first.
   final bool emphasised;
@@ -666,7 +976,10 @@ class _NumberCell extends StatelessWidget {
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerRight,
           child: Text(
-            groupedDecimal(value),
+            switch (value) {
+              final figure? => groupedDecimal(figure),
+              null => '—',
+            },
             // A Latin run: `12,450` renders as `450,12` without this, which is a different number
             // rather than a rendering glitch.
             textDirection: TextDirection.ltr,

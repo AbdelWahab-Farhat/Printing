@@ -16,7 +16,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SalesStatistics {
 
- StatisticsPeriod get period;@JsonKey(name: 'sales_value') SalesValue get salesValue;@JsonKey(name: 'by_type') List<BagTypeRow> get byType;@JsonKey(name: 'weight_comparison') WeightComparison get weightComparison;/// How many printed bags that was, by the piece — **kept apart from the weights beside it**.
+ StatisticsPeriod get period;@JsonKey(name: 'sales_value') SalesValue get salesValue;@JsonKey(name: 'by_type') List<BagTypeRow> get byType;/// The best sellers: the top variants (product + size) by value, best first.
+///
+/// Defaults to empty so the screen still opens against a server that predates the list.
+@JsonKey(name: 'top_items') List<TopSellingItem> get topItems;@JsonKey(name: 'weight_comparison') WeightComparison get weightComparison;/// How many printed bags that was, by the piece — **kept apart from the weights beside it**.
 ///
 /// A different unit answering a different question, and the figure the printing engineer's
 /// share will one day be computed from. Plain bags are absent from it by construction.
@@ -40,20 +43,20 @@ $SalesStatisticsCopyWith<SalesStatistics> get copyWith => _$SalesStatisticsCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as SalesStatistics;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesStatistics&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.salesValue, _this.salesValue) || other.salesValue == _this.salesValue)&&const DeepCollectionEquality().equals(other.byType, _this.byType)&&(identical(other.weightComparison, _this.weightComparison) || other.weightComparison == _this.weightComparison)&&(identical(other.printedPieces, _this.printedPieces) || other.printedPieces == _this.printedPieces)&&(identical(other.ordersCounted, _this.ordersCounted) || other.ordersCounted == _this.ordersCounted));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesStatistics&&(identical(other.period, _this.period) || other.period == _this.period)&&(identical(other.salesValue, _this.salesValue) || other.salesValue == _this.salesValue)&&const DeepCollectionEquality().equals(other.byType, _this.byType)&&const DeepCollectionEquality().equals(other.topItems, _this.topItems)&&(identical(other.weightComparison, _this.weightComparison) || other.weightComparison == _this.weightComparison)&&(identical(other.printedPieces, _this.printedPieces) || other.printedPieces == _this.printedPieces)&&(identical(other.ordersCounted, _this.ordersCounted) || other.ordersCounted == _this.ordersCounted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as SalesStatistics;
-  return Object.hash(runtimeType,_this.period,_this.salesValue,const DeepCollectionEquality().hash(_this.byType),_this.weightComparison,_this.printedPieces,_this.ordersCounted);
+  return Object.hash(runtimeType,_this.period,_this.salesValue,const DeepCollectionEquality().hash(_this.byType),const DeepCollectionEquality().hash(_this.topItems),_this.weightComparison,_this.printedPieces,_this.ordersCounted);
 }
 
 @override
 String toString() {
   final _this = this as SalesStatistics;
-  return 'SalesStatistics(period: ${_this.period}, salesValue: ${_this.salesValue}, byType: ${_this.byType}, weightComparison: ${_this.weightComparison}, printedPieces: ${_this.printedPieces}, ordersCounted: ${_this.ordersCounted})';
+  return 'SalesStatistics(period: ${_this.period}, salesValue: ${_this.salesValue}, byType: ${_this.byType}, topItems: ${_this.topItems}, weightComparison: ${_this.weightComparison}, printedPieces: ${_this.printedPieces}, ordersCounted: ${_this.ordersCounted})';
 }
 
 
@@ -64,7 +67,7 @@ abstract mixin class $SalesStatisticsCopyWith<$Res>  {
   factory $SalesStatisticsCopyWith(SalesStatistics value, $Res Function(SalesStatistics) _then) = _$SalesStatisticsCopyWithImpl;
 @useResult
 $Res call({
- StatisticsPeriod period,@JsonKey(name: 'sales_value') SalesValue salesValue,@JsonKey(name: 'by_type') List<BagTypeRow> byType,@JsonKey(name: 'weight_comparison') WeightComparison weightComparison,@JsonKey(name: 'printed_pieces') PrintedPieces printedPieces,@JsonKey(name: 'orders_counted') int ordersCounted
+ StatisticsPeriod period,@JsonKey(name: 'sales_value') SalesValue salesValue,@JsonKey(name: 'by_type') List<BagTypeRow> byType,@JsonKey(name: 'top_items') List<TopSellingItem> topItems,@JsonKey(name: 'weight_comparison') WeightComparison weightComparison,@JsonKey(name: 'printed_pieces') PrintedPieces printedPieces,@JsonKey(name: 'orders_counted') int ordersCounted
 });
 
 
@@ -81,12 +84,13 @@ class _$SalesStatisticsCopyWithImpl<$Res>
 
 /// Create a copy of SalesStatistics
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? salesValue = null,Object? byType = null,Object? weightComparison = null,Object? printedPieces = null,Object? ordersCounted = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? period = null,Object? salesValue = null,Object? byType = null,Object? topItems = null,Object? weightComparison = null,Object? printedPieces = null,Object? ordersCounted = null,}) {
   return _then(SalesStatistics(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as StatisticsPeriod,salesValue: null == salesValue ? _self.salesValue : salesValue // ignore: cast_nullable_to_non_nullable
 as SalesValue,byType: null == byType ? _self.byType : byType // ignore: cast_nullable_to_non_nullable
-as List<BagTypeRow>,weightComparison: null == weightComparison ? _self.weightComparison : weightComparison // ignore: cast_nullable_to_non_nullable
+as List<BagTypeRow>,topItems: null == topItems ? _self.topItems : topItems // ignore: cast_nullable_to_non_nullable
+as List<TopSellingItem>,weightComparison: null == weightComparison ? _self.weightComparison : weightComparison // ignore: cast_nullable_to_non_nullable
 as WeightComparison,printedPieces: null == printedPieces ? _self.printedPieces : printedPieces // ignore: cast_nullable_to_non_nullable
 as PrintedPieces,ordersCounted: null == ordersCounted ? _self.ordersCounted : ordersCounted // ignore: cast_nullable_to_non_nullable
 as int,
@@ -210,10 +214,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'top_items')  List<TopSellingItem> topItems, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SalesStatistics() when $default != null:
-return $default(_that.period,_that.salesValue,_that.byType,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
+return $default(_that.period,_that.salesValue,_that.byType,_that.topItems,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
   return orElse();
 
 }
@@ -231,10 +235,10 @@ return $default(_that.period,_that.salesValue,_that.byType,_that.weightCompariso
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'top_items')  List<TopSellingItem> topItems, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)  $default,) {final _that = this;
 switch (_that) {
 case _SalesStatistics():
-return $default(_that.period,_that.salesValue,_that.byType,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
+return $default(_that.period,_that.salesValue,_that.byType,_that.topItems,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -251,10 +255,10 @@ return $default(_that.period,_that.salesValue,_that.byType,_that.weightCompariso
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StatisticsPeriod period, @JsonKey(name: 'sales_value')  SalesValue salesValue, @JsonKey(name: 'by_type')  List<BagTypeRow> byType, @JsonKey(name: 'top_items')  List<TopSellingItem> topItems, @JsonKey(name: 'weight_comparison')  WeightComparison weightComparison, @JsonKey(name: 'printed_pieces')  PrintedPieces printedPieces, @JsonKey(name: 'orders_counted')  int ordersCounted)?  $default,) {final _that = this;
 switch (_that) {
 case _SalesStatistics() when $default != null:
-return $default(_that.period,_that.salesValue,_that.byType,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
+return $default(_that.period,_that.salesValue,_that.byType,_that.topItems,_that.weightComparison,_that.printedPieces,_that.ordersCounted);case _:
   return null;
 
 }
@@ -266,7 +270,7 @@ return $default(_that.period,_that.salesValue,_that.byType,_that.weightCompariso
 @JsonSerializable()
 
 class _SalesStatistics extends SalesStatistics {
-  const _SalesStatistics({required this.period, @JsonKey(name: 'sales_value') required this.salesValue, @JsonKey(name: 'by_type') required  List<BagTypeRow> byType, @JsonKey(name: 'weight_comparison') required this.weightComparison, @JsonKey(name: 'printed_pieces') required this.printedPieces, @JsonKey(name: 'orders_counted') required this.ordersCounted}): _byType = byType,super._();
+  const _SalesStatistics({required this.period, @JsonKey(name: 'sales_value') required this.salesValue, @JsonKey(name: 'by_type') required  List<BagTypeRow> byType, @JsonKey(name: 'top_items')  List<TopSellingItem> topItems = const <TopSellingItem>[], @JsonKey(name: 'weight_comparison') required this.weightComparison, @JsonKey(name: 'printed_pieces') required this.printedPieces, @JsonKey(name: 'orders_counted') required this.ordersCounted}): _byType = byType,_topItems = topItems,super._();
   factory _SalesStatistics.fromJson(Map<String, dynamic> json) => _$SalesStatisticsFromJson(json);
 
 @override final  StatisticsPeriod period;
@@ -276,6 +280,19 @@ class _SalesStatistics extends SalesStatistics {
   if (_byType is EqualUnmodifiableListView) return _byType;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_byType);
+}
+
+/// The best sellers: the top variants (product + size) by value, best first.
+///
+/// Defaults to empty so the screen still opens against a server that predates the list.
+ final  List<TopSellingItem> _topItems;
+/// The best sellers: the top variants (product + size) by value, best first.
+///
+/// Defaults to empty so the screen still opens against a server that predates the list.
+@override@JsonKey(name: 'top_items') List<TopSellingItem> get topItems {
+  if (_topItems is EqualUnmodifiableListView) return _topItems;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_topItems);
 }
 
 @override@JsonKey(name: 'weight_comparison') final  WeightComparison weightComparison;
@@ -305,18 +322,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesStatistics&&(identical(other.period, period) || other.period == period)&&(identical(other.salesValue, salesValue) || other.salesValue == salesValue)&&const DeepCollectionEquality().equals(other.byType, _byType)&&(identical(other.weightComparison, weightComparison) || other.weightComparison == weightComparison)&&(identical(other.printedPieces, printedPieces) || other.printedPieces == printedPieces)&&(identical(other.ordersCounted, ordersCounted) || other.ordersCounted == ordersCounted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesStatistics&&(identical(other.period, period) || other.period == period)&&(identical(other.salesValue, salesValue) || other.salesValue == salesValue)&&const DeepCollectionEquality().equals(other.byType, _byType)&&const DeepCollectionEquality().equals(other.topItems, _topItems)&&(identical(other.weightComparison, weightComparison) || other.weightComparison == weightComparison)&&(identical(other.printedPieces, printedPieces) || other.printedPieces == printedPieces)&&(identical(other.ordersCounted, ordersCounted) || other.ordersCounted == ordersCounted));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,period,salesValue,const DeepCollectionEquality().hash(_byType),weightComparison,printedPieces,ordersCounted);
+    return Object.hash(runtimeType,period,salesValue,const DeepCollectionEquality().hash(_byType),const DeepCollectionEquality().hash(_topItems),weightComparison,printedPieces,ordersCounted);
 }
 
 @override
 String toString() {
-    return 'SalesStatistics(period: $period, salesValue: $salesValue, byType: $byType, weightComparison: $weightComparison, printedPieces: $printedPieces, ordersCounted: $ordersCounted)';
+    return 'SalesStatistics(period: $period, salesValue: $salesValue, byType: $byType, topItems: $topItems, weightComparison: $weightComparison, printedPieces: $printedPieces, ordersCounted: $ordersCounted)';
 }
 
 
@@ -327,7 +344,7 @@ abstract mixin class _$SalesStatisticsCopyWith<$Res> implements $SalesStatistics
   factory _$SalesStatisticsCopyWith(_SalesStatistics value, $Res Function(_SalesStatistics) _then) = __$SalesStatisticsCopyWithImpl;
 @override @useResult
 $Res call({
- StatisticsPeriod period,@JsonKey(name: 'sales_value') SalesValue salesValue,@JsonKey(name: 'by_type') List<BagTypeRow> byType,@JsonKey(name: 'weight_comparison') WeightComparison weightComparison,@JsonKey(name: 'printed_pieces') PrintedPieces printedPieces,@JsonKey(name: 'orders_counted') int ordersCounted
+ StatisticsPeriod period,@JsonKey(name: 'sales_value') SalesValue salesValue,@JsonKey(name: 'by_type') List<BagTypeRow> byType,@JsonKey(name: 'top_items') List<TopSellingItem> topItems,@JsonKey(name: 'weight_comparison') WeightComparison weightComparison,@JsonKey(name: 'printed_pieces') PrintedPieces printedPieces,@JsonKey(name: 'orders_counted') int ordersCounted
 });
 
 
@@ -344,12 +361,13 @@ class __$SalesStatisticsCopyWithImpl<$Res>
 
 /// Create a copy of SalesStatistics
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? period = null,Object? salesValue = null,Object? byType = null,Object? weightComparison = null,Object? printedPieces = null,Object? ordersCounted = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? period = null,Object? salesValue = null,Object? byType = null,Object? topItems = null,Object? weightComparison = null,Object? printedPieces = null,Object? ordersCounted = null,}) {
   return _then(_SalesStatistics(
 period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as StatisticsPeriod,salesValue: null == salesValue ? _self.salesValue : salesValue // ignore: cast_nullable_to_non_nullable
 as SalesValue,byType: null == byType ? _self._byType : byType // ignore: cast_nullable_to_non_nullable
-as List<BagTypeRow>,weightComparison: null == weightComparison ? _self.weightComparison : weightComparison // ignore: cast_nullable_to_non_nullable
+as List<BagTypeRow>,topItems: null == topItems ? _self._topItems : topItems // ignore: cast_nullable_to_non_nullable
+as List<TopSellingItem>,weightComparison: null == weightComparison ? _self.weightComparison : weightComparison // ignore: cast_nullable_to_non_nullable
 as WeightComparison,printedPieces: null == printedPieces ? _self.printedPieces : printedPieces // ignore: cast_nullable_to_non_nullable
 as PrintedPieces,ordersCounted: null == ordersCounted ? _self.ordersCounted : ordersCounted // ignore: cast_nullable_to_non_nullable
 as int,
@@ -949,7 +967,10 @@ as String,
 mixin _$BagTypeRow {
 
  String get type; String get value;@JsonKey(name: 'weight_kg') String get weightKg;@JsonKey(name: 'plain_kg') String get plainKg;@JsonKey(name: 'printed_kg') String get printedKg;/// Printed pieces on this material only; a plain row carries `0`.
- int get pieces;
+ int get pieces;/// [value] split plain/printed; the two add up to it.
+@JsonKey(name: 'plain_value') String get plainValue;@JsonKey(name: 'printed_value') String get printedValue;/// Whether any line of this material was weighed. Null from a server that predates it.
+ bool? get weighed;/// This material's sales per size, best-selling first, an unsized row (if any) last.
+ List<BagSizeRow> get sizes;
 /// Create a copy of BagTypeRow
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -963,20 +984,20 @@ $BagTypeRowCopyWith<BagTypeRow> get copyWith => _$BagTypeRowCopyWithImpl<BagType
 @override
 bool operator ==(Object other) {
   final _this = this as BagTypeRow;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagTypeRow&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg)&&(identical(other.plainKg, _this.plainKg) || other.plainKg == _this.plainKg)&&(identical(other.printedKg, _this.printedKg) || other.printedKg == _this.printedKg)&&(identical(other.pieces, _this.pieces) || other.pieces == _this.pieces));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagTypeRow&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg)&&(identical(other.plainKg, _this.plainKg) || other.plainKg == _this.plainKg)&&(identical(other.printedKg, _this.printedKg) || other.printedKg == _this.printedKg)&&(identical(other.pieces, _this.pieces) || other.pieces == _this.pieces)&&(identical(other.plainValue, _this.plainValue) || other.plainValue == _this.plainValue)&&(identical(other.printedValue, _this.printedValue) || other.printedValue == _this.printedValue)&&(identical(other.weighed, _this.weighed) || other.weighed == _this.weighed)&&const DeepCollectionEquality().equals(other.sizes, _this.sizes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as BagTypeRow;
-  return Object.hash(runtimeType,_this.type,_this.value,_this.weightKg,_this.plainKg,_this.printedKg,_this.pieces);
+  return Object.hash(runtimeType,_this.type,_this.value,_this.weightKg,_this.plainKg,_this.printedKg,_this.pieces,_this.plainValue,_this.printedValue,_this.weighed,const DeepCollectionEquality().hash(_this.sizes));
 }
 
 @override
 String toString() {
   final _this = this as BagTypeRow;
-  return 'BagTypeRow(type: ${_this.type}, value: ${_this.value}, weightKg: ${_this.weightKg}, plainKg: ${_this.plainKg}, printedKg: ${_this.printedKg}, pieces: ${_this.pieces})';
+  return 'BagTypeRow(type: ${_this.type}, value: ${_this.value}, weightKg: ${_this.weightKg}, plainKg: ${_this.plainKg}, printedKg: ${_this.printedKg}, pieces: ${_this.pieces}, plainValue: ${_this.plainValue}, printedValue: ${_this.printedValue}, weighed: ${_this.weighed}, sizes: ${_this.sizes})';
 }
 
 
@@ -987,7 +1008,7 @@ abstract mixin class $BagTypeRowCopyWith<$Res>  {
   factory $BagTypeRowCopyWith(BagTypeRow value, $Res Function(BagTypeRow) _then) = _$BagTypeRowCopyWithImpl;
 @useResult
 $Res call({
- String type, String value,@JsonKey(name: 'weight_kg') String weightKg,@JsonKey(name: 'plain_kg') String plainKg,@JsonKey(name: 'printed_kg') String printedKg, int pieces
+ String type, String value,@JsonKey(name: 'weight_kg') String weightKg,@JsonKey(name: 'plain_kg') String plainKg,@JsonKey(name: 'printed_kg') String printedKg, int pieces,@JsonKey(name: 'plain_value') String plainValue,@JsonKey(name: 'printed_value') String printedValue, bool? weighed, List<BagSizeRow> sizes
 });
 
 
@@ -1004,7 +1025,7 @@ class _$BagTypeRowCopyWithImpl<$Res>
 
 /// Create a copy of BagTypeRow
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? value = null,Object? weightKg = null,Object? plainKg = null,Object? printedKg = null,Object? pieces = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? value = null,Object? weightKg = null,Object? plainKg = null,Object? printedKg = null,Object? pieces = null,Object? plainValue = null,Object? printedValue = null,Object? weighed = freezed,Object? sizes = null,}) {
   return _then(BagTypeRow(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
@@ -1012,7 +1033,11 @@ as String,weightKg: null == weightKg ? _self.weightKg : weightKg // ignore: cast
 as String,plainKg: null == plainKg ? _self.plainKg : plainKg // ignore: cast_nullable_to_non_nullable
 as String,printedKg: null == printedKg ? _self.printedKg : printedKg // ignore: cast_nullable_to_non_nullable
 as String,pieces: null == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
-as int,
+as int,plainValue: null == plainValue ? _self.plainValue : plainValue // ignore: cast_nullable_to_non_nullable
+as String,printedValue: null == printedValue ? _self.printedValue : printedValue // ignore: cast_nullable_to_non_nullable
+as String,weighed: freezed == weighed ? _self.weighed : weighed // ignore: cast_nullable_to_non_nullable
+as bool?,sizes: null == sizes ? _self.sizes : sizes // ignore: cast_nullable_to_non_nullable
+as List<BagSizeRow>,
   ));
 }
 
@@ -1097,10 +1122,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue,  bool? weighed,  List<BagSizeRow> sizes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BagTypeRow() when $default != null:
-return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces,_that.plainValue,_that.printedValue,_that.weighed,_that.sizes);case _:
   return orElse();
 
 }
@@ -1118,10 +1143,10 @@ return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue,  bool? weighed,  List<BagSizeRow> sizes)  $default,) {final _that = this;
 switch (_that) {
 case _BagTypeRow():
-return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces,_that.plainValue,_that.printedValue,_that.weighed,_that.sizes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1138,10 +1163,10 @@ return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String type,  String value, @JsonKey(name: 'weight_kg')  String weightKg, @JsonKey(name: 'plain_kg')  String plainKg, @JsonKey(name: 'printed_kg')  String printedKg,  int pieces, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue,  bool? weighed,  List<BagSizeRow> sizes)?  $default,) {final _that = this;
 switch (_that) {
 case _BagTypeRow() when $default != null:
-return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces,_that.plainValue,_that.printedValue,_that.weighed,_that.sizes);case _:
   return null;
 
 }
@@ -1153,7 +1178,7 @@ return $default(_that.type,_that.value,_that.weightKg,_that.plainKg,_that.printe
 @JsonSerializable()
 
 class _BagTypeRow extends BagTypeRow {
-  const _BagTypeRow({required this.type, required this.value, @JsonKey(name: 'weight_kg') required this.weightKg, @JsonKey(name: 'plain_kg') required this.plainKg, @JsonKey(name: 'printed_kg') required this.printedKg, required this.pieces}): super._();
+  const _BagTypeRow({required this.type, required this.value, @JsonKey(name: 'weight_kg') required this.weightKg, @JsonKey(name: 'plain_kg') required this.plainKg, @JsonKey(name: 'printed_kg') required this.printedKg, required this.pieces, @JsonKey(name: 'plain_value') this.plainValue = '0.00', @JsonKey(name: 'printed_value') this.printedValue = '0.00', this.weighed,  List<BagSizeRow> sizes = const <BagSizeRow>[]}): _sizes = sizes,super._();
   factory _BagTypeRow.fromJson(Map<String, dynamic> json) => _$BagTypeRowFromJson(json);
 
 @override final  String type;
@@ -1163,6 +1188,20 @@ class _BagTypeRow extends BagTypeRow {
 @override@JsonKey(name: 'printed_kg') final  String printedKg;
 /// Printed pieces on this material only; a plain row carries `0`.
 @override final  int pieces;
+/// [value] split plain/printed; the two add up to it.
+@override@JsonKey(name: 'plain_value') final  String plainValue;
+@override@JsonKey(name: 'printed_value') final  String printedValue;
+/// Whether any line of this material was weighed. Null from a server that predates it.
+@override final  bool? weighed;
+/// This material's sales per size, best-selling first, an unsized row (if any) last.
+ final  List<BagSizeRow> _sizes;
+/// This material's sales per size, best-selling first, an unsized row (if any) last.
+@override@JsonKey() List<BagSizeRow> get sizes {
+  if (_sizes is EqualUnmodifiableListView) return _sizes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_sizes);
+}
+
 
 /// Create a copy of BagTypeRow
 /// with the given fields replaced by the non-null parameter values.
@@ -1177,18 +1216,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BagTypeRow&&(identical(other.type, type) || other.type == type)&&(identical(other.value, value) || other.value == value)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BagTypeRow&&(identical(other.type, type) || other.type == type)&&(identical(other.value, value) || other.value == value)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces)&&(identical(other.plainValue, plainValue) || other.plainValue == plainValue)&&(identical(other.printedValue, printedValue) || other.printedValue == printedValue)&&(identical(other.weighed, weighed) || other.weighed == weighed)&&const DeepCollectionEquality().equals(other.sizes, _sizes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,type,value,weightKg,plainKg,printedKg,pieces);
+    return Object.hash(runtimeType,type,value,weightKg,plainKg,printedKg,pieces,plainValue,printedValue,weighed,const DeepCollectionEquality().hash(_sizes));
 }
 
 @override
 String toString() {
-    return 'BagTypeRow(type: $type, value: $value, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces)';
+    return 'BagTypeRow(type: $type, value: $value, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces, plainValue: $plainValue, printedValue: $printedValue, weighed: $weighed, sizes: $sizes)';
 }
 
 
@@ -1199,7 +1238,7 @@ abstract mixin class _$BagTypeRowCopyWith<$Res> implements $BagTypeRowCopyWith<$
   factory _$BagTypeRowCopyWith(_BagTypeRow value, $Res Function(_BagTypeRow) _then) = __$BagTypeRowCopyWithImpl;
 @override @useResult
 $Res call({
- String type, String value,@JsonKey(name: 'weight_kg') String weightKg,@JsonKey(name: 'plain_kg') String plainKg,@JsonKey(name: 'printed_kg') String printedKg, int pieces
+ String type, String value,@JsonKey(name: 'weight_kg') String weightKg,@JsonKey(name: 'plain_kg') String plainKg,@JsonKey(name: 'printed_kg') String printedKg, int pieces,@JsonKey(name: 'plain_value') String plainValue,@JsonKey(name: 'printed_value') String printedValue, bool? weighed, List<BagSizeRow> sizes
 });
 
 
@@ -1216,7 +1255,7 @@ class __$BagTypeRowCopyWithImpl<$Res>
 
 /// Create a copy of BagTypeRow
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? value = null,Object? weightKg = null,Object? plainKg = null,Object? printedKg = null,Object? pieces = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? value = null,Object? weightKg = null,Object? plainKg = null,Object? printedKg = null,Object? pieces = null,Object? plainValue = null,Object? printedValue = null,Object? weighed = freezed,Object? sizes = null,}) {
   return _then(_BagTypeRow(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
@@ -1224,7 +1263,610 @@ as String,weightKg: null == weightKg ? _self.weightKg : weightKg // ignore: cast
 as String,plainKg: null == plainKg ? _self.plainKg : plainKg // ignore: cast_nullable_to_non_nullable
 as String,printedKg: null == printedKg ? _self.printedKg : printedKg // ignore: cast_nullable_to_non_nullable
 as String,pieces: null == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
-as int,
+as int,plainValue: null == plainValue ? _self.plainValue : plainValue // ignore: cast_nullable_to_non_nullable
+as String,printedValue: null == printedValue ? _self.printedValue : printedValue // ignore: cast_nullable_to_non_nullable
+as String,weighed: freezed == weighed ? _self.weighed : weighed // ignore: cast_nullable_to_non_nullable
+as bool?,sizes: null == sizes ? _self._sizes : sizes // ignore: cast_nullable_to_non_nullable
+as List<BagSizeRow>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$BagSizeRow {
+
+/// Both null for the one row that gathers lines with no size (a made-to-order bag).
+@JsonKey(name: 'width_cm') int? get widthCm;@JsonKey(name: 'height_cm') int? get heightCm; String get value;@JsonKey(name: 'plain_value') String get plainValue;@JsonKey(name: 'printed_value') String get printedValue;@JsonKey(name: 'weight_kg') String? get weightKg;@JsonKey(name: 'plain_kg') String? get plainKg;@JsonKey(name: 'printed_kg') String? get printedKg;/// Printed pieces only: plain bags are sold by the kilo and never counted.
+ int? get pieces;
+/// Create a copy of BagSizeRow
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BagSizeRowCopyWith<BagSizeRow> get copyWith => _$BagSizeRowCopyWithImpl<BagSizeRow>(this as BagSizeRow, _$identity);
+
+  /// Serializes this BagSizeRow to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as BagSizeRow;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BagSizeRow&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.plainValue, _this.plainValue) || other.plainValue == _this.plainValue)&&(identical(other.printedValue, _this.printedValue) || other.printedValue == _this.printedValue)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg)&&(identical(other.plainKg, _this.plainKg) || other.plainKg == _this.plainKg)&&(identical(other.printedKg, _this.printedKg) || other.printedKg == _this.printedKg)&&(identical(other.pieces, _this.pieces) || other.pieces == _this.pieces));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as BagSizeRow;
+  return Object.hash(runtimeType,_this.widthCm,_this.heightCm,_this.value,_this.plainValue,_this.printedValue,_this.weightKg,_this.plainKg,_this.printedKg,_this.pieces);
+}
+
+@override
+String toString() {
+  final _this = this as BagSizeRow;
+  return 'BagSizeRow(widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, value: ${_this.value}, plainValue: ${_this.plainValue}, printedValue: ${_this.printedValue}, weightKg: ${_this.weightKg}, plainKg: ${_this.plainKg}, printedKg: ${_this.printedKg}, pieces: ${_this.pieces})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BagSizeRowCopyWith<$Res>  {
+  factory $BagSizeRowCopyWith(BagSizeRow value, $Res Function(BagSizeRow) _then) = _$BagSizeRowCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm, String value,@JsonKey(name: 'plain_value') String plainValue,@JsonKey(name: 'printed_value') String printedValue,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'plain_kg') String? plainKg,@JsonKey(name: 'printed_kg') String? printedKg, int? pieces
+});
+
+
+
+
+}
+/// @nodoc
+class _$BagSizeRowCopyWithImpl<$Res>
+    implements $BagSizeRowCopyWith<$Res> {
+  _$BagSizeRowCopyWithImpl(this._self, this._then);
+
+  final BagSizeRow _self;
+  final $Res Function(BagSizeRow) _then;
+
+/// Create a copy of BagSizeRow
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? widthCm = freezed,Object? heightCm = freezed,Object? value = null,Object? plainValue = null,Object? printedValue = null,Object? weightKg = freezed,Object? plainKg = freezed,Object? printedKg = freezed,Object? pieces = freezed,}) {
+  return _then(BagSizeRow(
+widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,plainValue: null == plainValue ? _self.plainValue : plainValue // ignore: cast_nullable_to_non_nullable
+as String,printedValue: null == printedValue ? _self.printedValue : printedValue // ignore: cast_nullable_to_non_nullable
+as String,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
+as String?,plainKg: freezed == plainKg ? _self.plainKg : plainKg // ignore: cast_nullable_to_non_nullable
+as String?,printedKg: freezed == printedKg ? _self.printedKg : printedKg // ignore: cast_nullable_to_non_nullable
+as String?,pieces: freezed == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [BagSizeRow].
+extension BagSizeRowPatterns on BagSizeRow {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BagSizeRow value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BagSizeRow() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BagSizeRow value)  $default,){
+final _that = this;
+switch (_that) {
+case _BagSizeRow():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BagSizeRow value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BagSizeRow() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'plain_kg')  String? plainKg, @JsonKey(name: 'printed_kg')  String? printedKg,  int? pieces)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BagSizeRow() when $default != null:
+return $default(_that.widthCm,_that.heightCm,_that.value,_that.plainValue,_that.printedValue,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'plain_kg')  String? plainKg, @JsonKey(name: 'printed_kg')  String? printedKg,  int? pieces)  $default,) {final _that = this;
+switch (_that) {
+case _BagSizeRow():
+return $default(_that.widthCm,_that.heightCm,_that.value,_that.plainValue,_that.printedValue,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'plain_value')  String plainValue, @JsonKey(name: 'printed_value')  String printedValue, @JsonKey(name: 'weight_kg')  String? weightKg, @JsonKey(name: 'plain_kg')  String? plainKg, @JsonKey(name: 'printed_kg')  String? printedKg,  int? pieces)?  $default,) {final _that = this;
+switch (_that) {
+case _BagSizeRow() when $default != null:
+return $default(_that.widthCm,_that.heightCm,_that.value,_that.plainValue,_that.printedValue,_that.weightKg,_that.plainKg,_that.printedKg,_that.pieces);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _BagSizeRow extends BagSizeRow {
+  const _BagSizeRow({@JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, required this.value, @JsonKey(name: 'plain_value') required this.plainValue, @JsonKey(name: 'printed_value') required this.printedValue, @JsonKey(name: 'weight_kg') this.weightKg, @JsonKey(name: 'plain_kg') this.plainKg, @JsonKey(name: 'printed_kg') this.printedKg, this.pieces}): super._();
+  factory _BagSizeRow.fromJson(Map<String, dynamic> json) => _$BagSizeRowFromJson(json);
+
+/// Both null for the one row that gathers lines with no size (a made-to-order bag).
+@override@JsonKey(name: 'width_cm') final  int? widthCm;
+@override@JsonKey(name: 'height_cm') final  int? heightCm;
+@override final  String value;
+@override@JsonKey(name: 'plain_value') final  String plainValue;
+@override@JsonKey(name: 'printed_value') final  String printedValue;
+@override@JsonKey(name: 'weight_kg') final  String? weightKg;
+@override@JsonKey(name: 'plain_kg') final  String? plainKg;
+@override@JsonKey(name: 'printed_kg') final  String? printedKg;
+/// Printed pieces only: plain bags are sold by the kilo and never counted.
+@override final  int? pieces;
+
+/// Create a copy of BagSizeRow
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BagSizeRowCopyWith<_BagSizeRow> get copyWith => __$BagSizeRowCopyWithImpl<_BagSizeRow>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BagSizeRowToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BagSizeRow&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.value, value) || other.value == value)&&(identical(other.plainValue, plainValue) || other.plainValue == plainValue)&&(identical(other.printedValue, printedValue) || other.printedValue == printedValue)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.plainKg, plainKg) || other.plainKg == plainKg)&&(identical(other.printedKg, printedKg) || other.printedKg == printedKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,widthCm,heightCm,value,plainValue,printedValue,weightKg,plainKg,printedKg,pieces);
+}
+
+@override
+String toString() {
+    return 'BagSizeRow(widthCm: $widthCm, heightCm: $heightCm, value: $value, plainValue: $plainValue, printedValue: $printedValue, weightKg: $weightKg, plainKg: $plainKg, printedKg: $printedKg, pieces: $pieces)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$BagSizeRowCopyWith<$Res> implements $BagSizeRowCopyWith<$Res> {
+  factory _$BagSizeRowCopyWith(_BagSizeRow value, $Res Function(_BagSizeRow) _then) = __$BagSizeRowCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm, String value,@JsonKey(name: 'plain_value') String plainValue,@JsonKey(name: 'printed_value') String printedValue,@JsonKey(name: 'weight_kg') String? weightKg,@JsonKey(name: 'plain_kg') String? plainKg,@JsonKey(name: 'printed_kg') String? printedKg, int? pieces
+});
+
+
+
+
+}
+/// @nodoc
+class __$BagSizeRowCopyWithImpl<$Res>
+    implements _$BagSizeRowCopyWith<$Res> {
+  __$BagSizeRowCopyWithImpl(this._self, this._then);
+
+  final _BagSizeRow _self;
+  final $Res Function(_BagSizeRow) _then;
+
+/// Create a copy of BagSizeRow
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? widthCm = freezed,Object? heightCm = freezed,Object? value = null,Object? plainValue = null,Object? printedValue = null,Object? weightKg = freezed,Object? plainKg = freezed,Object? printedKg = freezed,Object? pieces = freezed,}) {
+  return _then(_BagSizeRow(
+widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,plainValue: null == plainValue ? _self.plainValue : plainValue // ignore: cast_nullable_to_non_nullable
+as String,printedValue: null == printedValue ? _self.printedValue : printedValue // ignore: cast_nullable_to_non_nullable
+as String,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
+as String?,plainKg: freezed == plainKg ? _self.plainKg : plainKg // ignore: cast_nullable_to_non_nullable
+as String?,printedKg: freezed == printedKg ? _self.printedKg : printedKg // ignore: cast_nullable_to_non_nullable
+as String?,pieces: freezed == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TopSellingItem {
+
+ String get product;/// The catalogue's own label for the size: «متوسط», or «30*30».
+ String get variant; String get type;@JsonKey(unknownEnumValue: SaleKind.printed) SaleKind get kind;@JsonKey(name: 'width_cm') int? get widthCm;@JsonKey(name: 'height_cm') int? get heightCm; String get value;/// This item's share of the period's total sales, the server's own division.
+@JsonKey(name: 'share_percent') String get sharePercent;@JsonKey(name: 'weight_kg') String? get weightKg; int? get pieces;
+/// Create a copy of TopSellingItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TopSellingItemCopyWith<TopSellingItem> get copyWith => _$TopSellingItemCopyWithImpl<TopSellingItem>(this as TopSellingItem, _$identity);
+
+  /// Serializes this TopSellingItem to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as TopSellingItem;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TopSellingItem&&(identical(other.product, _this.product) || other.product == _this.product)&&(identical(other.variant, _this.variant) || other.variant == _this.variant)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.widthCm, _this.widthCm) || other.widthCm == _this.widthCm)&&(identical(other.heightCm, _this.heightCm) || other.heightCm == _this.heightCm)&&(identical(other.value, _this.value) || other.value == _this.value)&&(identical(other.sharePercent, _this.sharePercent) || other.sharePercent == _this.sharePercent)&&(identical(other.weightKg, _this.weightKg) || other.weightKg == _this.weightKg)&&(identical(other.pieces, _this.pieces) || other.pieces == _this.pieces));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as TopSellingItem;
+  return Object.hash(runtimeType,_this.product,_this.variant,_this.type,_this.kind,_this.widthCm,_this.heightCm,_this.value,_this.sharePercent,_this.weightKg,_this.pieces);
+}
+
+@override
+String toString() {
+  final _this = this as TopSellingItem;
+  return 'TopSellingItem(product: ${_this.product}, variant: ${_this.variant}, type: ${_this.type}, kind: ${_this.kind}, widthCm: ${_this.widthCm}, heightCm: ${_this.heightCm}, value: ${_this.value}, sharePercent: ${_this.sharePercent}, weightKg: ${_this.weightKg}, pieces: ${_this.pieces})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TopSellingItemCopyWith<$Res>  {
+  factory $TopSellingItemCopyWith(TopSellingItem value, $Res Function(TopSellingItem) _then) = _$TopSellingItemCopyWithImpl;
+@useResult
+$Res call({
+ String product, String variant, String type,@JsonKey(unknownEnumValue: SaleKind.printed) SaleKind kind,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'weight_kg') String? weightKg, int? pieces
+});
+
+
+
+
+}
+/// @nodoc
+class _$TopSellingItemCopyWithImpl<$Res>
+    implements $TopSellingItemCopyWith<$Res> {
+  _$TopSellingItemCopyWithImpl(this._self, this._then);
+
+  final TopSellingItem _self;
+  final $Res Function(TopSellingItem) _then;
+
+/// Create a copy of TopSellingItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? product = null,Object? variant = null,Object? type = null,Object? kind = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? value = null,Object? sharePercent = null,Object? weightKg = freezed,Object? pieces = freezed,}) {
+  return _then(TopSellingItem(
+product: null == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
+as String,variant: null == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as SaleKind,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
+as String,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
+as String?,pieces: freezed == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TopSellingItem].
+extension TopSellingItemPatterns on TopSellingItem {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TopSellingItem value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TopSellingItem() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TopSellingItem value)  $default,){
+final _that = this;
+switch (_that) {
+case _TopSellingItem():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TopSellingItem value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TopSellingItem() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String product,  String variant,  String type, @JsonKey(unknownEnumValue: SaleKind.printed)  SaleKind kind, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'weight_kg')  String? weightKg,  int? pieces)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TopSellingItem() when $default != null:
+return $default(_that.product,_that.variant,_that.type,_that.kind,_that.widthCm,_that.heightCm,_that.value,_that.sharePercent,_that.weightKg,_that.pieces);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String product,  String variant,  String type, @JsonKey(unknownEnumValue: SaleKind.printed)  SaleKind kind, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'weight_kg')  String? weightKg,  int? pieces)  $default,) {final _that = this;
+switch (_that) {
+case _TopSellingItem():
+return $default(_that.product,_that.variant,_that.type,_that.kind,_that.widthCm,_that.heightCm,_that.value,_that.sharePercent,_that.weightKg,_that.pieces);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String product,  String variant,  String type, @JsonKey(unknownEnumValue: SaleKind.printed)  SaleKind kind, @JsonKey(name: 'width_cm')  int? widthCm, @JsonKey(name: 'height_cm')  int? heightCm,  String value, @JsonKey(name: 'share_percent')  String sharePercent, @JsonKey(name: 'weight_kg')  String? weightKg,  int? pieces)?  $default,) {final _that = this;
+switch (_that) {
+case _TopSellingItem() when $default != null:
+return $default(_that.product,_that.variant,_that.type,_that.kind,_that.widthCm,_that.heightCm,_that.value,_that.sharePercent,_that.weightKg,_that.pieces);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TopSellingItem extends TopSellingItem {
+  const _TopSellingItem({required this.product, required this.variant, required this.type, @JsonKey(unknownEnumValue: SaleKind.printed) required this.kind, @JsonKey(name: 'width_cm') this.widthCm, @JsonKey(name: 'height_cm') this.heightCm, required this.value, @JsonKey(name: 'share_percent') required this.sharePercent, @JsonKey(name: 'weight_kg') this.weightKg, this.pieces}): super._();
+  factory _TopSellingItem.fromJson(Map<String, dynamic> json) => _$TopSellingItemFromJson(json);
+
+@override final  String product;
+/// The catalogue's own label for the size: «متوسط», or «30*30».
+@override final  String variant;
+@override final  String type;
+@override@JsonKey(unknownEnumValue: SaleKind.printed) final  SaleKind kind;
+@override@JsonKey(name: 'width_cm') final  int? widthCm;
+@override@JsonKey(name: 'height_cm') final  int? heightCm;
+@override final  String value;
+/// This item's share of the period's total sales, the server's own division.
+@override@JsonKey(name: 'share_percent') final  String sharePercent;
+@override@JsonKey(name: 'weight_kg') final  String? weightKg;
+@override final  int? pieces;
+
+/// Create a copy of TopSellingItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TopSellingItemCopyWith<_TopSellingItem> get copyWith => __$TopSellingItemCopyWithImpl<_TopSellingItem>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TopSellingItemToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TopSellingItem&&(identical(other.product, product) || other.product == product)&&(identical(other.variant, variant) || other.variant == variant)&&(identical(other.type, type) || other.type == type)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.widthCm, widthCm) || other.widthCm == widthCm)&&(identical(other.heightCm, heightCm) || other.heightCm == heightCm)&&(identical(other.value, value) || other.value == value)&&(identical(other.sharePercent, sharePercent) || other.sharePercent == sharePercent)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.pieces, pieces) || other.pieces == pieces));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,product,variant,type,kind,widthCm,heightCm,value,sharePercent,weightKg,pieces);
+}
+
+@override
+String toString() {
+    return 'TopSellingItem(product: $product, variant: $variant, type: $type, kind: $kind, widthCm: $widthCm, heightCm: $heightCm, value: $value, sharePercent: $sharePercent, weightKg: $weightKg, pieces: $pieces)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TopSellingItemCopyWith<$Res> implements $TopSellingItemCopyWith<$Res> {
+  factory _$TopSellingItemCopyWith(_TopSellingItem value, $Res Function(_TopSellingItem) _then) = __$TopSellingItemCopyWithImpl;
+@override @useResult
+$Res call({
+ String product, String variant, String type,@JsonKey(unknownEnumValue: SaleKind.printed) SaleKind kind,@JsonKey(name: 'width_cm') int? widthCm,@JsonKey(name: 'height_cm') int? heightCm, String value,@JsonKey(name: 'share_percent') String sharePercent,@JsonKey(name: 'weight_kg') String? weightKg, int? pieces
+});
+
+
+
+
+}
+/// @nodoc
+class __$TopSellingItemCopyWithImpl<$Res>
+    implements _$TopSellingItemCopyWith<$Res> {
+  __$TopSellingItemCopyWithImpl(this._self, this._then);
+
+  final _TopSellingItem _self;
+  final $Res Function(_TopSellingItem) _then;
+
+/// Create a copy of TopSellingItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? product = null,Object? variant = null,Object? type = null,Object? kind = null,Object? widthCm = freezed,Object? heightCm = freezed,Object? value = null,Object? sharePercent = null,Object? weightKg = freezed,Object? pieces = freezed,}) {
+  return _then(_TopSellingItem(
+product: null == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
+as String,variant: null == variant ? _self.variant : variant // ignore: cast_nullable_to_non_nullable
+as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as SaleKind,widthCm: freezed == widthCm ? _self.widthCm : widthCm // ignore: cast_nullable_to_non_nullable
+as int?,heightCm: freezed == heightCm ? _self.heightCm : heightCm // ignore: cast_nullable_to_non_nullable
+as int?,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,sharePercent: null == sharePercent ? _self.sharePercent : sharePercent // ignore: cast_nullable_to_non_nullable
+as String,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
+as String?,pieces: freezed == pieces ? _self.pieces : pieces // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

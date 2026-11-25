@@ -229,8 +229,9 @@ acceptance criteria name this explicitly, and this screen puts three units on on
 ### Four traps
 
 **A row with real value and zero weight is correct, not a bug.** أكياس ورقية عادية is stocked by
-the piece, so it earns money and weighs nothing. Do not hide the row and do not render `0.000` as
-«—»: its value is part of the total above it, and dropping it would make the table stop adding up.
+the piece, so it earns money and weighs nothing. Do not hide the row: its value is part of the
+total above it, and dropping it would make the table stop adding up. Since 2026-11-25 its weights
+are drawn as «—» (`by_type[].weighed` is false), never as a `0` that reads like a mistake.
 
 **Show the coverage line only when it is below 100.** `weight_coverage_percent` says how much of
 the period's *value* has a weight behind it. At 100 it is noise; below it, it is the difference
@@ -241,10 +242,10 @@ dinars. Production sits at ~92% today.
 painting five blocks of zeroes — `ProfitAndLossSummary.hasRecognisedOrders` is the existing
 precedent and this model wants the same getter.
 
-**The type labels are untidy, and the app must not tidy them.** Four of the five read
-«أكياس شفافه -», «أكياس يد خارجية -» with a trailing dash, because those shelves were
-auto-created from product names. Trimming it in Dart would hide a naming problem that also shows
-on the inventory screens; the fix belongs in the data. Render what the server sends.
+**Render the type labels as they arrive.** Several shelves were auto-created from product names
+and saved as «أكياس شفافه -», «أكياس يد خارجية -». Since 2026-11-25 the server drops that
+trailing dash (and merges a shelf saved with it into one saved without), so the app does nothing.
+The lasting fix is still in the data: file those shelves under a named group.
 
 ---
 
@@ -285,3 +286,35 @@ Minimum Cubit coverage per `frontend/RULES.md` §9.
 Grant `reports.sales.view` to whichever roles should see it, from **الأدوار والصلاحيات**. The
 backend adds the permission on deploy (`permissions:sync`) but assigns it to nobody — only the
 administrator satisfies it by rule until somebody hands it out.
+
+---
+
+## 10. Sizes and best sellers (2026-11-25)
+
+Added on top of everything above; no existing key changed, so an app built before this keeps
+working, and the app reads every new key with a default so it also works against an older server.
+
+**`by_type[]` gains:**
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `plain_value`, `printed_value` | `String`, 2 decimals, **د.ل** | `value` split plain/printed; they add up to it |
+| `weighed` | `bool` | whether any line of the material was weighed; false for paper bags |
+| `sizes[]` | list | the material per size, best-selling first, an unsized row last |
+
+**`by_type[].sizes[]`:** `width_cm`, `height_cm` (`int?`, both null on the one row gathering
+lines with no size), `value` / `plain_value` / `printed_value` (د.ل), `weight_kg` / `plain_kg` /
+`printed_kg` (`String?`, كجم), `pieces` (`int?`, printed pieces only). **Null means the size has
+no such figure**, never zero: a paper size has no weight, a size with no plain sales has no plain
+weight, a plain-only size has no piece count. The screen draws each as «—». The size is the
+shelf's, so the plain and printed twins of a bag share one row; the sizes add up to their type.
+
+**`top_items[]`:** the top 5 variants (a product in one size) by value. `product`, `variant`
+(the catalogue label: «متوسط» or «30*30»), `type`, `kind` (`plain` | `printed`), `width_cm`,
+`height_cm`, `value` (د.ل), `share_percent` (of the period's total, 1 decimal), `weight_kg`
+(`String?`), `pieces` (`int?`). Ranked in dinars, the one measure every bag has.
+
+**On the screen:** «الأكثر مبيعاً» sits under the three totals; each row shows the product, its
+size, pieces for a printed bag or kilograms for a plain one, the value and a share bar. Tapping a
+row of the type table opens a sheet with that material's plain/printed dinars and one tile per
+size. Every `25×35` is drawn through `String.isolated`, or Arabic text flips it to `35×25`.

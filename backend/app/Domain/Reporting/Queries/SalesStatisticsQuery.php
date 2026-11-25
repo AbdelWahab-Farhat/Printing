@@ -106,6 +106,21 @@ final class SalesStatisticsQuery
     private const TYPE_SQL = 'COALESCE(stock_item_groups.name, stock_items.name, order_items.product_name)';
 
     /**
+     * The size a line is filed under: the shelf's, because the plain and printed twins of a bag
+     * share it, so both land on one size row. A size with no shelf (a made-to-order paper bag)
+     * falls back to the variant's own dimensions. Both halves come from the same table, never
+     * one from each.
+     */
+    private const SIZE_SOURCE_IS_SHELF = 'stock_items.width_cm IS NOT NULL AND stock_items.height_cm IS NOT NULL';
+
+    private const WIDTH_SQL = 'CASE WHEN '.self::SIZE_SOURCE_IS_SHELF.' THEN stock_items.width_cm ELSE product_variants.width_cm END';
+
+    private const HEIGHT_SQL = 'CASE WHEN '.self::SIZE_SOURCE_IS_SHELF.' THEN stock_items.height_cm ELSE product_variants.height_cm END';
+
+    /** How many entries the best-sellers list carries. */
+    private const TOP_ITEMS = 5;
+
+    /**
      * {@see OrderItem::billableQuantity()} in SQL — what was ordered, less what came up short,
      * floored at zero.
      *
@@ -158,6 +173,7 @@ final class SalesStatisticsQuery
                 'total' => Money::round($value),
             ],
             'by_type' => $this->byType($rows),
+            'top_items' => $this->topItems($rows, $value),
             'weight_comparison' => [
                 'plain_kg' => self::scaleKg($plain['weight_kg']),
                 'printed_kg' => self::scaleKg($printed['weight_kg']),
@@ -210,7 +226,10 @@ final class SalesStatisticsQuery
     }
 
     /**
-     * One row per (type, سادة|مطبوع) — everything the board prints, before anything is added up.
+     * One row per variant sold — everything the board prints, before anything is added up.
+     *
+     * A variant fixes its type, its size and whether it is plain or printed, so every figure on
+     * the board (headline, type table, size rows, best sellers) is a fold of these same rows.
      *
      * **A query builder rather than the model**, unlike most reads in this codebase: nothing here
      * is an `OrderItem`, and hydrating one per group only to read six aggregate aliases off it
@@ -223,6 +242,8 @@ final class SalesStatisticsQuery
     {
         $mode = self::MODE_SQL;
         $type = self::TYPE_SQL;
+        $width = self::WIDTH_SQL;
+        $height = self::HEIGHT_SQL;
 
         return DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -238,10 +259,23 @@ final class SalesStatisticsQuery
             ->whereNull('orders.deleted_at')
             ->where($this->recognized($filters))
             ->whereIn(DB::raw($mode), self::BAG_MODES)
-            ->groupByRaw("{$type}, {$mode}")
+            ->groupByRaw(
+                "{$type}, {$mode}, order_items.product_variant_id, products.name, ".
+                "product_variants.label, {$width}, {$height}",
+            )
             ->selectRaw(
                 "{$type} AS type_label, ".
                 "{$mode} AS production_mode, ".
+                'order_items.product_variant_id AS variant_id, '.
+                'products.name AS product_name, '.
+                // The invoice's own label stands in for a variant that no longer resolves.
+                'COALESCE(product_variants.label, MAX(order_items.variant_label)) AS variant_label, '.
+                "{$width} AS width_cm, ".
+                "{$height} AS height_cm, ".
+                // Lines that carried a weight at all, so a size nobody weighed reports no weight
+                // rather than a zero that reads like a mistake.
+                'COUNT('.self::WEIGHT_SQL.') AS weighed_lines, '.
+                "COUNT(CASE WHEN order_items.pricing_unit = 'piece' THEN 1 END) AS piece_lines, ".
                 'COALESCE(SUM(order_items.line_total), 0) AS value, '.
                 // Null where the shelf is not counted in kilograms — summed as nothing, and
                 // owned up to through `value_with_weight` rather than passed off as zero.
@@ -323,6 +357,10 @@ final class SalesStatisticsQuery
      * Heaviest first, and by value where two weigh the same, so the row a reader came for is at
      * the top.
      *
+     * Each type also carries its dinars split plain/printed, whether any of it was weighed at all
+     * (`weighed`: false for paper bags, whose shelves count pieces), and its `sizes`. All of it
+     * is folded from the same rows, so the sizes always add up to their type.
+     *
      * @param  Collection<int, \stdClass>  $rows
      * @return list<array<string, mixed>>
      */
@@ -331,27 +369,34 @@ final class SalesStatisticsQuery
         $types = [];
 
         foreach ($rows as $row) {
-            $label = (string) $row->type_label;
-            $printed = $row->production_mode === ProductionMode::InHouse->value;
+            $label = self::cleanLabel((string) $row->type_label);
+            $kind = self::kind($row);
 
-            $types[$label] ??= [
+            $type = $types[$label] ?? [
                 'type' => $label,
                 'value' => '0',
+                'plain_value' => '0',
+                'printed_value' => '0',
                 'weight_kg' => '0',
                 'plain_kg' => '0',
                 'printed_kg' => '0',
+                'weighed' => false,
                 'pieces' => 0,
+                'rows' => [],
             ];
 
-            $types[$label]['value'] = Money::sum($types[$label]['value'], (string) $row->value);
-            $types[$label]['weight_kg'] = self::addKg($types[$label]['weight_kg'], (string) $row->weight_kg);
+            $type['value'] = Money::sum($type['value'], (string) $row->value);
+            $type["{$kind}_value"] = Money::sum($type["{$kind}_value"], (string) $row->value);
+            $type['weight_kg'] = self::addKg($type['weight_kg'], (string) $row->weight_kg);
+            $type["{$kind}_kg"] = self::addKg($type["{$kind}_kg"], (string) $row->weight_kg);
+            $type['weighed'] = $type['weighed'] || (int) $row->weighed_lines > 0;
 
-            $bucket = $printed ? 'printed_kg' : 'plain_kg';
-            $types[$label][$bucket] = self::addKg($types[$label][$bucket], (string) $row->weight_kg);
-
-            if ($printed) {
-                $types[$label]['pieces'] += (int) round((float) $row->pieces);
+            if ($kind === 'printed') {
+                $type['pieces'] += (int) round((float) $row->pieces);
             }
+
+            $type['rows'][] = $row;
+            $types[$label] = $type;
         }
 
         $types = array_values($types);
@@ -362,14 +407,182 @@ final class SalesStatisticsQuery
             return $byWeight !== 0 ? $byWeight : bccomp($b['value'], $a['value'], Money::SCALE);
         });
 
-        return array_map(static fn (array $type): array => [
+        return array_map(fn (array $type): array => [
             'type' => $type['type'],
             'value' => Money::round($type['value']),
+            'plain_value' => Money::round($type['plain_value']),
+            'printed_value' => Money::round($type['printed_value']),
             'weight_kg' => self::scaleKg($type['weight_kg']),
             'plain_kg' => self::scaleKg($type['plain_kg']),
             'printed_kg' => self::scaleKg($type['printed_kg']),
+            'weighed' => $type['weighed'],
             'pieces' => $type['pieces'],
+            'sizes' => $this->sizes($type['rows']),
         ], $types);
+    }
+
+    /**
+     * One type's sales per size, the plain and printed twins of a size on one row.
+     *
+     * **A missing figure is null, not zero.** A size nobody weighed (paper bags) has no weight,
+     * and a size with no printed sales has no piece count. A zero there would read as «sold
+     * nothing» or «weighed nothing», which is a different statement.
+     *
+     * Best-selling first by value. Lines with no size at all (a made-to-order bag) share one row
+     * with null dimensions, always last, so the sizes still add up to their type.
+     *
+     * @param  list<\stdClass>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function sizes(array $rows): array
+    {
+        $sizes = [];
+
+        foreach ($rows as $row) {
+            $sized = $row->width_cm !== null && $row->height_cm !== null;
+            $key = $sized ? "{$row->width_cm}x{$row->height_cm}" : '';
+            $kind = self::kind($row);
+
+            $size = $sizes[$key] ?? [
+                'width_cm' => $sized ? (int) $row->width_cm : null,
+                'height_cm' => $sized ? (int) $row->height_cm : null,
+                'value' => '0',
+                'plain_value' => '0',
+                'printed_value' => '0',
+                'plain_kg' => null,
+                'printed_kg' => null,
+                'pieces' => null,
+            ];
+
+            $size['value'] = Money::sum($size['value'], (string) $row->value);
+            $size["{$kind}_value"] = Money::sum($size["{$kind}_value"], (string) $row->value);
+
+            if ((int) $row->weighed_lines > 0) {
+                $size["{$kind}_kg"] = self::addKg($size["{$kind}_kg"] ?? '0', (string) $row->weight_kg);
+            }
+
+            // Printed pieces only, as on the type row: a plain bag sold by the kilo has no count.
+            if ($kind === 'printed' && (int) $row->piece_lines > 0) {
+                $size['pieces'] = ($size['pieces'] ?? 0) + (int) round((float) $row->pieces);
+            }
+
+            $sizes[$key] = $size;
+        }
+
+        $sizes = array_values($sizes);
+
+        usort($sizes, static function (array $a, array $b): int {
+            $unsized = ($a['width_cm'] === null) <=> ($b['width_cm'] === null);
+            if ($unsized !== 0) {
+                return $unsized;
+            }
+
+            $byValue = bccomp($b['value'], $a['value'], Money::SCALE);
+
+            return $byValue !== 0
+                ? $byValue
+                : [$a['width_cm'], $a['height_cm']] <=> [$b['width_cm'], $b['height_cm']];
+        });
+
+        return array_map(static function (array $size): array {
+            $weighed = array_filter([$size['plain_kg'], $size['printed_kg']], static fn (?string $kg): bool => $kg !== null);
+
+            return [
+                'width_cm' => $size['width_cm'],
+                'height_cm' => $size['height_cm'],
+                'value' => Money::round($size['value']),
+                'plain_value' => Money::round($size['plain_value']),
+                'printed_value' => Money::round($size['printed_value']),
+                'weight_kg' => $weighed === [] ? null : self::scaleKg(array_reduce($weighed, self::addKg(...), '0')),
+                'plain_kg' => $size['plain_kg'] === null ? null : self::scaleKg($size['plain_kg']),
+                'printed_kg' => $size['printed_kg'] === null ? null : self::scaleKg($size['printed_kg']),
+                'pieces' => $size['pieces'],
+            ];
+        }, $sizes);
+    }
+
+    /**
+     * The best sellers: the top variants (product + size) by value, each with its share of the
+     * period's total.
+     *
+     * Ranked by dinars because it is the one measure every bag has: plain bags carry no piece
+     * count and paper bags no weight. Each entry still reports the weight and the piece count it
+     * does have, null where it has none.
+     *
+     * @param  Collection<int, \stdClass>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function topItems(Collection $rows, string $total): array
+    {
+        // A variant is normally one row already; merged here in case a renamed product split it
+        // across two invoice names.
+        $variants = [];
+
+        foreach ($rows as $row) {
+            $id = (int) $row->variant_id;
+
+            $variant = $variants[$id] ?? [
+                'product' => (string) $row->product_name,
+                'variant' => (string) $row->variant_label,
+                'type' => self::cleanLabel((string) $row->type_label),
+                'kind' => self::kind($row),
+                'width_cm' => $row->width_cm !== null && $row->height_cm !== null ? (int) $row->width_cm : null,
+                'height_cm' => $row->width_cm !== null && $row->height_cm !== null ? (int) $row->height_cm : null,
+                'value' => '0',
+                'weight_kg' => null,
+                'pieces' => null,
+            ];
+
+            $variant['value'] = Money::sum($variant['value'], (string) $row->value);
+
+            if ((int) $row->weighed_lines > 0) {
+                $variant['weight_kg'] = self::addKg($variant['weight_kg'] ?? '0', (string) $row->weight_kg);
+            }
+
+            if ((int) $row->piece_lines > 0) {
+                $variant['pieces'] = ($variant['pieces'] ?? 0) + (int) round((float) $row->pieces);
+            }
+
+            $variants[$id] = $variant;
+        }
+
+        $variants = array_values(array_filter(
+            $variants,
+            static fn (array $variant): bool => bccomp($variant['value'], '0', Money::SCALE) > 0,
+        ));
+
+        usort($variants, static function (array $a, array $b): int {
+            $byValue = bccomp($b['value'], $a['value'], Money::SCALE);
+
+            return $byValue !== 0
+                ? $byValue
+                : [$a['product'], $a['variant']] <=> [$b['product'], $b['variant']];
+        });
+
+        return array_map(static fn (array $variant): array => [
+            ...$variant,
+            'value' => Money::round($variant['value']),
+            'share_percent' => self::percent($variant['value'], $total, Money::SCALE),
+            'weight_kg' => $variant['weight_kg'] === null ? null : self::scaleKg($variant['weight_kg']),
+        ], array_slice($variants, 0, self::TOP_ITEMS));
+    }
+
+    /** 'printed' or 'plain', the two keys every split on this board is written under. */
+    private static function kind(\stdClass $row): string
+    {
+        return $row->production_mode === ProductionMode::InHouse->value ? 'printed' : 'plain';
+    }
+
+    /**
+     * A material name without the trailing dash several shelves were saved with («أكياس شفافه -»),
+     * which would otherwise print as part of the name. Trimmed before grouping, so a shelf saved
+     * with the dash and one saved without it share a row.
+     */
+    private static function cleanLabel(string $label): string
+    {
+        $clean = preg_replace('/[\s\-\x{2013}\x{2014}]+$/u', '', $label) ?? $label;
+
+        return $clean === '' ? $label : $clean;
     }
 
     private static function addKg(string $a, string $b): string
