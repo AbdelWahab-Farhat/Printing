@@ -27,8 +27,8 @@ use Tests\TestCase;
  * An order waiting at the counter whose customer asks for delivery instead.
  *
  * «استلام مكتب» → «إعادة إرسال» carries the new delivery city, and the order leaves from there
- * like any re-send: to Nawris, or with our courier. The edit form refuses to make the same change
- * on its own, so the order can never sit at the counter as a delivery. See ORDERS-DESIGN.md
+ * like any re-send: to Nawris, or with our courier. The edit form makes the same move when it is
+ * given a delivery city, so the order can never sit at the counter as a delivery. See ORDERS-DESIGN.md
  * «من استلام مكتب إلى توصيل».
  *
  * Arrange - Act - Assert throughout.
@@ -383,21 +383,93 @@ class OrderPickupToDeliveryTest extends TestCase
 
     // ── the edit form ───────────────────────────────────────────────────────────────────
 
-    public function test_the_edit_form_refuses_a_delivery_city_while_the_order_waits_at_the_counter(): void
+    public function test_the_edit_form_moves_the_order_to_resend_with_a_delivery_city(): void
+    {
+        // Arrange
+        $order = $this->atTheCounter();
+        $city = City::factory()->requiringRegion()->create(['name' => 'جنزور', 'delivery_price' => '15.00']);
+        $region = Region::factory()->create(['city_id' => $city->id, 'name' => 'الغيران']);
+
+        // Act
+        $response = $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $city->id,
+            'region_id' => $region->id,
+            'address_details' => 'قرب الجامع',
+        ]);
+
+        // Assert — the address and the status land together, as the button would leave them.
+        $response->assertOk()->assertJsonPath('data.status', 'resend');
+
+        $moved = $order->fresh();
+        $this->assertSame(OrderStatus::Resend, $moved->status);
+        $this->assertSame($city->id, $moved->city_id);
+        $this->assertSame($region->id, $moved->region_id);
+        $this->assertSame('جنزور', $moved->city_name);
+        $this->assertSame('الغيران', $moved->region_name);
+        $this->assertSame(FulfilmentType::Delivery, $moved->fulfilment_type);
+        $this->assertSame('15.00', (string) $moved->delivery_price);
+        $this->assertSame('قرب الجامع', $moved->address_details);
+    }
+
+    public function test_the_move_the_edit_makes_is_in_the_status_history(): void
     {
         // Arrange
         $order = $this->atTheCounter();
         $city = City::factory()->create();
 
         // Act
-        $response = $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
+        $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
             'city_id' => $city->id,
+        ])->assertOk();
+
+        // Assert
+        $transition = $order->transitions()->latest('id')->first();
+        $this->assertNotNull($transition);
+        $this->assertSame(OrderStatus::OfficePickup, $transition->from_status);
+        $this->assertSame(OrderStatus::Resend, $transition->to_status);
+    }
+
+    public function test_the_delivery_cost_follows_the_city_the_edit_gave(): void
+    {
+        // Arrange
+        $order = $this->atTheCounter(['delivery_paid_by' => DeliveryPayer::Us]);
+        $city = City::factory()->create(['delivery_price' => '25.00']);
+
+        // Act
+        $this->withHeaders($this->clerk())->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $city->id,
+        ])->assertOk();
+
+        // Assert
+        $this->assertSame('25.00', (string) $order->fresh()->delivery_cost);
+    }
+
+    public function test_the_edit_form_refuses_a_delivery_city_without_the_resend_permission(): void
+    {
+        // Arrange — may edit orders, may not move them to «إعادة إرسال».
+        $order = $this->atTheCounter();
+        $city = City::factory()->create();
+        $user = User::factory()->create();
+        $user->givePermissionTo([
+            PermissionName::ViewOrders->value,
+            PermissionName::ManageOrders->value,
+        ]);
+        $headers = ['Authorization' => 'Bearer '.$user->createToken('test')->plainTextToken];
+
+        // Act
+        $response = $this->withHeaders($headers)->putJson("/api/v1/orders/{$order->id}", [
+            'city_id' => $city->id,
+            'notes' => 'لن تُحفظ',
         ]);
 
-        // Assert — the move is the way, and the refusal names it.
+        // Assert — refused whole: neither the city, the status nor the rest of the edit.
         $response->assertStatus(422)->assertJsonValidationErrors('city_id');
         $this->assertStringContainsString('إعادة إرسال', $response->json('errors.city_id.0'));
-        $this->assertSame(FulfilmentType::OfficePickup, $order->fresh()->fulfilment_type);
+
+        $kept = $order->fresh();
+        $this->assertSame(OrderStatus::OfficePickup, $kept->status);
+        $this->assertSame(FulfilmentType::OfficePickup, $kept->fulfilment_type);
+        $this->assertNotSame('لن تُحفظ', $kept->notes);
     }
 
     public function test_the_edit_form_still_moves_the_order_to_another_branch(): void
@@ -411,9 +483,10 @@ class OrderPickupToDeliveryTest extends TestCase
             'city_id' => $other->id,
         ]);
 
-        // Assert
+        // Assert — still a pickup, so the status stays where it is.
         $response->assertOk();
         $this->assertSame($other->id, $order->fresh()->city_id);
+        $this->assertSame(OrderStatus::OfficePickup, $order->fresh()->status);
     }
 
     public function test_an_order_already_stuck_as_a_delivery_at_the_counter_can_still_be_edited(): void
@@ -431,8 +504,9 @@ class OrderPickupToDeliveryTest extends TestCase
             'notes' => 'يتصل قبل الوصول',
         ]);
 
-        // Assert
+        // Assert — corrected, and not moved: the city did not change.
         $response->assertOk();
         $this->assertSame('يتصل قبل الوصول', $order->fresh()->notes);
+        $this->assertSame(OrderStatus::OfficePickup, $order->fresh()->status);
     }
 }

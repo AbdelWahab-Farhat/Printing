@@ -89,6 +89,14 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   /// Whether this edit has changed the discount from the one the screen opened on.
   bool get discountMoved => _ascii(state.discount) != _ascii(_openingDiscount);
 
+  /// Whether the city this edit picked is a delivery city rather than a branch. False until a
+  /// city other than the order's own is picked.
+  ///
+  /// Read by the save: on an order at «استلام مكتب» a delivery city moves it to «إعادة إرسال»
+  /// on the server, so the screen asks first. Not in the state, because nothing draws it.
+  bool get pickedADeliveryCity => _pickedADeliveryCity;
+  bool _pickedADeliveryCity = false;
+
   /// Puts a product the picker returned on the order, with no quantity yet.
   ///
   /// **Empty, not a guessed default.** A quantity the clerk did not type is one they did not
@@ -225,8 +233,10 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   /// **The region is cleared with it, always.** A region belongs to one city, so carrying the
   /// old one across would send the server a neighbourhood from somewhere else — which it
   /// refuses, correctly, with a message about a field the user never touched.
-  void setCity({required int id, required String name}) {
+  void setCity({required int id, required String name, required bool isOfficePickup}) {
     if (id == state.cityId) return;
+
+    _pickedADeliveryCity = !isOfficePickup;
 
     emit(
       state.copyWith(

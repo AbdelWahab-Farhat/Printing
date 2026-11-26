@@ -14,6 +14,7 @@ import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/cities/models/city.dart';
 import 'package:dayaa/features/orders/models/order.dart';
 import 'package:dayaa/features/orders/models/order_flow.dart';
+import 'package:dayaa/features/orders/models/order_status.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/line_quote_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_detail_cubit.dart';
 import 'package:dayaa/features/orders/presentation/viewmodel/order_invoice_cubit.dart';
@@ -25,6 +26,7 @@ import 'package:dayaa/features/orders/presentation/widgets/order_additional_cost
 import 'package:dayaa/features/orders/presentation/widgets/order_designs_section.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_line_row.dart';
 import 'package:dayaa/features/orders/presentation/widgets/order_urgent_switch.dart';
+import 'package:dayaa/features/orders/presentation/widgets/pickup_to_delivery_confirmation.dart';
 import 'package:dayaa/features/orders/presentation/widgets/place_picker_tile.dart';
 import 'package:dayaa/features/orders/presentation/widgets/product_picker_sheet.dart';
 import 'package:dayaa/features/orders/usecases/manage_order_designs.dart';
@@ -381,10 +383,17 @@ class _Form extends StatelessWidget {
     cubit.add(product: picked.product, variant: picked.variant);
   }
 
-  /// Saves, asking first when a full edit would have consequences beyond this screen.
+  /// Saves, asking first when a full edit would have consequences beyond this screen — or when
+  /// the save would move an office pickup to «إعادة إرسال».
   Future<void> _save(BuildContext context) async {
     final cubit = context.read<OrderInvoiceCubit>();
     final draft = fullEditDraft;
+
+    // The server moves it, not this screen (owner's decision, 2026-11-26); this only asks.
+    if (sourceOrder.status == OrderStatus.officePickup && cubit.pickedADeliveryCity) {
+      final goOn = await confirmPickupBecomesDelivery(context, cityName: cubit.state.cityName);
+      if (!goOn || !context.mounted) return;
+    }
 
     if (draft == null) {
       await cubit.save();
@@ -440,7 +449,11 @@ class _Form extends StatelessWidget {
                     title: 'مكان الاستلام',
                     child: _Destination(
                       state: state,
-                      onCity: (city) => cubit.setCity(id: city.id, name: city.name),
+                      onCity: (city) => cubit.setCity(
+                        id: city.id,
+                        name: city.name,
+                        isOfficePickup: city.isOfficePickup,
+                      ),
                       onRegion: (region) =>
                           cubit.setRegion(id: region.id, name: region.name),
                       onPhone: cubit.setRecipientPhone,

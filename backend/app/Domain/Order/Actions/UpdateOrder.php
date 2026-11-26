@@ -28,6 +28,7 @@ use App\Domain\Order\Exceptions\PickupBecomesDeliveryThroughResend;
 use App\Domain\Order\Exceptions\RecipientPhoneCannotChange;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\TransitionFields;
 use App\Domain\Vendor\VendorService;
 use Illuminate\Support\Facades\DB;
 
@@ -50,9 +51,9 @@ use Illuminate\Support\Facades\DB;
  *   moves the stock behind them once it has left the shelf.
  *
  * Changing the city re-snapshots its name and its rate, and re-derives the fulfilment type.
- * «جاري التوصيل» cannot reach that code at all, and «استلام مكتب» may change branch but not
- * become a delivery — that goes through «إعادة إرسال» — so the fulfilment type never
- * contradicts the status the order is sitting in.
+ * «جاري التوصيل» cannot reach that code at all, and an order at «استلام مكتب» given a delivery
+ * city is moved to «إعادة إرسال» in the same transaction — see moveToResend() — so the
+ * fulfilment type never contradicts the status the order is sitting in.
  */
 final class UpdateOrder
 {
@@ -68,6 +69,9 @@ final class UpdateOrder
         private readonly RecalculateDeliveryCost $recalculateDeliveryCost,
         private readonly GuardCompensation $guardCompensation,
         private readonly DeliveryService $delivery,
+        // The one door every status move goes through — used for the move to «إعادة إرسال» an
+        // edit makes when it turns an office pickup into a delivery. See moveToResend().
+        private readonly ChangeOrderStatus $changeStatus,
     ) {}
 
     /**
@@ -77,6 +81,7 @@ final class UpdateOrder
      * @throws DiscountRequiresPermission
      * @throws AdditionalCostRequiresPermission
      * @throws ShopDoesNotBelongToCustomer
+     * @throws PickupBecomesDeliveryThroughResend
      */
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
     {
@@ -122,15 +127,21 @@ final class UpdateOrder
 
         $destination = ($this->resolveDestination)($data->cityId, $data->regionId);
 
-        // **An order waiting at the counter does not become a delivery here** (owner's decision,
-        // 2026-11-15). Its status would still say «استلام مكتب», which leads nowhere a delivery
-        // can go. The move into «إعادة إرسال» asks for the city instead and writes both together.
-        // Another branch, the street or the phone are still ordinary edits — and so is any edit
-        // that leaves the city where it is, so an order stuck this way before the rule existed
-        // can still have its notes corrected.
-        if ($destinationMoved
+        // **An order waiting at the counter that is given a delivery city moves to «إعادة إرسال»
+        // with the edit** (owner's decision, 2026-11-26; it was refused from 2026-11-15). Left at
+        // «استلام مكتب» it would sit in a status that leads nowhere a delivery can go. Another
+        // branch, the street or the phone are still ordinary edits — and so is any edit that
+        // leaves the city where it is, so an order stuck this way before the rule existed can
+        // still have its notes corrected without being moved.
+        $pickupBecomesDelivery = $destinationMoved
             && $order->status === OrderStatus::OfficePickup
-            && $destination->fulfilmentType === FulfilmentType::Delivery) {
+            && $destination->fulfilmentType === FulfilmentType::Delivery;
+
+        // **Both grants, not just the edit's** (owner's decision, 2026-11-26): the edit form must
+        // not be a way round the permission the «إعادة إرسال» button costs. Refused before
+        // anything is written.
+        if ($pickupBecomesDelivery
+            && $actor?->can(OrderStatus::Resend->permission()->value) !== true) {
             throw PickupBecomesDeliveryThroughResend::make();
         }
 
@@ -140,7 +151,7 @@ final class UpdateOrder
             ? null
             : (string) $this->vendors->find($data->vendorId)->name;
 
-        $updated = DB::transaction(function () use ($order, $data, $destination, $destinationMoved, $shopName, $vendorName, $actor, $fullEdit): Order {
+        $updated = DB::transaction(function () use ($order, $data, $destination, $destinationMoved, $pickupBecomesDelivery, $shopName, $vendorName, $actor, $fullEdit): Order {
             // **The lock `ChangeOrderStatus` takes first, taken first here too.** An edit to the
             // lines can move stock, and so can a status move — so the two must not interleave: a
             // cancellation crediting back a draw this edit is replacing would reverse it twice.
@@ -253,6 +264,10 @@ final class UpdateOrder
                 $this->reworkTheMoney($recalculated);
             }
 
+            if ($pickupBecomesDelivery) {
+                return $this->moveToResend($recalculated, $data, $actor);
+            }
+
             return $recalculated;
         });
 
@@ -268,6 +283,29 @@ final class UpdateOrder
         }
 
         return $updated;
+    }
+
+    /**
+     * Moves an order the edit just gave a delivery city from «استلام مكتب» to «إعادة إرسال».
+     *
+     * **Through {@see ChangeOrderStatus}, the door the button uses**, carrying the same answer
+     * its dialog sends: the status history row, the notifications and the stamp on the last
+     * status change all come from the one place that owns them. The address it writes is the one
+     * this edit has just written, so the rewrite changes nothing, and the delivery cost was
+     * already reworked above, so it does not move twice.
+     *
+     * Inside the edit's transaction: a move the state machine refuses takes the edit back with it,
+     * so the order is never left at the counter as a delivery.
+     */
+    private function moveToResend(Order $order, OrderData $data, ?User $actor): Order
+    {
+        return ($this->changeStatus)($order, OrderStatus::Resend, null, $actor, [
+            TransitionFields::DESTINATION => [
+                'city_id' => $data->cityId,
+                'region_id' => $data->regionId,
+            ],
+            TransitionFields::ADDRESS_DETAILS => $data->addressDetails,
+        ]);
     }
 
     /**

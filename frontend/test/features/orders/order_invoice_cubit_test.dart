@@ -571,7 +571,7 @@ void main() {
     );
 
     // Act
-    cubit.setCity(id: 9, name: 'الزاوية');
+    cubit.setCity(id: 9, name: 'الزاوية', isOfficePickup: false);
     await cubit.save();
 
     // Assert
@@ -600,7 +600,7 @@ void main() {
     );
 
     // Act
-    cubit.setCity(id: 9, name: 'الزاوية');
+    cubit.setCity(id: 9, name: 'الزاوية', isOfficePickup: false);
     await cubit.save();
 
     // Assert — `lines` absent means "leave them alone"; sending them would be refused, and
@@ -629,7 +629,7 @@ void main() {
     );
 
     // Act
-    cubit.setCity(id: 9, name: 'الزاوية');
+    cubit.setCity(id: 9, name: 'الزاوية', isOfficePickup: false);
 
     // Assert — a region belongs to one city, and carrying it across would have the server
     // refuse a field the user never touched.
@@ -644,11 +644,42 @@ void main() {
     final cubit = cubitFor(orderWith().copyWith(regionId: 4, regionName: 'سوق الجمعة'));
 
     // Act — a picker that answers with the current city is a dismissal by another name.
-    cubit.setCity(id: 3, name: 'طرابلس');
+    cubit.setCity(id: 3, name: 'طرابلس', isOfficePickup: false);
 
     // Assert — the region survives, and nothing is marked dirty.
     expect(cubit.state.regionId, 4);
     expect(cubit.state.isDirty, isFalse);
+  });
+
+  test('a delivery city is remembered, so the save can ask before «إعادة إرسال»', () {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+
+    // Act
+    cubit.setCity(id: 9, name: 'الزاوية', isOfficePickup: false);
+
+    // Assert
+    expect(cubit.pickedADeliveryCity, isTrue);
+  });
+
+  test('a branch is not a delivery city, and picking one after a delivery city clears it', () {
+    // Arrange
+    final cubit = cubitFor(orderWith());
+    cubit.setCity(id: 9, name: 'الزاوية', isOfficePickup: false);
+
+    // Act — the clerk changed their mind and picked a branch.
+    cubit.setCity(id: 12, name: 'فرع قرجي', isOfficePickup: true);
+
+    // Assert
+    expect(cubit.pickedADeliveryCity, isFalse);
+  });
+
+  test('no city picked means no delivery city', () {
+    // Arrange - Act
+    final cubit = cubitFor(orderWith());
+
+    // Assert
+    expect(cubit.pickedADeliveryCity, isFalse);
   });
 
   test('the switch starts where the order stands', () {
