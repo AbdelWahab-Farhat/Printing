@@ -541,6 +541,21 @@ by `ChangeOrderStatus`). Rules in PRINT-COLORS.md §13 and ORDERS-STATUS-FLOW.md
   `ReviewDesignVersion`) after the design fee is filled; a refused move leaves the approval
   standing.
 
+**Changed 2026-11-26 (owner):**
+
+- **Off by default.** `OpenAutomaticDesignTicket` returns early unless
+  `config('design_tickets.auto_open_on_designing')` is true (env
+  `DESIGN_TICKETS_AUTO_OPEN_ON_DESIGNING`, default false). Automatic tickets opened before still
+  close as above.
+- **Column** `order_status_at_open` (nullable string, `OrderStatus` cast), migration
+  `2026_11_26_100000_add_order_status_at_open_to_design_tickets_table`. Set by
+  `CreateDesignTicket` from the order's status when the ticket opens; null without an order and
+  on older rows.
+- **Approval moves the order only when** `DesignTicket::movesItsOrderOnApproval()`: the ticket was
+  opened while the order was in «قيد التصميم», or the column is null (older tickets, earlier
+  rule). A ticket opened in «بانتظار العربون» puts its design on the order and leaves the status
+  alone, even if the order reached «قيد التصميم» in between.
+
 Tests: `AutomaticDesignTicketTest`.
 
 ---

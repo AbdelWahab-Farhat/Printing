@@ -54,9 +54,11 @@ final class CreateDesignTicket
     public function __invoke(DesignTicketData $data, ?User $actor = null): DesignTicket
     {
         $customer = $this->customers->find($data->customerId);
+        $orderStatusAtOpen = null;
 
         if ($data->orderId !== null) {
             $order = Order::query()->findOrFail($data->orderId);
+            $orderStatusAtOpen = $order->status;
 
             if ((int) $order->customer_id !== (int) $customer->getKey()) {
                 throw DesignTicketOrderBelongsToAnotherCustomer::make(
@@ -80,7 +82,7 @@ final class CreateDesignTicket
             }
         }
 
-        $ticket = DB::transaction(function () use ($data, $actor, $customer): DesignTicket {
+        $ticket = DB::transaction(function () use ($data, $actor, $customer, $orderStatusAtOpen): DesignTicket {
             $ticket = new DesignTicket([
                 'order_id' => $data->orderId,
                 'title' => $data->title,
@@ -104,6 +106,9 @@ final class CreateDesignTicket
                 'assigned_designer_id' => $data->assignedDesignerId,
                 'designer_pay' => $data->designerPay,
                 'opened_automatically' => $data->openedAutomatically,
+                // Only a ticket opened while the order sat in «قيد التصميم» moves it on when
+                // approved (MoveApprovedOrderToPreparing).
+                'order_status_at_open' => $orderStatusAtOpen,
             ])->save();
 
             // Bytes written to disk do not roll back with the rows: if anything below fails, the

@@ -28,13 +28,25 @@ use App\Domain\Order\Models\Order;
  *
  * Marked `opened_automatically`, which is what lets {@see CancelAutomaticDesignTickets} close it
  * when the order leaves the queue before anybody worked on it.
+ *
+ * **Off by default** (owner, 2026-11-26): the ticket carried no real brief, so a person opens one
+ * again. `design_tickets.auto_open_on_designing` turns it back on.
  */
 final class OpenAutomaticDesignTicket
 {
     public function __construct(private readonly CreateDesignTicket $createTicket) {}
 
+    public static function isEnabled(): bool
+    {
+        return (bool) config('design_tickets.auto_open_on_designing', false);
+    }
+
     public function __invoke(Order $order, ?User $actor = null): ?DesignTicket
     {
+        if (! self::isEnabled()) {
+            return null;
+        }
+
         if ($order->status !== OrderStatus::Designing || $order->customer_id === null) {
             return null;
         }

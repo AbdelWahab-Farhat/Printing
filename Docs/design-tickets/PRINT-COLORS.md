@@ -286,6 +286,10 @@ staff had to back out to «تعديل الطلبية». Now the move into «قي
 
 Full rules in ORDERS-STATUS-FLOW.md §٢٢. What changes here:
 
+> **2026-11-26 (owner):** the automatic ticket is off by default
+> (`design_tickets.auto_open_on_designing`), and approval moves the order only when the ticket
+> was opened while the order was in «قيد التصميم» (`design_tickets.order_status_at_open`).
+
 - **Every entry into «قيد التصميم» opens an order ticket when none is open**
   (`OpenAutomaticDesignTicket`), marked `opened_automatically`. It opens **without colours**:
   `CreateDesignTicket` skips the §10 colour rule for it alone, and `SubmitDesignVersion` still

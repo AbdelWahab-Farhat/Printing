@@ -700,6 +700,7 @@ final class ChangeOrderStatus
 
             // **The designer's queue gets a ticket** when the order has no open one — after the
             // status is written, because a ticket is only opened on an order that takes artwork.
+            // Switched off by default (owner, 2026-11-26); see OpenAutomaticDesignTicket.
             if ($target === OrderStatus::Designing) {
                 ($this->openAutomaticTicket)($order, $actor);
             }

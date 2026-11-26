@@ -13,7 +13,9 @@ use App\Domain\Order\Models\Order;
 /**
  * **A design approved on its ticket sends the order on to «بانتظار التجهيز»** (owner, 2026-11-18).
  *
- * Called by `ReviewDesignVersion` once the approved design is on the order. Only an order still
+ * Called by `ReviewDesignVersion` once the approved design is on the order, and only for a ticket
+ * opened while the order was in «قيد التصميم» (`DesignTicket::movesItsOrderOnApproval()`, owner
+ * 2026-11-26). Only an order still
  * in «قيد التصميم» on the printed road moves: the وسيط road has no «بانتظار التجهيز», and an order
  * somewhere else was moved on purpose by somebody.
  *
