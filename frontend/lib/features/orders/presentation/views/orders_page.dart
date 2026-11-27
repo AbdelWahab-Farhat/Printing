@@ -53,6 +53,9 @@ class _OrdersView extends StatefulWidget {
 /// would put a checkbox's state beside the pages it has nothing to do with.
 class _OrdersViewState extends State<_OrdersView> {
   bool _picking = false;
+
+  /// The type the filter sheet just picked, read by its «تطبيق» a moment later — one fetch.
+  String? _pickedOrderType;
   bool _sending = false;
 
   /// In the order they were picked — the first one is what the rest are compared against.
@@ -182,6 +185,8 @@ class _OrdersViewState extends State<_OrdersView> {
                         selectedPayments: cubit.paymentStatuses,
                         selectedUrgency: cubit.isUrgent,
                         selectedCompensation: cubit.isCompensation,
+                        selectedOrderType: cubit.orderType,
+                        onOrderTypeApplied: (type) => _pickedOrderType = type,
                         counts: cubit.counts,
                         onApplied: (status, payments, isUrgent, isCompensation) {
                           // Picking belongs to the queue it started in: the picks may not
@@ -193,6 +198,7 @@ class _OrdersViewState extends State<_OrdersView> {
                                 paymentStatuses: payments,
                                 isUrgent: isUrgent,
                                 isCompensation: isCompensation,
+                                orderType: _pickedOrderType,
                               )
                               .ignore();
                         },

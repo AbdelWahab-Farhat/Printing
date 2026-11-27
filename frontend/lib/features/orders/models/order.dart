@@ -80,6 +80,16 @@ abstract class Order with _$Order {
     /// predates the column was never marked, and false is exactly what that means.
     @JsonKey(name: 'is_urgent') @Default(false) bool isUrgent,
 
+    /// `normal` or `instant` — a booking or a counter sale (INSTANT-ORDERS-PLAN.md §2). Kept as
+    /// the wire string, with [orderTypeLabel] beside it, so a type this build has never heard of
+    /// still reads correctly.
+    @JsonKey(name: 'order_type') @Default('normal') String orderType,
+    @JsonKey(name: 'order_type_label') @Default('') String orderTypeLabel,
+
+    /// An instant order still «جديدة» past the company's late threshold (§4). Only a flag:
+    /// nothing is cancelled automatically.
+    @JsonKey(name: 'is_late') @Default(false) bool isLate,
+
     /// Whether «رسالة الجاهزية» is a question this order has reached at all.
     ///
     /// **The server's answer, not a comparison made here.** It is true from the moment the order
@@ -585,6 +595,9 @@ abstract class Order with _$Order {
   /// open order and hold none of its permissions, and «لا توجد إجراءات» is the honest thing to
   /// say to them.
   bool get hasActions => availableTransitions.isNotEmpty;
+
+  /// A counter sale rather than a booking — edited on its own screen, never the order form.
+  bool get isInstant => orderType == 'instant';
 
   /// Whether this order lives in الأرشيف rather than in the shop.
   ///

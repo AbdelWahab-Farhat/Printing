@@ -128,6 +128,8 @@ class OrderController extends Controller
             ...$request->only([
                 'search', 'status', 'payment_status', 'urgent', 'is_ready_message_sent', 'is_return_message_sent', 'sort',
                 'customer_id', 'city_id', 'from', 'to', 'is_compensation',
+                // INSTANT-ORDERS-PLAN.md §13 and §4.
+                'order_type', 'warehouse_id', 'created_by', 'payment_method', 'late',
             ]),
             'archived' => $archived,
         ]);
@@ -187,6 +189,7 @@ class OrderController extends Controller
             ...$request->only([
                 'search', 'payment_status', 'urgent', 'is_ready_message_sent', 'is_return_message_sent',
                 'customer_id', 'city_id', 'from', 'to',
+                'order_type', 'warehouse_id', 'created_by', 'payment_method', 'late',
             ]),
             'archived' => $archived,
         ]);

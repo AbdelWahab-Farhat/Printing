@@ -43,6 +43,8 @@ final readonly class ProductData
         public ?bool $isActive = null,
         public int $sortOrder = 0,
         public ?array $variants = null,
+        /** «متاح للبيع الفوري». null means "not supplied": on update the current value is kept. */
+        public ?bool $isInstantSale = null,
     ) {}
 
     /**
@@ -74,6 +76,9 @@ final readonly class ProductData
             sortOrder: (int) ($validated['sort_order'] ?? 0),
             variants: array_key_exists('variants', $validated) && is_array($validated['variants'])
                 ? array_map(ProductVariantData::fromArray(...), $validated['variants'])
+                : null,
+            isInstantSale: array_key_exists('is_instant_sale', $validated) && $validated['is_instant_sale'] !== null
+                ? (bool) $validated['is_instant_sale']
                 : null,
         );
     }

@@ -53,6 +53,9 @@ class SaveProductCubit extends Cubit<SaveProductState> {
     /// The photo. Required when adding — the server refuses a product without one — and ignored
     /// when correcting, because that product already has its picture.
     PickedFile? image,
+
+    /// «متاح للبيع الفوري». Null leaves it as it is.
+    bool? isInstantSale,
   }) async {
     // Ignored rather than queued: a second tap while the first is in flight is a second POST,
     // and with the slug generated server-side that is now a second *product* rather than a 422.
@@ -72,6 +75,7 @@ class SaveProductCubit extends Cubit<SaveProductState> {
       minOrderQuantity: minOrderQuantity,
       variants: variants,
       image: image,
+      isInstantSale: isInstantSale,
     );
 
     // The screen may have been popped while the request was in flight, and emitting into a

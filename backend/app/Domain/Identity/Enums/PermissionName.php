@@ -467,6 +467,25 @@ enum PermissionName: string
     // mailbox, and there is nothing to grant.
     case BroadcastNotifications = 'notifications.broadcast';
 
+    // «الطلبات الفورية» — a counter sale of plain stock at a branch (INSTANT-ORDERS-PLAN.md).
+    // A road of its own with grants of its own, so a branch employee can sell and hand over
+    // without holding `orders.manage` or any production status. Every action is also limited to
+    // the branches the employee is assigned to; see BranchAccess.
+    case ViewInstantOrders = 'instant_orders.view';
+    case CreateInstantOrders = 'instant_orders.create';
+    case UpdateInstantOrders = 'instant_orders.update';
+    case CancelInstantOrders = 'instant_orders.cancel';
+    case DeliverInstantOrders = 'instant_orders.deliver';
+    // Choosing a treasury account other than the branch's default at handover.
+    case ChooseInstantOrderAccount = 'instant_orders.choose_account';
+
+    // Handing over a normal «استلام مكتب» order — **only in the employee's own branches**. The
+    // global `orders.status.delivered` is unchanged and still covers every branch.
+    case DeliverBranchPickupOrders = 'pickup_orders.deliver';
+
+    // The branch settings: active switch, default warehouse, accounts, employees, late hours.
+    case ManageBranches = 'branches.manage';
+
     public function label(): string
     {
         return match ($this) {
@@ -590,6 +609,14 @@ enum PermissionName: string
             // Deliberately explicit about the blast radius: whoever ticks this on the roles
             // screen should read what they are granting before they grant it.
             self::BroadcastNotifications => 'إرسال إشعار عام لكل الموظفين',
+            self::ViewInstantOrders => 'عرض الطلبات الفورية',
+            self::CreateInstantOrders => 'إنشاء طلب فوري',
+            self::UpdateInstantOrders => 'تعديل طلب فوري جديد',
+            self::CancelInstantOrders => 'إلغاء طلب فوري جديد',
+            self::DeliverInstantOrders => 'تسليم طلب فوري (تم الاستلام)',
+            self::ChooseInstantOrderAccount => 'اختيار حساب غير حساب الفرع عند تسليم طلب فوري',
+            self::DeliverBranchPickupOrders => 'تسليم طلبات «استلام مكتب» في فروعه فقط',
+            self::ManageBranches => 'إدارة إعدادات الفروع',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
             self::ViewSalesStatisticsReport => 'عرض إحصائيات المبيعات',
         };
@@ -688,6 +715,11 @@ enum PermissionName: string
             self::ViewProfitAndLossReport,
             self::ViewSalesStatisticsReport => 'التقارير المالية',
             self::BroadcastNotifications => 'الإشعارات',
+            self::ViewInstantOrders, self::CreateInstantOrders, self::UpdateInstantOrders,
+            self::CancelInstantOrders, self::DeliverInstantOrders,
+            self::ChooseInstantOrderAccount,
+            self::DeliverBranchPickupOrders,
+            self::ManageBranches => 'الطلبات الفورية والفروع',
         };
     }
 

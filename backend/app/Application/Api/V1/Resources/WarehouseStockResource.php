@@ -36,6 +36,14 @@ class WarehouseStockResource extends JsonResource
             // clients would each get subtly wrong.
             'is_low_stock' => $this->isLowStock(),
 
+            // «بانتظار التسليم» — taken by instant orders not yet handed over, still physically on
+            // the shelf (INSTANT-ORDERS-PLAN.md §4). Set by the list endpoint; absent elsewhere.
+            // The shelf count is `quantity` + this.
+            'awaiting_handover' => $this->when(
+                $this->resource->hasAttribute('awaiting_handover'),
+                fn (): string => (string) $this->resource->getAttribute('awaiting_handover'),
+            ),
+
             // A snapshot taken when this balance was first created — see ApplyStockChange::increase().
             'unit' => $this->unit->value,
             'unit_label' => $this->unit->label(),

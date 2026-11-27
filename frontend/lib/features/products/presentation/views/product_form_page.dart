@@ -8,6 +8,7 @@ import 'package:dayaa/core/router/app_router.dart';
 import 'package:dayaa/core/session/session.dart';
 import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
+import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/utils/validators.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
@@ -96,8 +97,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
   final _formKey = GlobalKey<FormState>();
 
   late final _name = TextEditingController(text: _editing?.name ?? '');
+  // Without separators, for the reason [_seedBreaks] gives.
   late final _minimum = TextEditingController(
-    text: _editing?.minOrderQuantityLabel ?? '100',
+    text: _editing == null ? '100' : trimDecimals(_editing!.minOrderQuantity),
   );
 
   /// The quantity thresholds, shared by every size. One column each.
@@ -172,6 +174,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
   /// Priced by the piece with a published list, which is nine bags in ten.
   late bool _isQuoteOnly = _editing?.pricingMode == 'quote_on_request';
 
+  /// «متاح للبيع الفوري» — INSTANT-ORDERS-PLAN.md §3. The server still asks the rest: plain,
+  /// listed price, sold in its stock unit.
+  late bool _isInstantSale = _editing?.isInstantSale ?? false;
+
   /// The product being corrected, or null while one is being added.
   Product? get _editing => widget.product;
 
@@ -222,7 +228,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
           prices: [
             for (final threshold in thresholds)
               variant.priceTiers
-                      .where((tier) => tier.minQuantityLabel == threshold)
+                      .where((tier) => trimDecimals(tier.minQuantity) == threshold)
                       .firstOrNull
                       ?.unitPrice ??
                   '',
@@ -271,9 +277,12 @@ class _ProductFormViewState extends State<_ProductFormView> {
       ];
     }
 
+    // **No separators in a box.** «1,000» came back through the check and the save as 1.000 —
+    // a comma read as a decimal point — so an edited product with a break of a thousand or more
+    // could not be saved at all. See [trimDecimals].
     return [
       for (final tier in widest)
-        TextEditingController(text: tier.minQuantityLabel),
+        TextEditingController(text: trimDecimals(tier.minQuantity)),
     ];
   }
 
@@ -475,6 +484,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
       pricingUnit: _unit.wire,
       pricingMode: _isQuoteOnly ? 'quote_on_request' : 'tiered',
       minOrderQuantity: _minimum.text,
+      isInstantSale: _isInstantSale,
       variants: [
         for (final size in _sizes)
           DraftVariant(
@@ -673,6 +683,15 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         title: const Text('السعر حسب الطلب'),
                         subtitle: const Text(
                           'بدون قائمة أسعار — يُتفق على السعر مع الزبون',
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      SwitchListTile.adaptive(
+                        value: _isInstantSale,
+                        onChanged: (value) => setState(() => _isInstantSale = value),
+                        title: const Text('متاح للبيع الفوري'),
+                        subtitle: const Text(
+                          'يظهر في «طلب فوري» إن كان سادة وبسعر محدد ويُباع بوحدة المخزن',
                         ),
                         contentPadding: EdgeInsets.zero,
                       ),

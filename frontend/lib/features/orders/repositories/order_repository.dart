@@ -32,6 +32,9 @@ abstract interface class OrderRepository {
   /// and that nobody has marked as messaged. `true` is the plain question, «أيّها أُبلِغ
   /// أصحابها؟». Null asks neither. See ORDER-READY-MESSAGE.md §٥ — the rule is the server's, and
   /// a copy of it here is the copy that drifts.
+  ///
+  /// [orderType] is `normal` or `instant`; [isLate] `true` asks for the instant orders still
+  /// «جديدة» past the company's threshold (INSTANT-ORDERS-PLAN.md §4, §13). Null asks neither.
   Future<Either<Failure, Paginated<Order>>> orders({
     String? search,
     List<String> statuses,
@@ -46,6 +49,8 @@ abstract interface class OrderRepository {
     String? to,
     int page,
     int perPage,
+    String? orderType,
+    bool? isLate,
   });
 
   /// How many orders sit in each status, under the same filters as [orders].

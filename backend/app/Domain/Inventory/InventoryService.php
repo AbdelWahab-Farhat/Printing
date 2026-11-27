@@ -323,6 +323,42 @@ class InventoryService
     }
 
     /**
+     * {@see balancesFor()}, with the balance rows locked for the caller's transaction.
+     *
+     * For a sale that checks the shelf and takes from it in one breath — an instant order
+     * (INSTANT-ORDERS-PLAN.md §4): two counters selling the last bags of one shelf wait for each
+     * other here, and the second reads what the first left. Locked in stock-item order, so two
+     * sales asking for the same shelves never lock them in opposite orders. Must be called inside
+     * a transaction.
+     *
+     * @param  list<int>  $stockItemIds
+     * @return array<int, string>
+     */
+    public function lockedBalancesFor(int $warehouseId, array $stockItemIds): array
+    {
+        if ($stockItemIds === []) {
+            return [];
+        }
+
+        return WarehouseStock::query()
+            ->where('warehouse_id', $warehouseId)
+            ->whereIn('stock_item_id', $stockItemIds)
+            ->orderBy('stock_item_id')
+            ->lockForUpdate()
+            ->get(['stock_item_id', 'quantity'])
+            ->mapWithKeys(fn (WarehouseStock $stock): array => [(int) $stock->stock_item_id => (string) $stock->quantity])
+            ->all();
+    }
+
+    /** A warehouse's name, or null when it no longer exists — for a sentence about it. */
+    public function warehouseName(int $warehouseId): ?string
+    {
+        $name = Warehouse::query()->whereKey($warehouseId)->value('name');
+
+        return $name === null ? null : (string) $name;
+    }
+
+    /**
      * The same question asked of the whole business rather than one site.
      *
      * For the screen that has to report what is on hand before a warehouse has been chosen — see

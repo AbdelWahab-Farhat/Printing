@@ -104,6 +104,10 @@ class HomeSummaryResource extends JsonResource
                     'label' => 'طلبيات راجعة بانتظار التواصل',
                 ],
             ),
+
+            // The branch counter's board — INSTANT-ORDERS-PLAN.md §11. Absent for a reader
+            // without `instant_orders.view`, like the boxes above.
+            'instant' => $this->when(($summary['instant'] ?? null) !== null, fn () => $summary['instant']),
         ];
     }
 }

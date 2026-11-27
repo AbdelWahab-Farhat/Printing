@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Order\Queries;
 
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
+use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Queries\Concerns\FiltersOrders;
 
@@ -77,6 +79,15 @@ final readonly class OrderFilters
         public bool $archived = false,
         /** «طلبيات التعويض» — null is «كلاهما», as with «مستعجلة». */
         public ?bool $isCompensation = null,
+        // INSTANT-ORDERS-PLAN.md §13: normal or instant, the warehouse the goods left, who took
+        // the order, how it was paid — and §4, instant orders waiting past the late threshold.
+        public ?OrderType $orderType = null,
+        public ?int $warehouseId = null,
+        public ?int $createdBy = null,
+        public ?PaymentMethod $paymentMethod = null,
+        public ?bool $isLate = null,
+        /** @var list<int>|null the «استلام مكتب» counter of one employee's branches */
+        public ?array $cityIds = null,
     ) {}
 
     /**
@@ -105,6 +116,11 @@ final readonly class OrderFilters
             // before the archive existed was asking for.
             archived: self::boolOrNull($query['archived'] ?? null) ?? false,
             isCompensation: self::boolOrNull($query['is_compensation'] ?? null),
+            orderType: OrderType::tryFrom((string) ($query['order_type'] ?? '')),
+            warehouseId: self::intOrNull($query['warehouse_id'] ?? null),
+            createdBy: self::intOrNull($query['created_by'] ?? null),
+            paymentMethod: PaymentMethod::tryFrom((string) ($query['payment_method'] ?? '')),
+            isLate: self::boolOrNull($query['late'] ?? null),
         );
     }
 
@@ -138,6 +154,12 @@ final readonly class OrderFilters
             sort: $this->sort,
             archived: $this->archived,
             isCompensation: $this->isCompensation,
+            orderType: $this->orderType,
+            warehouseId: $this->warehouseId,
+            createdBy: $this->createdBy,
+            paymentMethod: $this->paymentMethod,
+            isLate: $this->isLate,
+            cityIds: $this->cityIds,
         );
     }
 

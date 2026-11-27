@@ -34,11 +34,13 @@ use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderPaymentType;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Exceptions\SettlementRequiresFullPayment;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Support\Money;
+use App\Domain\Order\Support\OrderMovePermission;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -73,6 +75,13 @@ class Order extends Model implements HasAuditTrail
 {
     /** @use HasFactory<OrderFactory> */
     use Auditable, HasFactory, SoftDeletes;
+
+    /**
+     * The column's default, so an order built in this request reads its type before a refresh.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['order_type' => 'normal'];
 
     /**
      * Gives every order its number, on whatever path created it.
@@ -113,6 +122,9 @@ class Order extends Model implements HasAuditTrail
             // fillable list for the reason `grand_total` is: a request that could post it could
             // skip the press on paper.
             'production_flow' => OrderFlow::class,
+            // Normal booking or instant counter sale — set once by whichever action created the
+            // order, never fillable: a request that could post it could skip the whole road.
+            'order_type' => OrderType::class,
             'design_source' => DesignSource::class,
             // Strings, not floats: these are summed, and money that is summed must stay exact.
             'items_total' => 'decimal:2',
@@ -563,9 +575,35 @@ class Order extends Model implements HasAuditTrail
      */
     public function pickupOfficeId(): ?int
     {
-        return $this->status === OrderStatus::OfficePickup && $this->city_id !== null
-            ? (int) $this->city_id
-            : null;
+        if ($this->city_id === null) {
+            return null;
+        }
+
+        // An instant order is sold at its branch counter from the moment it exists, so money
+        // taken before the handover is that branch's too (INSTANT-ORDERS-PLAN.md §7).
+        if ($this->isInstant()) {
+            return $this->status === OrderStatus::New ? (int) $this->city_id : null;
+        }
+
+        return $this->status === OrderStatus::OfficePickup ? (int) $this->city_id : null;
+    }
+
+    /** A counter sale rather than a booking — see {@see OrderType}. */
+    public function isInstant(): bool
+    {
+        return $this->order_type === OrderType::Instant;
+    }
+
+    /**
+     * «متأخرة» — an instant order still waiting at the counter longer than the company allows
+     * (INSTANT-ORDERS-PLAN.md §4). Only ever a flag: nothing is cancelled automatically.
+     */
+    public function isLateInstantOrder(int $lateAfterHours): bool
+    {
+        return $this->isInstant()
+            && $this->status === OrderStatus::New
+            && $this->placed_at !== null
+            && $this->placed_at->lte(now()->subHours($lateAfterHours));
     }
 
     /**
@@ -1317,16 +1355,18 @@ class Order extends Model implements HasAuditTrail
             // collapses the dispatch pair below; the flow decides whether the designer and the
             // press are on this order's road at all — an order of ready-made goods is offered
             // «جاهزة» from «جديدة» and is never shown two buttons for work nobody will do.
-            $this->status->allowedNext($this->production_flow),
+            $this->status->allowedNext($this->production_flow, $this->order_type ?? OrderType::Normal),
         );
 
         // array_unique keeps the first occurrence, so the collapsed pair leaves one entry in
         // the position the map put it — the order of the buttons stays deliberate.
         $targets = array_unique($targets, SORT_REGULAR);
 
+        $permission = app(OrderMovePermission::class);
+
         return array_values(array_filter(
             $targets,
-            fn (OrderStatus $target) => $user?->can($target->permission()->value) ?? false,
+            fn (OrderStatus $target) => $permission->allows($user, $this, $target),
         ));
     }
 

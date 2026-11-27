@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Reporting\Queries;
 
+use App\Domain\Order\Enums\OrderType;
 use Illuminate\Support\Carbon;
 
 /**
@@ -25,6 +26,8 @@ final readonly class SalesStatisticsFilters
     public function __construct(
         public Carbon $from,
         public Carbon $to,
+        // Normal bookings, instant counter sales, or (null) both.
+        public ?OrderType $orderType = null,
     ) {}
 
     /**
@@ -37,6 +40,7 @@ final readonly class SalesStatisticsFilters
             // Inclusive: a board for "today" should carry everything recognised today, not stop
             // at midnight.
             to: Carbon::parse((string) $validated['to'])->endOfDay(),
+            orderType: OrderType::tryFrom((string) ($validated['order_type'] ?? '')),
         );
     }
 }

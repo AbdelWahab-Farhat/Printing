@@ -53,6 +53,8 @@ import 'package:dayaa/features/auth/usecases/get_current_user.dart';
 import 'package:dayaa/features/auth/usecases/has_stored_session.dart';
 import 'package:dayaa/features/auth/usecases/login.dart';
 import 'package:dayaa/features/auth/usecases/logout.dart';
+import 'package:dayaa/features/branches/branch_repository.dart';
+import 'package:dayaa/features/branches/branches_cubit.dart';
 import 'package:dayaa/features/business_fields/presentation/viewmodel/business_fields_cubit.dart';
 import 'package:dayaa/features/business_fields/presentation/viewmodel/save_business_field_cubit.dart';
 import 'package:dayaa/features/business_fields/repositories/business_field_repository.dart';
@@ -127,6 +129,8 @@ import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/repositories/home_repository.dart';
 import 'package:dayaa/features/home/repositories/home_repository_impl.dart';
 import 'package:dayaa/features/home/usecases/get_home_summary.dart';
+import 'package:dayaa/features/instant_orders/presentation/viewmodel/instant_order_cubit.dart';
+import 'package:dayaa/features/instant_orders/repositories/instant_order_repository.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_thread_cubit.dart';
 import 'package:dayaa/features/internal_tickets/presentation/viewmodel/internal_tickets_cubit.dart';
@@ -1493,7 +1497,18 @@ abstract final class Injector {
       // One per line being edited, not one per screen — hence a factory.
       ..registerFactory<LineQuoteCubit>(
         () => LineQuoteCubit(getPriceQuote: sl<GetPriceQuote>()),
-      );
+      )
+      // «طلب فوري» — INSTANT-ORDERS-PLAN.md. Parameterised by the order being edited, or null
+      // for a new sale.
+      ..registerLazySingleton<InstantOrderRepository>(
+        () => InstantOrderRepositoryImpl(sl<Dio>()),
+      )
+      ..registerFactoryParam<InstantOrderCubit, Order?, void>(
+        (editing, _) => InstantOrderCubit(repository: sl<InstantOrderRepository>(), editing: editing),
+      )
+      // «إعدادات الفروع».
+      ..registerLazySingleton<BranchRepository>(() => BranchRepositoryImpl(sl<Dio>()))
+      ..registerFactory<BranchesCubit>(() => BranchesCubit(sl<BranchRepository>()));
   }
 
   /// التقارير — the figures the business is read by, rather than the records it is made of.

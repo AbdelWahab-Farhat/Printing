@@ -44,6 +44,11 @@ abstract class WarehouseStock with _$WarehouseStock {
     /// alert", which is not the same as a threshold of zero.
     @JsonKey(name: 'is_low_stock') @Default(false) bool isLowStock,
 
+    /// «بانتظار التسليم» — taken by instant orders not yet handed over, still physically on
+    /// the shelf (INSTANT-ORDERS-PLAN.md §4). The shelf count is [quantity] plus this. Null where
+    /// the server did not send it.
+    @JsonKey(name: 'awaiting_handover') String? awaitingHandover,
+
     @JsonKey(name: 'stock_item') StockItemRef? item,
 
     @JsonKey(name: 'created_at') DateTime? createdAt,
@@ -53,6 +58,9 @@ abstract class WarehouseStock with _$WarehouseStock {
   const WarehouseStock._();
 
   factory WarehouseStock.fromJson(Map<String, dynamic> json) => _$WarehouseStockFromJson(json);
+
+  /// Whether instant orders still waiting at the counter hold any of this shelf.
+  bool get hasAwaitingHandover => (double.tryParse(awaitingHandover ?? '') ?? 0) > 0;
 
   /// `'250.000'` reads as a quantity to a database and as noise to a storekeeper: `'250'`.
   /// `'12450.000'` reads as neither: `'12,450'`.

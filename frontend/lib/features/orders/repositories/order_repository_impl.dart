@@ -46,6 +46,8 @@ class OrderRepositoryImpl implements OrderRepository {
     String? to,
     int page = 1,
     int perPage = 20,
+    String? orderType,
+    bool? isLate,
   }) {
     return _pageFrom(
       OrderEndpoints.index,
@@ -62,6 +64,8 @@ class OrderRepositoryImpl implements OrderRepository {
       to: to,
       page: page,
       perPage: perPage,
+      orderType: orderType,
+      isLate: isLate,
     );
   }
 
@@ -125,6 +129,8 @@ class OrderRepositoryImpl implements OrderRepository {
     required String? to,
     required int page,
     required int perPage,
+    String? orderType,
+    bool? isLate,
   }) {
     return safePaginatedRequest<Order>(
       () => _dio.get(
@@ -165,6 +171,10 @@ class OrderRepositoryImpl implements OrderRepository {
           // boundary computed here would be computed in the phone's zone.
           'from': ?from,
           'to': ?to,
+          // INSTANT-ORDERS-PLAN.md §13 and §4: a booking or a counter sale, and the counter
+          // sales waiting past the late threshold.
+          'order_type': ?orderType,
+          if (isLate != null) 'late': isLate ? 1 : 0,
         },
       ),
       parseItem: Order.fromJson,

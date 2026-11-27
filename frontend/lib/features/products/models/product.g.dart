@@ -34,6 +34,7 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   hasListedPrices: json['has_listed_prices'] as bool? ?? false,
   minOrderQuantity: json['min_order_quantity'] as String,
   isActive: json['is_active'] as bool? ?? true,
+  isInstantSale: json['is_instant_sale'] as bool? ?? false,
   sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
   variants:
       (json['variants'] as List<dynamic>?)
@@ -71,6 +72,7 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'has_listed_prices': instance.hasListedPrices,
   'min_order_quantity': instance.minOrderQuantity,
   'is_active': instance.isActive,
+  'is_instant_sale': instance.isInstantSale,
   'sort_order': instance.sortOrder,
   'variants': instance.variants.map((e) => e.toJson()).toList(),
   'images': instance.images.map((e) => e.toJson()).toList(),

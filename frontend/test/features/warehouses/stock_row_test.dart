@@ -30,6 +30,7 @@ void main() {
     bool withItem = true,
     String unit = 'piece',
     String unitLabel = 'قطعة',
+    String? awaitingHandover,
   }) => WarehouseStock(
     id: 1,
     warehouseId: 1,
@@ -39,6 +40,7 @@ void main() {
     unitLabel: unitLabel,
     lowStockThreshold: threshold,
     isLowStock: isLow,
+    awaitingHandover: awaitingHandover,
     item: withItem
         ? const StockItemRef(
             id: 7,
@@ -192,5 +194,40 @@ void main() {
     // unit off the item instead would restate an old count in a unit somebody chose later.
     expect(find.text('250'), findsOneWidget);
     expect(find.text('كجم'), findsOneWidget);
+  });
+
+  testWidgets('counter sales still on the shelf wear a pill of their own', (tester) async {
+    // Arrange — 2 kg sold at the counter and not yet collected (INSTANT-ORDERS-PLAN.md §4)
+    await tester.pumpWidget(
+      host(
+        StockRow(
+          stock: stock(awaitingHandover: '2.000', unit: 'kg', unitLabel: 'كجم'),
+        ),
+      ),
+    );
+
+    // Act
+    await tester.pump();
+
+    // Assert — a filled pill, not small text under the balance where nobody saw it, and with
+    // the unit: a bare «2» read as a count of orders
+    final label = find.text('بانتظار التسليم 2 كجم');
+    expect(label, findsOneWidget);
+    final pill = tester.widget<Material>(
+      find.ancestor(of: label, matching: find.byType(Material)).first,
+    );
+    expect(pill.color, isNot(Colors.transparent));
+    expect(find.ancestor(of: label, matching: find.byType(InkWell)), findsWidgets);
+  });
+
+  testWidgets('a shelf with nothing awaiting handover shows no pill', (tester) async {
+    // Arrange
+    await tester.pumpWidget(host(StockRow(stock: stock(awaitingHandover: '0.000'))));
+
+    // Act
+    await tester.pump();
+
+    // Assert
+    expect(find.textContaining('بانتظار التسليم'), findsNothing);
   });
 }

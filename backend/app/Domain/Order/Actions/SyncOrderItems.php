@@ -72,8 +72,16 @@ final class SyncOrderItems
      * @throws EditedLineNeedsAStockQuantity
      * @throws OrderStockShortfall
      */
-    public function __invoke(Order $order, array $items, ?User $actor = null, bool $ignoreStatusLock = false): Order
-    {
+    public function __invoke(
+        Order $order,
+        array $items,
+        ?User $actor = null,
+        bool $ignoreStatusLock = false,
+        // An instant order's own edit has already checked its own grant and branch
+        // (UpdateInstantOrder); its stock was drawn at creation, not at «جاهزة للطباعة», so the
+        // production grants asked below are not the question for it.
+        bool $stockMoveAuthorised = false,
+    ): Order {
         // `ignoreStatusLock` is `orders.edit_fully`, asked by UpdateOrder. It lifts only this
         // lock: the stock guards below still stand, so lines whose draw cannot be re-posted
         // stay refused.
@@ -110,7 +118,7 @@ final class SyncOrderItems
             && ($added !== [] || $removed->isNotEmpty() || $changed !== [] || $this->weightsMoved($existing, $kept));
 
         if ($movesStock) {
-            $this->guardStockMayMove($order, $existing, $actor);
+            $this->guardStockMayMove($order, $existing, $actor, $stockMoveAuthorised);
         }
 
         $this->guardRemovals($removed);
@@ -214,16 +222,18 @@ final class SyncOrderItems
      * @throws EditingDrawnLinesRequiresPermission
      * @throws RedrawnOrderLinesAreLocked
      */
-    private function guardStockMayMove(Order $order, Collection $existing, ?User $actor): void
+    private function guardStockMayMove(Order $order, Collection $existing, ?User $actor, bool $authorised): void
     {
         if ($actor === null) {
             throw FulfillmentRequiresAnActor::make();
         }
 
         // Both grants, on top of the `orders.manage` the route already asked: the one that takes
-        // goods off the shelf, and the owner's own say on who edits drawn lines at all.
-        if (! $actor->can(PermissionName::MoveOrderToReadyToPrint->value)
-            || ! $actor->can(PermissionName::EditDrawnOrderLines->value)) {
+        // goods off the shelf, and the owner's own say on who edits drawn lines at all — unless
+        // the caller already answered for its own road (an instant order's edit).
+        if (! $authorised
+            && (! $actor->can(PermissionName::MoveOrderToReadyToPrint->value)
+                || ! $actor->can(PermissionName::EditDrawnOrderLines->value))) {
             throw EditingDrawnLinesRequiresPermission::make();
         }
 

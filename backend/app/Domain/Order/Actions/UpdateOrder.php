@@ -22,6 +22,7 @@ use App\Domain\Order\Exceptions\ClosedOrderTakesOnlyADiscount;
 use App\Domain\Order\Exceptions\DestinationCannotChange;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\EditWouldChangeTheRoad;
+use App\Domain\Order\Exceptions\InstantOrderRefused;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OutsourcedOrderNeedsAVendor;
 use App\Domain\Order\Exceptions\PickupBecomesDeliveryThroughResend;
@@ -85,6 +86,12 @@ final class UpdateOrder
      */
     public function __invoke(Order $order, OrderData $data, ?User $actor = null): Order
     {
+        // An instant order has its own edit (UpdateInstantOrder): its branch, customer and road
+        // never change, and its stock rules are the counter's, not the press's.
+        if ($order->isInstant()) {
+            throw InstantOrderRefused::editedThroughItsOwnForm();
+        }
+
         // **`orders.edit_fully` lifts the status locks** (owner's decision, 2026-11-24): the
         // closed order, the frozen destination and phone, the closed lines and the road. What it
         // does not lift are the rules about money and about the state machine itself: the

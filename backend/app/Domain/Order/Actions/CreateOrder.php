@@ -13,6 +13,7 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Order\DTOs\OrderData;
 use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\Exceptions\AdditionalCostRequiresPermission;
 use App\Domain\Order\Exceptions\DiscountRequiresPermission;
 use App\Domain\Order\Exceptions\OrderNeedsAtLeastOneItem;
@@ -102,6 +103,9 @@ final class CreateOrder
         OrderData $data,
         ?User $actor = null,
         OrderStatus $initialStatus = OrderStatus::New,
+        // Only {@see CreateInstantOrder} passes anything else. An instant sale is collected at the
+        // branch counter and carries no delivery fee (INSTANT-ORDERS-PLAN.md §3).
+        OrderType $type = OrderType::Normal,
     ): Order {
         if ($data->items === null || $data->items === []) {
             throw OrderNeedsAtLeastOneItem::make();
@@ -150,7 +154,9 @@ final class CreateOrder
                 : '0.00';
         $designFeeDecided = bccomp($designFee, '0', 2) > 0;
 
-        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus, $payer, $designFee, $designFeeDecided): Order {
+        $deliveryPrice = $type->isInstant() ? '0.00' : $destination->deliveryPrice;
+
+        return DB::transaction(function () use ($data, $destination, $customer, $shopName, $vendorName, $actor, $initialStatus, $payer, $designFee, $designFeeDecided, $type, $deliveryPrice): Order {
             $order = new Order;
 
             $order->fill([
@@ -186,14 +192,15 @@ final class CreateOrder
             $order->forceFill([
                 'customer_id' => $customer->getKey(),
                 'status' => $initialStatus,
+                'order_type' => $type,
                 'design_fee' => $designFee,
                 'design_fee_set_at' => $designFeeDecided ? now() : null,
                 'design_fee_set_by' => $designFeeDecided ? $actor?->getKey() : null,
-                'delivery_price' => $destination->deliveryPrice,
+                'delivery_price' => $deliveryPrice,
                 // The recipient unless the form said otherwise; when we pay, the city's rate is
                 // the order's delivery cost until settlement shows the real one.
                 'delivery_paid_by' => $payer,
-                'delivery_cost' => $payer === DeliveryPayer::Us ? $destination->deliveryPrice : '0.00',
+                'delivery_cost' => $payer === DeliveryPayer::Us ? $deliveryPrice : '0.00',
                 'discount' => $data->discount,
                 // The three move together and are guarded together: an amount, why it was
                 // charged, and the words beside it are one decision, not three fields.

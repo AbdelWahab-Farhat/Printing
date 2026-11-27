@@ -16,6 +16,7 @@ _WarehouseStock _$WarehouseStockFromJson(Map<String, dynamic> json) =>
       unitLabel: json['unit_label'] as String,
       lowStockThreshold: json['low_stock_threshold'] as String?,
       isLowStock: json['is_low_stock'] as bool? ?? false,
+      awaitingHandover: json['awaiting_handover'] as String?,
       item: json['stock_item'] == null
           ? null
           : StockItemRef.fromJson(json['stock_item'] as Map<String, dynamic>),
@@ -37,6 +38,7 @@ Map<String, dynamic> _$WarehouseStockToJson(_WarehouseStock instance) =>
       'unit_label': instance.unitLabel,
       'low_stock_threshold': instance.lowStockThreshold,
       'is_low_stock': instance.isLowStock,
+      'awaiting_handover': instance.awaitingHandover,
       'stock_item': instance.item?.toJson(),
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),

@@ -84,6 +84,8 @@ class ProductResource extends JsonResource
 
             'min_order_quantity' => (string) $this->min_order_quantity,
             'is_active' => $this->is_active,
+            // «متاح للبيع الفوري» — INSTANT-ORDERS-PLAN.md §3.
+            'is_instant_sale' => (bool) $this->is_instant_sale,
             'sort_order' => $this->sort_order,
 
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),

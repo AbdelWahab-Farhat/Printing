@@ -394,7 +394,7 @@ class _Customer extends StatelessWidget {
         ],
         // «مطبوع» / «سادة» / «تصنيع», as on the list card — see [OrderProductKindBadge].
         if (OrderProductKindBadge.labelFor(order.productionFlow) != null) ...[
-          OrderProductKindBadge(flow: order.productionFlow),
+          OrderProductKindBadge(flow: order.productionFlow, isInstant: order.isInstant),
           SizedBox(width: 6.w),
         ],
         // The plate is the point — see the class comment. Clipped to the chip's own radius so

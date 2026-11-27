@@ -131,6 +131,14 @@ class _RootDrawerState extends State<RootDrawer> {
           permission: AppPermission.viewShippingCompanies,
         ),
         _Link(icon: _LinkIcon.city, label: 'مدن التوصيل', route: Routes.cities),
+        // The office-pickup cities as branches: warehouse, accounts, employees, active switch.
+        // INSTANT-ORDERS-PLAN.md §8.
+        _Link(
+          icon: _LinkIcon.city,
+          label: 'إعدادات الفروع',
+          route: Routes.branches,
+          permission: AppPermission.manageBranches,
+        ),
         // Filed here because it is the same kind of back-office reference data as أوامر
         // الشراء: a standing figure curated once and read by every order that reaches الطباعة.
         //

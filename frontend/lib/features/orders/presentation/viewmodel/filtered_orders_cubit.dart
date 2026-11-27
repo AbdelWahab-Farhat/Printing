@@ -57,6 +57,8 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
       customerId: _filter.customerId,
       from: _filter.from,
       to: _filter.to,
+      orderType: _filter.orderType,
+      isLate: _filter.isLate,
       // And so does the sort, for the same reason: page two of «الأقدم أولاً» fetched the other
       // way round is a page of orders the reader has just read, appended under the ones they
       // have.
@@ -97,6 +99,9 @@ class FilteredOrdersCubit extends PagedCubit<Order> {
       // a row the server says no longer asks for a message has left the queue too.
       (_filter.returnMessageSent == null ||
           (_filter.returnMessageSent! ? item.isReturnMessageSent : !item.isReturnMessageSent && item.returnMessageApplies)) &&
+      (_filter.orderType == null || _filter.orderType == item.orderType) &&
+      // A late order handed over or cancelled leaves «متأخرة» at once.
+      (_filter.isLate == null || _filter.isLate == item.isLate) &&
       // And an archived one leaves too, exactly as it leaves الطلبيات. This screen reads the
       // live list, so a deleted order was never one of its answers — but the row can be deleted
       // *from* here, on the detail screen this list opens, and the trashed order is handed

@@ -65,6 +65,7 @@ use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderPayment;
 use App\Domain\Order\Models\OrderStatusTransition;
 use App\Domain\Order\Models\ProductionCostEntry;
+use App\Domain\Order\Queries\AwaitingHandoverQuery;
 use App\Domain\Order\Queries\ManufacturingCostRateFilters;
 use App\Domain\Order\Queries\ManufacturingCostRateListQuery;
 use App\Domain\Order\Queries\OrderCountQuery;
@@ -268,6 +269,27 @@ class OrderService
     public function count(OrderFilters $filters): int
     {
         return ($this->count)($filters);
+    }
+
+    /**
+     * «بانتظار التسليم» per stock item in one warehouse — see {@see AwaitingHandoverQuery}.
+     *
+     * @param  list<int>  $stockItemIds
+     * @return array<int, string>
+     */
+    public function awaitingHandover(int $warehouseId, array $stockItemIds): array
+    {
+        return app(AwaitingHandoverQuery::class)->totals($warehouseId, $stockItemIds);
+    }
+
+    /**
+     * The instant orders behind one shelf's «بانتظار التسليم».
+     *
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    public function awaitingHandoverOrders(int $warehouseId, int $stockItemId): \Illuminate\Support\Collection
+    {
+        return app(AwaitingHandoverQuery::class)->orders($warehouseId, $stockItemId);
     }
 
     /**

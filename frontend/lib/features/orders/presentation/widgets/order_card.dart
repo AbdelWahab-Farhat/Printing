@@ -130,7 +130,11 @@ class OrderCard extends StatelessWidget {
                       // the narrowest phone, and the order screen's header still shows it.
                       if (OrderProductKindBadge.labelFor(order.productionFlow) != null &&
                           _otherBadgeCount(order) < 2) ...[
-                        OrderProductKindBadge(flow: order.productionFlow, besideBanner: true),
+                        OrderProductKindBadge(
+                          flow: order.productionFlow,
+                          besideBanner: true,
+                          isInstant: order.isInstant,
+                        ),
                         SizedBox(width: 8.w),
                       ],
                       Expanded(

@@ -41,6 +41,7 @@ final class CreateProduct
                 'pricing_mode' => $data->pricingMode,
                 'min_order_quantity' => $data->minOrderQuantity,
                 'is_active' => $data->isActive ?? true,
+                'is_instant_sale' => $data->isInstantSale ?? false,
                 'sort_order' => $data->sortOrder,
             ]);
 

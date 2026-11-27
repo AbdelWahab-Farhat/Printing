@@ -12,9 +12,11 @@ use App\Domain\Inventory\InventoryService;
 use App\Domain\Inventory\Models\Warehouse;
 use App\Domain\Inventory\Models\WarehouseStock;
 use App\Domain\Inventory\Queries\StockFilters;
+use App\Domain\Order\OrderService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * Warehouse stock
@@ -50,14 +52,45 @@ class WarehouseStockController extends Controller
      * lines that have fallen to the level someone asked to be warned at. A line with no threshold
      * set is outside that question and appears in neither `low_stock=true` nor `low_stock=false`.
      */
-    public function index(Request $request, Warehouse $warehouse): JsonResponse
+    public function index(Request $request, Warehouse $warehouse, OrderService $orders): JsonResponse
     {
         $filters = StockFilters::fromArray($request->only(['stock_item_id', 'low_stock', 'in_stock']));
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
 
-        return $this->successWithPagination(
-            WarehouseStockResource::collection($this->inventory->paginateStocks($warehouse, $filters, $perPage)),
+        $page = $this->inventory->paginateStocks($warehouse, $filters, $perPage);
+
+        // «بانتظار التسليم» beside each line — one query for the page (INSTANT-ORDERS-PLAN.md §4).
+        $awaiting = $orders->awaitingHandover(
+            (int) $warehouse->getKey(),
+            $page->getCollection()->map(fn (WarehouseStock $stock): int => (int) $stock->stock_item_id)->all(),
         );
+
+        $page->getCollection()->each(
+            fn (WarehouseStock $stock) => $stock->setAttribute('awaiting_handover', $awaiting[(int) $stock->stock_item_id] ?? '0.000'),
+        );
+
+        return $this->successWithPagination(WarehouseStockResource::collection($page));
+    }
+
+    /**
+     * Orders awaiting handover on one line
+     *
+     * The instant orders still «جديدة» that took this line's stock — what makes up its
+     * `awaiting_handover`: each order's code, customer, quantity and when it was taken.
+     */
+    public function awaitingHandover(Warehouse $warehouse, WarehouseStock $stock, OrderService $orders): JsonResponse
+    {
+        abort_unless((int) $stock->warehouse_id === (int) $warehouse->getKey(), 404);
+
+        return $this->success($orders->awaitingHandoverOrders((int) $warehouse->getKey(), (int) $stock->stock_item_id)
+            ->map(fn (object $row): array => [
+                'order_id' => (int) $row->order_id,
+                'code' => (string) $row->code,
+                'customer_name' => $row->customer_name,
+                'quantity' => number_format((float) $row->quantity, 3, '.', ''),
+                'placed_at' => $row->placed_at === null ? null : Carbon::parse($row->placed_at)->toIso8601String(),
+            ])
+            ->values());
     }
 
     /**

@@ -292,6 +292,37 @@ abstract final class WarehouseEndpoints {
   /// a movement below explains it.
   static String stockThreshold(int warehouseId, int stockId) =>
       '/warehouses/$warehouseId/stocks/$stockId/threshold';
+
+  /// «بانتظار التسليم» on one line, opened: the instant orders still «جديدة» holding its stock.
+  static String stockAwaitingHandover(int warehouseId, int stockId) =>
+      '/warehouses/$warehouseId/stocks/$stockId/awaiting-handover';
+}
+
+/// «الطلبات الفورية» — a counter sale of plain stock at a branch (INSTANT-ORDERS-PLAN.md).
+///
+/// Moving one afterwards goes through [OrderEndpoints.status] like any order.
+abstract final class InstantOrderEndpoints {
+  static const String store = '/instant-orders';
+
+  /// The active branches this employee may sell from.
+  static const String branches = '/instant-orders/branches';
+
+  /// A customer by phone, any spelling.
+  static const String customer = '/instant-orders/customer';
+
+  /// What may be sold instantly, with what the branch's warehouse holds.
+  static const String products = '/instant-orders/products';
+
+  static String update(int orderId) => '/instant-orders/$orderId';
+}
+
+/// «إعدادات الفروع» — the office-pickup cities as branches.
+abstract final class BranchEndpoints {
+  static const String index = '/branches';
+
+  static const String lateHours = '/branches/late-hours';
+
+  static String update(int branchId) => '/branches/$branchId';
 }
 
 /// أصناف المخزون — the shelves themselves.

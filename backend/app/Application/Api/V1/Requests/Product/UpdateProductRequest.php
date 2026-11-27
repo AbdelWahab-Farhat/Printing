@@ -65,6 +65,8 @@ class UpdateProductRequest extends StoreProductRequest
             'min_order_quantity' => ['required', 'numeric', 'min:0.001'],
             // Omit to leave the product's current state alone.
             'is_active' => ['sometimes', 'boolean'],
+            // «متاح للبيع الفوري». Omit to leave it as it is.
+            'is_instant_sale' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
             // Omit `variants` to keep the existing price list. Sending the key replaces the whole

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Application\Api\V1\Requests\Reporting;
 
+use App\Domain\Order\Enums\OrderType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * The period a sales statistics board is asked for.
@@ -37,6 +39,8 @@ class SalesStatisticsReportRequest extends FormRequest
             // Inclusive: a board for "today" carries everything recognised today, rather than
             // stopping at midnight.
             'to' => ['required', 'date', 'after_or_equal:from'],
+            // Omitted: every sale. `instant` or `normal` splits the board (INSTANT-ORDERS-PLAN.md §13).
+            'order_type' => ['nullable', Rule::enum(OrderType::class)],
         ];
     }
 

@@ -52,6 +52,7 @@ class SaveProduct {
     required String minOrderQuantity,
     List<DraftVariant> variants = const [],
     PickedFile? image,
+    bool? isInstantSale,
   }) {
     if (id == null && image == null) {
       // The form validates this before submitting, so reaching here is a bug rather than a user
@@ -84,6 +85,7 @@ class SaveProduct {
       pricingUnit: pricingUnit,
       pricingMode: pricingMode,
       minOrderQuantity: _number(minOrderQuantity),
+      isInstantSale: isInstantSale,
       variants: [
         for (final variant in variants)
           NewProductVariant(

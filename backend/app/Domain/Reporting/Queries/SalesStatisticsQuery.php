@@ -221,7 +221,10 @@ final class SalesStatisticsQuery
                 ->whereBetween(
                     DB::raw('COALESCE(orders.delivered_at, orders.settled_at)'),
                     [$filters->from, $filters->to],
-                );
+                )
+                // Instant counter sales are in the totals; asked for, they are split out
+                // (INSTANT-ORDERS-PLAN.md §13).
+                ->when($filters->orderType !== null, fn ($q) => $q->where('orders.order_type', $filters->orderType->value));
         };
     }
 

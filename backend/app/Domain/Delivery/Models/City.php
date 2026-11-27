@@ -8,11 +8,15 @@ use App\Domain\Audit\Concerns\Auditable;
 use App\Domain\Audit\Concerns\CascadesSoftDeletes;
 use App\Domain\Audit\Contracts\HasAuditTrail;
 use App\Domain\Delivery\Enums\FulfilmentType;
+use App\Domain\Identity\Models\User;
+use App\Domain\Inventory\Models\Warehouse;
 use Database\Factories\CityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -34,6 +38,9 @@ class City extends Model implements HasAuditTrail
     /** @use HasFactory<CityFactory> */
     use Auditable, CascadesSoftDeletes, HasFactory, SoftDeletes;
 
+    /** The column's default, so a city created in this request reads it before a refresh. */
+    protected $attributes = ['is_branch_active' => true];
+
     /**
      * @return array<string, string>
      */
@@ -49,7 +56,40 @@ class City extends Model implements HasAuditTrail
             // should hand it numbers rather than "32.8872000".
             'latitude' => 'float',
             'longitude' => 'float',
+            // Branch settings — INSTANT-ORDERS-PLAN.md §8. Not fillable: they move only through
+            // UpdateBranchSettings, behind `branches.manage`, never through the city form.
+            'is_branch_active' => 'boolean',
+            'default_warehouse_id' => 'integer',
+            'bank_transfer_account_id' => 'integer',
+            'bank_card_account_id' => 'integer',
         ];
+    }
+
+    /**
+     * The employees who work at this branch (INSTANT-ORDERS-PLAN.md §9). The link decides what
+     * they may *do* here — never what they may read.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'branch_user', 'city_id', 'user_id')->withTimestamps();
+    }
+
+    /**
+     * Where an instant order sold here takes its stock from.
+     *
+     * @return BelongsTo<Warehouse, $this>
+     */
+    public function defaultWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'default_warehouse_id');
+    }
+
+    /** An office-pickup city that is open for new instant orders. */
+    public function isActiveBranch(): bool
+    {
+        return $this->isOfficePickup() && $this->is_branch_active;
     }
 
     /**
