@@ -74,7 +74,7 @@ void main() {
     expect(result()?.description, 'توحيد باللون الذهبي');
   });
 
-  testWidgets('the full-screen editor adds a point and hands the text back to the sheet', (
+  testWidgets('the full-screen editor is a plain box whose Return starts a new line', (
     tester,
   ) async {
     // Arrange
@@ -82,18 +82,40 @@ void main() {
     await tester.tap(find.text('ملء الشاشة'));
     await tester.pumpAndSettle();
 
-    // Act — the cursor sits at the end of the text.
-    await tester.tap(find.text('نقطة جديدة'));
+    // Act — the system keyboard types a line break and reports Return, as iOS does.
+    await tester.enterText(find.byType(TextField), '${_text(tester)}\nالشعار في المنتصف');
+    await tester.testTextInput.receiveAction(TextInputAction.newline);
     await tester.pump();
-    await tester.enterText(find.byType(TextField), '${_text(tester)}الشعار في المنتصف');
+
+    // Assert — no toolbar of its own, the keyboard is set for several lines, and Return kept
+    // the box focused rather than leaving it.
+    expect(find.text('نقطة جديدة'), findsNothing);
+    expect(find.text('لصق'), findsNothing);
+    expect(find.text('تحديد الكل'), findsNothing);
+    final keyboard = tester.testTextInput.setClientArgs!;
+    expect(keyboard['inputAction'], 'TextInputAction.newline');
+    expect((keyboard['inputType'] as Map)['name'], 'TextInputType.multiline');
+    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+
+    // Act — back to the sheet, and save.
     await tester.tap(find.text('تم'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('حفظ التعديلات'));
     await tester.pumpAndSettle();
 
-    // Assert — one line per point.
-    expect(result()?.description, 'توحيد باللون الذهبي\n- الشعار في المنتصف');
+    // Assert — the line break survives the round trip.
+    expect(result()?.description, 'توحيد باللون الذهبي\nالشعار في المنتصف');
+  });
+
+  testWidgets('the sheet no longer carries the Return-key hint', (tester) async {
+    // Arrange & Act
+    await open(tester);
+
+    // Assert
+    expect(find.text('Return ينزل سطراً جديداً'), findsNothing);
+    expect(find.text('ملء الشاشة'), findsOneWidget);
   });
 }
 
-String _text(WidgetTester tester) => tester.widget<TextField>(find.byType(TextField)).controller!.text;
+String _text(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField)).controller!.text;

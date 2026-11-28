@@ -10,7 +10,6 @@ import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/features/design_tickets/models/design_ticket.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Correcting what was asked for, while the ticket is still open.
@@ -71,9 +70,7 @@ class _EditSheet extends StatefulWidget {
 
 class _EditSheetState extends State<_EditSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _title = TextEditingController(
-    text: widget.ticket.title,
-  );
+  late final TextEditingController _title = TextEditingController(text: widget.ticket.title);
   late final TextEditingController _description = TextEditingController(
     text: widget.ticket.description,
   );
@@ -159,9 +156,7 @@ class _EditSheetState extends State<_EditSheet> {
                           children: [
                             Text(
                               'تعديل الطلب',
-                              style: text.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             SizedBox(width: 8.w),
                             _CodeChip(code: widget.ticket.code),
@@ -170,9 +165,7 @@ class _EditSheetState extends State<_EditSheet> {
                         SizedBox(height: 2.h),
                         Text(
                           'يرى المصمم التعديل فور الحفظ',
-                          style: text.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                          style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -206,10 +199,7 @@ class _EditSheetState extends State<_EditSheet> {
                           maxLines: 8,
                         ),
                         SizedBox(height: 6.h),
-                        _DescriptionFooter(
-                          controller: _description,
-                          onFullScreen: _openFullScreen,
-                        ),
+                        _DescriptionFooter(controller: _description, onFullScreen: _openFullScreen),
                       ],
                     ),
                     // بترتيب نموذج الطلب نفسه: قبل الألوان.
@@ -217,25 +207,15 @@ class _EditSheetState extends State<_EditSheet> {
                       SizedBox(height: 12.h),
                       _Card(
                         children: [
-                          OptionalAmountField(
-                            controller: _pay,
-                            label: 'أجرة المصمم',
-                          ),
-                          if (widget.ticket.suggestedPay
-                              case final suggested?) ...[
+                          OptionalAmountField(controller: _pay, label: 'أجرة المصمم'),
+                          if (widget.ticket.suggestedPay case final suggested?) ...[
                             SizedBox(height: 8.h),
                             Align(
                               alignment: AlignmentDirectional.centerStart,
                               child: ActionChip(
-                                avatar: const Icon(
-                                  Icons.auto_awesome_outlined,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  'المقترح: ${trimDecimals(suggested)}',
-                                ),
-                                onPressed: () =>
-                                    _pay.text = trimDecimals(suggested),
+                                avatar: const Icon(Icons.auto_awesome_outlined, size: 18),
+                                label: Text('المقترح: ${trimDecimals(suggested)}'),
+                                onPressed: () => _pay.text = trimDecimals(suggested),
                               ),
                             ),
                           ],
@@ -247,8 +227,7 @@ class _EditSheetState extends State<_EditSheet> {
                       children: [
                         PrintColorsField(
                           colors: _colors,
-                          onChanged: (colors) =>
-                              setState(() => _colors = colors),
+                          onChanged: (colors) => setState(() => _colors = colors),
                         ),
                       ],
                     ),
@@ -260,9 +239,7 @@ class _EditSheetState extends State<_EditSheet> {
             DecoratedBox(
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(
-                    color: scheme.outlineVariant.withValues(alpha: 0.6),
-                  ),
+                  top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
                 ),
               ),
               child: SafeArea(
@@ -283,9 +260,7 @@ class _EditSheetState extends State<_EditSheet> {
                       ),
                       SizedBox(width: 10.w),
                       OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size(88.w, 52.h),
-                        ),
+                        style: OutlinedButton.styleFrom(minimumSize: Size(88.w, 52.h)),
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('إلغاء'),
                       ),
@@ -316,10 +291,7 @@ class _Card extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(14.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
       ),
     );
   }
@@ -354,12 +326,9 @@ class _CodeChip extends StatelessWidget {
   }
 }
 
-/// Under the description: the Return-key hint, the line count, and the way to more room.
+/// Under the description: the line count and the way to more room.
 class _DescriptionFooter extends StatelessWidget {
-  const _DescriptionFooter({
-    required this.controller,
-    required this.onFullScreen,
-  });
+  const _DescriptionFooter({required this.controller, required this.onFullScreen});
 
   final TextEditingController controller;
   final VoidCallback onFullScreen;
@@ -372,9 +341,8 @@ class _DescriptionFooter extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(child: Text('Return ينزل سطراً جديداً', style: style)),
         _LineCount(controller: controller, style: style),
-        SizedBox(width: 4.w),
+        const Spacer(),
         TextButton.icon(
           onPressed: onFullScreen,
           icon: const Icon(Icons.open_in_full_rounded, size: 16),
@@ -396,9 +364,7 @@ class _LineCount extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final lines = controller.text.trim().isEmpty
-            ? 0
-            : controller.text.split('\n').length;
+        final lines = controller.text.trim().isEmpty ? 0 : controller.text.split('\n').length;
 
         return Text(lines == 1 ? 'سطر واحد' : '$lines أسطر', style: style);
       },
@@ -406,80 +372,18 @@ class _LineCount extends StatelessWidget {
   }
 }
 
-/// The description with the whole screen to itself.
+/// The description with the whole screen to itself: a plain text box and the system keyboard,
+/// with no toolbar of its own. Return starts a new line, and paste and select all come from the
+/// system's own text menu.
 ///
 /// **The sheet's own controller, not a copy**, so there is nothing to hand back and nothing
 /// to lose: «تم» and the back button both return to the sheet with the text as it now stands,
 /// and only the sheet's «حفظ» sends it.
-class _DescriptionEditorPage extends StatefulWidget {
-  const _DescriptionEditorPage({
-    required this.controller,
-    required this.subtitle,
-  });
+class _DescriptionEditorPage extends StatelessWidget {
+  const _DescriptionEditorPage({required this.controller, required this.subtitle});
 
   final TextEditingController controller;
   final String subtitle;
-
-  @override
-  State<_DescriptionEditorPage> createState() => _DescriptionEditorPageState();
-}
-
-class _DescriptionEditorPageState extends State<_DescriptionEditorPage> {
-  final _focus = FocusNode();
-
-  @override
-  void dispose() {
-    _focus.dispose();
-    super.dispose();
-  }
-
-  /// Puts [insert] where the cursor is, replacing any selection.
-  void _insert(String insert) {
-    final controller = widget.controller;
-    final value = controller.value;
-    final selection = value.selection.isValid
-        ? value.selection
-        : TextSelection.collapsed(offset: value.text.length);
-
-    final text = value.text.replaceRange(
-      selection.start,
-      selection.end,
-      insert,
-    );
-    controller.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(
-        offset: selection.start + insert.length,
-      ),
-    );
-    _focus.requestFocus();
-  }
-
-  void _newPoint() {
-    final controller = widget.controller;
-    final offset = controller.selection.isValid
-        ? controller.selection.start
-        : controller.text.length;
-    final atLineStart = offset == 0 || controller.text[offset - 1] == '\n';
-
-    _insert(atLineStart ? '- ' : '\n- ');
-  }
-
-  Future<void> _paste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final pasted = data?.text;
-    if (pasted == null || pasted.isEmpty || !mounted) return;
-
-    _insert(pasted);
-  }
-
-  void _selectAll() {
-    _focus.requestFocus();
-    widget.controller.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: widget.controller.text.length,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -495,10 +399,7 @@ class _DescriptionEditorPageState extends State<_DescriptionEditorPage> {
               'وصف الطلب والتعليمات',
               style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-            Text(
-              widget.subtitle,
-              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
+            Text(subtitle, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
           ],
         ),
         actions: [
@@ -511,110 +412,26 @@ class _DescriptionEditorPageState extends State<_DescriptionEditorPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focus,
-                autofocus: true,
-                expands: true,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-                textAlignVertical: TextAlignVertical.top,
-                style: text.bodyLarge?.copyWith(height: 1.8),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'اكتب وصف الطلب والتعليمات…',
-                ),
-              ),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            expands: true,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            textAlignVertical: TextAlignVertical.top,
+            style: text.bodyLarge?.copyWith(height: 1.8),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'اكتب وصف الطلب والتعليمات…',
             ),
           ),
-          // Above the keyboard: what is awkward to do with a thumb on a phone keyboard.
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              border: Border(
-                top: BorderSide(
-                  color: scheme.outlineVariant.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                child: Row(
-                  children: [
-                    // Scrolls sideways on a narrow phone rather than overflowing.
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _ToolButton(
-                              icon: Icons.format_list_bulleted_rounded,
-                              label: 'نقطة جديدة',
-                              onTap: _newPoint,
-                            ),
-                            SizedBox(width: 6.w),
-                            _ToolButton(
-                              icon: Icons.content_paste_rounded,
-                              label: 'لصق',
-                              onTap: _paste,
-                            ),
-                            SizedBox(width: 6.w),
-                            _ToolButton(
-                              icon: Icons.select_all_rounded,
-                              label: 'تحديد الكل',
-                              onTap: _selectAll,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    _LineCount(
-                      controller: widget.controller,
-                      style: text.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _ToolButton extends StatelessWidget {
-  const _ToolButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.tonalIcon(
-      style: FilledButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.symmetric(horizontal: 10.w),
-      ),
-      onPressed: onTap,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
     );
   }
 }
