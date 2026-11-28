@@ -3,6 +3,7 @@ import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/api_endpoints.dart';
 import 'package:dayaa/core/network/paginated.dart';
 import 'package:dayaa/core/network/safe_request.dart';
+import 'package:dayaa/features/warehouses/models/awaiting_handover_order.dart';
 import 'package:dayaa/features/warehouses/models/stock_batch.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
@@ -118,6 +119,17 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
         data: <String, dynamic>{'low_stock_threshold': threshold},
       ),
       parse: (data) => WarehouseStock.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<AwaitingHandoverOrder>>> awaitingHandover(int warehouseId, int stockId) {
+    return safeRequest<List<AwaitingHandoverOrder>>(
+      () => _dio.get(WarehouseEndpoints.stockAwaitingHandover(warehouseId, stockId)),
+      parse: (data) => [
+        for (final row in data as List<dynamic>)
+          AwaitingHandoverOrder.fromJson(row as Map<String, dynamic>),
+      ],
     );
   }
 

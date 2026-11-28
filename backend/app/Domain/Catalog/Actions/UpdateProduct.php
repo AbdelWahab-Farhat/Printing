@@ -48,6 +48,10 @@ final class UpdateProduct
                 $attributes['is_active'] = $data->isActive;
             }
 
+            if ($data->isInstantSale !== null) {
+                $attributes['is_instant_sale'] = $data->isInstantSale;
+            }
+
             $product->update($attributes);
 
             // null means the caller did not mention variants, so the price list is left alone.

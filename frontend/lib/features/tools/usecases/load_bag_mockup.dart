@@ -35,9 +35,7 @@ class LoadBagMockup {
       // مستخدم — لكنه يظهر في يده، فيستحق جملةً تقول أي شيء لم يُقرأ.
       debugPrint('⚠️ صورة الكيس «${bag.label}» لم تُقرأ: $error\n$stack');
 
-      return Left(
-        Failure.unexpected(message: 'تعذّر تحميل صورة الكيس', cause: '$error'),
-      );
+      return Left(Failure.unexpected(message: 'تعذّر تحميل صورة الكيس', cause: '$error'));
     }
   }
 }

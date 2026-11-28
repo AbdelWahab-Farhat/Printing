@@ -1,4 +1,3 @@
-
 import 'package:dayaa/core/di/injector.dart';
 import 'package:dayaa/core/files/local_files.dart';
 import 'package:dayaa/core/files/picked_file.dart';
@@ -114,10 +113,7 @@ class _QrToolViewState extends State<_QrToolView> {
                 onSubmitted: (_) => _generate(),
               ),
               SizedBox(height: 20.h),
-              QrInkPicker(
-                selected: _ink,
-                onSelected: (ink) => setState(() => _ink = ink),
-              ),
+              QrInkPicker(selected: _ink, onSelected: (ink) => setState(() => _ink = ink)),
               SizedBox(height: 4.h),
               SwitchListTile.adaptive(
                 value: _transparentBackground,
@@ -126,11 +122,7 @@ class _QrToolViewState extends State<_QrToolView> {
                 contentPadding: EdgeInsets.zero,
               ),
               SizedBox(height: 12.h),
-              AppButton(
-                label: 'إنشاء الرمز',
-                icon: AppIcons.qrCode,
-                onPressed: _generate,
-              ),
+              AppButton(label: 'إنشاء الرمز', icon: AppIcons.qrCode, onPressed: _generate),
               SizedBox(height: 24.h),
               BlocBuilder<QrToolCubit, QrToolState>(
                 builder: (context, state) => WebFrame.media(switch (state) {
@@ -205,25 +197,14 @@ class _Preview extends StatelessWidget {
         // الذي سيُطبع عليه، فالمعاينة تريه على ما سيصير إليه.
         Container(
           padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            color: QrInk.paper,
-            borderRadius: BorderRadius.circular(24.r),
-          ),
-          child: QrCodeView(
-            art: art,
-            color: ink,
-            transparentBackground: transparentBackground,
-          ),
+          decoration: BoxDecoration(color: QrInk.paper, borderRadius: BorderRadius.circular(24.r)),
+          child: QrCodeView(art: art, color: ink, transparentBackground: transparentBackground),
         ),
         SizedBox(height: 16.h),
         // إجراءٌ رئيسي واحد في كل حالة (§7): حين فُتحت الشاشة لتُعيد ملفاً فذاك هو الإجراء،
         // و«تحميل الصورة» يهبط إلى المساند — وحين فُتحت من الدرج فالتحميل هو كل ما تفعله.
         if (isPicking) ...[
-          _AddToDesignsButton(
-            art: art,
-            ink: ink,
-            transparentBackground: transparentBackground,
-          ),
+          _AddToDesignsButton(art: art, ink: ink, transparentBackground: transparentBackground),
           SizedBox(height: 12.h),
         ],
         AppButton.tonal(
@@ -316,22 +297,19 @@ class _AddToDesignsButtonState extends State<_AddToDesignsButton> {
     if (!mounted) return;
     setState(() => _isWriting = false);
 
-    await result.fold(
-      (failure) async => context.showFailure(failure),
-      (path) async {
-        // الحجم يُقرأ من القرص لا يُقدَّر: [DesignRules] ترفض قبل الرفع بناءً عليه، ورقمٌ
-        // مخمَّن كان سيجعلها ترفض ما يقبله الخادم أو العكس.
-        if (context.mounted) {
-          Navigator.of(context).pop(
-            PickedFile(
-              path: path,
-              name: SaveQrCodeImage.fileName,
-              sizeBytes: await LocalFiles.length(path),
-            ),
-          );
-        }
-      },
-    );
+    await result.fold((failure) async => context.showFailure(failure), (path) async {
+      // الحجم يُقرأ من القرص لا يُقدَّر: [DesignRules] ترفض قبل الرفع بناءً عليه، ورقمٌ
+      // مخمَّن كان سيجعلها ترفض ما يقبله الخادم أو العكس.
+      if (context.mounted) {
+        Navigator.of(context).pop(
+          PickedFile(
+            path: path,
+            name: SaveQrCodeImage.fileName,
+            sizeBytes: await LocalFiles.length(path),
+          ),
+        );
+      }
+    });
   }
 
   @override

@@ -53,6 +53,12 @@ final class NotifyWhenOrderStatusChanges implements ShouldQueue
             return;
         }
 
+        // A counter sale rings no bell: it is sold and handed over at the same desk, usually
+        // within minutes (INSTANT-ORDERS-PLAN.md §12).
+        if ($order->isInstant()) {
+            return;
+        }
+
         $this->notifications->publish(PendingNotification::about(
             type: NotificationType::OrderStatusChanged,
             subject: $order,

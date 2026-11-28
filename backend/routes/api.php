@@ -3,6 +3,7 @@
 use App\Application\Api\V1\Controllers\ActivityLogController;
 use App\Application\Api\V1\Controllers\AuthController;
 use App\Application\Api\V1\Controllers\BillboardController;
+use App\Application\Api\V1\Controllers\BranchController;
 use App\Application\Api\V1\Controllers\BusinessFieldController;
 use App\Application\Api\V1\Controllers\CarrierController;
 use App\Application\Api\V1\Controllers\CityController;
@@ -22,6 +23,7 @@ use App\Application\Api\V1\Controllers\FakeEzonePayController;
 use App\Application\Api\V1\Controllers\FundBreakdownController;
 use App\Application\Api\V1\Controllers\HealthController;
 use App\Application\Api\V1\Controllers\HomeController;
+use App\Application\Api\V1\Controllers\InstantOrderController;
 use App\Application\Api\V1\Controllers\InternalTicketController;
 use App\Application\Api\V1\Controllers\InvestmentFundController;
 use App\Application\Api\V1\Controllers\InvestorController;
@@ -489,6 +491,33 @@ Route::prefix('v1')->group(function (): void {
         // implicit binding would try to resolve the word "summary" as an order id and 404.
         Route::get('orders/summary', [OrderController::class, 'statusCounts'])
             ->middleware('can:orders.view')->name('orders.summary');
+
+        // «الطلبات الفورية» — INSTANT-ORDERS-PLAN.md. The screen that takes one reads the
+        // employee's branches, finds the customer by phone and lists the sellable products; each
+        // behind the create grant, since that is the only screen that asks. The branch the
+        // employee may act for is checked in the domain, beside the rest of the sale's rules.
+        // Moving an instant order afterwards goes through `orders/{order}/status` like any order.
+        Route::middleware('can:instant_orders.create')->group(function (): void {
+            Route::get('instant-orders/branches', [InstantOrderController::class, 'branches'])
+                ->name('instant-orders.branches');
+            Route::get('instant-orders/customer', [InstantOrderController::class, 'customer'])
+                ->name('instant-orders.customer');
+            Route::get('instant-orders/products', [InstantOrderController::class, 'products'])
+                ->name('instant-orders.products');
+            Route::post('instant-orders', [InstantOrderController::class, 'store'])
+                ->name('instant-orders.store');
+        });
+
+        Route::put('instant-orders/{order}', [InstantOrderController::class, 'update'])
+            ->middleware('can:instant_orders.update')->name('instant-orders.update');
+
+        // «إعدادات الفروع» — the office-pickup cities as branches (INSTANT-ORDERS-PLAN.md §8).
+        Route::middleware('can:branches.manage')->group(function (): void {
+            Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+            // Before `branches/{branch}`, or the word would be bound as a branch id.
+            Route::put('branches/late-hours', [BranchController::class, 'lateHours'])->name('branches.late-hours');
+            Route::put('branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        });
 
         // The archive: the deleted orders, read through the same list and the same chips. Behind
         // its own grant rather than `orders.view` — deleting is somebody's admission of a mistake,
@@ -1015,6 +1044,11 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('warehouses/{warehouse}/stocks/{stock}/threshold', [WarehouseStockController::class, 'setThreshold'])
             ->scopeBindings()
             ->middleware('can:inventory.manage')->name('warehouses.stocks.threshold');
+
+        // «بانتظار التسليم» on one line, opened — INSTANT-ORDERS-PLAN.md §4.
+        Route::get('warehouses/{warehouse}/stocks/{stock}/awaiting-handover', [WarehouseStockController::class, 'awaitingHandover'])
+            ->scopeBindings()
+            ->middleware('can:inventory.view')->name('warehouses.stocks.awaiting-handover');
 
         // The ledger. One feed to read, four ways to write to it — an arrival has no source, a
         // fulfillment has no destination, an adjustment has a direction instead of either, so

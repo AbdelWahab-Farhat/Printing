@@ -49,6 +49,7 @@ final class AuditAttributeLabels
         'delivery_price' => 'سعر التوصيل',
         'delivery_paid_by' => 'من يدفع التوصيل',
         'delivery_cost' => 'تكلفة التوصيل علينا',
+        'delivery_cost_override' => 'تكلفة التوصيل المكتوبة يدوياً',
 
         // The warehouse and money vocabulary, which reads the same on a purchase order, an
         // arrival, a batch and a movement — the whole point of this list. Naming them per
@@ -151,6 +152,7 @@ final class AuditAttributeLabels
 
         'product' => [
             'name' => 'اسم المنتج',
+            'is_instant_sale' => 'متاح للبيع الفوري',
             'slug' => 'المعرّف',
             'description' => 'الوصف',
             'features' => 'المزايا',
@@ -223,6 +225,11 @@ final class AuditAttributeLabels
             'name' => 'اسم المدينة',
             'is_region_required' => 'المنطقة إلزامية',
             'nawris_government_id' => 'محافظة نورس',
+            // Branch settings — INSTANT-ORDERS-PLAN.md §8.
+            'is_branch_active' => 'الفرع نشط',
+            'default_warehouse_id' => 'المخزن الافتراضي للفرع',
+            'bank_transfer_account_id' => 'حساب الحوالة للفرع',
+            'bank_card_account_id' => 'حساب البطاقة للفرع',
         ],
         'region' => [
             'city_id' => 'المدينة',
@@ -308,6 +315,7 @@ final class AuditAttributeLabels
         ],
 
         'order' => [
+            'order_type' => 'نوع الطلبية',
             'customer_id' => 'العميل',
             'customer_shop_id' => 'المحل',
             'customer_shop_name' => 'اسم المحل',
@@ -892,6 +900,8 @@ final class AuditAttributeLabels
             'status_changed_at' => 'وقت آخر تغيير للحالة',
             // Set once, when the system opens the ticket for an order entering «قيد التصميم».
             'opened_automatically' => 'فُتحت تلقائياً',
+            // Set once, at creation: the order's status then. Decides whether approval moves it.
+            'order_status_at_open' => 'حالة الطلبية عند فتح التذكرة',
             // خارج السجلّ (`DesignTicket::attributesNeverWorthLogging()`)، ومسمّاةٌ لأن الاختبار
             // يسأل عن كلّ عمود — ولأن الاسم الصحيح لا يكلّف شيئاً لو دخلت يوماً.
             'requester_read_message_id' => 'قرأ الطالب حتى الرسالة',
@@ -1130,6 +1140,7 @@ final class AuditAttributeLabels
 
         'company_setting' => [
             'investor_profit_share_percent' => 'نسبة المستثمرين من الربح (الافتراضية)',
+            'instant_order_late_hours' => 'الطلب الفوري «متأخر» بعد (ساعة)',
             // المددُ الأربع. تُنسَخ على صفّ الفترة يوم تُفتح ولا تُقرأ من هنا بعدها — فتغييرُها
             // لا يمسّ فترةً قائمة، وسجلُّ من غيّرها هو ما يفسّر اختلافَ فترتين متجاورتين.
             'investment_period_months' => 'مدة الفترة (شهور)',

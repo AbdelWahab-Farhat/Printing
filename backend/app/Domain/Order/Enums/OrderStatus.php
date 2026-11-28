@@ -316,8 +316,14 @@ enum OrderStatus: string
      *
      * @return list<self>
      */
-    public function allowedNext(OrderFlow $flow = OrderFlow::Standard): array
+    public function allowedNext(OrderFlow $flow = OrderFlow::Standard, OrderType $type = OrderType::Normal): array
     {
+        // **An instant order has its own short road, whatever its lines are** — a counter sale
+        // never passes review, design, print, preparing or delivery (INSTANT-ORDERS-PLAN.md §5).
+        if ($type->isInstant()) {
+            return $this->instantNext();
+        }
+
         // **A `match` over the roads rather than an `if` over a boolean, and «وسيط» is why.**
         // The question used to be «هل يوجد إنتاج؟», which two roads could answer between them.
         // The third has a designer's queue on it and no press at all, so there is no one word
@@ -327,6 +333,22 @@ enum OrderStatus: string
             OrderFlow::Standard => $this->standardNext(),
             OrderFlow::NoProduction => $this->noProductionNext(),
             OrderFlow::Outsourced => $this->outsourcedNext(),
+        };
+    }
+
+    /**
+     * A counter sale (INSTANT-ORDERS-PLAN.md §5): «جديدة» is handed over or cancelled, and a
+     * handed-over sale is settled. No jump from «جديدة» to «تم التسوية», and no cancel after the
+     * customer has the goods.
+     *
+     * @return list<self>
+     */
+    private function instantNext(): array
+    {
+        return match ($this) {
+            self::New => [self::Delivered, self::Cancelled],
+            self::Delivered => [self::Settled],
+            default => [],
         };
     }
 
@@ -594,9 +616,9 @@ enum OrderStatus: string
      * the «جاهزة» the app had just been told it could offer, and the short road would exist on
      * screen and nowhere else.
      */
-    public function canMoveTo(self $target, OrderFlow $flow = OrderFlow::Standard): bool
+    public function canMoveTo(self $target, OrderFlow $flow = OrderFlow::Standard, OrderType $type = OrderType::Normal): bool
     {
-        return in_array($target, $this->allowedNext($flow), true);
+        return in_array($target, $this->allowedNext($flow, $type), true);
     }
 
     /** Finished. Nothing follows, and nothing may reopen it. */

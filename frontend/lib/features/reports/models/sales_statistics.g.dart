@@ -15,6 +15,11 @@ _SalesStatistics _$SalesStatisticsFromJson(Map<String, dynamic> json) =>
       byType: (json['by_type'] as List<dynamic>)
           .map((e) => BagTypeRow.fromJson(e as Map<String, dynamic>))
           .toList(),
+      topItems:
+          (json['top_items'] as List<dynamic>?)
+              ?.map((e) => TopSellingItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <TopSellingItem>[],
       weightComparison: WeightComparison.fromJson(
         json['weight_comparison'] as Map<String, dynamic>,
       ),
@@ -29,6 +34,7 @@ Map<String, dynamic> _$SalesStatisticsToJson(_SalesStatistics instance) =>
       'period': instance.period.toJson(),
       'sales_value': instance.salesValue.toJson(),
       'by_type': instance.byType.map((e) => e.toJson()).toList(),
+      'top_items': instance.topItems.map((e) => e.toJson()).toList(),
       'weight_comparison': instance.weightComparison.toJson(),
       'printed_pieces': instance.printedPieces.toJson(),
       'orders_counted': instance.ordersCounted,
@@ -60,6 +66,14 @@ _BagTypeRow _$BagTypeRowFromJson(Map<String, dynamic> json) => _BagTypeRow(
   plainKg: json['plain_kg'] as String,
   printedKg: json['printed_kg'] as String,
   pieces: (json['pieces'] as num).toInt(),
+  plainValue: json['plain_value'] as String? ?? '0.00',
+  printedValue: json['printed_value'] as String? ?? '0.00',
+  weighed: json['weighed'] as bool?,
+  sizes:
+      (json['sizes'] as List<dynamic>?)
+          ?.map((e) => BagSizeRow.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <BagSizeRow>[],
 );
 
 Map<String, dynamic> _$BagTypeRowToJson(_BagTypeRow instance) =>
@@ -70,7 +84,73 @@ Map<String, dynamic> _$BagTypeRowToJson(_BagTypeRow instance) =>
       'plain_kg': instance.plainKg,
       'printed_kg': instance.printedKg,
       'pieces': instance.pieces,
+      'plain_value': instance.plainValue,
+      'printed_value': instance.printedValue,
+      'weighed': instance.weighed,
+      'sizes': instance.sizes.map((e) => e.toJson()).toList(),
     };
+
+_BagSizeRow _$BagSizeRowFromJson(Map<String, dynamic> json) => _BagSizeRow(
+  widthCm: (json['width_cm'] as num?)?.toInt(),
+  heightCm: (json['height_cm'] as num?)?.toInt(),
+  value: json['value'] as String,
+  plainValue: json['plain_value'] as String,
+  printedValue: json['printed_value'] as String,
+  weightKg: json['weight_kg'] as String?,
+  plainKg: json['plain_kg'] as String?,
+  printedKg: json['printed_kg'] as String?,
+  pieces: (json['pieces'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$BagSizeRowToJson(_BagSizeRow instance) =>
+    <String, dynamic>{
+      'width_cm': instance.widthCm,
+      'height_cm': instance.heightCm,
+      'value': instance.value,
+      'plain_value': instance.plainValue,
+      'printed_value': instance.printedValue,
+      'weight_kg': instance.weightKg,
+      'plain_kg': instance.plainKg,
+      'printed_kg': instance.printedKg,
+      'pieces': instance.pieces,
+    };
+
+_TopSellingItem _$TopSellingItemFromJson(Map<String, dynamic> json) =>
+    _TopSellingItem(
+      product: json['product'] as String,
+      variant: json['variant'] as String,
+      type: json['type'] as String,
+      kind: $enumDecode(
+        _$SaleKindEnumMap,
+        json['kind'],
+        unknownValue: SaleKind.printed,
+      ),
+      widthCm: (json['width_cm'] as num?)?.toInt(),
+      heightCm: (json['height_cm'] as num?)?.toInt(),
+      value: json['value'] as String,
+      sharePercent: json['share_percent'] as String,
+      weightKg: json['weight_kg'] as String?,
+      pieces: (json['pieces'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$TopSellingItemToJson(_TopSellingItem instance) =>
+    <String, dynamic>{
+      'product': instance.product,
+      'variant': instance.variant,
+      'type': instance.type,
+      'kind': _$SaleKindEnumMap[instance.kind]!,
+      'width_cm': instance.widthCm,
+      'height_cm': instance.heightCm,
+      'value': instance.value,
+      'share_percent': instance.sharePercent,
+      'weight_kg': instance.weightKg,
+      'pieces': instance.pieces,
+    };
+
+const _$SaleKindEnumMap = {
+  SaleKind.plain: 'plain',
+  SaleKind.printed: 'printed',
+};
 
 _WeightComparison _$WeightComparisonFromJson(Map<String, dynamic> json) =>
     _WeightComparison(

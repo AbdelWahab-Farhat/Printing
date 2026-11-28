@@ -9,11 +9,13 @@ use App\Domain\Order\Actions\ResolveOrderFlow;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\DeliveryPayer;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Support\CustomerMessageTexts;
 use App\Domain\Order\Support\StockEffectPreview;
 use App\Domain\Order\Support\TransitionFields;
+use App\Domain\Settings\SettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -68,6 +70,12 @@ class OrderResource extends JsonResource
 
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
+
+            // Normal booking or instant counter sale (INSTANT-ORDERS-PLAN.md §2), and whether an
+            // instant one has waited at the counter longer than the company allows (§4).
+            'order_type' => ($this->order_type ?? OrderType::Normal)->value,
+            'order_type_label' => ($this->order_type ?? OrderType::Normal)->label(),
+            'is_late' => $this->isInstant() && $this->isLateInstantOrder($this->lateHours($request)),
 
             // **«مستعجلة» — a decision, not a status.** It rides beside the status rather than
             // inside it because it is true of an order at *any* step: a rush job is rushed while
@@ -212,6 +220,11 @@ class OrderResource extends JsonResource
             'delivery_paid_by' => $this->payer()->value,
             'delivery_paid_by_label' => $this->payer()->label(),
             'delivery_cost' => (string) ($this->delivery_cost ?? '0.00'),
+            // A cost an administrator typed by hand, or null when it is derived. Sent so the full
+            // edit screen can tell «automatic» from a figure somebody chose.
+            'delivery_cost_override' => $this->delivery_cost_override === null
+                ? null
+                : (string) $this->delivery_cost_override,
             'discount' => (string) $this->discount,
             // Beside the discount and never folded into it: an order's total is read as «هذا ما
             // أُضيف وهذا ما خُصم», and one net figure explains neither. The reason travels with
@@ -355,6 +368,7 @@ class OrderResource extends JsonResource
             // which survives the company being renamed or removed from the list.
             'shipping_company_id' => $this->shipping_company_id,
             'shipping_company' => $this->shipping_company,
+            'courier_name' => $this->courier_name,
             'courier_phone' => $this->courier_phone,
             'tracking_number' => $this->tracking_number,
 
@@ -628,6 +642,21 @@ class OrderResource extends JsonResource
             // move somebody's money. Empty when the switch is not offered.
             'delivery_payer_warnings' => $this->deliveryPayerWarnings($request),
         ];
+    }
+
+    /**
+     * The «متأخرة» threshold, read once per request rather than once per row of a list.
+     */
+    private function lateHours(Request $request): int
+    {
+        $hours = $request->attributes->get('instant_order_late_hours');
+
+        if (! is_int($hours)) {
+            $hours = app(SettingsService::class)->instantOrderLateHours();
+            $request->attributes->set('instant_order_late_hours', $hours);
+        }
+
+        return $hours;
     }
 
     private function readsDesignFee(Request $request): bool

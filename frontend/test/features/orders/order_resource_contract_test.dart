@@ -105,7 +105,6 @@ void main() {
 
     // Ids whose *name* is what screens show. Kept out on purpose: an id on screen is a number
     // nobody can act on, and the snapshot beside it is the fact that survives a rename.
-    'shipping_company_id': 'the carrier is shown by the snapshotted `shipping_company` name',
 
     // The per-status stamps. The timeline is built from `transitions`, which carries who and
     // when for every move — these columns would be a second, thinner copy of the same history.

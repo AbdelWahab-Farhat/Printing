@@ -36,11 +36,20 @@ class OrderFilterButton extends StatelessWidget {
     required this.counts,
     required this.onApplied,
     this.selectedCompensation,
+    this.selectedOrderType,
+    this.onOrderTypeApplied,
     super.key,
   });
 
   /// Whether the list is narrowed to «طلبيات التعويض». Null is «كلاهما».
   final bool? selectedCompensation;
+
+  /// `normal` or `instant`, or null for both (INSTANT-ORDERS-PLAN.md §13).
+  final String? selectedOrderType;
+
+  /// Called with the picked type just before [onApplied], so one «تطبيق» still fetches once.
+  /// Null hides the section — الأرشيف does not ask it.
+  final ValueChanged<String?>? onOrderTypeApplied;
 
   /// Which status the list is narrowed to, or null for «الكل».
   final OrderStatus? selected;
@@ -85,12 +94,15 @@ class OrderFilterButton extends StatelessWidget {
           selectedPayments: selectedPayments,
           selectedUrgency: selectedUrgency,
           selectedCompensation: selectedCompensation,
+          selectedOrderType: selectedOrderType,
+          asksOrderType: onOrderTypeApplied != null,
           counts: value,
         ),
       ),
     );
 
     if (picked != null) {
+      onOrderTypeApplied?.call(picked.orderType);
       onApplied(picked.status, picked.payments, picked.isUrgent, picked.isCompensation);
     }
   }
@@ -104,7 +116,8 @@ class OrderFilterButton extends StatelessWidget {
         selected != null ||
         selectedPayments.isNotEmpty ||
         selectedUrgency != null ||
-        selectedCompensation != null;
+        selectedCompensation != null ||
+        selectedOrderType != null;
 
     return Material(
       color: isActive ? scheme.primaryContainer : scheme.surfaceContainerLowest,
@@ -127,12 +140,13 @@ class OrderFilterButton extends StatelessWidget {
 
 /// What the sheet answers with: every axis, together.
 class _FilterChoice {
-  const _FilterChoice(this.status, this.payments, this.isUrgent, this.isCompensation);
+  const _FilterChoice(this.status, this.payments, this.isUrgent, this.isCompensation, this.orderType);
 
   final OrderStatus? status;
   final Set<PaymentStatus> payments;
   final bool? isUrgent;
   final bool? isCompensation;
+  final String? orderType;
 }
 
 /// Three questions on one sheet, and every one of them narrows the list: where the work stands,
@@ -172,6 +186,8 @@ class _FilterSheet extends StatefulWidget {
     required this.selectedUrgency,
     required this.selectedCompensation,
     required this.counts,
+    this.selectedOrderType,
+    this.asksOrderType = false,
   });
 
   final OrderStatus? selected;
@@ -179,6 +195,8 @@ class _FilterSheet extends StatefulWidget {
   final bool? selectedUrgency;
   final bool? selectedCompensation;
   final OrderCounts counts;
+  final String? selectedOrderType;
+  final bool asksOrderType;
 
   @override
   State<_FilterSheet> createState() => _FilterSheetState();
@@ -189,9 +207,14 @@ class _FilterSheetState extends State<_FilterSheet> {
   late Set<PaymentStatus> _payments = {...widget.selectedPayments};
   late bool? _isUrgent = widget.selectedUrgency;
   late bool? _isCompensation = widget.selectedCompensation;
+  late String? _orderType = widget.selectedOrderType;
 
   bool get _isFiltered =>
-      _status != null || _payments.isNotEmpty || _isUrgent != null || _isCompensation != null;
+      _status != null ||
+      _payments.isNotEmpty ||
+      _isUrgent != null ||
+      _isCompensation != null ||
+      _orderType != null;
 
   @override
   Widget build(BuildContext context) {
@@ -230,6 +253,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         _payments = <PaymentStatus>{};
                         _isUrgent = null;
                         _isCompensation = null;
+                        _orderType = null;
                       }),
                       child: const Text('مسح الفلاتر'),
                     ),
@@ -346,6 +370,26 @@ class _FilterSheetState extends State<_FilterSheet> {
                         ),
                       ],
                     ),
+                    // «نوع الطلبية» — the bookings or the counter sales (INSTANT-ORDERS-PLAN.md
+                    // §13). One choice, tapped again to clear, like the ticks above.
+                    if (widget.asksOrderType) ...[
+                      SizedBox(height: 18.h),
+                      const FilterSectionTitle(title: 'نوع الطلبية'),
+                      SizedBox(height: 10.h),
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          for (final (wire, label) in const [('normal', 'عادية'), ('instant', 'فورية')])
+                            FilterOptionChip(
+                              label: label,
+                              isTicked: true,
+                              isSelected: _orderType == wire,
+                              onTap: () => setState(() => _orderType = _orderType == wire ? null : wire),
+                            ),
+                        ],
+                      ),
+                    ],
                     // **ولا قسمَ للترتيب هنا.** كان، ونُزع إلى زرٍّ فوق القائمة: كل شريحةٍ على
                     // هذه الورقة تُنقص من النتيجة، والترتيب لا يُنقص شيئاً — فشريحةٌ لا تصغّر
                     // القائمة بين شرائحَ تصغّرها تُقرأ كفلترٍ لا يعمل. انظر [OrderSortButton].
@@ -358,7 +402,9 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: AppButton(
                 label: 'تطبيق',
                 onPressed: () =>
-                    Navigator.of(context).pop(_FilterChoice(_status, _payments, _isUrgent, _isCompensation)),
+                    Navigator.of(context).pop(
+                      _FilterChoice(_status, _payments, _isUrgent, _isCompensation, _orderType),
+                    ),
               ),
             ),
           ],

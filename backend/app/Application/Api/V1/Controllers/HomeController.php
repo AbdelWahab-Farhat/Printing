@@ -7,10 +7,15 @@ namespace App\Application\Api\V1\Controllers;
 use App\Application\Api\V1\Resources\HomeSummaryResource;
 use App\Application\Controller;
 use App\Domain\Customer\CustomerService;
+use App\Domain\Delivery\Support\BranchAccess;
 use App\Domain\Identity\Enums\PermissionName;
+use App\Domain\Identity\Models\User;
 use App\Domain\Investor\InvestorService;
+use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\OrderService;
 use App\Domain\Order\Queries\OrderFilters;
+use App\Domain\Settings\SettingsService;
 use App\Support\ResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +41,8 @@ class HomeController extends Controller
         private readonly OrderService $orders,
         private readonly CustomerService $customers,
         private readonly InvestorService $investors,
+        private readonly BranchAccess $branches,
+        private readonly SettingsService $settings,
     ) {}
 
     /**
@@ -90,6 +97,51 @@ class HomeController extends Controller
             'return_message_count' => $request->user()?->can(PermissionName::ConfirmReadyMessage->value) === true
                 ? $this->orders->count(new OrderFilters(returnMessageSent: false))
                 : null,
+            // The branch counter's board (INSTANT-ORDERS-PLAN.md §11) — only for whoever reads
+            // instant orders, like the boxes above.
+            'instant' => $request->user()?->can(PermissionName::ViewInstantOrders->value) === true
+                ? $this->instantBoard($request)
+                : null,
         ]));
+    }
+
+    /**
+     * «طلب فوري» and the counters around it: the instant orders by status, the late ones, and
+     * the «استلام مكتب» orders waiting at the employee's own branches. Hiding a counter never
+     * hides an order — the search still finds every one.
+     *
+     * @return array<string, mixed>
+     */
+    private function instantBoard(Request $request): array
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $everyBranch = $this->branches->coversEveryBranch($user);
+
+        $counts = $this->orders->statusCounts(new OrderFilters(orderType: OrderType::Instant));
+
+        return [
+            'can_create' => $user->can(PermissionName::CreateInstantOrders->value),
+            // Empty means the «طلب فوري» button is drawn disabled, with the reason beside it.
+            'branches' => $this->branches->sellingBranchesFor($user)
+                ->map(fn ($branch): array => ['id' => (int) $branch->getKey(), 'name' => (string) $branch->name])
+                ->values()
+                ->all(),
+            'statuses' => array_map(
+                fn (OrderStatus $status): array => [
+                    'status' => $status->value,
+                    'label' => $status->label(),
+                    'count' => (int) ($counts[$status->value] ?? 0),
+                ],
+                [OrderStatus::New, OrderStatus::Delivered, OrderStatus::Cancelled, OrderStatus::Settled],
+            ),
+            'late_count' => $this->orders->count(new OrderFilters(isLate: true)),
+            'late_after_hours' => $this->settings->instantOrderLateHours(),
+            // Whose pickups: the employee's own branches, or every branch for whoever covers them.
+            'pickup_count' => $this->orders->count(new OrderFilters(
+                statuses: [OrderStatus::OfficePickup],
+                cityIds: $everyBranch ? null : $this->branches->assignedIds($user),
+            )),
+        ];
     }
 }

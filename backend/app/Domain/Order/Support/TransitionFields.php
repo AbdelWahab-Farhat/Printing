@@ -557,8 +557,13 @@ final class TransitionFields
         // same shape {@see money()} below uses to keep a driver away from the till without
         // keeping them away from the parcel. Null — a console command, an importer — is nobody,
         // and gets no boxes.
+        //
+        // **An instant order's handover asks it of whoever hands it over** (owner's decision,
+        // 2026-11-26): less than ordered may leave the counter, the rest going back to the shelf;
+        // never more — the box's ceiling is what was ordered.
         if ($target === OrderStatus::Delivered
-            && $actor?->can(PermissionName::RecordPartialDelivery->value)) {
+            && ($actor?->can(PermissionName::RecordPartialDelivery->value)
+                || ($order->isInstant() && $actor?->can(PermissionName::DeliverInstantOrders->value)))) {
             array_push($fields, ...self::partialDelivery($order));
         }
 
@@ -1117,7 +1122,11 @@ final class TransitionFields
         // Settling *means* the money came back, and nearly always all of it: the box opens
         // holding the remainder and agreeing costs a tap. Handing bags over means no such thing
         // — the customer may pay all of it, some of it, or none — so nothing is suggested.
-        $settling = $target === OrderStatus::Settled;
+        //
+        // **Except an instant sale's handover, which is paid in full** (owner's decision,
+        // 2026-11-26): the box opens holding the remainder and is required.
+        $instantHandover = $order->isInstant() && $target === OrderStatus::Delivered;
+        $settling = $target === OrderStatus::Settled || $instantHandover;
 
         // **«عربون مدفوع» opens holding the figure that was agreed**, capped like everything else
         // at what is actually owed — an invoice edited downward since can leave the estimate
@@ -1134,14 +1143,19 @@ final class TransitionFields
             $expected = bccomp($asked, $remaining, Money::SCALE) > 0 ? $remaining : $asked;
         }
 
-        return [
+        // An instant sale's money lands in its branch's account; the picker is offered only to
+        // whoever may choose another (INSTANT-ORDERS-PLAN.md §7).
+        $offersAccount = ! $order->isInstant()
+            || $actor?->can(PermissionName::ChooseInstantOrderAccount->value) === true;
+
+        return array_values(array_filter([
             TransitionField::number(
                 key: self::PAYMENT_AMOUNT,
                 label: $target === OrderStatus::DepositPaid ? 'العربون المقبوض' : 'المبلغ المقبوض',
-                // Never required, at either end. An order paid in full when it was taken is
-                // handed over with the box left alone, and one settled after the money was
-                // recorded from the payments screen needs nothing here either.
-                required: false,
+                // Never required, at either end — but an instant handover. An order paid in full
+                // when it was taken is handed over with the box left alone, and one settled after
+                // the money was recorded from the payments screen needs nothing here either.
+                required: $instantHandover,
                 // **No ceiling.** 100 handed over on an order owing 99 is ordinary — nobody had
                 // the one dinar — and the confirmation below is what tells it apart from 500
                 // typed for 50. The debt is still in the hint, and in that question.
@@ -1168,8 +1182,12 @@ final class TransitionFields
             TransitionField::paymentMethod(
                 key: self::PAYMENT_METHOD,
                 label: 'طريقة الدفع',
-                // Not the wallet: paying from it has its own door, which checks the balance.
-                methods: PaymentMethod::handPicked(),
+                // Not the wallet: paying from it has its own door, which checks the balance. An
+                // instant sale takes cash, a transfer or a card — Libyana waits for its own
+                // decision (INSTANT-ORDERS-PLAN.md §7).
+                methods: $order->isInstant()
+                    ? [PaymentMethod::Cash, PaymentMethod::BankTransfer, PaymentMethod::BankCard]
+                    : PaymentMethod::handPicked(),
                 // Meaningless without an amount and mandatory with one — the ledger takes no
                 // entry lacking it.
                 requiredWith: self::PAYMENT_AMOUNT,
@@ -1186,13 +1204,13 @@ final class TransitionFields
             // fits. Left empty, the treasury decides — the person's own account, else the
             // method's default (TREASURY-DESIGN §٥) — which is also what an app that does not
             // know this field gets.
-            TransitionField::treasuryAccount(
+            $offersAccount ? TransitionField::treasuryAccount(
                 key: self::PAYMENT_ACCOUNT,
                 label: 'الحساب',
                 accounts: app(TreasuryService::class)->pickableAccounts(
                     $actor?->getKey() === null ? null : (int) $actor->getKey(),
                 ),
-            ),
+            ) : null,
             // **One field, two jobs.** Obligatory for «حوالة», whose only proof is a document
             // the customer sends — see {@see PaymentMethod::requiresReceipt()} — and offered for
             // everything else, because the slip out of a card machine is worth keeping and
@@ -1222,7 +1240,7 @@ final class TransitionFields
                 whenKey: self::PAYMENT_AMOUNT,
                 above: $remaining,
             ),
-        ];
+        ]));
     }
 
     /**

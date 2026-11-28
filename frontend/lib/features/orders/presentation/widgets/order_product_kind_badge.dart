@@ -15,9 +15,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///
 /// An unknown road shows nothing rather than a guess.
 class OrderProductKindBadge extends StatelessWidget {
-  const OrderProductKindBadge({required this.flow, this.besideBanner = false, super.key});
+  const OrderProductKindBadge({
+    required this.flow,
+    this.besideBanner = false,
+    this.isInstant = false,
+    super.key,
+  });
 
   final OrderFlow flow;
+
+  /// A counter sale (INSTANT-ORDERS-PLAN.md §2): the badge reads «فوري · سادة», so the kind of
+  /// sale is seen beside the kind of goods.
+  final bool isInstant;
 
   /// The list card's size, where it stands beside the full-width status band — the same switch
   /// `OrderDeletedBadge` has, so the row keeps one height.
@@ -33,8 +42,10 @@ class OrderProductKindBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = labelFor(flow);
-    if (label == null) return const SizedBox.shrink();
+    final kind = labelFor(flow);
+    if (kind == null && !isInstant) return const SizedBox.shrink();
+
+    final label = isInstant ? ['فوري', ?kind].join(' · ') : kind!;
 
     final scheme = context.colorScheme;
 

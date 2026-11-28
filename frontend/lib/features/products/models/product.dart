@@ -70,6 +70,10 @@ abstract class Product with _$Product {
     @JsonKey(name: 'min_order_quantity') required String minOrderQuantity,
 
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
+
+    /// «متاح للبيع الفوري» — one of the conditions the instant-order screen asks
+    /// (INSTANT-ORDERS-PLAN.md §3).
+    @JsonKey(name: 'is_instant_sale') @Default(false) bool isInstantSale,
     @JsonKey(name: 'sort_order') @Default(0) int sortOrder,
 
     @Default(<ProductVariant>[]) List<ProductVariant> variants,

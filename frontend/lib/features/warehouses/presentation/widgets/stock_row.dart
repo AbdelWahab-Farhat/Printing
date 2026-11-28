@@ -3,6 +3,7 @@ import 'package:dayaa/core/utils/app_icons.dart';
 import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/features/warehouses/models/warehouse_stock.dart';
+import 'package:dayaa/features/warehouses/presentation/widgets/awaiting_handover_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -139,6 +140,17 @@ class StockRow extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // «بانتظار التسليم» — sold at the counter, still on the shelf
+                  // (INSTANT-ORDERS-PLAN.md §4). A filled pill on its own line, because small
+                  // text under the balance went unseen; the shelf count is the two added up.
+                  if (stock.hasAwaitingHandover) ...[
+                    SizedBox(height: 6.h),
+                    _AwaitingHandoverPill(
+                      // With the shelf's unit: a bare «2» read as two orders, not two kilos.
+                      quantity: '${stock.awaitingHandover!.grouped} ${stock.unitLabel}',
+                      onTap: () => showAwaitingHandoverSheet(context: context, stock: stock),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -193,6 +205,55 @@ class StockRow extends StatelessWidget {
     return _standalone
         ? Material(color: scheme.surfaceContainerLowest, borderRadius: radius, child: row)
         : row;
+  }
+}
+
+/// «بانتظار التسليم 2 ‹» — stock already deducted for counter sales the customer has not
+/// collected yet. Filled in the primary container so it stands apart from the amber and red
+/// shelf states: it is not a problem, it is stock somebody else is about to take. Tapping it
+/// lists those orders.
+class _AwaitingHandoverPill extends StatelessWidget {
+  const _AwaitingHandoverPill({required this.quantity, required this.onTap});
+
+  final String quantity;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+    final radius = BorderRadius.circular(8.r);
+
+    return Material(
+      color: scheme.primaryContainer,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(AppIcons.awaitingHandover, size: 14.sp, color: scheme.onPrimaryContainer),
+              SizedBox(width: 4.w),
+              Flexible(
+                child: Text(
+                  'بانتظار التسليم $quantity',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              SizedBox(width: 2.w),
+              Icon(AppIcons.forward, size: 16.sp, color: scheme.onPrimaryContainer),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

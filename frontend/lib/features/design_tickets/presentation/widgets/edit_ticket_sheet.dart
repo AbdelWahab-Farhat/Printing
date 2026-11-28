@@ -118,58 +118,317 @@ class _EditSheetState extends State<_EditSheet> {
     );
   }
 
+  /// Opens the description on a page of its own, editing the same controller, so what is
+  /// typed there is already in the sheet when it comes back.
+  Future<void> _openFullScreen() => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _DescriptionEditorPage(
+        controller: _description,
+        subtitle: '${widget.ticket.code} · ${_title.text.trim()}',
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final text = context.textTheme;
+    final scheme = context.colorScheme;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16.w,
-        0,
-        16.w,
-        MediaQuery.viewInsetsOf(context).bottom + 16.h,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('تعديل الطلب', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-              SizedBox(height: 14.h),
-              AppTextField(controller: _title, label: 'عنوان الطلب'),
-              SizedBox(height: 12.h),
-              // One box, like the form that raised the ticket — see `DesignTicketFormPage`. An
-              // older ticket may still carry `instructions`; the detail screen keeps drawing it
-              // when it is there, and nothing writes one any more.
-              AppTextField(
-                controller: _description,
-                label: 'وصف الطلب والتعليمات',
-                maxLines: 6,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header: what this is, which ticket, and who sees the change.
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 0, 12.w, 12.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'تعديل الطلب',
+                              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            SizedBox(width: 8.w),
+                            _CodeChip(code: widget.ticket.code),
+                          ],
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'يرى المصمم التعديل فور الحفظ',
+                          style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton.filledTonal(
+                    tooltip: 'إغلاق',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
-              // بترتيب نموذج الطلب نفسه: قبل الألوان.
-              if (widget.ticket.canSetPay) ...[
-                SizedBox(height: 12.h),
-                OptionalAmountField(controller: _pay, label: 'أجرة المصمم'),
-              ],
-              SizedBox(height: 16.h),
-              PrintColorsField(
-                colors: _colors,
-                onChanged: (colors) => setState(() => _colors = colors),
-              ),
-              SizedBox(height: 18.h),
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  label: 'حفظ',
-                  // The server validates both required fields again and answers in Arabic under
-                  // the field, so nothing is blocked here — an empty box reaches a 422 that says
-                  // which one, rather than a disabled button that says nothing.
-                  onPressed: _save,
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Card(
+                      children: [
+                        AppTextField(controller: _title, label: 'عنوان الطلب'),
+                        SizedBox(height: 12.h),
+                        // One box, like the form that raised the ticket — see
+                        // `DesignTicketFormPage`. An older ticket may still carry
+                        // `instructions`; the detail screen keeps drawing it when it is
+                        // there, and nothing writes one any more.
+                        AppTextField(
+                          controller: _description,
+                          label: 'وصف الطلب والتعليمات',
+                          minLines: 4,
+                          maxLines: 8,
+                        ),
+                        SizedBox(height: 6.h),
+                        _DescriptionFooter(controller: _description, onFullScreen: _openFullScreen),
+                      ],
+                    ),
+                    // بترتيب نموذج الطلب نفسه: قبل الألوان.
+                    if (widget.ticket.canSetPay) ...[
+                      SizedBox(height: 12.h),
+                      _Card(
+                        children: [
+                          OptionalAmountField(controller: _pay, label: 'أجرة المصمم'),
+                          if (widget.ticket.suggestedPay case final suggested?) ...[
+                            SizedBox(height: 8.h),
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ActionChip(
+                                avatar: const Icon(Icons.auto_awesome_outlined, size: 18),
+                                label: Text('المقترح: ${trimDecimals(suggested)}'),
+                                onPressed: () => _pay.text = trimDecimals(suggested),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                    SizedBox(height: 12.h),
+                    _Card(
+                      children: [
+                        PrintColorsField(
+                          colors: _colors,
+                          onChanged: (colors) => setState(() => _colors = colors),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
+            // Fixed under the scrolling cards, so «حفظ» is reachable without scrolling to it.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'حفظ التعديلات',
+                          // The server validates both required fields again and answers in
+                          // Arabic under the field, so nothing is blocked here — an empty box
+                          // reaches a 422 that says which one, rather than a disabled button
+                          // that says nothing.
+                          onPressed: _save,
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: Size(88.w, 52.h)),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('إلغاء'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A grouped block of the sheet, on the surface one step above the sheet itself.
+class _Card extends StatelessWidget {
+  const _Card({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(14.w),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      ),
+    );
+  }
+}
+
+class _CodeChip extends StatelessWidget {
+  const _CodeChip({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+        child: Text(
+          code,
+          textDirection: TextDirection.ltr,
+          style: context.textTheme.labelMedium?.copyWith(
+            color: scheme.onPrimaryContainer,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Under the description: the line count and the way to more room.
+class _DescriptionFooter extends StatelessWidget {
+  const _DescriptionFooter({required this.controller, required this.onFullScreen});
+
+  final TextEditingController controller;
+  final VoidCallback onFullScreen;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = context.textTheme.bodySmall?.copyWith(
+      color: context.colorScheme.onSurfaceVariant,
+    );
+
+    return Row(
+      children: [
+        _LineCount(controller: controller, style: style),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: onFullScreen,
+          icon: const Icon(Icons.open_in_full_rounded, size: 16),
+          label: const Text('ملء الشاشة'),
+        ),
+      ],
+    );
+  }
+}
+
+class _LineCount extends StatelessWidget {
+  const _LineCount({required this.controller, this.style});
+
+  final TextEditingController controller;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final lines = controller.text.trim().isEmpty ? 0 : controller.text.split('\n').length;
+
+        return Text(lines == 1 ? 'سطر واحد' : '$lines أسطر', style: style);
+      },
+    );
+  }
+}
+
+/// The description with the whole screen to itself: a plain text box and the system keyboard,
+/// with no toolbar of its own. Return starts a new line, and paste and select all come from the
+/// system's own text menu.
+///
+/// **The sheet's own controller, not a copy**, so there is nothing to hand back and nothing
+/// to lose: «تم» and the back button both return to the sheet with the text as it now stands,
+/// and only the sheet's «حفظ» sends it.
+class _DescriptionEditorPage extends StatelessWidget {
+  const _DescriptionEditorPage({required this.controller, required this.subtitle});
+
+  final TextEditingController controller;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = context.textTheme;
+    final scheme = context.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'وصف الطلب والتعليمات',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            Text(subtitle, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: 12.w),
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('تم'),
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            expands: true,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            textAlignVertical: TextAlignVertical.top,
+            style: text.bodyLarge?.copyWith(height: 1.8),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'اكتب وصف الطلب والتعليمات…',
+            ),
           ),
         ),
       ),

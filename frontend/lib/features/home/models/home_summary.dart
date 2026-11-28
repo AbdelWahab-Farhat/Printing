@@ -45,6 +45,10 @@ abstract class HomeSummary with _$HomeSummary {
     /// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
     /// Same grant and same «null is not your job» as [readyMessage].
     @JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage,
+
+    /// The branch counter's board — «طلب فوري» and its counters (INSTANT-ORDERS-PLAN.md §11).
+    /// Null for a reader without `instant_orders.view`, and on an API that predates it.
+    InstantBoard? instant,
   }) = _HomeSummary;
 
   const HomeSummary._();
@@ -68,6 +72,44 @@ abstract class ReadyMessageQueue with _$ReadyMessageQueue {
 
   factory ReadyMessageQueue.fromJson(Map<String, dynamic> json) =>
       _$ReadyMessageQueueFromJson(json);
+}
+
+/// The counter's board: whether the employee may sell, where, and what is waiting.
+///
+/// **Hiding a counter never hides an order** — the search still finds every one (§11).
+@freezed
+abstract class InstantBoard with _$InstantBoard {
+  const factory InstantBoard({
+    @JsonKey(name: 'can_create') @Default(false) bool canCreate,
+
+    /// The active branches this employee may sell from. Empty draws «طلب فوري» disabled.
+    @Default(<BranchRef>[]) List<BranchRef> branches,
+
+    /// جديدة، تم الاستلام، إلغاء تام، تم التسوية — the instant orders by status.
+    @Default(<OrderStatusCount>[]) List<OrderStatusCount> statuses,
+
+    /// Instant orders still «جديدة» past [lateAfterHours].
+    @JsonKey(name: 'late_count') @Default(0) int lateCount,
+    @JsonKey(name: 'late_after_hours') @Default(24) int lateAfterHours,
+
+    /// «استلام مكتب» orders waiting at the employee's own branches.
+    @JsonKey(name: 'pickup_count') @Default(0) int pickupCount,
+  }) = _InstantBoard;
+
+  const InstantBoard._();
+
+  factory InstantBoard.fromJson(Map<String, dynamic> json) => _$InstantBoardFromJson(json);
+
+  /// Whether the «طلب فوري» button can be pressed at all.
+  bool get canSell => canCreate && branches.isNotEmpty;
+}
+
+/// A branch by id and name.
+@freezed
+abstract class BranchRef with _$BranchRef {
+  const factory BranchRef({required int id, required String name}) = _BranchRef;
+
+  factory BranchRef.fromJson(Map<String, dynamic> json) => _$BranchRefFromJson(json);
 }
 
 /// One status and how many orders sit in it.

@@ -7,8 +7,10 @@ import 'package:dayaa/core/utils/context_extensions.dart';
 import 'package:dayaa/features/customers/presentation/widgets/customer_picker_sheet.dart';
 import 'package:dayaa/features/employee_wallet/presentation/viewmodel/my_wallet_cubit.dart';
 import 'package:dayaa/features/employee_wallet/presentation/widgets/my_wallet_row.dart';
+import 'package:dayaa/features/home/models/home_summary.dart';
 import 'package:dayaa/features/home/presentation/viewmodel/home_cubit.dart';
 import 'package:dayaa/features/home/presentation/widgets/employee_card.dart';
+import 'package:dayaa/features/home/presentation/widgets/instant_board_section.dart';
 import 'package:dayaa/features/home/presentation/widgets/payment_board.dart';
 import 'package:dayaa/features/home/presentation/widgets/quick_actions.dart';
 import 'package:dayaa/features/home/presentation/widgets/ready_message_box.dart';
@@ -91,8 +93,50 @@ class _HomeView extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 20.h),
-              QuickActions(actions: _actionsFor(context)),
-              SizedBox(height: 20.h),
+              if (_actionsFor(context) case final actions when actions.isNotEmpty) ...[
+                QuickActions(actions: actions),
+                SizedBox(height: 20.h),
+              ],
+              // The branch counter's board (INSTANT-ORDERS-PLAN.md §11): «طلب فوري», the search,
+              // and what waits at the counter. Absent for anybody without the instant grant.
+              if (summary.instant case final board?) ...[
+                _OrderSearchBox(onTap: () => context.go(Routes.orders)),
+                SizedBox(height: 16.h),
+                InstantBoardSection(
+                  board: board,
+                  onNewOrder: () => context.push(Routes.newInstantOrder),
+                  onOpenStatus: (status) => _openOrders(
+                    context,
+                    OrdersFilter(
+                      title: 'الطلبات الفورية — ${status.label}',
+                      statuses: [status.status],
+                      orderType: 'instant',
+                    ),
+                  ),
+                  onOpenLate: () => _openOrders(
+                    context,
+                    const OrdersFilter(title: 'طلبات فورية متأخرة', isLate: true),
+                  ),
+                ),
+                SizedBox(height: 24.h),
+              ],
+              // **The counter layout ends there** (§11): an employee who sells but does not run
+              // the workshop has no use for the shop-wide boards below — and hiding them hides
+              // no order, the search still finds every one.
+              if (!_isCounterOnly(summary)) ..._shopBoards(context, summary),
+            ],
+          ),
+        ),
+      },
+    );
+  }
+
+  /// Whether this reader works the counter and not the workshop.
+  bool _isCounterOnly(HomeSummary summary) =>
+      summary.instant != null && !sl<Session>().can(AppPermission.manageOrders);
+
+  List<Widget> _shopBoards(BuildContext context, HomeSummary summary) {
+    return [
               SummaryTiles(
                 summary: summary,
                 // Two of these switch tabs and two open a screen, and the difference is what
@@ -174,11 +218,7 @@ class _HomeView extends StatelessWidget {
                   OrdersFilter(title: status.label, statuses: [status.status]),
                 ),
               ),
-            ],
-          ),
-        ),
-      },
-    );
+    ];
   }
 
   void _openOrders(BuildContext context, OrdersFilter filter) {
@@ -217,11 +257,14 @@ class _HomeView extends StatelessWidget {
   /// for.
   List<QuickAction> _actionsFor(BuildContext context) {
     return [
-      QuickAction(
-        label: 'عميل جديد',
-        icon: AppIcons.addCustomer,
-        onTap: () => context.push(Routes.addCustomer),
-      ),
+      // Behind `customers.manage`, like the order shortcut below: a branch employee adds a
+      // customer only inside an instant sale (INSTANT-ORDERS-PLAN.md §9).
+      if (sl<Session>().can(AppPermission.manageCustomers))
+        QuickAction(
+          label: 'عميل جديد',
+          icon: AppIcons.addCustomer,
+          onTap: () => context.push(Routes.addCustomer),
+        ),
       // Left out entirely without `orders.manage`: the route redirects back to the customer, and
       // a shortcut that bounces the user where they came from reads as a broken button rather
       // than as a permission they do not hold.
@@ -250,6 +293,41 @@ class _HomeView extends StatelessWidget {
     // The whole customer travels, so the form opens with their name in place instead of a
     // spinner — exactly what their own screen hands it.
     await context.push(Routes.newCustomerOrder(customer.id), extra: customer);
+  }
+}
+
+/// «البحث عن طلب: الكود أو الهاتف» — opens the orders tab, whose search reads every order of every
+/// branch, status and type (INSTANT-ORDERS-PLAN.md §10).
+class _OrderSearchBox extends StatelessWidget {
+  const _OrderSearchBox({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colorScheme;
+
+    return Material(
+      color: scheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(16.r),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16.r),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+          child: Row(
+            children: [
+              Icon(AppIcons.search, color: scheme.onSurfaceVariant),
+              SizedBox(width: 10.w),
+              Text(
+                'البحث عن طلب: الكود أو الهاتف',
+                style: context.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

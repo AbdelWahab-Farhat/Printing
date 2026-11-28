@@ -22,11 +22,35 @@ use Illuminate\Testing\TestResponse;
  * The ticket «قيد التصميم» opens by itself, what closes it, and the move to «بانتظار التجهيز» its
  * approval makes (owner, 2026-11-18).
  *
+ * The automatic ticket is off by default since 2026-11-26 (`design_tickets.auto_open_on_designing`);
+ * the tests about it switch it on. Approval moves the order only for a ticket opened while the
+ * order was in «قيد التصميم».
+ *
  * Arrange - Act - Assert throughout.
  */
 class AutomaticDesignTicketTest extends DesignTicketTestCase
 {
     private const BLACK = ['name' => 'أسود', 'code' => null, 'hex' => '#000000'];
+
+    private function withAutomaticTickets(): void
+    {
+        config(['design_tickets.auto_open_on_designing' => true]);
+    }
+
+    /**
+     * A ticket a person opens on [$order] through the API, as the order stands now.
+     *
+     * @param  array<string, string>  $headers
+     */
+    private function openTicketOn(Order $order, array $headers): DesignTicket
+    {
+        $id = $this->postJson('/api/v1/design-tickets', $this->payload($order->customer, [
+            'order_id' => $order->id,
+            'print_colors' => [self::BLACK],
+        ]), $headers)->assertCreated()->json('data.id');
+
+        return DesignTicket::query()->findOrFail($id);
+    }
 
     /**
      * @return array{User, array<string, string>}
@@ -100,9 +124,36 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
 
     // ───────────────────────────── opening ─────────────────────────────
 
-    public function test_moving_into_design_opens_a_ticket_for_the_order(): void
+    public function test_moving_into_design_opens_no_ticket_by_default(): void
     {
         // Arrange
+        [, $headers] = $this->foreman();
+        $order = $this->orderFor($this->customer());
+
+        // Act
+        $this->move($order, OrderStatus::Designing, $headers)->assertOk();
+
+        // Assert
+        $this->assertSame(0, DesignTicket::query()->where('order_id', $order->id)->count());
+    }
+
+    public function test_a_ticket_records_the_order_status_it_was_opened_in(): void
+    {
+        // Arrange
+        [, $headers] = $this->foreman();
+        $order = $this->orderFor($this->customer(), OrderStatus::AwaitingDeposit);
+
+        // Act
+        $ticket = $this->openTicketOn($order, $headers);
+
+        // Assert
+        $this->assertSame(OrderStatus::AwaitingDeposit, $ticket->order_status_at_open);
+    }
+
+    public function test_with_the_switch_on_moving_into_design_opens_a_ticket(): void
+    {
+        // Arrange
+        $this->withAutomaticTickets();
         [$user, $headers] = $this->foreman();
         $order = $this->orderFor($this->customer());
 
@@ -122,6 +173,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_an_order_with_an_open_ticket_gets_no_second_one(): void
     {
         // Arrange — somebody opened one by hand while the order was «بدون عربون».
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         $order = $this->orderFor($this->customer());
         DesignTicket::factory()->create(['customer_id' => $order->customer_id, 'order_id' => $order->id]);
@@ -136,6 +188,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_a_correction_trip_back_opens_a_fresh_ticket(): void
     {
         // Arrange — at the press's door, the earlier ticket long approved.
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         $order = $this->orderFor($this->customer(), OrderStatus::ReadyToPrint);
         $order->forceFill(['stock_deducted_at' => now()])->save();
@@ -156,6 +209,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_the_designer_gives_the_colours_with_the_first_version(): void
     {
         // Arrange
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer());
@@ -179,6 +233,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_moving_on_by_hand_cancels_an_automatic_ticket_nobody_worked_on(): void
     {
         // Arrange — the customer sent the final file; it is on the order, approved.
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         $order = $this->orderFor($this->customer());
         $this->move($order, OrderStatus::Designing, $headers)->assertOk();
@@ -197,6 +252,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_an_automatic_ticket_with_a_version_still_holds_the_order(): void
     {
         // Arrange — a designer has submitted work.
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer());
@@ -232,6 +288,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_cancelling_the_order_cancels_its_automatic_ticket(): void
     {
         // Arrange — even one a designer is working on.
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer());
@@ -252,6 +309,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_approving_the_design_moves_the_order_to_preparing(): void
     {
         // Arrange — the person who moved the order reviews the ticket it opened.
+        $this->withAutomaticTickets();
         [$reviewer, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer());
@@ -281,6 +339,7 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
     public function test_the_approval_stands_when_the_order_cannot_move_on(): void
     {
         // Arrange — a second ticket, opened by a person, is still open on the order.
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer());
@@ -298,9 +357,64 @@ class AutomaticDesignTicketTest extends DesignTicketTestCase
         $this->assertSame(OrderStatus::Designing, $order->fresh()->status);
     }
 
+    public function test_a_ticket_opened_in_design_moves_the_order_on_approval(): void
+    {
+        // Arrange — the switch off; a person opens the ticket while the order is in «قيد التصميم».
+        [, $headers] = $this->foreman();
+        [, $designer] = $this->designer();
+        $order = $this->orderFor($this->customer(), OrderStatus::Designing);
+        $ticket = $this->openTicketOn($order, $headers);
+        $versionId = $this->submitVersion($ticket, $designer);
+
+        // Act
+        $this->approve($ticket, $versionId, $headers)->assertOk();
+
+        // Assert
+        $this->assertSame(OrderStatus::Preparing, $order->fresh()->status);
+    }
+
+    public function test_a_ticket_opened_awaiting_deposit_leaves_the_order_where_it_is(): void
+    {
+        // Arrange
+        [, $headers] = $this->foreman();
+        [, $designer] = $this->designer();
+        $order = $this->orderFor($this->customer(), OrderStatus::AwaitingDeposit);
+        $ticket = $this->openTicketOn($order, $headers);
+        $versionId = $this->submitVersion($ticket, $designer);
+
+        // Act
+        $this->approve($ticket, $versionId, $headers)->assertOk();
+
+        // Assert — approved, the design on the order, the status untouched.
+        $this->assertSame(DesignTicketStatus::Completed, $ticket->fresh()->status);
+        $this->assertSame(OrderStatus::AwaitingDeposit, $order->fresh()->status);
+        $this->assertTrue(
+            OrderDesign::query()->where('order_id', $order->id)->where('status', OrderDesignStatus::Approved)->exists(),
+        );
+    }
+
+    public function test_a_ticket_opened_before_design_does_not_move_the_order_once_it_is_there(): void
+    {
+        // Arrange — opened in «بانتظار العربون»; the order reached «قيد التصميم» afterwards.
+        [, $headers] = $this->foreman();
+        [, $designer] = $this->designer();
+        $order = $this->orderFor($this->customer(), OrderStatus::AwaitingDeposit);
+        $ticket = $this->openTicketOn($order, $headers);
+        $order->forceFill(['status' => OrderStatus::Designing])->save();
+        $versionId = $this->submitVersion($ticket, $designer);
+
+        // Act
+        $this->approve($ticket, $versionId, $headers)->assertOk();
+
+        // Assert
+        $this->assertSame(DesignTicketStatus::Completed, $ticket->fresh()->status);
+        $this->assertSame(OrderStatus::Designing, $order->fresh()->status);
+    }
+
     public function test_an_outsourced_order_stays_in_design_after_approval(): void
     {
         // Arrange — the وسيط road has no «بانتظار التجهيز».
+        $this->withAutomaticTickets();
         [, $headers] = $this->foreman();
         [, $designer] = $this->designer();
         $order = $this->orderFor($this->customer(), OrderStatus::NoDeposit, OrderFlow::Outsourced);

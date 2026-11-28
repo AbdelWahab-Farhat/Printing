@@ -77,6 +77,24 @@ final class SettingsService
     }
 
     /**
+     * How many hours an instant order may wait in «جديدة» before it is flagged «متأخرة»
+     * (INSTANT-ORDERS-PLAN.md §4). At least one hour; 24 unless the owner changed it.
+     */
+    public function instantOrderLateHours(): int
+    {
+        return max(1, (int) ($this->current()->instant_order_late_hours ?? 24));
+    }
+
+    /** Changes the «متأخرة» threshold — from the branch settings screen. */
+    public function setInstantOrderLateHours(int $hours, ?int $actorId): void
+    {
+        $settings = $this->current();
+        $settings->fill(['instant_order_late_hours' => max(1, $hours)]);
+        $settings->updated_by = $actorId;
+        $settings->save();
+    }
+
+    /**
      * @param  array<string, int>  $durations  ما وصل من المدد، بأسماء أعمدتها. الفارغُ يعني
      *                                         «لم تُذكر» فتبقى كما هي — لا «صفّرها».
      */

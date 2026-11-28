@@ -20,6 +20,7 @@ import 'package:dayaa/features/audit/models/audit_subject.dart';
 import 'package:dayaa/features/audit/presentation/views/activity_log_page.dart';
 import 'package:dayaa/features/auth/models/auth_user.dart';
 import 'package:dayaa/features/auth/presentation/views/login_page.dart';
+import 'package:dayaa/features/branches/branches_page.dart';
 import 'package:dayaa/features/business_fields/presentation/views/business_fields_page.dart';
 import 'package:dayaa/features/carrier/presentation/views/nawris_settlement_imports_page.dart';
 import 'package:dayaa/features/carrier/presentation/views/nawris_settlement_page.dart';
@@ -42,6 +43,7 @@ import 'package:dayaa/features/design_tickets/presentation/views/design_tickets_
 import 'package:dayaa/features/employee_wallet/presentation/views/employee_wallet_page.dart';
 import 'package:dayaa/features/employee_wallet/presentation/views/my_wallet_page.dart';
 import 'package:dayaa/features/home/presentation/views/home_page.dart';
+import 'package:dayaa/features/instant_orders/presentation/views/instant_order_page.dart';
 import 'package:dayaa/features/internal_tickets/models/internal_ticket_query.dart';
 import 'package:dayaa/features/internal_tickets/presentation/views/internal_thread_page.dart';
 import 'package:dayaa/features/internal_tickets/presentation/views/internal_tickets_page.dart';
@@ -242,6 +244,17 @@ abstract final class Routes {
 
   /// «تصنيفات المصروفات» — كانت قسماً في «إعدادات المالية».
   static const String expenseCategories = '/treasury/expense-categories';
+
+  /// «طلب فوري» — a counter sale on one screen, behind `instant_orders.create`.
+  /// INSTANT-ORDERS-PLAN.md §3.
+  static const String newInstantOrder = '/instant-orders/new';
+
+  /// Editing a «جديدة» instant order, behind `instant_orders.update`. Opened with the order as
+  /// `extra`; a deep link without one goes to the order instead.
+  static String editInstantOrder(int orderId) => '/instant-orders/$orderId/edit';
+
+  /// «إعدادات الفروع» — behind `branches.manage`. §8.
+  static const String branches = '/branches';
 
   /// «تسوية الدفعات» — من الرئيسية، خلف `orders.payments.settle`. TREASURY-DESIGN §٢٣.
   static const String paymentSettlement = '/payment-settlement';
@@ -941,6 +954,30 @@ abstract final class AppRouter {
       GoRoute(
         path: Routes.expenseCategories,
         builder: (context, state) => const ExpenseCategoriesPage(),
+      ),
+      GoRoute(
+        path: Routes.newInstantOrder,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.createInstantOrders) ? null : Routes.home,
+        builder: (context, state) => const InstantOrderPage(),
+      ),
+      GoRoute(
+        path: '/instant-orders/:id/edit',
+        redirect: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+
+          // Without the grant, or without the order in hand (a deep link), the order itself.
+          return sl<Session>().can(AppPermission.updateInstantOrders) && state.payload is Order
+              ? null
+              : Routes.order(id);
+        },
+        builder: (context, state) => InstantOrderPage(editing: state.payload as Order?),
+      ),
+      GoRoute(
+        path: Routes.branches,
+        redirect: (context, state) =>
+            sl<Session>().can(AppPermission.manageBranches) ? null : Routes.home,
+        builder: (context, state) => const BranchesPage(),
       ),
       GoRoute(
         path: '/treasury/accounts/:id',

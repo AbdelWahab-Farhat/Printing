@@ -36,7 +36,7 @@ class AppTextField extends StatefulWidget {
     this.suffix,
     this.validator,
     this.keyboardType,
-    this.textInputAction = TextInputAction.next,
+    this.textInputAction,
     this.inputFormatters,
     this.textDirection,
     this.enabled = true,
@@ -104,7 +104,11 @@ class AppTextField extends StatefulWidget {
   final Widget? suffix;
   final Validator? validator;
   final TextInputType? keyboardType;
-  final TextInputAction textInputAction;
+
+  /// What the keyboard's Return key does. Left `null`, a one-line field moves on to the next
+  /// field and a box of several lines starts a new line, because a description that cannot
+  /// break a line has to be typed elsewhere and pasted in.
+  final TextInputAction? textInputAction;
   final List<TextInputFormatter>? inputFormatters;
 
   /// Forced to [TextDirection.ltr] for anything Latin inside this right-to-left app — a phone
@@ -176,6 +180,9 @@ class _AppTextFieldState extends State<AppTextField> {
     setState(() => _isFocused = _node.hasFocus);
   }
 
+  /// `maxLines: null` grows without limit, so it is multi-line too.
+  bool get _isMultiline => widget.maxLines == null || widget.maxLines! > 1;
+
   @override
   Widget build(BuildContext context) {
     final scheme = context.colorScheme;
@@ -216,8 +223,12 @@ class _AppTextFieldState extends State<AppTextField> {
       readOnly: widget.readOnly,
       autofocus: widget.autofocus,
       obscureText: widget.obscureText && _isObscured,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
+      keyboardType:
+          widget.keyboardType ??
+          (_isMultiline ? TextInputType.multiline : null),
+      textInputAction:
+          widget.textInputAction ??
+          (_isMultiline ? TextInputAction.newline : TextInputAction.next),
       inputFormatters: widget.inputFormatters,
       textDirection: widget.textDirection,
       textAlignVertical: TextAlignVertical.center,

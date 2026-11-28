@@ -7,6 +7,7 @@ namespace App\Application\Api\V1\Requests\Order;
 use App\Domain\Order\DTOs\TransitionField;
 use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
+use App\Domain\Order\Support\OrderMovePermission;
 use App\Domain\Order\Support\TransitionFields;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -51,7 +52,12 @@ class ChangeOrderStatusRequest extends FormRequest
             return true;
         }
 
-        return $this->user()?->can($target->permission()->value) ?? false;
+        $order = $this->route('order');
+
+        // The same answer the order's buttons are drawn from: the target's permission, the
+        // instant road's own grants, and the branch an employee may act for.
+        return $order instanceof Order
+            && app(OrderMovePermission::class)->allows($this->user(), $order, $target);
     }
 
     /**

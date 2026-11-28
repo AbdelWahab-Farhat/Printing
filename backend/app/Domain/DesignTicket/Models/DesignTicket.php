@@ -21,6 +21,7 @@ use App\Domain\DesignTicket\Enums\DesignTicketStatus;
 use App\Domain\DesignTicket\Queries\DesignTicketListQuery;
 use App\Domain\Identity\Enums\PermissionName;
 use App\Domain\Identity\Models\User;
+use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use Database\Factories\DesignTicketFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -111,6 +112,7 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
             'status' => DesignTicketStatus::class,
             'status_changed_at' => 'datetime',
             'opened_automatically' => 'boolean',
+            'order_status_at_open' => OrderStatus::class,
             'designer_pay' => 'decimal:2',
             'accepted_at' => 'datetime',
             'completed_at' => 'datetime',
@@ -392,6 +394,21 @@ class DesignTicket extends Model implements Commentable, HasAuditTrail
         $order = $this->loadMissing('order')->order;
 
         return $order !== null && $order->isPrintedHere();
+    }
+
+    /**
+     * Whether approving this ticket may move its order on to «بانتظار التجهيز» (owner,
+     * 2026-11-26): only a ticket opened while the order was in «قيد التصميم». One opened in
+     * «بانتظار العربون» or any other status leaves the order alone, even if the order has
+     * reached «قيد التصميم» by the time of approval.
+     *
+     * A ticket from before the status was recorded (null) keeps the earlier rule, judged by
+     * the order's status at approval alone.
+     */
+    public function movesItsOrderOnApproval(): bool
+    {
+        return $this->order_status_at_open === null
+            || $this->order_status_at_open === OrderStatus::Designing;
     }
 
     /**

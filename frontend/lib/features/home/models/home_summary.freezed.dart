@@ -38,7 +38,9 @@ mixin _$HomeSummary {
 /// it because the screen it opens is titled with the box's own word.
 @JsonKey(name: 'ready_message') ReadyMessageQueue? get readyMessage;/// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
 /// Same grant and same «null is not your job» as [readyMessage].
-@JsonKey(name: 'return_message') ReadyMessageQueue? get returnMessage;
+@JsonKey(name: 'return_message') ReadyMessageQueue? get returnMessage;/// The branch counter's board — «طلب فوري» and its counters (INSTANT-ORDERS-PLAN.md §11).
+/// Null for a reader without `instant_orders.view`, and on an API that predates it.
+ InstantBoard? get instant;
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,20 +54,20 @@ $HomeSummaryCopyWith<HomeSummary> get copyWith => _$HomeSummaryCopyWithImpl<Home
 @override
 bool operator ==(Object other) {
   final _this = this as HomeSummary;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, _this.totalOrders) || other.totalOrders == _this.totalOrders)&&(identical(other.customersCount, _this.customersCount) || other.customersCount == _this.customersCount)&&(identical(other.dailyOrders, _this.dailyOrders) || other.dailyOrders == _this.dailyOrders)&&(identical(other.monthlyOrders, _this.monthlyOrders) || other.monthlyOrders == _this.monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _this.statuses)&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.readyMessage, _this.readyMessage) || other.readyMessage == _this.readyMessage)&&(identical(other.returnMessage, _this.returnMessage) || other.returnMessage == _this.returnMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HomeSummary&&(identical(other.totalOrders, _this.totalOrders) || other.totalOrders == _this.totalOrders)&&(identical(other.customersCount, _this.customersCount) || other.customersCount == _this.customersCount)&&(identical(other.dailyOrders, _this.dailyOrders) || other.dailyOrders == _this.dailyOrders)&&(identical(other.monthlyOrders, _this.monthlyOrders) || other.monthlyOrders == _this.monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _this.statuses)&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.readyMessage, _this.readyMessage) || other.readyMessage == _this.readyMessage)&&(identical(other.returnMessage, _this.returnMessage) || other.returnMessage == _this.returnMessage)&&(identical(other.instant, _this.instant) || other.instant == _this.instant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as HomeSummary;
-  return Object.hash(runtimeType,_this.totalOrders,_this.customersCount,_this.dailyOrders,_this.monthlyOrders,const DeepCollectionEquality().hash(_this.statuses),const DeepCollectionEquality().hash(_this.payments),_this.readyMessage,_this.returnMessage);
+  return Object.hash(runtimeType,_this.totalOrders,_this.customersCount,_this.dailyOrders,_this.monthlyOrders,const DeepCollectionEquality().hash(_this.statuses),const DeepCollectionEquality().hash(_this.payments),_this.readyMessage,_this.returnMessage,_this.instant);
 }
 
 @override
 String toString() {
   final _this = this as HomeSummary;
-  return 'HomeSummary(totalOrders: ${_this.totalOrders}, customersCount: ${_this.customersCount}, dailyOrders: ${_this.dailyOrders}, monthlyOrders: ${_this.monthlyOrders}, statuses: ${_this.statuses}, payments: ${_this.payments}, readyMessage: ${_this.readyMessage}, returnMessage: ${_this.returnMessage})';
+  return 'HomeSummary(totalOrders: ${_this.totalOrders}, customersCount: ${_this.customersCount}, dailyOrders: ${_this.dailyOrders}, monthlyOrders: ${_this.monthlyOrders}, statuses: ${_this.statuses}, payments: ${_this.payments}, readyMessage: ${_this.readyMessage}, returnMessage: ${_this.returnMessage}, instant: ${_this.instant})';
 }
 
 
@@ -76,11 +78,11 @@ abstract mixin class $HomeSummaryCopyWith<$Res>  {
   factory $HomeSummaryCopyWith(HomeSummary value, $Res Function(HomeSummary) _then) = _$HomeSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage, InstantBoard? instant
 });
 
 
-$ReadyMessageQueueCopyWith<$Res>? get readyMessage;$ReadyMessageQueueCopyWith<$Res>? get returnMessage;
+$ReadyMessageQueueCopyWith<$Res>? get readyMessage;$ReadyMessageQueueCopyWith<$Res>? get returnMessage;$InstantBoardCopyWith<$Res>? get instant;
 
 }
 /// @nodoc
@@ -93,7 +95,7 @@ class _$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,Object? instant = freezed,}) {
   return _then(HomeSummary(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
@@ -103,7 +105,8 @@ as int,statuses: null == statuses ? _self.statuses : statuses // ignore: cast_nu
 as List<OrderStatusCount>,payments: null == payments ? _self.payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,readyMessage: freezed == readyMessage ? _self.readyMessage : readyMessage // ignore: cast_nullable_to_non_nullable
 as ReadyMessageQueue?,returnMessage: freezed == returnMessage ? _self.returnMessage : returnMessage // ignore: cast_nullable_to_non_nullable
-as ReadyMessageQueue?,
+as ReadyMessageQueue?,instant: freezed == instant ? _self.instant : instant // ignore: cast_nullable_to_non_nullable
+as InstantBoard?,
   ));
 }
 /// Create a copy of HomeSummary
@@ -129,6 +132,18 @@ $ReadyMessageQueueCopyWith<$Res>? get returnMessage {
 
   return $ReadyMessageQueueCopyWith<$Res>(_self.returnMessage!, (value) {
     return _then(_self.copyWith(returnMessage: value));
+  });
+}/// Create a copy of HomeSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InstantBoardCopyWith<$Res>? get instant {
+    if (_self.instant == null) {
+    return null;
+  }
+
+  return $InstantBoardCopyWith<$Res>(_self.instant!, (value) {
+    return _then(_self.copyWith(instant: value));
   });
 }
 }
@@ -212,10 +227,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage,  InstantBoard? instant)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage,_that.instant);case _:
   return orElse();
 
 }
@@ -233,10 +248,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage,  InstantBoard? instant)  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary():
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage,_that.instant);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -253,10 +268,10 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'total_orders')  int totalOrders, @JsonKey(name: 'customers_count')  int customersCount, @JsonKey(name: 'daily_orders')  int dailyOrders, @JsonKey(name: 'monthly_orders')  int monthlyOrders,  List<OrderStatusCount> statuses,  List<OrderStatusCount> payments, @JsonKey(name: 'ready_message')  ReadyMessageQueue? readyMessage, @JsonKey(name: 'return_message')  ReadyMessageQueue? returnMessage,  InstantBoard? instant)?  $default,) {final _that = this;
 switch (_that) {
 case _HomeSummary() when $default != null:
-return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage);case _:
+return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.monthlyOrders,_that.statuses,_that.payments,_that.readyMessage,_that.returnMessage,_that.instant);case _:
   return null;
 
 }
@@ -268,7 +283,7 @@ return $default(_that.totalOrders,_that.customersCount,_that.dailyOrders,_that.m
 @JsonSerializable()
 
 class _HomeSummary extends HomeSummary {
-  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders,  List<OrderStatusCount> statuses = const <OrderStatusCount>[],  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage, @JsonKey(name: 'return_message') this.returnMessage}): _statuses = statuses,_payments = payments,super._();
+  const _HomeSummary({@JsonKey(name: 'total_orders') required this.totalOrders, @JsonKey(name: 'customers_count') required this.customersCount, @JsonKey(name: 'daily_orders') required this.dailyOrders, @JsonKey(name: 'monthly_orders') required this.monthlyOrders,  List<OrderStatusCount> statuses = const <OrderStatusCount>[],  List<OrderStatusCount> payments = const <OrderStatusCount>[], @JsonKey(name: 'ready_message') this.readyMessage, @JsonKey(name: 'return_message') this.returnMessage, this.instant}): _statuses = statuses,_payments = payments,super._();
   factory _HomeSummary.fromJson(Map<String, dynamic> json) => _$HomeSummaryFromJson(json);
 
 @override@JsonKey(name: 'total_orders') final  int totalOrders;
@@ -324,6 +339,9 @@ class _HomeSummary extends HomeSummary {
 /// «طلبيات راجعة بانتظار التواصل» — orders in a return whose customer nobody has asked yet.
 /// Same grant and same «null is not your job» as [readyMessage].
 @override@JsonKey(name: 'return_message') final  ReadyMessageQueue? returnMessage;
+/// The branch counter's board — «طلب فوري» and its counters (INSTANT-ORDERS-PLAN.md §11).
+/// Null for a reader without `instant_orders.view`, and on an API that predates it.
+@override final  InstantBoard? instant;
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -338,18 +356,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _statuses)&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _HomeSummary&&(identical(other.totalOrders, totalOrders) || other.totalOrders == totalOrders)&&(identical(other.customersCount, customersCount) || other.customersCount == customersCount)&&(identical(other.dailyOrders, dailyOrders) || other.dailyOrders == dailyOrders)&&(identical(other.monthlyOrders, monthlyOrders) || other.monthlyOrders == monthlyOrders)&&const DeepCollectionEquality().equals(other.statuses, _statuses)&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.readyMessage, readyMessage) || other.readyMessage == readyMessage)&&(identical(other.returnMessage, returnMessage) || other.returnMessage == returnMessage)&&(identical(other.instant, instant) || other.instant == instant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage,returnMessage);
+    return Object.hash(runtimeType,totalOrders,customersCount,dailyOrders,monthlyOrders,const DeepCollectionEquality().hash(_statuses),const DeepCollectionEquality().hash(_payments),readyMessage,returnMessage,instant);
 }
 
 @override
 String toString() {
-    return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage)';
+    return 'HomeSummary(totalOrders: $totalOrders, customersCount: $customersCount, dailyOrders: $dailyOrders, monthlyOrders: $monthlyOrders, statuses: $statuses, payments: $payments, readyMessage: $readyMessage, returnMessage: $returnMessage, instant: $instant)';
 }
 
 
@@ -360,11 +378,11 @@ abstract mixin class _$HomeSummaryCopyWith<$Res> implements $HomeSummaryCopyWith
   factory _$HomeSummaryCopyWith(_HomeSummary value, $Res Function(_HomeSummary) _then) = __$HomeSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage
+@JsonKey(name: 'total_orders') int totalOrders,@JsonKey(name: 'customers_count') int customersCount,@JsonKey(name: 'daily_orders') int dailyOrders,@JsonKey(name: 'monthly_orders') int monthlyOrders, List<OrderStatusCount> statuses, List<OrderStatusCount> payments,@JsonKey(name: 'ready_message') ReadyMessageQueue? readyMessage,@JsonKey(name: 'return_message') ReadyMessageQueue? returnMessage, InstantBoard? instant
 });
 
 
-@override $ReadyMessageQueueCopyWith<$Res>? get readyMessage;@override $ReadyMessageQueueCopyWith<$Res>? get returnMessage;
+@override $ReadyMessageQueueCopyWith<$Res>? get readyMessage;@override $ReadyMessageQueueCopyWith<$Res>? get returnMessage;@override $InstantBoardCopyWith<$Res>? get instant;
 
 }
 /// @nodoc
@@ -377,7 +395,7 @@ class __$HomeSummaryCopyWithImpl<$Res>
 
 /// Create a copy of HomeSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? totalOrders = null,Object? customersCount = null,Object? dailyOrders = null,Object? monthlyOrders = null,Object? statuses = null,Object? payments = null,Object? readyMessage = freezed,Object? returnMessage = freezed,Object? instant = freezed,}) {
   return _then(_HomeSummary(
 totalOrders: null == totalOrders ? _self.totalOrders : totalOrders // ignore: cast_nullable_to_non_nullable
 as int,customersCount: null == customersCount ? _self.customersCount : customersCount // ignore: cast_nullable_to_non_nullable
@@ -387,7 +405,8 @@ as int,statuses: null == statuses ? _self._statuses : statuses // ignore: cast_n
 as List<OrderStatusCount>,payments: null == payments ? _self._payments : payments // ignore: cast_nullable_to_non_nullable
 as List<OrderStatusCount>,readyMessage: freezed == readyMessage ? _self.readyMessage : readyMessage // ignore: cast_nullable_to_non_nullable
 as ReadyMessageQueue?,returnMessage: freezed == returnMessage ? _self.returnMessage : returnMessage // ignore: cast_nullable_to_non_nullable
-as ReadyMessageQueue?,
+as ReadyMessageQueue?,instant: freezed == instant ? _self.instant : instant // ignore: cast_nullable_to_non_nullable
+as InstantBoard?,
   ));
 }
 
@@ -414,6 +433,18 @@ $ReadyMessageQueueCopyWith<$Res>? get returnMessage {
 
   return $ReadyMessageQueueCopyWith<$Res>(_self.returnMessage!, (value) {
     return _then(_self.copyWith(returnMessage: value));
+  });
+}/// Create a copy of HomeSummary
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InstantBoardCopyWith<$Res>? get instant {
+    if (_self.instant == null) {
+    return null;
+  }
+
+  return $InstantBoardCopyWith<$Res>(_self.instant!, (value) {
+    return _then(_self.copyWith(instant: value));
   });
 }
 }
@@ -684,6 +715,586 @@ class __$ReadyMessageQueueCopyWithImpl<$Res>
   return _then(_ReadyMessageQueue(
 count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$InstantBoard {
+
+@JsonKey(name: 'can_create') bool get canCreate;/// The active branches this employee may sell from. Empty draws «طلب فوري» disabled.
+ List<BranchRef> get branches;/// جديدة، تم الاستلام، إلغاء تام، تم التسوية — the instant orders by status.
+ List<OrderStatusCount> get statuses;/// Instant orders still «جديدة» past [lateAfterHours].
+@JsonKey(name: 'late_count') int get lateCount;@JsonKey(name: 'late_after_hours') int get lateAfterHours;/// «استلام مكتب» orders waiting at the employee's own branches.
+@JsonKey(name: 'pickup_count') int get pickupCount;
+/// Create a copy of InstantBoard
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InstantBoardCopyWith<InstantBoard> get copyWith => _$InstantBoardCopyWithImpl<InstantBoard>(this as InstantBoard, _$identity);
+
+  /// Serializes this InstantBoard to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as InstantBoard;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InstantBoard&&(identical(other.canCreate, _this.canCreate) || other.canCreate == _this.canCreate)&&const DeepCollectionEquality().equals(other.branches, _this.branches)&&const DeepCollectionEquality().equals(other.statuses, _this.statuses)&&(identical(other.lateCount, _this.lateCount) || other.lateCount == _this.lateCount)&&(identical(other.lateAfterHours, _this.lateAfterHours) || other.lateAfterHours == _this.lateAfterHours)&&(identical(other.pickupCount, _this.pickupCount) || other.pickupCount == _this.pickupCount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as InstantBoard;
+  return Object.hash(runtimeType,_this.canCreate,const DeepCollectionEquality().hash(_this.branches),const DeepCollectionEquality().hash(_this.statuses),_this.lateCount,_this.lateAfterHours,_this.pickupCount);
+}
+
+@override
+String toString() {
+  final _this = this as InstantBoard;
+  return 'InstantBoard(canCreate: ${_this.canCreate}, branches: ${_this.branches}, statuses: ${_this.statuses}, lateCount: ${_this.lateCount}, lateAfterHours: ${_this.lateAfterHours}, pickupCount: ${_this.pickupCount})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InstantBoardCopyWith<$Res>  {
+  factory $InstantBoardCopyWith(InstantBoard value, $Res Function(InstantBoard) _then) = _$InstantBoardCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'can_create') bool canCreate, List<BranchRef> branches, List<OrderStatusCount> statuses,@JsonKey(name: 'late_count') int lateCount,@JsonKey(name: 'late_after_hours') int lateAfterHours,@JsonKey(name: 'pickup_count') int pickupCount
+});
+
+
+
+
+}
+/// @nodoc
+class _$InstantBoardCopyWithImpl<$Res>
+    implements $InstantBoardCopyWith<$Res> {
+  _$InstantBoardCopyWithImpl(this._self, this._then);
+
+  final InstantBoard _self;
+  final $Res Function(InstantBoard) _then;
+
+/// Create a copy of InstantBoard
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? canCreate = null,Object? branches = null,Object? statuses = null,Object? lateCount = null,Object? lateAfterHours = null,Object? pickupCount = null,}) {
+  return _then(InstantBoard(
+canCreate: null == canCreate ? _self.canCreate : canCreate // ignore: cast_nullable_to_non_nullable
+as bool,branches: null == branches ? _self.branches : branches // ignore: cast_nullable_to_non_nullable
+as List<BranchRef>,statuses: null == statuses ? _self.statuses : statuses // ignore: cast_nullable_to_non_nullable
+as List<OrderStatusCount>,lateCount: null == lateCount ? _self.lateCount : lateCount // ignore: cast_nullable_to_non_nullable
+as int,lateAfterHours: null == lateAfterHours ? _self.lateAfterHours : lateAfterHours // ignore: cast_nullable_to_non_nullable
+as int,pickupCount: null == pickupCount ? _self.pickupCount : pickupCount // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [InstantBoard].
+extension InstantBoardPatterns on InstantBoard {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _InstantBoard value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _InstantBoard() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _InstantBoard value)  $default,){
+final _that = this;
+switch (_that) {
+case _InstantBoard():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _InstantBoard value)?  $default,){
+final _that = this;
+switch (_that) {
+case _InstantBoard() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'can_create')  bool canCreate,  List<BranchRef> branches,  List<OrderStatusCount> statuses, @JsonKey(name: 'late_count')  int lateCount, @JsonKey(name: 'late_after_hours')  int lateAfterHours, @JsonKey(name: 'pickup_count')  int pickupCount)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _InstantBoard() when $default != null:
+return $default(_that.canCreate,_that.branches,_that.statuses,_that.lateCount,_that.lateAfterHours,_that.pickupCount);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'can_create')  bool canCreate,  List<BranchRef> branches,  List<OrderStatusCount> statuses, @JsonKey(name: 'late_count')  int lateCount, @JsonKey(name: 'late_after_hours')  int lateAfterHours, @JsonKey(name: 'pickup_count')  int pickupCount)  $default,) {final _that = this;
+switch (_that) {
+case _InstantBoard():
+return $default(_that.canCreate,_that.branches,_that.statuses,_that.lateCount,_that.lateAfterHours,_that.pickupCount);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'can_create')  bool canCreate,  List<BranchRef> branches,  List<OrderStatusCount> statuses, @JsonKey(name: 'late_count')  int lateCount, @JsonKey(name: 'late_after_hours')  int lateAfterHours, @JsonKey(name: 'pickup_count')  int pickupCount)?  $default,) {final _that = this;
+switch (_that) {
+case _InstantBoard() when $default != null:
+return $default(_that.canCreate,_that.branches,_that.statuses,_that.lateCount,_that.lateAfterHours,_that.pickupCount);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _InstantBoard extends InstantBoard {
+  const _InstantBoard({@JsonKey(name: 'can_create') this.canCreate = false,  List<BranchRef> branches = const <BranchRef>[],  List<OrderStatusCount> statuses = const <OrderStatusCount>[], @JsonKey(name: 'late_count') this.lateCount = 0, @JsonKey(name: 'late_after_hours') this.lateAfterHours = 24, @JsonKey(name: 'pickup_count') this.pickupCount = 0}): _branches = branches,_statuses = statuses,super._();
+  factory _InstantBoard.fromJson(Map<String, dynamic> json) => _$InstantBoardFromJson(json);
+
+@override@JsonKey(name: 'can_create') final  bool canCreate;
+/// The active branches this employee may sell from. Empty draws «طلب فوري» disabled.
+ final  List<BranchRef> _branches;
+/// The active branches this employee may sell from. Empty draws «طلب فوري» disabled.
+@override@JsonKey() List<BranchRef> get branches {
+  if (_branches is EqualUnmodifiableListView) return _branches;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_branches);
+}
+
+/// جديدة، تم الاستلام، إلغاء تام، تم التسوية — the instant orders by status.
+ final  List<OrderStatusCount> _statuses;
+/// جديدة، تم الاستلام، إلغاء تام، تم التسوية — the instant orders by status.
+@override@JsonKey() List<OrderStatusCount> get statuses {
+  if (_statuses is EqualUnmodifiableListView) return _statuses;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_statuses);
+}
+
+/// Instant orders still «جديدة» past [lateAfterHours].
+@override@JsonKey(name: 'late_count') final  int lateCount;
+@override@JsonKey(name: 'late_after_hours') final  int lateAfterHours;
+/// «استلام مكتب» orders waiting at the employee's own branches.
+@override@JsonKey(name: 'pickup_count') final  int pickupCount;
+
+/// Create a copy of InstantBoard
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$InstantBoardCopyWith<_InstantBoard> get copyWith => __$InstantBoardCopyWithImpl<_InstantBoard>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$InstantBoardToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InstantBoard&&(identical(other.canCreate, canCreate) || other.canCreate == canCreate)&&const DeepCollectionEquality().equals(other.branches, _branches)&&const DeepCollectionEquality().equals(other.statuses, _statuses)&&(identical(other.lateCount, lateCount) || other.lateCount == lateCount)&&(identical(other.lateAfterHours, lateAfterHours) || other.lateAfterHours == lateAfterHours)&&(identical(other.pickupCount, pickupCount) || other.pickupCount == pickupCount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,canCreate,const DeepCollectionEquality().hash(_branches),const DeepCollectionEquality().hash(_statuses),lateCount,lateAfterHours,pickupCount);
+}
+
+@override
+String toString() {
+    return 'InstantBoard(canCreate: $canCreate, branches: $branches, statuses: $statuses, lateCount: $lateCount, lateAfterHours: $lateAfterHours, pickupCount: $pickupCount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$InstantBoardCopyWith<$Res> implements $InstantBoardCopyWith<$Res> {
+  factory _$InstantBoardCopyWith(_InstantBoard value, $Res Function(_InstantBoard) _then) = __$InstantBoardCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'can_create') bool canCreate, List<BranchRef> branches, List<OrderStatusCount> statuses,@JsonKey(name: 'late_count') int lateCount,@JsonKey(name: 'late_after_hours') int lateAfterHours,@JsonKey(name: 'pickup_count') int pickupCount
+});
+
+
+
+
+}
+/// @nodoc
+class __$InstantBoardCopyWithImpl<$Res>
+    implements _$InstantBoardCopyWith<$Res> {
+  __$InstantBoardCopyWithImpl(this._self, this._then);
+
+  final _InstantBoard _self;
+  final $Res Function(_InstantBoard) _then;
+
+/// Create a copy of InstantBoard
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? canCreate = null,Object? branches = null,Object? statuses = null,Object? lateCount = null,Object? lateAfterHours = null,Object? pickupCount = null,}) {
+  return _then(_InstantBoard(
+canCreate: null == canCreate ? _self.canCreate : canCreate // ignore: cast_nullable_to_non_nullable
+as bool,branches: null == branches ? _self._branches : branches // ignore: cast_nullable_to_non_nullable
+as List<BranchRef>,statuses: null == statuses ? _self._statuses : statuses // ignore: cast_nullable_to_non_nullable
+as List<OrderStatusCount>,lateCount: null == lateCount ? _self.lateCount : lateCount // ignore: cast_nullable_to_non_nullable
+as int,lateAfterHours: null == lateAfterHours ? _self.lateAfterHours : lateAfterHours // ignore: cast_nullable_to_non_nullable
+as int,pickupCount: null == pickupCount ? _self.pickupCount : pickupCount // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$BranchRef {
+
+ int get id; String get name;
+/// Create a copy of BranchRef
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BranchRefCopyWith<BranchRef> get copyWith => _$BranchRefCopyWithImpl<BranchRef>(this as BranchRef, _$identity);
+
+  /// Serializes this BranchRef to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as BranchRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BranchRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as BranchRef;
+  return Object.hash(runtimeType,_this.id,_this.name);
+}
+
+@override
+String toString() {
+  final _this = this as BranchRef;
+  return 'BranchRef(id: ${_this.id}, name: ${_this.name})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BranchRefCopyWith<$Res>  {
+  factory $BranchRefCopyWith(BranchRef value, $Res Function(BranchRef) _then) = _$BranchRefCopyWithImpl;
+@useResult
+$Res call({
+ int id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$BranchRefCopyWithImpl<$Res>
+    implements $BranchRefCopyWith<$Res> {
+  _$BranchRefCopyWithImpl(this._self, this._then);
+
+  final BranchRef _self;
+  final $Res Function(BranchRef) _then;
+
+/// Create a copy of BranchRef
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
+  return _then(BranchRef(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [BranchRef].
+extension BranchRefPatterns on BranchRef {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BranchRef value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BranchRef() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BranchRef value)  $default,){
+final _that = this;
+switch (_that) {
+case _BranchRef():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BranchRef value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BranchRef() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BranchRef() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _BranchRef():
+return $default(_that.id,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _BranchRef() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _BranchRef implements BranchRef {
+  const _BranchRef({required this.id, required this.name});
+  factory _BranchRef.fromJson(Map<String, dynamic> json) => _$BranchRefFromJson(json);
+
+@override final  int id;
+@override final  String name;
+
+/// Create a copy of BranchRef
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BranchRefCopyWith<_BranchRef> get copyWith => __$BranchRefCopyWithImpl<_BranchRef>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BranchRefToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BranchRef&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,name);
+}
+
+@override
+String toString() {
+    return 'BranchRef(id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$BranchRefCopyWith<$Res> implements $BranchRefCopyWith<$Res> {
+  factory _$BranchRefCopyWith(_BranchRef value, $Res Function(_BranchRef) _then) = __$BranchRefCopyWithImpl;
+@override @useResult
+$Res call({
+ int id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$BranchRefCopyWithImpl<$Res>
+    implements _$BranchRefCopyWith<$Res> {
+  __$BranchRefCopyWithImpl(this._self, this._then);
+
+  final _BranchRef _self;
+  final $Res Function(_BranchRef) _then;
+
+/// Create a copy of BranchRef
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+  return _then(_BranchRef(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

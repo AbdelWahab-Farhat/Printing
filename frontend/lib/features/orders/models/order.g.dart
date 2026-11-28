@@ -26,6 +26,9 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   isFinal: json['is_final'] as bool,
   isClosed: json['is_closed'] as bool? ?? false,
   isUrgent: json['is_urgent'] as bool? ?? false,
+  orderType: json['order_type'] as String? ?? 'normal',
+  orderTypeLabel: json['order_type_label'] as String? ?? '',
+  isLate: json['is_late'] as bool? ?? false,
   readyMessageApplies: json['ready_message_applies'] as bool? ?? false,
   isReadyMessageSent: json['is_ready_message_sent'] as bool? ?? false,
   readyMessageSentAt: json['ready_message_sent_at'] == null
@@ -102,6 +105,7 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   deliveryPaidBy: json['delivery_paid_by'] as String? ?? 'recipient',
   deliveryPaidByLabel: json['delivery_paid_by_label'] as String? ?? 'المستلم',
   deliveryCost: json['delivery_cost'] as String? ?? '0.00',
+  deliveryCostOverride: json['delivery_cost_override'] as String?,
   discount: json['discount'] as String,
   additionalCost: json['additional_cost'] as String? ?? '0.00',
   additionalCostReason: $enumDecodeNullable(
@@ -150,12 +154,14 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   recipientPhone: json['recipient_phone'] as String?,
   addressDetails: json['address_details'] as String?,
   notes: json['notes'] as String?,
+  shippingCompanyId: (json['shipping_company_id'] as num?)?.toInt(),
   shippingCompany: json['shipping_company'] as String?,
   trackingNumber: json['tracking_number'] as String?,
   nawrisParcel: json['nawris_parcel'] == null
       ? null
       : NawrisParcelRef.fromJson(json['nawris_parcel'] as Map<String, dynamic>),
   courierPhone: json['courier_phone'] as String?,
+  courierName: json['courier_name'] as String?,
   cancellationReason: json['cancellation_reason'] as String?,
   reinstateTo: $enumDecodeNullable(
     _$OrderStatusEnumMap,
@@ -247,6 +253,9 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'is_final': instance.isFinal,
   'is_closed': instance.isClosed,
   'is_urgent': instance.isUrgent,
+  'order_type': instance.orderType,
+  'order_type_label': instance.orderTypeLabel,
+  'is_late': instance.isLate,
   'ready_message_applies': instance.readyMessageApplies,
   'is_ready_message_sent': instance.isReadyMessageSent,
   'ready_message_sent_at': instance.readyMessageSentAt?.toIso8601String(),
@@ -292,6 +301,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'delivery_paid_by': instance.deliveryPaidBy,
   'delivery_paid_by_label': instance.deliveryPaidByLabel,
   'delivery_cost': instance.deliveryCost,
+  'delivery_cost_override': instance.deliveryCostOverride,
   'discount': instance.discount,
   'additional_cost': instance.additionalCost,
   'additional_cost_reason':
@@ -325,10 +335,12 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'recipient_phone': instance.recipientPhone,
   'address_details': instance.addressDetails,
   'notes': instance.notes,
+  'shipping_company_id': instance.shippingCompanyId,
   'shipping_company': instance.shippingCompany,
   'tracking_number': instance.trackingNumber,
   'nawris_parcel': instance.nawrisParcel?.toJson(),
   'courier_phone': instance.courierPhone,
+  'courier_name': instance.courierName,
   'cancellation_reason': instance.cancellationReason,
   'reinstate_to': _$OrderStatusEnumMap[instance.reinstateTo],
   'reinstate_to_label': instance.reinstateToLabel,

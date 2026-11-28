@@ -17,6 +17,7 @@ use App\Domain\Order\Exceptions\ReceiptRequiredForMethod;
 use App\Domain\Order\Exceptions\WalletPaymentRefused;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderPayment;
+use App\Domain\Order\Support\InstantOrderAccounts;
 use App\Domain\Order\Support\Money;
 use App\Domain\Treasury\DTOs\MovementData;
 use App\Domain\Treasury\Enums\MovementDirection;
@@ -176,12 +177,21 @@ final class RecordOrderPayment
         // **وحسابٌ يسمّيه النظام يُؤخذ كما هو** — النورس حين يكتب الـ webhook ما حصّله. **ونقدٌ يُكتب
         // باليد والطردُ ما زال في الطريق يهبط في حساب النورس** إن لم يُختر غيره: الموظف علّم
         // «تم الاستلام» قبل أن يصل تأكيد التسليم، والمالُ ما زال في يد المندوب، والتسوية تنقله.
+        //
+        // **An instant order's money lands where its branch says** — the branch box for cash,
+        // the branch's bank account for a transfer or a card — and nowhere else unless the person
+        // holds the grant to choose (INSTANT-ORDERS-PLAN.md §7). Handed on as the chosen account,
+        // so the treasury still checks it fits the method.
+        $chosenId = $data->systemAccount === null && $order->isInstant()
+            ? app(InstantOrderAccounts::class)->resolve($order, $data->method, $data->treasuryAccountId, $actor)
+            : $data->treasuryAccountId;
+
         $account = $data->systemAccount !== null
             ? $this->treasury->systemAccount($data->systemAccount)
             : $this->treasury->accountFor(
                 $data->method->value,
                 $actor?->getKey() === null ? null : (int) $actor->getKey(),
-                $data->treasuryAccountId,
+                $chosenId,
                 field: $accountField,
                 pickupCityId: $order->pickupOfficeId(),
                 carrierHolds: $data->treasuryAccountId === null

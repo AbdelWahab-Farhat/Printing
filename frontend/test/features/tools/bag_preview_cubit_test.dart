@@ -28,10 +28,9 @@ void main() {
   /// A real PNG on disk, so the decoder has something it can actually read.
   Future<PickedFile> pngFile(String name) async {
     final recorder = ui.PictureRecorder();
-    Canvas(recorder).drawRect(
-      const Rect.fromLTWH(0, 0, 40, 40),
-      Paint()..color = const Color(0xFF112233),
-    );
+    Canvas(
+      recorder,
+    ).drawRect(const Rect.fromLTWH(0, 0, 40, 40), Paint()..color = const Color(0xFF112233));
     final image = await recorder.endRecording().toImage(40, 40);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
@@ -44,10 +43,7 @@ void main() {
 
   setUp(() async {
     temp = await Directory.systemTemp.createTemp('bag_preview_test');
-    cubit = BagPreviewCubit(
-      loadImage: const LoadDesignImage(),
-      loadMockup: const LoadBagMockup(),
-    );
+    cubit = BagPreviewCubit(loadImage: const LoadDesignImage(), loadMockup: const LoadBagMockup());
   });
 
   tearDown(() async {
@@ -132,9 +128,7 @@ void main() {
         ..writeAsBytesSync(Uint8List.fromList([1, 2, 3, 4]));
 
       // Act
-      await cubit.loadDesign(
-        PickedFile(path: broken.path, name: 'broken.png', sizeBytes: 4),
-      );
+      await cubit.loadDesign(PickedFile(path: broken.path, name: 'broken.png', sizeBytes: 4));
 
       // Assert
       expect(cubit.state, isA<BagPreviewFailure>());
@@ -146,9 +140,7 @@ void main() {
       await cubit.selectBag(BagType.transparent);
 
       // Act
-      await cubit.loadDesign(
-        PickedFile(path: '${temp.path}/x.pdf', name: 'x.pdf', sizeBytes: 1),
-      );
+      await cubit.loadDesign(PickedFile(path: '${temp.path}/x.pdf', name: 'x.pdf', sizeBytes: 1));
 
       // Assert — رسالةٌ عن ملف يجب ألّا تُغيّر المقاس الذي اختاره الموظف قبلها.
       expect(cubit.state.bag, BagType.transparent);
@@ -171,9 +163,7 @@ void main() {
       await cubit.loadDesign(await pngFile('logo.png'));
 
       // Act
-      await cubit.loadDesign(
-        PickedFile(path: '${temp.path}/x.pdf', name: 'x.pdf', sizeBytes: 1),
-      );
+      await cubit.loadDesign(PickedFile(path: '${temp.path}/x.pdf', name: 'x.pdf', sizeBytes: 1));
 
       // Assert — الشاشة تعود إلى «ارفع تصميماً» ولا تحمل صورةً أُفرج عن ذاكرتها؛ الرسم بصورةٍ
       // مُتلَفة انهيارٌ لا رسالة.

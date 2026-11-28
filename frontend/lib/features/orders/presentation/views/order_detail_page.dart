@@ -502,7 +502,11 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     final order = cubit.state.order;
     if (order == null) return;
 
-    final changed = await context.pushForResult<bool>(Routes.editOrder(order.id));
+    // An instant order is edited on its own screen: its branch, customer and road never change
+    // (INSTANT-ORDERS-PLAN.md §9).
+    final changed = order.isInstant
+        ? await context.pushForResult<bool>(Routes.editInstantOrder(order.id), extra: order)
+        : await context.pushForResult<bool>(Routes.editOrder(order.id));
     if (changed != true || !context.mounted) return;
 
     await cubit.load();
@@ -1819,6 +1823,11 @@ class _Actions extends StatelessWidget {
     if (order.isArchived) return false;
 
     final session = sl<Session>();
+
+    // An instant order is edited on its own screen, while «جديدة», by its own grant (§9).
+    if (order.isInstant) {
+      return order.status == OrderStatus.taken && session.can(AppPermission.updateInstantOrders);
+    }
 
     return session.can(AppPermission.manageOrders) ||
         (order.discountIsEditable && session.can(AppPermission.discountOrders)) ||

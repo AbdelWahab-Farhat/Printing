@@ -37,10 +37,9 @@ class QrToolCubit extends Cubit<QrToolState> {
     if (text.isEmpty) return;
 
     emit(
-      _generate(text).fold(
-        (failure) => QrToolState.failure(failure),
-        (art) => QrToolState.ready(art: art),
-      ),
+      _generate(
+        text,
+      ).fold((failure) => QrToolState.failure(failure), (art) => QrToolState.ready(art: art)),
     );
   }
 }

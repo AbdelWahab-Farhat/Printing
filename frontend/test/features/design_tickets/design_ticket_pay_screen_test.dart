@@ -244,10 +244,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The pay sheet says «حفظ»; the edit sheet's fixed bar says «حفظ التعديلات».
   Future<void> save(WidgetTester tester) async {
-    await tester.ensureVisible(find.text('حفظ'));
+    final edit = find.text('حفظ التعديلات');
+    final button = edit.evaluate().isNotEmpty ? edit : find.text('حفظ');
+    await tester.ensureVisible(button);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('حفظ'));
+    await tester.tap(button);
     await tester.pumpAndSettle();
   }
 

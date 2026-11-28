@@ -17,6 +17,7 @@ use App\Domain\Order\Enums\DesignSource;
 use App\Domain\Order\Enums\OrderDesignStatus;
 use App\Domain\Order\Enums\OrderFlow;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\Enums\PaymentMethod;
 use App\Domain\Order\Enums\ShortageRevision;
 use App\Domain\Order\Events\OrderEnteredShortage;
@@ -24,6 +25,7 @@ use App\Domain\Order\Events\OrderProfitFinalised;
 use App\Domain\Order\Events\OrderStatusChanged;
 use App\Domain\Order\Events\OrderStockDrawn;
 use App\Domain\Order\Exceptions\FulfillmentRequiresAnActor;
+use App\Domain\Order\Exceptions\InstantOrderRefused;
 use App\Domain\Order\Exceptions\OrderHasOpenDesignTicket;
 use App\Domain\Order\Exceptions\OrderIsClosed;
 use App\Domain\Order\Exceptions\OrderIsDeletedForStatusChange;
@@ -47,6 +49,7 @@ use App\Domain\Order\Support\Money;
 use App\Domain\Order\Support\TransitionFields;
 use App\Domain\Treasury\TreasuryService;
 use App\Domain\Vendor\VendorService;
+use App\Support\DecimalText;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -180,7 +183,7 @@ final class ChangeOrderStatus
         // already made walks جديدة → جاهزة — see {@see OrderFlow} — and asking the map without
         // saying so would refuse the very move `Order::availableTransitionsFor()` had just told
         // the app it could make, leaving the short road drawn on screen and enforced nowhere.
-        if (! $from->canMoveTo($target, $order->production_flow)) {
+        if (! $from->canMoveTo($target, $order->production_flow, $order->order_type ?? OrderType::Normal)) {
             throw TransitionNotAllowed::make($from, $target);
         }
 
@@ -298,7 +301,7 @@ final class ChangeOrderStatus
         return DB::transaction(function () use ($order, $from, $target, $reason, $actor, $fields, $batch, $namedVendor, $acceptingARequest, $deliverTo, $headsForThePress): Order {
             // **Before anything else, because an archived order must not move.** See §٤ of
             // Docs/orders/ORDER-DELETE-AND-ARCHIVE.md and {@see OrderIsDeletedForStatusChange}.
-            $this->guardTheOrderIsNotDeleted($order);
+            $this->guardTheOrderIsNotDeleted($order, $from, $target);
 
             // The automatic tickets the guard above let past, closed with the move that made
             // them unnecessary; and on a cancellation, every automatic ticket still open.
@@ -379,6 +382,13 @@ final class ChangeOrderStatus
             // {@see SettlementRequiresFullPayment}.
             if ($target === OrderStatus::Settled && $order->paymentStatus()->isOutstanding()) {
                 throw SettlementRequiresFullPayment::make($order->remainingAmount());
+            }
+
+            // **An instant sale leaves the counter paid in full** (owner's decision, 2026-11-26) —
+            // read after the line counts and the payment above, so a customer who took less is
+            // asked only for what they took.
+            if ($target === OrderStatus::Delivered && $order->isInstant() && $order->paymentStatus()->isOutstanding()) {
+                throw InstantOrderRefused::needsFullPayment(DecimalText::trim($order->remainingAmount()));
             }
 
             // **The money follows the order to «تم التسوية».** What Nawris or a driver still holds
@@ -700,6 +710,7 @@ final class ChangeOrderStatus
 
             // **The designer's queue gets a ticket** when the order has no open one — after the
             // status is written, because a ticket is only opened on an order that takes artwork.
+            // Switched off by default (owner, 2026-11-26); see OpenAutomaticDesignTicket.
             if ($target === OrderStatus::Designing) {
                 ($this->openAutomaticTicket)($order, $actor);
             }
@@ -1238,12 +1249,21 @@ final class ChangeOrderStatus
      *
      * @throws OrderIsDeletedForStatusChange
      */
-    private function guardTheOrderIsNotDeleted(Order $order): void
+    private function guardTheOrderIsNotDeleted(Order $order, OrderStatus $from, OrderStatus $target): void
     {
         $locked = Order::withTrashed()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
         if ($locked->trashed()) {
             throw OrderIsDeletedForStatusChange::make((string) $locked->code);
+        }
+
+        // **The move was checked against the order as it was read, before this lock.** Two
+        // identical requests — a double tap, a retry after a dropped connection — can both pass
+        // that check; the second waits here for the first to commit. If the status changed in
+        // between, the second is refused rather than handing over, paying or moving stock twice
+        // (INSTANT-ORDERS-PLAN.md §15).
+        if ($locked->status !== $from) {
+            throw TransitionNotAllowed::make($locked->status, $target);
         }
     }
 

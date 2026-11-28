@@ -59,6 +59,10 @@ abstract class NewProduct with _$NewProduct {
     /// A decimal string like `'100'`, already normalised out of whatever the keyboard produced.
     @JsonKey(name: 'min_order_quantity') required String minOrderQuantity,
 
+    /// «متاح للبيع الفوري» (INSTANT-ORDERS-PLAN.md §3). Omitted when null, which on an update
+    /// leaves the product's switch as it is.
+    @JsonKey(name: 'is_instant_sale', includeIfNull: false) bool? isInstantSale,
+
     /// Sizes. Empty is allowed: a quote-only product can exist before its sizes are known.
     @Default(<NewProductVariant>[]) List<NewProductVariant> variants,
   }) = _NewProduct;

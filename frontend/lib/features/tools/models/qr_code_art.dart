@@ -11,11 +11,8 @@ import 'package:qr/qr.dart';
 /// `copyWith`. وأهم من ذلك أن مساواة Freezed القيمية كانت ستقارن آلاف الوحدات عنصراً عنصراً في
 /// كل `emit`، وهي مقارنة لا تجيب عن سؤال يسأله أحد: رمزٌ جديد كائنٌ جديد.
 class QrCodeArt {
-  const QrCodeArt._({
-    required this.data,
-    required this.moduleCount,
-    required List<bool> modules,
-  }) : _modules = modules;
+  const QrCodeArt._({required this.data, required this.moduleCount, required List<bool> modules})
+    : _modules = modules;
 
   /// المحتوى كما رُمِّز — نصاً كما أدخله الموظف.
   ///

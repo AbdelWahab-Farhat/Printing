@@ -42,11 +42,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'slug', 'name', 'description', 'features', 'category', 'product_category_id',
     'stock_item_group_id', 'pricing_unit', 'pricing_mode', 'min_order_quantity', 'is_active', 'sort_order',
+    'is_instant_sale',
 ])]
 class Product extends Model implements HasAuditTrail
 {
     /** @use HasFactory<ProductFactory> */
     use Auditable, HasFactory, SoftDeletes;
+
+    /**
+     * The column's default, so a product built in this request reads it before a refresh — and
+     * its first update does not log the switch as if it had moved.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['is_instant_sale' => false];
 
     /**
      * Gives every product its code, on whatever path created it.
@@ -90,6 +99,9 @@ class Product extends Model implements HasAuditTrail
             // String, not float: money and the quantities it is multiplied by must stay exact.
             'min_order_quantity' => 'decimal:3',
             'is_active' => 'boolean',
+            // «متاح للبيع الفوري» — one of the conditions the instant-order screen asks; see
+            // InstantSaleEligibility for the rest.
+            'is_instant_sale' => 'boolean',
         ];
     }
 

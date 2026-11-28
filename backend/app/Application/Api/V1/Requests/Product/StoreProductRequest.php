@@ -39,6 +39,10 @@ class StoreProductRequest extends FormRequest
             $this->merge(['is_active' => $this->boolean('is_active')]);
         }
 
+        if ($this->has('is_instant_sale')) {
+            $this->merge(['is_instant_sale' => $this->boolean('is_instant_sale')]);
+        }
+
         $variants = $this->input('variants');
 
         if (! is_array($variants)) {
@@ -120,6 +124,8 @@ class StoreProductRequest extends FormRequest
 
             'min_order_quantity' => ['required', 'numeric', 'min:0.001'],
             'is_active' => ['sometimes', 'boolean'],
+            // «متاح للبيع الفوري» — INSTANT-ORDERS-PLAN.md §3. Omitted means off on a new product.
+            'is_instant_sale' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
 
             // A size and its price list. Sizes are optional here so a quote-only product can be

@@ -113,6 +113,14 @@ enum PermissionName: string
     // See ORDER-LINES-ADD-REMOVE.md §4, decision 9.
     case EditDrawnOrderLines = 'orders.items.edit_after_draw';
 
+    // Editing every field of an order in any status, delivered, settled and cancelled included,
+    // plus the fields nothing else edits once they are set: the delivery price and cost, the
+    // shipping company and courier, the weight, the expected deposit and the order date.
+    // Asked **on top of** `orders.manage`. It lifts the status locks only; the discount, the
+    // additional cost and drawn stock still ask for their own grants. Seeded on nobody: an
+    // administrator has it through `Gate::before`, and a role is given it on the roles screen.
+    case EditOrdersFully = 'orders.edit_fully';
+
     // «طلبية تعويض» — sending goods out for free. Its own grant rather than the discount's: the
     // discount lowers a price, this gives the goods away and books them as a loss. Seeded on
     // nobody, like the one above. See ORDER-COMPENSATION.md §4.
@@ -459,6 +467,25 @@ enum PermissionName: string
     // mailbox, and there is nothing to grant.
     case BroadcastNotifications = 'notifications.broadcast';
 
+    // «الطلبات الفورية» — a counter sale of plain stock at a branch (INSTANT-ORDERS-PLAN.md).
+    // A road of its own with grants of its own, so a branch employee can sell and hand over
+    // without holding `orders.manage` or any production status. Every action is also limited to
+    // the branches the employee is assigned to; see BranchAccess.
+    case ViewInstantOrders = 'instant_orders.view';
+    case CreateInstantOrders = 'instant_orders.create';
+    case UpdateInstantOrders = 'instant_orders.update';
+    case CancelInstantOrders = 'instant_orders.cancel';
+    case DeliverInstantOrders = 'instant_orders.deliver';
+    // Choosing a treasury account other than the branch's default at handover.
+    case ChooseInstantOrderAccount = 'instant_orders.choose_account';
+
+    // Handing over a normal «استلام مكتب» order — **only in the employee's own branches**. The
+    // global `orders.status.delivered` is unchanged and still covers every branch.
+    case DeliverBranchPickupOrders = 'pickup_orders.deliver';
+
+    // The branch settings: active switch, default warehouse, accounts, employees, late hours.
+    case ManageBranches = 'branches.manage';
+
     public function label(): string
     {
         return match ($this) {
@@ -489,6 +516,7 @@ enum PermissionName: string
             self::AddOrderAdditionalCost => 'إضافة تكلفة إضافية على الطلبية',
             self::ManageOrderDesigns => 'إدارة تصاميم الطلبية واعتمادها',
             self::EditDrawnOrderLines => 'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
+            self::EditOrdersFully => 'تعديل الطلبية بالكامل في أي حالة',
             self::CompensationOrders => 'إنشاء طلبية تعويض (بضاعة بلا مقابل)',
             self::SetOrderDesignFee => 'رؤية وتحديد أجرة التصميم على الطلبية',
             self::ConfirmReadyMessage => 'رسائل الزبائن (الجاهزية والراجع)',
@@ -581,6 +609,14 @@ enum PermissionName: string
             // Deliberately explicit about the blast radius: whoever ticks this on the roles
             // screen should read what they are granting before they grant it.
             self::BroadcastNotifications => 'إرسال إشعار عام لكل الموظفين',
+            self::ViewInstantOrders => 'عرض الطلبات الفورية',
+            self::CreateInstantOrders => 'إنشاء طلب فوري',
+            self::UpdateInstantOrders => 'تعديل طلب فوري جديد',
+            self::CancelInstantOrders => 'إلغاء طلب فوري جديد',
+            self::DeliverInstantOrders => 'تسليم طلب فوري (تم الاستلام)',
+            self::ChooseInstantOrderAccount => 'اختيار حساب غير حساب الفرع عند تسليم طلب فوري',
+            self::DeliverBranchPickupOrders => 'تسليم طلبات «استلام مكتب» في فروعه فقط',
+            self::ManageBranches => 'إدارة إعدادات الفروع',
             self::ViewProfitAndLossReport => 'عرض تقرير الأرباح والخسائر',
             self::ViewSalesStatisticsReport => 'عرض إحصائيات المبيعات',
         };
@@ -609,7 +645,8 @@ enum PermissionName: string
             // deliberately *not* in «حالات الطلبيات» either — a delete is not a status the
             // machine can move into, which is the whole of what that group collects.
             self::DeleteOrders, self::RestoreOrders, self::ViewOrderArchive,
-            self::ManageOrderDesigns, self::EditDrawnOrderLines, self::CompensationOrders,
+            self::ManageOrderDesigns, self::EditDrawnOrderLines, self::EditOrdersFully,
+            self::CompensationOrders,
             self::SetOrderDesignFee,
             // Deliberately not in «حالات الطلبيات»: telling the customer is not a move on the map.
             self::ConfirmReadyMessage => 'الطلبيات',
@@ -678,6 +715,11 @@ enum PermissionName: string
             self::ViewProfitAndLossReport,
             self::ViewSalesStatisticsReport => 'التقارير المالية',
             self::BroadcastNotifications => 'الإشعارات',
+            self::ViewInstantOrders, self::CreateInstantOrders, self::UpdateInstantOrders,
+            self::CancelInstantOrders, self::DeliverInstantOrders,
+            self::ChooseInstantOrderAccount,
+            self::DeliverBranchPickupOrders,
+            self::ManageBranches => 'الطلبات الفورية والفروع',
         };
     }
 

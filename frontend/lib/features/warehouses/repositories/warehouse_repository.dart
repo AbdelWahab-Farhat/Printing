@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dayaa/core/error/failure.dart';
 import 'package:dayaa/core/network/paginated.dart';
+import 'package:dayaa/features/warehouses/models/awaiting_handover_order.dart';
 import 'package:dayaa/features/warehouses/models/stock_batch.dart';
 import 'package:dayaa/features/warehouses/models/stock_movement.dart';
 import 'package:dayaa/features/warehouses/models/warehouse.dart';
@@ -74,6 +75,10 @@ abstract interface class WarehouseRepository {
     int stockId, {
     String? threshold,
   });
+
+  /// The instant orders still «جديدة» that hold this line's stock — what makes up its
+  /// «بانتظار التسليم» (INSTANT-ORDERS-PLAN.md §4).
+  Future<Either<Failure, List<AwaitingHandoverOrder>>> awaitingHandover(int warehouseId, int stockId);
 
   /// The ledger, newest first.
   ///

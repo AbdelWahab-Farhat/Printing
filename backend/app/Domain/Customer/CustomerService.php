@@ -21,6 +21,7 @@ use App\Domain\Customer\Queries\BusinessFieldFilters;
 use App\Domain\Customer\Queries\BusinessFieldListQuery;
 use App\Domain\Customer\Queries\CustomerFilters;
 use App\Domain\Customer\Queries\CustomerListQuery;
+use App\Domain\Customer\Support\PhoneNumber;
 use App\Domain\Customer\Support\PrintColors;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -118,6 +119,43 @@ class CustomerService
     public function create(CustomerData $data): Customer
     {
         return ($this->createCustomer)($data);
+    }
+
+    /**
+     * The customer this number belongs to, or null — an exact match on the normalised number and
+     * the older spellings it may have been saved under (INSTANT-ORDERS-PLAN.md §3).
+     *
+     * `$lock` takes the row for the caller's transaction, so two counter sales for one customer
+     * fill their blanks one after the other.
+     */
+    public function findByPhone(string $typed, bool $lock = false): ?Customer
+    {
+        $normalised = PhoneNumber::normalise($typed);
+
+        if (! PhoneNumber::isValid($normalised)) {
+            return null;
+        }
+
+        $query = Customer::query()->whereIn('phone', PhoneNumber::storedForms($normalised))->orderBy('id');
+
+        return $lock ? $query->lockForUpdate()->first() : $query->first();
+    }
+
+    /**
+     * Fills the customer's address only where it is blank — never replaces one they already have
+     * (INSTANT-ORDERS-PLAN.md §3, owner's decision 2026-11-26).
+     *
+     * @return bool whether anything was written
+     */
+    public function fillMissingAddress(Customer $customer, ?int $cityId, ?int $regionId): bool
+    {
+        if ($customer->city_id !== null || $cityId === null) {
+            return false;
+        }
+
+        $customer->forceFill(['city_id' => $cityId, 'region_id' => $regionId])->save();
+
+        return true;
     }
 
     public function update(Customer $customer, CustomerData $data): Customer

@@ -6,12 +6,14 @@ namespace App\Domain\Order\Queries\Concerns;
 
 use App\Domain\Order\Enums\CustomerMessage;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Order\Enums\OrderType;
 use App\Domain\Order\Enums\PaymentStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Queries\OrderFilters;
 use App\Domain\Order\Queries\OrderSearchKind;
 use App\Domain\Order\Queries\OrderSearchTerm;
 use App\Domain\Order\Support\PaymentStatusExpression;
+use App\Domain\Settings\SettingsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -78,6 +80,16 @@ trait FiltersOrders
             )
             ->when($filters->customerId !== null, fn (Builder $q) => $q->where('customer_id', $filters->customerId))
             ->when($filters->cityId !== null, fn (Builder $q) => $q->where('city_id', $filters->cityId))
+            ->when($filters->cityIds !== null, fn (Builder $q) => $q->whereIn('city_id', $filters->cityIds))
+            // INSTANT-ORDERS-PLAN.md §13 — the instant order's own axes, open to every order.
+            ->when($filters->orderType !== null, fn (Builder $q) => $q->where('order_type', $filters->orderType->value))
+            ->when($filters->warehouseId !== null, fn (Builder $q) => $q->where('fulfillment_warehouse_id', $filters->warehouseId))
+            ->when($filters->createdBy !== null, fn (Builder $q) => $q->where('created_by', $filters->createdBy))
+            ->when(
+                $filters->paymentMethod !== null,
+                fn (Builder $q) => $q->whereHas('payments', fn (Builder $p) => $p->where('method', $filters->paymentMethod->value)),
+            )
+            ->when($filters->isLate !== null, fn (Builder $q) => $this->applyLate($q, $filters->isLate))
             // **`placed_at`, in the shop's own timezone, and both of those matter.**
             //
             // The column, because that is what «طلبات اليوم» counts on the home screen — and a
@@ -91,6 +103,25 @@ trait FiltersOrders
             // every day. The day is turned into a pair of UTC instants instead.
             ->when($filters->from !== null, fn (Builder $q) => $q->where('placed_at', '>=', $this->dayStart($filters->from)))
             ->when($filters->to !== null, fn (Builder $q) => $q->where('placed_at', '<=', $this->dayEnd($filters->to)));
+    }
+
+    /**
+     * «متأخرة» — an instant order still «جديدة» past the company's threshold
+     * (INSTANT-ORDERS-PLAN.md §4). The same test as {@see Order::isLateInstantOrder()}; `false`
+     * is every order that is not late.
+     *
+     * @param  Builder<Order>  $query
+     */
+    private function applyLate(Builder $query, bool $late): void
+    {
+        $cutoff = now()->subHours(app(SettingsService::class)->instantOrderLateHours());
+
+        $predicate = fn (Builder $q) => $q
+            ->where('order_type', OrderType::Instant->value)
+            ->where('status', OrderStatus::New->value)
+            ->where('placed_at', '<=', $cutoff);
+
+        $late ? $query->where($predicate) : $query->whereNot($predicate);
     }
 
     /**

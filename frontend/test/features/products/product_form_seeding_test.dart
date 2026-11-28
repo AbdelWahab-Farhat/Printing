@@ -507,6 +507,63 @@ void main() {
     );
   });
 
+  testWidgets('a break and a minimum of a thousand open without a separator, and save as typed', (
+    tester,
+  ) async {
+    // Arrange — «1,000» in a box came back as 1.000 (the comma read as a decimal point), so the
+    // ascending check refused and the product could not be saved at all.
+    const big = Product(
+      id: 8,
+      code: 'P8',
+      slug: 'plain-bags',
+      name: 'أكياس سادة',
+      productCategory: ProductCategory(id: 3, name: 'أكياس'),
+      productCategoryId: 3,
+      pricingUnit: 'piece',
+      pricingUnitLabel: 'بالقطعة',
+      pricingMode: 'tiered',
+      pricingModeLabel: 'أسعار مدرجة',
+      minOrderQuantity: '1000.000',
+      variants: [
+        ProductVariant(
+          id: 21,
+          label: '25*35',
+          stockItemId: 4,
+          stockItem: shelf,
+          priceTiers: [
+            ProductPriceTier(id: 1, minQuantity: '100.000', unitPrice: '1.100'),
+            ProductPriceTier(id: 2, minQuantity: '300.000', unitPrice: '1.000'),
+            ProductPriceTier(id: 3, minQuantity: '1000.000', unitPrice: '0.900'),
+          ],
+        ),
+      ],
+    );
+
+    final repository = _RecordingRepository();
+    sl.unregister<SaveProduct>();
+    sl.registerLazySingleton<SaveProduct>(() => SaveProduct(repository));
+
+    await tester.pumpWidget(host(const ProductFormPage(product: big)));
+    await tester.pumpAndSettle();
+
+    // Assert — the boxes hold plain digits.
+    expect(find.text('1,000'), findsNothing);
+    expect(find.text('1000'), findsWidgets);
+
+    // Act
+    await tester.ensureVisible(find.text('حفظ التعديلات'));
+    await tester.pump();
+    await tester.tap(find.text('حفظ التعديلات'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Assert — no refusal, and a thousand goes out as a thousand.
+    expect(find.text('حدود الكمية يجب أن تتصاعد: 100 ثم 300 ثم 1000'), findsNothing);
+    final sent = repository.sent!;
+    expect(sent.minOrderQuantity, '1000');
+    expect([for (final tier in sent.variants.single.priceTiers) tier.minQuantity], ['100', '300', '1000']);
+  });
+
   testWidgets('a product being corrected opens on the heading it already has', (
     tester,
   ) async {

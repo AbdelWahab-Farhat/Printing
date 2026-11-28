@@ -46,6 +46,9 @@ final class GetArchivedOrders extends GetOrders {
     String? to,
     int page = 1,
     int perPage = 20,
+    // Accepted to keep the override whole; الأرشيف's filter sheet does not ask either.
+    String? orderType,
+    bool? isLate,
   }) {
     return _repository.archivedOrders(
       search: search,

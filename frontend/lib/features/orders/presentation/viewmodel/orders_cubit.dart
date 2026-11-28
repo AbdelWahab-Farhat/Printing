@@ -71,6 +71,10 @@ class OrdersCubit extends PagedCubit<Order> {
   /// crossing the others as urgency does.
   bool? isCompensation;
 
+  /// `normal` or `instant` — bookings or counter sales (INSTANT-ORDERS-PLAN.md §13). Null is
+  /// both. A fifth axis, crossing the others.
+  String? orderType;
+
   /// Which end of the queue the list starts at.
   ///
   /// **Not a filter, and it has its own button** — see [OrderSortButton]. It changes nothing
@@ -85,7 +89,11 @@ class OrdersCubit extends PagedCubit<Order> {
   /// The sort is deliberately absent: it narrows nothing, and the button beside the filter's
   /// already says which way the list runs.
   bool get isFiltered =>
-      status != null || paymentStatuses.isNotEmpty || isUrgent != null || isCompensation != null;
+      status != null ||
+      paymentStatuses.isNotEmpty ||
+      isUrgent != null ||
+      isCompensation != null ||
+      orderType != null;
 
   @override
   Object identityOf(Order item) => item.id;
@@ -102,6 +110,7 @@ class OrdersCubit extends PagedCubit<Order> {
       isCompensation: isCompensation,
       sort: sort,
       page: page,
+      orderType: orderType,
     );
   }
 
@@ -171,11 +180,13 @@ class OrdersCubit extends PagedCubit<Order> {
     required Set<PaymentStatus> paymentStatuses,
     required bool? isUrgent,
     bool? isCompensation,
+    String? orderType,
   }) async {
     if (status == this.status &&
         setEquals(paymentStatuses, this.paymentStatuses) &&
         isUrgent == this.isUrgent &&
-        isCompensation == this.isCompensation) {
+        isCompensation == this.isCompensation &&
+        orderType == this.orderType) {
       return;
     }
 
@@ -183,6 +194,7 @@ class OrdersCubit extends PagedCubit<Order> {
     this.paymentStatuses = paymentStatuses;
     this.isUrgent = isUrgent;
     this.isCompensation = isCompensation;
+    this.orderType = orderType;
 
     await load(search: currentSearch);
   }
@@ -216,7 +228,8 @@ class OrdersCubit extends PagedCubit<Order> {
       // jumping the queue, because nothing about it moved except the flag.
       (isUrgent == null || item.isUrgent == isUrgent) &&
       // The fourth axis: an order switched to or from «تعويض» joins or leaves the narrowed list.
-      (isCompensation == null || item.isCompensation == isCompensation);
+      (isCompensation == null || item.isCompensation == isCompensation) &&
+      (orderType == null || item.orderType == orderType);
 
   /// Whether an order still belongs under the filters on screen.
   ///

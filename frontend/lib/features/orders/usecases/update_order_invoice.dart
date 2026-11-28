@@ -65,6 +65,57 @@ class InvoiceLineUpdate {
 /// «جاهزة» has its lines shut and its address open, so the only honest way to express that edit
 /// is to send the address and say nothing at all about the lines. The recipient's phone closes
 /// with the address — see [OrderRepository.updateInvoice] for why it is a record.
+/// The fields only `orders.edit_fully` sends: the ones nothing else edits once they are set.
+///
+/// **Sent only by a reader holding the grant**; the server refuses them from anybody else, and a
+/// key left out leaves its column standing. [deliveryCost] null hands the cost back to the
+/// server's own derivation («تلقائي»).
+@immutable
+class OrderFullEdit {
+  const OrderFullEdit({
+    required this.deliveryPrice,
+    required this.deliveryCost,
+    required this.shippingCompanyId,
+    required this.courierName,
+    required this.courierPhone,
+    required this.depositExpectedAmount,
+    required this.placedAt,
+  });
+
+  final String deliveryPrice;
+  final String? deliveryCost;
+  final int? shippingCompanyId;
+  final String? courierName;
+  final String? courierPhone;
+  final String? depositExpectedAmount;
+  final DateTime placedAt;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'delivery_price': _money(deliveryPrice) ?? '0.00',
+    'delivery_cost': _money(deliveryCost),
+    'shipping_company_id': shippingCompanyId,
+    'courier_name': _blankToNull(courierName),
+    'courier_phone': _blankToNull(courierPhone),
+    'deposit_expected_amount': _money(depositExpectedAmount),
+    // Wall-clock time as the clerk picked it; the server stores it in the app's own zone.
+    'placed_at': placedAt.toIso8601String(),
+  };
+
+  /// «١٢٫٥» → `12.5`; an empty box → null.
+  static String? _money(String? input) {
+    final trimmed = input?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+
+    return Validators.toWesternDigits(trimmed).replaceAll(',', '.');
+  }
+
+  static String? _blankToNull(String? input) {
+    final trimmed = input?.trim() ?? '';
+
+    return trimmed.isEmpty ? null : trimmed;
+  }
+}
+
 class UpdateOrderInvoice {
   const UpdateOrderInvoice(this._repository);
 
@@ -82,6 +133,7 @@ class UpdateOrderInvoice {
     String? additionalCostNote,
     bool? isUrgent,
     ({int? id})? vendor,
+    OrderFullEdit? fullEdit,
   }) {
     // **An amount of nothing takes its reason with it.** The chips can be tapped before the box
     // is filled, and a reason on its own would be a category for money nobody is charging —
@@ -101,6 +153,7 @@ class UpdateOrderInvoice {
       additionalCostNote: isCharging ? _text(additionalCostNote) : null,
       isUrgent: isUrgent,
       vendor: vendor,
+      fullEdit: fullEdit,
     );
   }
 

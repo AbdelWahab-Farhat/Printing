@@ -452,6 +452,11 @@ abstract final class AppIcons {
   static IconData get awaitingDeposit =>
       _pick(Icons.hourglass_top_rounded, CupertinoIcons.hourglass);
 
+  /// «بانتظار التسليم» on a stock row — a counter sale's bags still on the shelf, waiting for the
+  /// customer to collect them. A bag, because the thing waiting is goods, not money or a reply.
+  static IconData get awaitingHandover =>
+      _pick(Icons.shopping_bag_outlined, CupertinoIcons.bag);
+
   /// «عربون مدفوع» — somebody has said the money arrived, so the work may start.
   ///
   /// Banknotes, and **deliberately not a tick**: a tick says «تأكّدنا», and confirming the عربون

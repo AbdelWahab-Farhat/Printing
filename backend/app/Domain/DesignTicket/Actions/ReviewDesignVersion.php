@@ -157,8 +157,11 @@ final class ReviewDesignVersion
                     );
 
                     // And on to «بانتظار التجهيز» when the order was waiting in «قيد التصميم» —
-                    // after the fee, so the order moves with its money already settled.
-                    ($this->moveToPreparing)($order, $actor);
+                    // after the fee, so the order moves with its money already settled. Only a
+                    // ticket opened while the order was in «قيد التصميم» moves it (2026-11-26).
+                    if ($ticket->movesItsOrderOnApproval()) {
+                        ($this->moveToPreparing)($order, $actor);
+                    }
                 }
             }
 

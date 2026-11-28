@@ -23,6 +23,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   OrderInvoiceCubit({required Order order, required UpdateOrderInvoice updateInvoice})
     : _updateInvoice = updateInvoice,
       _openingDiscount = order.discount,
+      _openingLineIds = {for (final item in order.items ?? const <OrderItem>[]) item.id},
       super(
         OrderInvoiceState(
           orderId: order.id,
@@ -74,8 +75,27 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   /// The discount the screen opened on, so a save knows whether this edit moved it.
   final String _openingDiscount;
 
+  /// The lines the screen opened on, so a save knows whether one was removed.
+  final Set<int> _openingLineIds;
+
+  /// Whether this edit added, removed or re-counted a line — what moves stock once it has left.
+  bool get linesChanged {
+    final kept = {for (final line in state.lines) if (!line.isNew) line.id};
+
+    return state.lines.any((line) => line.isNew || _ascii(line.quantity) != _ascii(line.originalQuantity ?? '')) ||
+        !kept.containsAll(_openingLineIds);
+  }
+
   /// Whether this edit has changed the discount from the one the screen opened on.
   bool get discountMoved => _ascii(state.discount) != _ascii(_openingDiscount);
+
+  /// Whether the city this edit picked is a delivery city rather than a branch. False until a
+  /// city other than the order's own is picked.
+  ///
+  /// Read by the save: on an order at «استلام مكتب» a delivery city moves it to «إعادة إرسال»
+  /// on the server, so the screen asks first. Not in the state, because nothing draws it.
+  bool get pickedADeliveryCity => _pickedADeliveryCity;
+  bool _pickedADeliveryCity = false;
 
   /// Puts a product the picker returned on the order, with no quantity yet.
   ///
@@ -213,8 +233,10 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
   /// **The region is cleared with it, always.** A region belongs to one city, so carrying the
   /// old one across would send the server a neighbourhood from somewhere else — which it
   /// refuses, correctly, with a message about a field the user never touched.
-  void setCity({required int id, required String name}) {
+  void setCity({required int id, required String name, required bool isOfficePickup}) {
     if (id == state.cityId) return;
+
+    _pickedADeliveryCity = !isOfficePickup;
 
     emit(
       state.copyWith(
@@ -261,7 +283,9 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
     emit(state.copyWith(isUrgent: value, isDirty: true, failure: null));
   }
 
-  Future<void> save() async {
+  /// [fullEdit] carries the «حقول الأدمن» section, sent only by a reader holding
+  /// `orders.edit_fully`.
+  Future<void> save({OrderFullEdit? fullEdit}) async {
     if (!state.isValid || state.isSaving) return;
 
     emit(state.copyWith(isSaving: true, failure: null));
@@ -306,6 +330,7 @@ class OrderInvoiceCubit extends Cubit<OrderInvoiceState> {
       // Only when this edit changed it — picked on the «المورد» row, or let go with the last
       // وسيط line. Otherwise absent, and the order's own vendor goes back untouched.
       vendor: state.vendorToSend == state.originalVendorId ? null : (id: state.vendorToSend),
+      fullEdit: fullEdit,
     );
 
     if (isClosed) return;

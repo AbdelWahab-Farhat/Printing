@@ -27,6 +27,8 @@ class GetOrders {
     String? to,
     int page = 1,
     int perPage = 20,
+    String? orderType,
+    bool? isLate,
   }) {
     return _repository.orders(
       search: search,
@@ -42,6 +44,8 @@ class GetOrders {
       to: to,
       page: page,
       perPage: perPage,
+      orderType: orderType,
+      isLate: isLate,
     );
   }
 }

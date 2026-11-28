@@ -32,6 +32,11 @@ abstract class SalesStatistics with _$SalesStatistics {
     required StatisticsPeriod period,
     @JsonKey(name: 'sales_value') required SalesValue salesValue,
     @JsonKey(name: 'by_type') required List<BagTypeRow> byType,
+
+    /// The best sellers: the top variants (product + size) by value, best first.
+    ///
+    /// Defaults to empty so the screen still opens against a server that predates the list.
+    @JsonKey(name: 'top_items') @Default(<TopSellingItem>[]) List<TopSellingItem> topItems,
     @JsonKey(name: 'weight_comparison') required WeightComparison weightComparison,
 
     /// How many printed bags that was, by the piece — **kept apart from the weights beside it**.
@@ -104,10 +109,9 @@ abstract class SalesValue with _$SalesValue {
 /// سادة» are two catalogue rows drawing on one pile, and they arrive here as one row carrying its
 /// own split.
 ///
-/// **The labels are untidy and the app must not tidy them.** Several read «أكياس شفافه -» with a
-/// trailing dash, because those shelves were auto-created from product names. Trimming it in Dart
-/// would hide a naming problem that also shows on the inventory screens; the fix belongs in the
-/// data. Render what the server sends.
+/// **The server drops the trailing dash** some shelves were saved with («أكياس شفافه -»), so
+/// [type] arrives clean. Render what it sends; the lasting fix is still to file those shelves
+/// under a named group.
 @freezed
 abstract class BagTypeRow with _$BagTypeRow {
   const factory BagTypeRow({
@@ -119,6 +123,16 @@ abstract class BagTypeRow with _$BagTypeRow {
 
     /// Printed pieces on this material only; a plain row carries `0`.
     required int pieces,
+
+    /// [value] split plain/printed; the two add up to it.
+    @JsonKey(name: 'plain_value') @Default('0.00') String plainValue,
+    @JsonKey(name: 'printed_value') @Default('0.00') String printedValue,
+
+    /// Whether any line of this material was weighed. Null from a server that predates it.
+    bool? weighed,
+
+    /// This material's sales per size, best-selling first, an unsized row (if any) last.
+    @Default(<BagSizeRow>[]) List<BagSizeRow> sizes,
   }) = _BagTypeRow;
 
   const BagTypeRow._();
@@ -127,12 +141,90 @@ abstract class BagTypeRow with _$BagTypeRow {
 
   /// Whether this material was ever weighed.
   ///
-  /// **A row with real value and no weight is correct, not a bug** — أكياس ورقية عادية is stocked
-  /// by the piece, so it earns money and weighs nothing. The row is drawn like any other and its
-  /// `0.000` is drawn as a figure rather than as «—»: its value is part of the total above it,
-  /// and hiding it would make the table stop adding up.
-  bool get hasWeight => (num.tryParse(weightKg) ?? 0) > 0;
+  /// **A row with real value and no weight is correct, not a bug**: أكياس ورقية عادية is stocked
+  /// by the piece, so it earns money and weighs nothing. Its weight is drawn as «—», never as a
+  /// zero that reads like a mistake; its value still counts toward the total above it.
+  bool get hasWeight => weighed ?? (num.tryParse(weightKg) ?? 0) > 0;
 }
+
+/// One size of one material, its plain and printed twins on the same row.
+///
+/// **Null means «no such figure», not zero.** A size nobody weighed has no weight, a size with
+/// no plain sales has no plain weight, and a size with no printed sales has no piece count. The
+/// screen draws each of them as «—».
+@freezed
+abstract class BagSizeRow with _$BagSizeRow {
+  const factory BagSizeRow({
+    /// Both null for the one row that gathers lines with no size (a made-to-order bag).
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
+    required String value,
+    @JsonKey(name: 'plain_value') required String plainValue,
+    @JsonKey(name: 'printed_value') required String printedValue,
+    @JsonKey(name: 'weight_kg') String? weightKg,
+    @JsonKey(name: 'plain_kg') String? plainKg,
+    @JsonKey(name: 'printed_kg') String? printedKg,
+
+    /// Printed pieces only: plain bags are sold by the kilo and never counted.
+    int? pieces,
+  }) = _BagSizeRow;
+
+  const BagSizeRow._();
+
+  factory BagSizeRow.fromJson(Map<String, dynamic> json) => _$BagSizeRowFromJson(json);
+
+  /// `25×35`, or null for the unsized row. Isolate it when drawing (see `String.isolated`):
+  /// inside Arabic text it otherwise renders as `35×25`.
+  String? get dimensions => sizeText(widthCm, heightCm);
+}
+
+/// Whether a best seller is the plain or the printed twin of its bag.
+enum SaleKind {
+  @JsonValue('plain')
+  plain,
+  @JsonValue('printed')
+  printed,
+}
+
+/// One entry of «الأكثر مبيعاً»: a product in one size, ranked by value.
+///
+/// Ranked in dinars because it is the one measure every bag has. [weightKg] and [pieces] are
+/// whatever this item does have: a plain bag has a weight and no count, a paper bag a count and
+/// no weight.
+@freezed
+abstract class TopSellingItem with _$TopSellingItem {
+  const factory TopSellingItem({
+    required String product,
+
+    /// The catalogue's own label for the size: «متوسط», or «30*30».
+    required String variant,
+    required String type,
+    @JsonKey(unknownEnumValue: SaleKind.printed) required SaleKind kind,
+    @JsonKey(name: 'width_cm') int? widthCm,
+    @JsonKey(name: 'height_cm') int? heightCm,
+    required String value,
+
+    /// This item's share of the period's total sales, the server's own division.
+    @JsonKey(name: 'share_percent') required String sharePercent,
+    @JsonKey(name: 'weight_kg') String? weightKg,
+    int? pieces,
+  }) = _TopSellingItem;
+
+  const TopSellingItem._();
+
+  factory TopSellingItem.fromJson(Map<String, dynamic> json) => _$TopSellingItemFromJson(json);
+
+  /// `25×35`, or null when the item has no size. Isolate it when drawing.
+  String? get dimensions => sizeText(widthCm, heightCm);
+
+  /// Whether [variant] already spells the size out («30*30»), so the screen shows [dimensions]
+  /// in its place rather than the same numbers twice. «متوسط» does not, so both are shown.
+  bool get variantIsDimensions => RegExp(r'\d').hasMatch(variant);
+}
+
+/// `25×35` from a width and a height, or null when either is missing.
+String? sizeText(int? width, int? height) =>
+    width == null || height == null ? null : '$width×$height';
 
 /// السادة مقابل المطبوع — the same period measured on the scale rather than at the till.
 @freezed

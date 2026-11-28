@@ -142,6 +142,11 @@ enum AppPermission {
     'orders.items.edit_after_draw',
     'تعديل بنود الطلبية بعد خروج البضاعة من المخزن',
   ),
+  // Every field of an order in any status, plus the fields nothing else edits once set: the
+  // delivery price and cost, the courier, the expected deposit and the order date. Asked on top
+  // of `manageOrders`; it lifts the status locks only, the money grants still apply. Held by
+  // nobody until a role is given it.
+  editOrdersFully('orders.edit_fully', 'تعديل الطلبية بالكامل في أي حالة'),
   // «طلبية تعويض» — goods sent out for free. Its own grant, not the discount's: this gives the
   // goods away and books them as a loss. Held by nobody until a role is given it.
   compensationOrders('orders.compensation', 'إنشاء طلبية تعويض (بضاعة بلا مقابل)'),
@@ -423,7 +428,21 @@ enum AppPermission {
   // answering, assigning and closing is a job. `SupportTicketController` guards them separately
   // and the roles screen composes them however the shop likes.
   viewSupportTickets('support.view', 'عرض تذاكر الدعم'),
-  manageSupportTickets('support.manage', 'الرد على تذاكر الدعم وإسنادها وإغلاقها');
+  manageSupportTickets('support.manage', 'الرد على تذاكر الدعم وإسنادها وإغلاقها'),
+
+  // «الطلبات الفورية» — a counter sale of plain stock at a branch (INSTANT-ORDERS-PLAN.md §9).
+  // Every move is also limited to the branches the employee works at; the server checks it.
+  viewInstantOrders('instant_orders.view', 'عرض الطلبات الفورية'),
+  createInstantOrders('instant_orders.create', 'إنشاء طلب فوري'),
+  updateInstantOrders('instant_orders.update', 'تعديل طلب فوري جديد'),
+  cancelInstantOrders('instant_orders.cancel', 'إلغاء طلب فوري جديد'),
+  deliverInstantOrders('instant_orders.deliver', 'تسليم طلب فوري (تم الاستلام)'),
+  chooseInstantOrderAccount(
+    'instant_orders.choose_account',
+    'اختيار حساب غير حساب الفرع عند تسليم طلب فوري',
+  ),
+  deliverBranchPickupOrders('pickup_orders.deliver', 'تسليم طلبات «استلام مكتب» في فروعه فقط'),
+  manageBranches('branches.manage', 'إدارة إعدادات الفروع');
 
   const AppPermission(this.wire, this.label);
 

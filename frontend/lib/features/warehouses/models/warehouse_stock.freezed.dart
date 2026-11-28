@@ -26,7 +26,10 @@ mixin _$WarehouseStock {
 @JsonKey(name: 'unit_label') String get unitLabel;/// The level at which this shelf starts asking to be refilled, or null for one nobody set.
 @JsonKey(name: 'low_stock_threshold') String? get lowStockThreshold;/// The server's answer, not a comparison this app re-derives — `null` threshold means "no
 /// alert", which is not the same as a threshold of zero.
-@JsonKey(name: 'is_low_stock') bool get isLowStock;@JsonKey(name: 'stock_item') StockItemRef? get item;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
+@JsonKey(name: 'is_low_stock') bool get isLowStock;/// «بانتظار التسليم» — taken by instant orders not yet handed over, still physically on
+/// the shelf (INSTANT-ORDERS-PLAN.md §4). The shelf count is [quantity] plus this. Null where
+/// the server did not send it.
+@JsonKey(name: 'awaiting_handover') String? get awaitingHandover;@JsonKey(name: 'stock_item') StockItemRef? get item;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -40,20 +43,20 @@ $WarehouseStockCopyWith<WarehouseStock> get copyWith => _$WarehouseStockCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as WarehouseStock;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.lowStockThreshold, _this.lowStockThreshold) || other.lowStockThreshold == _this.lowStockThreshold)&&(identical(other.isLowStock, _this.isLowStock) || other.isLowStock == _this.isLowStock)&&(identical(other.item, _this.item) || other.item == _this.item)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WarehouseStock&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.stockItemId, _this.stockItemId) || other.stockItemId == _this.stockItemId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.unit, _this.unit) || other.unit == _this.unit)&&(identical(other.unitLabel, _this.unitLabel) || other.unitLabel == _this.unitLabel)&&(identical(other.lowStockThreshold, _this.lowStockThreshold) || other.lowStockThreshold == _this.lowStockThreshold)&&(identical(other.isLowStock, _this.isLowStock) || other.isLowStock == _this.isLowStock)&&(identical(other.awaitingHandover, _this.awaitingHandover) || other.awaitingHandover == _this.awaitingHandover)&&(identical(other.item, _this.item) || other.item == _this.item)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as WarehouseStock;
-  return Object.hash(runtimeType,_this.id,_this.warehouseId,_this.stockItemId,_this.quantity,_this.unit,_this.unitLabel,_this.lowStockThreshold,_this.isLowStock,_this.item,_this.createdAt,_this.updatedAt);
+  return Object.hash(runtimeType,_this.id,_this.warehouseId,_this.stockItemId,_this.quantity,_this.unit,_this.unitLabel,_this.lowStockThreshold,_this.isLowStock,_this.awaitingHandover,_this.item,_this.createdAt,_this.updatedAt);
 }
 
 @override
 String toString() {
   final _this = this as WarehouseStock;
-  return 'WarehouseStock(id: ${_this.id}, warehouseId: ${_this.warehouseId}, stockItemId: ${_this.stockItemId}, quantity: ${_this.quantity}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, lowStockThreshold: ${_this.lowStockThreshold}, isLowStock: ${_this.isLowStock}, item: ${_this.item}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  return 'WarehouseStock(id: ${_this.id}, warehouseId: ${_this.warehouseId}, stockItemId: ${_this.stockItemId}, quantity: ${_this.quantity}, unit: ${_this.unit}, unitLabel: ${_this.unitLabel}, lowStockThreshold: ${_this.lowStockThreshold}, isLowStock: ${_this.isLowStock}, awaitingHandover: ${_this.awaitingHandover}, item: ${_this.item}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -64,7 +67,7 @@ abstract mixin class $WarehouseStockCopyWith<$Res>  {
   factory $WarehouseStockCopyWith(WarehouseStock value, $Res Function(WarehouseStock) _then) = _$WarehouseStockCopyWithImpl;
 @useResult
 $Res call({
- int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'stock_item_id') int stockItemId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'stock_item_id') int stockItemId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'awaiting_handover') String? awaitingHandover,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -81,7 +84,7 @@ class _$WarehouseStockCopyWithImpl<$Res>
 
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? item = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? awaitingHandover = freezed,Object? item = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(WarehouseStock(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
@@ -91,7 +94,8 @@ as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non
 as String,unitLabel: null == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String,lowStockThreshold: freezed == lowStockThreshold ? _self.lowStockThreshold : lowStockThreshold // ignore: cast_nullable_to_non_nullable
 as String?,isLowStock: null == isLowStock ? _self.isLowStock : isLowStock // ignore: cast_nullable_to_non_nullable
-as bool,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
+as bool,awaitingHandover: freezed == awaitingHandover ? _self.awaitingHandover : awaitingHandover // ignore: cast_nullable_to_non_nullable
+as String?,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
 as StockItemRef?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -191,10 +195,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'awaiting_handover')  String? awaitingHandover, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WarehouseStock() when $default != null:
-return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.item,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.awaitingHandover,_that.item,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -212,10 +216,10 @@ return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'awaiting_handover')  String? awaitingHandover, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _WarehouseStock():
-return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.item,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.awaitingHandover,_that.item,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -232,10 +236,10 @@ return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id, @JsonKey(name: 'warehouse_id')  int warehouseId, @JsonKey(name: 'stock_item_id')  int stockItemId,  String quantity,  String unit, @JsonKey(name: 'unit_label')  String unitLabel, @JsonKey(name: 'low_stock_threshold')  String? lowStockThreshold, @JsonKey(name: 'is_low_stock')  bool isLowStock, @JsonKey(name: 'awaiting_handover')  String? awaitingHandover, @JsonKey(name: 'stock_item')  StockItemRef? item, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _WarehouseStock() when $default != null:
-return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.item,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_that.unit,_that.unitLabel,_that.lowStockThreshold,_that.isLowStock,_that.awaitingHandover,_that.item,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -247,7 +251,7 @@ return $default(_that.id,_that.warehouseId,_that.stockItemId,_that.quantity,_tha
 @JsonSerializable()
 
 class _WarehouseStock extends WarehouseStock {
-  const _WarehouseStock({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'stock_item_id') required this.stockItemId, required this.quantity, required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, @JsonKey(name: 'low_stock_threshold') this.lowStockThreshold, @JsonKey(name: 'is_low_stock') this.isLowStock = false, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
+  const _WarehouseStock({required this.id, @JsonKey(name: 'warehouse_id') required this.warehouseId, @JsonKey(name: 'stock_item_id') required this.stockItemId, required this.quantity, required this.unit, @JsonKey(name: 'unit_label') required this.unitLabel, @JsonKey(name: 'low_stock_threshold') this.lowStockThreshold, @JsonKey(name: 'is_low_stock') this.isLowStock = false, @JsonKey(name: 'awaiting_handover') this.awaitingHandover, @JsonKey(name: 'stock_item') this.item, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt}): super._();
   factory _WarehouseStock.fromJson(Map<String, dynamic> json) => _$WarehouseStockFromJson(json);
 
 @override final  int id;
@@ -268,6 +272,10 @@ class _WarehouseStock extends WarehouseStock {
 /// The server's answer, not a comparison this app re-derives — `null` threshold means "no
 /// alert", which is not the same as a threshold of zero.
 @override@JsonKey(name: 'is_low_stock') final  bool isLowStock;
+/// «بانتظار التسليم» — taken by instant orders not yet handed over, still physically on
+/// the shelf (INSTANT-ORDERS-PLAN.md §4). The shelf count is [quantity] plus this. Null where
+/// the server did not send it.
+@override@JsonKey(name: 'awaiting_handover') final  String? awaitingHandover;
 @override@JsonKey(name: 'stock_item') final  StockItemRef? item;
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 @override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
@@ -285,18 +293,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.item, item) || other.item == item)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WarehouseStock&&(identical(other.id, id) || other.id == id)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.stockItemId, stockItemId) || other.stockItemId == stockItemId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.unitLabel, unitLabel) || other.unitLabel == unitLabel)&&(identical(other.lowStockThreshold, lowStockThreshold) || other.lowStockThreshold == lowStockThreshold)&&(identical(other.isLowStock, isLowStock) || other.isLowStock == isLowStock)&&(identical(other.awaitingHandover, awaitingHandover) || other.awaitingHandover == awaitingHandover)&&(identical(other.item, item) || other.item == item)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,warehouseId,stockItemId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,item,createdAt,updatedAt);
+    return Object.hash(runtimeType,id,warehouseId,stockItemId,quantity,unit,unitLabel,lowStockThreshold,isLowStock,awaitingHandover,item,createdAt,updatedAt);
 }
 
 @override
 String toString() {
-    return 'WarehouseStock(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, item: $item, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'WarehouseStock(id: $id, warehouseId: $warehouseId, stockItemId: $stockItemId, quantity: $quantity, unit: $unit, unitLabel: $unitLabel, lowStockThreshold: $lowStockThreshold, isLowStock: $isLowStock, awaitingHandover: $awaitingHandover, item: $item, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -307,7 +315,7 @@ abstract mixin class _$WarehouseStockCopyWith<$Res> implements $WarehouseStockCo
   factory _$WarehouseStockCopyWith(_WarehouseStock value, $Res Function(_WarehouseStock) _then) = __$WarehouseStockCopyWithImpl;
 @override @useResult
 $Res call({
- int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'stock_item_id') int stockItemId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
+ int id,@JsonKey(name: 'warehouse_id') int warehouseId,@JsonKey(name: 'stock_item_id') int stockItemId, String quantity, String unit,@JsonKey(name: 'unit_label') String unitLabel,@JsonKey(name: 'low_stock_threshold') String? lowStockThreshold,@JsonKey(name: 'is_low_stock') bool isLowStock,@JsonKey(name: 'awaiting_handover') String? awaitingHandover,@JsonKey(name: 'stock_item') StockItemRef? item,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt
 });
 
 
@@ -324,7 +332,7 @@ class __$WarehouseStockCopyWithImpl<$Res>
 
 /// Create a copy of WarehouseStock
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? item = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? warehouseId = null,Object? stockItemId = null,Object? quantity = null,Object? unit = null,Object? unitLabel = null,Object? lowStockThreshold = freezed,Object? isLowStock = null,Object? awaitingHandover = freezed,Object? item = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_WarehouseStock(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,warehouseId: null == warehouseId ? _self.warehouseId : warehouseId // ignore: cast_nullable_to_non_nullable
@@ -334,7 +342,8 @@ as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non
 as String,unitLabel: null == unitLabel ? _self.unitLabel : unitLabel // ignore: cast_nullable_to_non_nullable
 as String,lowStockThreshold: freezed == lowStockThreshold ? _self.lowStockThreshold : lowStockThreshold // ignore: cast_nullable_to_non_nullable
 as String?,isLowStock: null == isLowStock ? _self.isLowStock : isLowStock // ignore: cast_nullable_to_non_nullable
-as bool,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
+as bool,awaitingHandover: freezed == awaitingHandover ? _self.awaitingHandover : awaitingHandover // ignore: cast_nullable_to_non_nullable
+as String?,item: freezed == item ? _self.item : item // ignore: cast_nullable_to_non_nullable
 as StockItemRef?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

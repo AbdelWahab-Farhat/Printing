@@ -22,7 +22,17 @@ class OrdersFilter {
     this.customerId,
     this.from,
     this.to,
+    this.orderType,
+    this.isLate,
   });
+
+  /// `instant` or `normal` — the branch counter's cards open on their own orders only
+  /// (INSTANT-ORDERS-PLAN.md §11). Null is every order.
+  final String? orderType;
+
+  /// `true` is the instant orders still «جديدة» past the late threshold — the rule is the
+  /// server's (§4). Null asks nothing.
+  final bool? isLate;
 
   /// What to call the answer — «نواقص», «طلبات اليوم».
   final String title;

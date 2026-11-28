@@ -44,6 +44,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'return_carrier_message',
     'vendor_request_message',
     'courier_contact_message',
+    // Hours an instant order may wait in «جديدة» before it is flagged «متأخرة».
+    'instant_order_late_hours',
 ])]
 class CompanySetting extends Model implements HasAuditTrail
 {
@@ -62,6 +64,7 @@ class CompanySetting extends Model implements HasAuditTrail
             'investor_profit_share_percent' => 'decimal:2',
             // سعرُ السادة بثلاث خاناتٍ أينما كُتب — على الصفقة، وعلى طبقة التكلفة، وهنا.
             'default_plain_sale_price' => 'decimal:3',
+            'instant_order_late_hours' => 'integer',
         ];
     }
 }
