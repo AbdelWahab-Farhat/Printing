@@ -19,6 +19,8 @@ use App\Domain\Order\Support\Money;
  *
  * **Silent when it may not act**: a fee a person decided (zero included), an order that has closed
  * or is a compensation, or no pay at all. Approving the design must never fail over the fee.
+ *
+ * Turned off entirely by `ORDERS_FILL_DESIGN_FEE_FROM_PAY=false` (config/orders.php).
  */
 final class FillDesignFeeFromTickets
 {
@@ -32,6 +34,10 @@ final class FillDesignFeeFromTickets
      */
     public function __invoke(Order $order, string $designersPay, ?int $actorId = null): ?string
     {
+        if (! config('orders.design_fee.fill_from_designer_pay', true)) {
+            return null;
+        }
+
         $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
 
         if ($locked === null || $locked->design_fee_set_at !== null || ! $locked->designFeeIsEditable()) {
