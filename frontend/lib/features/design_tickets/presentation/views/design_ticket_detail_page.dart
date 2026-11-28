@@ -16,6 +16,7 @@ import 'package:dayaa/core/utils/digits.dart';
 import 'package:dayaa/core/widgets/amount_sheet.dart';
 import 'package:dayaa/core/widgets/app_button.dart';
 import 'package:dayaa/core/widgets/app_dialog.dart';
+import 'package:dayaa/core/widgets/app_text_field.dart';
 import 'package:dayaa/core/widgets/attachment_sheet.dart';
 import 'package:dayaa/core/widgets/image_viewer.dart';
 import 'package:dayaa/features/audit/models/audit_subject.dart';
@@ -362,7 +363,6 @@ class _DesignTicketDetailView extends StatelessWidget {
 
   Future<void> _cancel(BuildContext context) async {
     final cubit = context.read<DesignTicketDetailCubit>();
-    final controller = TextEditingController();
 
     final confirmed = await showDestructiveDialog(
       context: context,
@@ -371,39 +371,15 @@ class _DesignTicketDetailView extends StatelessWidget {
       confirmLabel: 'إلغاء التذكرة',
     );
 
-    if (confirmed != true || !context.mounted) {
-      controller.dispose();
-
-      return;
-    }
+    if (confirmed != true || !context.mounted) return;
 
     // The reason is required by the server and by the database under it, so it is asked for
     // rather than defaulted — a cancellation with no words is the one thing the designer whose
     // job disappeared cannot work with.
     final reason = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('سبب الإلغاء'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 2,
-          decoration: const InputDecoration(hintText: 'الزبون غيّر رأيه'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('تراجع'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('تأكيد'),
-          ),
-        ],
-      ),
+      builder: (_) => const _CancelReasonDialog(),
     );
-
-    controller.dispose();
 
     if (reason == null || !context.mounted) return;
 
@@ -1188,6 +1164,61 @@ class _Versions extends StatelessWidget {
 
 /// What the screen shows when the ticket itself could not be read.
 ///
+/// Why the ticket is being cancelled.
+///
+/// A widget rather than a closure, so the controller is disposed after the dialog has left the
+/// tree, not while it is still fading out. Disposing it as soon as `showDialog` returned threw
+/// "A TextEditingController was used after being disposed" on every cancellation.
+class _CancelReasonDialog extends StatefulWidget {
+  const _CancelReasonDialog();
+
+  @override
+  State<_CancelReasonDialog> createState() => _CancelReasonDialogState();
+}
+
+class _CancelReasonDialogState extends State<_CancelReasonDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    Navigator.of(context).pop(_reason.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('سبب الإلغاء'),
+      content: Form(
+        key: _formKey,
+        child: AppTextField(
+          controller: _reason,
+          hint: 'الزبون غيّر رأيه',
+          autofocus: true,
+          maxLines: 2,
+          // Mirrors the server's `min:3`, so a short reason is caught here, not after a request.
+          validator: (value) =>
+              (value ?? '').trim().length < 3 ? 'السبب مطلوب' : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('تراجع'),
+        ),
+        TextButton(onPressed: _submit, child: const Text('تأكيد')),
+      ],
+    );
+  }
+}
+
 /// **The server's own sentence**, including «ليست لك» arriving as a 404 — deliberately not
 /// replaced with a blanket message, because the reader holds the grant the endpoint asks for and
 /// is being refused by a fact about this row.
